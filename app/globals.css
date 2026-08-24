@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: 'Assistant', 'Arial Hebrew', system-ui, sans-serif;
+  background-color: #f7f5f0;
+  color: #1f2937;
+}
+
+/* עיצוב מיוחד להדפסה - יתרחב בהמשך כשנבנה את מסך התצוגה להדפסה */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
