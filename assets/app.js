@@ -709,7 +709,6 @@ function yzItems(hd,big,noLimit){
   let L=yzOn(hd).filter(e=>(e.p||s.yzHist||e.custom)&&yzVisible(e));
   const ord=s.yzOrder||'year',yk=e=>isNaN(e.yn)?(ord==='recent'?-1:1e9):e.yn;
   L.sort((a,b)=>(((sel[b.id]||b.custom)?1:0)-((sel[a.id]||a.custom)?1:0))||(ord==='year'?yk(a)-yk(b):ord==='recent'?yk(b)-yk(a):0));
-  const max=+(s.yzMax??2);if(max>0&&!noLimit)L=L.slice(0,big?max*3:max);
   return L.map(e=>({cls:'gadol',text:yzText(e,s.yzFmt==='full')}));
 }
 const YZ_MONTH_NAME=m=>m===12?'אדר / אדר א׳':m===13?'אדר ב׳':HEB_MONTHS[m];
@@ -2117,7 +2116,7 @@ function renderYz(){
   document.querySelectorAll('input[name=yzMode]').forEach(r=>r.checked=r.value===mode);
   $('#yzListSel').innerHTML=yzListOptions();$('#yzListRow').hidden=(s.yzMode||'selected')==='all';$('#yzListHint').hidden=(s.yzMode||'selected')==='all';
   $('#yzOrder').value=s.yzOrder||'year';
-  $('#yzMax').value=String(s.yzMax??2);$('#yzFmt').value=s.yzFmt||'short';$('#yzHist').checked=!!s.yzHist;
+  $('#yzFmt').value=s.yzFmt||'short';$('#yzHist').checked=!!s.yzHist;
   let L;
   if(qv){const words=qv.replace(/["'״׳]/g,'').split(/\s+/);L=yzAll().filter(e=>yzMatches(e,words)).slice(0,80)}
   else if(mode==='all'){const h=s.yzHide||{};L=yzAll().filter(e=>h[e.id]);}
@@ -2154,7 +2153,6 @@ document.addEventListener('change',e=>{
   if(t.name==='zmSimple'){state.s.zm={...ZM_PRESETS[t.value]};state.s.zmPreset=t.value;if(t.value==='chul'&&!state.s.il){}return set('zmPreset',t.value)}
   if(t.dataset.yzv&&t.closest('#yzList')){yzSetVisible(t.dataset.yzv,t.checked);save();rerender();renderYz();return}
   if(t.name==='yzMode')return set('yzMode',t.value);
-  if(t.id==='yzMax')return set('yzMax',+t.value);
   if(t.id==='yzFmt')return set('yzFmt',t.value);
   if(t.id==='yzHist'){if(t.checked&&(state.s.view||'month')==='month'&&placeOf('yz')!=='none'){state.s.place={...(state.s.place||{}),yz:'page'}}return set('yzHist',t.checked)}
   if(t.id==='yzOrder')return set('yzOrder',t.value);
