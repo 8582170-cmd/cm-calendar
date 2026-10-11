@@ -246,7 +246,7 @@ function buildMonths(){
   }
   return months;
 }
-function hebText(ev){let t='';try{t=ev.render('he')}catch(e){}if(!t)t=ev.getDesc();return stripNikud(t)}
+function hebText(ev){let t='';try{t=ev.render('he')}catch(e){}if(!t)t=ev.getDesc();return stripNikud(t).replace(/\b(5\d{3})\b/,(m,y)=>hebYearStr(+y))}
 /* שניות: לכל זמן אפשר לבחור בנפרד (עם / בלי), ואם לא נבחר, לפי ההגדרה הכללית */
 function zdir(key,def){const r=(state.s.zround||{})[key];return r&&r!=='auto'?r:def}
 function secsFor(key){if(key==='tfila')return false;const z=state.s.zsecs||{};return key&&z[key]!=null?!!z[key]:!!state.s.secs}
@@ -510,6 +510,9 @@ function eventsFor(start,end){
   const map=new Map();
   for(const ev of evs){
     const f=ev.getFlags(),desc=ev.getDesc();let item;
+    /* זמני חמץ ונרות חנוכה מחושבים אצלנו לפי ההגדרות, ולכן לא לוקחים את השעה מהספרייה */
+    if(/chametz/i.test(desc))continue;
+    if(ev.eventTime instanceof Date&&/^Chanukah/.test(desc)){if(!s.showHolidays)continue;const k0=ymd(ev.getDate().greg());if(!map.has(k0))map.set(k0,[]);map.get(k0).push({cls:'',text:hebText(ev).replace(/[:\s]*\d{1,2}:\d{2}.*/,''),order:2});continue}
     if(ev.eventTime instanceof Date){
       const lbl=desc.startsWith('Candle')?'הדלקת נרות':desc.startsWith('Havdalah')?'יציאה':desc.startsWith('Fast begins')?'תחילת הצום':desc.startsWith('Fast ends')?'סוף הצום':hebText(ev).replace(/[:\s]*\d{1,2}:\d{2}.*/,'');
       const dir=desc.startsWith('Candle')||desc.startsWith('Fast begins')?'down':'up';
@@ -565,10 +568,10 @@ function eventsFor(start,end){
     const k0=new HDate(24,9,hd.getFullYear()).abs(),n=hd.abs()-k0+1;
     if(n<1||n>8)return;
     const nm='נר '+gem(n)+' דחנוכה',dow=d.getDay(),Z=zctx(d);
-    if(dow===5){putX(d,{cls:'timed',text:nm+': לפני הדלקת נרות שבת',order:5});return}
-    if(dow===6){putX(d,{cls:'timed',text:nm+': אחרי צאת השבת',order:5});return}
+    if(dow===5){putX(d,{cls:'timed',text:'נרות חנוכה: לפני הדלקת נרות שבת',order:5});return}
+    if(dow===6){putX(d,{cls:'timed',text:'נרות חנוכה: אחרי צאת השבת',order:5});return}
     const tt=ch==='sunset'?Z.sunset:Z.tzeit;
-    putX(d,{cls:'timed',text:'הדלקת '+nm+' '+fmtTime(tt,zdir('chanukah','up'),tz,'chanukah'),order:5});
+    putX(d,{cls:'timed',text:'הדלקת נרות חנוכה '+fmtTime(tt,zdir('chanukah','up'),tz,'chanukah'),order:5});
   });
   /* זמני תפילות בבית הכנסת (מסלול מלא) */
   const TF=(s.tfilot||[]).filter(t=>t.name&&t.on!==false);

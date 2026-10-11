@@ -637,3 +637,11 @@ td.zb{font-weight:800}
 
 .intro-tag{font-size:12px;font-weight:700;color:#b4231b;margin-top:2px}
 .pc-price s{color:var(--mute);font-weight:500}
+/* לוח שנתי: ממלא את כל הדף */
+.yr-grid{grid-auto-rows:minmax(0,1fr);align-content:stretch}
+.yr-mo{min-height:0}
+.yr-days{flex:1;grid-auto-rows:minmax(0,1fr);align-content:stretch}
+.yr-d{justify-content:center;font-size:calc(var(--u)*2.9*var(--ts))}
+.yr-wd{font-size:calc(var(--u)*2.3);align-self:end}
+.yr-mh{font-size:calc(var(--u)*3.8)}
+.yr-notes{font-size:calc(var(--u)*2.1*var(--ts));max-height:30%;overflow:hidden}
