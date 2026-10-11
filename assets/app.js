@@ -251,8 +251,18 @@ function fmtTime(dt,dir,tz){
   if(!(dt instanceof Date)||isNaN(dt))return '—';
   const secs=!!state.s.secs,u=secs?1000:60000;
   let t=dt.getTime();t=dir==='down'?Math.floor(t/u)*u:dir==='near'?Math.round(t/u)*u:Math.ceil(t/u)*u;
+  if(tz&&dstMode()!=='auto'){const d=new Date(t+customOff(t,tz)*60000);return d.getUTCHours()+':'+String(d.getUTCMinutes()).padStart(2,'0')+(secs?':'+String(d.getUTCSeconds()).padStart(2,'0'):'')}
   try{return new Intl.DateTimeFormat('he-IL',{hour:'numeric',minute:'2-digit',second:secs?'2-digit':undefined,hourCycle:'h23',timeZone:tz}).format(new Date(t))}catch(e){return '—'}
 }
+/* ---------- שעון קיץ: אוטומטי לפי המדינה, בלי, או תאריכים משלי ---------- */
+function dstCfg(){const d=state.s.dst||{};return {mode:d.mode||'auto',sm:+d.sm||3,sd:+d.sd||27,st:d.st||'02:00',em:+d.em||10,ed:+d.ed||30,et:d.et||'02:00'}}
+function dstMode(){return dstCfg().mode}
+function intlOff(ms,tz){try{const p={};new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(ms)).forEach(x=>p[x.type]=x.value);return Math.round((Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms)/60000)}catch(e){return 0}}
+const STD_OFF={};
+function stdOff(tz,y){const k=tz+y;if(STD_OFF[k]==null)STD_OFF[k]=Math.min(intlOff(Date.UTC(y,0,15,12),tz),intlOff(Date.UTC(y,6,15,12),tz));return STD_OFF[k]}
+function hm(s){const m=/^(\d{1,2}):(\d{2})/.exec(s||'');return m?(+m[1])*60+(+m[2]):120}
+function dstWindow(y){/* בזמן חורף מקומי: מ־ההתחלה עד הסוף (שעת הסוף נכתבת לפי שעון הקיץ) */const c=dstCfg();return [Date.UTC(y,c.sm-1,c.sd)+hm(c.st)*60000,Date.UTC(y,c.em-1,c.ed)+(hm(c.et)-60)*60000]}
+function customOff(ms,tz){const y=new Date(ms).getUTCFullYear(),base=stdOff(tz,y);if(dstMode()==='none')return base;const L=ms+base*60000,[S,E]=dstWindow(y);const inS=S<=E?(L>=S&&L<E):(L>=S||L<E);return base+(inS?60:0)}
 /* ---------- halachic times engine ---------- */
 const ZM_BASE={gra:'netz',minchaK:'gra',musaf:'gra',ci:'9.28',fastStart:'alot',chatzotNight:'true',chatzot:'mid',yereim:'-18f'};
 const ZM_PRESETS={
@@ -393,7 +403,15 @@ function addHebrewExtras(map,start,end){
   const local=ms=>{const dt=new Date(ms);let y,mo,da;try{const f=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(dt).split('-');y=+f[0];mo=+f[1];da=+f[2]}catch(e){y=dt.getFullYear();mo=dt.getMonth()+1;da=dt.getDate()}return new Date(y,mo-1,da,12)};
   const inRange=d=>d>=new Date(start.getFullYear(),start.getMonth(),start.getDate())&&d<=new Date(end.getFullYear(),end.getMonth(),end.getDate(),23);
   /* מעבר לשעון קיץ / חורף לפי אזור הזמן של המקום */
-  if(s.showDst!==false&&tz){
+  if(s.showDst!==false&&tz&&dstMode()==='custom'){
+    const c=dstCfg(),fm=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+    for(let y=start.getFullYear();y<=end.getFullYear();y++){
+      const a=new Date(y,c.sm-1,c.sd,12),b=new Date(y,c.em-1,c.ed,12);
+      if(inRange(a))put(a,{cls:'dst',text:'שעון קיץ: ב־'+fm(hm(c.st))+' מקדימים ל־'+fm(hm(c.st)+60),order:2});
+      if(inRange(b))put(b,{cls:'dst',text:'שעון חורף: ב־'+fm(hm(c.et))+' מחזירים ל־'+fm(hm(c.et)-60),order:2});
+    }
+  }
+  if(s.showDst!==false&&tz&&dstMode()==='auto'){
     const off=ms=>{try{const p={};new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(ms)).forEach(x=>p[x.type]=x.value);return Math.round((Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms)/60000)}catch(e){return 0}};
     const wall=(T,o)=>{const d=new Date(T+o*60000);return d.getUTCHours()+':'+String(d.getUTCMinutes()).padStart(2,'0')};
     let prev=Date.UTC(start.getFullYear(),start.getMonth(),start.getDate()-1,12),po=off(prev);
@@ -1882,7 +1900,7 @@ function syncUI(){
   $('#rangeRow').hidden=(s.view||'month')==='month';$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליארצייטים.',month:'עמוד לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
-  $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const sel=$('#yzPanelW'),v=String(s.yzPanelW||26);if(![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML('beforeend',opt(v,v+'%'));sel.value=v}$('#panelSide').value=s.panelSide==='right'?'right':'left';document.querySelectorAll('[data-place]').forEach(c=>c.value=placeOf(c.dataset.place));
+  $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const sel=$('#yzPanelW'),v=String(s.yzPanelW||26);if(![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML('beforeend',opt(v,v+'%'));sel.value=v}$('#panelSide').value=s.panelSide==='right'?'right':'left';document.querySelectorAll('[data-place]').forEach(c=>c.value=placeOf(c.dataset.place));
   $('#zmHint').textContent={col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
   $('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
   if(![...$('#hebYear').options].some(o=>+o.value===+s.hebYear))$('#hebYear').insertAdjacentHTML('beforeend',opt(s.hebYear,hebYearStr(+s.hebYear)));
@@ -1974,6 +1992,7 @@ document.addEventListener('change',e=>{
   if(t.id==='yzPanelW')return set('yzPanelW',+t.value);
   if(t.id==='yzOverflow')return set('yzOverflow',t.value);
   if(t.id==='histOverflow'){HIST_ASKED=false;return set('histOverflow',t.value)}
+  if(/^dst(Mode|Sd|Sm|St|Ed|Em|Et)$/.test(t.id)){const k={dstMode:'mode',dstSd:'sd',dstSm:'sm',dstSt:'st',dstEd:'ed',dstEm:'em',dstEt:'et'}[t.id];state.s.dst={...dstCfg(),...(state.s.dst||{}),[k]:t.value};ZC.clear&&ZC.clear();return set('dst',state.s.dst)}
   if(t.dataset.tcol){const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(state.s.tcols||{})};tc[t.dataset.tcol]=t.checked;return set('tcols',tc)}
   if(t.id==='splitCols')return set('splitCols',t.checked);
   if(t.dataset.moon){state.s.moon={...(state.s.moon||{}),[t.dataset.moon]:t.checked};return set('moon',state.s.moon)}

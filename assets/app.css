@@ -539,3 +539,7 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .sample-offer span{color:var(--mute);font-size:14px}
 
 .e.dst{color:#5a4b8a;font-weight:700}
+
+.dst-box{border-top:1px solid var(--line);padding-top:10px;margin-top:6px;display:flex;flex-direction:column;gap:8px}
+.dst-custom{display:flex;flex-direction:column;gap:8px}
+.dst-l{font-weight:700;min-width:44px;align-self:center}
