@@ -152,7 +152,7 @@ const todayH=new HDate(new Date());
 const DEFAULT={
   v:2,
   s:{calType:'heb',hebYear:todayH.getFullYear(),gregYear:new Date().getFullYear()+1,gregStart:1,cover:true,
-     showDst:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,showMevarchim:false,showOmer:false,
+     showDst:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,ytsg:'faint',showMevarchim:false,showOmer:false,
      city:'jerusalem',custom:null,candleMins:40,il:true,zmanimMode:'daily',
      zmanim:{sunrise:true,shma:true,sunset:true},
      m_shma:'gra',zmPreset:'ashkenaz',zm:null,secs:false,zlab:{},zround:{},zmode:{},
@@ -504,6 +504,16 @@ function eventsFor(start,end){
     }
     const k=ymd(ev.getDate().greg());
     if(!map.has(k))map.set(k,[]);map.get(k).push(item);
+  }
+  /* יום טוב שני של גלויות: בלוח לארץ ישראל, כהערה לבני חו״ל ששוהים בארץ */
+  const yts=s.ytsg||'faint';
+  if(s.il&&s.showHolidays&&yts!=='none'){
+    const YTSG={'7-16':'סוכות ב׳','7-23':'שמחת תורה','1-16':'פסח ב׳','1-22':'אחרון של פסח','3-7':'שבועות ב׳'};
+    for(let d=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);d<=end;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
+      const hd=new HDate(d),nm=YTSG[hd.getMonth()+'-'+hd.getDate()];if(!nm)continue;
+      const k=ymd(d);if(!map.has(k))map.set(k,[]);
+      map.get(k).push(yts==='normal'?{cls:'chag',text:'יו״ט שני של גלויות ('+nm+')',order:0}:{cls:'ytsg',text:'יו״ט שני של גלויות ('+nm+')',order:3});
+    }
   }
   addHebrewExtras(map,start,end);
   return map;
@@ -1914,7 +1924,7 @@ function syncUI(){
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליארצייטים.',month:'עמוד לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const sel=$('#yzPanelW'),v=String(s.yzPanelW||26);if(![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML('beforeend',opt(v,v+'%'));sel.value=v}$('#panelSide').value=s.panelSide==='right'?'right':'left';document.querySelectorAll('[data-place]').forEach(c=>c.value=placeOf(c.dataset.place));
   $('#zmHint').textContent={col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
-  $('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
+  $('#ytsg').value=s.ytsg||'faint';$('#ytsgRow').hidden=!s.il;$('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
   if(![...$('#hebYear').options].some(o=>+o.value===+s.hebYear))$('#hebYear').insertAdjacentHTML('beforeend',opt(s.hebYear,hebYearStr(+s.hebYear)));
   $('#hebYear').value=s.hebYear;$('#gregYear').value=s.gregYear;$('#gregStart').value=s.gregStart;$('#hebStart').value=s.hebStart||7;
   $('#cover').checked=!!s.cover;$('#candleMins').value=s.candleMins;$('#il').checked=!!s.il;
@@ -2024,7 +2034,7 @@ document.addEventListener('change',e=>{
     case 'accentCustom':return set('accent',t.value);
     case 'size':{const z=SIZES[t.value];if(z&&z.o)state.s.orient=z.o;return set('size',t.value)}
     case 'customW':case 'customH':if(+t.value>=50&&+t.value<=1200)set(t.id,+t.value);return;
-    case 'm_shma':return set(t.id,t.value);
+    case 'm_shma':case 'ytsg':return set(t.id,t.value);
     case 'secs':return set('secs',t.checked);
     case 'zmPreset':{if(t.value!=='custom')state.s.zm={...ZM_PRESETS[t.value]};return set('zmPreset',t.value)}
     case 'headFont':case 'bodyFont':loadFont(t.value);return set(t.id,t.value);

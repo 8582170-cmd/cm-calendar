@@ -187,6 +187,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .e.reminder{font-weight:700;color:#8a2c2c}
 .e.gadol{color:var(--p-mute);font-style:italic}
 .e.moon{color:#3c4d7a}
+.e.ytsg{color:var(--p-mute);font-size:.82em}
 .grid-row{flex:1;min-height:0;display:flex;gap:calc(var(--u)*2.5)}
 .grid-row>.grid{flex:1;min-width:0}
 .yz-panel{flex:0 0 auto;position:relative;min-width:0;display:flex;flex-direction:column;border:.25mm solid var(--p-line);border-radius:calc(var(--u)*1)}
