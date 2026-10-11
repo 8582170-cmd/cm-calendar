@@ -1890,6 +1890,7 @@ function syncUI(){
   $('#showCaption').checked=!!s.showCaption;$('#dedication').checked=!!s.dedication;
   document.querySelectorAll('.sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.acc===s.accent));
   if(typeof applyMode==='function'&&$('#stepper').childElementCount)applyMode();
+  renderHl();
   $('#accentCustom').value=s.accent;
   renderCitySelect();renderLocNow();
   const p=place();$('#cName').value=p.name;$('#cLat').value=p.lat;$('#cLng').value=p.lng;$('#cEl').value=p.el||0;$('#cTz').value=p.tz;$('#cIl').checked=!!s.il;
