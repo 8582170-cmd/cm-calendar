@@ -53,6 +53,7 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:
 .item.wide{grid-column:span 2}
 .item.wide .mp{max-width:400px}
 .item.wide .stagebox{min-height:440px}
+.stagebox{cursor:zoom-in;position:relative}
 @media (max-width:620px){.item.wide{grid-column:auto}}
 .stagebox{background:color-mix(in srgb,var(--teal-soft) 60%,var(--paper));border-radius:14px;padding:22px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:330px}
 .item h3{font-size:22px;font-weight:900}
@@ -102,8 +103,12 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .mg .f{color:#7a3b16;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mg .z{color:var(--mu);font-size:1.6cqw}
 .mg .ci{position:absolute;inset:0;z-index:0}
-.mg .ci~*{position:relative;z-index:1;color:#fff;text-shadow:0 1px 2px rgb(0 0 0 / .5)}
-.mg .ci~.d i{color:#fff}
+.mg .ci~*{position:relative;z-index:1}
+.mg .ci~.d{align-self:flex-start}
+.mg .ci~.d b{background:#fff;border-radius:.6cqw;padding:.2cqw .6cqw}
+.mg .ci~.d i{display:none}
+.mg .ci~.t,.mg .ci~.f{margin-top:auto;background:rgb(255 255 255 / .92);border-radius:.5cqw;padding:.1cqw .5cqw;font-size:1.6cqw}
+.mg .ci~.t+.f{margin-top:.3cqw}
 .mg .hlA{background:#f6d365}.mg .hlB{background:#a7c7e7}
 .ms{flex:0 0 26%;min-width:0;border:.25cqw solid var(--ln);border-radius:.8cqw;display:flex;flex-direction:column;overflow:hidden;font-size:1.7cqw}
 .ms.narrow{flex-basis:14%}
@@ -151,6 +156,17 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .a4{background:radial-gradient(circle at 50% 120%,#2e5a3a 0 45%,transparent 46%),radial-gradient(circle at 15% 110%,#3f6f47 0 35%,transparent 36%),radial-gradient(circle at 85% 115%,#38653f 0 38%,transparent 39%),linear-gradient(#bfe0d0,#e7f1e9)}
 .a5{background:radial-gradient(circle at 80% 25%,#fff 0 3%,transparent 3.5%),radial-gradient(circle at 20% 15%,#fff8 0 1%,transparent 1.5%),radial-gradient(circle at 45% 35%,#fff8 0 1%,transparent 1.5%),radial-gradient(circle at 65% 10%,#fff8 0 1%,transparent 1.5%),linear-gradient(#1f2a4d,#3c4c7d 70%,#5d4f73)}
 .a6{background:radial-gradient(circle at 30% 40%,#f4a6c2 0 9%,transparent 10%),radial-gradient(circle at 60% 55%,#f7c96b 0 8%,transparent 9%),radial-gradient(circle at 75% 30%,#c9a7e8 0 7%,transparent 8%),radial-gradient(circle at 45% 75%,#f29b9b 0 8%,transparent 9%),linear-gradient(#e9f2df,#d5e6c3)}
+
+.zoom-hint{position:absolute;bottom:10px;inset-inline-start:10px;background:var(--sheet);color:var(--teal);font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px;box-shadow:var(--shadow)}
+.lb{position:fixed;inset:0;z-index:100;background:rgb(10 16 18 / .85);display:flex;flex-direction:column;align-items:center;gap:14px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overflow:auto}
+.lb[hidden]{display:none}
+.lb-top{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:1400px;color:#fff}
+.lb-top h2{font-size:24px}
+.lb-close{font:inherit;font-weight:700;background:#fff;color:#172126;border:0;border-radius:999px;padding:6px 16px;cursor:pointer}
+.lb-pages{display:flex;gap:18px;justify-content:center;align-items:flex-start;flex-wrap:wrap;width:100%}
+.lb-pages .mp{flex:0 1 auto;max-width:100%;width:min(760px,calc((100vh - 110px) * 297 / 420))}
+.lb-pages.two .mp{width:min(620px,calc((100vh - 110px) * 297 / 420))}
+.lb-pages .mp.land{width:min(1000px,100%)}
 @media (max-width:560px){body{padding-inline:16px}.nav-links a:not(.btn){display:none}.gal{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
@@ -179,6 +195,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
       <button type="button" data-f="view" aria-pressed="false">תצוגות</button>
     </div>
     <div class="gal" id="gal"></div>
+    <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-labelledby="lbTitle"><div class="lb-top"><h2 id="lbTitle"></h2><button class="lb-close" type="button" id="lbClose">סגירה</button></div><div class="lb-pages" id="lbPages"></div></div>
   </main>
   <footer>הדוגמאות מוקטנות ומציגות חודש תשרי תשפ״ז. בלוח שלכם יופיעו השנה, העיר והאירועים שתבחרו.</footer>
 </div>
@@ -190,6 +207,12 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
   const H={1:['ch','ראש השנה'],2:['ch','ר״ה ב׳'],3:['','צום גדליה'],8:['','שבת שובה'],10:['ch','יום כיפור'],14:['','ערב סוכות'],15:['ch','סוכות'],16:['','חוה״מ'],17:['','חוה״מ'],18:['','חוה״מ'],19:['','חוה״מ'],20:['','חוה״מ'],21:['','הושע״ר'],22:['ch','שמח״ת'],23:['','אסרו חג'],29:['','בראשית'],30:['','ר״ח']};
   const FAM={17:'יום הולדת לנעמה',24:'יארצייט סבא משה',5:'יום נישואין'};
   const greg=d=>new Date(2026,8,11+d);
+  const SVG={
+    bday:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fde2ec"/><circle cx="20" cy="22" r="10" fill="#f48fb1"/><path d="M20 32 Q18 45 24 60" stroke="#c97a95" fill="none" stroke-width="1.5"/><circle cx="82" cy="18" r="9" fill="#ffd54f"/><path d="M82 27 Q85 40 79 55" stroke="#c9a640" fill="none" stroke-width="1.5"/><ellipse cx="50" cy="100" rx="30" ry="24" fill="#7e57c2"/><circle cx="50" cy="52" r="20" fill="#f6c9a8"/><path d="M29 52 Q30 26 50 28 Q71 26 71 52 Q66 38 50 38 Q35 38 29 52Z" fill="#5d4037"/><circle cx="43" cy="53" r="2.2" fill="#3e2723"/><circle cx="57" cy="53" r="2.2" fill="#3e2723"/><path d="M43 62 Q50 68 57 62" stroke="#b5654a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+    candle:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1f2a4d"/><circle cx="50" cy="40" r="26" fill="#ffd54f" opacity=".18"/><path d="M50 18 Q60 32 50 44 Q40 32 50 18Z" fill="#ffca28"/><path d="M50 27 Q55 35 50 42 Q45 35 50 27Z" fill="#fff3c4"/><rect x="49" y="43" width="2" height="7" fill="#333"/><rect x="34" y="50" width="32" height="38" rx="3" fill="#e8eef5" opacity=".9"/><rect x="34" y="50" width="32" height="8" rx="3" fill="#fff"/></svg>',
+    rings:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e3f2fd"/><path d="M50 82 C20 62 14 44 26 32 C36 22 48 28 50 38 C52 28 64 22 74 32 C86 44 80 62 50 82Z" fill="#ef9a9a"/><circle cx="41" cy="52" r="13" fill="none" stroke="#f9a825" stroke-width="5"/><circle cx="59" cy="52" r="13" fill="none" stroke="#fbc02d" stroke-width="5"/><path d="M58 37 l4 -6 l4 6 z" fill="#b3e5fc"/></svg>'
+  };
+  const svgUrl=k=>"url('data:image/svg+xml,"+encodeURIComponent(SVG[k])+"')";
   const t2=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
   const netz=d=>t2(382+Math.round((d-1)*18/29)), shk=d=>t2(1129-Math.round((d-1)*38/29));
   /* month grid */
@@ -215,7 +238,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
       let cls=m[0]==='ch'?'ch':dow===6?'sh':'';
       if(o.hl&&((d>=1&&d<=2)||(d>=10&&d<=10)||(d>=14&&d<=23)))cls='hlA';
       if(o.hl&&(d===5||d===26))cls='hlB';
-      const img=o.cellImg&&(d===17||d===24||d===5)?'<span class="ci '+(d===17?'a6':d===24?'a3':'a2')+'"></span>':'';
+      const img=o.cellImg&&(d===17||d===24||d===5)?'<span class="ci" style="background:center/cover no-repeat '+svgUrl(d===17?'bday':d===24?'candle':'rings')+'"></span>':'';
       h+='<div class="'+cls+'">'+img+'<div class="d"><b>'+heb(d)+'</b><i>'+g.getDate()+'</i></div>'+(m[1]?'<span class="t">'+m[1]+'</span>':'')+(o.fam&&FAM[d]?'<span class="f">'+FAM[d]+'</span>':'')+(o.zIn?'<span class="z">נץ '+netz(d)+'</span>':'')+'</div>';
     }
     for(let i=36;i<42;i++)h+='<div class="p"></div>';
@@ -272,7 +295,15 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     {f:'view',title:'טבלה',desc:'שורה לכל יום וטור לכל זמן, לתלייה בבית הכנסת או בישיבה.',chips:['טבלה','זמנים'],pages:[{kind:'table',acc:'#7a4a17'}],preset:'table'}
   ];
   const gal=document.getElementById('gal');
-  gal.innerHTML=ITEMS.map(it=>'<article class="item'+(it.wide?' wide':'')+'" data-f="'+it.f+'"><div class="stagebox">'+it.pages.map(page).join('')+'</div><h3>'+it.title+'</h3><p>'+it.desc+'</p><div class="chips">'+it.chips.map(c=>'<span>'+c+'</span>').join('')+'</div><a class="btn btn-ghost" href="app.html#preset-'+it.preset+'">להתחיל מהעיצוב הזה</a></article>').join('');
+  gal.innerHTML=ITEMS.map(it=>'<article class="item'+(it.wide?' wide':'')+'" data-f="'+it.f+'"><div class="stagebox" tabindex="0" role="button" aria-label="הגדלה: '+it.title+'" data-i="'+ITEMS.indexOf(it)+'">'+it.pages.map(page).join('')+'<span class="zoom-hint">לחצו להגדלה</span></div><h3>'+it.title+'</h3><p>'+it.desc+'</p><div class="chips">'+it.chips.map(c=>'<span>'+c+'</span>').join('')+'</div><a class="btn btn-ghost" href="app.html#preset-'+it.preset+'">להתחיל מהעיצוב הזה</a></article>').join('');
+  const lb=document.getElementById('lb'),lbp=document.getElementById('lbPages');
+  const openLb=i=>{const it=ITEMS[i];document.getElementById('lbTitle').textContent=it.title;lbp.className='lb-pages'+(it.pages.length>1?' two':'');lbp.innerHTML=it.pages.map(page).join('');lb.hidden=false;document.body.style.overflow='hidden';document.getElementById('lbClose').focus()};
+  const closeLb=()=>{lb.hidden=true;document.body.style.overflow=''};
+  gal.addEventListener('click',e=>{const s=e.target.closest('.stagebox');if(s)openLb(+s.dataset.i)});
+  gal.addEventListener('keydown',e=>{const s=e.target.closest('.stagebox');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openLb(+s.dataset.i)}});
+  document.getElementById('lbClose').onclick=closeLb;
+  lb.addEventListener('click',e=>{if(e.target===lb||e.target===lbp)closeLb()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!lb.hidden)closeLb()});
   document.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('.filters button').forEach(x=>x.setAttribute('aria-pressed',x===b));
     const f=b.dataset.f;gal.querySelectorAll('.item').forEach(i=>i.hidden=f!=='all'&&i.dataset.f!==f);
