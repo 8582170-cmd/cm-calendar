@@ -737,7 +737,7 @@ function yzItems(hd,big,noLimit){
   let L=yzOn(hd).filter(e=>(e.p||s.yzHist||e.custom)&&yzVisible(e));
   const ord=s.yzOrder||'year',yk=e=>isNaN(e.yn)?(ord==='recent'?-1:1e9):e.yn;
   L.sort((a,b)=>(((sel[b.id]||b.custom)?1:0)-((sel[a.id]||a.custom)?1:0))||(ord==='year'?yk(a)-yk(b):ord==='recent'?yk(b)-yk(a):0));
-  return L.map(e=>({cls:'gadol',text:yzText(e,s.yzFmt==='full')}));
+  return L.map(e=>({cls:e.p||e.custom?'gadol':'gadol hev',text:yzText(e,s.yzFmt==='full')}));
 }
 const YZ_MONTH_NAME=m=>m===12?'אדר / אדר א׳':m===13?'אדר ב׳':HEB_MONTHS[m];
 function yzMatches(e,words){const t=(e.t+' '+e.y).replace(/["'״׳]/g,'');return words.every(w=>t.includes(w))}

@@ -801,3 +801,7 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 /* הגנה על דברי הימים: אי אפשר לסמן */
 .hist-body,.yz-panel,.e.gadol,.yzp-e,.yz-list,.ym-list,#ymList,.yz-row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .hist-body [contenteditable=true],.yz-panel [contenteditable=true],#ymList input,#ymList textarea{-webkit-user-select:text;user-select:text}
+
+/* דברי הימים: מאורעות בצבע שונה מיארצייטן */
+.e.gadol.hev,.yzp-e.hev{color:#a3322a}
+.t-block .yzp-e.hev,.t-block .e.gadol.hev{color:#9b2a22}
