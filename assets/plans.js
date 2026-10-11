@@ -16,9 +16,9 @@
      features:{views:true, banners:true, extraPages:true, advZmanim:false, customSize:false, imageEditor:true, fonts:true},
      bullets:['כל התצוגות: חודשי, שבועי, יומי וטבלה','עד 120 אירועים משפחתיים','באנרים, עמודי ברכות ופרסומות','עורך תמונות','2 הורדות של לוח מוכן']},
     {id:'full',  name:'מלא',     tagline:'הכל פתוח, בלי חשבונות',
-     price:{ils:99, usd:30}, months:13, events:Infinity, downloads:3, watermark:false, best:true,
+     price:{ils:99, usd:30}, months:13, events:Infinity, downloads:5, watermark:false, best:true,
      features:{...ALL},
-     bullets:['אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','3 הורדות של לוח מוכן']}
+     bullets:['אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','5 הורדות של לוח מוכן']}
   ];
   const FEATURE_NAMES = {
     views:'תצוגה שבועית, יומית וטבלה', banners:'באנרים בצדי הדף', extraPages:'עמודים נוספים (ברכות, פרסומות, הערות)',
