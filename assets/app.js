@@ -1036,7 +1036,7 @@ function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')
 function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
 /* שורת תחתית: פרטי הזמנים, ומשמאל "נוצר בלוחנו". במסלולים בתשלום אפשר להסתיר את השורה. */
 function creditOn(){return PLAN().watermark||state.s.credit!==false}
-function creditHost(){const h=location.host;return /^(localhost|127\.|$)/.test(h)?'לוחנו':h.replace(/^www\./,'')}
+function creditHost(){const h=window.location.host;return /^(localhost|127\.|$)/.test(h)?'לוחנו':h.replace(/^www\./,'')}
 function addFootLine(p){
   const s=state.s,z=s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
   if(!z&&!creditOn())return;
@@ -2793,7 +2793,9 @@ syncPlanUI();
   if(!state.s.addAmnon){state.s.addAmnon=1;(state.s.yzLists||[]).forEach(l=>{if(l.sel&&!(state.s.yzHide||{})['7'])l.sel['7']=1});if(state.s.yzSel)state.s.yzSel['7']=1}
   if(!state.s.histPage2){state.s.histPage2=1;if((state.s.place||{}).yz==='col')state.s.place={...(state.s.place||{}),yz:'page'}}
   loadFont(state.s.headFont);loadFont(state.s.bodyFont);Object.values(state.textStyles||{}).forEach(t=>t.ff&&loadFont(t.ff));
-  {const m=/^#preset-([a-z]+)$/.exec(location.hash||'');const P={
+  /* הגעה מהלוח המקוון: #city-ID&hy-שנה */
+  {const m=/^#city-([a-z]+)(?:&hy-(\d{4}))?$/.exec(window.location.hash||'');if(m){const c=CITIES.find(x=>x.id===m[1]);const s=state.s;if(c){s.city=c.id;s.il=c.il;s.candleMins=c.candle}if(m[2]){s.calType='heb';s.hebYear=+m[2];s.hebStart=7}save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
+  {const m=/^#preset-([a-z]+)$/.exec(window.location.hash||'');const P={
     family:{layout:'same',imgRatio:40,theme:'ink',accent:'#1e5a63',size:'wall',view:'month',zmanimMode:'shabbat'},
     split:{layout:'split',theme:'soft',accent:'#24427a',size:'wall',view:'month'},
     shul:{layout:'full',theme:'block',accent:'#7a4a17',zmanimMode:'col',banners:['right'],view:'month'},
@@ -2810,7 +2812,7 @@ syncPlanUI();
      s.cols=null;s.zplace=null;
      for(const k in p){if(k==='place'||k==='learn'||k==='moon')s[k]={...(s[k]||{}),...p[k]};else s[k]=p[k]}
      if(m[1]==='school'&&!(s.hl||[]).length)s.hl=[{id:'h'+uid(),name:'חופשות',color:'#f6d365',days:{},show:true,repeat:'none'},{id:'h'+uid(),name:'ימי הורים',color:'#a7c7e7',days:{},show:true,repeat:'none'}];
-     s.uiMode='wizard';s.step=1;save();try{history.replaceState(null,'',location.pathname)}catch(e){}}}
+     s.uiMode='wizard';s.step=1;save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   syncUI();applyMode();render();fillLums();
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
 })();
