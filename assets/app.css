@@ -732,3 +732,32 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 .cdst-baby .cd-d.shabbat{background:#eaf3fb}
 .cdst-baby .cd-d.goal{background:#8bb7dd}
 .cdst-baby .cd-n{color:#5b8db8}
+/* ספירה לאחור: פוסטר */
+.cd-poster .cdp-grid{flex:1;min-height:0;display:grid;grid-template-columns:auto repeat(7,minmax(0,1fr));gap:calc(var(--u)*.5)}
+.cdp-grid .wd{text-align:center;font-weight:700;color:var(--acc);font-size:calc(var(--u)*2.2)}
+.cdp-m{font-family:var(--cd-f,var(--f-head));font-weight:700;color:var(--acc);font-size:calc(var(--u)*2.4);display:flex;align-items:center;padding-inline-end:calc(var(--u)*1);white-space:nowrap}
+.cdp-d{border:.3mm solid var(--p-line);border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;background:rgba(255,255,255,.85);line-height:1}
+.cdp-d b{font-family:var(--cd-nf,var(--f-head));color:var(--acc);font-size:calc(var(--u)*5.2)}
+.cdp-d small{font-size:calc(var(--u)*2.2);color:var(--p-mute)}
+.cdp-d.shabbat{background:var(--acc-t)}
+.cdp-d.goal{background:var(--acc)}.cdp-d.goal b,.cdp-d.goal small{color:#fff}
+.cdp-legend{text-align:center;font-size:calc(var(--u)*2);color:var(--p-mute)}
+/* ספירה לאחור: דף צר וארוך */
+.cd-scroll{gap:calc(var(--u)*1.4)}
+.cds-list{display:flex;flex-direction:column;gap:calc(var(--u)*.8)}
+.cds-m{font-family:var(--cd-f,var(--f-head));font-weight:700;color:var(--acc);font-size:calc(var(--u)*4);border-bottom:.4mm solid var(--acc);margin-top:calc(var(--u)*1.6)}
+.cds-r{position:relative;display:grid;grid-template-columns:calc(var(--u)*12) 1fr;grid-template-rows:auto auto;column-gap:calc(var(--u)*2);align-items:center;border:.3mm solid var(--p-line);border-radius:calc(var(--u)*1.6);padding:calc(var(--u)*.8) calc(var(--u)*1.6);background:rgba(255,255,255,.85);min-height:calc(var(--u)*9)}
+.cds-r.shabbat{background:var(--acc-t)}
+.cds-r.goal{background:var(--acc);color:#fff}
+.cds-n{grid-row:1/3;font-family:var(--cd-nf,var(--f-head));font-size:calc(var(--u)*6.5);color:var(--acc);text-align:center;line-height:1}
+.cds-r.goal .cds-n{color:#fff}
+.cds-dt{font-weight:600;font-size:calc(var(--u)*2.8)}
+.cds-dt small{color:var(--p-mute);font-weight:400;margin-inline-start:calc(var(--u)*1.2)}
+.cds-e{font-size:calc(var(--u)*2.3);color:var(--p-mute)}
+.cds-r.goal .cds-e,.cds-r.goal .cds-dt small{color:#fff}
+/* ספירה לאחור: שרשרת */
+.cdc-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:0}
+.cdc-s{border:.3mm dashed #999;display:flex;align-items:center;gap:calc(var(--u)*2.4);padding:0 calc(var(--u)*3);background:color-mix(in srgb,var(--sc) 14%,#fff);border-inline-start:calc(var(--u)*2.2) solid var(--sc)}
+.cdc-s b{font-family:var(--cd-nf,var(--f-head));font-size:calc(var(--u)*8);color:var(--sc);line-height:1;min-width:calc(var(--u)*12);text-align:center}
+.cdc-s span{font-family:var(--cd-f,var(--f-head));font-size:calc(var(--u)*3.4);font-weight:700}
+.cdc-s small{margin-inline-start:auto;font-size:calc(var(--u)*1.9);color:var(--p-mute);text-align:end}
