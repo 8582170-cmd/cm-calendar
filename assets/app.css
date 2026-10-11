@@ -805,3 +805,31 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 /* דברי הימים: מאורעות בצבע שונה מיארצייטן */
 .e.gadol.hev,.yzp-e.hev{color:#a3322a}
 .t-block .yzp-e.hev,.t-block .e.gadol.hev{color:#9b2a22}
+
+/* צבע לכל סוג טקסט (נקבע בהגדרות; בלי בחירה נשאר צבע העיצוב) */
+.pg-month{color:var(--c-month,var(--acc))}
+.wd{color:var(--c-wd,var(--p-mute))}
+.d-main{color:var(--c-date,var(--p-ink))}
+.cell.shabbat .d-main,.cell.chag .d-main{color:var(--c-date,var(--acc))}
+.d-sub{color:var(--c-date2,var(--p-mute))}
+.e.chag{color:var(--c-chag,var(--acc))}
+.e.parasha{color:var(--c-par,inherit)}
+.e.timed,.d-z,.wd-z,.zr,.zl{color:var(--c-times,inherit)}
+.e.personal,.yzp-e.personal{color:var(--c-pers,#7a3b16)}
+.e.gadol{color:var(--c-yz,var(--p-mute))}
+.yzp-e:not(.hev):not(.personal):not(.moon):not(.lrn){color:var(--c-yz,inherit)}
+.e.gadol.hev,.yzp-e.hev{color:var(--c-hev,#a3322a)}
+.e.learn,.yzp-e.lrn,.learn-t td{color:var(--c-learn,#5b6670)}
+.e.moon,.moon-sec .yzp-e{color:var(--c-moon,#3c4d7a)}
+.e.tfila{color:var(--c-tfila,inherit)}
+.pg-foot{color:var(--c-foot,var(--p-mute))}
+.tcol-box{margin:8px 0;border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.tcol-box summary{cursor:pointer;font-weight:700}
+.tcol-list{display:grid;grid-template-columns:1fr;gap:4px;margin:8px 0}
+.tcol{display:flex;align-items:center;gap:8px;font-size:14px}
+.tcol input[type=color]{width:32px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:none}
+.tcol input[data-unset]{opacity:.45}
+.tcol .linkish{margin-inline-start:auto;background:none;border:0;color:var(--accent,#1e5a63);text-decoration:underline;cursor:pointer;font-size:12px}
+.tcol small{margin-inline-start:auto}
+.txt-tools .tt-col{display:inline-flex;align-items:center}
+.txt-tools .tt-col input{width:30px;height:26px;padding:0;border:0;background:none;cursor:pointer}

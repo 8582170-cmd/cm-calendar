@@ -940,7 +940,7 @@ function editable(cls,text,ph,onSave,multi){
   return d;
 }
 let RS={labels:{},emitted:new Set(),slots:[],count:0,tc:{},curKey:''};
-function applyTextStyle(d){const st=(state.textStyles||{})[d.dataset.tid]||{};d.style.setProperty('--fs',st.fs||1);d.style.textAlign=st.al||'';if(st.ff){loadFont(st.ff);d.style.fontFamily=fontCSS(st.ff)}else d.style.fontFamily=''}
+function applyTextStyle(d){const st=(state.textStyles||{})[d.dataset.tid]||{};d.style.setProperty('--fs',st.fs||1);d.style.textAlign=st.al||'';d.style.color=st.co||'';if(st.ff){loadFont(st.ff);d.style.fontFamily=fontCSS(st.ff)}else d.style.fontFamily=''}
 const FONTS=[
  ['קלאסי ומסורתי',[['Frank Ruhl Libre','פרנק ריהל','s','400;700;900'],['David Libre','דוד','s','400;700'],['Noto Serif Hebrew','נוטו סריף','s','400;700'],['Bona Nova','בונה נובה','s','400;700'],['Tinos','טינוס (כמו טיימס)','s','400;700'],['Noto Rashi Hebrew','כתב רש״י','s','']]],
  ['מודרני ונקי',[['Assistant','אסיסטנט','a','400;700'],['Heebo','חפצי','a','400;700;900'],['Rubik','רוביק','a','400;700;900'],['Alef','אלף','a','400;700'],['Miriam Libre','מרים','a','400;700'],['IBM Plex Sans Hebrew','IBM פלקס','a','400;700'],['Noto Sans Hebrew','נוטו סאנס','a','400;700'],['Open Sans','אופן סאנס','a','400;700'],['Arimo','ארימו (כמו אריאל)','a','400;700'],['Varela Round','וארלה עגול','a',''],['Fredoka','פרדוקה עגול','a','400;700']]],
@@ -963,6 +963,7 @@ function pageShell(label,key){
   const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
+  for(const [k,v] of Object.entries(s.tcolors||{}))if(v)p.style.setProperty('--c-'+k,v);
   if(s.headFont)p.style.setProperty('--f-head',fontCSS(s.headFont));
   if(s.bodyFont)p.style.setProperty('--f-body',fontCSS(s.bodyFont));
   const wrap=el('div','sheet-wrap');wrap.appendChild(p);
@@ -1828,16 +1829,18 @@ function openZmanimSettings(){
 
 /* ---------- text toolbar ---------- */
 const tt=el('div','txt-tools no-print');tt.hidden=true;
-tt.innerHTML='<button type="button" data-a="dn" title="הקטנת הטקסט">A−</button><button type="button" data-a="up" title="הגדלת הטקסט">A+</button><button type="button" data-a="right" title="יישור לימין">ימין</button><button type="button" data-a="center" title="מרכוז">מרכז</button><button type="button" data-a="left" title="יישור לשמאל">שמאל</button><button type="button" data-a="reset" title="חזרה לברירת המחדל">איפוס</button><select id="ttFont" aria-label="גופן"></select>';
+tt.innerHTML='<button type="button" data-a="dn" title="הקטנת הטקסט">A−</button><button type="button" data-a="up" title="הגדלת הטקסט">A+</button><button type="button" data-a="right" title="יישור לימין">ימין</button><button type="button" data-a="center" title="מרכוז">מרכז</button><button type="button" data-a="left" title="יישור לשמאל">שמאל</button><button type="button" data-a="reset" title="חזרה לברירת המחדל">איפוס</button><select id="ttFont" aria-label="גופן"></select><label class="tt-col" title="צבע הטקסט"><input type="color" id="ttColor" aria-label="צבע הטקסט"></label>';
 document.body.appendChild(tt);
 let ttEl=null;
 $('#ttFont').innerHTML=fontOptions('גופן רגיל');
 $('#ttFont').addEventListener('change',e=>{if(!ttEl)return;state.textStyles=state.textStyles||{};const id=ttEl.dataset.tid,st={...(state.textStyles[id]||{})};if(e.target.value)st.ff=e.target.value;else delete st.ff;state.textStyles[id]=st;applyTextStyle(ttEl);save();ttEl.focus()});
 function placeTT(){if(!ttEl)return;const r=ttEl.getBoundingClientRect();tt.style.top=Math.max(4,r.top-42)+'px';tt.style.left=Math.max(4,Math.min(window.innerWidth-tt.offsetWidth-4,r.left+r.width/2-tt.offsetWidth/2))+'px'}
-stage.addEventListener('focusin',e=>{const d=e.target.closest('[contenteditable][data-tid]');if(!d)return;ttEl=d;tt.hidden=false;$('#ttFont').value=((state.textStyles||{})[d.dataset.tid]||{}).ff||'';placeTT()});
+stage.addEventListener('focusin',e=>{const d=e.target.closest('[contenteditable][data-tid]');if(!d)return;ttEl=d;tt.hidden=false;const st=(state.textStyles||{})[d.dataset.tid]||{};$('#ttFont').value=st.ff||'';$('#ttColor').value=st.co||rgbHex(getComputedStyle(d).color);placeTT()});
+function rgbHex(c){const m=String(c).match(/\d+/g);return m?'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join(''):'#000000'}
+$('#ttColor').addEventListener('input',e=>{if(!ttEl)return;state.textStyles=state.textStyles||{};const id=ttEl.dataset.tid,st={...(state.textStyles[id]||{})};st.co=e.target.value;state.textStyles[id]=st;applyTextStyle(ttEl);save()});
 stage.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!a||!(a.closest('[contenteditable][data-tid]')||a.closest('.txt-tools'))){tt.hidden=true;ttEl=null}},150));
 window.addEventListener('scroll',placeTT,true);
-tt.addEventListener('mousedown',e=>{if(e.target.tagName!=='SELECT')e.preventDefault()});
+tt.addEventListener('mousedown',e=>{if(e.target.tagName!=='SELECT'&&e.target.tagName!=='INPUT')e.preventDefault()});
 tt.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!a||!(a.closest('[contenteditable][data-tid]')||a.closest('.txt-tools'))){tt.hidden=true;ttEl=null}},150));
 tt.addEventListener('click',e=>{const a=e.target.dataset.a;if(!a||!ttEl)return;
   state.textStyles=state.textStyles||{};const id=ttEl.dataset.tid,st={...(state.textStyles[id]||{})};
@@ -2242,7 +2245,7 @@ function fillStatic(){
   $('#cTz').innerHTML=tzs.map(t=>opt(t,t)).join('');
   if(!framed&&navigator.geolocation)$('#geoBtn').hidden=false;
 }
-function syncUI(){if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
+function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?.dataset?.tcolC)renderTColors();if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
   yzInvalidate();
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
@@ -2954,6 +2957,14 @@ const YZ_NOTE='התוכן של דברי הימים מוגן בזכויות יו�
 document.addEventListener('contextmenu',e=>{if(yzProt(e.target))e.preventDefault()},true);
 document.addEventListener('dragstart',e=>{if(yzProt(e.target))e.preventDefault()},true);
 document.addEventListener('selectstart',e=>{if(yzProt(e.target)&&!e.target.closest('[contenteditable=true],input,textarea'))e.preventDefault()},true);
+/* ---------- צבע לכל סוג טקסט בלוח ---------- */
+const TCOLS=[['month','שם החודש'],['wd','ימי השבוע'],['date','מספר היום'],['date2','התאריך השני (הקטן)'],['chag','חגים'],['par','פרשת השבוע'],['times','הדלקה, יציאה וזמנים בתוך היום'],['pers','אירועים אישיים'],['yz','יומי דהילולא (יארצייטן)'],['hev','מאורעות בדברי הימים'],['learn','לימוד יומי'],['moon','מולד, קידוש לבנה ותקופות'],['tfila','זמני תפילות'],['foot','השורה התחתונה']];
+function renderTColors(){const b=$('#tcolList');if(!b)return;const T=state.s.tcolors||{};
+  b.innerHTML=TCOLS.map(([k,n])=>'<label class="tcol"><input type="color" data-tcol-c="'+k+'" value="'+(T[k]||'#000000')+'"'+(T[k]?'':' data-unset="1"')+'><span>'+n+'</span>'+(T[k]?'<button type="button" class="linkish" data-tcol-x="'+k+'">ברירת מחדל</button>':'<small class="hint">ברירת מחדל</small>')+'</label>').join('')}
+document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.tcolC;if(!k)return;state.s.tcolors={...(state.s.tcolors||{}),[k]:e.target.value};save();rerender()});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.tcolC;if(k)renderTColors()});
+document.addEventListener('click',e=>{const k=e.target.dataset&&e.target.dataset.tcolX;if(k){const o={...(state.s.tcolors||{})};delete o[k];state.s.tcolors=o;save();renderTColors();rerender();return}
+  if(e.target.id==='tcolReset'){state.s.tcolors={};save();renderTColors();rerender()}});
 syncPlanUI();
 /* boot */
 (async function(){
