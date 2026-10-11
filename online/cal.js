@@ -260,7 +260,7 @@ function viewTools(){
 }
 /* ---------- ספירה לאחור ---------- */
 const CD_ST=[['classic','קלאסי','Classic','#1e5a63','#fff','🎉'],['bride','כלה וחתונה','Wedding','#a8646f','#fdf8f5','💍'],['barmitzvah','בר מצווה','Bar Mitzvah','#1f3a5f','#fbfaf5','✡'],['batmitzvah','בת מצווה','Bat Mitzvah','#b8487a','#fff7fa','🌸'],['kids','ילדים','Kids','#e0663a','#fffaf0','🎈'],['baby','לידה ותינוק','Baby','#5b8db8','#f7fbff','👶']];
-const CD_LAY=[['months',HE()?'עמוד לכל חודש':'A page per month'],['poster',HE()?'פוסטר: כל הימים בדף אחד':'Poster: all days on one page'],['scroll',HE()?'דף צר וארוך לגלילה':'Long narrow page to scroll'],['chain',HE()?'שרשרת נייר לגזירה':'Paper chain to cut out']];
+const CD_LAY=[['board',HE()?'לוח מספרים: כל הימים בטבלה אחת':'Number board: all days in one table'],['months',HE()?'עמוד לכל חודש':'A page per month'],['poster',HE()?'פוסטר: כל הימים בדף אחד':'Poster: all days on one page'],['scroll',HE()?'דף צר וארוך לגלילה':'Long narrow page to scroll'],['chain',HE()?'שרשרת נייר לגזירה':'Paper chain to cut out']];
 function viewCountdown(back){
   const q=CDQ||LS.get('cd',{});const v={t:q.t||'',d:q.d||iso(addD(TODAY,60)),st:q.st||'bride',l:q.l||'months'};
   $('#main').innerHTML=back+'<div class="bar"><h1>'+t('countdown')+'</h1></div><div class="card"><div class="row"><label class="fld" style="flex:2 1 220px">'+(HE()?'למה סופרים':'Counting down to')+'<input id="kT" value="'+esc(v.t)+'" placeholder="'+(HE()?'למשל: החתונה של רחלי ודוד':'e.g. Sarah &amp; David&#39;s wedding')+'"></label><label class="fld">'+(HE()?'תאריך':'Date')+'<input type="date" id="kD" value="'+esc(v.d)+'"></label></div>'+

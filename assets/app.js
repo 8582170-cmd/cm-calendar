@@ -176,7 +176,7 @@ function merge(base,inc){
   if(!inc||typeof inc!=='object')return out;
   out.s=Object.assign(out.s,inc.s||{});
   if(inc.s&&inc.s.paper&&!inc.s.size)out.s.size={A4:'a4',A3:'wall',A5:'fridge',Letter:'letter'}[inc.s.paper]||'a4';
-  ['slots','cover','banner','bannersData','textStyles','yzEdit','colImgs'].forEach(k=>{if(inc[k])out[k]=inc[k]});
+  ['slots','cover','banner','bannersData','textStyles','yzEdit','colImgs','cdImgs'].forEach(k=>{if(inc[k])out[k]=inc[k]});
   ['events','customGedolim','ads','yzCustom'].forEach(k=>{if(Array.isArray(inc[k]))out[k]=inc[k]});
   out.events=out.events.map(e=>e.rec?e:{...e,rec:e.cal||'heb'});
   return out;
@@ -1083,10 +1083,23 @@ function cdPoster(ST){
   let lastM='';for(const wk of weeks){const f=wk.days.find(Boolean),[k,t]=cdMonthKey(f);if(k!==lastM){wk.label=t.split(' ')[0];lastM=k}}
   const g=el('div','cdp-grid');g.style.gridTemplateRows='auto repeat('+weeks.length+',minmax(0,1fr))';
   g.innerHTML='<div></div>'+WEEKDAYS.map(x=>'<div class="wd">'+x+'</div>').join('')+weeks.map(wk=>'<div class="cdp-m">'+esc(wk.label)+'</div>'+wk.days.map(d=>{if(!d)return '<div></div>';const n=cdN(to,d),hd=new HDate(d);
-    return '<div class="cdp-d'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+'" data-date="'+iso(d)+'"><b>'+(n===0?ST.goal:n)+'</b><small>'+(dStyle().startsWith('greg')?d.getDate()+'/'+(d.getMonth()+1):gem(hd.getDate()))+'</small></div>'}).join('')).join('');
+    const gi=n===0?cdImg('goal'):null;return '<div class="cdp-d'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+'" data-date="'+iso(d)+'"'+(gi?' style="background:center/cover url('+gi+')"':'')+'><b>'+(n===0?ST.goal:n)+'</b><small>'+(dStyle().startsWith('greg')?d.getDate()+'/'+(d.getMonth()+1):gem(hd.getDate()))+'</small></div>'}).join('')).join('');
   p.appendChild(g);
   p.insertAdjacentHTML('beforeend','<div class="cdp-legend">צובעים או מסמנים כל יום שעבר. המספר הגדול: כמה ימים נשארו. הקטן: התאריך.</div>');
   addFootLine(p);emitExtras('cd-poster');
+}
+/* לוח מספרים: כל הימים בטבלה אחת, למשל 100 ימים = 10×10, מהמספר הגדול לקטן */
+function cdBoard(ST){
+  const s=state.s,{to,from,days}=cdDays(),title=s.cdTitle||'הספירה לאחור',N=days.length;
+  const [w,h]=pageDims(),cols=(N-1)%10===0&&N<=201?10:(N-1)%7===0&&N<=120?7:Math.max(5,Math.round(Math.sqrt(N*w/h)));
+  const p=pageShell('ספירה לאחור · לוח מספרים','cd-board');cdSetup(p,ST,s);p.classList.add('cd-boardp');
+  p.insertAdjacentHTML('beforeend','<div class="cd-head"><div class="cd-title">'+esc(title)+'</div><div class="cd-sub">'+(N-1)+' ימים · '+esc(dateLong(to))+'</div></div>');
+  const g=el('div','cdb-grid');g.style.gridTemplateColumns='repeat('+cols+',minmax(0,1fr))';g.style.gridTemplateRows='repeat('+Math.ceil(N/cols)+',minmax(0,1fr))';
+  g.innerHTML=days.map(d=>{const n=cdN(to,d),hd=new HDate(d),q=cdQuote(n),im=n===0?cdImg('goal'):d.getTime()===from.getTime()?cdImg('first'):null;
+    return '<div class="cdb-d'+(n===0?' goal':'')+(n%10===0&&n?' ten':'')+(im?' has-im':'')+'" data-date="'+iso(d)+'"'+(q?' title="'+esc(q)+'"':'')+'>'+(im?'<img class="cd-im" alt="" src="'+im+'">':'')+'<b>'+(n===0?ST.goal:n)+'</b><small>'+esc(dStyle().startsWith('greg')?d.getDate()+'.'+(d.getMonth()+1):gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'</small>'+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}).join('');
+  p.appendChild(g);
+  if(s.cdQuotes){const qs=days.map(d=>cdN(to,d)).filter(n=>cdQuote(n)).slice(0,6).map(n=>'<span><b>'+n+':</b> '+esc(cdQuote(n))+'</span>');if(qs.length)p.insertAdjacentHTML('beforeend','<div class="cdb-q">'+qs.join('')+'</div>')}
+  addFootLine(p);emitExtras('cd-board');
 }
 /* דף צר וארוך לגלילה בטלפון: שורה לכל יום */
 function cdScroll(ST){
@@ -1095,7 +1108,8 @@ function cdScroll(ST){
   let h='<div class="cd-head"><div class="cd-title">'+esc(title)+'</div><div class="cd-sub">'+esc(dateLong(to))+'</div></div><div class="cds-list">';let lastM='';
   for(const d of days){const [k,t]=cdMonthKey(d);if(k!==lastM){h+='<div class="cds-m">'+esc(t)+'</div>';lastM=k}
     const n=cdN(to,d),hd=new HDate(d),ev=eventsOn(d,hd).map(e=>eventLabel(e,d,hd));
-    h+='<div class="cds-r'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+'"><b class="cds-n">'+(n===0?ST.goal:n)+'</b><span class="cds-dt">'+esc(WEEKDAYS[d.getDay()])+' '+esc(hebShort(hd))+'<small>'+esc(gregShort(d))+'</small></span><span class="cds-e">'+esc(n===0?'היום!':ev.join(' · '))+'</span>'+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}
+    const q=cdQuote(n),im=n===0?cdImg('goal'):d.getTime()===from.getTime()?cdImg('first'):null;if(im)h+='<img class="cds-im" alt="" src="'+im+'">';
+    h+='<div class="cds-r'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+'"><b class="cds-n">'+(n===0?ST.goal:n)+'</b><span class="cds-dt">'+esc(WEEKDAYS[d.getDay()])+' '+esc(hebShort(hd))+'<small>'+esc(gregShort(d))+'</small></span><span class="cds-e">'+esc(n===0?'היום!':ev.join(' · '))+(q?'<em class="cd-q">'+esc(q)+'</em>':'')+'</span>'+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}
   p.insertAdjacentHTML('beforeend',h+'</div>');addFootLine(p);emitExtras('cd-scroll');
 }
 /* שרשרת נייר: רצועות לגזירה, אחת לכל יום. כל יום תולשים חוליה */
@@ -1106,12 +1120,29 @@ function cdChain(ST){
     const p=pageShell('שרשרת · '+(i/per+1),'cd-chain-'+(i/per));cdSetup(p,ST,s);p.classList.add('cd-chainp');
     const g=el('div','cdc-grid');
     g.innerHTML=days.slice(i,i+per).map((d,j)=>{const n=cdN(to,d),hd=new HDate(d),c=s.cdStyle==='kids'?pal[(i+j)%pal.length]:'var(--acc)';
-      return '<div class="cdc-s" style="--sc:'+c+'"><b>'+(n===0?ST.goal:n)+'</b><span>'+esc(n===0?'היום!':cdLeft(n))+'</span><small>'+esc(title)+' · '+esc(hebShort(hd))+'</small></div>'}).join('');
+      return '<div class="cdc-s" style="--sc:'+c+'"><b>'+(n===0?ST.goal:n)+'</b><span>'+esc(n===0?'היום!':cdLeft(n))+'</span><small>'+(cdQuote(n)?esc(cdQuote(n))+'<br>':'')+esc(title)+' · '+esc(hebShort(hd))+'</small></div>'}).join('');
     p.appendChild(g);p.insertAdjacentHTML('beforeend','<div class="cdp-legend">גוזרים לאורך הקווים, מחברים את הרצועות לשרשרת מהמספר הגדול לקטן, ותולשים חוליה בכל ערב.</div>');
     emitExtras('cd-chain-'+(i/per));
   }
 }
 function dateLong(d){const hd=new HDate(d);return WEEKDAYS[d.getDay()]+', '+hebShort(hd)+' '+hebYearStr(hd.getFullYear())+' · '+gregShort(d)+' '+d.getFullYear()}
+/* משפטים לספירה לאחור: פסוקים (עם מקור) ומשפטים מקוריים */
+const CD_QUOTES={
+  bride:['קול ששון וקול שמחה, קול חתן וקול כלה (ירמיהו לג)','שוש אשיש בה׳, תגל נפשי באלוקי (ישעיהו סא)','אני לדודי ודודי לי (שיר השירים ו)','מים רבים לא יוכלו לכבות את האהבה (שיר השירים ח)','וארשתיך לי לעולם (הושע ב)',
+    'כל יום מקרב אותנו לבית נאמן בישראל','עוד קצת ומתחילים לבנות בית','סופרים ימים, אוספים ברכות','הלב כבר מתחיל לרקוד','כל יום שעובר הוא צעד אל החופה','האהבה גדלה, הימים מתקצרים','מתכוננים לרגע הכי מרגש'],
+  barmitzvah:['בן שלוש עשרה למצוות (אבות ה)','תורה ציווה לנו משה, מורשה קהילת יעקב (דברים לג)','שמע בני מוסר אביך ואל תטוש תורת אמך (משלי א)','חנוך לנער על פי דרכו (משלי כב)','עץ חיים היא למחזיקים בה (משלי ג)',
+    'כל יום מקרב אותך לעלייה לתורה','עוד מעט מניחים תפילין בפעם הראשונה','מתכוננים לקרוא בתורה בקול גדול','גדלים במצוות, יום אחרי יום','כל המשפחה סופרת איתך','כל יום של לימוד הוא מתנה'],
+  batmitzvah:['רבות בנות עשו חיל ואת עלית על כולנה (משלי לא)','כל כבודה בת מלך פנימה (תהלים מה)','פיה פתחה בחכמה ותורת חסד על לשונה (משלי לא)','אשה יראת ה׳ היא תתהלל (משלי לא)',
+    'כל יום מקרב אותך לחגיגה הגדולה','גדלה בחסד, בחכמה ובאמונה','מתכוננות לשמחה גדולה','כל מצווה קטנה היא אבן דרך','הבית מתמלא שמחה לקראתך'],
+  baby:['על הילד הזה התפללתי (שמואל א א)','הנה נחלת ה׳ בנים, שכר פרי הבטן (תהלים קכז)','בניך כשתילי זיתים סביב לשולחנך (תהלים קכח)',
+    'בעוד מעט נכיר אותך','מכינים לך מקום בלב ובבית','כל יום מקרב חיבוק ראשון','מחכים לך באהבה','הכי שווה לחכות לך'],
+  kids:['עוד קצת ומגיעים!','מחכים בסבלנות, קופצים משמחה','כל ערב תולשים, כל בוקר שמחים','עוד כמה לילות שינה','שמחה בדרך!','כל יום הוא צעד קדימה','מי סופר הכי יפה?','עוד מעט חוגגים!'],
+  classic:['זה היום עשה ה׳, נגילה ונשמחה בו (תהלים קיח)','כל יום הוא צעד קדימה','שמחה בדרך!','סופרים יחד, שמחים יחד','עוד קצת וזה כאן','הדרך יפה לא פחות מהיעד']
+};
+function cdQuote(n){const s=state.s;if(!s.cdQuotes||n<=0)return '';const every=+s.cdQEvery||10;if(n%every)return '';
+  const own=String(s.cdQCustom||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const L=own.length?own:CD_QUOTES[s.cdQTopic&&s.cdQTopic!=='auto'?s.cdQTopic:s.cdStyle]||CD_QUOTES.classic;return L[Math.floor(n/every)%L.length]}
+const cdImg=k=>((state.cdImgs||{})[k]||{}).img||null;
 function cdCfg(){const s=state.s,t=new Date(),d0=new Date(t.getFullYear(),t.getMonth(),t.getDate(),12);
   const to=s.cdDate||iso(new Date(d0.getFullYear(),d0.getMonth()+3,d0.getDate(),12)),from=s.cdFrom||iso(d0);return {to,from}}
 function cdLeft(n){const s=state.s;if(n===0)return 'היום!';if(n===1)return 'מחר!';
@@ -1120,13 +1151,13 @@ function cdLeft(n){const s=state.s;if(n===0)return 'היום!';if(n===1)return '
 function cdDays(){const c=cdCfg(),to=dateFromIso(c.to);let from=dateFromIso(c.from);if(from>to)from=to;const L=[];for(let d=new Date(from);d<=to&&L.length<1500;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12))L.push(d);return {to,from,days:L}}
 /* גובה הדף הארוך לגלילה: כותרת + שורה לכל יום + כותרת לכל חודש */
 function cdScrollH(){const {days}=cdDays();const months=new Set(days.map(d=>state.s.calType==='heb'?(()=>{const h=new HDate(d);return h.getFullYear()+'-'+h.getMonth()})():d.getFullYear()+'-'+d.getMonth())).size;return Math.round(70+days.length*11+months*13)}
-function cdSetup(p,ST,s){p.classList.add('cd-page','cdst-'+(s.cdStyle||'classic'));if(ST.acc)p.style.setProperty('--acc',ST.acc);if(ST.font)p.style.setProperty('--cd-f',fontCSS(ST.font));if(ST.num)p.style.setProperty('--cd-nf',fontCSS(ST.num));p.insertAdjacentHTML('beforeend',cdOrnaments(s.cdStyle))}
+function cdSetup(p,ST,s){p.classList.add('cd-page','cdst-'+(s.cdStyle||'classic'));if(cdImg('bg')){p.insertAdjacentHTML('beforeend','<img class="cd-bgimg" alt="" src="'+cdImg('bg')+'" style="opacity:'+(+s.cdBgOp||0.25)+'">');p.classList.add('has-bg')}if(ST.acc)p.style.setProperty('--acc',ST.acc);if(ST.font)p.style.setProperty('--cd-f',fontCSS(ST.font));if(ST.num)p.style.setProperty('--cd-nf',fontCSS(ST.num));p.insertAdjacentHTML('beforeend',cdOrnaments(s.cdStyle))}
 function cdMonthKey(d){const s=state.s;if(s.calType==='heb'){const h=new HDate(d);return [h.getFullYear()+'-'+h.getMonth(),hebMonthName(h.getMonth(),isLeap(h.getFullYear()))+' '+hebYearStr(h.getFullYear())]}return [d.getFullYear()+'-'+d.getMonth(),GREG_MONTHS[d.getMonth()]+' '+d.getFullYear()]}
 const cdN=(to,d)=>Math.round((to-d)/864e5);
 function countdownPages(){
   const s=state.s,lay=s.cdLayout||'months',ST=CD_STYLES[s.cdStyle]||CD_STYLES.classic;
   if(ST.font)loadFont(ST.font);if(ST.num)loadFont(ST.num);
-  if(lay==='poster')return cdPoster(ST);if(lay==='scroll')return cdScroll(ST);if(lay==='chain')return cdChain(ST);
+  if(lay==='poster')return cdPoster(ST);if(lay==='board')return cdBoard(ST);if(lay==='scroll')return cdScroll(ST);if(lay==='chain')return cdChain(ST);
   const c=cdCfg(),to=dateFromIso(c.to);let from=dateFromIso(c.from);if(from>to)from=to;
   const title=s.cdTitle||'הספירה לאחור';
   const ev=eventsFor(from,to);
@@ -1149,9 +1180,11 @@ function countdownPages(){
     for(let i=0;i<g.days[0].getDay();i++)grid.appendChild(el('div','cd-d pad'));
     for(const d of g.days){
       const n=Math.round((to-d)/864e5),hd=new HDate(d),its=(ev.get(ymd(d))||[]).filter(x=>x.chag||x.cls==='parasha'),pers=eventsOn(d,hd);
-      const c2=el('div','cd-d'+(d.getDay()===6?' shabbat':'')+(n===0?' goal':'')+(n%7===0&&n?' wk':''));c2.dataset.date=iso(d);
+      const im=n===0?cdImg('goal'):d.getTime()===from.getTime()?cdImg('first'):((pers.find(e=>e.img)||{}).img||null),q=cdQuote(n);
+      const c2=el('div','cd-d'+(d.getDay()===6?' shabbat':'')+(n===0?' goal':'')+(n%7===0&&n?' wk':'')+(im?' has-im':'')+(q?' has-q':''));c2.dataset.date=iso(d);
       c2.innerHTML='<div class="cd-dt">'+dateTop(d,hd)+'</div><div class="cd-n">'+(n===0?ST.goal:n)+'</div><div class="cd-l">'+esc(n===0?'היום!':n===1?'מחר!':s.cdUnit==='weeks'&&n>=7?cdLeft(n).replace('עוד ',''):(n===2?'יומיים':'ימים'))+'</div>'+
-        its.concat(pers.map(e=>({text:eventLabel(e,d,hd)}))).slice(0,2).map(x=>'<div class="cd-e">'+esc(x.text)+'</div>').join('')+(s.cdCheck&&n?'<i class="cd-chk" aria-hidden="true"></i>':'');
+        its.concat(pers.map(e=>({text:eventLabel(e,d,hd)}))).slice(0,2).map(x=>'<div class="cd-e">'+esc(x.text)+'</div>').join('')+(q?'<div class="cd-q">'+esc(q)+'</div>':'')+(s.cdCheck&&n?'<i class="cd-chk" aria-hidden="true"></i>':'');
+      if(im)c2.insertAdjacentHTML('afterbegin','<img class="cd-im" alt="" src="'+im+'">');
       grid.appendChild(c2)}
     const tot=g.days[0].getDay()+g.days.length;for(let i=tot;i<Math.ceil(tot/7)*7;i++)grid.appendChild(el('div','cd-d pad'));
     p.appendChild(grid);
@@ -2207,7 +2240,8 @@ function syncUI(){if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
   radio('calType',s.calType);radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
-  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';const cs=$('#cdStyle');if(!cs.options.length)cs.innerHTML=Object.entries(CD_STYLES).map(([k,v])=>opt(k,v.n)).join('');cs.value=s.cdStyle||'classic';$('#cdLayout').value=s.cdLayout||'months'}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
+  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';const cs=$('#cdStyle');if(!cs.options.length)cs.innerHTML=Object.entries(CD_STYLES).map(([k,v])=>opt(k,v.n)).join('');cs.value=s.cdStyle||'classic';$('#cdLayout').value=s.cdLayout||'months';$('#cdQEvery').value=String(s.cdQEvery||10);$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;
+    document.querySelectorAll('[data-cdimg]').forEach(b=>{const k=b.dataset.cdimg,has=!!cdImg(k);b.textContent=(has?'החלפת ':'')+{bg:'תמונת רקע',first:'תמונה ביום הראשון',goal:'תמונה ביום היעד'}[k];const d=b.nextElementSibling;if(d)d.hidden=!has});$('#cdBgOpRow').hidden=!cdImg('bg')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליארצייטים.',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
@@ -2317,7 +2351,8 @@ document.addEventListener('change',e=>{
     case 'hebStart':return set('hebStart',+t.value);
     case 'rangeFrom':case 'rangeTo':return set(t.id,t.value);
     case 'cdDate':case 'cdFrom':if(t.value)set(t.id,t.value);return;
-    case 'cdUnit':case 'cdStyle':case 'cdLayout':return set(t.id,t.value);
+    case 'cdUnit':case 'cdStyle':case 'cdLayout':case 'cdQTopic':return set(t.id,t.value);
+    case 'cdQEvery':case 'cdBgOp':return set(t.id,+t.value);
     case 'cover':case 'showCaption':case 'dedication':case 'il':case 'bannerPer':return set(t.id,t.checked);
     case 'city':{if(!t.value)return;if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);state.s.candleMins=c.candle;state.s.il=c.il}return set('city',t.value)}
     case 'candleMins':return set('candleMins',+t.value);
@@ -2754,6 +2789,10 @@ function icsToEvents(t){
     out.push(o)}
   return out}
 const EV_SAMPLE='﻿שם,סוג,תאריך,חזרה,אחרי השקיעה\nשירה,יום הולדת,12/08/2018,עברי,\nההורים,יום נישואין,03/06/1990,לועזי,\nסבא משה,יארצייט,21/11/2010,עברי,כן\nטיול שנתי,אירוע,15/05/2027,פעם אחת,\n';
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cdimg],[data-cdimgdel]');if(!b)return;const k=b.dataset.cdimg||b.dataset.cdimgdel;
+  if(b.dataset.cdimgdel){const o={...(state.cdImgs||{})};delete o[k];state.cdImgs=o;save();syncUI();render();return}
+  const f=v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};save();syncUI();render()};f.maxPx=k==='bg'?2400:1400;pickImage(f)});
+if($('#cdQCustom'))$('#cdQCustom').addEventListener('input',e=>{state.s.cdQCustom=e.target.value;save();rerender()});
 if($('#nextYear'))$('#nextYear').onclick=()=>{const s=state.s;if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;save();syncUI();render()};
 if($('#evImport'))$('#evImport').onclick=()=>{
   const m=modal('<h3>ייבוא אירועים מקובץ</h3><p class="hint">אפשר לייבא מקובץ אקסל או CSV, או מקובץ יומן (ics) מגוגל, מאפל או מאאוטלוק. בקובץ אקסל צריכים להיות הטורים: <b>שם, סוג, תאריך, חזרה, אחרי השקיעה</b>. התאריך הוא לועזי (למשל 12/08/2018), והלוח מחשב לבד את התאריך העברי. בטור "חזרה" כותבים עברי, לועזי או פעם אחת.</p>'+
