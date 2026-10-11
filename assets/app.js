@@ -155,7 +155,7 @@ const DEFAULT={
      showDst:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,ytsg:'faint',showIsru:true,showMevarchim:false,showOmer:false,
      city:'jerusalem',custom:null,candleMins:40,il:true,zmanimMode:'daily',
      zmanim:{sunrise:true,shma:true,sunset:true},
-     m_shma:'gra',zmPreset:'ashkenaz',zm:null,secs:false,zlab:{},zround:{},zmode:{},
+     m_shma:'gra',zmPreset:'ashkenaz',zm:null,secs:false,zsecs:{},zlab:{},zround:{},zmode:{},
      theme:'ink',accent:ACCENTS[0],headFont:'',size:'wall',customW:300,customH:300,orient:'portrait',layout:'full',
      imgRatio:40,textScale:100,showCaption:true,dedication:false,imgText:'auto',view:'month',rangeFrom:'',rangeTo:'',yzPanel:true,yzPanelW:26,yzMode:'all',yzMax:2,yzFmt:'short',yzHist:false,yzLines:true,yzSel:null,banner:'none',banners:[],bannerSize:15,bannerSizes:{},bannerPer:false,
      gedolim:{rambam:1,rashbi:1,ari:1,gra:1,chafetz:1,babasali:1,besht:1,ramchal:1,rachel:1,chazonish:1,ovadia:1,rashi:1}},
@@ -247,9 +247,11 @@ function buildMonths(){
   return months;
 }
 function hebText(ev){let t='';try{t=ev.render('he')}catch(e){}if(!t)t=ev.getDesc();return stripNikud(t)}
-function fmtTime(dt,dir,tz){
+/* שניות: לכל זמן אפשר לבחור בנפרד (עם / בלי), ואם לא נבחר, לפי ההגדרה הכללית */
+function secsFor(key){const z=state.s.zsecs||{};return key&&z[key]!=null?!!z[key]:!!state.s.secs}
+function fmtTime(dt,dir,tz,key){
   if(!(dt instanceof Date)||isNaN(dt))return '—';
-  const secs=!!state.s.secs,u=secs?1000:60000;
+  const secs=secsFor(key),u=secs?1000:60000;
   let t=dt.getTime();t=dir==='down'?Math.floor(t/u)*u:dir==='near'?Math.round(t/u)*u:Math.ceil(t/u)*u;
   if(tz&&dstMode()!=='auto'){const d=new Date(t+customOff(t,tz)*60000);return d.getUTCHours()+':'+String(d.getUTCMinutes()).padStart(2,'0')+(secs?':'+String(d.getUTCSeconds()).padStart(2,'0'):'')}
   try{return new Intl.DateTimeFormat('he-IL',{hour:'numeric',minute:'2-digit',second:secs?'2-digit':undefined,hourCycle:'h23',timeZone:tz}).format(new Date(t))}catch(e){return '—'}
@@ -495,8 +497,9 @@ function eventsFor(start,end){
       else if(desc.startsWith('Fast ends'))tt=Zd.fastEnd;
       else if(desc.startsWith('Fast begins')){let hr=12;try{hr=+new Intl.DateTimeFormat('en-US',{hour:'numeric',hourCycle:'h23',timeZone:tz}).format(ev.eventTime)}catch(e){}tt=hr>=12?Zd.sunset:Zd.fastStart}
       tt=tt||ev.eventTime;
-      item={cls:'timed',text:lbl+' '+fmtTime(tt,dir,tz),order:5,
-        tkind:desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'havdalah':'',time:fmtTime(tt,dir,tz)};
+      const sk=desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'motzash':desc.startsWith('Fast begins')?'fastStart':desc.startsWith('Fast ends')?'fastEnd':'';
+      item={cls:'timed',text:lbl+' '+fmtTime(tt,dir,tz,sk),order:5,
+        tkind:desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'havdalah':'',time:fmtTime(tt,dir,tz,sk)};
     }else if(f&flags.PARSHA_HASHAVUA){item={cls:'parasha',text:hebText(ev),order:1}}
     else{
       if(!s.showHolidays&&!(f&(flags.ROSH_CHODESH|flags.SPECIAL_SHABBAT|flags.MODERN_HOLIDAY|flags.SHABBAT_MEVARCHIM|flags.OMER_COUNT|flags.MINOR_FAST)))continue;
@@ -545,11 +548,11 @@ function zmanimFor(date,all){
     if(k==='musaf'&&!isMusafDay(date)){if(all)out.push({k:short,v:''});continue}
     if(k==='shma'||k==='tfila'){
       const g=k==='shma'?Z.shmaGRA:Z.tfilaGRA,m=k==='shma'?Z.shmaMGA:Z.tfilaMGA,md=(s.zmode||{})[k]||s.m_shma;
-      if(md==='both'){out.push({k:short+' מג״א',v:fmtTime(m,dir,tz)});out.push({k:short+' גר״א',v:fmtTime(g,dir,tz)})}
-      else out.push({k:short,v:fmtTime(md==='mga'?m:g,dir,tz)});
+      if(md==='both'){out.push({k:short+' מג״א',v:fmtTime(m,dir,tz,k)});out.push({k:short+' גר״א',v:fmtTime(g,dir,tz,k)})}
+      else out.push({k:short,v:fmtTime(md==='mga'?m:g,dir,tz,k)});
       continue;
     }
-    out.push({k:short,v:fmtTime(Z[k],dir,tz)});
+    out.push({k:short,v:fmtTime(Z[k],dir,tz,k)});
   }
   return out;
 }
@@ -1467,27 +1470,29 @@ function openZmanimSettings(){
   function draw(){
     const s=state.s,Z=zctx(sample()),tz=place().tz;
     q('#zsPreset').value=s.zmPreset||'ashkenaz';q('#zsHint').textContent=ZM_PRESET_HINT[s.zmPreset||'ashkenaz']||'';
-    let h='<div class="zs-grid zs-all"><div class="zs-h">מופיע</div><div class="zs-h">זמן</div><div class="zs-h">שיטת החישוב</div><div class="zs-h">שם בלוח ועיגול</div><div class="zs-h">לדוגמה</div>';
+    const secSel=k=>{const z=s.zsecs||{},v=z[k]==null?'':z[k]?'1':'0';return '<select class="zs-in" data-zssecs="'+k+'" aria-label="שניות">'+[['','שניות: לפי הכללי ('+(s.secs?'עם':'בלי')+')'],['1','עם שניות'],['0','בלי שניות']].map(x=>opt(x[0],x[1],x[0]===v)).join('')+'</select>'};
+    let h='<div class="zs-grid zs-all"><div class="zs-h">מופיע</div><div class="zs-h">זמן</div><div class="zs-h">שיטת החישוב</div><div class="zs-h">שם בלוח, עיגול ושניות</div><div class="zs-h">לדוגמה</div>';
     for(const [k,full,short,dir] of ZMANIM){
       const on=!!s.zmanim[k],lab=(s.zlab||{})[k]||'',rd=(s.zround||{})[k]||'auto';
       let meth,ex;
       if(k==='shma'||k==='tfila'){
         meth='<div class="zs-two"><span>הצגה:</span><select class="zs-in" data-zsmode="'+k+'">'+[['','לפי הכללי ('+({gra:'גר״א',mga:'מג״א',both:'שניהם'}[s.m_shma])+')'],['gra','גר״א'],['mga','מג״א'],['both','שניהם']].map(x=>opt(x[0],x[1],x[0]===((s.zmode||{})[k]||''))).join('')+'</select></div>'+
           '<div class="zs-two"><span>מג״א:</span>'+zmMethodCtl('mga')+'</div><div class="zs-two"><span>גר״א:</span>'+zmMethodCtl('gra')+'</div>';
-        ex='מג״א '+fmtTime(k==='shma'?Z.shmaMGA:Z.tfilaMGA,dir,tz)+'<br>גר״א '+fmtTime(k==='shma'?Z.shmaGRA:Z.tfilaGRA,dir,tz);
+        ex='מג״א '+fmtTime(k==='shma'?Z.shmaMGA:Z.tfilaMGA,dir,tz,k)+'<br>גר״א '+fmtTime(k==='shma'?Z.shmaGRA:Z.tfilaGRA,dir,tz,k);
       }else{
         meth=ZM_ROW_FIELD[k]?zmMethodCtl(ZM_ROW_FIELD[k]):'';
-        ex=fmtTime(Z[k],rd==='auto'?dir:rd,tz);
+        ex=fmtTime(Z[k],rd==='auto'?dir:rd,tz,k);
       }
       h+='<label class="chk"><input type="checkbox" data-zsshow="'+k+'"'+(on?' checked':'')+' aria-label="'+full+' מופיע"></label>'+
         '<div class="zs-name">'+full+'</div><div class="zs-meth">'+meth+'</div>'+
-        '<div class="zs-lab"><input class="zs-in" data-zslab="'+k+'" value="'+esc(lab)+'" placeholder="'+esc(short)+'"><select class="zs-in" data-zsround="'+k+'">'+[['auto','עיגול לחומרא'],['down','תמיד למטה'],['up','תמיד למעלה'],['near','לדקה הקרובה']].map(x=>opt(x[0],x[1],x[0]===rd)).join('')+'</select></div>'+
+        '<div class="zs-lab"><input class="zs-in" data-zslab="'+k+'" value="'+esc(lab)+'" placeholder="'+esc(short)+'"><select class="zs-in" data-zsround="'+k+'">'+[['auto','עיגול לחומרא'],['down','תמיד למטה'],['up','תמיד למעלה'],['near','לדקה הקרובה']].map(x=>opt(x[0],x[1],x[0]===rd)).join('')+'</select>'+secSel(k)+'</div>'+
         '<div class="zs-ex">'+ex+'</div>';
     }
     h+='</div><h4 class="zs-sub">זמני שבת, חג וצום</h4><div class="zs-grid zs-extra">';
     for(const [k,l,ek] of [['motzash','צאת שבת וחג','motzash'],['fastStart','תחילת צום (בבוקר)','fastStart'],['fastEnd','סוף צום דרבנן','fastEnd'],['minchaG','מנחה גדולה','minchaG']].slice(0,3)){
-      h+='<div class="zs-name">'+l+'</div><div class="zs-meth">'+zmMethodCtl(k)+'</div><div class="zs-ex">'+fmtTime(Z[ek],'near',tz)+'</div>';
+      h+='<div class="zs-name">'+l+'</div><div class="zs-meth">'+zmMethodCtl(k)+secSel(k)+'</div><div class="zs-ex">'+fmtTime(Z[ek],'near',tz,k)+'</div>';
     }
+    h+='<div class="zs-name">הדלקת נרות</div><div class="zs-meth">'+secSel('candle')+'</div><div class="zs-ex"></div>';
     h+='</div><p class="hint">בכל זמן שמחושב לפי מעלות או דקות יש "ערך אחר…": מקלידים כל מספר ובוחרים מעלות, דקות זמניות (לפי אורך היום) או דקות שוות. הדלקת הנרות נקבעת לפי העיר, בחלק "מיקום וזמני היום".</p>';
     q('#zsBody').innerHTML=h;
   }
@@ -1497,6 +1502,7 @@ function openZmanimSettings(){
     if(t.id==='zsPreset'){if(t.value!=='custom')s.zm={...ZM_PRESETS[t.value]};s.zmPreset=t.value;return changed()}
     if(t.id==='zsDate')return draw();
     if(t.dataset.zsshow){s.zmanim[t.dataset.zsshow]=t.checked;return changed()}
+    if(t.dataset.zssecs){const z={...(s.zsecs||{})};if(t.value==='')delete z[t.dataset.zssecs];else z[t.dataset.zssecs]=t.value==='1';s.zsecs=z;return changed()}
     if(t.dataset.zsround){s.zround={...(s.zround||{}),[t.dataset.zsround]:t.value};return changed()}
     if(t.dataset.zsmode){const z={...(s.zmode||{})};if(t.value)z[t.dataset.zsmode]=t.value;else delete z[t.dataset.zsmode];s.zmode=z;return changed()}
     if(t.dataset.zsf){if(t.value==='__custom'){m.querySelectorAll('[data-zsc="'+t.dataset.zsf+'"]').forEach(c=>c.hidden=false);return}zmSetField(t.dataset.zsf,t.value);return changed()}

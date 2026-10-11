@@ -388,7 +388,7 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .zs-all{grid-template-columns:auto minmax(110px,.8fr) minmax(220px,2fr) minmax(150px,1.1fr) auto}
 .zs-extra{grid-template-columns:minmax(140px,.8fr) minmax(220px,2fr) auto}
 .zs-meth{display:flex;flex-direction:column;gap:4px;min-width:0}
-.zs-meth .zs-msel{width:100%}
+.zs-meth .zs-msel,.zs-meth .zs-in{width:100%}
 .zs-two{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .zs-two>span{font-size:12px;color:var(--mute);min-width:42px}
 .zs-two .zs-msel{flex:1;min-width:0}
