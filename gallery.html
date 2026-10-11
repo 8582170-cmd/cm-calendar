@@ -50,6 +50,10 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:34px 26px;padding-bottom:60px}
 .item{display:flex;flex-direction:column;gap:12px;min-width:0}
 .item[hidden]{display:none}
+.item.wide{grid-column:span 2}
+.item.wide .mp{max-width:400px}
+.item.wide .stagebox{min-height:440px}
+@media (max-width:620px){.item.wide{grid-column:auto}}
 .stagebox{background:color-mix(in srgb,var(--teal-soft) 60%,var(--paper));border-radius:14px;padding:22px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:330px}
 .item h3{font-size:22px;font-weight:900}
 .item p{margin:0;color:var(--mute);font-size:15.5px;line-height:1.5}
@@ -134,7 +138,9 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .tb .sh{background:var(--acc-t)}
 .hist{flex:1;columns:2;column-gap:3cqw;column-rule:.2cqw solid var(--ln);font-size:1.8cqw;line-height:1.3;overflow:hidden}
 .mp p{font-size:inherit;color:inherit;line-height:inherit}
-.hist p{margin:0 0 .6cqw;break-inside:avoid}.hist b{color:var(--acc);font-family:var(--f-display)}
+.hist p{margin:0 0 .6cqw;break-inside:avoid}
+.hist .gl{height:1.1cqw;background:#e3e7ea;border-radius:.4cqw;margin-bottom:1cqw}
+.mp.tight .ms{flex-basis:20%}.mp.tight .ms.narrow{flex-basis:11%}.mp.tight .mb{flex-basis:7%;font-size:2.4cqw}.hist b{color:var(--acc);font-family:var(--f-display)}
 .cover{flex:1;display:flex;flex-direction:column;gap:3cqw}
 .cover .ttl{font-family:var(--f-display);font-weight:900;font-size:8cqw;text-align:center;color:var(--acc);line-height:1.1}
 .cover .yr{text-align:center;font-family:var(--f-display);font-size:5cqw}
@@ -219,11 +225,11 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
   const lines=(t,n,narrow)=>'<div class="ms'+(narrow?' narrow':'')+'"><b>'+t+'</b>'+Array.from({length:n},()=>'<div class="ln"></div>').join('')+'</div>';
   const head=(o)=>'<div class="mh"><b>'+(o.title||'תשרי')+'</b><span>'+(o.sub||'תשפ״ז')+'</span><small>'+(o.small||'ספטמבר–אוקטובר 2026')+'</small></div>';
   function page(o){
-    const cls='mp th-'+(o.theme||'ink')+(o.land?' land':'')+(o.small?' small':'');
+    const cls='mp th-'+(o.theme||'ink')+(o.land?' land':'')+(o.small?' small':'')+(o.tight?' tight':'');
     let body='';
     if(o.kind==='cover')body='<div class="mi full '+o.art+'"></div><div class="ttl">'+o.coverTitle+'</div><div class="yr">שנת תשפ״ז</div>';
     else if(o.kind==='photo')body=head(o)+'<div class="mi full '+o.art+'"><em>'+(o.cap||'')+'</em></div>';
-    else if(o.kind==='hist')body=head({title:'תשרי',sub:'דברי הימים',small:'העמוד העליון'})+'<div class="hist">'+[['א׳','רבנו אמנון ממגנצא, בעל ״ונתנה תוקף״'],['ג׳','המגן אברהם'],['ד׳','ר׳ אברהם דנציג, בעל ״חיי אדם״'],['ט׳','הגרי״ז מבריסק'],['י״ג','רבי עקיבא איגר'],['י״ח','רבי נחמן מברסלב'],['י״ט','הגאון מוילנא'],['י״ט','היהודי הקדוש מפשיסחא'],['כ״ה','רבי לוי יצחק מברדיצ׳ב'],['כ״ה','החתם סופר'],['כ״ז','ר׳ יצחק הזקן, מבעלי התוספות'],['ל׳','המהר״ץ חיות']].map(x=>'<p><b>'+x[0]+'</b> '+x[1]+'</p>').join('')+'</div>';
+    else if(o.kind==='hist')body=head({title:'תשרי',sub:'דברי הימים',small:'העמוד העליון'})+'<div class="hist">'+[['א׳','רבנו אמנון ממגנצא, בעל ״ונתנה תוקף״'],['ג׳','המגן אברהם'],['ד׳','ר׳ אברהם דנציג, בעל ״חיי אדם״'],['ט׳','הגרי״ז מבריסק'],['י״ג','רבי עקיבא איגר'],['י״ח','רבי נחמן מברסלב'],['י״ט','הגאון מוילנא'],['י״ט','היהודי הקדוש מפשיסחא'],['כ״ה','רבי לוי יצחק מברדיצ׳ב'],['כ״ה','החתם סופר'],['כ״ז','ר׳ יצחק הזקן, מבעלי התוספות'],['ל׳','המהר״ץ חיות']].map(x=>'<p><b>'+x[0]+'</b> '+x[1]+'</p>').join('')+(o.dense?Array.from({length:70},(_,i)=>'<p class="gl" style="width:'+(55+(i*37)%45)+'%"></p>').join(''):'')+'</div>';
     else if(o.kind==='week'){
       body=head({title:'שבוע',sub:'בראשית',small:'כ״ג–כ״ט תשרי'})+'<div class="wk">'+['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'].map((n,i)=>'<div class="row'+(i===6?' sh':'')+'"><div class="lab"><b>'+heb(23+i)+'</b>'+n+(i===0?'<span class="tag">אסרו חג</span>':i===1?'<span class="tag">יארצייט סבא משה</span>':i===5?'<span class="tag">הדלקה 17:34</span>':i===6?'<span class="tag">בראשית</span>':'')+'</div><div class="lines"></div></div>').join('')+'</div>';
     }else if(o.kind==='day'){
@@ -239,7 +245,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
       if(o.bannerR)row+='<div class="mb">'+o.bannerR+'</div>';
       row+=grid(o);
       if(o.zcol)row+=zcol();
-      if(o.learn)row+=lines('לימוד יומי',22,true);
+      if(o.learn)row+=o.moon?'<div class="ms narrow"><b>לימוד יומי</b>'+Array.from({length:14},()=>'<div class="ln"></div>').join('')+'<b style="margin-top:auto">מולד ותקופות</b><div class="r"><span>מולד</span></div><div class="r"><span>תק׳ תשרי</span></div><div class="r"><span>ק״ל מ־</span></div></div>':lines('לימוד יומי',22,true);
       if(o.pers)row+=lines('אירועים אישיים',12);
       if(o.bannerL)row+='<div class="mb">'+o.bannerL+'</div>';
       body+='<div class="mrow">'+row+'</div>';
@@ -250,6 +256,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     return '<div class="'+cls+'" style="--acc:'+(o.acc||'#1e5a63')+'"><div class="mpi">'+body+'</div></div>';
   }
   const ITEMS=[
+    {f:'org',wide:1,title:'הכל כלול',desc:'כל מה שאפשר בעמוד אחד: זמני היום בטור, לימוד יומי עם מולד ותקופות, עמוד דברי הימים מעל, באנרים בשני הצדדים ותמונות בתוך הימים.',chips:['זמנים','לימוד יומי','מולד ותקופות','דברי הימים','באנרים','תמונות בימים'],pages:[{kind:'hist',dense:1,acc:'#1e5a63'},{tight:1,acc:'#1e5a63',zcol:1,learn:1,moon:1,cellImg:1,fam:1,bannerR:'בית הכנסת אהל משה',bannerL:'בברכת שנה טובה'}],preset:'all'},
     {f:'family',title:'משפחתי קלאסי',desc:'תמונה של המשפחה בראש כל חודש, ימי הולדת ויארצייטים בתוך הימים, וזמני הדלקת נרות.',chips:['קיר A3','תמונה ולוח','קלאסי'],pages:[{img:'a1',cap:'תשרי בגליל',fam:1}],preset:'family'},
     {f:'family',title:'עמוד לתמונה, עמוד ללוח',desc:'לוח קיר שנפתח לשניים: תמונה גדולה למעלה, והחודש מתחת.',chips:['קיר','שני עמודים','עדין'],pages:[{kind:'photo',art:'a2',cap:'חופשה בים',theme:'soft',acc:'#24427a'},{theme:'soft',acc:'#24427a',fam:1}],preset:'split'},
     {f:'org',title:'לבית הכנסת',desc:'כל הזמנים בטור ליד הלוח, טבלת הדלקת נרות ומוצאי שבת, ושם הקהילה בבאנר.',chips:['זמנים בטור','טבלת שבתות','באנר'],pages:[{theme:'block',acc:'#7a4a17',zcol:1,ztable:1,bannerR:'בית הכנסת אהל משה'}],preset:'shul'},
@@ -265,7 +272,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     {f:'view',title:'טבלה',desc:'שורה לכל יום וטור לכל זמן, לתלייה בבית הכנסת או בישיבה.',chips:['טבלה','זמנים'],pages:[{kind:'table',acc:'#7a4a17'}],preset:'table'}
   ];
   const gal=document.getElementById('gal');
-  gal.innerHTML=ITEMS.map(it=>'<article class="item" data-f="'+it.f+'"><div class="stagebox">'+it.pages.map(page).join('')+'</div><h3>'+it.title+'</h3><p>'+it.desc+'</p><div class="chips">'+it.chips.map(c=>'<span>'+c+'</span>').join('')+'</div><a class="btn btn-ghost" href="app.html#preset-'+it.preset+'">להתחיל מהעיצוב הזה</a></article>').join('');
+  gal.innerHTML=ITEMS.map(it=>'<article class="item'+(it.wide?' wide':'')+'" data-f="'+it.f+'"><div class="stagebox">'+it.pages.map(page).join('')+'</div><h3>'+it.title+'</h3><p>'+it.desc+'</p><div class="chips">'+it.chips.map(c=>'<span>'+c+'</span>').join('')+'</div><a class="btn btn-ghost" href="app.html#preset-'+it.preset+'">להתחיל מהעיצוב הזה</a></article>').join('');
   document.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('.filters button').forEach(x=>x.setAttribute('aria-pressed',x===b));
     const f=b.dataset.f;gal.querySelectorAll('.item').forEach(i=>i.hidden=f!=='all'&&i.dataset.f!==f);
