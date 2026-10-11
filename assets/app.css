@@ -622,3 +622,9 @@ td.zb{font-weight:800}
 .col-ad{border:.4mm solid var(--acc);border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*1.2)}
 .col-ad .ad-title{font-family:var(--f-head);font-weight:700;color:var(--acc);text-align:center;font-size:calc(var(--u)*3.4)}
 .col-img .banner-text{font-size:calc(var(--u)*2.4);text-align:center}
+
+/* ההגדרות נשארות במקומן כשגוללים את התצוגה המקדימה, ונגללות בנפרד */
+@media (min-width:901px){
+  .side{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;overscroll-behavior:contain;padding-inline-end:6px;padding-block:8px 0;scrollbar-width:thin}
+}
+@media print{.side{position:static;max-height:none;overflow:visible}}
