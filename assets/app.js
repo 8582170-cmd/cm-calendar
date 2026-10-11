@@ -3,8 +3,9 @@
 const $=s=>document.querySelector(s);
 /* ---------- מסלולים ---------- */
 const LP=window.LuchenuPlans;
-const PLAN=()=>LP?LP.current():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
-const canF=f=>!LP||LP.can(f);
+let SAMPLE=null; /* הורדת חודש לדוגמה: {key} בזמן ההדפסה */
+const PLAN=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?LP.current():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
+const canF=f=>SAMPLE?true:(!LP||LP.can(f));
 function monthCut(months){const n=PLAN().months;return n<months.length&&months[n]?months[n].days[0]:null}
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
 const stage=$('#stage');
@@ -785,7 +786,7 @@ function loadFont(fam){
 function fontOptions(def){return opt('',def)+FONTS.map(([g,l])=>'<optgroup label="'+g+'">'+l.map(f=>opt(f[0],f[1])).join('')+'</optgroup>').join('')}
 function pageShell(label,key){
   const [w,h]=pageDims(),s=state.s;
-  const p=el('div','page'+(PLAN().watermark?' wm':'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
+  const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
   if(s.headFont)p.style.setProperty('--f-head',fontCSS(s.headFont));
@@ -1241,7 +1242,7 @@ function render(){
   }
 
   emitExtras('top');
-  if(s.cover){
+  if(s.cover&&!SAMPLE){
     const p=pageShell('שער','cover');
     p.appendChild(makeImageBox(()=>state.cover,v=>{state.cover={...state.cover,...v};save();render()},null));
     if(!(state.cover||{}).img){p.classList.add('cover-empty');const d=p.querySelector('.pg-img .drop');if(d)d.insertAdjacentHTML('afterbegin','<b class="cover-mark">עמוד שער</b>')}
@@ -1251,7 +1252,7 @@ function render(){
   }
   emitExtras('start');
   if(view==='month'){
-    const shownM=months.slice(0,PLAN().months);
+    const shownM=SAMPLE?months.filter(m=>m.key===SAMPLE.key):months.slice(0,PLAN().months);
     shownM.forEach(mo=>{
       if(s.layout==='split'){
         const pi=pageShell(mo.title+' · תמונה','mi-'+mo.key);
@@ -1273,7 +1274,7 @@ function render(){
   }else{
     for(const d of days.filter(d=>beforeCut(d,months))){dayPage(d,evMap);emitExtras('d-'+iso(d))}
   }
-  if(monthCut(months))lockedPage(months);
+  if(monthCut(months)&&!SAMPLE)lockedPage(months);
   emitExtras('end');
   const orphans=state.ads.filter(a=>!RS.emitted.has(String(a.after))&&!RS.emitted.has('x-'+a.id));
   for(const x of orphans){if(!RS.emitted.has('x-'+x.id)){extraPage(x);emitExtras('x-'+x.id)}}
@@ -2262,9 +2263,9 @@ function openUpgrade(reason){
   const need=LP.cheapestWith(reason),what=LP.FEATURE_NAMES[reason]||'';
   const title=reason==='download'?'הורדה והדפסה של הלוח':reason==='months'?'פתיחת כל חודשי השנה':reason?what:'המסלולים של לוחנו';
   const sub=reason==='events'?'במסלול שלכם אפשר עד '+PLAN().events+' אירועים משפחתיים.':reason&&reason!=='months'&&reason!=='download'?'האפשרות הזאת כלולה במסלול '+need.name+' ומעלה.':'בוחרים מסלול, וכל מה שבניתם נשאר בדיוק כמו שהוא.';
-  const m=modal('<h3>'+esc(title)+'</h3><p class="hint">'+esc(sub)+'</p>'+planCards(need.id)+'<p class="hint plan-note">כל מסלול הוא לשנה אחת, ללוח של אותה שנה. בשלב הזה התשלום עוד לא מחובר: הבחירה רק מחליפה את המסלול כדי לבדוק את האתר.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+  const m=modal('<h3>'+esc(title)+'</h3><p class="hint">'+esc(sub)+'</p>'+(PLAN().id==='free'?'<div class="sample-offer"><div><b>רוצים לראות קודם איך זה יוצא?</b><span>חודש אחד מלא להורדה בחינם, עם סימן מים עדין.</span></div><button class="btn" type="button" data-sample>חודש לדוגמה בחינם</button></div>':'')+planCards(need.id)+'<p class="hint plan-note">כל מסלול הוא לשנה אחת, ללוח של אותה שנה. בשלב הזה התשלום עוד לא מחובר: הבחירה רק מחליפה את המסלול כדי לבדוק את האתר.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
   m.querySelector('.modal').classList.add('upgrade');
-  m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;LP.setCurrent(b.dataset.pick);m.remove();syncPlanUI();render()});
+  m.addEventListener('click',e=>{if(e.target.closest('[data-sample]')){m.remove();openSample();return}const b=e.target.closest('[data-pick]');if(!b)return;LP.setCurrent(b.dataset.pick);m.remove();syncPlanUI();render()});
 }
 function doPrint(){
   const P=PLAN();
@@ -2274,11 +2275,30 @@ function doPrint(){
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=()=>{LP.useDownload();m.remove();syncPlanUI();setTimeout(()=>window.print(),50)};
 }
+/* ---------- חודש לדוגמה בחינם ---------- */
+const SAMPLE_KEY='luchenu-sample';
+/* שלב 1: נשמר בדפדפן. בשלב 2 הבדיקה תעבור לשרת, עם אימות כתובת המייל. */
+function sampleUsedBy(){try{return localStorage.getItem(SAMPLE_KEY)||''}catch(e){return ''}}
+function claimSample(email){try{localStorage.setItem(SAMPLE_KEY,email)}catch(e){}return true}
+function openSample(){
+  const used=sampleUsedBy(),ms=monthsCache.length?monthsCache:buildMonths();
+  if(used){modal('<h3>כבר הורדתם חודש לדוגמה</h3><p class="hint">החודש לדוגמה כבר נוצל עם הכתובת '+esc(used)+'. כדי להוריד את כל הלוח, בוחרים מסלול.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>').querySelector('.modal').classList.add('upgrade');return}
+  const m=modal('<h3>חודש אחד בחינם, בגרסה המלאה</h3><p class="hint">בוחרים חודש ומורידים אותו עם כל האפשרויות פתוחות, עם סימן מים עדין. אפשר פעם אחת לכל כתובת מייל.</p><label class="fld">איזה חודש<select id="smMonth">'+ms.map(mo=>opt(mo.key,mo.title+' '+mo.year)).join('')+'</select></label><label class="fld">כתובת מייל<input id="smEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" dir="ltr"></label><p class="hint" id="smMsg"></p><div class="row"><button class="btn primary" type="button" id="smGo">להוריד את החודש</button><button class="btn" type="button" data-close>ביטול</button></div>');
+  m.querySelector('#smGo').onclick=()=>{
+    const email=m.querySelector('#smEmail').value.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){m.querySelector('#smMsg').innerHTML='<span class="msg-bad">כתבו כתובת מייל תקינה, למשל name@example.com.</span>';m.querySelector('#smEmail').focus();return}
+    if(!claimSample(email)){m.querySelector('#smMsg').innerHTML='<span class="msg-bad">הכתובת הזאת כבר השתמשה בחודש לדוגמה.</span>';return}
+    SAMPLE={key:m.querySelector('#smMonth').value};document.body.classList.add('sampling');m.remove();render();
+    const done=()=>{SAMPLE=null;document.body.classList.remove('sampling');window.removeEventListener('afterprint',done);render();syncPlanUI()};
+    window.addEventListener('afterprint',done);setTimeout(()=>window.print(),400);
+  };
+}
 function syncPlanUI(){
   if(!LP)return;const P=PLAN();
   LP.PLANS.forEach(p=>document.body.classList.toggle('plan-'+p.id,p.id===P.id));
   const b=$('#planBadge');if(b)b.innerHTML='מסלול '+esc(P.name)+(P.downloads?' · <span>'+LP.downloadsLeft()+' הורדות</span>':'');
   const u=$('#upgradeBtn');if(u)u.hidden=P.id==='full';
+  const sb=$('#sampleBtn');if(sb)sb.hidden=P.id!=='free';
   const g=(sel,f)=>document.querySelectorAll(sel).forEach(x=>{const l=x.closest('label')||x;l.classList.toggle('gated',!canF(f))});
   g('input[name=view]:not([value=month])','views');g('[data-bpos]','banners');g('#adAdd','extraPages');
   const zs=$('#zmAdv>summary');if(zs)zs.classList.toggle('gated',!canF('advZmanim'));
@@ -2298,6 +2318,7 @@ document.addEventListener('click',e=>{
 },true);
 {const z=$('#zmAdv');if(z)z.addEventListener('toggle',()=>{if(z.open&&!canF('advZmanim')){z.open=false;openUpgrade('advZmanim')}})}
 if($('#upgradeBtn'))$('#upgradeBtn').onclick=()=>openUpgrade(null);
+if($('#sampleBtn'))$('#sampleBtn').onclick=openSample;
 if($('#devPlan')){$('#devPlan').innerHTML=(LP?LP.PLANS:[]).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');$('#devPlan').onchange=e=>{LP.setCurrent(e.target.value);syncPlanUI();render()}}
 syncPlanUI();
 /* boot */
