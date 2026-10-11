@@ -2347,7 +2347,7 @@ syncPlanUI();
     cover:{cover:true,layout:'same',accent:'#2f2f3a',view:'month'},
     desk:{size:'desk',layout:'same',accent:'#3d5a2a',view:'month'},
     fridge:{size:'fridge',layout:'full',accent:'#6b2d4f',view:'month'},
-    all:{layout:'full',theme:'ink',accent:'#1e5a63',view:'month',size:'wall',zmanimMode:'col',banners:['right','left'],place:{yz:'page',learn:'col'},learn:{daf:true,mishna:true,box:true},moon:{molad:true,kl:'ash',klEnd:'rema',tekufa:true,tal:true}},
+    all:{layout:'full',theme:'ink',accent:'#1e5a63',view:'month',size:'wall',orient:'landscape',zmanimMode:'col',banners:['right','left'],place:{yz:'page',learn:'col'},learn:{daf:true,mishna:true,box:true},moon:{molad:true,kl:'ash',klEnd:'rema',tekufa:true,tal:true}},
     week:{view:'week'},day:{view:'day'},table:{view:'table'}};
    if(m&&P[m[1]]){const p=P[m[1]],s=state.s;
      for(const k in p){if(k==='place'||k==='learn'||k==='moon')s[k]={...(s[k]||{}),...p[k]};else s[k]=p[k]}
