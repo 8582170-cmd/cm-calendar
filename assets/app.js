@@ -998,7 +998,7 @@ function moonShort(x){return String(x).replace('המולד: ','מולד ').repla
 function addHistBox(p,mo,full){
   const s=state.s;
   if(full){const head=el('div','pg-head');head.appendChild(el('div','pg-month',esc(mo.title)));head.appendChild(el('div','pg-year',esc(mo.year)));head.appendChild(el('div','pg-other',esc(s.yzHist?'אירועים בדברי ימי ישראל':'יומי דהילולא (יארצייטן)')));p.appendChild(head)}
-  const box=el('div','cont-body hist-body'+(full?'':' hist-under'));
+  const box=el('div','cont-body hist-body'+(full?'':' hist-under'));box.style.setProperty('--ts',((+s.histScale||100)/100).toFixed(2));
   if(!full)box.appendChild(el('div','spill-t hist-title',esc((s.yzHist?'דברי הימים':'יומי דהילולא (יארצייטן)')+' · '+mo.title)));
   const dl=d=>{const hd=new HDate(d);return dStyle().startsWith('greg')?gregShort(d):hebShort(hd)};
   let n=0;
@@ -1031,7 +1031,7 @@ function fitHist(cb){
     const nw=el('div','sheet-wrap cont');nw.style.width=wrap.style.width;nw.style.height=wrap.style.height;
     const np=el('div',page.className.replace(/\blocked-page\b/,''));np.style.cssText=page.style.cssText;
     const head=el('div','pg-head');head.appendChild(el('div','pg-month',esc(title)));head.appendChild(el('div','pg-other','דברי הימים · המשך '+(n-1)));np.appendChild(head);
-    const body=el('div','cont-body hist-body');body.dataset.fitDone='1';body.style.setProperty('--yzf',READ);moved.forEach(d=>body.appendChild(d));np.appendChild(body);
+    const body=el('div','cont-body hist-body');body.style.setProperty('--ts',((+state.s.histScale||100)/100).toFixed(2));body.dataset.fitDone='1';body.style.setProperty('--yzf',READ);moved.forEach(d=>body.appendChild(d));np.appendChild(body);
     nw.appendChild(np);nw.appendChild(el('div','sheet-label',esc(title)+' · דברי הימים, המשך'));
     wrap.after(nw);wrap=nw;cur=body;
   }
@@ -2274,7 +2274,7 @@ function syncUI(){if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof
   const bl=bannerList();document.querySelectorAll('[data-bpos]').forEach(c=>c.checked=bl.includes(c.dataset.bpos));$('#bannerOpts').hidden=!bl.length;
   $('#bannerSize').value=s.bannerSize||15;$('#bannerSizeVal').textContent=(s.bannerSize||15)+'% מהדף';$('#bannerPer').checked=!!s.bannerPer;
   $('#imgRatio').value=s.imgRatio;$('#imgRatioVal').textContent=s.imgRatio+'% מהדף';
-  $('#textScale').value=s.textScale;$('#textScaleVal').textContent=s.textScale+'%';
+  $('#textScale').value=s.textScale;$('#textScaleVal').textContent=s.textScale+'%';$('#histScale').value=s.histScale||100;$('#histScaleVal').textContent=(s.histScale||100)+'%';
   $('#showCaption').checked=!!s.showCaption;$('#dedication').checked=!!s.dedication;
   document.querySelectorAll('.sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.acc===s.accent));
   if(typeof applyMode==='function'&&$('#stepper').childElementCount)applyMode();
@@ -2375,6 +2375,7 @@ document.addEventListener('change',e=>{
 $('#cityFilter').addEventListener('input',renderCitySelect);
 $('#imgRatio').addEventListener('input',e=>{state.s.imgRatio=+e.target.value;$('#imgRatioVal').textContent=e.target.value+'% מהדף';save();rerender()});
 $('#bannerSize').addEventListener('input',e=>{state.s.bannerSize=+e.target.value;state.s.bannerSizes={};$('#bannerSizeVal').textContent=e.target.value+'% מהדף';save();rerender()});
+$('#histScale')&&$('#histScale').addEventListener('input',e=>{state.s.histScale=+e.target.value;$('#histScaleVal').textContent=e.target.value+'%';save();rerender()});
 $('#textScale').addEventListener('input',e=>{state.s.textScale=+e.target.value;$('#textScaleVal').textContent=e.target.value+'%';save();rerender()});
 $('#swatches').addEventListener('click',e=>{const b=e.target.closest('.sw');if(b)set('accent',b.dataset.acc)});
 $('#yzSearch').addEventListener('input',renderYz);
