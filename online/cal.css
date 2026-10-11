@@ -177,3 +177,5 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .kgrid span:empty{background:none;border:0}
 .kgrid .past{opacity:.35}
 .kgrid .goal{background:var(--k);color:#fff;border-color:var(--k)}
+
+.linkbtn{display:block;margin-top:8px;background:none;border:0;color:#cfe1e0;text-decoration:underline;cursor:pointer;padding:0;font-size:13px}

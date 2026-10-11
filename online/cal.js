@@ -68,35 +68,65 @@ const city=()=>CITIES.find(c=>c.id===st.city)||CITIES[0];
 const cityName=c=>HE()?c.he:c.en;
 function loc(){const c=city();return new Location(c.lat,c.lng,c.il,c.tz,c.en,'',undefined,c.el||0)}
 const fmtT=d=>{if(!(d instanceof Date)||isNaN(d))return '—';try{return new Intl.DateTimeFormat(HE()?'he-IL':'en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:city().tz}).format(d)}catch(e){return '—'}};
+/* הגדרות זמנים: מנהג, נץ ושקיעה, צאת שבת והדלקת נרות */
+const ZPRE={
+  ashkenaz:{he:'אשכנזים (המקובל בארץ)',en:'Ashkenazi (common in Israel)',alot:'16.1',mish:'11.5',mga:['16.1','16.1'],tzeit:'8.5'},
+  sefardi:{he:'ספרדים, ע״פ הגר״ע יוסף',en:'Sephardi (R. Ovadia Yosef)',alot:'72z',mish:'66z',mga:['72z','72z'],tzeit:'13.5z'},
+  chabad:{he:'חב״ד (בעל התניא)',en:'Chabad (Baal HaTanya)',alot:'16.9',mish:'10.2',mga:['16.9','16.9'],tzeit:'6'},
+  chul:{he:'נפוץ בחו״ל (72 דק׳ שוות)',en:'Common abroad (72 fixed minutes)',alot:'72f',mish:'11',mga:['72f','72f'],tzeit:'8.5'},
+  gra:{he:'גר״א בלבד, בלי מג״א',en:'GRA only',alot:'16.1',mish:'11',mga:null,tzeit:'8.5'}
+};
+const zcfg=()=>Object.assign({pre:'ashkenaz',netz:'sea',motz:'8.5',candle:'',both:true},st.zm||{});
+const angLbl=k=>{k=String(k);return k.endsWith('z')?parseFloat(k)+(HE()?' דק׳ זמניות':' zmaniyot min'):k.endsWith('f')?parseFloat(k)+(HE()?' דק׳':' min'):k+'°'};
 function zm(d){
-  const L=loc(),z=new Zmanim(L,noon(d),false),ze=new Zmanim(L,noon(d),true),s=f=>{try{const r=f();return r instanceof Date&&!isNaN(r)?r:null}catch(e){return null}};
-  const nx=new Zmanim(L,addD(d,1),false);
-  return [
-   ['alot',HE()?'עלות השחר':'Dawn (Alot HaShachar)',s(()=>z.alotHaShachar()),HE()?'16.1° מתחת לאופק':'16.1° below horizon'],
-   ['mish',HE()?'משיכיר (טלית ותפילין)':'Misheyakir (tallit & tefillin)',s(()=>z.misheyakir()),'11.5°'],
-   ['netz',HE()?'הנץ החמה':'Sunrise',s(()=>z.seaLevelSunrise()),HE()?'מישורי':'sea level'],
-   ['netzV',HE()?'הנץ הנראה':'Visible sunrise',s(()=>ze.sunrise()),HE()?'לפי גובה המקום':'with elevation'],
-   ['shmaM',HE()?'סוף זמן ק״ש (מג״א)':'Latest Shema (MGA)',s(()=>z.sofZmanShmaMGA()),HE()?'3 שעות זמניות, מעלות השחר עד צאת הכוכבים 72 דק׳':'3 halachic hours, 72 min'],
-   ['shmaG',HE()?'סוף זמן ק״ש (גר״א)':'Latest Shema (GRA)',s(()=>z.sofZmanShma()),HE()?'3 שעות זמניות מהנץ עד השקיעה':'3 halachic hours, sunrise to sunset'],
-   ['tfilaM',HE()?'סוף זמן תפילה (מג״א)':'Latest Shacharit (MGA)',s(()=>z.sofZmanTfillaMGA()),HE()?'4 שעות זמניות':'4 halachic hours'],
-   ['tfilaG',HE()?'סוף זמן תפילה (גר״א)':'Latest Shacharit (GRA)',s(()=>z.sofZmanTfilla()),HE()?'4 שעות זמניות':'4 halachic hours'],
-   ['chatzot',HE()?'חצות היום':'Midday (Chatzot)',s(()=>z.chatzot()),''],
-   ['minG',HE()?'מנחה גדולה':'Mincha Gedola',s(()=>z.minchaGedola()),HE()?'חצי שעה זמנית אחרי חצות':'½ halachic hour after midday'],
-   ['minK',HE()?'מנחה קטנה':'Mincha Ketana',s(()=>z.minchaKetana()),HE()?'9.5 שעות זמניות':'9.5 halachic hours'],
-   ['plag',HE()?'פלג המנחה':'Plag HaMincha',s(()=>z.plagHaMincha()),HE()?'10.75 שעות זמניות':'10.75 halachic hours'],
-   ['shkia',HE()?'שקיעה':'Sunset',s(()=>z.seaLevelSunset()),HE()?'מישורית':'sea level'],
-   ['tzeit',HE()?'צאת הכוכבים':'Nightfall (Tzeit)',s(()=>z.tzeit(8.5)),'8.5°'],
-   ['rt',HE()?'צאת הכוכבים לר״ת':'Rabbeinu Tam',s(()=>{const x=z.seaLevelSunset();return x?new Date(x.getTime()+72*6e4):null}),HE()?'72 דק׳ אחרי השקיעה':'72 min after sunset'],
-   ['chatzotN',HE()?'חצות הלילה':'Midnight',s(()=>z.chatzotNight()),''],
-  ].map(([k,n,v,m])=>({k,n,v,m}));
+  const C=zcfg(),P=ZPRE[C.pre]||ZPRE.ashkenaz,L=loc(),z=new Zmanim(L,noon(d),false),ze=new Zmanim(L,noon(d),true),s=f=>{try{const r=f();return r instanceof Date&&!isNaN(r)?r:null}catch(e){return null}};
+  const netz=C.netz==='elev'?s(()=>ze.sunrise()):s(()=>z.seaLevelSunrise()),shkia=C.netz==='elev'?s(()=>ze.sunset()):s(()=>z.seaLevelSunset());
+  const H=netz&&shkia?(shkia-netz)/12:NaN,T=(x,ms)=>x&&isFinite(ms)?new Date(x.getTime()+ms):null;
+  const before=k=>{k=String(k);if(k.endsWith('f'))return T(netz,-parseFloat(k)*6e4);if(k.endsWith('z'))return T(netz,-parseFloat(k)*H/60);return s(()=>z.timeAtAngle(parseFloat(k),true))};
+  const after=k=>{k=String(k);if(k.endsWith('f'))return T(shkia,parseFloat(k)*6e4);if(k.endsWith('z'))return T(shkia,parseFloat(k)*H/60);return s(()=>z.timeAtAngle(parseFloat(k),false))};
+  const ms=P.mga?before(P.mga[0]):null,me=P.mga?after(P.mga[1]):null,Hm=ms&&me?(me-ms)/12:NaN;
+  const nl=C.netz==='elev'?(HE()?'לפי גובה המקום':'with elevation'):(HE()?'מישורי':'sea level');
+  const mgaL=P.mga?(HE()?'מעלות השחר '+angLbl(P.mga[0])+' עד צאה״כ '+angLbl(P.mga[1]):'dawn '+angLbl(P.mga[0])+' to nightfall '+angLbl(P.mga[1])):'';
+  const rows=[
+   ['alot',HE()?'עלות השחר':'Dawn (Alot HaShachar)',before(P.alot),angLbl(P.alot)],
+   ['mish',HE()?'משיכיר (טלית ותפילין)':'Misheyakir (tallit & tefillin)',before(P.mish),angLbl(P.mish)],
+   ['netz',HE()?'הנץ החמה':'Sunrise',netz,nl],
+   P.mga&&C.both?['shmaM',HE()?'סוף זמן ק״ש (מג״א)':'Latest Shema (MGA)',T(ms,3*Hm),HE()?'3 שעות זמניות, '+mgaL:'3 halachic hours, '+mgaL]:null,
+   ['shmaG',HE()?'סוף זמן ק״ש (גר״א)':'Latest Shema (GRA)',T(netz,3*H),HE()?'3 שעות זמניות מהנץ עד השקיעה':'3 halachic hours, sunrise to sunset'],
+   P.mga&&C.both?['tfilaM',HE()?'סוף זמן תפילה (מג״א)':'Latest Shacharit (MGA)',T(ms,4*Hm),HE()?'4 שעות זמניות':'4 halachic hours']:null,
+   ['tfilaG',HE()?'סוף זמן תפילה (גר״א)':'Latest Shacharit (GRA)',T(netz,4*H),HE()?'4 שעות זמניות':'4 halachic hours'],
+   ['chatzot',HE()?'חצות היום':'Midday (Chatzot)',T(netz,6*H),''],
+   ['minG',HE()?'מנחה גדולה':'Mincha Gedola',(()=>{const a=T(netz,6.5*H),b=T(netz,6*H+30*6e4);return a&&b?new Date(Math.max(a,b)):a})(),HE()?'המאוחר מחצי שעה זמנית או קבועה אחרי חצות':'later of ½ halachic or fixed hour after midday'],
+   ['minK',HE()?'מנחה קטנה':'Mincha Ketana',T(netz,9.5*H),HE()?'9.5 שעות זמניות':'9.5 halachic hours'],
+   ['plag',HE()?'פלג המנחה':'Plag HaMincha',T(netz,10.75*H),HE()?'10.75 שעות זמניות':'10.75 halachic hours'],
+   ['shkia',HE()?'שקיעה':'Sunset',shkia,nl],
+   ['tzeit',HE()?'צאת הכוכבים':'Nightfall (Tzeit)',after(P.tzeit),angLbl(P.tzeit)],
+   ['rt',HE()?'צאת הכוכבים לר״ת':'Rabbeinu Tam',T(shkia,72*6e4),HE()?'72 דק׳ אחרי השקיעה':'72 min after sunset'],
+   ['chatzotN',HE()?'חצות הלילה':'Midnight',T(netz,18*H),HE()?'12 שעות אחרי חצות היום':'12 hours after midday'],
+  ].filter(Boolean);
+  return rows.map(([k,n,v,m])=>({k,n,v,m}));
+}
+function candleMins(){const c=zcfg().candle;return c?+c:city().candle}
+function havOpts(){const m=zcfg().motz;return m.endsWith('f')?{havdalahMins:parseFloat(m)}:{havdalahDeg:parseFloat(m)}}
+function zmSettings(){
+  const C=zcfg();
+  dialog('<h2 id="dlgT">'+(HE()?'הגדרות זמנים':'Zmanim settings')+'</h2><p class="small mute">'+(HE()?'ההגדרות חלות על זמני היום, זמני השבת והלוח, ונשמרות בדפדפן.':'Applies to zmanim, Shabbat times and the calendar. Saved in this browser.')+'</p>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'מנהג':'Custom')+'<select id="zP">'+Object.entries(ZPRE).map(([k,v])=>'<option value="'+k+'"'+(k===C.pre?' selected':'')+'>'+(HE()?v.he:v.en)+'</option>').join('')+'</select></div>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'נץ ושקיעה':'Sunrise & sunset')+'<select id="zN"><option value="sea">'+(HE()?'מישורי (גובה פני הים)':'Sea level')+'</option><option value="elev">'+(HE()?'לפי גובה המקום (הנראה)':'With elevation (visible)')+'</option></select></div>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'צאת שבת וחג':'Shabbat ends')+'<select id="zM"><option value="8.5">8.5° ('+(HE()?'מקובל':'common')+')</option><option value="7.083">7.083°</option><option value="6">6° ('+(HE()?'חב״ד':'Chabad')+')</option><option value="40f">40 '+(HE()?'דק׳ אחרי השקיעה':'min after sunset')+'</option><option value="50f">50 '+(HE()?'דק׳':'min')+'</option><option value="72f">72 '+(HE()?'דק׳ (רבנו תם)':'min (Rabbeinu Tam)')+'</option></select></div>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'הדלקת נרות':'Candle lighting')+'<select id="zC"><option value="">'+(HE()?'לפי העיר ('+city().candle+' דק׳)':'City default ('+city().candle+' min)')+'</option>'+[15,18,20,22,24,30,40].map(n=>'<option value="'+n+'">'+n+(HE()?' דק׳ לפני השקיעה':' min before sunset')+'</option>').join('')+'</select></div>'+
+    '<label class="chk" style="margin-top:10px"><input type="checkbox" id="zB"'+(C.both?' checked':'')+'> '+(HE()?'להציג ק״ש ותפילה גם לפי המג״א':'Show MGA times too')+'</label>'+
+    '<div class="row" style="margin-top:14px"><button class="btn pri" type="button" id="zS">'+t('save')+'</button></div>');
+  $('#zN').value=C.netz;$('#zM').value=C.motz;$('#zC').value=C.candle;
+  $('#zS').onclick=()=>{st.zm={pre:$('#zP').value,netz:$('#zN').value,motz:$('#zM').value,candle:$('#zC').value,both:$('#zB').checked};saveSt();evCache.clear();closeDlg();render()};
 }
 
 /* ---------- אירועים ---------- */
 const evCache=new Map();
 function events(a,b){
-  const key=iso(a)+iso(b)+st.city+st.lang+JSON.stringify(st.opts);if(evCache.has(key))return evCache.get(key);
+  const key=iso(a)+iso(b)+st.city+st.lang+JSON.stringify(st.opts)+JSON.stringify(st.zm||{});if(evCache.has(key))return evCache.get(key);
   const map=new Map();let evs=[];
-  try{evs=HebrewCalendar.calendar({start:a,end:b,location:loc(),candlelighting:!!st.opts.times,candleLightingMins:city().candle,il:city().il,sedrot:!!st.opts.parasha,omer:!!st.opts.omer,noModern:!st.opts.modern,havdalahDeg:8.5})}catch(e){console.error(e)}
+  try{evs=HebrewCalendar.calendar({start:a,end:b,location:loc(),candlelighting:!!st.opts.times,candleLightingMins:candleMins(),il:city().il,sedrot:!!st.opts.parasha,omer:!!st.opts.omer,noModern:!st.opts.modern,...havOpts()})}catch(e){console.error(e)}
   for(const ev of evs){
     const f=ev.getFlags(),d=ev.getDate().greg(),k=iso(d),desc=ev.getDesc();let txt=strip(ev.render(st.lang==='he'?'he':'en')),cls='';
     if(HE())txt=txt.replace(/\b(5\d{3})\b/,(m,y)=>hYear(+y));
@@ -195,7 +225,7 @@ function viewHolidays(){
 function viewZmanim(){
   const d=anchor,Z=zm(d),hd=new HDate(d);
   const M=monthDays();const keys=['alot','netz','shmaM','shmaG','tfilaG','chatzot','minG','plag','shkia','tzeit'];
-  $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'זמני היום ב'+cityName(city()):'Zmanim for '+cityName(city()))+'</h1><span class="jump"><button class="btn" type="button" data-zd="-1">'+(HE()?'→':'←')+'</button><input type="date" id="zDate" value="'+iso(d)+'"><button class="btn" type="button" data-zd="1">'+(HE()?'←':'→')+'</button></span><a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
+  $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'זמני היום ב'+cityName(city()):'Zmanim for '+cityName(city()))+'</h1><span class="jump"><button class="btn" type="button" data-zd="-1">'+(HE()?'→':'←')+'</button><input type="date" id="zDate" value="'+iso(d)+'"><button class="btn" type="button" data-zd="1">'+(HE()?'←':'→')+'</button></span><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'הגדרות זמנים':'Zmanim settings')+'</button><a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
     '<div class="card"><h2>'+t('weekdays')[d.getDay()]+', '+esc(hStr(hd))+' · '+esc(gStr(d))+'</h2><div class="zl" style="margin-top:10px">'+Z.map(z=>'<span>'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>'+(z.m?'<span class="sub">'+esc(z.m)+'</span>':'')).join('')+'</div>'+
     '<p class="mute small">'+(HE()?'הזמנים מחושבים אסטרונומית לפי מיקום העיר ואינם תחליף ללוח של רב הקהילה.':'Times are calculated astronomically for the city location.')+'</p></div>'+
     '<h2 style="margin:18px 0 8px">'+esc(M.title)+'</h2><div class="tbl-wrap"><table class="t"><thead><tr><th></th>'+keys.map(k=>'<th>'+esc(Z.find(z=>z.k===k).n.replace(/ \(.*\)/,'').replace('סוף זמן ',''))+(k==='shmaM'?' מג״א':k==='shmaG'?' גר״א':'')+'</th>').join('')+'</tr></thead><tbody>'+
@@ -207,10 +237,10 @@ function viewShabbat(){
     let e=d;const hv=[];for(let k=1;k<4;k++){const x=addD(d,k),xi=ev.get(iso(x))||[];const h=xi.find(y=>y.ev.getDesc().startsWith('Havdalah'));if(h){e=x;hv.push(h);break}}
     const names=[];for(let x=d;x<=e;x=addD(x,1))for(const y of ev.get(iso(x))||[])if(y.cls==='par'||y.chag)names.push(y.txt);
     rows.push({d,c:fmtT(c.ev.eventTime),h:hv[0]?fmtT(hv[0].ev.eventTime):'—',n:[...new Set(names)].join(' · ')})}
-  $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'זמני כניסת ויציאת שבת ב'+cityName(city()):'Shabbat times in '+cityName(city()))+'</h1><a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
+  $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'זמני כניסת ויציאת שבת ב'+cityName(city()):'Shabbat times in '+cityName(city()))+'</h1><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'הגדרות זמנים':'Zmanim settings')+'</button><a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
     '<div class="tbl-wrap"><table class="t"><thead><tr><th>'+(HE()?'שבת / חג':'Shabbat / Holiday')+'</th><th>'+(HE()?'תאריך':'Date')+'</th><th>'+t('candles')+'</th><th>'+t('havdalah')+'</th></tr></thead><tbody>'+
     rows.map(r=>'<tr><td>'+esc(r.n)+'</td><td>'+t('weekdays')[r.d.getDay()]+' '+esc(gStr(r.d,false))+' · '+esc(hStr(new HDate(r.d),false))+'</td><td>'+r.c+'</td><td>'+r.h+'</td></tr>').join('')+'</tbody></table></div>'+
-    '<p class="mute small">'+(HE()?'הדלקת נרות '+city().candle+' דקות לפני השקיעה, יציאה כשהשמש 8.5° מתחת לאופק.':'Candle lighting '+city().candle+' minutes before sunset; havdalah at 8.5°.')+'</p>'+seoBlock();
+    '<p class="mute small">'+(HE()?'הדלקת נרות '+candleMins()+' דקות לפני השקיעה, יציאה '+angLbl(zcfg().motz)+(zcfg().motz.endsWith('f')?' אחרי השקיעה':' מתחת לאופק')+'.':'Candle lighting '+candleMins()+' minutes before sunset; havdalah '+angLbl(zcfg().motz)+'.')+'</p>'+seoBlock();
 }
 
 /* ---------- כלים ---------- */
@@ -355,7 +385,7 @@ function renderSide(){
   const evW=events(TODAY,addD(TODAY,8));let par='',cand='',hav='';
   for(let i=0;i<8;i++){const its=evW.get(iso(addD(TODAY,i)))||[];for(const x of its){if(x.cls==='par'&&!par)par=x.txt;if(x.ev.getDesc().startsWith('Candle')&&!cand)cand=fmtT(x.ev.eventTime);if(x.ev.getDesc().startsWith('Havdalah')&&!hav&&cand)hav=fmtT(x.ev.eventTime)}}
   $('#side').innerHTML='<div class="card today-card"><div class="mute small">'+t('today')+', '+t('weekdays')[TODAY.getDay()]+'</div><div class="big">'+esc(hStr(hd))+'</div><div>'+esc(gStr(TODAY))+'</div>'+
-    '<div class="kv" style="margin-top:10px"><span>'+t('sunrise')+'</span><b>'+z('netz')+'</b><span>'+t('sunset')+'</span><b>'+z('shkia')+'</b>'+(cand?'<span>'+t('candles')+'</span><b>'+cand+'</b>':'')+(hav?'<span>'+t('havdalah')+'</span><b>'+hav+'</b>':'')+'</div>'+(par?'<div style="margin-top:8px">'+t('parasha')+': <b>'+esc(par.replace(/^פרשת /,''))+'</b></div>':'')+'</div>'+
+    '<div class="kv" style="margin-top:10px"><span>'+t('sunrise')+'</span><b>'+z('netz')+'</b><span>'+t('sunset')+'</span><b>'+z('shkia')+'</b>'+(cand?'<span>'+t('candles')+'</span><b>'+cand+'</b>':'')+(hav?'<span>'+t('havdalah')+'</span><b>'+hav+'</b>':'')+'</div>'+(par?'<div style="margin-top:8px">'+t('parasha')+': <b>'+esc(par.replace(/^פרשת /,''))+'</b></div>':'')+'<button type="button" class="linkbtn" data-zset="1">⚙ '+esc((HE()?ZPRE[zcfg().pre].he:ZPRE[zcfg().pre].en))+'</button></div>'+
     (next?'<div class="card"><div class="mute small">'+t('nextHoliday')+'</div><div style="font-weight:700;font-size:18px">'+esc(evName(next))+'</div><div class="small">'+esc(gStr(noon(next.getDate().greg())))+' · '+esc(relDays(noon(next.getDate().greg())))+'</div></div>':'')+
     '<div class="card cta"><h3>'+t('ctaT')+'</h3><p>'+t('ctaP')+'</p><a class="btn pri big" href="'+builderLink()+'">'+t('ctaB')+'</a></div>'+
     '<div class="card"><b>'+t('tools')+'</b><ul style="margin-top:6px">'+['countdown','convert','barmitzvah','yahrzeit','days'].map(k=>'<li><a href="#tools/'+k+'" data-tool="'+k+'">'+t(k)+'</a></li>').join('')+'</ul></div>';
@@ -385,7 +415,7 @@ function render(){
   renderSide();renderFoot();
   if(!PAGE.static)document.title=(view==='month'?monthDays().title+' · ':t(view)+' · ')+t('siteName');
 }
-function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts})}
+function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm})}
 
 /* ---------- אירועים בממשק ---------- */
 document.addEventListener('click',e=>{
@@ -397,6 +427,7 @@ document.addEventListener('click',e=>{
   const sh=T2.closest('[data-sh]');if(sh){const n=+sh.dataset.sh;if(Math.abs(n)===12)shiftYear(n/12);else shiftMonth(n);render();return}
   const sy=T2.closest('[data-shy]');if(sy){shiftYear(+sy.dataset.shy);render();return}
   const hy=T2.closest('[data-hy]');if(hy){shiftYear(+hy.dataset.hy);render();return}
+  const zs2=T2.closest('[data-zset]');if(zs2){zmSettings();return}
   const zd=T2.closest('[data-zd]');if(zd){anchor=addD(anchor,+zd.dataset.zd);render();return}
   const gt=T2.closest('[data-goto]');if(gt){anchor=fromIso(gt.dataset.goto);go('month',anchor);return}
   const re=T2.closest('[data-redit]');if(re){e.preventDefault();remEditor(re.dataset.redit);return}
