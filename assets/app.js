@@ -156,7 +156,7 @@ const DEFAULT={
      zmanim:{sunrise:true,shma:true,sunset:true},
      m_shma:'gra',zmPreset:'ashkenaz',zm:null,secs:false,zlab:{},zround:{},zmode:{},
      theme:'ink',accent:ACCENTS[0],headFont:'',size:'wall',customW:300,customH:300,orient:'portrait',layout:'full',
-     imgRatio:40,textScale:100,showCaption:true,dedication:false,imgText:'auto',view:'month',rangeFrom:'',rangeTo:'',yzPanel:true,yzPanelW:26,yzMode:'selected',yzMax:2,yzFmt:'short',yzHist:false,yzLines:true,yzSel:null,banner:'none',banners:[],bannerSize:15,bannerSizes:{},bannerPer:false,
+     imgRatio:40,textScale:100,showCaption:true,dedication:false,imgText:'auto',view:'month',rangeFrom:'',rangeTo:'',yzPanel:true,yzPanelW:26,yzMode:'all',yzMax:2,yzFmt:'short',yzHist:false,yzLines:true,yzSel:null,banner:'none',banners:[],bannerSize:15,bannerSizes:{},bannerPer:false,
      gedolim:{rambam:1,rashbi:1,ari:1,gra:1,chafetz:1,babasali:1,besht:1,ramchal:1,rachel:1,chazonish:1,ovadia:1,rashi:1}},
   slots:{},
   cover:{title:'',img:null},
