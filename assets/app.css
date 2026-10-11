@@ -610,3 +610,15 @@ td.zb{font-weight:800}
 
 .yzp-sec.col-img{flex:1;min-height:0;display:flex;flex-direction:column;gap:calc(var(--u)*1)}
 .yzp-sec.col-img .pg-img{flex:1;min-height:calc(var(--u)*20)}
+
+/* תפריט הוספה */
+.add-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+.add-card{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:start;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;cursor:pointer;font:inherit}
+.add-card:hover{border-color:var(--acc,#1e5a63)}
+.add-card.on{border-color:var(--acc,#1e5a63);background:var(--acc-t,#eef4f4)}
+.add-card small{color:#6b6b6b;font-size:.8em}
+.add-ic{font-size:1.4em}
+.add-where{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.col-ad{border:.4mm solid var(--acc);border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*1.2)}
+.col-ad .ad-title{font-family:var(--f-head);font-weight:700;color:var(--acc);text-align:center;font-size:calc(var(--u)*3.4)}
+.col-img .banner-text{font-size:calc(var(--u)*2.4);text-align:center}

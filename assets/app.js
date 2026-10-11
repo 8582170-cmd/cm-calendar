@@ -805,7 +805,7 @@ function placeOfLegacy(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.y
 /* ---------- טורים ליד הלוח ----------
    s.cols: [{id, side:'right'|'left', w:אחוזים, types:['zmanim','personal','yz','learn']}]
    סוג מידע שנבחר להצגה ולא נמצא באף טור מופיע בתוך הימים. */
-const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','יארצייטים ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['img','תמונה או באנר']];
+const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','יארצייטים ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['img','תמונה'],['ad','מודעה או הקדשה']];
 function zMode(){return state.s.zmanimMode||'daily'}
 function zpl(k){const s=state.s,Z=s.zplace&&s.zplace[k];if(Z)return Z;const m=zMode();return m==='shabbat'?{day:1,sh:1}:m==='col'?{col:1}:m==='daily'||m==='custom'?{day:1}:{}}
 function zOn(){const m=zMode();return m!=='none'&&m!=='table'&&Object.values(state.s.zmanim).some(Boolean)}
@@ -830,7 +830,7 @@ function placeOf(t){
   return colOf(t)?'col':'cell'}
 function saveCols(cols){state.s.cols=cols.map(c=>({id:c.id,side:c.side,w:c.w,types:c.types.slice(),imgPer:!!c.imgPer}));
   /* מה שהוסר מכל הטורים חוזר לתוך הימים */
-  const P={...(state.s.place||{})};for(const [t] of COL_TYPES){if(t==='zmanim'||t==='img')continue;if(P[t]==='col')P[t]='cell';if(t==='yz'&&!P.yz)P.yz='none'}state.s.place=P}
+  const P={...(state.s.place||{})};for(const [t] of COL_TYPES){if(t==='zmanim'||t==='img'||t==='ad')continue;if(P[t]==='col')P[t]='cell';if(t==='yz'&&!P.yz)P.yz='none'}state.s.place=P}
 function zDay(d,noCol){if(!zOn())return [];return zmanimFor(d).filter(z=>{const p=zpl(z.key);return (p.day&&(!p.sh||d.getDay()===6))||(noCol&&p.col)})}
 function zCol(d,all){if(!zOn())return [];return zmanimFor(d,all).filter(z=>zpl(z.key).col)}
 function yzPanelOn(){return placeOf('yz')==='col'}
@@ -1131,7 +1131,7 @@ function addMonthGrid(p,mo,evMap){
     grid.appendChild(c);
   }
   for(let i=total;i<rows*7;i++)grid.appendChild(el('div','cell pad'));
-  const cols=colsCfg().filter(c=>c.types.some(t=>t==='zmanim'?zAnyCol():t==='img'?canF('banners'):placeOf(t)==='col'));
+  const cols=colsCfg().filter(c=>c.types.some(t=>t==='zmanim'?zAnyCol():t==='img'||t==='ad'?canF('banners'):placeOf(t)==='col'));
   if(cols.length){
     const row=el('div','grid-row');
     const dl=d=>{const hd=new HDate(d);return dStyle().startsWith('greg')?gregShort(d):hebShort(hd)};
@@ -1146,11 +1146,13 @@ function addMonthGrid(p,mo,evMap){
           for(const it of L){const e=el('span','yzp-e'+(it.cls&&it.cls!=='gadol'?' '+it.cls:''));e.textContent=String(it.text).replace(/^יא״צ /,'');day.appendChild(e);n++}sec.appendChild(day)}
         if(!n)sec.appendChild(el('div','yzp-empty',esc(empty)));body.appendChild(sec)};
       for(const t of col.types){
-        if(t==='img'&&canF('banners')){
-          const per=!!col.imgPer,get=()=>per?((state.slots[mo.key]||{}).colimg||{})[col.id]||{}:(state.colImgs||{})[col.id]||{};
-          const put=v=>{if(per){const sl=state.slots[mo.key]||{};state.slots[mo.key]={...sl,colimg:{...(sl.colimg||{}),[col.id]:{...get(),...v}}}}else state.colImgs={...(state.colImgs||{}),[col.id]:{...get(),...v}}};
-          const sec=el('div','yzp-sec col-img');sec.appendChild(makeImageBox(get,v=>{put(v);save();render()},null));
-          sec.appendChild(editable('banner-text',get().text,'טקסט מתחת לתמונה (לא חובה)',tx=>{put({text:tx});save()}));
+        if((t==='img'||t==='ad')&&canF('banners')){
+          const id=col.id+(t==='ad'?'-ad':''),per=!!col.imgPer,get=()=>per?((state.slots[mo.key]||{}).colimg||{})[id]||{}:(state.colImgs||{})[id]||{};
+          const put=v=>{if(per){const sl=state.slots[mo.key]||{};state.slots[mo.key]={...sl,colimg:{...(sl.colimg||{}),[id]:{...get(),...v}}}}else state.colImgs={...(state.colImgs||{}),[id]:{...get(),...v}}};
+          const sec=el('div','yzp-sec col-img'+(t==='ad'?' col-ad':''));
+          if(t==='ad')sec.appendChild(editable('ad-title',get().title,'כותרת המודעה, למשל: לעילוי נשמת…',tx=>{put({title:tx});save()}));
+          sec.appendChild(makeImageBox(get,v=>{put(v);save();render()},null));
+          sec.appendChild(editable('banner-text',get().text,t==='ad'?'טקסט המודעה: פרטים, טלפון, כתובת':'טקסט מתחת לתמונה (לא חובה)',tx=>{put({text:tx});save()},t==='ad'));
           body.appendChild(sec);
         }
         else if(t==='zmanim'&&zAnyCol()){
@@ -2684,15 +2686,39 @@ function renderPlaceUI(){
   cs.forEach((c,i)=>{h+='<div class="col-card" data-colid="'+c.id+'"><div class="col-card-h"><b>טור '+(i+1)+'</b><button type="button" class="btn small danger" data-coldel="1">מחיקת הטור</button></div>'+
     '<div class="row"><label class="fld">צד<select data-colside="1">'+opt('right','מימין ללוח',c.side==='right')+opt('left','משמאל ללוח',c.side!=='right')+'</select></label>'+
     '<label class="fld">רוחב<select data-colw="1">'+COL_W.map(x=>opt(x[0],x[1],+x[0]===+c.w)).join('')+(COL_W.some(x=>+x[0]===+c.w)?'':opt(String(c.w),c.w+'%',true))+'</select></label></div>'+
-    '<div class="fld">מה בטור הזה<div class="checks">'+COL_TYPES.map(([t,n])=>'<label class="chk'+(t==='img'&&!canF('banners')?' gated':'')+'"><input type="checkbox" data-coltype="'+t+'"'+(c.types.includes(t)?' checked':'')+'> '+n+'</label>').join('')+'</div></div>'+
-    (c.types.includes('img')?'<label class="chk"><input type="checkbox" data-colper="1"'+(c.imgPer?' checked':'')+'> תמונה אחרת בכל חודש (אחרת: אותה תמונה בכל הלוח)</label><p class="hint">מעלים את התמונה בלחיצה על הטור בתצוגה המקדימה.</p>':'')+'</div>'});
-  h+='<button class="btn" type="button" id="colAdd">+ הוספת טור</button>';
+    '<div class="fld">מה בטור הזה<div class="checks">'+COL_TYPES.map(([t,n])=>'<label class="chk'+((t==='img'||t==='ad')&&!canF('banners')?' gated':'')+'"><input type="checkbox" data-coltype="'+t+'"'+(c.types.includes(t)?' checked':'')+'> '+n+'</label>').join('')+'</div></div>'+
+    (c.types.includes('img')||c.types.includes('ad')?'<label class="chk"><input type="checkbox" data-colper="1"'+(c.imgPer?' checked':'')+'> תמונה ומודעה אחרות בכל חודש (אחרת: אותן בכל הלוח)</label><p class="hint">מעלים את התמונה בלחיצה על הטור בתצוגה המקדימה.</p>':'')+'</div>'});
+  h+='<button class="btn primary" type="button" id="colAdd">+ הוספה ליד הלוח</button>';
   box.innerHTML=h;
   /* מיקום לכל זמן */
   const zb=$('#zmPlace');if(!zb)return;
   const dis=zMode()==='none'||zMode()==='table';
   zb.innerHTML='<div class="zp-head"><span></span><span>ביום</span><span>בטור</span><span>רק בשבת</span></div>'+ZMANIM.map(([k,full])=>{const on=!!s.zmanim[k],p=on?zpl(k):{};
     return '<div class="zp-row'+(on?'':' off')+'"><span>'+full+'</span><input type="checkbox" data-zpday="'+k+'"'+(p.day?' checked':'')+' aria-label="'+full+' בתוך היום"'+(dis?' disabled':'')+'><input type="checkbox" data-zpcol="'+k+'"'+(p.col?' checked':'')+' aria-label="'+full+' בטור"'+(dis?' disabled':'')+'><input type="checkbox" data-zpsh="'+k+'"'+(p.sh?' checked':'')+' aria-label="'+full+' רק בשבת"'+(dis||!p.day?' disabled':'')+'></div>'}).join('');
+}
+function colAddType(cs,c,ty){const s=state.s;
+  if(ty!=='img'&&ty!=='ad')cs.forEach(x=>x.types=x.types.filter(y=>y!==ty));
+  if(!c.types.includes(ty))c.types.push(ty);
+  if(ty==='zmanim'){s.zmanimMode=s.zmanimMode==='none'||s.zmanimMode==='table'?'daily':s.zmanimMode;if(!s.zplace&&zMode()!=='custom')s.zmanimMode='col';else{const o=zplAll();for(const k in o)if(s.zmanim[k])o[k]={...o[k],col:1,day:0};s.zplace=o;s.zmanimMode='custom'}}
+  else if(ty==='personal'||ty==='learn'||ty==='yz')s.place={...s.place,[ty]:'cell'}}
+const ADD_ITEMS=[['zmanim','זמני היום','טבלה עם שורה לכל יום','🕐'],['personal','אירועים אישיים','ימי הולדת, נישואין, תזכורות','🎂'],['yz','יארצייטים ודברי הימים','אירועים מתולדות עם ישראל','📜'],['learn','לימוד יומי ומולד','דף יומי, משניות, מולד ותקופות','📖'],['img','תמונה','תמונה לאורך הלוח','🖼'],['ad','מודעה או הקדשה','כותרת, תמונה וטקסט, לפרסום או לעילוי נשמה','📣']];
+function openAddMenu(){
+  const m=modal('<h3>מה להוסיף ליד הלוח?</h3><div class="add-grid">'+ADD_ITEMS.map(([t,n,d,i])=>'<button type="button" class="add-card'+((t==='img'||t==='ad')&&!canF('banners')?' gated':'')+'" data-addt="'+t+'"><span class="add-ic">'+i+'</span><b>'+n+'</b><small>'+d+'</small></button>').join('')+'</div>'+
+    '<div id="addWhere" hidden><h4>איפה?</h4><div class="add-where"></div></div><div class="row"><button class="btn" type="button" data-close>ביטול</button></div>');
+  const q=x=>m.querySelector(x);let ty=null;
+  m.addEventListener('click',e=>{
+    const a=e.target.closest('[data-addt]');
+    if(a){ty=a.dataset.addt;if((ty==='img'||ty==='ad')&&!canF('banners')){m.remove();openUpgrade('banners');return}
+      m.querySelectorAll('.add-card').forEach(x=>x.classList.toggle('on',x===a));
+      const cs=colsCfg(),wh=[['right','בטור חדש מימין ללוח'],['left','בטור חדש משמאל ללוח']].concat(cs.map(c=>['col:'+c.id,'בתוך '+colName(cs,c.id)+', מתחת למה שכבר בו'])).concat(ty==='img'||ty==='ad'?[['top','ברצועה מעל הלוח'],['bottom','ברצועה מתחת ללוח']]:[]);
+      q('#addWhere').hidden=false;q('.add-where').innerHTML=wh.map(([v,l])=>'<button type="button" class="btn" data-addw="'+v+'">'+l+'</button>').join('');return}
+    const w=e.target.closest('[data-addw]');if(!w||!ty)return;const v=w.dataset.addw,s=state.s;
+    if(v==='top'||v==='bottom'){const cur=bannerList().filter(x=>x!==v);cur.push(v);s.banner='none';s.banners=['top','right','left','bottom'].filter(x=>cur.includes(x));m.remove();save();syncUI();render();return}
+    const cs=colsCfg();let c;
+    if(v.startsWith('col:'))c=cs.find(x=>x.id===v.slice(4));
+    if(!c){c={id:'c'+uid(),side:v==='right'?'right':'left',w:ty==='learn'?12:ty==='zmanim'?24:18,types:[]};cs.push(c)}
+    colAddType(cs,c,ty);saveCols(cs);m.remove();save();syncUI();render();
+  });
 }
 function zplAll(){const s=state.s,o={};for(const [k] of ZMANIM){o[k]=s.zmanim[k]?{...zpl(k)}:{}}return o}
 document.addEventListener('change',e=>{
@@ -2708,11 +2734,9 @@ document.addEventListener('change',e=>{
     if(t.dataset.colside)c.side=t.value;
     if(t.dataset.colw)c.w=+t.value;
     if(t.dataset.colper)c.imgPer=t.checked;
-    if(t.dataset.coltype==='img'&&t.checked&&!canF('banners')){t.checked=false;openUpgrade('banners');return}
+    if((t.dataset.coltype==='img'||t.dataset.coltype==='ad')&&t.checked&&!canF('banners')){t.checked=false;openUpgrade('banners');return}
     if(t.dataset.coltype){const ty=t.dataset.coltype;
-      if(t.checked){cs.forEach(x=>x.types=x.types.filter(y=>y!==ty));c.types.push(ty);
-        if(ty==='zmanim'){if(!s.zplace&&zMode()!=='custom')s.zmanimMode='col';else{const o=zplAll();for(const k in o)if(s.zmanim[k])o[k]={...o[k],col:1,day:0};s.zplace=o;s.zmanimMode='custom'}}
-        else if((s.place||{})[ty]==='none'||(ty==='yz'&&(s.place||{}).yz!=='col'))s.place={...s.place,[ty]:'cell'};}
+      if(t.checked)colAddType(cs,c,ty);
       else{c.types=c.types.filter(y=>y!==ty);
         if(ty==='zmanim'){const o=zplAll();for(const k in o)if(o[k].col)o[k]={...o[k],col:0,day:1};s.zplace=o;s.zmanimMode='custom'}}
     }
@@ -2728,7 +2752,7 @@ document.addEventListener('click',e=>{
   s.zplace=o;s.zmanimMode='custom';save();syncUI();render()});
 document.addEventListener('click',e=>{
   const s=state.s;
-  if(e.target.id==='colAdd'){const cs=colsCfg(),last=cs[cs.length-1];cs.push({id:'c'+uid(),side:last?(last.side==='right'?'left':'right'):(s.panelSide==='right'?'right':'left'),w:20,types:[]});saveCols(cs);save();syncUI();render();return}
+  if(e.target.id==='colAdd'){openAddMenu();return}
   if(e.target.dataset&&e.target.dataset.coldel){const card=e.target.closest('.col-card');let cs=colsCfg();const c=cs.find(x=>x.id===card.dataset.colid);if(!c)return;
     if(c.types.includes('zmanim')){const o=zplAll();for(const k in o)if(o[k].col)o[k]={...o[k],col:0,day:1};s.zplace=o;s.zmanimMode='custom'}
     saveCols(cs.filter(x=>x!==c));save();syncUI();render()}
