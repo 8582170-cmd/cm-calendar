@@ -122,11 +122,12 @@ function remHits(r,d){const hd=new HDate(d);
 const remsOn=d=>REM.filter(r=>remHits(r,d));
 
 /* ---------- ניווט ---------- */
-const VIEWS=['month','year','holidays','zmanim','shabbat','tools','reminders'];
+const VIEWS=['month','year','holidays','zmanim','shabbat','countdown','tools','reminders'];
 let view=PAGE.view||'month',anchor=TODAY,sub=PAGE.tool||'',CDQ=null;
 function readHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const [v,a]=h.split('/');
+  if(v==='countdown'){view='tools';sub='countdown';return}
   if(VIEWS.includes(v)){view=v;if(v==='tools'){const [sb,qs]=(a||'').split('?');sub=sb||'';if(qs)CDQ=Object.fromEntries(new URLSearchParams(qs))}else if(a&&/^\d{4}-\d{2}-\d{2}$/.test(a))anchor=fromIso(a)}}
-function go(v,a,s){view=v;if(a)anchor=a;if(s!==undefined)sub=s;const h=v+(v==='tools'?(sub?'/'+sub:''):a?'/'+iso(anchor):'');
+function go(v,a,s){if(v==='countdown'){v='tools';s='countdown'}view=v;if(a)anchor=a;if(s!==undefined)sub=s;const h=v+(v==='tools'?(sub?'/'+sub:''):a?'/'+iso(anchor):'');
   if(!PAGE.static||(v===PAGE.view&&v!=='tools'))history.replaceState(null,'',PAGE.static?location.pathname+'#'+h:'#'+h);else{location.href=(PAGE.root||'./')+'#'+h;return}
   render();window.scrollTo({top:0})}
 
@@ -371,7 +372,7 @@ function seoBlock(){
 }
 function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t('siteName')+'</span><a href="'+BUILDER+'">'+(HE()?'לוחנו · בניית לוח שנה אישי להדפסה':'Luchenu · personal printed calendars')+'</a><a href="'+BASE+'../index.html">'+(HE()?'מסלולים ומחירים':'Plans & pricing')+'</a><span>'+(HE()?'הזמנים מחושבים אסטרונומית ואינם תחליף ללוח של רב הקהילה.':'Times are astronomical calculations.')+'</span>'}
 function renderNav(){
-  $('#nav').innerHTML=VIEWS.map(v=>'<a href="#'+v+'" data-nav="'+v+'"'+(v===view?' aria-current="page"':'')+'>'+t(v)+'</a>').join('');
+  $('#nav').innerHTML=VIEWS.map(v=>{const cur=v==='countdown'?view==='tools'&&sub==='countdown':v==='tools'?view==='tools'&&sub!=='countdown':v===view;return '<a href="#'+v+'" data-nav="'+v+'"'+(cur?' aria-current="page"':'')+'>'+t(v)+'</a>'}).join('');
   const sel=$('#city');const groups=[...new Set(CITIES.map(c=>c.g))];
   sel.innerHTML=groups.map(g=>'<optgroup label="'+esc(HE()?g:CITIES.find(c=>c.g===g).gen)+'">'+CITIES.filter(c=>c.g===g).map(c=>'<option value="'+c.id+'">'+esc(cityName(c))+'</option>').join('')+'</optgroup>').join('');sel.value=st.city;
   $('#lang').textContent=HE()?'English':'עברית';
@@ -389,7 +390,7 @@ function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts
 /* ---------- אירועים בממשק ---------- */
 document.addEventListener('click',e=>{
   const T2=e.target;
-  const nv=T2.closest('[data-nav]');if(nv){e.preventDefault();$('#nav').classList.remove('open');go(nv.dataset.nav,nv.dataset.nav==='month'?TODAY:null);return}
+  const nv=T2.closest('[data-nav]');if(nv){e.preventDefault();$('#nav').classList.remove('open');go(nv.dataset.nav,nv.dataset.nav==='month'?TODAY:null,nv.dataset.nav==='tools'?'':undefined);return}
   const tl=T2.closest('[data-tool]');if(tl){e.preventDefault();go('tools',null,tl.dataset.tool);return}
   const dy=T2.closest('[data-day]');if(dy){dayDialog(fromIso(dy.dataset.day));return}
   const md=T2.closest('[data-mode]');if(md){st.mode=md.dataset.mode;saveSt();render();return}

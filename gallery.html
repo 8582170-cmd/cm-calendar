@@ -171,6 +171,16 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .lb-pages.two .mp{width:min(620px,calc((100vh - 110px) * 297 / 420))}
 .lb-pages .mp.land{width:min(1000px,100%)}
 @media (max-width:560px){body{padding-inline:16px}.nav-links a:not(.btn){display:none}.gal{grid-template-columns:minmax(0,1fr)}}
+.mp .cdt{font-family:'Bellefair','Frank Ruhl Libre',serif;color:#a8646f;text-align:center;font-size:5.6cqw;margin-top:1cqw}
+.mp .cds{text-align:center;color:#8a7f72;font-size:2.6cqw;margin-bottom:1.4cqw}
+.mp .cdg{flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:auto repeat(5,1fr);gap:.8cqw}
+.mp .cdh{text-align:center;color:#b0894a;font-weight:700;font-size:2.4cqw}
+.mp .cdc{border:.25cqw solid #e6cdb0;border-radius:1.4cqw;display:grid;place-items:center;background:#fff}
+.mp .cdc b{font-family:'Bellefair',serif;color:#b0894a;font-size:4.4cqw;font-weight:400}
+.mp .cdc.wk{border-color:#c9a45c}
+.mp .cdc.goal{background:#a8646f}
+.mp .cdo{position:absolute;width:24cqw;height:24cqw;background:radial-gradient(circle at 30% 30%,#e8b7bf 0 9%,transparent 10%),radial-gradient(circle at 60% 55%,#e8b7bf 0 7%,transparent 8%),radial-gradient(circle at 20% 70%,#c9a45c 0 4%,transparent 5%);opacity:.8}
+.mp .cdo.tl{top:0;left:0}.mp .cdo.br{bottom:0;right:0;transform:rotate(180deg)}
 </style>
 </head>
 <body>
@@ -260,6 +270,10 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     else if(o.kind==='hist')body=head({title:'תשרי',sub:'דברי הימים',small:'העמוד העליון'})+'<div class="hist">'+[['א׳','רבנו אמנון ממגנצא, בעל ״ונתנה תוקף״'],['ג׳','המגן אברהם'],['ד׳','ר׳ אברהם דנציג, בעל ״חיי אדם״'],['ט׳','הגרי״ז מבריסק'],['י״ג','רבי עקיבא איגר'],['י״ח','רבי נחמן מברסלב'],['י״ט','הגאון מוילנא'],['י״ט','היהודי הקדוש מפשיסחא'],['כ״ה','רבי לוי יצחק מברדיצ׳ב'],['כ״ה','החתם סופר'],['כ״ז','ר׳ יצחק הזקן, מבעלי התוספות'],['ל׳','המהר״ץ חיות']].map(x=>'<p><b>'+x[0]+'</b> '+x[1]+'</p>').join('')+(o.dense?Array.from({length:70},(_,i)=>'<p class="gl" style="width:'+(55+(i*37)%45)+'%"></p>').join(''):'')+'</div>';
     else if(o.kind==='week'){
       body=head({title:'שבוע',sub:'בראשית',small:'כ״ג–כ״ט תשרי'})+'<div class="wk">'+['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'].map((n,i)=>'<div class="row'+(i===6?' sh':'')+'"><div class="lab"><b>'+heb(23+i)+'</b>'+n+(i===0?'<span class="tag">אסרו חג</span>':i===1?'<span class="tag">יום השנה לסבא משה</span>':i===5?'<span class="tag">הדלקה 17:34</span>':i===6?'<span class="tag">בראשית</span>':'')+'</div><div class="lines"></div></div>').join('')+'</div>';
+    }else if(o.kind==='countdown'){
+      let c='';for(let i=0;i<7;i++)c+='<div class="cdh">'+['א','ב','ג','ד','ה','ו','ש'][i]+'</div>';
+      for(let n=34;n>=0;n--)c+='<div class="cdc'+(n===0?' goal':'')+(n%7===0&&n?' wk':'')+'"><b>'+(n===0?'💍':n)+'</b></div>';
+      body='<div class="cdo tl"></div><div class="cdo br"></div><div class="cdt">עוד כמה ימים לחתונה?</div><div class="cds">כ״ט טבת · עוד 34 ימים</div><div class="cdg">'+c+'</div>';
     }else if(o.kind==='day'){
       body=head({title:'יום ה׳',sub:'י״ז תשרי',small:'חוה״מ סוכות'})+'<div class="dy"><div class="box"><div class="big">י״ז</div><div class="ms" style="flex:1"><b>זמני היום</b>'+[['עלות','5:07'],['נץ','6:31'],['סוזק״ש','9:29'],['חצות','12:28'],['שקיעה','18:26'],['צאה״כ','18:44']].map(r=>'<div class="r"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>').join('')+'</div><div class="ms" style="flex:0 0 22%"><b>אירועים</b><div class="r"><span>יום הולדת לנעמה</span></div></div></div><div class="hours">'+Array.from({length:14},(_,i)=>'<div class="h">'+(7+i)+':00</div>').join('')+'</div></div>';
     }else if(o.kind==='table'){
@@ -295,6 +309,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     {f:'family',title:'עם שער',desc:'עמוד ראשון עם תמונה וכותרת, למשל ״הלוח של משפחת כהן״.',chips:['עמוד שער','תמונה'],pages:[{kind:'cover',art:'a5',coverTitle:'הלוח של משפחת כהן',acc:'#2f2f3a'}],preset:'cover'},
     {f:'size',title:'שולחני',desc:'לוח לרוחב בגודל 21×15 ס״מ, לעמידה על השולחן.',chips:['שולחני','לרוחב'],pages:[{land:1,img:'a4',acc:'#3d5a2a'}],preset:'desk'},
     {f:'size',title:'למקרר',desc:'A5 עם תמונות קטנות בתוך הימים החשובים.',chips:['A5','תמונות בימים'],pages:[{small:1,cellImg:1,fam:1,acc:'#6b2d4f'}],preset:'fridge'},
+    {f:'view',title:'ספירה לאחור לחתונה או לבר מצווה',desc:'כמה ימים נשארו: טבלה כמו לוח חודשי, לוח מספרים, דף ארוך לגלילה או שרשרת נייר. עם תמונות ומשפטים יפים, ו־6 עיצובים: כלה, בר מצווה, בת מצווה, ילדים ותינוק.',chips:['ספירה לאחור','כלה','בר מצווה'],pages:[{kind:'countdown',acc:'#a8646f'}],preset:'countdown'},
     {f:'view',title:'מתכנן שבועי',desc:'עמוד לכל שבוע, עם מקום לכתוב בכל יום, חגים ואירועים.',chips:['שבועי','מקום לכתיבה'],pages:[{kind:'week',acc:'#1e5a63'}],preset:'week'},
     {f:'view',title:'יומן יומי',desc:'עמוד לכל יום עם שעות, כל זמני היום והאירועים של אותו יום.',chips:['יומי','שעות'],pages:[{kind:'day',acc:'#24427a'}],preset:'day'},
     {f:'view',title:'טבלה',desc:'שורה לכל יום וטור לכל זמן, לתלייה בבית הכנסת או בישיבה.',chips:['טבלה','זמנים'],pages:[{kind:'table',acc:'#7a4a17'}],preset:'table'}
