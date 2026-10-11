@@ -1,7 +1,7 @@
 /* לוחנו: הגדרת המסלולים. מקור אחד לדף הבית, לדף המסלולים ולמגבלות בבונה הלוח. */
 (function(){
   'use strict';
-  const ALL = {views:true, banners:true, extraPages:true, advZmanim:true, customSize:true, imageEditor:true, fonts:true};
+  const ALL = {views:true, banners:true, extraPages:true, advZmanim:true, customSize:true, imageEditor:true, fonts:true, tfilot:true};
   const PLANS = [
     {id:'free',  name:'ניסיון',  tagline:'בונים, רואים, מתלהבים',
      price:{ils:0, usd:0}, months:13, events:30, downloads:0, watermark:true,
@@ -9,20 +9,20 @@
      bullets:['בונים ורואים את כל השנה, עם סימן מים חזק','כל האפשרויות פתוחות לניסיון','חודש אחד מלא להורדה, עם סימן מים עדין','פעם אחת לכל כתובת מייל']},
     {id:'basic', name:'בסיסי',   tagline:'לוח חודשי פשוט ויפה',
      price:{ils:19, usd:4.9}, months:13, events:30, downloads:1, watermark:false,
-     features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true},
+     features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true, tfilot:false},
      bullets:['שנה שלמה, לוח חודשי','עד 30 אירועים משפחתיים','זמני היום ב־4 שיטות עיקריות','הורדה אחת של לוח מוכן']},
     {id:'family',name:'משפחתי',  tagline:'לכל המשפחה המורחבת',
      price:{ils:49, usd:14}, months:13, events:120, downloads:2, watermark:false,
-     features:{views:true, banners:true, extraPages:true, advZmanim:false, customSize:false, imageEditor:true, fonts:true},
+     features:{views:true, banners:true, extraPages:true, advZmanim:false, customSize:false, imageEditor:true, fonts:true, tfilot:false},
      bullets:['כל התצוגות: חודשי, שבועי, יומי וטבלה','עד 120 אירועים משפחתיים','באנרים, עמודי ברכות ופרסומות','עורך תמונות','2 הורדות של לוח מוכן']},
     {id:'full',  name:'מלא',     tagline:'הכל פתוח, בלי חשבונות',
      price:{ils:99, usd:30}, months:13, events:Infinity, downloads:5, watermark:false, best:true,
      features:{...ALL},
-     bullets:['אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','5 הורדות של לוח מוכן']}
+     bullets:['אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','זמני תפילות לבית הכנסת, מחושבים לכל יום','5 הורדות של לוח מוכן']}
   ];
   const FEATURE_NAMES = {
     views:'תצוגה שבועית, יומית וטבלה', banners:'באנרים בצדי הדף', extraPages:'עמודים נוספים (ברכות, פרסומות, הערות)',
-    advZmanim:'הגדרות זמנים מתקדמות', customSize:'גודל דף לפי מידה', imageEditor:'עורך התמונות', events:'אירועים משפחתיים נוספים',
+    advZmanim:'הגדרות זמנים מתקדמות', tfilot:'זמני תפילות בבית הכנסת', customSize:'גודל דף לפי מידה', imageEditor:'עורך התמונות', events:'אירועים משפחתיים נוספים',
     months:'כל חודשי השנה', download:'הורדה והדפסה של הלוח'
   };
   const KEY = 'luchenu-plan', DL = 'luchenu-downloads';

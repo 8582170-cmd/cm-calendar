@@ -70,6 +70,7 @@
             <label><input type="radio" name="view" value="week"> שבועי</label>
             <label><input type="radio" name="view" value="day"> יומי</label>
             <label><input type="radio" name="view" value="table"> טבלה</label>
+            <label><input type="radio" name="view" value="year"> שנתי</label>
           </div>
         </div>
         <div class="row" id="rangeRow">
@@ -97,7 +98,7 @@
           <option value="both">עברי ולועזי באותו גודל</option>
           <option value="hebOnly">רק עברי</option>
           <option value="gregOnly">רק לועזי</option></select></label>
-        <div class="row" id="hebYearRow"><label class="fld">שנה עברית<select id="hebYear"></select></label><label class="fld">חודש פתיחה<select id="hebStart"></select></label></div>
+        <div class="row" id="hebYearRow"><label class="fld">שנה עברית<select id="hebYear"></select></label><label class="fld">חודש פתיחה<select id="hebStart"></select></label><button class="btn small" type="button" id="nextYear" title="אותו לוח עם כל האירועים וההגדרות, לשנה הבאה">לשנה הבאה ←</button></div>
         <div class="row" id="gregYearRow">
           <label class="fld">שנה לועזית<input id="gregYear" type="number" min="1900" max="2200"></label>
           <label class="fld">חודש פתיחה<select id="gregStart"></select></label>
@@ -113,7 +114,9 @@
           <label class="chk"><input type="checkbox" data-opt="showMevarchim"> שבת מברכים</label>
           <label class="chk"><input type="checkbox" data-opt="showOmer"> ספירת העומר</label>
           <label class="chk"><input type="checkbox" data-opt="showIsru"> אסרו חג</label>
+          <label class="chk"><input type="checkbox" data-opt="showChametz"> סוף זמן אכילת וביעור חמץ</label>
         </div>
+        <label class="fld">הדלקת נרות חנוכה<select id="chanukah"><option value="tzeit">בצאת הכוכבים</option><option value="sunset">בשקיעה</option><option value="none">לא להציג</option></select></label>
         <label class="fld" id="ytsgRow">יום טוב שני של גלויות<select id="ytsg"><option value="normal">רגיל, כמו חג</option><option value="faint">חלש: קטן ואפור</option><option value="none">לא להציג</option></select></label>
       </div>
     </details>
@@ -141,6 +144,7 @@
         <p class="hint">לחצו על כל יום בלוח כדי להוסיף לו טקסט, תמונה, יום הולדת, יארצייט או תזכורת. אפשר גם לגרור תמונה ישר לתוך יום. אירועים שחוזרים כל שנה יופיעו לבד גם בלוחות הבאים.</p>
         <div class="listbox" id="evList"></div>
         <button class="btn" type="button" id="addEvSide">הוספת אירוע</button>
+        <div class="row ev-tools"><button class="btn small" type="button" id="evImport">ייבוא מקובץ</button><button class="btn small" type="button" id="evIcs">תזכורות ליומן בטלפון</button></div>
       </div>
     </details>
 
@@ -242,6 +246,15 @@
       </div>
     </details>
 
+    <details class="sec" data-step="3" id="tfSec">
+      <summary>זמני תפילות בבית הכנסת <span class="tag">מסלול מלא</span></summary>
+      <div class="sec-body">
+        <p class="hint">לגבאים ולמוסדות: מגדירים כל תפילה פעם אחת, בשעה קבועה או ביחס לזמן היום (למשל מנחה 15 דקות לפני השקיעה), והלוח מחשב אותה לכל יום ומציג אותה בתוך הימים.</p>
+        <div id="tfList" class="tf-list"></div>
+        <div class="row"><button class="btn" type="button" id="tfAdd">+ תפילה</button><button class="btn" type="button" id="tfSample">דוגמה מוכנה</button></div>
+      </div>
+    </details>
+
     <details class="sec" data-step="4">
       <summary>מולד, קידוש לבנה, תקופות ולימוד יומי</summary>
       <div class="sec-body">
@@ -312,6 +325,7 @@
           <label class="chk"><input type="checkbox" id="cover"> עמוד שער</label>
           <label class="chk"><input type="checkbox" id="showCaption"> שורת טקסט לתמונה</label>
           <label class="chk"><input type="checkbox" id="dedication"> שורת הקדשה או חסות בכל חודש</label>
+          <label class="chk"><input type="checkbox" data-opt="credit"> שורה קטנה "נוצר בלוחנו" בתחתית הדף <small class="hint" id="creditHint"></small></label>
         </div>
       </div>
     </details>

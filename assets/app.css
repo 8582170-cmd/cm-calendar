@@ -544,3 +544,45 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .dst-box{border-top:1px solid var(--line);padding-top:10px;margin-top:6px;display:flex;flex-direction:column;gap:8px}
 .dst-custom{display:flex;flex-direction:column;gap:8px}
 .dst-l{font-weight:700;min-width:44px;align-self:center}
+
+/* זמן מודגש */
+.zb,.d-z .zb,.wd-z .zb{font-weight:800}
+td.zb{font-weight:800}
+.zr.zb span,.zr.zb b,.zl.zb span,.zl.zb b{font-weight:800}
+.zs-bold{font-size:.85em}
+.pg-foot .credit{white-space:nowrap;opacity:.85}
+
+/* זמני תפילות */
+.tf-list{display:flex;flex-direction:column;gap:10px}
+.tf-row{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.tf-row .row{align-items:flex-end;flex-wrap:wrap}
+.tf-row input[type=number]{width:5em}
+.tf-ex{flex:1}
+.e.tfila{font-weight:600;font-variant-numeric:tabular-nums}
+
+.ev-tools{flex-wrap:wrap;margin-top:6px}
+.ix-list{max-height:220px;overflow:auto;font-size:.9em}
+.conv{background:var(--acc-t,#f3efe6);border-radius:8px;padding:6px 8px;flex-basis:100%}
+.conv .row{align-items:center}
+
+/* לוח שנתי */
+.year-page{display:flex;flex-direction:column;gap:calc(var(--u)*2.4)}
+.yr-title{font-family:var(--f-head);font-weight:700;color:var(--acc);text-align:center;font-size:calc(var(--u)*7)}
+.yr-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--yc),1fr);gap:calc(var(--u)*2.2) calc(var(--u)*2.8);align-content:start}
+.yr-mo{min-width:0;display:flex;flex-direction:column;gap:calc(var(--u)*.6)}
+.yr-mh{font-family:var(--f-head);font-weight:700;color:var(--acc);font-size:calc(var(--u)*3.3);border-bottom:.3mm solid var(--acc);padding-bottom:calc(var(--u)*.4)}
+.yr-mh small{font-family:var(--f-body);font-weight:400;color:var(--p-mute);font-size:.62em}
+.yr-days{display:grid;grid-template-columns:repeat(7,1fr);gap:calc(var(--u)*.25);text-align:center}
+.yr-wd{font-size:calc(var(--u)*2);color:var(--p-mute);font-weight:700}
+.yr-d{position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.05;padding:calc(var(--u)*.35) 0;border-radius:calc(var(--u)*.6);font-size:calc(var(--u)*2.25*var(--ts))}
+.yr-d b{font-weight:600}
+.yr-d i{font-style:normal;font-size:.68em;color:var(--p-mute)}
+.yr-d.sh{background:var(--acc-t)}
+.yr-d.sh b{color:var(--acc)}
+.yr-d.ch{background:var(--acc);}
+.yr-d.ch b,.yr-d.ch i{color:#fff}
+.yr-d.pe::after{content:"";position:absolute;top:calc(var(--u)*.3);left:calc(var(--u)*.4);width:calc(var(--u)*.9);height:calc(var(--u)*.9);border-radius:50%;background:#c2410c}
+.yr-notes{display:flex;flex-direction:column;font-size:calc(var(--u)*1.85*var(--ts));line-height:1.25}
+.yr-notes span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yn-h{color:var(--acc);font-weight:600}
+.yn-p{color:#7a3b16}
