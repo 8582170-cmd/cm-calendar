@@ -12,7 +12,7 @@
      features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true, tfilot:false},
      bullets:['שנה שלמה, לוח חודשי','עד 30 אירועים משפחתיים','זמני היום ב־4 שיטות עיקריות','הורדה אחת של לוח מוכן']},
     {id:'family',name:'משפחתי',  tagline:'לכל המשפחה המורחבת',
-     price:{ils:49, usd:14}, months:13, events:120, downloads:2, watermark:false,
+     price:{ils:49, usd:14}, intro:50, months:13, events:120, downloads:2, watermark:false,
      features:{views:true, banners:true, extraPages:true, advZmanim:false, customSize:false, imageEditor:true, fonts:true, tfilot:false},
      bullets:['כל התצוגות: חודשי, שבועי, יומי וטבלה','עד 120 אירועים משפחתיים','באנרים, עמודי ברכות ופרסומות','עורך תמונות','2 הורדות של לוח מוכן']},
     {id:'full',  name:'מלא',     tagline:'הכל פתוח, בלי חשבונות',
@@ -39,6 +39,11 @@
     useDownload(){ put(DL, String(this.downloadsUsed() + 1)) },
     downloadsLeft(){ return Math.max(0, this.current().downloads - this.downloadsUsed()) },
     price(p, cur){ const v = p.price[cur]; return v === 0 ? 'חינם' : (cur === 'ils' ? v + ' ₪' : '$' + v) },
+    fmt(v, cur){ v = Math.round(v * 10) / 10; return cur === 'ils' ? v + ' ₪' : '$' + v },
+    /* הנחת היכרות: אחוז הנחה ברכישה הראשונה של כל נרשם (נאכף בתשלום, בשלב 4) */
+    introPrice(p, cur){ return p.intro ? this.fmt(p.price[cur] * (100 - p.intro) / 100, cur) : null },
+    priceHTML(p, cur, en){ const ip = this.introPrice(p, cur); if(!ip) return this.price(p, cur).replace('חינם', en ? 'Free' : 'חינם');
+      return '<s class="was">' + this.price(p, cur) + '</s> ' + ip + '<span class="intro-tag">' + (en ? p.intro + '% off your first purchase' : p.intro + '% הנחה ברכישה הראשונה') + '</span>' },
     /* מי שמסלול ממנו חסרה יכולת: המסלול הזול ביותר שכולל אותה */
     cheapestWith(feature){ return PLANS.find(p => p.id !== 'free' && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' ? true : p.features[feature])) || PLANS[3] }
   };

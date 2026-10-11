@@ -2486,7 +2486,7 @@ function lockedPage(months){
 }
 function planCards(highlight){
   const cur=PLAN();
-  return '<div class="plan-cards">'+LP.PLANS.filter(p=>p.id!=='free').map(p=>'<div class="plan-card'+(p.id===highlight?' hl':'')+(p.id===cur.id?' cur':'')+'"><div class="pc-name">'+esc(p.name)+'</div><div class="pc-price">'+LP.price(p,'ils')+'<small> · '+LP.price(p,'usd')+'</small></div><ul>'+p.bullets.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+(p.id===cur.id?'<div class="pc-cur">המסלול שלכם</div>':'<button class="btn'+(p.id===highlight?' primary':'')+'" type="button" data-pick="'+p.id+'">בחירה</button>')+'</div>').join('')+'</div>';
+  return '<div class="plan-cards">'+LP.PLANS.filter(p=>p.id!=='free').map(p=>'<div class="plan-card'+(p.id===highlight?' hl':'')+(p.id===cur.id?' cur':'')+'"><div class="pc-name">'+esc(p.name)+'</div><div class="pc-price">'+(p.intro?'<s>'+LP.price(p,'ils')+'</s> '+LP.introPrice(p,'ils')+'<small> · '+LP.introPrice(p,'usd')+'</small><div class="intro-tag">'+p.intro+'% הנחה ברכישה הראשונה</div>':LP.price(p,'ils')+'<small> · '+LP.price(p,'usd')+'</small>')+'</div><ul>'+p.bullets.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+(p.id===cur.id?'<div class="pc-cur">המסלול שלכם</div>':'<button class="btn'+(p.id===highlight?' primary':'')+'" type="button" data-pick="'+p.id+'">בחירה</button>')+'</div>').join('')+'</div>';
 }
 function openUpgrade(reason){
   if(!LP)return;

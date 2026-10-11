@@ -634,3 +634,6 @@ td.zb{font-weight:800}
 .zexp b{color:var(--p-ink,inherit);font-weight:600}
 .yzp-sec .zexp{flex-direction:column;gap:calc(var(--u)*.2)}
 .zl-m{display:block;font-size:.72em;color:var(--p-mute);font-weight:400}
+
+.intro-tag{font-size:12px;font-weight:700;color:#b4231b;margin-top:2px}
+.pc-price s{color:var(--mute);font-weight:500}

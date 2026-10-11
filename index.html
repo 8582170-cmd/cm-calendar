@@ -111,6 +111,8 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .plan .sub{color:var(--mute);font-size:15px;margin:-6px 0 0}
 .price{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
 .price small{font-size:14px;font-weight:600;color:var(--mute)}
+.price .was{font-size:20px;color:var(--mute);font-weight:600}
+.intro-tag{display:block;margin-top:6px;font-size:13px;font-weight:700;color:#b4231b}
 .plan ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:15.5px;flex:1}
 .plan li{display:flex;gap:8px;align-items:flex-start}
 .plan li::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-top:.6em}
@@ -305,7 +307,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   let cur='ils';try{cur=localStorage.getItem('luchenu-cur')||'ils'}catch(e){}
   function draw(){
     grid.innerHTML=P.PLANS.map(p=>'<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+
-      '<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.price(p,cur)+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div>'+
+      '<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,cur)+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div>'+
       '<ul>'+p.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul>'+
       '<a class="btn '+(p.best?'btn-primary':'btn-ghost')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a></div>').join('');
     document.getElementById('curIls').setAttribute('aria-pressed',cur==='ils');
