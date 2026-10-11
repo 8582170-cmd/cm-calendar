@@ -513,3 +513,21 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .yz-hint-page span{color:var(--p-mute)}
 .yz-hint-page .yh-b{display:flex;gap:calc(var(--u)*2);flex:none}
 .yz-hint-page .btn{font-size:calc(var(--u)*3.4);padding:.45em 1em}
+
+/* ---------- ימים צבועים ---------- */
+[data-date].hl{background:color-mix(in srgb,var(--hl) 75%,var(--p-paper,#fff))!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+[data-date].hl.hl2{background:linear-gradient(135deg,color-mix(in srgb,var(--hl) 75%,#fff) 50%,color-mix(in srgb,var(--hl2) 75%,#fff) 50%)!important}
+.painting [data-date]{cursor:crosshair}
+.painting [data-date]:hover{box-shadow:inset 0 0 0 calc(var(--u,1mm)*.8) var(--acc)}
+.hl-lists{display:flex;flex-direction:column;gap:6px}
+.hl-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto auto auto;align-items:center;gap:6px;padding:4px;border-radius:8px}
+.hl-row.on{background:var(--soft)}
+.hl-row input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+.hl-row input[type=text]{min-width:0;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--panel)}
+.hl-row small{color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (max-width:480px){.hl-row{grid-template-columns:34px minmax(0,1fr) auto}.hl-row small{display:none}}
+.hl-bar{position:fixed;z-index:80;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--accent);border-radius:999px;padding:6px 8px 6px 14px;box-shadow:0 8px 24px rgb(0 0 0 / .18);max-width:calc(100vw - 32px)}
+.hl-bar i{width:18px;height:18px;border-radius:50%;flex:none;border:1px solid var(--line)}
+.hl-legend{display:flex;flex-wrap:wrap;gap:calc(var(--u)*1.5) calc(var(--u)*4);font-size:calc(var(--u)*2.6);color:var(--p-ink);padding-top:calc(var(--u)*1.5);flex:none}
+.hl-legend span{display:inline-flex;align-items:center;gap:calc(var(--u)*1)}
+.hl-legend i{width:calc(var(--u)*3);height:calc(var(--u)*3);border-radius:calc(var(--u)*.6);-webkit-print-color-adjust:exact;print-color-adjust:exact}

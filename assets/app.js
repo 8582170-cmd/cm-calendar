@@ -1289,6 +1289,7 @@ function render(){
   const sz=s.size==='custom'?'מותאם':SIZES[s.size].label;
   $('#stageMeta').textContent=RS.count+' עמודים · '+sz+' · '+Math.round(W)+'×'+Math.round(H)+' מ״מ · '+place().name;
   renderAds();
+  hlApply();
   fit();
 }
 stage.addEventListener('click',e=>{
@@ -1722,6 +1723,7 @@ function openImageOrganizer(){
 /* ---------- day clicks & drops ---------- */
 stage.addEventListener('click',e=>{
   const c=e.target.closest('[data-date]');if(!c||e.target.closest('[contenteditable]'))return;
+  if(PAINT){hlToggle(c.dataset.date);return}
   openEventEditor({date:c.dataset.date});
 });
 stage.addEventListener('keydown',e=>{const c=e.target.closest&&e.target.closest('[data-date]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openEventEditor({date:c.dataset.date})}});
@@ -2172,6 +2174,58 @@ $('#swatches2').addEventListener('click',e=>{const b=e.target.closest('.sw');if(
 $('#textScale2').addEventListener('input',e=>{state.s.textScale=+e.target.value;$('#textScaleVal2').textContent=e.target.value+'%';$('#textScale').value=e.target.value;$('#textScaleVal').textContent=e.target.value+'%';save();rerender()});
 if(!framed){$('#printBtn2').hidden=false;$('#homePrint').hidden=false}
 $('#printBtn2').onclick=$('#homePrint').onclick=()=>doPrint();
+/* ---------- ימים צבועים ---------- */
+const HL_COLORS=['#f6d365','#9bd3ae','#a7c7e7','#f4a6a6','#c9b6e4','#ffcf99','#b5e2e0','#e6c9a8','#d4e157','#f8bbd0'];
+let PAINT=null;
+function hlLists(){const s=state.s;if(!Array.isArray(s.hl))s.hl=[];return s.hl}
+function hlFor(isoD){return hlLists().filter(l=>l.show!==false&&l.days&&l.days[isoD])}
+function hlPaintCell(c){
+  const ls=hlFor(c.dataset.date);c.classList.toggle('hl',ls.length>0);
+  if(!ls.length){c.style.removeProperty('--hl');c.style.removeProperty('--hl2');return}
+  c.style.setProperty('--hl',ls[0].color);c.style.setProperty('--hl2',(ls[1]||ls[0]).color);c.classList.toggle('hl2',ls.length>1);
+  c.title=ls.map(l=>l.name).join(' · ');
+}
+function hlApply(){
+  stage.querySelectorAll('[data-date]').forEach(hlPaintCell);
+  stage.querySelectorAll('.hl-legend').forEach(n=>n.remove());
+  if(state.s.hlLegend)stage.querySelectorAll('.page').forEach(p=>{
+    const used=new Map();p.querySelectorAll('[data-date]').forEach(c=>hlFor(c.dataset.date).forEach(l=>used.set(l.id,l)));
+    if(!used.size)return;const g=el('div','hl-legend');
+    used.forEach(l=>g.insertAdjacentHTML('beforeend','<span><i style="background:'+esc(l.color)+'"></i>'+esc(l.name)+'</span>'));
+    const foot=p.querySelector('.pg-foot');if(foot)foot.before(g);else p.appendChild(g);
+  });
+  stage.classList.toggle('painting',!!PAINT);
+}
+function hlToggle(isoD){
+  const l=hlLists().find(x=>x.id===PAINT);if(!l)return;l.days=l.days||{};
+  if(l.days[isoD])delete l.days[isoD];else l.days[isoD]=1;
+  save();stage.querySelectorAll('[data-date="'+isoD+'"]').forEach(hlPaintCell);renderHl(true);
+  if(state.s.hlLegend)hlApply();
+}
+function hlPaintBar(){
+  let b=$('#hlBar');const l=hlLists().find(x=>x.id===PAINT);
+  if(!l){if(b)b.remove();stage.classList.remove('painting');return}
+  if(!b){b=el('div','hl-bar no-print');b.id='hlBar';document.body.appendChild(b)}
+  b.innerHTML='<i style="background:'+esc(l.color)+'"></i><span>צובעים: <b>'+esc(l.name)+'</b>. לוחצים על ימים בלוח.</span><button class="btn primary small" type="button" id="hlDone">סיום</button>';
+  b.querySelector('#hlDone').onclick=()=>{PAINT=null;hlPaintBar();renderHl()};
+  stage.classList.add('painting');
+}
+function renderHl(light){
+  const L=hlLists(),box=$('#hlLists');if(!box)return;
+  $('#hlCount').textContent=L.length?L.length+'/10':'';$('#hlAdd').disabled=L.length>=10;
+  if(light){L.forEach(l=>{const n=box.querySelector('[data-hlc="'+l.id+'"]');if(n)n.textContent=Object.keys(l.days||{}).length+' ימים'});return}
+  box.innerHTML=L.length?L.map(l=>'<div class="hl-row'+(PAINT===l.id?' on':'')+'" data-hl="'+l.id+'"><input type="color" value="'+esc(l.color)+'" data-hlf="color" aria-label="צבע"><input type="text" value="'+esc(l.name)+'" data-hlf="name" aria-label="שם הרשימה"><small data-hlc="'+l.id+'">'+Object.keys(l.days||{}).length+' ימים</small><button class="btn small'+(PAINT===l.id?' primary':'')+'" type="button" data-hla="paint">'+(PAINT===l.id?'סיום':'לצבוע ימים')+'</button><button class="btn small" type="button" data-hla="vis" title="להציג או להסתיר בלוח">'+(l.show===false?'מוסתר':'מוצג')+'</button><button class="x" type="button" data-hla="del" aria-label="מחיקת הרשימה">×</button></div>').join(''):'<p class="hint">עדיין אין רשימות.</p>';
+}
+$('#hlAdd').onclick=()=>{const L=hlLists();if(L.length>=10)return;const id='h'+uid();L.push({id,name:'רשימה '+(L.length+1),color:HL_COLORS[L.length%10],days:{},show:true});PAINT=id;save();renderHl();hlPaintBar();hlApply()};
+$('#hlLists').addEventListener('input',e=>{const r=e.target.closest('[data-hl]'),f=e.target.dataset.hlf;if(!r||!f)return;const l=hlLists().find(x=>x.id===r.dataset.hl);if(!l)return;l[f]=e.target.value;save();if(f==='color'){hlApply();hlPaintBar()}else if(PAINT===l.id)hlPaintBar()});
+$('#hlLists').addEventListener('change',e=>{if(e.target.dataset.hlf){e.stopPropagation();if(state.s.hlLegend)hlApply()}},true);
+$('#hlLists').addEventListener('click',e=>{const b=e.target.closest('[data-hla]'),r=e.target.closest('[data-hl]');if(!b||!r)return;const L=hlLists(),l=L.find(x=>x.id===r.dataset.hl);if(!l)return;
+  const a=b.dataset.hla;
+  if(a==='paint'){PAINT=PAINT===l.id?null:l.id;hlPaintBar()}
+  else if(a==='vis'){l.show=l.show===false;save();hlApply()}
+  else if(a==='del'){if(b.dataset.sure){state.s.hl=L.filter(x=>x!==l);if(PAINT===l.id){PAINT=null;hlPaintBar()}save();hlApply()}else{b.dataset.sure='1';b.textContent='למחוק?';b.classList.add('danger');return}}
+  renderHl()});
+renderHl();
 /* ---------- מסלולים: עמוד נעול, שדרוג, הורדות ---------- */
 const LOCK_SVG='<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 0 1 6 0v3H9Z"/></svg>';
 function lockedPage(months){
