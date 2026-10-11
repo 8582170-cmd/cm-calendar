@@ -181,6 +181,8 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .mp .cdc.goal{background:#a8646f}
 .mp .cdo{position:absolute;width:24cqw;height:24cqw;background:radial-gradient(circle at 30% 30%,#e8b7bf 0 9%,transparent 10%),radial-gradient(circle at 60% 55%,#e8b7bf 0 7%,transparent 8%),radial-gradient(circle at 20% 70%,#c9a45c 0 4%,transparent 5%);opacity:.8}
 .mp .cdo.tl{top:0;left:0}.mp .cdo.br{bottom:0;right:0;transform:rotate(180deg)}
+.mp .z.zf{line-height:1.15}
+.mp .z.tf{color:var(--acc);font-weight:700}
 </style>
 </head>
 <body>
@@ -230,6 +232,8 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
   const svgUrl=k=>"url('data:image/svg+xml,"+encodeURIComponent(SVG[k])+"')";
   const t2=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
   const netz=d=>t2(382+Math.round((d-1)*18/29)), shk=d=>t2(1129-Math.round((d-1)*38/29));
+  /* זמני תפילות לדוגמה: מנחה X דקות לפני השקיעה, מעוגל ל־5 דקות */
+  const tfm=(d,before)=>{const m=1129-Math.round((d-1)*38/29)-before;return t2(Math.floor(m/5)*5)};
   /* month grid */
   function gridGreg(){
     /* ספטמבר 2026: 1 בספטמבר הוא יום שלישי, י״ט באלול */
@@ -254,7 +258,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
       if(o.hl&&((d>=1&&d<=2)||(d>=10&&d<=10)||(d>=14&&d<=23)))cls='hlA';
       if(o.hl&&(d===5||d===26))cls='hlB';
       const img=o.cellImg&&(d===17||d===24||d===5)?'<span class="ci" style="background:center/cover no-repeat '+svgUrl(d===17?'bday':d===24?'candle':'rings')+'"></span>':'';
-      h+='<div class="'+cls+'">'+img+'<div class="d"><b>'+heb(d)+'</b><i>'+g.getDate()+'</i></div>'+(m[1]?'<span class="t">'+m[1]+'</span>':'')+(o.fam&&FAM[d]?'<span class="f">'+FAM[d]+'</span>':'')+(o.zIn?'<span class="z">נץ '+netz(d)+'</span>':'')+(o.zShab&&ZSH[d]?'<span class="z">'+ZSH[d]+'</span>':'')+'</div>';
+      h+='<div class="'+cls+'">'+img+'<div class="d"><b>'+heb(d)+'</b><i>'+g.getDate()+'</i></div>'+(m[1]?'<span class="t">'+m[1]+'</span>':'')+(o.fam&&FAM[d]?'<span class="f">'+FAM[d]+'</span>':'')+(o.zIn?'<span class="z">נץ '+netz(d)+'</span>':'')+(o.zFull?'<span class="z zf">נץ '+netz(d)+'<br>ק״ש 9:2'+(d%10)+'<br>שקיעה '+shk(d)+'</span>':'')+(o.tf?'<span class="z tf">'+(dow===6?'שחרית 8:00 · מנחה '+tfm(d,40):dow===5?'מנחה '+tfm(d,-10)+' · ערבית':'שחרית 6:30 · מנחה '+tfm(d,15))+'</span>':'')+(o.zShab&&ZSH[d]?'<span class="z">'+ZSH[d]+'</span>':'')+'</div>';
     }
     for(let i=36;i<42;i++)h+='<div class="p"></div>';
     return '<div class="mg">'+h+'</div>';
@@ -298,6 +302,8 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     return '<div class="'+cls+'" style="--acc:'+(o.acc||'#1e5a63')+'"><div class="mpi">'+body+'</div></div>';
   }
   const ITEMS=[
+    {f:'org',wide:1,title:'זמנים ודברי הימים, לרוחב',desc:'שני עמודים לכל חודש, לתלייה זה מעל זה: למעלה עמוד מלא של אירועים בדברי ימי ישראל, ולמטה הלוח עם זמני היום בתוך כל יום, טבלת זמנים מלאה בטור ולימוד יומי עם ריבוע לסימון.',chips:['לרוחב','דברי הימים','זמנים בימים','טבלת זמנים','לימוד יומי'],pages:[{kind:'hist',dense:1,land:1,acc:'#7a1f3d'},{land:1,tight:1,zFull:1,zShab:1,acc:'#7a1f3d',zcol:1,learn:1}],preset:'scholar'},
+    {f:'org',title:'בית כנסת עם זמני תפילות',desc:'זמני שחרית, מנחה וערבית בתוך כל יום, מחושבים לפי השקיעה ומעוגלים ל־5 דקות, עם טבלת זמני שבת מתחת ללוח. במסלול המלא.',chips:['זמני תפילות','בית כנסת','מסלול מלא'],pages:[{acc:'#2f4f6f',theme:'block',tf:1,ztable:1,footR:'בית הכנסת · זמני התפילות לפי השקיעה'}],preset:'tfilot'},
     {f:'org',wide:1,title:'הכל כלול',desc:'כל מה שאפשר בעמוד אחד: זמני היום בטור, לימוד יומי עם מולד ותקופות, עמוד דברי הימים מעל, באנרים בשני הצדדים ותמונות בתוך הימים.',chips:['זמנים','לימוד יומי','מולד ותקופות','דברי הימים','באנרים','תמונות בימים'],pages:[{kind:'hist',dense:1,land:1,acc:'#1e5a63'},{land:1,tight:1,zShab:1,acc:'#1e5a63',zcol:1,learn:1,moon:1,cellImg:1,fam:1,bannerR:'בית הכנסת אהל משה',bannerL:'בברכת שנה טובה'}],preset:'all'},
     {f:'family',title:'משפחתי קלאסי',desc:'תמונה של המשפחה בראש כל חודש, ימי הולדת וימי שנה (יארצייטים) בתוך הימים, וזמני הדלקת נרות.',chips:['קיר A3','תמונה ולוח','קלאסי'],pages:[{img:'a1',cap:'תשרי בגליל',fam:1}],preset:'family'},
     {f:'family',title:'עמוד לתמונה, עמוד ללוח',desc:'לוח קיר שנפתח לשניים: תמונה גדולה למעלה, והחודש מתחת.',chips:['קיר','שני עמודים','עדין'],pages:[{kind:'photo',art:'a2',cap:'חופשה בים',theme:'soft',acc:'#24427a'},{theme:'soft',acc:'#24427a',fam:1}],preset:'split'},

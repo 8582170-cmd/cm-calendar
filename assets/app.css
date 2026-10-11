@@ -558,7 +558,7 @@ td.zb{font-weight:800}
 .tf-row .row{align-items:flex-end;flex-wrap:wrap}
 .tf-row input[type=number]{width:5em}
 .tf-ex{flex:1}
-.e.tfila{font-weight:600;font-variant-numeric:tabular-nums}
+.e.tfila{font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;overflow:visible;line-height:1.25}
 
 .ev-tools{flex-wrap:wrap;margin-top:6px}
 .ix-list{max-height:220px;overflow:auto;font-size:.9em}

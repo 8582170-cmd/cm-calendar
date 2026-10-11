@@ -2965,6 +2965,11 @@ syncPlanUI();
   /* הגעה מהלוח המקוון: #city-ID&hy-שנה */
   {const m=/^#city-([a-z]+)(?:&hy-(\d{4}))?$/.exec(window.location.hash||'');if(m){const c=CITIES.find(x=>x.id===m[1]);const s=state.s;if(c){s.city=c.id;s.il=c.il;s.candleMins=c.candle}if(m[2]){s.calType='heb';s.hebYear=+m[2];s.hebStart=7}save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   {const m=/^#preset-([a-z]+)$/.exec(window.location.hash||'');const P={
+    scholar:{layout:'full',theme:'ink',accent:'#7a1f3d',size:'wall',orient:'landscape',view:'month',yzHist:true,yzMode:'all',place:{yz:'page',learn:'col'},learn:{daf:true,nach:true,box:true},zmanimMode:'custom',
+      zmanim:{alot:true,sunrise:true,shma:true,tfila:true,chatzot:true,minchaG:true,plag:true,sunset:true,tzeit:true},
+      zplace:{sunrise:{day:1,col:1},shma:{day:1,col:1},chatzot:{day:1,col:1},sunset:{day:1,col:1},alot:{col:1},tfila:{col:1},minchaG:{col:1},plag:{col:1},tzeit:{col:1}}},
+    tfilot:{layout:'full',theme:'block',accent:'#2f4f6f',size:'wall',orient:'portrait',view:'month',zmanimMode:'table',place:{yz:'none',learn:'cell'},
+      tfilot:[{id:'t1',name:'שחרית',days:'weekday',mode:'fixed',time:'06:30'},{id:'t2',name:'שחרית',days:'shabbatChag',mode:'fixed',time:'08:00'},{id:'t3',name:'מנחה',days:'sunThu',mode:'rel',off:15,dir:'before',base:'sunset',round:5,rdir:'down'},{id:'t4',name:'מנחה',days:'friday',mode:'rel',off:10,dir:'after',base:'candle',round:5,rdir:'down'},{id:'t5',name:'מנחה',days:'shabbat',mode:'rel',off:40,dir:'before',base:'sunset',round:5,rdir:'down'},{id:'t6',name:'ערבית',days:'sunThu',mode:'fixed',time:'20:00'}]},
     countdown:{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',orient:'portrait',zmanimMode:'none',cover:false,cdTitle:'עוד כמה ימים לבר המצווה?'},
     family:{layout:'same',imgRatio:40,theme:'ink',accent:'#1e5a63',size:'wall',view:'month',zmanimMode:'shabbat'},
     split:{layout:'split',theme:'soft',accent:'#24427a',size:'wall',view:'month'},
