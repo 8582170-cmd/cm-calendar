@@ -26,7 +26,7 @@ TOOLS = {
                 'Hebrew date converter', 'Convert Gregorian dates to Hebrew dates and back, including after-sunset births.'),
     'barmitzvah': ('חישוב תאריך בר מצווה ובת מצווה', 'מחשבון בר מצווה ובת מצווה: התאריך העברי, יום השבת ופרשת השבוע של העלייה לתורה.',
                    'Bar Mitzvah & Bat Mitzvah date calculator', 'Find the Bar or Bat Mitzvah date, the Shabbat and the Torah portion.'),
-    'yahrzeit': ('חישוב יארצייט', 'מחשבון יארצייט: תאריכי האזכרה בשנים הקרובות לפי תאריך הפטירה.',
+    'yahrzeit': ('חישוב יום שנה (יארצייט)', 'מחשבון יום שנה (יארצייט): תאריכי האזכרה בשנים הקרובות לפי תאריך הפטירה.',
                  'Yahrzeit calculator', 'Upcoming yahrzeit dates from the date of passing.'),
     'days': ('חישוב ימים בין תאריכים', 'כמה ימים בין שני תאריכים, ומה התאריך בעוד מספר ימים, בעברי ובלועזי.',
              'Days between dates calculator', 'How many days between two dates, and the date N days from now.'),

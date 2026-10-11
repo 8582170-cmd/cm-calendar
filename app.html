@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>לוחנו · בניית הלוח</title>
-<meta name="description" content="בונים לוח שנה עברי־לועזי להדפסה: תמונות המשפחה, ימי הולדת ויארצייטים, וזמני היום לפי העיר והשיטה שלכם.">
+<meta name="description" content="בונים לוח שנה עברי־לועזי להדפסה: תמונות המשפחה, ימי הולדת וימי שנה (יארצייטים), וזמני היום לפי העיר והשיטה שלכם.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
@@ -20,7 +20,7 @@
       <button class="btn" id="sampleBtn" type="button" hidden>חודש לדוגמה בחינם</button>
       <button class="btn upgrade-btn" id="upgradeBtn" type="button">שדרוג מסלול</button>
       <button class="btn" id="modeBtn" type="button"></button>
-      <button class="btn" id="addEvTop" type="button" title="יום הולדת, יארצייט, תזכורת או תמונה ליום מסוים">הוספת אירוע ליום</button>
+      <button class="btn" id="addEvTop" type="button" title="יום הולדת, יום שנה (יארצייט), תזכורת או תמונה ליום מסוים">הוספת אירוע ליום</button>
       <button class="btn" id="bulkBtn" type="button" title="העלאת כמה תמונות ביחד, תצוגה מקדימה ושינוי הסדר">סידור תמונות</button>
       <button class="btn primary" id="printBtn" type="button" hidden>הדפסה</button>
     </div>
@@ -28,11 +28,11 @@
   <nav class="stepper" id="stepper" aria-label="שלבי בניית הלוח"></nav>
   <section class="welcome" id="welcome" hidden>
     <h2>לוח שנה משלכם, מוכן להדפסה</h2>
-    <p>בונים לוח עברי־לועזי עם תמונות המשפחה, ימי הולדת ויארצייטים, וזמני היום לפי העיר והשיטה שלכם. האשף מוביל אתכם שלב אחר שלב, והכל נשמר לשנים הבאות.</p>
+    <p>בונים לוח עברי־לועזי עם תמונות המשפחה, ימי הולדת וימי שנה (יארצייטים), וזמני היום לפי העיר והשיטה שלכם. האשף מוביל אתכם שלב אחר שלב, והכל נשמר לשנים הבאות.</p>
     <ul>
       <li><b>תמונות וטקסט</b>תמונה לכל חודש, ותמונות או ברכות בתוך הימים.</li>
       <li><b>זמני היום</b>לכל עיר בעולם, לפי מנהג אשכנז, ספרד ועוד.</li>
-      <li><b>תאריכים משפחתיים</b>ימי הולדת ויארצייטים שחוזרים כל שנה.</li>
+      <li><b>תאריכים משפחתיים</b>ימי הולדת וימי שנה (יארצייטים) שחוזרים כל שנה.</li>
       <li><b>כל גודל</b>לוח קיר, שולחני, למקרר או לכיס.</li>
     </ul>
     <button class="btn primary start" type="button" id="startBtn">התחל עכשיו</button>
@@ -53,7 +53,7 @@
   </section>
   <div class="notice howto" id="howto"><b>איך מתחילים:</b>
     <span><b>1.</b> בצד בוחרים שנה, תצוגה (חודשי, שבועי או יומי), עיר וגודל.</span>
-    <span><b>2.</b> לוחצים על כל יום בלוח כדי להוסיף לו יום הולדת, יארצייט, תזכורת או תמונה.</span>
+    <span><b>2.</b> לוחצים על כל יום בלוח כדי להוסיף לו יום הולדת, יום שנה (יארצייט), תזכורת או תמונה.</span>
     <span><b>3.</b> "סידור תמונות" מעלה כמה תמונות ביחד לחודשים, עם תצוגה מקדימה ושינוי סדר.</span>
     <span><b>4.</b> "+ הוספת עמוד כאן" בין העמודים מוסיף פרסומת, ברכה או דף הערות.</span>
     <button class="x" type="button" id="howtoClose" aria-label="סגירת ההסבר">×</button></div>
@@ -101,13 +101,13 @@
           <label class="fld">עד תאריך<input type="date" id="rangeTo"></label>
         </div>
         <p class="hint" id="viewHint"></p>
-        <label class="chk" id="splitColsRow"><input type="checkbox" id="splitCols"> טורים נפרדים בכל יום: חגים, אירועים אישיים ויארצייטים</label>
+        <label class="chk" id="splitColsRow"><input type="checkbox" id="splitCols"> טורים נפרדים בכל יום: חגים, אירועים אישיים וימי שנה (יארצייטים)</label>
         <div class="fld" id="tcolsRow">טורים בטבלה
           <div class="checks">
             <label class="chk"><input type="checkbox" data-tcol="zmanim"> זמני היום</label>
             <label class="chk"><input type="checkbox" data-tcol="holidays"> חגים ופרשה</label>
             <label class="chk"><input type="checkbox" data-tcol="personal"> אירועים אישיים</label>
-            <label class="chk"><input type="checkbox" data-tcol="yz"> יארצייטים</label>
+            <label class="chk"><input type="checkbox" data-tcol="yz"> ימי שנה (יארצייטים)</label>
             <label class="chk"><input type="checkbox" data-tcol="notes"> טור להערות</label>
           </div>
         </div>
@@ -154,7 +154,7 @@
             <li><b>בתוך הימים:</b> המידע כתוב בתוך המשבצת של כל יום, מתחת לתאריך.</li>
             <li><b>בטור:</b> טור צר ליד הלוח, עם שורה לכל יום שיש בו מידע. הימים נשארים נקיים ויש יותר מקום לכתיבה ולתמונות. בלחיצה על "+ הוספה ליד הלוח" בוחרים מה להוסיף (זמנים, אירועים, לימוד, תמונה או מודעה) ואיפה. אפשר כמה טורים, לכל אחד צד ורוחב, ובכל טור כמה דברים אחד מתחת לשני.</li>
             <li><b>לא להציג:</b> המידע לא מופיע בלוח בכלל.</li>
-            <li><b>ליארצייטים ודברי הימים יש הגדרה רביעית, "בעמוד נפרד מעל הלוח":</b> כל אירועי החודש מתולדות עם ישראל מודפסים בעמוד משלהם, שנתלה מעל עמוד הלוח של אותו חודש. מתאים כשיש הרבה אירועים שלא נכנסים בתוך הימים או בטור.</li>
+            <li><b>לימי שנה (יארצייטים) ודברי הימים יש הגדרה רביעית, "בעמוד נפרד מעל הלוח":</b> כל אירועי החודש מתולדות עם ישראל מודפסים בעמוד משלהם, שנתלה מעל עמוד הלוח של אותו חודש. מתאים כשיש הרבה אירועים שלא נכנסים בתוך הימים או בטור.</li>
           </ul>
           <p><b>הכלל:</b> כל סוג מידע שבחרתם להציג ולא שייך לאף טור מופיע בתוך הימים. למשל, סימנתם "לימוד יומי" ובניתם רק טור זמנים: הלימוד יופיע בתוך כל יום. אם רוצים אותו בטור, מוסיפים לו טור והוא עובר לשם.</p>
           <p>גם כשמוחקים טור, מה שהיה בו חוזר לתוך הימים ולא נעלם. כדי להוריד משהו מהלוח לגמרי, בוחרים בו במפורש "לא להציג".</p>
@@ -171,7 +171,7 @@
     <details class="sec" open data-step="5">
       <summary>אירועים ותזכורות <span class="tag" id="evCount"></span></summary>
       <div class="sec-body">
-        <p class="hint">לחצו על כל יום בלוח כדי להוסיף לו טקסט, תמונה, יום הולדת, יארצייט או תזכורת. אפשר גם לגרור תמונה ישר לתוך יום. אירועים שחוזרים כל שנה יופיעו לבד גם בלוחות הבאים.</p>
+        <p class="hint">לחצו על כל יום בלוח כדי להוסיף לו טקסט, תמונה, יום הולדת, יום שנה (יארצייט) או תזכורת. אפשר גם לגרור תמונה ישר לתוך יום. אירועים שחוזרים כל שנה יופיעו לבד גם בלוחות הבאים.</p>
         <div class="listbox" id="evList"></div>
         <button class="btn" type="button" id="addEvSide">הוספת אירוע</button>
         <div class="row ev-tools"><button class="btn small" type="button" id="evImport">ייבוא מקובץ</button><button class="btn small" type="button" id="evIcs">תזכורות ליומן בטלפון</button></div>
@@ -430,7 +430,7 @@
       <div class="sec-body">
         <p class="hint">מאגר "אירועים בדברי ימי ישראל": כ־3,450 רשומות של פטירות גדולי ישראל ואירועים בתולדות עם ישראל, לפי תאריך עברי.</p>
         <div class="fld">מה להציג בלוח
-          <div class="seg" role="radiogroup" aria-label="יארצייטים">
+          <div class="seg" role="radiogroup" aria-label="ימי שנה (יארצייטים)">
             <label><input type="radio" name="yzMode" value="none"> בלי</label>
             <label><input type="radio" name="yzMode" value="selected"> רק מסומנים</label>
             <label><input type="radio" name="yzMode" value="all"> כל המאגר</label>
@@ -449,7 +449,7 @@
         </div>
         <label class="chk"><input type="checkbox" id="yzHist"> כולל אירועים בדברי ימי ישראל (לא רק פטירות)</label>
 
-        <p class="hint">היכן היארצייטים מופיעים (בתוך הימים או בטור נפרד) קובעים ב"מה מופיע איפה".</p>
+        <p class="hint">היכן ימי השנה (יארצייטים) מופיעים (בתוך הימים או בטור נפרד) קובעים ב"מה מופיע איפה".</p>
         <p class="hint">בלוח שבועי ויומי יש יותר מקום, ולכן מוצגים שם עד פי שלושה.</p>
         <button class="btn primary" type="button" id="yzManage">ניהול "אירועים בדברי ימי ישראל": סימון, דילוג ועריכה</button>
         <div class="row"><button class="btn" type="button" id="yzReport">שליחת תיקונים, אירועים והערות למנהל האתר</button><button class="btn" type="button" id="yzInbox" hidden>דיווחים שהתקבלו</button></div>

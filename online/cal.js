@@ -15,12 +15,12 @@ const BUILDER=BASE+'../app.html';
 const T={
  he:{siteName:'לוח עברי',city:'עיר',menu:'תפריט',month:'לוח חודשי',year:'לוח שנתי',holidays:'חגים ומועדים',zmanim:'זמני היום',shabbat:'זמני שבת',tools:'כלים',reminders:'תזכורות',
   today:'היום',prev:'הקודם',next:'הבא',prevYear:'שנה אחורה',nextYear:'שנה קדימה',hebMode:'עברי',gregMode:'לועזי',jump:'קפיצה לתאריך',go:'מעבר',
-  print:'הדפסה ואפשרויות נוספות',printSub:'לוח מעוצב להדפסה, עם התמונות, ימי ההולדת והיארצייטים שלכם',
+  print:'הדפסה ואפשרויות נוספות',printSub:'לוח מעוצב להדפסה, עם התמונות, ימי ההולדת וימי השנה (יארצייטים) שלכם',
   ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'בלוחנו בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
   sunrise:'הנץ',sunset:'שקיעה',candles:'הדלקת נרות',havdalah:'יציאה',parasha:'פרשת השבוע',nextHoliday:'החג הבא',inDays:n=>n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים',
   daysAgo:n=>n===1?'אתמול':'לפני '+n+' ימים',fromToday:'מהיום',addRem:'הוספת תזכורת',note:'הערה ליום הזה',color:'צבע ליום',save:'שמירה',del:'מחיקה',close:'סגירה',
   showOmer:'ספירת העומר',showTimes:'הדלקה ויציאה',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
-  convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יארצייט',
+  convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יום שנה (יארצייט)',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
  en:{siteName:'Hebrew Calendar',city:'City',menu:'Menu',month:'Month',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
@@ -219,7 +219,7 @@ function viewTools(){
     [['countdown',HE()?'כמה ימים נשארו לחתונה, לבר המצווה או ללידה. עם קישור לשיתוף ולוח מעוצב להדפסה.':'Days left until the wedding, Bar Mitzvah or birth, with a share link and a printable design.'],
      ['convert',HE()?'מתאריך לועזי לעברי ומעברי ללועזי, כולל לידה אחרי השקיעה.':'Gregorian ↔ Hebrew, including after-sunset births.'],
      ['barmitzvah',HE()?'תאריך בר / בת המצווה, יום השבת ופרשת השבוע.':'Bar/Bat Mitzvah date, Shabbat and Torah portion.'],
-     ['yahrzeit',HE()?'תאריכי היארצייט בשנים הקרובות לפי תאריך הפטירה.':'Upcoming yahrzeit dates from the date of passing.'],
+     ['yahrzeit',HE()?'תאריכי יום השנה (יארצייט) בשנים הקרובות לפי תאריך הפטירה.':'Upcoming yahrzeit dates from the date of passing.'],
      ['days',HE()?'כמה ימים בין שני תאריכים, ומה התאריך בעוד X ימים.':'Days between two dates, or the date X days from now.']].map(([k,d])=>'<a class="card tool" href="#tools/'+k+'" data-tool="'+k+'"><h3>'+t(k)+'</h3><p class="mute small">'+d+'</p></a>').join('')+'</div>'+seoBlock();return}
   const back='<a href="#tools" data-tool="" class="small">'+(HE()?'→ כל הכלים':'← All tools')+'</a>';
   if(sub==='countdown')return viewCountdown(back);
@@ -249,7 +249,7 @@ function viewTools(){
     $('#main').innerHTML=back+'<div class="bar"><h1>'+t('yahrzeit')+'</h1></div><div class="card"><div class="row"><label class="fld">'+(HE()?'תאריך הפטירה (לועזי)':'Date of passing')+'<input type="date" id="yD" value="'+iso(addD(TODAY,-400))+'"></label><label class="chk"><input type="checkbox" id="yN"> '+(HE()?'אחרי השקיעה':'After sunset')+'</label></div><div class="res" id="yR"></div></div>'+seoBlock();
     const calc=()=>{const v=$('#yD').value;if(!v)return;let d=fromIso(v);if($('#yN').checked)d=addD(d,1);const h=new HDate(d),y0=new HDate(TODAY).getFullYear();let rows='';
       for(let y=Math.max(h.getFullYear()+1,y0);y<y0+8;y++){let x;try{x=HebrewCalendar.getYahrzeit(y,h)}catch(e){x=null}if(!x)continue;const gd=noon(x.greg());if(gd<addD(TODAY,-1))continue;rows+='<tr><td>'+esc(hStr(x))+'</td><td>'+t('weekdays')[gd.getDay()]+', '+esc(gStr(gd))+'</td><td class="mute">'+esc(relDays(gd))+'</td></tr>'}
-      $('#yR').innerHTML='<div class="mute">'+(HE()?'תאריך הפטירה העברי: ':'Hebrew date of passing: ')+esc(hStr(h))+'</div><div class="tbl-wrap" style="margin-top:8px"><table class="t"><tbody>'+rows+'</tbody></table></div><p class="small mute">'+(HE()?'היארצייט מתחיל בערב שלפני התאריך הלועזי.':'The yahrzeit begins the evening before.')+'</p>'};
+      $('#yR').innerHTML='<div class="mute">'+(HE()?'תאריך הפטירה העברי: ':'Hebrew date of passing: ')+esc(hStr(h))+'</div><div class="tbl-wrap" style="margin-top:8px"><table class="t"><tbody>'+rows+'</tbody></table></div><p class="small mute">'+(HE()?'יום השנה (יארצייט) מתחיל בערב שלפני התאריך הלועזי.':'The yahrzeit begins the evening before.')+'</p>'};
     $('#yD').addEventListener('input',calc);$('#yN').addEventListener('input',calc);calc();return}
   if(sub==='days'){
     $('#main').innerHTML=back+'<div class="bar"><h1>'+t('days')+'</h1></div><div class="card"><div class="row"><label class="fld">'+(HE()?'מתאריך':'From')+'<input type="date" id="dA" value="'+iso(TODAY)+'"></label><label class="fld">'+(HE()?'עד תאריך':'To')+'<input type="date" id="dB" value="'+iso(addD(TODAY,100))+'"></label></div><div class="res" id="dR1"></div></div>'+
@@ -290,7 +290,7 @@ function relDays(d){const n=dayDiff(TODAY,d);return n>=0?t('inDays')(n):t('daysA
 /* ---------- תזכורות ---------- */
 function viewReminders(){
   $('#main').innerHTML='<div class="bar"><h1>'+t('reminders')+'</h1><button class="btn pri" type="button" id="remNew">+ '+t('addRem')+'</button></div>'+
-    '<div class="card"><p class="small mute" style="margin-top:0">'+(HE()?'ימי הולדת, ימי נישואין, יארצייטים ותזכורות. הם מופיעים בלוח, ואפשר להוסיף אותם ליומן בטלפון עם התראה. התזכורות נשמרות בדפדפן הזה.':'Birthdays, anniversaries, yahrzeits and reminders. They show on the calendar and can be added to your phone calendar with alerts. Saved in this browser.')+'</p>'+
+    '<div class="card"><p class="small mute" style="margin-top:0">'+(HE()?'ימי הולדת, ימי נישואין, ימי שנה (יארצייטים) ותזכורות. הם מופיעים בלוח, ואפשר להוסיף אותם ליומן בטלפון עם התראה. התזכורות נשמרות בדפדפן הזה.':'Birthdays, anniversaries, yahrzeits and reminders. They show on the calendar and can be added to your phone calendar with alerts. Saved in this browser.')+'</p>'+
     (REM.length?'<div class="tbl-wrap"><table class="t"><tbody>'+REM.map(r=>{const nx=nextOcc(r);return '<tr><td><b>'+esc(r.name)+'</b></td><td>'+esc(remWhen(r))+'</td><td class="mute">'+(nx?esc(gStr(nx))+' · '+esc(relDays(nx)):'')+'</td><td><a class="btn" target="_blank" rel="noopener" href="'+gcalLink(r,nx)+'">Google</a> <button class="btn" type="button" data-redit="'+r.id+'">✎</button></td></tr>'}).join('')+'</tbody></table></div>'+
       '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="remIcs">📅 '+(HE()?'הוספת הכל ליומן בטלפון (קובץ)':'Add all to phone calendar (.ics)')+'</button></div>':'<p>'+(HE()?'עדיין אין תזכורות.':'No reminders yet.')+'</p>')+
     '<p class="small mute">'+(HE()?'בקרוב: תזכורות במייל ובהודעה לטלפון, עם חשבון אישי.':'Coming soon: email and SMS reminders with an account.')+'</p></div>'+
@@ -365,7 +365,7 @@ function seoBlock(){
   const root=PAGE.root||'./';
   const top=CITIES.filter(x=>x.il).slice(0,14).concat(CITIES.filter(x=>['newyork','brooklyn','lakewood','london','paris','antwerp','losangeles','toronto','montreal'].includes(x.id)));
   return '<section class="card seo"><h2>'+(HE()?'לוח שנה עברי ל'+cn:'Jewish calendar for '+cn)+'</h2>'+
-    (HE()?'<p>לוח השנה העברי-לועזי המקוון מציג את כל החגים והמועדים, ראשי החודשים, פרשות השבוע וזמני כניסת השבת ויציאתה ב'+cn+'. בלחיצה על כל יום רואים את זמני היום המלאים: עלות השחר, הנץ החמה, סוף זמן קריאת שמע ותפילה לפי המג״א והגר״א, מנחה גדולה, פלג המנחה, שקיעה וצאת הכוכבים.</p><p>אפשר להוסיף תזכורות לימי הולדת, ימי נישואין ויארצייטים לפי התאריך העברי, להמיר תאריכים, לחשב תאריך בר מצווה ובת מצווה, ולהוריד את הכל ליומן בטלפון. רוצים לוח מודפס? בלוחנו בונים לוח שנה אישי ל'+hYear(hy)+' עם התמונות והאירועים שלכם.</p>'
+    (HE()?'<p>לוח השנה העברי-לועזי המקוון מציג את כל החגים והמועדים, ראשי החודשים, פרשות השבוע וזמני כניסת השבת ויציאתה ב'+cn+'. בלחיצה על כל יום רואים את זמני היום המלאים: עלות השחר, הנץ החמה, סוף זמן קריאת שמע ותפילה לפי המג״א והגר״א, מנחה גדולה, פלג המנחה, שקיעה וצאת הכוכבים.</p><p>אפשר להוסיף תזכורות לימי הולדת, ימי נישואין וימי שנה (יארצייטים) לפי התאריך העברי, להמיר תאריכים, לחשב תאריך בר מצווה ובת מצווה, ולהוריד את הכל ליומן בטלפון. רוצים לוח מודפס? בלוחנו בונים לוח שנה אישי ל'+hYear(hy)+' עם התמונות והאירועים שלכם.</p>'
       :'<p>This online Hebrew-Gregorian calendar shows all Jewish holidays, Rosh Chodesh, weekly Torah portions and Shabbat candle-lighting and havdalah times for '+cn+'. Click any day for full zmanim: dawn, sunrise, latest Shema and Shacharit (MGA and GRA), mincha, plag, sunset and nightfall.</p><p>Add reminders for Hebrew birthdays, anniversaries and yahrzeits, convert dates, calculate a Bar or Bat Mitzvah date, and export everything to your phone calendar.</p>')+
     '<div class="links">'+top.map(x=>'<a href="'+root+'zmanim/'+x.id+'.html">'+esc(HE()?'זמני היום '+x.he:'Zmanim '+x.en)+'</a>').join('')+'</div></section>';
 }
