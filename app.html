@@ -124,14 +124,20 @@
     <details class="sec" open data-step="4">
       <summary>מה מופיע איפה</summary>
       <div class="sec-body">
-        <p class="hint">לכל סוג מידע בוחרים אם יופיע בתוך הימים, בטור נפרד או בכלל לא. בלוח החודשי הטור הנפרד נמצא ליד הלוח, ובלוח השבועי כל סוג מקבל טור משלו לאורך כל ימי השבוע.</p>
-        <label class="fld">זמני היום<select id="plZ">
-          <option value="daily">בתוך כל יום</option><option value="shabbat">רק בשבת, בתוך היום</option><option value="col">בטור נפרד ליד הלוח</option><option value="table">בטבלת שבתות מתחת ללוח</option><option value="none">לא להציג</option></select></label>
-        <label class="fld">אירועים אישיים<select data-place="personal"><option value="cell">בתוך הימים</option><option value="col">בטור נפרד ליד הלוח</option><option value="none">לא להציג</option></select></label>
-        <label class="fld">אירועים בדברי ימי ישראל (יארצייטים)<select data-place="yz"><option value="cell">בתוך הימים</option><option value="col">בטור נפרד ליד הלוח</option><option value="page">בעמוד נפרד מעל הלוח</option><option value="none">לא להציג</option></select></label>
-        <label class="fld">לימוד יומי, מולד ותקופות<select data-place="learn"><option value="cell">בתוך הימים</option><option value="col">בטור נפרד ליד הלוח</option><option value="none">לא להציג</option></select></label>
-        <label class="fld">צד הטור הנפרד<select id="panelSide"><option value="left">משמאל ללוח</option><option value="right">מימין ללוח</option></select></label>
-        <label class="fld">רוחב הטור הנפרד<select id="yzPanelW"><option value="20">צר (20%)</option><option value="26">בינוני (26%)</option><option value="32">רחב (32%)</option><option value="40">רחב מאוד (40%)</option></select></label>
+        <details class="pl-explain" open><summary>איך זה עובד?</summary>
+          <div class="pl-demo" aria-hidden="true"><div class="pl-demo-col">טור</div><div class="pl-demo-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <p>לכל סוג מידע יש תמיד מקום אחד מתוך שלושה:</p>
+          <ul>
+            <li><b>בתוך הימים:</b> המידע כתוב בתוך המשבצת של כל יום, מתחת לתאריך.</li>
+            <li><b>בטור:</b> טור צר ליד הלוח, עם שורה לכל יום שיש בו מידע. הימים נשארים נקיים ויש יותר מקום לכתיבה ולתמונות. אפשר לבנות כמה טורים, לכל אחד צד ורוחב, ולשים בכל טור סוג אחד או כמה.</li>
+            <li><b>לא להציג:</b> המידע לא מופיע בלוח בכלל.</li>
+          </ul>
+          <p><b>הכלל:</b> כל סוג מידע שבחרתם להציג ולא שייך לאף טור מופיע בתוך הימים. למשל, סימנתם "לימוד יומי" ובניתם רק טור זמנים: הלימוד יופיע בתוך כל יום. אם רוצים אותו בטור, מוסיפים לו טור והוא עובר לשם.</p>
+          <p>גם כשמוחקים טור, מה שהיה בו חוזר לתוך הימים ולא נעלם. כדי להוריד משהו מהלוח לגמרי, בוחרים בו במפורש "לא להציג".</p>
+        </details>
+        <label class="fld">זמני היום<select id="plZ"><option value="daily">כולם בתוך כל יום</option><option value="shabbat">כולם רק בשבת, בתוך היום</option><option value="col">כולם בטור ליד הלוח</option><option value="custom">לכל זמן בנפרד</option><option value="table">בטבלת שבתות מתחת ללוח</option><option value="none">לא להציג</option></select></label>
+        <p class="hint">לבחור לכל זמן בנפרד אם הוא ביום או בטור: בחלק "מיקום וזמני היום", ברשימת הזמנים.</p>
+        <div id="placeUI"></div>
         <label class="fld">כשהמידע לא נכנס בטור<select id="yzOverflow"><option value="spill">להמשיך בתאים הריקים ובעמוד המשך</option><option value="widen">להרחיב את הטור ולהקטין את הלוח</option></select></label>
         <p class="hint">בתצוגה המקדימה אפשר גם למשוך את הפס הצבעוני שבקצה הטור כדי לשנות את רוחבו.</p>
         <p class="hint">בתצוגת הטבלה יש לכל סוג טור קבוע, ובוחרים אותם ב"טורים בטבלה". "לא להציג" חל על כל התצוגות. שם מוצג מה שלא סימנתם "לא להציג".</p>
@@ -202,9 +208,14 @@
         </div>
         <label class="chk"><input type="checkbox" id="il"> לוח ארץ ישראל (יום טוב אחד, פרשיות א״י)</label>
         <div class="fld">איפה מופיעים הזמנים<select id="plZ2">
-          <option value="daily">בתוך כל יום</option><option value="shabbat">רק בשבת, בתוך היום</option><option value="col">בטור נפרד ליד הלוח</option><option value="table">בטבלת שבתות מתחת ללוח</option><option value="none">לא להציג</option></select></div>
+          <option value="daily">כולם בתוך כל יום</option><option value="shabbat">כולם רק בשבת, בתוך היום</option><option value="col">כולם בטור ליד הלוח</option><option value="custom">לכל זמן בנפרד (בטבלה למטה)</option><option value="table">בטבלת שבתות מתחת ללוח</option><option value="none">לא להציג</option></select></div>
         <p class="hint" id="zmHint"></p>
         <div class="checks" id="zmanimChecks"></div>
+        <div id="zmPlaceBox">
+          <p class="hint"><b>ביום</b> = הזמן כתוב בתוך המשבצת של כל יום, מתחת לתאריך. <b>בטור</b> = הזמן מופיע בטבלה בטור ליד הלוח, שורה לכל יום. אפשר לסמן את שניהם. <b>רק בשבת</b> = בתוך היום רק בימי שבת. זמן בלי שום סימון לא מופיע בלוח.</p>
+          <div class="zp-quick row"><button class="btn small" type="button" data-zpq="day">הכל ביום</button><button class="btn small" type="button" data-zpq="col">הכל בטור</button><button class="btn small" type="button" data-zpq="mix">עיקריים ביום, השאר בטור</button></div>
+          <div id="zmPlace" class="zp-grid"></div>
+        </div>
         <div class="fld">לפי איזה מנהג לחשב את הזמנים?
           <div class="zm-cards" role="radiogroup" aria-label="מנהג">
             <label class="zm-card"><input type="radio" name="zmSimple" value="ashkenaz"><b>אשכנזים</b><span>המקובל ברוב הלוחות והקהילות האשכנזיות בארץ ישראל</span></label>

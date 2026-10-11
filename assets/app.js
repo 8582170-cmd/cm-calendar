@@ -176,7 +176,7 @@ function merge(base,inc){
   if(!inc||typeof inc!=='object')return out;
   out.s=Object.assign(out.s,inc.s||{});
   if(inc.s&&inc.s.paper&&!inc.s.size)out.s.size={A4:'a4',A3:'wall',A5:'fridge',Letter:'letter'}[inc.s.paper]||'a4';
-  ['slots','cover','banner','bannersData','textStyles','yzEdit'].forEach(k=>{if(inc[k])out[k]=inc[k]});
+  ['slots','cover','banner','bannersData','textStyles','yzEdit','colImgs'].forEach(k=>{if(inc[k])out[k]=inc[k]});
   ['events','customGedolim','ads','yzCustom'].forEach(k=>{if(Array.isArray(inc[k]))out[k]=inc[k]});
   out.events=out.events.map(e=>e.rec?e:{...e,rec:e.cal||'heb'});
   return out;
@@ -801,7 +801,38 @@ function openYzManager(){
   });
   list();
 }
-function placeOf(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.yz||'none';return v==='page'&&(s.view||'month')!=='month'?'col':v}return P[t]||'cell'}
+function placeOfLegacy(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.yz||'none';return v==='page'&&(s.view||'month')!=='month'?'col':v}return P[t]||'cell'}
+/* ---------- טורים ליד הלוח ----------
+   s.cols: [{id, side:'right'|'left', w:אחוזים, types:['zmanim','personal','yz','learn']}]
+   סוג מידע שנבחר להצגה ולא נמצא באף טור מופיע בתוך הימים. */
+const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','יארצייטים ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['img','תמונה או באנר']];
+function zMode(){return state.s.zmanimMode||'daily'}
+function zpl(k){const s=state.s,Z=s.zplace&&s.zplace[k];if(Z)return Z;const m=zMode();return m==='shabbat'?{day:1,sh:1}:m==='col'?{col:1}:m==='daily'||m==='custom'?{day:1}:{}}
+function zOn(){const m=zMode();return m!=='none'&&m!=='table'&&Object.values(state.s.zmanim).some(Boolean)}
+function zAnyCol(){if(!zOn())return false;const s=state.s;return ZMANIM.some(z=>s.zmanim[z[0]]&&zpl(z[0]).col)}
+function colsCfg(){
+  const s=state.s,P=s.place||{};let cols;
+  if(Array.isArray(s.cols))cols=s.cols.map(c=>({...c,types:(c.types||[]).filter(t=>COL_TYPES.some(x=>x[0]===t))}));
+  else{
+    cols=[];const side=s.panelSide==='right'?'right':'left';
+    const t1=[(zMode()==='col')?'zmanim':null,P.personal==='col'?'personal':null,placeOfLegacy('yz')==='col'?'yz':null].filter(Boolean);
+    if(t1.length)cols.push({id:'c1',side,w:+s.yzPanelW||26,types:t1});
+    if(P.learn==='col')cols.push({id:'c2',side,w:+s.learnPanelW||12,types:['learn']});
+  }
+  if(zAnyCol()&&!cols.some(c=>c.types.includes('zmanim'))){if(cols.length)cols[0].types=['zmanim',...cols[0].types];else cols.push({id:'cz',side:s.panelSide==='right'?'right':'left',w:26,types:['zmanim']})}
+  return cols}
+function colOf(t){return colsCfg().find(c=>c.types.includes(t))||null}
+function placeOf(t){
+  const s=state.s,P=s.place||{};
+  if(!Array.isArray(s.cols))return placeOfLegacy(t);
+  if(t==='yz'){const v=P.yz||'none';if(v==='none')return 'none';if(v==='page'&&(s.view||'month')==='month')return 'page'}
+  else if(P[t]==='none')return 'none';
+  return colOf(t)?'col':'cell'}
+function saveCols(cols){state.s.cols=cols.map(c=>({id:c.id,side:c.side,w:c.w,types:c.types.slice(),imgPer:!!c.imgPer}));
+  /* מה שהוסר מכל הטורים חוזר לתוך הימים */
+  const P={...(state.s.place||{})};for(const [t] of COL_TYPES){if(t==='zmanim'||t==='img')continue;if(P[t]==='col')P[t]='cell';if(t==='yz'&&!P.yz)P.yz='none'}state.s.place=P}
+function zDay(d,noCol){if(!zOn())return [];return zmanimFor(d).filter(z=>{const p=zpl(z.key);return (p.day&&(!p.sh||d.getDay()===6))||(noCol&&p.col)})}
+function zCol(d,all){if(!zOn())return [];return zmanimFor(d,all).filter(z=>zpl(z.key).col)}
 function yzPanelOn(){return placeOf('yz')==='col'}
 function personalOnly(date,hd){
   const out=[];
@@ -1096,58 +1127,64 @@ function addMonthGrid(p,mo,evMap){
         c.classList.add('top-'+pick(withImg.imgFit==='contain'?1:L.top),'bot-'+pick(withImg.imgFit==='contain'?1:L.bot));
       }
     }
-    if(s.zmanimMode==='daily'||(s.zmanimMode==='shabbat'&&dow===6)){const zs=zmanimFor(d);if(zs.length)c.appendChild(el('div','d-z',zs.map(zTxt).join('<br>')))}
+    {const zs=zDay(d);if(zs.length)c.appendChild(el('div','d-z',zs.map(zTxt).join('<br>')))}
     grid.appendChild(c);
   }
   for(let i=total;i<rows*7;i++)grid.appendChild(el('div','cell pad'));
-  const wantZ=s.zmanimMode==='col'&&Object.values(s.zmanim).some(Boolean),wantP=placeOf('personal')==='col',wantY=placeOf('yz')==='col',wantL=placeOf('learn')==='col';
-  if(wantZ||wantP||wantY||wantL){
-    const row=el('div','grid-row');row.appendChild(grid);
-    const side=s.panelSide==='right'?'right':'left';
+  const cols=colsCfg().filter(c=>c.types.some(t=>t==='zmanim'?zAnyCol():t==='img'?canF('banners'):placeOf(t)==='col'));
+  if(cols.length){
+    const row=el('div','grid-row');
     const dl=d=>{const hd=new HDate(d);return dStyle().startsWith('greg')?gregShort(d):hebShort(hd)};
-    if(wantZ||wantP||wantY){
-    const pan=el('div','yz-panel');pan.style.width=(+s.yzPanelW||26)+'%';
-    const body=el('div','yz-panel-b');
-    const section=(title,getter,empty)=>{
-      const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h',esc(title)));let n=0;
-      for(const d of mo.days){const L=getter(d);if(!L.length)continue;const day=el('div','yzp-day');day.appendChild(el('span','yzp-d',esc(dl(d))));
-        for(const it of L){const e=el('span','yzp-e'+(it.cls&&it.cls!=='gadol'?' '+it.cls:''));e.textContent=String(it.text).replace(/^יא״צ /,'');day.appendChild(e);n++}sec.appendChild(day)}
-      if(!n)sec.appendChild(el('div','yzp-empty',esc(empty)));body.appendChild(sec)};
-    if(wantZ){
-      const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h','זמני היום · '+esc(place().name)));
-      const keys=zmanimFor(mo.days[0],true).map(z=>z.k);
-      let h='<table class="yzp-zt"><thead><tr><th></th>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>';
-      for(const d of mo.days)h+='<tr'+(d.getDay()===6?' class="shabbat"':'')+'><td>'+esc(dl(d))+'</td>'+zmanimFor(d,true).map(z=>'<td'+(z.b?' class="zb"':'')+'>'+esc(z.v)+'</td>').join('')+'</tr>';
-      sec.insertAdjacentHTML('beforeend',h+'</tbody></table>');body.appendChild(sec);
+    const R=[],Lf=[];
+    for(const col of cols){
+      const onlyLearn=col.types.length===1&&col.types[0]==='learn';
+      const pan=el('div','yz-panel'+(onlyLearn?' learn-panel':''));pan.style.width=(+col.w||(onlyLearn?12:26))+'%';pan.dataset.col=col.id;
+      const body=el('div','yz-panel-b');
+      const section=(title,getter,empty)=>{
+        const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h',esc(title)));let n=0;
+        for(const d of mo.days){const L=getter(d);if(!L.length)continue;const day=el('div','yzp-day');day.appendChild(el('span','yzp-d',esc(dl(d))));
+          for(const it of L){const e=el('span','yzp-e'+(it.cls&&it.cls!=='gadol'?' '+it.cls:''));e.textContent=String(it.text).replace(/^יא״צ /,'');day.appendChild(e);n++}sec.appendChild(day)}
+        if(!n)sec.appendChild(el('div','yzp-empty',esc(empty)));body.appendChild(sec)};
+      for(const t of col.types){
+        if(t==='img'&&canF('banners')){
+          const per=!!col.imgPer,get=()=>per?((state.slots[mo.key]||{}).colimg||{})[col.id]||{}:(state.colImgs||{})[col.id]||{};
+          const put=v=>{if(per){const sl=state.slots[mo.key]||{};state.slots[mo.key]={...sl,colimg:{...(sl.colimg||{}),[col.id]:{...get(),...v}}}}else state.colImgs={...(state.colImgs||{}),[col.id]:{...get(),...v}}};
+          const sec=el('div','yzp-sec col-img');sec.appendChild(makeImageBox(get,v=>{put(v);save();render()},null));
+          sec.appendChild(editable('banner-text',get().text,'טקסט מתחת לתמונה (לא חובה)',tx=>{put({text:tx});save()}));
+          body.appendChild(sec);
+        }
+        else if(t==='zmanim'&&zAnyCol()){
+          const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h','זמני היום · '+esc(place().name)));
+          const keys=zCol(mo.days[0],true).map(z=>z.k);
+          let h='<table class="yzp-zt"><thead><tr><th></th>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>';
+          for(const d of mo.days)h+='<tr'+(d.getDay()===6?' class="shabbat"':'')+'><td>'+esc(dl(d))+'</td>'+zCol(d,true).map(z=>'<td'+(z.b?' class="zb"':'')+'>'+esc(z.v)+'</td>').join('')+'</tr>';
+          sec.insertAdjacentHTML('beforeend',h+'</tbody></table>');body.appendChild(sec);
+        }
+        else if(t==='personal'&&placeOf('personal')==='col')section('אירועים אישיים',d=>personalOnly(d,new HDate(d)),'אין אירועים אישיים בחודש זה.');
+        else if(t==='yz'&&placeOf('yz')==='col')section(s.yzHist?'יארצייטים ודברי הימים':'יארצייטים',d=>gedolimFor(new HDate(d),true,true),'אין יארצייטים מסומנים לחודש זה.');
+        else if(t==='learn'&&placeOf('learn')==='col'){
+          const L=s.learn||{},lc=LEARN_TYPES.filter(c=>L[c[0]]);
+          const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h','לימוד יומי'));
+          if(lc.length>3){
+            for(const d of mo.days){const its=(evMap.get(ymd(d))||[]).filter(it=>it.learn);if(!its.length)continue;const hd=new HDate(d);const day=el('div','yzp-day lday'+(d.getDay()===6?' shabbat':''));day.appendChild(el('span','yzp-d',dStyle().startsWith('greg')?String(d.getDate()):gem(hd.getDate())));
+              for(const c of lc){const it=its.find(x=>String(x.text).startsWith(c[1]));if(!it)continue;const e=el('span','yzp-e lrn');e.innerHTML='<b>'+esc(c[2])+'</b> '+esc(String(it.text).slice(c[1].length));day.appendChild(e)}sec.appendChild(day)}
+          }else if(lc.length){
+            let h='<table class="learn-t"><thead><tr><th></th>'+(lc.length>1?lc.map(c=>'<th>'+c[2]+'</th>').join(''):'')+'</tr></thead><tbody>';
+            for(const d of mo.days){const its=(evMap.get(ymd(d))||[]).filter(it=>it.learn);const hd=new HDate(d);
+              h+='<tr'+(d.getDay()===6?' class="shabbat"':'')+'><td>'+(dStyle().startsWith('greg')?d.getDate():gem(hd.getDate()))+'</td>'+lc.map(c=>{const it=its.find(x=>String(x.text).startsWith(c[1]));return '<td>'+(it?esc(String(it.text).slice(c[1].length)):'')+'</td>'}).join('')+'</tr>'}
+            sec.insertAdjacentHTML('beforeend',h+'</tbody></table>');
+          }else sec.appendChild(el('div','yzp-empty','לא נבחר לימוד יומי.'));
+          body.appendChild(sec);
+          const ms=el('div','yzp-sec moon-sec');let n=0;ms.appendChild(el('div','yz-panel-h','מולד ותקופות'));
+          for(const d of mo.days){const its=(evMap.get(ymd(d))||[]).filter(it=>it.cls==='moon');if(!its.length)continue;const day=el('div','yzp-day');day.appendChild(el('span','yzp-d',esc(dl(d))));its.forEach(it=>{const e=el('span','yzp-e');e.textContent=moonShort(it.text);day.appendChild(e);n++});ms.appendChild(day)}
+          if(n)body.appendChild(ms);
+        }
+      }
+      pan.appendChild(body);
+      (col.side==='right'?R:Lf).push(pan);
+      addResizer(pan,col.side==='left'?'right':'left',mm=>{const rw=row.getBoundingClientRect().width*screenMM(row);if(rw>0){const cs=colsCfg();const c=cs.find(x=>x.id===col.id);if(c){c.w=Math.max(7,Math.min(60,Math.round(mm/rw*100)));saveCols(cs);save();render()}}});
     }
-    if(wantP)section('אירועים אישיים',d=>personalOnly(d,new HDate(d)),'אין אירועים אישיים בחודש זה.');
-    if(wantY)section(s.yzHist?'יארצייטים ודברי הימים':'יארצייטים',d=>gedolimFor(new HDate(d),true,true),'אין יארצייטים מסומנים לחודש זה.');
-    pan.appendChild(body);
-    if(side==='right')row.insertBefore(pan,grid);else row.appendChild(pan);
-    addResizer(pan,side==='left'?'right':'left',mm=>{const rw=row.getBoundingClientRect().width*screenMM(row);if(rw>0)set('yzPanelW',Math.max(12,Math.min(60,Math.round(mm/rw*100))))});
-    }
-    if(wantL){
-      const lp=el('div','yz-panel learn-panel');lp.style.width=(+s.learnPanelW||12)+'%';
-      const lb=el('div','yz-panel-b');
-      const L=s.learn||{},cols=LEARN_TYPES.filter(c=>L[c[0]]);
-      const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h','לימוד יומי'));
-      if(cols.length>3){
-        for(const d of mo.days){const its=(evMap.get(ymd(d))||[]).filter(it=>it.learn);if(!its.length)continue;const hd=new HDate(d);const day=el('div','yzp-day lday'+(d.getDay()===6?' shabbat':''));day.appendChild(el('span','yzp-d',dStyle().startsWith('greg')?String(d.getDate()):gem(hd.getDate())));
-          for(const c of cols){const it=its.find(x=>String(x.text).startsWith(c[1]));if(!it)continue;const e=el('span','yzp-e lrn');e.innerHTML='<b>'+esc(c[2])+'</b> '+esc(String(it.text).slice(c[1].length));day.appendChild(e)}sec.appendChild(day)}
-      }else if(cols.length){
-        let h='<table class="learn-t"><thead><tr><th></th>'+(cols.length>1?cols.map(c=>'<th>'+c[2]+'</th>').join(''):'')+'</tr></thead><tbody>';
-        for(const d of mo.days){const its=(evMap.get(ymd(d))||[]).filter(it=>it.learn);const hd=new HDate(d);
-          h+='<tr'+(d.getDay()===6?' class="shabbat"':'')+'><td>'+(dStyle().startsWith('greg')?d.getDate():gem(hd.getDate()))+'</td>'+cols.map(c=>{const it=its.find(x=>String(x.text).startsWith(c[1]));return '<td>'+(it?esc(String(it.text).slice(c[1].length)):'')+'</td>'}).join('')+'</tr>'}
-        sec.insertAdjacentHTML('beforeend',h+'</tbody></table>');
-      }else sec.appendChild(el('div','yzp-empty','לא נבחר לימוד יומי.'));
-      lb.appendChild(sec);
-      const ms=el('div','yzp-sec moon-sec');let n=0;ms.appendChild(el('div','yz-panel-h','מולד ותקופות'));
-      for(const d of mo.days){const its=(evMap.get(ymd(d))||[]).filter(it=>it.cls==='moon');if(!its.length)continue;const day=el('div','yzp-day');day.appendChild(el('span','yzp-d',esc(dl(d))));its.forEach(it=>{const e=el('span','yzp-e');e.textContent=moonShort(it.text);day.appendChild(e);n++});ms.appendChild(day)}
-      if(n)lb.appendChild(ms);
-      lp.appendChild(lb);
-      if(side==='right')row.insertBefore(lp,row.firstChild);else row.appendChild(lp);
-      addResizer(lp,side==='left'?'right':'left',mm=>{const rw=row.getBoundingClientRect().width*screenMM(row);if(rw>0)set('learnPanelW',Math.max(7,Math.min(40,Math.round(mm/rw*100))))});
-    }
+    R.forEach(x=>row.appendChild(x));row.appendChild(grid);Lf.forEach(x=>row.appendChild(x));
     p.appendChild(row);
   }else p.appendChild(grid);
   if(s.zmanimMode==='table')p.appendChild(zmanimTable(mo,evMap));
@@ -1268,7 +1305,7 @@ function weekPage(days,evMap){
   if(s.layout==='same'&&+s.imgRatio>0)addSlotImage(p,key,innerH()*(+s.imgRatio/100),'שבוע');
   {const st=dStyle();if(st==='hebOnly')headRow(p,title,hebR,'');else if(st==='gregOnly')headRow(p,title,gregR,'');else if(st==='gregMain')headRow(p,title,gregR,hebR);else headRow(p,title,hebR,gregR)}
   const [w,h]=pageDims(),wide=w>h;
-  const colT=[s.zmanimMode==='col'&&Object.values(s.zmanim).some(Boolean)?'zmanim':null,placeOf('personal')==='col'?'personal':null,placeOf('yz')==='col'?'yz':null,placeOf('learn')==='col'?'learn':null].filter(Boolean);
+  const colT=[zAnyCol()?'zmanim':null,placeOf('personal')==='col'?'personal':null,placeOf('yz')==='col'?'yz':null,placeOf('learn')==='col'?'learn':null].filter(Boolean);
   const COLN={zmanim:'זמני היום',personal:'אירועים אישיים',yz:'יארצייטים',learn:'לימוד ומולד'};
   const useCols=colT.length>0;
   const tpl=useCols?(()=>{const cw=(+s.yzPanelW||26)/colT.length;const parts=[`minmax(0,${100-(+s.yzPanelW||26)}fr)`].concat(colT.map(()=>`minmax(0,${cw}fr)`));return (s.panelSide==='right'?parts.slice(1).concat(parts[0]):parts).join(' ')})():'';
@@ -1285,12 +1322,12 @@ function weekPage(days,evMap){
       const learnCol=colT.includes('learn');
       const inMain=I.items.filter(it=>!(learnCol&&(it.learn||it.cls==='moon'))).concat(colT.includes('personal')?[]:I.pers,colT.includes('yz')?[]:I.ged);
       if(inMain.length){const ev=el('div','wd-ev');for(const it of inMain){const e=el('span','e '+it.cls);e.textContent=it.text;ev.appendChild(e)}main.appendChild(ev)}
-      if(!colT.includes('zmanim')&&s.zmanimMode!=='none'&&(s.zmanimMode!=='shabbat'||I.dow===6)){const zs=zmanimFor(d);if(zs.length)main.appendChild(el('div','wd-z',zs.map(zTxt).join(' · ')))}
+      {const zs=zDay(d,!colT.includes('zmanim'));if(zs.length)main.appendChild(el('div','wd-z',zs.map(zTxt).join(' · ')))}
       if(I.img){const box=el('div','wd-imgbox wd-imgbox-s');const im=el('img');im.src=I.img.img;im.alt='';im.style.objectFit=I.img.imgFit==='contain'?'contain':'cover';im.style.objectPosition='50% '+(I.img.imgPos??50)+'%';box.appendChild(im);main.appendChild(box)}
       main.appendChild(el('div','lines'));
       const colEls=colT.map(t=>{const c=el('div','wd-c wd-c-'+t);
         if(wide)c.appendChild(el('div','wd-col-h',COLN[t]));
-        if(t==='zmanim'){c.innerHTML+=zmanimFor(d).map(z=>'<div class="zr'+(z.b?' zb':'')+'"><span>'+esc(z.k)+'</span><b>'+esc(z.v)+'</b></div>').join('')}
+        if(t==='zmanim'){c.innerHTML+=zCol(d).map(z=>'<div class="zr'+(z.b?' zb':'')+'"><span>'+esc(z.k)+'</span><b>'+esc(z.v)+'</b></div>').join('')}
         else{const L=t==='personal'?I.pers:t==='yz'?I.ged:I.items.filter(it=>it.learn||it.cls==='moon');for(const it of L){const e=el('div','e '+it.cls);e.textContent=String(it.text).replace(/^יא״צ /,t==='yz'?'':'יא״צ ');c.appendChild(e)}}
         return c});
       (s.panelSide==='right'?colEls.concat(main):[main].concat(colEls)).forEach(x=>b.appendChild(x));
@@ -1305,7 +1342,7 @@ function weekPage(days,evMap){
       [[I.items,'חגים וזמנים'],[I.pers,'אירועים אישיים'],[I.ged,'יארצייטים']].forEach(([L,lab])=>{const c=el('div','wd-col');c.appendChild(el('div','wd-col-h',lab));for(const it of L){const e=el('div','e '+it.cls);e.textContent=it.text;c.appendChild(e)}cols.appendChild(c)});
       main.appendChild(cols);
     }else if(I.all.length){const ev=el('div','wd-ev');for(const it of I.all){const e=el('span','e '+it.cls);e.textContent=it.text;ev.appendChild(e)}main.appendChild(ev)}
-    if(s.zmanimMode!=='none'&&(s.zmanimMode!=='shabbat'||I.dow===6)){const zs=zmanimFor(d);if(zs.length)main.appendChild(el('div','wd-z',zs.map(zTxt).join(' · ')))}
+    {const zs=zDay(d,true);if(zs.length)main.appendChild(el('div','wd-z',zs.map(zTxt).join(' · ')))}
     main.appendChild(el('div','lines'));
     b.appendChild(main);
     if(I.img){const box=el('div','wd-imgbox');const im=el('img');im.src=I.img.img;im.alt='';im.style.objectFit=I.img.imgFit==='contain'?'contain':'cover';im.style.objectPosition='50% '+(I.img.imgPos??50)+'%';box.appendChild(im);b.appendChild(box)}
@@ -2026,7 +2063,7 @@ function fillStatic(){
   $('#cTz').innerHTML=tzs.map(t=>opt(t,t)).join('');
   if(!framed&&navigator.geolocation)$('#geoBtn').hidden=false;
 }
-function syncUI(){if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
+function syncUI(){if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
   yzInvalidate();
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
@@ -2034,8 +2071,8 @@ function syncUI(){if(typeof renderTfilot==='function'&&!document.activeElement?.
   $('#rangeRow').hidden=['month','year'].includes(s.view||'month');$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליארצייטים.',month:'עמוד לכל חודש.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
-  $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const sel=$('#yzPanelW'),v=String(s.yzPanelW||26);if(![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML('beforeend',opt(v,v+'%'));sel.value=v}$('#panelSide').value=s.panelSide==='right'?'right':'left';document.querySelectorAll('[data-place]').forEach(c=>c.value=placeOf(c.dataset.place));
-  $('#zmHint').textContent={col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
+  $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
+  $('#zmHint').textContent={custom:'כל זמן במקום שבחרתם ברשימה למטה: בתוך היום, בטור, או בשניהם.',col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
   $('#ytsg').value=s.ytsg||'faint';$('#chanukah').value=s.chanukah||'tzeit';$('#ytsgRow').hidden=!s.il;$('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
   if(![...$('#hebYear').options].some(o=>+o.value===+s.hebYear))$('#hebYear').insertAdjacentHTML('beforeend',opt(s.hebYear,hebYearStr(+s.hebYear)));
   $('#hebYear').value=s.hebYear;$('#gregYear').value=s.gregYear;$('#gregStart').value=s.gregStart;$('#hebStart').value=s.hebStart||7;
@@ -2121,7 +2158,7 @@ document.addEventListener('change',e=>{
   if(t.id==='yzOrder')return set('yzOrder',t.value);
   if(t.id==='yzListSel')return set('yzListId',t.value);
   if(t.dataset.yzsrc){state.s.yzSrc={...(state.s.yzSrc||{}),[t.dataset.yzsrc]:t.checked};return set('yzSrc',state.s.yzSrc)}
-  if(t.id==='plZ'||t.id==='plZ2')return set('zmanimMode',t.value);
+  if(t.id==='plZ'||t.id==='plZ2'){if(t.value!=='custom'&&t.value!=='table'&&t.value!=='none')state.s.zplace=null;return set('zmanimMode',t.value)}
   if(t.id==='panelSide')return set('panelSide',t.value);
   if(t.dataset.place){state.s.place={...(state.s.place||{}),yz:(state.s.place||{}).yz||placeOf('yz'),[t.dataset.place]:t.value};return set('place',state.s.place)}
   if(t.id==='yzPanelW')return set('yzPanelW',+t.value);
@@ -2633,6 +2670,69 @@ if($('#evIcs'))$('#evIcs').onclick=()=>{
     q('#icMsg').innerHTML='<span class="msg-ok">הקובץ ירד עם '+n+' אירועים. פתחו אותו כדי להוסיף אותם ליומן.</span>';
   };
 };
+/* ---------- מה מופיע איפה: טורים, ומיקום לכל זמן ---------- */
+const COL_W=[['12','צר מאוד (12%)'],['16','צר (16%)'],['20','בינוני-צר (20%)'],['26','בינוני (26%)'],['32','רחב (32%)'],['40','רחב מאוד (40%)']];
+function colName(cs,id){const i=cs.findIndex(c=>c.id===id);return 'טור '+(i+1)+' ('+(cs[i].side==='right'?'מימין':'משמאל')+')'}
+function renderPlaceUI(){
+  const box=$('#placeUI');if(!box)return;const s=state.s,cs=colsCfg(),P=s.place||{};
+  const typeSel=t=>{const cur=t==='yz'&&(P.yz||'none')==='page'?'page':(t==='yz'?(P.yz||'none'):P[t])==='none'?'none':(colOf(t)?'col:'+colOf(t).id:'cell');
+    return '<select data-ptype="'+t+'">'+opt('cell','בתוך הימים',cur==='cell')+cs.map(c=>opt('col:'+c.id,'ב'+colName(cs,c.id),cur==='col:'+c.id)).join('')+opt('newcol','בטור חדש',false)+(t==='yz'?opt('page','בעמוד נפרד מעל הלוח',cur==='page'):'')+opt('none','לא להציג',cur==='none')+'</select>'};
+  let h='<div class="pl-rows">';
+  for(const [t,n] of COL_TYPES.slice(1,4))h+='<label class="fld">'+n+typeSel(t)+'</label>';
+  h+='</div><h4 class="pl-sub">הטורים ליד הלוח</h4>';
+  if(!cs.length)h+='<p class="hint">אין טורים. כל המידע מופיע בתוך הימים.</p>';
+  cs.forEach((c,i)=>{h+='<div class="col-card" data-colid="'+c.id+'"><div class="col-card-h"><b>טור '+(i+1)+'</b><button type="button" class="btn small danger" data-coldel="1">מחיקת הטור</button></div>'+
+    '<div class="row"><label class="fld">צד<select data-colside="1">'+opt('right','מימין ללוח',c.side==='right')+opt('left','משמאל ללוח',c.side!=='right')+'</select></label>'+
+    '<label class="fld">רוחב<select data-colw="1">'+COL_W.map(x=>opt(x[0],x[1],+x[0]===+c.w)).join('')+(COL_W.some(x=>+x[0]===+c.w)?'':opt(String(c.w),c.w+'%',true))+'</select></label></div>'+
+    '<div class="fld">מה בטור הזה<div class="checks">'+COL_TYPES.map(([t,n])=>'<label class="chk'+(t==='img'&&!canF('banners')?' gated':'')+'"><input type="checkbox" data-coltype="'+t+'"'+(c.types.includes(t)?' checked':'')+'> '+n+'</label>').join('')+'</div></div>'+
+    (c.types.includes('img')?'<label class="chk"><input type="checkbox" data-colper="1"'+(c.imgPer?' checked':'')+'> תמונה אחרת בכל חודש (אחרת: אותה תמונה בכל הלוח)</label><p class="hint">מעלים את התמונה בלחיצה על הטור בתצוגה המקדימה.</p>':'')+'</div>'});
+  h+='<button class="btn" type="button" id="colAdd">+ הוספת טור</button>';
+  box.innerHTML=h;
+  /* מיקום לכל זמן */
+  const zb=$('#zmPlace');if(!zb)return;
+  const dis=zMode()==='none'||zMode()==='table';
+  zb.innerHTML='<div class="zp-head"><span></span><span>ביום</span><span>בטור</span><span>רק בשבת</span></div>'+ZMANIM.map(([k,full])=>{const on=!!s.zmanim[k],p=on?zpl(k):{};
+    return '<div class="zp-row'+(on?'':' off')+'"><span>'+full+'</span><input type="checkbox" data-zpday="'+k+'"'+(p.day?' checked':'')+' aria-label="'+full+' בתוך היום"'+(dis?' disabled':'')+'><input type="checkbox" data-zpcol="'+k+'"'+(p.col?' checked':'')+' aria-label="'+full+' בטור"'+(dis?' disabled':'')+'><input type="checkbox" data-zpsh="'+k+'"'+(p.sh?' checked':'')+' aria-label="'+full+' רק בשבת"'+(dis||!p.day?' disabled':'')+'></div>'}).join('');
+}
+function zplAll(){const s=state.s,o={};for(const [k] of ZMANIM){o[k]=s.zmanim[k]?{...zpl(k)}:{}}return o}
+document.addEventListener('change',e=>{
+  const t=e.target,s=state.s;if(!t.closest||!(t.closest('#placeUI')||t.closest('#zmPlace')))return;
+  const done=()=>{save();syncUI();render()};
+  if(t.dataset.ptype){const ty=t.dataset.ptype,v=t.value;let cs=colsCfg();cs.forEach(c=>c.types=c.types.filter(x=>x!==ty));
+    let pv=v==='none'?'none':v==='page'?'page':'cell';
+    if(v==='newcol'){const last=cs[cs.length-1];cs.push({id:'c'+uid(),side:last?last.side:(s.panelSide==='right'?'right':'left'),w:ty==='learn'?12:22,types:[ty]})}
+    else if(v.startsWith('col:')){const c=cs.find(x=>x.id===v.slice(4));if(c)c.types.push(ty)}
+    saveCols(cs);s.place={...s.place,[ty]:pv};return done()}
+  const card=t.closest('.col-card');
+  if(card){let cs=colsCfg();const c=cs.find(x=>x.id===card.dataset.colid);if(!c)return;
+    if(t.dataset.colside)c.side=t.value;
+    if(t.dataset.colw)c.w=+t.value;
+    if(t.dataset.colper)c.imgPer=t.checked;
+    if(t.dataset.coltype==='img'&&t.checked&&!canF('banners')){t.checked=false;openUpgrade('banners');return}
+    if(t.dataset.coltype){const ty=t.dataset.coltype;
+      if(t.checked){cs.forEach(x=>x.types=x.types.filter(y=>y!==ty));c.types.push(ty);
+        if(ty==='zmanim'){if(!s.zplace&&zMode()!=='custom')s.zmanimMode='col';else{const o=zplAll();for(const k in o)if(s.zmanim[k])o[k]={...o[k],col:1,day:0};s.zplace=o;s.zmanimMode='custom'}}
+        else if((s.place||{})[ty]==='none'||(ty==='yz'&&(s.place||{}).yz!=='col'))s.place={...s.place,[ty]:'cell'};}
+      else{c.types=c.types.filter(y=>y!==ty);
+        if(ty==='zmanim'){const o=zplAll();for(const k in o)if(o[k].col)o[k]={...o[k],col:0,day:1};s.zplace=o;s.zmanimMode='custom'}}
+    }
+    saveCols(cs);return done()}
+  const k=t.dataset.zpday||t.dataset.zpcol||t.dataset.zpsh;
+  if(k){const o=zplAll(),p={...(o[k]||{})};
+    if(t.dataset.zpday)p.day=t.checked?1:0;if(t.dataset.zpcol)p.col=t.checked?1:0;if(t.dataset.zpsh)p.sh=t.checked?1:0;
+    o[k]=p;s.zplace=o;s.zmanim={...s.zmanim,[k]:!!(p.day||p.col)};s.zmanimMode='custom';return done()}
+});
+document.addEventListener('click',e=>{
+  const q=e.target.dataset&&e.target.dataset.zpq;if(!q)return;const s=state.s,o={},MAIN=['sunrise','shma','tfila','sunset','tzeit'];
+  for(const [k] of ZMANIM){if(!s.zmanim[k])continue;o[k]=q==='day'?{day:1}:q==='col'?{col:1}:MAIN.includes(k)?{day:1}:{col:1}}
+  s.zplace=o;s.zmanimMode='custom';save();syncUI();render()});
+document.addEventListener('click',e=>{
+  const s=state.s;
+  if(e.target.id==='colAdd'){const cs=colsCfg(),last=cs[cs.length-1];cs.push({id:'c'+uid(),side:last?(last.side==='right'?'left':'right'):(s.panelSide==='right'?'right':'left'),w:20,types:[]});saveCols(cs);save();syncUI();render();return}
+  if(e.target.dataset&&e.target.dataset.coldel){const card=e.target.closest('.col-card');let cs=colsCfg();const c=cs.find(x=>x.id===card.dataset.colid);if(!c)return;
+    if(c.types.includes('zmanim')){const o=zplAll();for(const k in o)if(o[k].col)o[k]={...o[k],col:0,day:1};s.zplace=o;s.zmanimMode='custom'}
+    saveCols(cs.filter(x=>x!==c));save();syncUI();render()}
+});
 syncPlanUI();
 /* boot */
 (async function(){
@@ -2663,6 +2763,7 @@ syncPlanUI();
     all:{layout:'full',theme:'ink',accent:'#1e5a63',view:'month',size:'wall',orient:'landscape',zmanimMode:'col',banners:['right','left'],place:{yz:'page',learn:'col'},learn:{daf:true,mishna:true,box:true},moon:{molad:true,kl:'ash',klEnd:'rema',tekufa:true,tal:true}},
     week:{view:'week'},day:{view:'day'},table:{view:'table'}};
    if(m&&P[m[1]]){const p=P[m[1]],s=state.s;
+     s.cols=null;s.zplace=null;
      for(const k in p){if(k==='place'||k==='learn'||k==='moon')s[k]={...(s[k]||{}),...p[k]};else s[k]=p[k]}
      if(m[1]==='school'&&!(s.hl||[]).length)s.hl=[{id:'h'+uid(),name:'חופשות',color:'#f6d365',days:{},show:true,repeat:'none'},{id:'h'+uid(),name:'ימי הורים',color:'#a7c7e7',days:{},show:true,repeat:'none'}];
      s.uiMode='wizard';s.step=1;save();try{history.replaceState(null,'',location.pathname)}catch(e){}}}
