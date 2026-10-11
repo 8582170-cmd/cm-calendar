@@ -174,6 +174,7 @@
         <p class="hint">לחצו על כל יום בלוח כדי להוסיף לו טקסט, תמונה, יום הולדת, יום שנה (יארצייט) או תזכורת. אפשר גם לגרור תמונה ישר לתוך יום. אירועים שחוזרים כל שנה יופיעו לבד גם בלוחות הבאים.</p>
         <div class="listbox" id="evList"></div>
         <button class="btn" type="button" id="addEvSide">הוספת אירוע</button>
+        <label class="fld">יום שנה (יארצייט) במשפחה נכתב בלוח<select id="persPrefix"><option value="yaz">יא״צ משה כהן</option><option value="ys">יום השנה למשה כהן</option><option value="yosh">יו״ש משה כהן</option><option value="azk">אזכרה למשה כהן</option></select></label>
         <div class="row ev-tools"><button class="btn small" type="button" id="evImport">ייבוא מקובץ</button><button class="btn small" type="button" id="evIcs">תזכורות ליומן בטלפון</button></div>
       </div>
     </details>
@@ -443,6 +444,7 @@
         <p class="hint" id="yzListHint">אפשר לשמור כמה רשימות אישיות, למשל "גדולי חסידות" או "רבני ספרד", ולעבור ביניהן.</p>
         <div class="row">
           <label class="fld">סדר בתוך כל יום<select id="yzOrder"><option value="year">לפי שנים, מהקדום לחדש</option><option value="recent">לפי שנים, מהחדש לקדום</option><option value="db">כמו במאגר</option></select></label>
+          <label class="fld">איך לכתוב לפני השם<select id="yzPrefix"><option value="yaz">יא״צ</option><option value="hil">הילולת</option><option value="yoma">יומא דהילולא</option><option value="yod">יו״ד (ראשי תיבות של יומא דהילולא)</option><option value="none">רק השם</option></select></label>
           <label class="fld">צורת הכתיבה<select id="yzFmt"><option value="short">מקוצרת</option><option value="full">מלאה עם שנה</option></select></label>
           <label class="chk"><input type="checkbox" data-opt="yzLines"> כל אירוע בשורה נפרדת</label>
           <label class="fld">כשהאירועים לא נכנסים בעמוד<select id="histOverflow"><option value="ask">לשאול אותי</option><option value="page">להוסיף עמוד נוסף</option><option value="shrink">להקטין את הטקסט</option></select></label>

@@ -633,6 +633,11 @@ function eventHits(e,date,hd){
   const len=HDate.daysInMonth(hd.getMonth(),hd.getFullYear()),day=(+e.day===30&&len===29)?29:+e.day;
   return monthMatches(+e.month,hd.getMonth(),isLeap(hd.getFullYear()))&&hd.getDate()===day;
 }
+/* איך נכתב יום שנה בלוח: למשפחה ולצדיקים, לפי בחירה */
+const PERS_P={yaz:'יא״צ ',ys:'יום השנה ל',yosh:'יו״ש ',azk:'אזכרה ל'},YZ_P={yaz:'יא״צ ',hil:'הילולת ',yoma:'יומא דהילולא ',yod:'יו״ד ',none:''};
+const persP=()=>PERS_P[state.s.persPrefix]??'יא״צ ';
+const yzP=()=>YZ_P[state.s.yzPrefix]??'יא״צ ';
+const stripYP=t=>{t=String(t);const p=yzP();return p&&t.startsWith(p)?t.slice(p.length):t};
 function eventLabel(e,date,hd){
   let n='';
   if(e.year&&e.rec!=='once'){n=e.rec==='heb'?hd.getFullYear()-e.year:date.getFullYear()-e.year;if(!(n>0&&n<200))n=''}
@@ -640,7 +645,7 @@ function eventLabel(e,date,hd){
   switch(e.kind){
     case 'birthday':if(e.bm&&n===(e.bm==='bat'?12:13))return (e.bm==='bat'?'בת מצווה ל':'בר מצווה ל')+name;return 'יום הולדת ל'+name+(n?' ('+n+')':'');
     case 'anniversary':return 'יום נישואין ל'+name+(n?' ('+n+')':'');
-    case 'yahrzeit':return 'יא״צ '+name;
+    case 'yahrzeit':return persP()+name;
     case 'reminder':return 'תזכורת: '+name;
     default:return name;
   }
@@ -719,12 +724,12 @@ function yzText(e,full){
     let n=t.replace(/^(נפ'|נעקה"ש|שנה לפטי')\s*/,'').replace(/^(ה?גה?[מקצ]?"ר|ההק"ר|ההצ"ר|הגהק"ר|הגהצ"ר|הג"ר|הגאון)\s+/,"ר' ").replace(/\s*\([^)]*\)\s*/g,' ');
     n=n.split(/,| ב' | זצ"ל| זלה"ה| הי"ד/)[0].trim();
     const nick=(t.match(/,\s*(ה[א-ת"']+(?: [א-ת"']+)?)\s*(?:זצ"ל|,|$)/)||[])[1];
-    return 'יא״צ '+n+(nick&&nick.length<26?', '+nick:'');
+    return yzP()+n+(nick&&nick.length<26?', '+nick:'');
   }
   if(!p){const c=t.split(/,|\(|\[/)[0].trim();return c.length>70?c.slice(0,68)+'…':c}
   const seg=t.split(', ');let name=seg[0].replace(/\s*\(.*?\)\s*/g,' ').trim();
   const nick=(seg[1]||'').trim();
-  return 'יא״צ '+name+(nick&&nick.length<=30&&!/^(ב'|וב'|ר"י|רבה|אב"ד|מרבני|תלמיד)/.test(nick)?', '+nick:'');
+  return yzP()+name+(nick&&nick.length<=30&&!/^(ב'|וב'|ר"י|רבה|אב"ד|מרבני|תלמיד)/.test(nick)?', '+nick:'');
 }
 function yzItems(hd,big,noLimit){
   const s=state.s;if((s.yzMode||'selected')==='none')return [];
@@ -864,7 +869,7 @@ function personalOnly(date,hd){
 function gedolimFor(hd,big,noLimit){
   const out=[],leap=isLeap(hd.getFullYear());
   for(const g of GEDOLIM.concat(state.customGedolim)){
-    if(state.s.gedolim[g.id]&&monthMatches(+g.month,hd.getMonth(),leap)&&hd.getDate()===+g.day)out.push({cls:'gadol',text:'יא״צ '+g.name});
+    if(state.s.gedolim[g.id]&&monthMatches(+g.month,hd.getMonth(),leap)&&hd.getDate()===+g.day)out.push({cls:'gadol',text:yzP()+g.name});
   }
   return out.concat(yzItems(hd,big,noLimit));
 }
@@ -998,7 +1003,7 @@ function addHistBox(p,mo,full){
   const dl=d=>{const hd=new HDate(d);return dStyle().startsWith('greg')?gregShort(d):hebShort(hd)};
   let n=0;
   for(const d of mo.days){const L=gedolimFor(new HDate(d),true,true);if(!L.length)continue;const day=el('div','yzp-day');day.appendChild(el('span','yzp-d',esc(dl(d))));
-    for(const it of L){const e=el('span','yzp-e'+(it.cls&&it.cls!=='gadol'?' '+it.cls:''));e.textContent=String(it.text).replace(/^יא״צ /,'');day.appendChild(e);n++}box.appendChild(day)}
+    for(const it of L){const e=el('span','yzp-e'+(it.cls&&it.cls!=='gadol'?' '+it.cls:''));e.textContent=stripYP(it.text);day.appendChild(e);n++}box.appendChild(day)}
   if(!n)box.appendChild(el('div','yzp-empty','אין אירועים מסומנים לחודש זה.'));
   p.appendChild(box);
 }
@@ -1311,7 +1316,7 @@ function addMonthGrid(p,mo,evMap){
       const section=(title,getter,empty)=>{
         const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h',esc(title)));let n=0;
         for(const d of mo.days){const L=getter(d);if(!L.length)continue;const day=el('div','yzp-day');day.appendChild(el('span','yzp-d',esc(dl(d))));
-          for(const it of L){const e=el('span','yzp-e'+(it.cls&&it.cls!=='gadol'?' '+it.cls:''));e.textContent=String(it.text).replace(/^יא״צ /,'');day.appendChild(e);n++}sec.appendChild(day)}
+          for(const it of L){const e=el('span','yzp-e'+(it.cls&&it.cls!=='gadol'?' '+it.cls:''));e.textContent=stripYP(it.text);day.appendChild(e);n++}sec.appendChild(day)}
         if(!n)sec.appendChild(el('div','yzp-empty',esc(empty)));body.appendChild(sec)};
       for(const t of col.types){
         if((t==='img'||t==='ad')&&canF('banners')){
@@ -1500,7 +1505,7 @@ function weekPage(days,evMap){
       const colEls=colT.map(t=>{const c=el('div','wd-c wd-c-'+t);
         if(wide)c.appendChild(el('div','wd-col-h',COLN[t]));
         if(t==='zmanim'){c.innerHTML+=zCol(d).map(z=>'<div class="zr'+(z.b?' zb':'')+'"><span>'+esc(z.k)+'</span><b>'+esc(z.v)+'</b></div>').join('')}
-        else{const L=t==='personal'?I.pers:t==='yz'?I.ged:I.items.filter(it=>it.learn||it.cls==='moon');for(const it of L){const e=el('div','e '+it.cls);e.textContent=String(it.text).replace(/^יא״צ /,t==='yz'?'':'יא״צ ');c.appendChild(e)}}
+        else{const L=t==='personal'?I.pers:t==='yz'?I.ged:I.items.filter(it=>it.learn||it.cls==='moon');for(const it of L){const e=el('div','e '+it.cls);e.textContent=t==='yz'?stripYP(it.text):String(it.text);c.appendChild(e)}}
         return c});
       (s.panelSide==='right'?colEls.concat(main):[main].concat(colEls)).forEach(x=>b.appendChild(x));
       wk.appendChild(b);continue;
@@ -2290,7 +2295,7 @@ function renderYz(){
   document.querySelectorAll('input[name=yzMode]').forEach(r=>r.checked=r.value===mode);
   $('#yzListSel').innerHTML=yzListOptions();$('#yzListRow').hidden=(s.yzMode||'selected')==='all';$('#yzListHint').hidden=(s.yzMode||'selected')==='all';
   $('#yzOrder').value=s.yzOrder||'year';
-  $('#yzFmt').value=s.yzFmt||'short';$('#yzHist').checked=!!s.yzHist;
+  $('#yzFmt').value=s.yzFmt||'short';$('#yzPrefix').value=s.yzPrefix||'yaz';$('#persPrefix').value=s.persPrefix||'yaz';$('#yzHist').checked=!!s.yzHist;
   let L;
   if(qv){const words=qv.replace(/["'״׳]/g,'').split(/\s+/);L=yzAll().filter(e=>yzMatches(e,words)).slice(0,80)}
   else if(mode==='all'){const h=s.yzHide||{};L=yzAll().filter(e=>h[e.id]);}
@@ -2361,7 +2366,7 @@ document.addEventListener('change',e=>{
     case 'accentCustom':return set('accent',t.value);
     case 'size':{const z=SIZES[t.value];if(z&&z.o)state.s.orient=z.o;return set('size',t.value)}
     case 'customW':case 'customH':if(+t.value>=50&&+t.value<=1200)set(t.id,+t.value);return;
-    case 'm_shma':case 'ytsg':case 'chanukah':return set(t.id,t.value);
+    case 'm_shma':case 'ytsg':case 'chanukah':case 'yzPrefix':case 'persPrefix':yzInvalidate&&yzInvalidate();return set(t.id,t.value);
     case 'secs':return set('secs',t.checked);
     case 'zmPreset':{if(t.value!=='custom')state.s.zm={...ZM_PRESETS[t.value]};return set('zmPreset',t.value)}
     case 'headFont':case 'bodyFont':loadFont(t.value);return set(t.id,t.value);
@@ -2785,7 +2790,7 @@ function icsToEvents(t){
     const get=k=>{const m=b.match(new RegExp('^'+k+'[^:\\n]*:(.*)$','m'));return m?m[1].trim():''};
     const name=get('SUMMARY').replace(/\\,/g,',').replace(/\\n/g,' '),g=parseAnyDate(get('DTSTART'));if(!name||!g)continue;
     const yearly=/FREQ=YEARLY/.test(get('RRULE')),kind=kindOf(name)||'event';
-    const o={id:uid(),kind:kind==='other'?'other':kind,name:name.replace(/^(יום הולדת ל|יום נישואין ל|יא״צ )/,''),img:null};
+    const o={id:uid(),kind:kind==='other'?'other':kind,name:name.replace(/^(יום הולדת ל|יום נישואין ל|יא״צ |יום השנה ל|אזכרה ל|יו״ש )/,''),img:null};
     if(yearly){o.rec='greg';o.day=g.getDate();o.month=g.getMonth()+1;o.year=''}else{o.rec='once';o.date=iso(g)}
     if(!['birthday','anniversary','yahrzeit','reminder'].includes(o.kind)){o.kind='other';o.name=name}
     out.push(o)}
