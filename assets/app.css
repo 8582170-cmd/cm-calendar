@@ -628,3 +628,9 @@ td.zb{font-weight:800}
   .side{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;overscroll-behavior:contain;padding-inline-end:6px;padding-block:8px 0;scrollbar-width:thin}
 }
 @media print{.side{position:static;max-height:none;overflow:visible}}
+
+/* הסבר שיטות */
+.zexp{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4) calc(var(--u)*2.4);font-size:calc(var(--u)*1.9);color:var(--p-mute);line-height:1.3;padding-top:calc(var(--u)*.8)}
+.zexp b{color:var(--p-ink,inherit);font-weight:600}
+.yzp-sec .zexp{flex-direction:column;gap:calc(var(--u)*.2)}
+.zl-m{display:block;font-size:.72em;color:var(--p-mute);font-weight:400}

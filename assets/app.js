@@ -86,7 +86,7 @@ const ZMANIM=[
  ['alot','עלות השחר','עלות','down'],['alot2','עלות השחר ב׳','עלות ב׳','down'],['misheyakir','משיכיר (טלית ותפילין)','טלית','up'],['sunrise','הנץ החמה','נץ','up'],
  ['shma','סוף זמן ק״ש','ק״ש','down'],['tfila','סוף זמן תפילה','תפילה','down'],['musaf','סוף זמן מוסף לכתחילה','מוסף','down'],['chatzot','חצות היום','חצות','up'],
  ['minchaG','מנחה גדולה','מ.גדולה','up'],['minchaK','מנחה קטנה','מ.קטנה','up'],['plag','פלג המנחה','פלג','up'],
- ['yereim','בין השמשות (יראים)','בה״ש','down'],['sunset','שקיעה','שקיעה','down'],['tzeit','צאת הכוכבים','צאה״כ','up'],['ci','צאה״כ חזו״א','חזו״א','up'],['rt','צאה״כ רבינו תם','ר״ת','up'],['chatzotNight','חצות הלילה','חצות ל׳','up'],['hour','אורך שעה זמנית (גר״א)','שעה זמנית','near']];
+ ['yereim','בין השמשות (יראים)','בה״ש','down'],['sunset','שקיעה','שקיעה','down'],['tzeit','צאת הכוכבים','צאה״כ','up'],['ci','צאה״כ חזו״א','חזו״א','up'],['rt','צאה״כ רבינו תם','ר״ת','up'],['chatzotNight','חצות הלילה','חצות ל׳','up'],['ash2','אשמורת התיכונה (שליש הלילה)','אשמורת ב׳','up'],['ash3','אשמורת הבוקר (שני שלישי הלילה)','אשמורת ג׳','up'],['hour','אורך שעה זמנית (גר״א)','שעה זמנית','near']];
 
 const GEDOLIM=[
  ['rashbi','רבי שמעון בר יוחאי',18,2],['meir','רבי מאיר בעל הנס',14,2],['rambam','הרמב״ם',20,10],
@@ -267,7 +267,7 @@ function hm(s){const m=/^(\d{1,2}):(\d{2})/.exec(s||'');return m?(+m[1])*60+(+m[
 function dstWindow(y){/* בזמן חורף מקומי: מ־ההתחלה עד הסוף (שעת הסוף נכתבת לפי שעון הקיץ) */const c=dstCfg();return [Date.UTC(y,c.sm-1,c.sd)+hm(c.st)*60000,Date.UTC(y,c.em-1,c.ed)+(hm(c.et)-60)*60000]}
 function customOff(ms,tz){const y=new Date(ms).getUTCFullYear(),base=stdOff(tz,y);if(dstMode()==='none')return base;const L=ms+base*60000,[S,E]=dstWindow(y);const inS=S<=E?(L>=S&&L<E):(L>=S||L<E);return base+(inS?60:0)}
 /* ---------- halachic times engine ---------- */
-const ZM_BASE={gra:'netz',minchaK:'gra',musaf:'gra',ci:'9.28',fastStart:'alot',chatzotNight:'true',chatzot:'mid',yereim:'-18f'};
+const ZM_BASE={ash:'shkia',gra:'netz',minchaK:'gra',musaf:'gra',ci:'9.28',fastStart:'alot',chatzotNight:'true',chatzot:'mid',yereim:'-18f'};
 const ZM_PRESETS={
   ashkenaz:{...ZM_BASE,alot:'19.75',alot2:'16.1',mish:'11.5',netz:'sea',shkia:'sea',mga:'19.75',minchaG:'lechumra',plag:'gra',tzeit:'8.5',motzash:'8.5',rt:'72f',fastEnd:'6.45'},
   sefardi:{...ZM_BASE,alot:'72z',alot2:'90z',mish:'66z',netz:'elev',shkia:'elev',mga:'72z',minchaG:'fixed30',plag:'sefardi',tzeit:'13.5z',motzash:'30f',rt:'72z',fastEnd:'20f'},
@@ -307,6 +307,7 @@ const ZM_FIELDS=[
   ['tzeit','צאת הכוכבים (ימי חול)',ZM_TZ],
   ['ci','צאה״כ חזו״א',[['9.28','9.28°'],['40f','40 דק׳ שוות'],['8.5','8.5°']]],
   ['rt','רבינו תם',[['72f','72 דק׳ שוות'],['72z','72 דק׳ זמניות'],['16.1','16.1°'],['90f','90 דק׳ שוות'],['120f','120 דק׳'],['26','26°']]],
+  ['ash','משמרות הלילה (שלוש אשמורות)',[['shkia','הלילה מהשקיעה עד הנץ'],['tzeit','הלילה מצאת הכוכבים עד עלות השחר']]],
   ['chatzotNight','חצות הלילה',[['true','12 שעות אחרי חצות היום'],['shkia6','6 שעות אחרי השקיעה'],['tzeit6','6 שעות אחרי צאה״כ']]],
   ['motzash','צאת שבת וחג',ZM_TZ],
   ['fastStart','תחילת צום (בבוקר)',[['alot','כמו עלות השחר'],['alot2','כמו עלות השחר ב׳']].concat(ZM_ALOT)],
@@ -347,8 +348,27 @@ function zctx(date){
     chametzEatGRA:T(gN,4*H),chametzEatMGA:T(ms,4*Hm),chametzBurnGRA:T(gN,5*H),chametzBurnMGA:T(ms,5*Hm),hourGRA:H,
     chatzotNight:M.chatzotNight==='shkia6'?T(shkia,6*3600000):M.chatzotNight==='tzeit6'?T(tzeitW,6*3600000):safe(()=>zs.chatzotNight())
   };
+  /* משמרות הלילה: הלילה שאחרי היום הזה מחולק לשלוש */
+  Object.defineProperty(Z,'ash2',{get(){return nightPart(date,M,1)},enumerable:false});
+  Object.defineProperty(Z,'ash3',{get(){return nightPart(date,M,2)},enumerable:false});
   ZC.set(key,Z);return Z;
 }
+function nightPart(date,M,i){
+  const Z=zctx(date),N=zctx(new Date(date.getFullYear(),date.getMonth(),date.getDate()+1,12));
+  const a=M.ash==='tzeit'?Z.tzeit:Z.sunset,b=M.ash==='tzeit'?N.alot:N.sunrise;
+  return a&&b?new Date(a.getTime()+(b-a)*i/3):null}
+/* שורת הסבר: לפי איזו שיטה מחושב כל זמן */
+function zMethodText(k){
+  const M=zmCfg(),lab=f=>{const F=ZM_FIELDS.find(x=>x[0]===f);if(!F)return '';const v=M[f];const o=(F[2]||[]).find(x=>String(x[0])===String(v));return o?o[1]:v!=null?zmKeyLabel(v):''};
+  if(k==='shma'||k==='tfila'){const md=(state.s.zmode||{})[k]||state.s.m_shma,h=k==='shma'?3:4;
+    const g='גר״א: '+h+' שעות זמניות, '+lab('gra'),m='מג״א: '+h+' שעות זמניות, '+lab('mga');return md==='both'?m+' · '+g:md==='mga'?m:g}
+  if(k==='hour')return 'אורך שעה זמנית לפי הגר״א, '+lab('gra');
+  if(k==='ash2'||k==='ash3')return (k==='ash2'?'שליש':'שני שלישי')+' '+lab('ash');
+  const f=ZM_ROW_FIELD[k];return f?lab(f):''}
+function zExplainHTML(keys){
+  if(!state.s.zExplain)return '';const seen=new Set(),rows=[];
+  for(const z of keys){if(seen.has(z.key))continue;seen.add(z.key);const t=zMethodText(z.key);if(t)rows.push('<span><b>'+esc(String(z.k).replace(/ (מג״א|גר״א)$/,''))+':</b> '+esc(t)+'</span>')}
+  return rows.length?'<div class="zexp">'+rows.join('')+'</div>':''}
 /* ---------- molad, kiddush levana, tekufot, daily learning ---------- */
 const JMT_MS=(35.2354/15)*3600000;
 function moladRD(y,m){const Y=m<7?y+1:y;const me=(m-7)+Math.floor((235*Y-234)/19);return -1373427-876/25920+me*(29.5+793/25920)}
@@ -1159,7 +1179,7 @@ function addMonthGrid(p,mo,evMap){
           const keys=zCol(mo.days[0],true).map(z=>z.k);
           let h='<table class="yzp-zt"><thead><tr><th></th>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>';
           for(const d of mo.days)h+='<tr'+(d.getDay()===6?' class="shabbat"':'')+'><td>'+esc(dl(d))+'</td>'+zCol(d,true).map(z=>'<td'+(z.b?' class="zb"':'')+'>'+esc(z.v)+'</td>').join('')+'</tr>';
-          sec.insertAdjacentHTML('beforeend',h+'</tbody></table>');body.appendChild(sec);
+          sec.insertAdjacentHTML('beforeend',h+'</tbody></table>'+zExplainHTML(zCol(mo.days[0],true)));body.appendChild(sec);
         }
         else if(t==='personal'&&placeOf('personal')==='col')section('אירועים אישיים',d=>personalOnly(d,new HDate(d)),'אין אירועים אישיים בחודש זה.');
         else if(t==='yz'&&placeOf('yz')==='col')section(s.yzHist?'יארצייטים ודברי הימים':'יארצייטים',d=>gedolimFor(new HDate(d),true,true),'אין יארצייטים מסומנים לחודש זה.');
@@ -1189,6 +1209,7 @@ function addMonthGrid(p,mo,evMap){
     p.appendChild(row);
   }else p.appendChild(grid);
   if(s.zmanimMode==='table')p.appendChild(zmanimTable(mo,evMap));
+  if(s.zExplain){const ks=zOn()?zmanimFor(mo.days[0]).filter(z=>zpl(z.key).day):[];const x=zExplainHTML(ks);if(x)p.insertAdjacentHTML('beforeend',x)}
   if(s.dedication)p.appendChild(editable('dedic',(state.slots[mo.key]||{}).dedic,'לחצו להוספת הקדשה או חסות לחודש זה',t=>{state.slots[mo.key]={...(state.slots[mo.key]||{}),dedic:t};save()}));
   addFootLine(p);
   applyBanner(p,mo.key);
@@ -1236,6 +1257,7 @@ function zmanimTable(mo,evMap){
     h+='<tr><td>'+label+'</td><td>'+timeOf(fri,'candle')+'</td>'+zmanimFor(d,true).map(z=>'<td'+(z.b?' class="zb"':'')+'>'+esc(z.v)+'</td>').join('')+'<td>'+timeOf(d,'havdalah')+'</td></tr>';
   }
   t.innerHTML=h+'</tbody>';
+  if(state.s.zExplain&&first.length){const w=el('div','zt-wrap');w.appendChild(t);w.insertAdjacentHTML('beforeend',zExplainHTML(first));return w}
   return t;
 }
 const XTYPES={image:'תמונה וטקסט / פרסומת',text:'טקסט בלבד',notes:'דף הערות עם שורות',blank:'עמוד ריק'};
@@ -1383,7 +1405,7 @@ function dayPage(d,evMap){
   const timed=I.items.filter(x=>x.tkind);
   if(zs.length||timed.length){
     let h='<div class="zl-t">זמני היום</div>';
-    for(const z of zs)h+='<div class="zl'+(z.b?' zb':'')+'"><span>'+esc(z.k)+'</span><b>'+esc(z.v)+'</b></div>';
+    for(const z of zs)h+='<div class="zl'+(z.b?' zb':'')+'"><span>'+esc(z.k)+(s.zExplain&&zMethodText(z.key)?'<small class="zl-m">'+esc(zMethodText(z.key))+'</small>':'')+'</span><b>'+esc(z.v)+'</b></div>';
     for(const t of timed)h+='<div class="zl"><span>'+esc(t.text.replace(t.time,'').trim())+'</span><b>'+esc(t.time)+'</b></div>';
     side.appendChild(el('div','zlist',h));
   }
@@ -1570,7 +1592,7 @@ function zmMethodCtl(k){
   }
   return h;
 }
-const ZM_ROW_FIELD={yereim:'yereim',chatzot:'chatzot',alot:'alot',alot2:'alot2',misheyakir:'mish',sunrise:'netz',musaf:'musaf',minchaG:'minchaG',minchaK:'minchaK',plag:'plag',sunset:'shkia',tzeit:'tzeit',ci:'ci',rt:'rt',chatzotNight:'chatzotNight'};
+const ZM_ROW_FIELD={yereim:'yereim',chatzot:'chatzot',alot:'alot',alot2:'alot2',misheyakir:'mish',sunrise:'netz',musaf:'musaf',minchaG:'minchaG',minchaK:'minchaK',plag:'plag',sunset:'shkia',tzeit:'tzeit',ci:'ci',rt:'rt',chatzotNight:'chatzotNight',ash2:'ash',ash3:'ash'};
 function openZmanimSettings(){
   if(!canF('advZmanim')){openUpgrade('advZmanim');return}
   const m=modal('<h3>שיטה לכל זמן<small>בוחרים שיטה כללית, ואז אפשר לשנות לכל זמן בנפרד את שיטת החישוב, השם, העיגול ואם יופיע. הזמנים לדוגמה מחושבים לתאריך ולמקום שבחרתם.</small></h3>'+
