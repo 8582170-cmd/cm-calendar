@@ -2942,6 +2942,18 @@ document.addEventListener('click',e=>{
     if(c.types.includes('zmanim')){const o=zplAll();for(const k in o)if(o[k].col)o[k]={...o[k],col:0,day:1};s.zplace=o;s.zmanimMode='custom'}
     saveCols(cs.filter(x=>x!==c));save();syncUI();render()}
 });
+/* ---------- הגנה על דברי הימים מפני העתקה ---------- */
+const YZ_PROT='.hist-body,.yz-panel,.e.gadol,.yzp-e,.yz-list,.ym-list,#ymList,.yz-row,.wd-c-yz,.c-yz';
+const yzProt=n=>{n=n&&(n.nodeType===1?n:n.parentElement);return !!(n&&n.closest&&n.closest(YZ_PROT))};
+function selTouchesYz(){const sel=window.getSelection();if(!sel||!sel.rangeCount)return false;
+  if(yzProt(sel.anchorNode)||yzProt(sel.focusNode))return true;
+  const r=sel.getRangeAt(0),c=r.commonAncestorContainer;const root=c.nodeType===1?c:c.parentElement;
+  return !!(root&&[...root.querySelectorAll(YZ_PROT)].some(x=>r.intersectsNode(x)))}
+const YZ_NOTE='התוכן של דברי הימים מוגן בזכויות יוצרים · לוחנו';
+['copy','cut'].forEach(ev=>document.addEventListener(ev,e=>{if(!selTouchesYz())return;e.preventDefault();try{e.clipboardData.setData('text/plain',YZ_NOTE)}catch(err){}},true));
+document.addEventListener('contextmenu',e=>{if(yzProt(e.target))e.preventDefault()},true);
+document.addEventListener('dragstart',e=>{if(yzProt(e.target))e.preventDefault()},true);
+document.addEventListener('selectstart',e=>{if(yzProt(e.target)&&!e.target.closest('[contenteditable=true],input,textarea'))e.preventDefault()},true);
 syncPlanUI();
 /* boot */
 (async function(){

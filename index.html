@@ -166,6 +166,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   .d b{font-size:13px}.z,.d i{display:none}
   .sheet{padding:14px 12px 10px}.sheet-head b{font-size:32px}
 }
+#hist,#hist *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 </style>
 </head>
 <body>
@@ -319,6 +320,8 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   document.getElementById('curUsd').onclick=()=>{cur='usd';try{localStorage.setItem('luchenu-cur',cur)}catch(e){}draw()};
   draw();
 })();
+
+;['copy','cut','contextmenu','dragstart'].forEach(ev=>document.addEventListener(ev,e=>{const n=e.target&&e.target.closest?e.target:null;const s=window.getSelection&&window.getSelection();const inH=(x)=>{x=x&&(x.nodeType===1?x:x.parentElement);return x&&x.closest&&x.closest('#hist')};if(inH(n)||(s&&(inH(s.anchorNode)||inH(s.focusNode)))){e.preventDefault();if(e.clipboardData)e.clipboardData.setData('text/plain','© לוחנו')}},true));
 </script>
 </body>
 </html>
