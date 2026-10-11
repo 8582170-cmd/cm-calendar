@@ -2179,7 +2179,26 @@ $('#printBtn2').onclick=$('#homePrint').onclick=()=>doPrint();
 const HL_COLORS=['#f6d365','#9bd3ae','#a7c7e7','#f4a6a6','#c9b6e4','#ffcf99','#b5e2e0','#e6c9a8','#d4e157','#f8bbd0'];
 let PAINT=null;
 function hlLists(){const s=state.s;if(!Array.isArray(s.hl))s.hl=[];return s.hl}
-function hlFor(isoD){return hlLists().filter(l=>l.show!==false&&l.days&&l.days[isoD])}
+function hlKey(l,isoD){
+  if(l.repeat==='greg')return 'g:'+isoD.slice(5);
+  if(l.repeat==='heb'){const [y,m,d]=isoD.split('-').map(Number),hd=new HDate(new Date(y,m-1,d,12));return 'h:'+hd.getMonth()+'-'+hd.getDate()}
+  return isoD;
+}
+function hlFor(isoD){return hlLists().filter(l=>l.show!==false&&l.days&&l.days[hlKey(l,isoD)])}
+function hlSetRepeat(l,mode){
+  const old=l.days||{},nd={};
+  for(const k in old){
+    let iso=k;
+    if(!/^\d{4}-/.test(k)){/* מפתח חוזר: ממירים לתאריך בשנה הנוכחית של הלוח */
+      const ms=monthsCache||[];let found=null;
+      for(const mo of ms){for(const d of mo.days){const x=iso8(d);if(hlKey({repeat:k[0]==='g'?'greg':'heb'},x)===k){found=x;break}}if(found)break}
+      if(!found)continue;iso=found;
+    }
+    nd[hlKey({repeat:mode},iso)]=1;
+  }
+  l.repeat=mode;l.days=nd;
+}
+function iso8(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function hlPaintCell(c){
   const ls=hlFor(c.dataset.date);c.classList.toggle('hl',ls.length>0);
   if(!ls.length){c.style.removeProperty('--hl');c.style.removeProperty('--hl2');return}
@@ -2199,7 +2218,7 @@ function hlApply(){
 }
 function hlToggle(isoD){
   const l=hlLists().find(x=>x.id===PAINT);if(!l)return;l.days=l.days||{};
-  if(l.days[isoD])delete l.days[isoD];else l.days[isoD]=1;
+  const k=hlKey(l,isoD);if(l.days[k])delete l.days[k];else l.days[k]=1;
   save();stage.querySelectorAll('[data-date="'+isoD+'"]').forEach(hlPaintCell);renderHl(true);
   if(state.s.hlLegend)hlApply();
 }
@@ -2215,11 +2234,11 @@ function renderHl(light){
   const L=hlLists(),box=$('#hlLists');if(!box)return;
   $('#hlCount').textContent=L.length?L.length+'/10':'';$('#hlAdd').disabled=L.length>=10;
   if(light){L.forEach(l=>{const n=box.querySelector('[data-hlc="'+l.id+'"]');if(n)n.textContent=Object.keys(l.days||{}).length+' ימים'});return}
-  box.innerHTML=L.length?L.map(l=>'<div class="hl-row'+(PAINT===l.id?' on':'')+'" data-hl="'+l.id+'"><input type="color" value="'+esc(l.color)+'" data-hlf="color" aria-label="צבע"><input type="text" value="'+esc(l.name)+'" data-hlf="name" aria-label="שם הרשימה"><small data-hlc="'+l.id+'">'+Object.keys(l.days||{}).length+' ימים</small><button class="btn small'+(PAINT===l.id?' primary':'')+'" type="button" data-hla="paint">'+(PAINT===l.id?'סיום':'לצבוע ימים')+'</button><button class="btn small" type="button" data-hla="vis" title="להציג או להסתיר בלוח">'+(l.show===false?'מוסתר':'מוצג')+'</button><button class="x" type="button" data-hla="del" aria-label="מחיקת הרשימה">×</button></div>').join(''):'<p class="hint">עדיין אין רשימות.</p>';
+  box.innerHTML=L.length?L.map(l=>'<div class="hl-row'+(PAINT===l.id?' on':'')+'" data-hl="'+l.id+'"><input type="color" value="'+esc(l.color)+'" data-hlf="color" aria-label="צבע"><input type="text" value="'+esc(l.name)+'" data-hlf="name" aria-label="שם הרשימה"><small data-hlc="'+l.id+'">'+Object.keys(l.days||{}).length+' ימים</small><button class="btn small'+(PAINT===l.id?' primary':'')+'" type="button" data-hla="paint">'+(PAINT===l.id?'סיום':'לצבוע ימים')+'</button><button class="btn small" type="button" data-hla="vis" title="להציג או להסתיר בלוח">'+(l.show===false?'מוסתר':'מוצג')+'</button><select data-hlf="repeat" class="hl-rep" aria-label="חזרה בשנה הבאה">'+[['none','רק השנה'],['heb','כל שנה לפי התאריך העברי'],['greg','כל שנה לפי התאריך הלועזי']].map(o=>'<option value="'+o[0]+'"'+((l.repeat||'none')===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select><button class="x" type="button" data-hla="del" aria-label="מחיקת הרשימה">×</button></div>').join(''):'<p class="hint">עדיין אין רשימות.</p>';
 }
 $('#hlAdd').onclick=()=>{const L=hlLists();if(L.length>=10)return;const id='h'+uid();L.push({id,name:'רשימה '+(L.length+1),color:HL_COLORS[L.length%10],days:{},show:true});PAINT=id;save();renderHl();hlPaintBar();hlApply()};
-$('#hlLists').addEventListener('input',e=>{const r=e.target.closest('[data-hl]'),f=e.target.dataset.hlf;if(!r||!f)return;const l=hlLists().find(x=>x.id===r.dataset.hl);if(!l)return;l[f]=e.target.value;save();if(f==='color'){hlApply();hlPaintBar()}else if(PAINT===l.id)hlPaintBar()});
-$('#hlLists').addEventListener('change',e=>{if(e.target.dataset.hlf){e.stopPropagation();if(state.s.hlLegend)hlApply()}},true);
+$('#hlLists').addEventListener('input',e=>{const r=e.target.closest('[data-hl]'),f=e.target.dataset.hlf;if(!r||!f||f==='repeat')return;const l=hlLists().find(x=>x.id===r.dataset.hl);if(!l)return;l[f]=e.target.value;save();if(f==='color'){hlApply();hlPaintBar()}else if(PAINT===l.id)hlPaintBar()});
+$('#hlLists').addEventListener('change',e=>{const f=e.target.dataset.hlf;if(!f)return;e.stopPropagation();if(f==='repeat'){const r=e.target.closest('[data-hl]'),l=hlLists().find(x=>x.id===r.dataset.hl);if(l){hlSetRepeat(l,e.target.value);save();renderHl();hlApply()}}else if(state.s.hlLegend)hlApply()},true);
 $('#hlLists').addEventListener('click',e=>{const b=e.target.closest('[data-hla]'),r=e.target.closest('[data-hl]');if(!b||!r)return;const L=hlLists(),l=L.find(x=>x.id===r.dataset.hl);if(!l)return;
   const a=b.dataset.hla;
   if(a==='paint'){PAINT=PAINT===l.id?null:l.id;hlPaintBar()}
