@@ -162,3 +162,18 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 
 .ws{display:none}
 @media (max-width:640px){.ws{display:inline}}
+
+/* ספירה לאחור */
+.kcard{background:var(--kb);border:2px solid var(--k);border-radius:18px;padding:22px 18px;text-align:center}
+.ktitle{font-family:var(--f-h);font-size:26px;font-weight:700;color:var(--k)}
+.kbig{font-family:var(--f-h);font-size:96px;font-weight:700;color:var(--k);line-height:1.05}
+.ksub{font-size:18px;font-weight:700}
+.kdate{color:var(--mute);margin-top:4px}
+.kmini{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:16px}
+.kmo{width:220px}
+.kmo b{color:var(--k)}
+.kgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:4px}
+.kgrid span{font-size:12px;padding:3px 0;border-radius:6px;background:#fff;border:1px solid var(--line);min-height:22px}
+.kgrid span:empty{background:none;border:0}
+.kgrid .past{opacity:.35}
+.kgrid .goal{background:var(--k);color:#fff;border-color:var(--k)}

@@ -20,7 +20,7 @@ const T={
   sunrise:'הנץ',sunset:'שקיעה',candles:'הדלקת נרות',havdalah:'יציאה',parasha:'פרשת השבוע',nextHoliday:'החג הבא',inDays:n=>n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים',
   daysAgo:n=>n===1?'אתמול':'לפני '+n+' ימים',fromToday:'מהיום',addRem:'הוספת תזכורת',note:'הערה ליום הזה',color:'צבע ליום',save:'שמירה',del:'מחיקה',close:'סגירה',
   showOmer:'ספירת העומר',showTimes:'הדלקה ויציאה',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
-  convert:'המרת תאריכים',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יארצייט',
+  convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יארצייט',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
  en:{siteName:'Hebrew Calendar',city:'City',menu:'Menu',month:'Month',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
@@ -30,7 +30,7 @@ const T={
   sunrise:'Sunrise',sunset:'Sunset',candles:'Candle lighting',havdalah:'Havdalah',parasha:'Torah portion',nextHoliday:'Next holiday',inDays:n=>n===0?'today':n===1?'tomorrow':'in '+n+' days',
   daysAgo:n=>n===1?'yesterday':n+' days ago',fromToday:'from today',addRem:'Add reminder',note:'Note for this day',color:'Day color',save:'Save',del:'Delete',close:'Close',
   showOmer:'Omer count',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',
-  convert:'Date converter',barmitzvah:'Bar / Bat Mitzvah calculator',days:'Days between dates',yahrzeit:'Yahrzeit calculator',
+  convert:'Date converter',countdown:'Countdown',barmitzvah:'Bar / Bat Mitzvah calculator',days:'Days between dates',yahrzeit:'Yahrzeit calculator',
   weekdays:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Shabbat'],wdShort:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
   gMonths:['January','February','March','April','May','June','July','August','September','October','November','December']}
 };
@@ -123,9 +123,9 @@ const remsOn=d=>REM.filter(r=>remHits(r,d));
 
 /* ---------- ניווט ---------- */
 const VIEWS=['month','year','holidays','zmanim','shabbat','tools','reminders'];
-let view=PAGE.view||'month',anchor=TODAY,sub=PAGE.tool||'';
+let view=PAGE.view||'month',anchor=TODAY,sub=PAGE.tool||'',CDQ=null;
 function readHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const [v,a]=h.split('/');
-  if(VIEWS.includes(v)){view=v;if(v==='tools')sub=a||'';else if(a&&/^\d{4}-\d{2}-\d{2}$/.test(a))anchor=fromIso(a)}}
+  if(VIEWS.includes(v)){view=v;if(v==='tools'){const [sb,qs]=(a||'').split('?');sub=sb||'';if(qs)CDQ=Object.fromEntries(new URLSearchParams(qs))}else if(a&&/^\d{4}-\d{2}-\d{2}$/.test(a))anchor=fromIso(a)}}
 function go(v,a,s){view=v;if(a)anchor=a;if(s!==undefined)sub=s;const h=v+(v==='tools'?(sub?'/'+sub:''):a?'/'+iso(anchor):'');
   if(!PAGE.static||(v===PAGE.view&&v!=='tools'))history.replaceState(null,'',PAGE.static?location.pathname+'#'+h:'#'+h);else{location.href=(PAGE.root||'./')+'#'+h;return}
   render();window.scrollTo({top:0})}
@@ -216,11 +216,13 @@ function viewShabbat(){
 const TOOLS=[['convert','convert',HE()?'מתאריך לועזי לעברי ולהפך, כולל אחרי השקיעה':''],['barmitzvah','barmitzvah',''],['yahrzeit','yahrzeit',''],['days','days','']];
 function viewTools(){
   if(!sub){$('#main').innerHTML='<div class="bar"><h1>'+t('tools')+'</h1></div><div class="tools">'+
-    [['convert',HE()?'מתאריך לועזי לעברי ומעברי ללועזי, כולל לידה אחרי השקיעה.':'Gregorian ↔ Hebrew, including after-sunset births.'],
+    [['countdown',HE()?'כמה ימים נשארו לחתונה, לבר המצווה או ללידה. עם קישור לשיתוף ולוח מעוצב להדפסה.':'Days left until the wedding, Bar Mitzvah or birth, with a share link and a printable design.'],
+     ['convert',HE()?'מתאריך לועזי לעברי ומעברי ללועזי, כולל לידה אחרי השקיעה.':'Gregorian ↔ Hebrew, including after-sunset births.'],
      ['barmitzvah',HE()?'תאריך בר / בת המצווה, יום השבת ופרשת השבוע.':'Bar/Bat Mitzvah date, Shabbat and Torah portion.'],
      ['yahrzeit',HE()?'תאריכי היארצייט בשנים הקרובות לפי תאריך הפטירה.':'Upcoming yahrzeit dates from the date of passing.'],
      ['days',HE()?'כמה ימים בין שני תאריכים, ומה התאריך בעוד X ימים.':'Days between two dates, or the date X days from now.']].map(([k,d])=>'<a class="card tool" href="#tools/'+k+'" data-tool="'+k+'"><h3>'+t(k)+'</h3><p class="mute small">'+d+'</p></a>').join('')+'</div>'+seoBlock();return}
   const back='<a href="#tools" data-tool="" class="small">'+(HE()?'→ כל הכלים':'← All tools')+'</a>';
+  if(sub==='countdown')return viewCountdown(back);
   if(sub==='convert'){
     $('#main').innerHTML=back+'<div class="bar"><h1>'+t('convert')+'</h1></div><div class="card"><h2>'+(HE()?'מלועזי לעברי':'Gregorian → Hebrew')+'</h2><div class="row" style="margin-top:8px"><label class="fld">'+(HE()?'תאריך לועזי':'Date')+'<input type="date" id="cG" value="'+iso(TODAY)+'"></label><label class="chk"><input type="checkbox" id="cN"> '+(HE()?'אחרי השקיעה':'After sunset')+'</label></div><div class="res" id="cGR"></div></div>'+
       '<div class="card" style="margin-top:12px"><h2>'+(HE()?'מעברי ללועזי':'Hebrew → Gregorian')+'</h2><div class="row" style="margin-top:8px"><label class="fld">'+(HE()?'יום':'Day')+'<select id="cHD">'+Array.from({length:30},(_,i)=>'<option value="'+(i+1)+'">'+hDay(i+1)+'</option>').join('')+'</select></label><label class="fld">'+(HE()?'חודש':'Month')+'<select id="cHM">'+HEB_ORDER.map(m=>'<option value="'+m+'">'+(m===12?(HE()?'אדר / אדר א׳':'Adar / Adar I'):m===13?(HE()?'אדר ב׳':'Adar II'):hMonthName(m,5785))+'</option>').join('')+'</select></label><label class="fld">'+(HE()?'שנה':'Year')+'<input id="cHY" size="8" value="'+hYear(new HDate(TODAY).getFullYear())+'"></label></div><div class="res" id="cHR"></div></div>'+seoBlock();
@@ -255,6 +257,33 @@ function viewTools(){
     const c1=()=>{const a=$('#dA').value,b=$('#dB').value;if(!a||!b)return;const n=dayDiff(fromIso(a),fromIso(b)),w=Math.floor(Math.abs(n)/7),r=Math.abs(n)%7;$('#dR1').innerHTML='<div class="big">'+Math.abs(n)+(HE()?' ימים':' days')+'</div><div class="mute">'+(HE()?w+' שבועות ו־'+r+' ימים':w+' weeks and '+r+' days')+'</div>'};
     const c2=()=>{const a=$('#dC').value;if(!a)return;const d=addD(fromIso(a),+$('#dN').value||0);$('#dR2').innerHTML='<div class="big">'+t('weekdays')[d.getDay()]+', '+esc(gStr(d))+'</div><div>'+esc(hStr(new HDate(d)))+'</div>'};
     ['dA','dB'].forEach(i=>$('#'+i).addEventListener('input',c1));['dC','dN'].forEach(i=>$('#'+i).addEventListener('input',c2));c1();c2();return}
+}
+/* ---------- ספירה לאחור ---------- */
+const CD_ST=[['classic','קלאסי','Classic','#1e5a63','#fff','🎉'],['bride','כלה וחתונה','Wedding','#a8646f','#fdf8f5','💍'],['barmitzvah','בר מצווה','Bar Mitzvah','#1f3a5f','#fbfaf5','✡'],['batmitzvah','בת מצווה','Bat Mitzvah','#b8487a','#fff7fa','🌸'],['kids','ילדים','Kids','#e0663a','#fffaf0','🎈'],['baby','לידה ותינוק','Baby','#5b8db8','#f7fbff','👶']];
+const CD_LAY=[['months',HE()?'עמוד לכל חודש':'A page per month'],['poster',HE()?'פוסטר: כל הימים בדף אחד':'Poster: all days on one page'],['scroll',HE()?'דף צר וארוך לגלילה':'Long narrow page to scroll'],['chain',HE()?'שרשרת נייר לגזירה':'Paper chain to cut out']];
+function viewCountdown(back){
+  const q=CDQ||LS.get('cd',{});const v={t:q.t||'',d:q.d||iso(addD(TODAY,60)),st:q.st||'bride',l:q.l||'months'};
+  $('#main').innerHTML=back+'<div class="bar"><h1>'+t('countdown')+'</h1></div><div class="card"><div class="row"><label class="fld" style="flex:2 1 220px">'+(HE()?'למה סופרים':'Counting down to')+'<input id="kT" value="'+esc(v.t)+'" placeholder="'+(HE()?'למשל: החתונה של רחלי ודוד':'e.g. Sarah &amp; David&#39;s wedding')+'"></label><label class="fld">'+(HE()?'תאריך':'Date')+'<input type="date" id="kD" value="'+esc(v.d)+'"></label></div>'+
+    '<div class="row" style="margin-top:8px"><label class="fld">'+(HE()?'עיצוב':'Style')+'<select id="kS">'+CD_ST.map(x=>'<option value="'+x[0]+'">'+(HE()?x[1]:x[2])+'</option>').join('')+'</select></label><label class="fld">'+(HE()?'צורה להדפסה':'Print layout')+'<select id="kL">'+CD_LAY.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select></label></div></div>'+
+    '<div id="kOut" style="margin-top:12px"></div>'+seoBlock();
+  $('#kS').value=v.st;$('#kL').value=v.l;
+  const draw=()=>{
+    const o={t:$('#kT').value.trim(),d:$('#kD').value,st:$('#kS').value,l:$('#kL').value};LS.set('cd',o);if(!o.d)return;
+    const to=fromIso(o.d),n=dayDiff(TODAY,to),S=CD_ST.find(x=>x[0]===o.st)||CD_ST[0],hd=new HDate(to);
+    const w=Math.floor(Math.abs(n)/7),r=Math.abs(n)%7;
+    const share=location.origin+location.pathname.replace(/[^/]*$/,'')+(PAGE.root&&PAGE.static?PAGE.root:'')+'#tools/countdown?'+new URLSearchParams(o).toString();
+    const print=BUILDER+'#countdown&'+new URLSearchParams({d:o.d,t:o.t||(HE()?'הספירה לאחור':'Countdown'),st:o.st,l:o.l}).toString();
+    let mini='';const start=TODAY,end=to<start?start:to;let cnt=0;
+    for(let d=new Date(start.getFullYear(),start.getMonth(),1,12);d<=end&&cnt<3;d=new Date(d.getFullYear(),d.getMonth()+1,1,12),cnt++){
+      const len=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();let g='<div class="kmo"><b>'+t('gMonths')[d.getMonth()]+'</b><div class="kgrid">'+'<span></span>'.repeat(d.getDay());
+      for(let i=1;i<=len;i++){const x=new Date(d.getFullYear(),d.getMonth(),i,12),k=dayDiff(x,to);g+='<span class="'+(k===0?'goal':k<0||x<TODAY?'past':'')+'">'+(k===0?S[5]:k>0&&x>=TODAY?k:'')+'</span>'}
+      mini+=g+'</div></div>'}
+    $('#kOut').innerHTML='<div class="kcard" style="--k:'+S[3]+';--kb:'+S[4]+'"><div class="ktitle">'+esc(o.t||(HE()?'הספירה לאחור':'Countdown'))+'</div><div class="kbig">'+(n===0?S[5]:Math.abs(n))+'</div><div class="ksub">'+(n===0?(HE()?'היום!':'Today!'):n>0?(HE()?'ימים נשארו':'days to go')+(w?' · '+(HE()?w+' שבועות ו־'+r+' ימים':w+' weeks, '+r+' days'):''):(HE()?'ימים עברו':'days ago'))+'</div><div class="kdate">'+t('weekdays')[to.getDay()]+', '+esc(hStr(hd))+' · '+esc(gStr(to))+'</div><div class="kmini">'+mini+'</div></div>'+
+      '<div class="row" style="margin-top:12px"><a class="btn pri big" href="'+print+'">🖨 '+(HE()?'הדפסה והורדה בעיצוב מלא':'Print & download the full design')+'</a><button class="btn" type="button" id="kShare">🔗 '+(HE()?'העתקת קישור לשיתוף':'Copy share link')+'</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent((o.t||'')+' · '+(HE()?'עוד '+n+' ימים! ':n+' days to go! ')+share)+'">WhatsApp</a></div>'+
+      '<p class="small mute">'+(HE()?'הקישור מראה לכל מי שמקבל אותו כמה ימים נשארו, ומתעדכן לבד כל יום. הלוח המעוצב להדפסה (פוסטר, עמוד לכל חודש, דף ארוך לגלילה או שרשרת נייר) נבנה בלוחנו.':'The link shows how many days are left and updates daily. The printable design is built in Luchenu.')+'</p>';
+    $('#kShare').onclick=async e=>{try{await navigator.clipboard.writeText(share);e.target.textContent=HE()?'הקישור הועתק':'Copied'}catch(err){prompt('',share)}};
+  };
+  ['kT','kD','kS','kL'].forEach(i=>$('#'+i).addEventListener('input',draw));draw();
 }
 function relDays(d){const n=dayDiff(TODAY,d);return n>=0?t('inDays')(n):t('daysAgo')(-n)}
 
@@ -328,7 +357,7 @@ function renderSide(){
     '<div class="kv" style="margin-top:10px"><span>'+t('sunrise')+'</span><b>'+z('netz')+'</b><span>'+t('sunset')+'</span><b>'+z('shkia')+'</b>'+(cand?'<span>'+t('candles')+'</span><b>'+cand+'</b>':'')+(hav?'<span>'+t('havdalah')+'</span><b>'+hav+'</b>':'')+'</div>'+(par?'<div style="margin-top:8px">'+t('parasha')+': <b>'+esc(par.replace(/^פרשת /,''))+'</b></div>':'')+'</div>'+
     (next?'<div class="card"><div class="mute small">'+t('nextHoliday')+'</div><div style="font-weight:700;font-size:18px">'+esc(evName(next))+'</div><div class="small">'+esc(gStr(noon(next.getDate().greg())))+' · '+esc(relDays(noon(next.getDate().greg())))+'</div></div>':'')+
     '<div class="card cta"><h3>'+t('ctaT')+'</h3><p>'+t('ctaP')+'</p><a class="btn pri big" href="'+builderLink()+'">'+t('ctaB')+'</a></div>'+
-    '<div class="card"><b>'+t('tools')+'</b><ul style="margin-top:6px">'+['convert','barmitzvah','yahrzeit','days'].map(k=>'<li><a href="#tools/'+k+'" data-tool="'+k+'">'+t(k)+'</a></li>').join('')+'</ul></div>';
+    '<div class="card"><b>'+t('tools')+'</b><ul style="margin-top:6px">'+['countdown','convert','barmitzvah','yahrzeit','days'].map(k=>'<li><a href="#tools/'+k+'" data-tool="'+k+'">'+t(k)+'</a></li>').join('')+'</ul></div>';
 }
 function pageH1(){const c=cityName(city());return HE()?'לוח שנה עברי '+c+' · '+monthDays().title:'Hebrew calendar '+c+' · '+monthDays().title}
 function seoBlock(){

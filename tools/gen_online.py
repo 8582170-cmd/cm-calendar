@@ -20,6 +20,8 @@ def gem(n):
 HEB_YEARS = range(5786, 5791)
 GREG_YEARS = range(2026, 2029)
 TOOLS = {
+    'countdown': ('ספירה לאחור לחתונה, בר מצווה ולידה', 'כמה ימים נשארו לחתונה, לבר המצווה או ללידה: ספירה לאחור עם קישור לשיתוף, ולוח ספירה מעוצב להדפסה.',
+                  'Countdown to a wedding, Bar Mitzvah or birth', 'How many days are left: a countdown with a share link and a printable countdown calendar.'),
     'convert': ('המרת תאריכים עברי לועזי', 'ממיר תאריכים: מתאריך לועזי לעברי ומעברי ללועזי, כולל לידה אחרי השקיעה.',
                 'Hebrew date converter', 'Convert Gregorian dates to Hebrew dates and back, including after-sunset births.'),
     'barmitzvah': ('חישוב תאריך בר מצווה ובת מצווה', 'מחשבון בר מצווה ובת מצווה: התאריך העברי, יום השבת ופרשת השבוע של העלייה לתורה.',
