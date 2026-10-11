@@ -101,13 +101,13 @@
           <label class="fld">עד תאריך<input type="date" id="rangeTo"></label>
         </div>
         <p class="hint" id="viewHint"></p>
-        <label class="chk" id="splitColsRow"><input type="checkbox" id="splitCols"> טורים נפרדים בכל יום: חגים, אירועים אישיים וימי שנה (יארצייטים)</label>
+        <label class="chk" id="splitColsRow"><input type="checkbox" id="splitCols"> טורים נפרדים בכל יום: חגים, אירועים אישיים ויומי דהילולא (יארצייטן)</label>
         <div class="fld" id="tcolsRow">טורים בטבלה
           <div class="checks">
             <label class="chk"><input type="checkbox" data-tcol="zmanim"> זמני היום</label>
             <label class="chk"><input type="checkbox" data-tcol="holidays"> חגים ופרשה</label>
             <label class="chk"><input type="checkbox" data-tcol="personal"> אירועים אישיים</label>
-            <label class="chk"><input type="checkbox" data-tcol="yz"> ימי שנה (יארצייטים)</label>
+            <label class="chk"><input type="checkbox" data-tcol="yz"> יומי דהילולא (יארצייטן)</label>
             <label class="chk"><input type="checkbox" data-tcol="notes"> טור להערות</label>
           </div>
         </div>
@@ -154,7 +154,7 @@
             <li><b>בתוך הימים:</b> המידע כתוב בתוך המשבצת של כל יום, מתחת לתאריך.</li>
             <li><b>בטור:</b> טור צר ליד הלוח, עם שורה לכל יום שיש בו מידע. הימים נשארים נקיים ויש יותר מקום לכתיבה ולתמונות. בלחיצה על "+ הוספה ליד הלוח" בוחרים מה להוסיף (זמנים, אירועים, לימוד, תמונה או מודעה) ואיפה. אפשר כמה טורים, לכל אחד צד ורוחב, ובכל טור כמה דברים אחד מתחת לשני.</li>
             <li><b>לא להציג:</b> המידע לא מופיע בלוח בכלל.</li>
-            <li><b>לימי שנה (יארצייטים) ודברי הימים יש הגדרה רביעית, "בעמוד נפרד מעל הלוח":</b> כל אירועי החודש מתולדות עם ישראל מודפסים בעמוד משלהם, שנתלה מעל עמוד הלוח של אותו חודש. מתאים כשיש הרבה אירועים שלא נכנסים בתוך הימים או בטור.</li>
+            <li><b>ליומי דהילולא (יארצייטן) ודברי הימים יש הגדרה רביעית, "בעמוד נפרד מעל הלוח":</b> כל אירועי החודש מתולדות עם ישראל מודפסים בעמוד משלהם, שנתלה מעל עמוד הלוח של אותו חודש. מתאים כשיש הרבה אירועים שלא נכנסים בתוך הימים או בטור.</li>
           </ul>
           <p><b>הכלל:</b> כל סוג מידע שבחרתם להציג ולא שייך לאף טור מופיע בתוך הימים. למשל, סימנתם "לימוד יומי" ובניתם רק טור זמנים: הלימוד יופיע בתוך כל יום. אם רוצים אותו בטור, מוסיפים לו טור והוא עובר לשם.</p>
           <p>גם כשמוחקים טור, מה שהיה בו חוזר לתוך הימים ולא נעלם. כדי להוריד משהו מהלוח לגמרי, בוחרים בו במפורש "לא להציג".</p>
@@ -430,7 +430,7 @@
       <div class="sec-body">
         <p class="hint">מאגר "אירועים בדברי ימי ישראל": כ־3,450 רשומות של פטירות גדולי ישראל ואירועים בתולדות עם ישראל, לפי תאריך עברי.</p>
         <div class="fld">מה להציג בלוח
-          <div class="seg" role="radiogroup" aria-label="ימי שנה (יארצייטים)">
+          <div class="seg" role="radiogroup" aria-label="יומי דהילולא (יארצייטן)">
             <label><input type="radio" name="yzMode" value="none"> בלי</label>
             <label><input type="radio" name="yzMode" value="selected"> רק מסומנים</label>
             <label><input type="radio" name="yzMode" value="all"> כל המאגר</label>
@@ -449,7 +449,7 @@
         </div>
         <label class="chk"><input type="checkbox" id="yzHist"> כולל אירועים בדברי ימי ישראל (לא רק פטירות)</label>
 
-        <p class="hint">היכן ימי השנה (יארצייטים) מופיעים (בתוך הימים או בטור נפרד) קובעים ב"מה מופיע איפה".</p>
+        <p class="hint">היכן יומי דהילולא (יארצייטן) מופיעים (בתוך הימים או בטור נפרד) קובעים ב"מה מופיע איפה".</p>
         <p class="hint">בלוח שבועי ויומי יש יותר מקום, ולכן מוצגים שם עד פי שלושה.</p>
         <button class="btn primary" type="button" id="yzManage">ניהול "אירועים בדברי ימי ישראל": סימון, דילוג ועריכה</button>
         <div class="row"><button class="btn" type="button" id="yzReport">שליחת תיקונים, אירועים והערות למנהל האתר</button><button class="btn" type="button" id="yzInbox" hidden>דיווחים שהתקבלו</button></div>

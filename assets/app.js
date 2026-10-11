@@ -792,7 +792,7 @@ function openYzManager(){
     const words=qv?qv.replace(/["'״׳]/g,'').split(/\s+/):null;
     const mode=state.s.yzMode||'selected';
     q('#ymList').innerHTML=yzListOptions();q('#ymListRow').hidden=mode==='all';
-    q('#ymMode').innerHTML=mode==='all'?'מצב "כל המאגר": הכל מוצג, חוץ ממה שהורדתם ממנו את הסימון.':mode==='none'?'<span class="msg-bad">ימי השנה (יארצייטים) כבויים כרגע. הסימונים יישמרו ויופיעו כשתבחרו "רק מסומנים".</span>':'מצב "רק מסומנים": בלוח יופיע רק מה שמסומן ברשימה הפעילה.';
+    q('#ymMode').innerHTML=mode==='all'?'מצב "כל המאגר": הכל מוצג, חוץ ממה שהורדתם ממנו את הסימון.':mode==='none'?'<span class="msg-bad">יומי דהילולא (יארצייטן) כבויים כרגע. הסימונים יישמרו ויופיעו כשתבחרו "רק מסומנים".</span>':'מצב "רק מסומנים": בלוח יופיע רק מה שמסומן ברשימה הפעילה.';
     const order=HEB_ORDER;
     shown=yzAll().filter(e=>(mo==='all'||e.m==+mo)&&(pv==='all'||String(e.p?1:0)===pv)&&(sv==='all'||(sv==='custom'?e.custom:(!e.custom&&e.src===sv)))&&(!words||yzMatches(e,words)));
     shown=shown.filter(e=>{const on=mode==='all'?!(state.s.yzHide||{})[e.id]:!!yzSel()[e.id];return f==='all'||(f==='on'&&on)||(f==='off'&&!on)||(f==='edited'&&e.edited)||(f==='custom'&&e.custom)});
@@ -827,7 +827,7 @@ function placeOfLegacy(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.y
 /* ---------- טורים ליד הלוח ----------
    s.cols: [{id, side:'right'|'left', w:אחוזים, types:['zmanim','personal','yz','learn']}]
    סוג מידע שנבחר להצגה ולא נמצא באף טור מופיע בתוך הימים. */
-const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','ימי שנה (יארצייטים) ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['img','תמונה'],['ad','מודעה או הקדשה']];
+const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','יומי דהילולא (יארצייטן) ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['img','תמונה'],['ad','מודעה או הקדשה']];
 function zMode(){return state.s.zmanimMode||'daily'}
 function zpl(k){const s=state.s,Z=s.zplace&&s.zplace[k];if(Z)return Z;const m=zMode();return m==='shabbat'?{day:1,sh:1}:m==='col'?{col:1}:m==='daily'||m==='custom'?{day:1}:{}}
 function zOn(){const m=zMode();return m!=='none'&&m!=='table'&&Object.values(state.s.zmanim).some(Boolean)}
@@ -992,9 +992,9 @@ function addSlotImage(p,key,heightMm,what){
 function moonShort(x){return String(x).replace('המולד: ','מולד ').replace(/מתחילים קידוש לבנה/,'ק״ל מ־').replace(/סוף זמן קידוש לבנה/,'סוף ק״ל').replace(/בערבית מתחילים ״ותן טל ומטר״/,'ותן טל ומטר').replace(/^תקופת /,'תק׳ ').replace(/ ?\((אשכנז|ספרד|רמ״א|שו״ע)\)/,(m,g)=>' '+({'אשכנז':'אשכ׳','ספרד':'ספ׳','רמ״א':'רמ״א','שו״ע':'שו״ע'}[g]))}
 function addHistBox(p,mo,full){
   const s=state.s;
-  if(full){const head=el('div','pg-head');head.appendChild(el('div','pg-month',esc(mo.title)));head.appendChild(el('div','pg-year',esc(mo.year)));head.appendChild(el('div','pg-other',esc(s.yzHist?'אירועים בדברי ימי ישראל':'ימי שנה (יארצייטים)')));p.appendChild(head)}
+  if(full){const head=el('div','pg-head');head.appendChild(el('div','pg-month',esc(mo.title)));head.appendChild(el('div','pg-year',esc(mo.year)));head.appendChild(el('div','pg-other',esc(s.yzHist?'אירועים בדברי ימי ישראל':'יומי דהילולא (יארצייטן)')));p.appendChild(head)}
   const box=el('div','cont-body hist-body'+(full?'':' hist-under'));
-  if(!full)box.appendChild(el('div','spill-t hist-title',esc((s.yzHist?'דברי הימים':'ימי שנה (יארצייטים)')+' · '+mo.title)));
+  if(!full)box.appendChild(el('div','spill-t hist-title',esc((s.yzHist?'דברי הימים':'יומי דהילולא (יארצייטן)')+' · '+mo.title)));
   const dl=d=>{const hd=new HDate(d);return dStyle().startsWith('greg')?gregShort(d):hebShort(hd)};
   let n=0;
   for(const d of mo.days){const L=gedolimFor(new HDate(d),true,true);if(!L.length)continue;const day=el('div','yzp-day');day.appendChild(el('span','yzp-d',esc(dl(d))));
@@ -1331,7 +1331,7 @@ function addMonthGrid(p,mo,evMap){
           sec.insertAdjacentHTML('beforeend',h+'</tbody></table>'+zExplainHTML(zCol(mo.days[0],true)));body.appendChild(sec);
         }
         else if(t==='personal'&&placeOf('personal')==='col')section('אירועים אישיים',d=>personalOnly(d,new HDate(d)),'אין אירועים אישיים בחודש זה.');
-        else if(t==='yz'&&placeOf('yz')==='col')section(s.yzHist?'ימי שנה (יארצייטים) ודברי הימים':'ימי שנה (יארצייטים)',d=>gedolimFor(new HDate(d),true,true),'אין ימי שנה (יארצייטים) מסומנים לחודש זה.');
+        else if(t==='yz'&&placeOf('yz')==='col')section(s.yzHist?'יומי דהילולא (יארצייטן) ודברי הימים':'יומי דהילולא (יארצייטן)',d=>gedolimFor(new HDate(d),true,true),'אין יומי דהילולא (יארצייטן) מסומנים לחודש זה.');
         else if(t==='learn'&&placeOf('learn')==='col'){
           const L=s.learn||{},lc=LEARN_TYPES.filter(c=>L[c[0]]);
           const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h','לימוד יומי'));
@@ -1450,7 +1450,7 @@ function tablePage(days,evMap){
   const zKeys=tc.zmanim&&s.zmanimMode!=='none'?zmanimFor(days[0],true).map(z=>z.k):[];
   const wrap=el('div','wt-wrap');const t=el('table','wt');
   let h='<thead><tr><th class="c-date">תאריך</th>'+zKeys.map(k=>'<th class="c-z">'+esc(k)+'</th>').join('')+
-    (tc.holidays?'<th>חגים, פרשה וזמני שבת</th>':'')+(tc.personal?'<th>אירועים אישיים</th>':'')+(tc.yz?'<th>ימי שנה (יארצייטים)</th>':'')+(tc.notes?'<th>הערות</th>':'')+'</tr></thead><tbody>';
+    (tc.holidays?'<th>חגים, פרשה וזמני שבת</th>':'')+(tc.personal?'<th>אירועים אישיים</th>':'')+(tc.yz?'<th>יומי דהילולא (יארצייטן)</th>':'')+(tc.notes?'<th>הערות</th>':'')+'</tr></thead><tbody>';
   const list=L=>L.map(it=>'<div class="e '+it.cls+'">'+esc(it.text)+'</div>').join('');
   for(const d of days){
     const I=dayItems(d,evMap,false);
@@ -1478,7 +1478,7 @@ function weekPage(days,evMap){
   {const st=dStyle();if(st==='hebOnly')headRow(p,title,hebR,'');else if(st==='gregOnly')headRow(p,title,gregR,'');else if(st==='gregMain')headRow(p,title,gregR,hebR);else headRow(p,title,hebR,gregR)}
   const [w,h]=pageDims(),wide=w>h;
   const colT=[zAnyCol()?'zmanim':null,placeOf('personal')==='col'?'personal':null,placeOf('yz')==='col'?'yz':null,placeOf('learn')==='col'?'learn':null].filter(Boolean);
-  const COLN={zmanim:'זמני היום',personal:'אירועים אישיים',yz:'ימי שנה (יארצייטים)',learn:'לימוד ומולד'};
+  const COLN={zmanim:'זמני היום',personal:'אירועים אישיים',yz:'יומי דהילולא (יארצייטן)',learn:'לימוד ומולד'};
   const useCols=colT.length>0;
   const tpl=useCols?(()=>{const cw=(+s.yzPanelW||26)/colT.length;const parts=[`minmax(0,${100-(+s.yzPanelW||26)}fr)`].concat(colT.map(()=>`minmax(0,${cw}fr)`));return (s.panelSide==='right'?parts.slice(1).concat(parts[0]):parts).join(' ')})():'';
   const wk=el('div','week'+(wide?' wide':'')+(useCols?' wk-cols':''));
@@ -1511,7 +1511,7 @@ function weekPage(days,evMap){
     main.appendChild(el('div','wd-h','<span class="wd-name">'+WEEKDAYS[I.dow]+'</span>'+dateTop(d,I.hd,true)));
     if(s.splitCols){
       const cols=el('div','wd-cols');
-      [[I.items,'חגים וזמנים'],[I.pers,'אירועים אישיים'],[I.ged,'ימי שנה (יארצייטים)']].forEach(([L,lab])=>{const c=el('div','wd-col');c.appendChild(el('div','wd-col-h',lab));for(const it of L){const e=el('div','e '+it.cls);e.textContent=it.text;c.appendChild(e)}cols.appendChild(c)});
+      [[I.items,'חגים וזמנים'],[I.pers,'אירועים אישיים'],[I.ged,'יומי דהילולא (יארצייטן)']].forEach(([L,lab])=>{const c=el('div','wd-col');c.appendChild(el('div','wd-col-h',lab));for(const it of L){const e=el('div','e '+it.cls);e.textContent=it.text;c.appendChild(e)}cols.appendChild(c)});
       main.appendChild(cols);
     }else if(I.all.length){const ev=el('div','wd-ev');for(const it of I.all){const e=el('span','e '+it.cls);e.textContent=it.text;ev.appendChild(e)}main.appendChild(ev)}
     {const zs=zDay(d,true);if(zs.length)main.appendChild(el('div','wd-z',zs.map(zTxt).join(' · ')))}
@@ -1543,7 +1543,7 @@ function dayPage(d,evMap){
   const body=el('div','day-body');body.dataset.date=iso(d);body.tabIndex=0;body.setAttribute('role','button');body.setAttribute('aria-label','הוספת אירוע ל'+label);
   const main=el('div','day-main');
   const dayList=I.all.filter(x=>!x.tkind);
-  if(s.splitCols){const cols=el('div','wd-cols day-ev');[[I.items.filter(x=>!x.tkind),'חגים ופרשה'],[I.pers,'אירועים אישיים'],[I.ged,'ימי שנה (יארצייטים)']].forEach(([L,lab])=>{const c=el('div','wd-col');c.appendChild(el('div','wd-col-h',lab));for(const it of L){const e=el('div','e '+it.cls);e.textContent=it.text;c.appendChild(e)}cols.appendChild(c)});main.appendChild(cols)}
+  if(s.splitCols){const cols=el('div','wd-cols day-ev');[[I.items.filter(x=>!x.tkind),'חגים ופרשה'],[I.pers,'אירועים אישיים'],[I.ged,'יומי דהילולא (יארצייטן)']].forEach(([L,lab])=>{const c=el('div','wd-col');c.appendChild(el('div','wd-col-h',lab));for(const it of L){const e=el('div','e '+it.cls);e.textContent=it.text;c.appendChild(e)}cols.appendChild(c)});main.appendChild(cols)}
   else if(dayList.length){const ev=el('div','wd-ev day-ev');for(const it of dayList){const e=el('span','e '+it.cls);e.textContent=it.text;ev.appendChild(e)}main.appendChild(ev)}
   const hours=el('div','hours');
   for(let hr=7;hr<=22;hr++)hours.appendChild(el('div','hr','<span>'+String(hr).padStart(2,'0')+':00</span>'));
@@ -2245,7 +2245,7 @@ function syncUI(){if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof
   $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';const cs=$('#cdStyle');if(!cs.options.length)cs.innerHTML=Object.entries(CD_STYLES).map(([k,v])=>opt(k,v.n)).join('');cs.value=s.cdStyle||'classic';$('#cdLayout').value=s.cdLayout||'months';$('#cdQEvery').value=String(s.cdQEvery||10);$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;
     document.querySelectorAll('[data-cdimg]').forEach(b=>{const k=b.dataset.cdimg,has=!!cdImg(k);b.textContent=(has?'החלפת ':'')+{bg:'תמונת רקע',first:'תמונה ביום הראשון',goal:'תמונה ביום היעד'}[k];const d=b.nextElementSibling;if(d)d.hidden=!has});$('#cdBgOpRow').hidden=!cdImg('bg')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
-  $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים ולימי שנה (יארצייטים).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
+  $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליומי דהילולא (יארצייטן).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
   $('#zmHint').textContent={custom:'כל זמן במקום שבחרתם ברשימה למטה: בתוך היום, בטור, או בשניהם.',col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
   $('#ytsg').value=s.ytsg||'faint';$('#chanukah').value=s.chanukah||'tzeit';$('#ytsgRow').hidden=!s.il;$('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
@@ -2880,7 +2880,7 @@ function colAddType(cs,c,ty){const s=state.s;
   if(!c.types.includes(ty))c.types.push(ty);
   if(ty==='zmanim'){s.zmanimMode=s.zmanimMode==='none'||s.zmanimMode==='table'?'daily':s.zmanimMode;if(!s.zplace&&zMode()!=='custom')s.zmanimMode='col';else{const o=zplAll();for(const k in o)if(s.zmanim[k])o[k]={...o[k],col:1,day:0};s.zplace=o;s.zmanimMode='custom'}}
   else if(ty==='personal'||ty==='learn'||ty==='yz')s.place={...s.place,[ty]:'cell'}}
-const ADD_ITEMS=[['zmanim','זמני היום','טבלה עם שורה לכל יום','🕐'],['personal','אירועים אישיים','ימי הולדת, נישואין, תזכורות','🎂'],['yz','ימי שנה (יארצייטים) ודברי הימים','אירועים מתולדות עם ישראל','📜'],['learn','לימוד יומי ומולד','דף יומי, משניות, מולד ותקופות','📖'],['img','תמונה','תמונה לאורך הלוח','🖼'],['ad','מודעה או הקדשה','כותרת, תמונה וטקסט, לפרסום או לעילוי נשמה','📣']];
+const ADD_ITEMS=[['zmanim','זמני היום','טבלה עם שורה לכל יום','🕐'],['personal','אירועים אישיים','ימי הולדת, נישואין, תזכורות','🎂'],['yz','יומי דהילולא (יארצייטן) ודברי הימים','אירועים מתולדות עם ישראל','📜'],['learn','לימוד יומי ומולד','דף יומי, משניות, מולד ותקופות','📖'],['img','תמונה','תמונה לאורך הלוח','🖼'],['ad','מודעה או הקדשה','כותרת, תמונה וטקסט, לפרסום או לעילוי נשמה','📣']];
 function openAddMenu(){
   const m=modal('<h3>מה להוסיף ליד הלוח?</h3><div class="add-grid">'+ADD_ITEMS.map(([t,n,d,i])=>'<button type="button" class="add-card'+((t==='img'||t==='ad')&&!canF('banners')?' gated':'')+'" data-addt="'+t+'"><span class="add-ic">'+i+'</span><b>'+n+'</b><small>'+d+'</small></button>').join('')+'</div>'+
     '<div id="addWhere" hidden><h4>איפה?</h4><div class="add-where"></div></div><div class="row"><button class="btn" type="button" data-close>ביטול</button></div>');
