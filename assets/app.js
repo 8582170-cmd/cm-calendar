@@ -508,11 +508,23 @@ function eventsFor(start,end){
   addHebrewExtras(map,start,end);
   return map;
 }
-function zmanimFor(date){
+/* ימים שיש בהם תפילת מוסף: שבת, ראש חודש, ראש השנה, יום כיפור, סוכות ושמיני עצרת, פסח ושבועות (כולל חול המועד ויום טוב שני בחו״ל) */
+function isMusafDay(date){
+  if(date.getDay()===6)return true;
+  const hd=new HDate(date),m=hd.getMonth(),d=hd.getDate(),il=!!state.s.il;
+  if(d===1||d===30)return true;
+  if(m===7)return d===2||d===10||(d>=15&&d<=(il?22:23));
+  if(m===1)return d>=15&&d<=(il?21:22);
+  if(m===3)return d===6||(!il&&d===7);
+  return false;
+}
+/* all=true: לטבלאות, מחזיר את כל העמודות ותא ריק ביום שאין בו מוסף, כדי שהעמודות לא יזוזו */
+function zmanimFor(date,all){
   const s=state.s,keys=ZMANIM.filter(z=>s.zmanim[z[0]]);if(!keys.length)return [];
   const Z=zctx(date),tz=place().tz,out=[];
   for(const [k,,short0,dir0] of keys){
     const short=(s.zlab||{})[k]||short0,rd=(s.zround||{})[k],dir=rd&&rd!=='auto'?rd:dir0;
+    if(k==='musaf'&&!isMusafDay(date)){if(all)out.push({k:short,v:''});continue}
     if(k==='shma'||k==='tfila'){
       const g=k==='shma'?Z.shmaGRA:Z.tfilaGRA,m=k==='shma'?Z.shmaMGA:Z.tfilaMGA,md=(s.zmode||{})[k]||s.m_shma;
       if(md==='both'){out.push({k:short+' מג״א',v:fmtTime(m,dir,tz)});out.push({k:short+' גר״א',v:fmtTime(g,dir,tz)})}
@@ -999,9 +1011,9 @@ function addMonthGrid(p,mo,evMap){
       if(!n)sec.appendChild(el('div','yzp-empty',esc(empty)));body.appendChild(sec)};
     if(wantZ){
       const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h','זמני היום · '+esc(place().name)));
-      const keys=zmanimFor(mo.days[0]).map(z=>z.k);
+      const keys=zmanimFor(mo.days[0],true).map(z=>z.k);
       let h='<table class="yzp-zt"><thead><tr><th></th>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>';
-      for(const d of mo.days)h+='<tr'+(d.getDay()===6?' class="shabbat"':'')+'><td>'+esc(dl(d))+'</td>'+zmanimFor(d).map(z=>'<td>'+esc(z.v)+'</td>').join('')+'</tr>';
+      for(const d of mo.days)h+='<tr'+(d.getDay()===6?' class="shabbat"':'')+'><td>'+esc(dl(d))+'</td>'+zmanimFor(d,true).map(z=>'<td>'+esc(z.v)+'</td>').join('')+'</tr>';
       sec.insertAdjacentHTML('beforeend',h+'</tbody></table>');body.appendChild(sec);
     }
     if(wantP)section('אירועים אישיים',d=>personalOnly(d,new HDate(d)),'אין אירועים אישיים בחודש זה.');
@@ -1075,13 +1087,13 @@ function zmanimTable(mo,evMap){
   const sats=mo.days.filter(d=>d.getDay()===6);
   const t=el('table','zt');
   const timeOf=(d,kind)=>{const it=(evMap.get(ymd(d))||[]).find(x=>x.tkind===kind);return it?it.time:'—'};
-  const first=sats.length?zmanimFor(sats[0]):[];
+  const first=sats.length?zmanimFor(sats[0],true):[];
   let h='<caption>זמני השבתות · '+esc(place().name)+'</caption><thead><tr><th style="width:24%">שבת</th><th>הדלקת נרות</th>'+first.map(z=>'<th>'+esc(z.k)+'</th>').join('')+'<th>צאת שבת</th></tr></thead><tbody>';
   for(const d of sats){
     const fri=new Date(d.getFullYear(),d.getMonth(),d.getDate()-1,12),hd=new HDate(d);
     const par=(evMap.get(ymd(d))||[]).find(x=>x.cls==='parasha');
     const label=(par?esc(par.text.replace(/^פרשת\s*/,'')):'')+' <small>'+esc(dStyle().startsWith('greg')?gregShort(d):hebShort(hd))+'</small>';
-    h+='<tr><td>'+label+'</td><td>'+timeOf(fri,'candle')+'</td>'+zmanimFor(d).map(z=>'<td>'+esc(z.v)+'</td>').join('')+'<td>'+timeOf(d,'havdalah')+'</td></tr>';
+    h+='<tr><td>'+label+'</td><td>'+timeOf(fri,'candle')+'</td>'+zmanimFor(d,true).map(z=>'<td>'+esc(z.v)+'</td>').join('')+'<td>'+timeOf(d,'havdalah')+'</td></tr>';
   }
   t.innerHTML=h+'</tbody>';
   return t;
@@ -1124,7 +1136,7 @@ function tablePage(days,evMap){
   if(s.layout==='same'&&+s.imgRatio>0)addSlotImage(p,key,innerH()*(+s.imgRatio/100),'שבוע');
   {const st=dStyle();if(st==='hebOnly')headRow(p,title,hebR,'');else if(st==='gregOnly')headRow(p,title,gregR,'');else if(st==='gregMain')headRow(p,title,gregR,hebR);else headRow(p,title,hebR,gregR)}
   const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};
-  const zKeys=tc.zmanim&&s.zmanimMode!=='none'?zmanimFor(days[0]).map(z=>z.k):[];
+  const zKeys=tc.zmanim&&s.zmanimMode!=='none'?zmanimFor(days[0],true).map(z=>z.k):[];
   const wrap=el('div','wt-wrap');const t=el('table','wt');
   let h='<thead><tr><th class="c-date">תאריך</th>'+zKeys.map(k=>'<th class="c-z">'+esc(k)+'</th>').join('')+
     (tc.holidays?'<th>חגים, פרשה וזמני שבת</th>':'')+(tc.personal?'<th>אירועים אישיים</th>':'')+(tc.yz?'<th>יארצייטים</th>':'')+(tc.notes?'<th>הערות</th>':'')+'</tr></thead><tbody>';
@@ -1133,7 +1145,7 @@ function tablePage(days,evMap){
     const I=dayItems(d,evMap,false);
     h+='<tr class="'+(I.dow===6?'shabbat':'')+(I.chag?' chag':'')+'" data-date="'+iso(d)+'" tabindex="0" role="button" aria-label="'+WEEKDAYS[I.dow]+' '+esc(hebShort(I.hd))+'. הוספת אירוע">'+
       '<td class="c-date"><span class="wd-name">'+WEEKDAYS[I.dow]+'</span> '+dateTop(d,I.hd,true)+'</td>'+
-      (zKeys.length?zmanimFor(d).map(z=>'<td class="c-z">'+esc(z.v)+'</td>').join(''):'')+
+      (zKeys.length?zmanimFor(d,true).map(z=>'<td class="c-z">'+esc(z.v)+'</td>').join(''):'')+
       (tc.holidays?'<td>'+list(I.items)+'</td>':'')+(tc.personal?'<td>'+list(I.pers)+'</td>':'')+(tc.yz?'<td class="c-yz">'+list(I.ged)+'</td>':'')+(tc.notes?'<td></td>':'')+'</tr>';
   }
   t.innerHTML=h+'</tbody>';wrap.appendChild(t);p.appendChild(wrap);
