@@ -2336,6 +2336,22 @@ syncPlanUI();
   if(!state.s.addAmnon){state.s.addAmnon=1;(state.s.yzLists||[]).forEach(l=>{if(l.sel&&!(state.s.yzHide||{})['7'])l.sel['7']=1});if(state.s.yzSel)state.s.yzSel['7']=1}
   if(!state.s.histPage2){state.s.histPage2=1;if((state.s.place||{}).yz==='col')state.s.place={...(state.s.place||{}),yz:'page'}}
   loadFont(state.s.headFont);loadFont(state.s.bodyFont);Object.values(state.textStyles||{}).forEach(t=>t.ff&&loadFont(t.ff));
+  {const m=/^#preset-([a-z]+)$/.exec(location.hash||'');const P={
+    family:{layout:'same',imgRatio:40,theme:'ink',accent:'#1e5a63',size:'wall',view:'month',zmanimMode:'shabbat'},
+    split:{layout:'split',theme:'soft',accent:'#24427a',size:'wall',view:'month'},
+    shul:{layout:'full',theme:'block',accent:'#7a4a17',zmanimMode:'col',banners:['right'],view:'month'},
+    yeshiva:{layout:'full',theme:'ink',accent:'#3d5a2a',zmanimMode:'daily',view:'month',place:{learn:'col'},learn:{daf:true,mishna:true,box:true}},
+    school:{calType:'greg',gregStart:9,layout:'full',theme:'ink',accent:'#24427a',view:'month',hlLegend:true},
+    history:{layout:'full',theme:'ink',accent:'#6b2d4f',view:'month',place:{yz:'page'}},
+    sponsor:{layout:'full',theme:'ink',accent:'#8a2c2c',view:'month',banners:['right','left']},
+    cover:{cover:true,layout:'same',accent:'#2f2f3a',view:'month'},
+    desk:{size:'desk',layout:'same',accent:'#3d5a2a',view:'month'},
+    fridge:{size:'fridge',layout:'full',accent:'#6b2d4f',view:'month'},
+    week:{view:'week'},day:{view:'day'},table:{view:'table'}};
+   if(m&&P[m[1]]){const p=P[m[1]],s=state.s;
+     for(const k in p){if(k==='place'||k==='learn')s[k]={...(s[k]||{}),...p[k]};else s[k]=p[k]}
+     if(m[1]==='school'&&!(s.hl||[]).length)s.hl=[{id:'h'+uid(),name:'חופשות',color:'#f6d365',days:{},show:true,repeat:'none'},{id:'h'+uid(),name:'ימי הורים',color:'#a7c7e7',days:{},show:true,repeat:'none'}];
+     s.uiMode='wizard';s.step=1;save();try{history.replaceState(null,'',location.pathname)}catch(e){}}}
   syncUI();applyMode();render();fillLums();
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
 })();

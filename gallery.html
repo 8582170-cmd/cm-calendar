@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>לוחנו · גלריה</title>
+<meta name="description" content="דוגמאות לעיצובים של לוחנו: לוח משפחתי, לבית הכנסת, לישיבה, לבית ספר, שולחני, למקרר, שבועי, יומי ועוד.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@500;900&family=Suez+One&display=swap">
+<style>
+/* Layout: a filterable wall of miniature printed pages, each with what it is and a button to start from it */
+:root{
+  --paper:#f6f7f4; --sheet:#ffffff; --ink:#172126; --mute:#5c686c; --line:#dde2df;
+  --teal:#1f5c63; --teal-ink:#ffffff; --teal-soft:#e4eeec; --chag:#b3261e;
+  --f-display:"Frank Ruhl Libre","Times New Roman",serif;
+  --f-body:"Assistant","Arial Hebrew",Arial,sans-serif;
+  --shadow:0 1px 2px rgb(23 33 38 / .08),0 14px 30px -16px rgb(23 33 38 / .3);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1517; --sheet:#172024; --ink:#e6ecea; --mute:#9aa7a8; --line:#28343a;
+  --teal:#79c0b8; --teal-ink:#0d1a1b; --teal-soft:#1b2b2d; --chag:#ef8a80;
+  --shadow:0 1px 2px rgb(0 0 0 / .4),0 14px 30px -16px rgb(0 0 0 / .7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1517; --sheet:#172024; --ink:#e6ecea; --mute:#9aa7a8; --line:#28343a;
+  --teal:#79c0b8; --teal-ink:#0d1a1b; --teal-soft:#1b2b2d; --chag:#ef8a80;
+  --shadow:0 1px 2px rgb(0 0 0 / .4),0 14px 30px -16px rgb(0 0 0 / .7); color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;padding-inline:20px}
+a{color:var(--teal)}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.wrap{max-width:1180px;margin-inline:auto}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:20px}
+.logo{font-family:var(--f-display);font-weight:900;font-size:30px;color:var(--ink);text-decoration:none}
+.nav-links{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.nav-links a{color:var(--ink);text-decoration:none;font-weight:600;padding:6px 10px;border-radius:8px}
+.nav-links a:hover,.nav-links a[aria-current]{background:var(--teal-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;font:inherit;font-weight:700;border-radius:10px;padding:10px 18px;text-decoration:none;cursor:pointer;border:1.5px solid var(--teal)}
+.btn-primary{background:var(--teal);color:var(--teal-ink)}
+.btn-ghost{background:transparent;color:var(--teal)}
+.btn-ghost:hover{background:var(--teal-soft)}
+.nav .btn{padding:8px 16px}
+.intro{display:flex;flex-direction:column;gap:10px;padding-block:24px 18px;max-width:46em}
+.intro h1{font-size:clamp(34px,4.6vw,52px);font-weight:900}
+.intro p{margin:0;color:var(--mute);font-size:18px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding-block:8px 26px}
+.filters button{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:34px 26px;padding-bottom:60px}
+.item{display:flex;flex-direction:column;gap:12px;min-width:0}
+.item[hidden]{display:none}
+.stagebox{background:color-mix(in srgb,var(--teal-soft) 60%,var(--paper));border-radius:14px;padding:22px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:330px}
+.item h3{font-size:22px;font-weight:900}
+.item p{margin:0;color:var(--mute);font-size:15.5px;line-height:1.5}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{font-size:12.5px;font-weight:700;color:var(--teal);background:var(--teal-soft);border-radius:999px;padding:2px 9px}
+.item .btn{align-self:flex-start;padding:7px 14px;font-size:15px}
+footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);font-size:14px}
+
+/* ---------- the miniature printed page (always paper-white, like print) ---------- */
+.mp{--acc:#1e5a63;--acc-t:color-mix(in srgb,var(--acc) 10%,#fff);--acc-m:color-mix(in srgb,var(--acc) 24%,#fff);--ink2:#1c242b;--mu:#6b747d;--ln:#cdd3d8;
+  container-type:inline-size;width:100%;max-width:270px;aspect-ratio:297/420;background:#fff;color:var(--ink2);border-radius:3px;box-shadow:var(--shadow);
+  padding:5%;font-family:var(--f-body);overflow:hidden;position:relative;line-height:1.15;flex:1 1 0;min-width:0}
+.mpi{height:100%;display:flex;flex-direction:column;gap:2.4cqw;min-height:0}
+.mp.land{aspect-ratio:420/297;max-width:330px}
+.mp.small{max-width:170px}
+.mh{display:flex;align-items:baseline;gap:3cqw;border-bottom:.7cqw solid var(--acc);padding-bottom:1.6cqw;flex:none}
+.mh b{font-family:var(--f-display);font-weight:900;font-size:12cqw;line-height:.9;color:var(--acc)}
+.mh span{font-family:var(--f-display);font-size:5cqw}
+.mh small{margin-inline-start:auto;font-size:2.6cqw;color:var(--mu)}
+.th-block .mh{border:0;background:var(--acc);border-radius:1.6cqw;padding:2cqw 3cqw}
+.th-block .mh b,.th-block .mh span{color:#fff;font-family:"Suez One",var(--f-display);font-weight:400}
+.th-block .mh small{color:rgb(255 255 255 / .8)}
+.th-soft .mh{flex-direction:column;align-items:center;border:0;gap:.5cqw}
+.th-soft .mh b{font-weight:500}
+.th-soft .mh small{margin:0}
+.mi{flex:0 0 36%;border-radius:1.2cqw;position:relative;overflow:hidden}
+.th-soft .mi{border-radius:40cqw 40cqw 1.2cqw 1.2cqw}
+.mi.full{flex:1;border-radius:1.2cqw}
+.mp.land .mi{flex-basis:28%}
+.mi em{position:absolute;bottom:2cqw;inset-inline-start:3cqw;font-style:normal;color:#fff;font-size:3cqw;font-weight:700;text-shadow:0 1px 3px rgb(0 0 0 / .4)}
+.mrow{flex:1;min-height:0;display:flex;gap:2cqw}
+.mg{flex:1;min-width:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:auto;grid-auto-rows:1fr;border-top:.25cqw solid var(--ln);border-inline-start:.25cqw solid var(--ln)}
+.th-soft .mg{border:0}
+.mg>div{border-inline-end:.25cqw solid var(--ln);border-bottom:.25cqw solid var(--ln);padding:.6cqw .8cqw;font-size:1.9cqw;display:flex;flex-direction:column;gap:.3cqw;min-width:0;overflow:hidden;position:relative}
+.th-soft .mg>div{border:0}
+.mg .w{text-align:center;font-weight:700;color:var(--mu);font-size:2.1cqw;padding-block:.8cqw}
+.th-block .mg .w{background:var(--acc-m);color:var(--ink2)}
+.mg .p{background:repeating-linear-gradient(135deg,transparent 0 .9cqw,#eef1f2 .9cqw 1.2cqw)}
+.th-soft .mg .p{background:none}
+.mg .d{display:flex;justify-content:space-between;align-items:baseline}
+.mg .d b{font-family:var(--f-display);font-weight:900;font-size:3.4cqw;line-height:1}
+.mg .d i{font-style:normal;color:var(--mu);font-size:1.7cqw}
+.mg .sh{background:var(--acc-t)}
+.mg .ch{background:#fbeceb}.mg .ch .t{color:#b3261e}
+.mg .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg .f{color:#7a3b16;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg .z{color:var(--mu);font-size:1.6cqw}
+.mg .ci{position:absolute;inset:0;z-index:0}
+.mg .ci~*{position:relative;z-index:1;color:#fff;text-shadow:0 1px 2px rgb(0 0 0 / .5)}
+.mg .ci~.d i{color:#fff}
+.mg .hlA{background:#f6d365}.mg .hlB{background:#a7c7e7}
+.ms{flex:0 0 26%;min-width:0;border:.25cqw solid var(--ln);border-radius:.8cqw;display:flex;flex-direction:column;overflow:hidden;font-size:1.7cqw}
+.ms.narrow{flex-basis:14%}
+.ms>b{background:var(--acc-t);color:var(--acc);padding:1cqw 1.4cqw;font-size:2.2cqw;font-family:var(--f-display)}
+.th-block .ms>b{background:var(--acc);color:#fff}
+.ms .r{display:flex;justify-content:space-between;gap:1cqw;padding:.25cqw 1.2cqw;border-bottom:.15cqw solid #e6eaec;font-variant-numeric:tabular-nums}
+.ms .r:nth-child(7n+2){background:var(--acc-t)}
+.ms .ln{height:.9cqw;margin:.9cqw 1.4cqw 0;border-radius:.4cqw;background:#e3e7ea}
+.ms .ln:nth-child(3n){width:60%}
+.mb{flex:0 0 13%;background:var(--acc-t);border-radius:1cqw;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;font-family:var(--f-display);font-weight:900;color:var(--acc);font-size:3cqw;letter-spacing:.05em}
+.mf{flex:none;font-size:1.8cqw;color:var(--mu);display:flex;justify-content:space-between;gap:2cqw}
+.mlg{flex:none;display:flex;gap:3cqw;font-size:2cqw}
+.mlg span{display:inline-flex;align-items:center;gap:1cqw}.mlg i{width:2.6cqw;height:2.6cqw;border-radius:.6cqw}
+.mzt{flex:none;display:grid;grid-template-columns:repeat(6,1fr);border:.25cqw solid var(--ln);font-size:1.6cqw;text-align:center}
+.mzt>div{padding:.4cqw;border-inline-end:.15cqw solid var(--ln)}
+.mzt .hd{background:var(--acc-t);font-weight:700;color:var(--acc)}
+.wk{flex:1;display:flex;flex-direction:column;gap:1cqw;min-height:0}
+.wk .row{flex:1;display:flex;gap:2cqw;border-bottom:.25cqw solid var(--ln);padding-bottom:1cqw;min-height:0}
+.wk .lab{flex:0 0 18%;display:flex;flex-direction:column;font-size:2cqw;color:var(--mu)}
+.wk .lab b{font-family:var(--f-display);font-weight:900;font-size:4.2cqw;color:var(--ink2);line-height:1}
+.wk .lines{flex:1;background:repeating-linear-gradient(to bottom,transparent 0 3.6cqw,#e3e7ea 3.6cqw 3.8cqw)}
+.wk .sh{background:var(--acc-t);border-radius:.8cqw}
+.wk .tag{font-size:1.9cqw;font-weight:700;color:var(--acc)}
+.dy{flex:1;display:flex;gap:3cqw;min-height:0}
+.dy .hours{flex:1;display:flex;flex-direction:column}
+.dy .h{flex:1;border-bottom:.25cqw solid #e3e7ea;font-size:2cqw;color:var(--mu);font-variant-numeric:tabular-nums;padding-top:.4cqw}
+.dy .box{flex:0 0 30%;display:flex;flex-direction:column;gap:2cqw}
+.dy .big{font-family:var(--f-display);font-weight:900;font-size:22cqw;line-height:.85;color:var(--acc);text-align:center}
+.tb{flex:1;display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr 1fr 2fr 2fr;border:.25cqw solid var(--ln);font-size:1.8cqw;min-height:0}
+.tb>div{border-bottom:.15cqw solid var(--ln);border-inline-end:.15cqw solid var(--ln);padding:.5cqw .8cqw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.tb .hd{background:var(--acc-t);font-weight:700;color:var(--acc)}
+.tb .sh{background:var(--acc-t)}
+.hist{flex:1;columns:2;column-gap:3cqw;column-rule:.2cqw solid var(--ln);font-size:1.8cqw;line-height:1.3;overflow:hidden}
+.mp p{font-size:inherit;color:inherit;line-height:inherit}
+.hist p{margin:0 0 .6cqw;break-inside:avoid}.hist b{color:var(--acc);font-family:var(--f-display)}
+.cover{flex:1;display:flex;flex-direction:column;gap:3cqw}
+.cover .ttl{font-family:var(--f-display);font-weight:900;font-size:8cqw;text-align:center;color:var(--acc);line-height:1.1}
+.cover .yr{text-align:center;font-family:var(--f-display);font-size:5cqw}
+/* photo-like art, drawn with gradients */
+.a1{background:radial-gradient(circle at 70% 30%,#ffe7a8 0 8%,transparent 9%),linear-gradient(to bottom,#f6b26b 0%,#f49b7a 35%,transparent 36%),radial-gradient(120% 60% at 30% 100%,#6b8f5e 0 55%,transparent 56%),radial-gradient(120% 70% at 85% 100%,#4f7652 0 60%,transparent 61%),linear-gradient(#f49b7a,#e9c49a)}
+.a2{background:radial-gradient(circle at 25% 25%,#fff7 0 6%,transparent 7%),linear-gradient(to bottom,#9fd0ea 0 48%,#2f7fa8 48% 70%,#e8d3a4 70%)}
+.a3{background:linear-gradient(to bottom,#cfe1ec 0 40%,transparent 40%),repeating-linear-gradient(90deg,#e9dcc0 0 12%,#dccaa6 12% 13%),linear-gradient(#e9dcc0,#d8c39c)}
+.a4{background:radial-gradient(circle at 50% 120%,#2e5a3a 0 45%,transparent 46%),radial-gradient(circle at 15% 110%,#3f6f47 0 35%,transparent 36%),radial-gradient(circle at 85% 115%,#38653f 0 38%,transparent 39%),linear-gradient(#bfe0d0,#e7f1e9)}
+.a5{background:radial-gradient(circle at 80% 25%,#fff 0 3%,transparent 3.5%),radial-gradient(circle at 20% 15%,#fff8 0 1%,transparent 1.5%),radial-gradient(circle at 45% 35%,#fff8 0 1%,transparent 1.5%),radial-gradient(circle at 65% 10%,#fff8 0 1%,transparent 1.5%),linear-gradient(#1f2a4d,#3c4c7d 70%,#5d4f73)}
+.a6{background:radial-gradient(circle at 30% 40%,#f4a6c2 0 9%,transparent 10%),radial-gradient(circle at 60% 55%,#f7c96b 0 8%,transparent 9%),radial-gradient(circle at 75% 30%,#c9a7e8 0 7%,transparent 8%),radial-gradient(circle at 45% 75%,#f29b9b 0 8%,transparent 9%),linear-gradient(#e9f2df,#d5e6c3)}
+@media (max-width:560px){body{padding-inline:16px}.nav-links a:not(.btn){display:none}.gal{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <a class="logo" href="index.html">לוחנו</a>
+    <nav class="nav-links" aria-label="ניווט ראשי">
+      <a href="index.html#what">מה בלוח</a>
+      <a href="gallery.html" aria-current="page">גלריה</a>
+      <a href="index.html#plans">מסלולים</a>
+      <a href="index.html#faq">שאלות</a>
+      <a class="btn btn-primary" href="app.html">לבנות לוח</a>
+    </nav>
+  </header>
+  <main>
+    <div class="intro">
+      <h1>גלריה</h1>
+      <p>כמה מהדרכים לעצב את הלוח: למשפחה, לבית הכנסת, לישיבה או לבית הספר, כלוח קיר, שולחני או יומן. בוחרים דוגמה, מתחילים ממנה, ומשנים הכל.</p>
+    </div>
+    <div class="filters" role="group" aria-label="סינון">
+      <button type="button" data-f="all" aria-pressed="true">הכל</button>
+      <button type="button" data-f="family" aria-pressed="false">משפחה</button>
+      <button type="button" data-f="org" aria-pressed="false">מוסדות וקהילות</button>
+      <button type="button" data-f="size" aria-pressed="false">גדלים</button>
+      <button type="button" data-f="view" aria-pressed="false">תצוגות</button>
+    </div>
+    <div class="gal" id="gal"></div>
+  </main>
+  <footer>הדוגמאות מוקטנות ומציגות חודש תשרי תשפ״ז. בלוח שלכם יופיעו השנה, העיר והאירועים שתבחרו.</footer>
+</div>
+<script>
+(function(){
+  'use strict';
+  const L=['א','ב','ג','ד','ה','ו','ז','ח','ט','י','יא','יב','יג','יד','טו','טז','יז','יח','יט','כ','כא','כב','כג','כד','כה','כו','כז','כח','כט','ל'];
+  const heb=i=>{const s=L[i-1];return s.length>1?s.slice(0,-1)+'״'+s.slice(-1):s+'׳'};
+  const H={1:['ch','ראש השנה'],2:['ch','ר״ה ב׳'],3:['','צום גדליה'],8:['','שבת שובה'],10:['ch','יום כיפור'],14:['','ערב סוכות'],15:['ch','סוכות'],16:['','חוה״מ'],17:['','חוה״מ'],18:['','חוה״מ'],19:['','חוה״מ'],20:['','חוה״מ'],21:['','הושע״ר'],22:['ch','שמח״ת'],23:['','אסרו חג'],29:['','בראשית'],30:['','ר״ח']};
+  const FAM={17:'יום הולדת לנעמה',24:'יארצייט סבא משה',5:'יום נישואין'};
+  const greg=d=>new Date(2026,8,11+d);
+  const t2=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+  const netz=d=>t2(382+Math.round((d-1)*18/29)), shk=d=>t2(1129-Math.round((d-1)*38/29));
+  /* month grid */
+  function gridGreg(){
+    /* ספטמבר 2026: 1 בספטמבר הוא יום שלישי, י״ט באלול */
+    let h=['א','ב','ג','ד','ה','ו','ש'].map(w=>'<div class="w">'+w+'</div>').join('');
+    for(let i=0;i<2;i++)h+='<div class="p"></div>';
+    const hebOf=g=>g<=11?heb(18+g).replace(/^(.)/,'$1')+' אלול':heb(g-11)+' תשרי';
+    const HG={12:['ch','ראש השנה'],13:['ch','ר״ה ב׳'],21:['ch','יום כיפור'],26:['ch','סוכות']};
+    for(let g=1;g<=30;g++){const dow=new Date(2026,8,g).getDay(),m=HG[g]||[];
+      let cls=m[0]==='ch'?'ch':dow===6?'sh':'';
+      if((g>=11&&g<=14)||(g>=20&&g<=21)||g>=25)cls='hlA';if(g===3||g===17)cls='hlB';
+      h+='<div class="'+cls+'"><div class="d"><b>'+g+'</b><i>'+hebOf(g).split(' ')[0]+'</i></div>'+(m[1]?'<span class="t">'+m[1]+'</span>':'')+(g===3||g===17?'<span class="f">ימי הורים</span>':'')+'</div>'}
+    for(let i=32;i<35;i++)h+='<div class="p"></div>';
+    return '<div class="mg">'+h+'</div>';
+  }
+  function grid(o){
+    if(o.greg)return gridGreg();
+    let h=['א','ב','ג','ד','ה','ו','ש'].map(w=>'<div class="w">'+w+'</div>').join('');
+    for(let i=0;i<6;i++)h+='<div class="p"></div>';
+    for(let d=1;d<=30;d++){
+      const g=greg(d),m=H[d]||[],dow=g.getDay();
+      let cls=m[0]==='ch'?'ch':dow===6?'sh':'';
+      if(o.hl&&((d>=1&&d<=2)||(d>=10&&d<=10)||(d>=14&&d<=23)))cls='hlA';
+      if(o.hl&&(d===5||d===26))cls='hlB';
+      const img=o.cellImg&&(d===17||d===24||d===5)?'<span class="ci '+(d===17?'a6':d===24?'a3':'a2')+'"></span>':'';
+      h+='<div class="'+cls+'">'+img+'<div class="d"><b>'+heb(d)+'</b><i>'+g.getDate()+'</i></div>'+(m[1]?'<span class="t">'+m[1]+'</span>':'')+(o.fam&&FAM[d]?'<span class="f">'+FAM[d]+'</span>':'')+(o.zIn?'<span class="z">נץ '+netz(d)+'</span>':'')+'</div>';
+    }
+    for(let i=36;i<42;i++)h+='<div class="p"></div>';
+    return '<div class="mg">'+h+'</div>';
+  }
+  const zcol=()=>'<div class="ms"><b>זמני היום</b>'+Array.from({length:26},(_,i)=>'<div class="r"><span>'+heb(i+1)+'</span><span>'+netz(i+1)+'</span><span>'+shk(i+1)+'</span></div>').join('')+'</div>';
+  const lines=(t,n,narrow)=>'<div class="ms'+(narrow?' narrow':'')+'"><b>'+t+'</b>'+Array.from({length:n},()=>'<div class="ln"></div>').join('')+'</div>';
+  const head=(o)=>'<div class="mh"><b>'+(o.title||'תשרי')+'</b><span>'+(o.sub||'תשפ״ז')+'</span><small>'+(o.small||'ספטמבר–אוקטובר 2026')+'</small></div>';
+  function page(o){
+    const cls='mp th-'+(o.theme||'ink')+(o.land?' land':'')+(o.small?' small':'');
+    let body='';
+    if(o.kind==='cover')body='<div class="mi full '+o.art+'"></div><div class="ttl">'+o.coverTitle+'</div><div class="yr">שנת תשפ״ז</div>';
+    else if(o.kind==='photo')body=head(o)+'<div class="mi full '+o.art+'"><em>'+(o.cap||'')+'</em></div>';
+    else if(o.kind==='hist')body=head({title:'תשרי',sub:'דברי הימים',small:'העמוד העליון'})+'<div class="hist">'+[['א׳','רבנו אמנון ממגנצא, בעל ״ונתנה תוקף״'],['ג׳','המגן אברהם'],['ד׳','ר׳ אברהם דנציג, בעל ״חיי אדם״'],['ט׳','הגרי״ז מבריסק'],['י״ג','רבי עקיבא איגר'],['י״ח','רבי נחמן מברסלב'],['י״ט','הגאון מוילנא'],['י״ט','היהודי הקדוש מפשיסחא'],['כ״ה','רבי לוי יצחק מברדיצ׳ב'],['כ״ה','החתם סופר'],['כ״ז','ר׳ יצחק הזקן, מבעלי התוספות'],['ל׳','המהר״ץ חיות']].map(x=>'<p><b>'+x[0]+'</b> '+x[1]+'</p>').join('')+'</div>';
+    else if(o.kind==='week'){
+      body=head({title:'שבוע',sub:'בראשית',small:'כ״ג–כ״ט תשרי'})+'<div class="wk">'+['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'].map((n,i)=>'<div class="row'+(i===6?' sh':'')+'"><div class="lab"><b>'+heb(23+i)+'</b>'+n+(i===0?'<span class="tag">אסרו חג</span>':i===1?'<span class="tag">יארצייט סבא משה</span>':i===5?'<span class="tag">הדלקה 17:34</span>':i===6?'<span class="tag">בראשית</span>':'')+'</div><div class="lines"></div></div>').join('')+'</div>';
+    }else if(o.kind==='day'){
+      body=head({title:'יום ה׳',sub:'י״ז תשרי',small:'חוה״מ סוכות'})+'<div class="dy"><div class="box"><div class="big">י״ז</div><div class="ms" style="flex:1"><b>זמני היום</b>'+[['עלות','5:07'],['נץ','6:31'],['סוזק״ש','9:29'],['חצות','12:28'],['שקיעה','18:26'],['צאה״כ','18:44']].map(r=>'<div class="r"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>').join('')+'</div><div class="ms" style="flex:0 0 22%"><b>אירועים</b><div class="r"><span>יום הולדת לנעמה</span></div></div></div><div class="hours">'+Array.from({length:14},(_,i)=>'<div class="h">'+(7+i)+':00</div>').join('')+'</div></div>';
+    }else if(o.kind==='table'){
+      let h='<div class="hd">יום</div><div class="hd">נץ</div><div class="hd">סוזק״ש</div><div class="hd">שקיעה</div><div class="hd">צאה״כ</div><div class="hd">חגים</div><div class="hd">אישי</div>';
+      for(let d=14;d<=20;d++){const sh=greg(d).getDay()===6?' sh':'',m=H[d]||[];h+='<div class="'+sh+'">'+heb(d)+'</div><div class="'+sh+'">'+netz(d)+'</div><div class="'+sh+'">9:2'+(d%10)+'</div><div class="'+sh+'">'+shk(d)+'</div><div class="'+sh+'">'+shk(d+0).replace(/:(\d)/,(a,b)=>':'+(+b+1))+'</div><div class="'+sh+'">'+(m[1]||'')+'</div><div class="'+sh+'">'+(FAM[d]||'')+'</div>'}
+      body=head({title:'שבוע',sub:'סוכות',small:'י״ד–כ׳ תשרי'})+'<div class="tb">'+h+'</div>';
+    }else{
+      body=head(o);
+      if(o.img)body+='<div class="mi '+o.img+'"><em>'+(o.cap||'')+'</em></div>';
+      let row='';
+      if(o.bannerR)row+='<div class="mb">'+o.bannerR+'</div>';
+      row+=grid(o);
+      if(o.zcol)row+=zcol();
+      if(o.learn)row+=lines('לימוד יומי',22,true);
+      if(o.pers)row+=lines('אירועים אישיים',12);
+      if(o.bannerL)row+='<div class="mb">'+o.bannerL+'</div>';
+      body+='<div class="mrow">'+row+'</div>';
+      if(o.hl)body+='<div class="mlg"><span><i style="background:#f6d365"></i>חופשות</span><span><i style="background:#a7c7e7"></i>ימי הורים</span></div>';
+      if(o.ztable)body+='<div class="mzt">'+['','נץ','סוזק״ש','שקיעה','הדלקה','יציאה'].map(x=>'<div class="hd">'+x+'</div>').join('')+['ש׳ שובה','6:26','9:28','18:39','18:01','19:17','סוכות','6:30','9:29','18:30','17:52','19:07'].map(x=>'<div>'+x+'</div>').join('')+'</div>';
+      if(o.foot!==false)body+='<div class="mf"><span>'+(o.footR||'ירושלים · הדלקת נרות 40 דק׳ לפני השקיעה')+'</span></div>';
+    }
+    return '<div class="'+cls+'" style="--acc:'+(o.acc||'#1e5a63')+'"><div class="mpi">'+body+'</div></div>';
+  }
+  const ITEMS=[
+    {f:'family',title:'משפחתי קלאסי',desc:'תמונה של המשפחה בראש כל חודש, ימי הולדת ויארצייטים בתוך הימים, וזמני הדלקת נרות.',chips:['קיר A3','תמונה ולוח','קלאסי'],pages:[{img:'a1',cap:'תשרי בגליל',fam:1}],preset:'family'},
+    {f:'family',title:'עמוד לתמונה, עמוד ללוח',desc:'לוח קיר שנפתח לשניים: תמונה גדולה למעלה, והחודש מתחת.',chips:['קיר','שני עמודים','עדין'],pages:[{kind:'photo',art:'a2',cap:'חופשה בים',theme:'soft',acc:'#24427a'},{theme:'soft',acc:'#24427a',fam:1}],preset:'split'},
+    {f:'org',title:'לבית הכנסת',desc:'כל הזמנים בטור ליד הלוח, טבלת הדלקת נרות ומוצאי שבת, ושם הקהילה בבאנר.',chips:['זמנים בטור','טבלת שבתות','באנר'],pages:[{theme:'block',acc:'#7a4a17',zcol:1,ztable:1,bannerR:'בית הכנסת אהל משה'}],preset:'shul'},
+    {f:'org',title:'לישיבה ולבית המדרש',desc:'טור צר ללימוד היומי עם ריבוע לסימון, וזמני היום בתוך הימים.',chips:['לימוד יומי','ריבוע לסימון','זמנים בימים'],pages:[{acc:'#3d5a2a',zIn:1,learn:1}],preset:'yeshiva'},
+    {f:'org',title:'לבית הספר',desc:'ימי חופשה וימי הורים בצבעים משלכם, עם מקרא בתחתית כל חודש.',chips:['ימים צבועים','מקרא','לועזי'],pages:[{acc:'#24427a',hl:1,greg:1,title:'ספטמבר',sub:'2026',small:'אלול–תשרי תשפ״ז',foot:false}],preset:'school'},
+    {f:'org',title:'עם דברי ימי ישראל',desc:'עמוד מעל כל חודש עם ימי פטירה של גדולי ישראל ואירועים מההיסטוריה היהודית.',chips:['עמוד דברי הימים','קיר'],pages:[{kind:'hist',acc:'#6b2d4f'},{acc:'#6b2d4f'}],preset:'history'},
+    {f:'org',title:'בחסות ובפרסום',desc:'באנרים בשני צדי הדף ועמוד ברכות או פרסומות בין החודשים, למוסד שמחלק לוח לתורמים.',chips:['שני באנרים','עמוד פרסומות'],pages:[{bannerR:'בברכת שנה טובה',bannerL:'ישיבת אור תורה',acc:'#8a2c2c'}],preset:'sponsor'},
+    {f:'family',title:'עם שער',desc:'עמוד ראשון עם תמונה וכותרת, למשל ״הלוח של משפחת כהן״.',chips:['עמוד שער','תמונה'],pages:[{kind:'cover',art:'a5',coverTitle:'הלוח של משפחת כהן',acc:'#2f2f3a'}],preset:'cover'},
+    {f:'size',title:'שולחני',desc:'לוח לרוחב בגודל 21×15 ס״מ, לעמידה על השולחן.',chips:['שולחני','לרוחב'],pages:[{land:1,img:'a4',acc:'#3d5a2a'}],preset:'desk'},
+    {f:'size',title:'למקרר',desc:'A5 עם תמונות קטנות בתוך הימים החשובים.',chips:['A5','תמונות בימים'],pages:[{small:1,cellImg:1,fam:1,acc:'#6b2d4f'}],preset:'fridge'},
+    {f:'view',title:'מתכנן שבועי',desc:'עמוד לכל שבוע, עם מקום לכתוב בכל יום, חגים ואירועים.',chips:['שבועי','מקום לכתיבה'],pages:[{kind:'week',acc:'#1e5a63'}],preset:'week'},
+    {f:'view',title:'יומן יומי',desc:'עמוד לכל יום עם שעות, כל זמני היום והאירועים של אותו יום.',chips:['יומי','שעות'],pages:[{kind:'day',acc:'#24427a'}],preset:'day'},
+    {f:'view',title:'טבלה',desc:'שורה לכל יום וטור לכל זמן, לתלייה בבית הכנסת או בישיבה.',chips:['טבלה','זמנים'],pages:[{kind:'table',acc:'#7a4a17'}],preset:'table'}
+  ];
+  const gal=document.getElementById('gal');
+  gal.innerHTML=ITEMS.map(it=>'<article class="item" data-f="'+it.f+'"><div class="stagebox">'+it.pages.map(page).join('')+'</div><h3>'+it.title+'</h3><p>'+it.desc+'</p><div class="chips">'+it.chips.map(c=>'<span>'+c+'</span>').join('')+'</div><a class="btn btn-ghost" href="app.html#preset-'+it.preset+'">להתחיל מהעיצוב הזה</a></article>').join('');
+  document.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.filters button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    const f=b.dataset.f;gal.querySelectorAll('.item').forEach(i=>i.hidden=f!=='all'&&i.dataset.f!==f);
+  });
+})();
+</script>
+</body>
+</html>
