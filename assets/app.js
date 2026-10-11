@@ -1048,6 +1048,72 @@ function addFootLine(p){
   p.appendChild(f);
 }
 /* ---------- לוח שנתי בעמוד אחד ---------- */
+/* ---------- לוח ספירה לאחור ---------- */
+const CD_STYLES={
+  classic:{n:'קלאסי',goal:'🎉'},
+  bride:{n:'כלה וחתונה: ורוד עתיק וזהב, פרחים',goal:'💍',acc:'#a8646f',font:'Bellefair',num:'Bellefair'},
+  barmitzvah:{n:'בר מצווה: כחול וזהב, פסי טלית',goal:'✡',acc:'#1f3a5f',font:'Suez One',num:'Suez One'},
+  batmitzvah:{n:'בת מצווה: ורוד וזהב, פרחים',goal:'🌸',acc:'#b8487a',font:'Secular One',num:'Secular One'},
+  kids:{n:'ילדים: צבעוני ושמח',goal:'🎈',acc:'#e0663a',font:'Playpen Sans Hebrew',num:'Rubik Bubbles'},
+  baby:{n:'לידה ותינוק: תכלת רך, עננים',goal:'👶',acc:'#5b8db8',font:'Playpen Sans Hebrew',num:'Playpen Sans Hebrew'}
+};
+/* קישוטים מקוריים לכל סגנון (SVG), ממוקמים בפינות העמוד */
+function cdOrnaments(st){
+  const flower=(c1,c2)=>'<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M8 8 C 60 20, 90 60, 100 120 S 150 180, 195 192" fill="none" stroke="'+c2+'" stroke-width="2.2"/><path d="M8 8 C 40 50, 30 90, 60 130" fill="none" stroke="'+c2+'" stroke-width="1.6"/>'+
+    [[38,24,30],[70,52,-20],[92,92,40],[118,148,-30],[150,170,20],[30,62,60],[48,104,-40]].map(([x,y,r])=>'<ellipse cx="'+x+'" cy="'+y+'" rx="11" ry="4.5" transform="rotate('+r+' '+x+' '+y+')" fill="'+c2+'" opacity=".55"/>').join('')+
+    [[60,30,9],[100,120,12],[170,186,8],[44,128,7]].map(([x,y,r])=>[0,72,144,216,288].map(a=>'<circle cx="'+(x+Math.cos(a*Math.PI/180)*r*.9).toFixed(1)+'" cy="'+(y+Math.sin(a*Math.PI/180)*r*.9).toFixed(1)+'" r="'+(r*.62).toFixed(1)+'" fill="'+c1+'" opacity=".85"/>').join('')+'<circle cx="'+x+'" cy="'+y+'" r="'+(r*.4).toFixed(1)+'" fill="'+c2+'"/>').join('')+'</svg>';
+  const star=c=>'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke="'+c+'" stroke-width="3"><polygon points="50,8 88,74 12,74"/><polygon points="50,92 12,26 88,26"/></g></svg>';
+  const cloud=c=>'<svg viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg"><path d="M20 50 a14 14 0 0 1 4-27 a20 20 0 0 1 37-8 a16 16 0 0 1 28 6 a14 14 0 0 1 11 29 z" fill="'+c+'"/></svg>';
+  switch(st){
+    case 'bride':return '<div class="cd-orn tl">'+flower('#e8b7bf','#c9a45c')+'</div><div class="cd-orn br">'+flower('#e8b7bf','#c9a45c')+'</div>';
+    case 'batmitzvah':return '<div class="cd-orn tl">'+flower('#f2a7c3','#d8a94a')+'</div><div class="cd-orn br">'+flower('#f2a7c3','#d8a94a')+'</div>';
+    case 'barmitzvah':return '<div class="cd-stripes top"></div><div class="cd-stripes bot"></div><div class="cd-star s1">'+star('#c9a45c')+'</div><div class="cd-star s2">'+star('#c9a45c')+'</div>';
+    case 'kids':return '<div class="cd-confetti"></div>';
+    case 'baby':return '<div class="cd-cloud c1">'+cloud('#dbe9f6')+'</div><div class="cd-cloud c2">'+cloud('#e7f0f9')+'</div><div class="cd-cloud c3">'+cloud('#dbe9f6')+'</div>';
+    default:return '';
+  }
+}
+function cdCfg(){const s=state.s,t=new Date(),d0=new Date(t.getFullYear(),t.getMonth(),t.getDate(),12);
+  const to=s.cdDate||iso(new Date(d0.getFullYear(),d0.getMonth()+3,d0.getDate(),12)),from=s.cdFrom||iso(d0);return {to,from}}
+function cdLeft(n){const s=state.s;if(n===0)return 'היום!';if(n===1)return 'מחר!';
+  if(s.cdUnit==='weeks'&&n>=7){const w=Math.floor(n/7),r=n%7;return 'עוד '+(w===1?'שבוע':w===2?'שבועיים':w+' שבועות')+(r?' ו־'+(r===1?'יום':r===2?'יומיים':r+' ימים'):'')}
+  return 'עוד '+(n===2?'יומיים':n+' ימים')}
+function countdownPages(){
+  const s=state.s,c=cdCfg(),to=dateFromIso(c.to);let from=dateFromIso(c.from);if(from>to)from=to;
+  const title=s.cdTitle||'הספירה לאחור';
+  const ev=eventsFor(from,to);
+  /* חלוקה לחודשים: עבריים או לועזיים לפי סוג הלוח */
+  const groups=[];let cur=null;
+  for(let d=new Date(from);d<=to&&groups.length<36;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
+    const hd=new HDate(d),key=s.calType==='heb'?hd.getFullYear()+'-'+hd.getMonth():d.getFullYear()+'-'+d.getMonth();
+    if(!cur||cur.key!==key){cur={key,days:[],t:s.calType==='heb'?hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+' '+hebYearStr(hd.getFullYear()):GREG_MONTHS[d.getMonth()]+' '+d.getFullYear()};groups.push(cur)}
+    cur.days.push(d)}
+  /* חודש ראשון או אחרון קצר (פחות משבוע) מצטרף לחודש הסמוך */
+  if(groups.length>1&&groups[0].days.length<7){const a=groups.shift();groups[0].days=a.days.concat(groups[0].days);groups[0].t=a.t.split(' ')[0]+' – '+groups[0].t}
+  if(groups.length>1&&groups.at(-1).days.length<7){const z=groups.pop();groups.at(-1).days.push(...z.days);groups.at(-1).t=groups.at(-1).t.split(' ')[0]+' – '+z.t}
+  const total=Math.round((to-from)/864e5),ST=CD_STYLES[s.cdStyle]||CD_STYLES.classic;
+  if(ST.font)loadFont(ST.font);if(ST.num)loadFont(ST.num);
+  groups.forEach((g,gi)=>{
+    const p=pageShell(g.t+' · ספירה לאחור','cd-'+g.key);p.classList.add('cd-page','cdst-'+(s.cdStyle||'classic'));
+    if(ST.acc)p.style.setProperty('--acc',ST.acc);if(ST.font)p.style.setProperty('--cd-f',fontCSS(ST.font));if(ST.num)p.style.setProperty('--cd-nf',fontCSS(ST.num));
+    p.insertAdjacentHTML('beforeend',cdOrnaments(s.cdStyle));
+    const first=Math.round((to-g.days[0])/864e5);
+    p.insertAdjacentHTML('beforeend','<div class="cd-head"><div class="cd-title">'+esc(title)+'</div><div class="cd-sub">'+esc(g.t)+' · '+esc(cdLeft(first))+'</div></div>');
+    const grid=el('div','cd-grid');grid.style.gridTemplateRows='auto repeat('+Math.ceil((g.days[0].getDay()+g.days.length)/7)+',minmax(0,1fr))';
+    WEEKDAYS.forEach(w=>grid.appendChild(el('div','wd',w)));
+    for(let i=0;i<g.days[0].getDay();i++)grid.appendChild(el('div','cd-d pad'));
+    for(const d of g.days){
+      const n=Math.round((to-d)/864e5),hd=new HDate(d),its=(ev.get(ymd(d))||[]).filter(x=>x.chag||x.cls==='parasha'),pers=eventsOn(d,hd);
+      const c2=el('div','cd-d'+(d.getDay()===6?' shabbat':'')+(n===0?' goal':'')+(n%7===0&&n?' wk':''));c2.dataset.date=iso(d);
+      c2.innerHTML='<div class="cd-dt">'+dateTop(d,hd)+'</div><div class="cd-n">'+(n===0?ST.goal:n)+'</div><div class="cd-l">'+esc(n===0?'היום!':n===1?'מחר!':s.cdUnit==='weeks'&&n>=7?cdLeft(n).replace('עוד ',''):(n===2?'יומיים':'ימים'))+'</div>'+
+        its.concat(pers.map(e=>({text:eventLabel(e,d,hd)}))).slice(0,2).map(x=>'<div class="cd-e">'+esc(x.text)+'</div>').join('')+(s.cdCheck&&n?'<i class="cd-chk" aria-hidden="true"></i>':'');
+      grid.appendChild(c2)}
+    const tot=g.days[0].getDay()+g.days.length;for(let i=tot;i<Math.ceil(tot/7)*7;i++)grid.appendChild(el('div','cd-d pad'));
+    p.appendChild(grid);
+    const done=Math.max(0,total-first);p.insertAdjacentHTML('beforeend','<div class="cd-bar"><i style="width:'+(total?Math.round(done/total*100):100)+'%"></i></div>');
+    addFootLine(p);applyBanner(p,'cd-'+g.key);emitExtras('cd-'+g.key);
+  });
+}
 function yearPage(months,evMap){
   const s=state.s,ds=s.dateStyle||'hebMain',heb=s.calType==='heb';
   const title=heb&&(+s.hebStart||7)===7?'לוח שנה '+hebYearStr(+s.hebYear):months[0].title+' '+months[0].year+' – '+months.at(-1).title+' '+months.at(-1).year;
@@ -1440,7 +1506,7 @@ function render(){
   stage.querySelectorAll('.ins').forEach(n=>n.remove());
   RS={labels:{top:'תחילת הלוח',start:'אחרי השער',end:'סוף הלוח'},emitted:new Set(['top','start','end']),slots:[],count:0,tc:{},curKey:''};
   state.ads.forEach(a=>{if(typeof a.after==='number')a.after=(months[a.after]||{}).key||'end'});
-  const ih=innerH(),view=s.view==='year'?'year':canF('views')?(s.view||'month'):'month';
+  const ih=innerH(),view=s.view==='year'||s.view==='countdown'?s.view:canF('views')?(s.view||'month'):'month';
   const [W,H]=pageDims();
   let evMap,days=null,weeks=null;
   if(view==='month'||view==='year'){const last=months[months.length-1].days;evMap=eventsFor(months[0].days[0],last[last.length-1])}
@@ -1479,6 +1545,8 @@ function render(){
       }
       emitExtras(mo.key);
     });
+  }else if(view==='countdown'){
+    countdownPages();
   }else if(view==='year'){
     yearPage(months,evMap);emitExtras('year');
   }else if(view==='week'){
@@ -1499,7 +1567,7 @@ function render(){
   if(wraps.length)mkIns('top',wraps[0],'beforebegin');
   wraps.forEach(w=>{if(w.dataset.key)mkIns(w.dataset.key,w,'afterend')});
 
-  const viewName={month:'חודשי',week:'שבועי',day:'יומי',table:'טבלה שבועית',year:'שנתי'}[view];
+  const viewName={month:'חודשי',week:'שבועי',day:'יומי',table:'טבלה שבועית',year:'שנתי',countdown:'ספירה לאחור'}[view];
   $('#stageTitle').textContent='לוח '+viewName+' · '+(s.calType==='heb'&&(+s.hebStart||7)===7?'שנת '+hebYearStr(+s.hebYear):months[0].title+' '+months[0].year+' – '+months.at(-1).title+' '+months.at(-1).year);
   const sz=s.size==='custom'?'מותאם':SIZES[s.size].label;
   $('#stageMeta').textContent=RS.count+' עמודים · '+sz+' · '+Math.round(W)+'×'+Math.round(H)+' מ״מ · '+place().name;
@@ -2094,9 +2162,9 @@ function syncUI(){if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
   radio('calType',s.calType);radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
-  $('#rangeRow').hidden=['month','year'].includes(s.view||'month');$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
+  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';const cs=$('#cdStyle');if(!cs.options.length)cs.innerHTML=Object.entries(CD_STYLES).map(([k,v])=>opt(k,v.n)).join('');cs.value=s.cdStyle||'classic'}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
-  $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליארצייטים.',month:'עמוד לכל חודש.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
+  $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליארצייטים.',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
   $('#zmHint').textContent={custom:'כל זמן במקום שבחרתם ברשימה למטה: בתוך היום, בטור, או בשניהם.',col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
   $('#ytsg').value=s.ytsg||'faint';$('#chanukah').value=s.chanukah||'tzeit';$('#ytsgRow').hidden=!s.il;$('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
@@ -2203,6 +2271,8 @@ document.addEventListener('change',e=>{
     case 'gregStart':return set('gregStart',+t.value);
     case 'hebStart':return set('hebStart',+t.value);
     case 'rangeFrom':case 'rangeTo':return set(t.id,t.value);
+    case 'cdDate':case 'cdFrom':if(t.value)set(t.id,t.value);return;
+    case 'cdUnit':case 'cdStyle':return set(t.id,t.value);
     case 'cover':case 'showCaption':case 'dedication':case 'il':case 'bannerPer':return set(t.id,t.checked);
     case 'city':{if(!t.value)return;if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);state.s.candleMins=c.candle;state.s.il=c.il}return set('city',t.value)}
     case 'candleMins':return set('candleMins',+t.value);
@@ -2533,14 +2603,14 @@ function syncPlanUI(){
   const u=$('#upgradeBtn');if(u)u.hidden=P.id==='full';
   const sb=$('#sampleBtn');if(sb)sb.hidden=P.id!=='free';
   const g=(sel,f)=>document.querySelectorAll(sel).forEach(x=>{const l=x.closest('label')||x;l.classList.toggle('gated',!canF(f))});
-  g('input[name=view]:not([value=month]):not([value=year])','views');g('[data-bpos]','banners');g('#adAdd','extraPages');
+  g('input[name=view]:not([value=month]):not([value=year]):not([value=countdown])','views');g('[data-bpos]','banners');g('#adAdd','extraPages');
   const zs=$('#zmAdv>summary');if(zs)zs.classList.toggle('gated',!canF('advZmanim'));
   const co=$('#size option[value=custom]');if(co)co.textContent='מותאם אישית'+(canF('customSize')?'':' (מסלול מלא)');
   const dv=$('#devPlan');if(dv)dv.value=P.id;
 }
 document.addEventListener('change',e=>{
   const t=e.target;let f=null;
-  if(t.name==='view'&&t.value!=='month'&&t.value!=='year'&&!canF('views')){f='views';const r=$('input[name=view][value=month]');if(r)r.checked=true}
+  if(t.name==='view'&&!['month','year','countdown'].includes(t.value)&&!canF('views')){f='views';const r=$('input[name=view][value=month]');if(r)r.checked=true}
   else if(t.dataset&&t.dataset.bpos&&t.checked&&!canF('banners')){f='banners';t.checked=false}
   else if(t.id==='size'&&t.value==='custom'&&!canF('customSize')){f='customSize';t.value=state.s.size==='custom'?'wall':state.s.size}
   if(f){e.stopImmediatePropagation();openUpgrade(f)}
@@ -2799,6 +2869,7 @@ syncPlanUI();
   /* הגעה מהלוח המקוון: #city-ID&hy-שנה */
   {const m=/^#city-([a-z]+)(?:&hy-(\d{4}))?$/.exec(window.location.hash||'');if(m){const c=CITIES.find(x=>x.id===m[1]);const s=state.s;if(c){s.city=c.id;s.il=c.il;s.candleMins=c.candle}if(m[2]){s.calType='heb';s.hebYear=+m[2];s.hebStart=7}save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   {const m=/^#preset-([a-z]+)$/.exec(window.location.hash||'');const P={
+    countdown:{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',orient:'portrait',zmanimMode:'none',cover:false,cdTitle:'עוד כמה ימים לבר המצווה?'},
     family:{layout:'same',imgRatio:40,theme:'ink',accent:'#1e5a63',size:'wall',view:'month',zmanimMode:'shabbat'},
     split:{layout:'split',theme:'soft',accent:'#24427a',size:'wall',view:'month'},
     shul:{layout:'full',theme:'block',accent:'#7a4a17',zmanimMode:'col',banners:['right'],view:'month'},

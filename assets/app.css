@@ -645,3 +645,90 @@ td.zb{font-weight:800}
 .yr-wd{font-size:calc(var(--u)*2.3);align-self:end}
 .yr-mh{font-size:calc(var(--u)*3.8)}
 .yr-notes{font-size:calc(var(--u)*2.1*var(--ts));max-height:30%;overflow:hidden}
+
+/* ספירה לאחור */
+.cd-box{display:flex;flex-direction:column;gap:6px;background:var(--acc-t,#eef4f4);border-radius:10px;padding:8px 10px;margin:6px 0}
+.cd-page{display:flex;flex-direction:column;gap:calc(var(--u)*2)}
+.cd-head{text-align:center}
+.cd-title{font-family:var(--f-head);font-weight:700;color:var(--acc);font-size:calc(var(--u)*7.5);line-height:1.1}
+.cd-sub{font-size:calc(var(--u)*3.4);color:var(--p-mute);margin-top:calc(var(--u)*.6)}
+.cd-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);grid-template-rows:auto;gap:calc(var(--u)*.8)}
+.cd-grid .wd{text-align:center;font-weight:700;color:var(--acc);font-size:calc(var(--u)*2.6)}
+.cd-d{position:relative;border:.3mm solid var(--p-line);border-radius:calc(var(--u)*1.4);padding:calc(var(--u)*.8);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;overflow:hidden;background:#fff}
+.cd-d.pad{border:0;background:none}
+.cd-d.shabbat{background:var(--acc-t)}
+.cd-d.wk{border-color:var(--acc);border-width:.5mm}
+.cd-d.goal{background:var(--acc);color:#fff;border-color:var(--acc)}
+.cd-d.goal .cd-dt,.cd-d.goal .cd-l{color:#fff}
+.cd-dt{position:absolute;top:calc(var(--u)*.6);inset-inline:calc(var(--u)*.9);font-size:calc(var(--u)*2.1);color:var(--p-mute);display:flex;justify-content:space-between}
+.cd-dt *{font-size:inherit!important}
+.cd-n{font-family:var(--f-head);font-weight:700;font-size:calc(var(--u)*8*var(--ts));line-height:1;color:var(--acc);margin-top:calc(var(--u)*1.6)}
+.cd-d.goal .cd-n{color:#fff}
+.cd-l{font-size:calc(var(--u)*2.3);color:var(--p-mute)}
+.cd-e{font-size:calc(var(--u)*1.9);text-align:center;line-height:1.15;color:var(--p-ink,inherit);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(--u)*.8);width:calc(var(--u)*2.6);height:calc(var(--u)*2.6);border:.3mm solid var(--p-mute);border-radius:calc(var(--u)*.5);padding:0;margin:0;background:none}
+.cd-bar{height:calc(var(--u)*1.6);border-radius:99px;background:var(--acc-t);overflow:hidden}
+.cd-bar i{display:block;height:100%;background:var(--acc)}
+
+/* סגנונות ספירה לאחור */
+.cd-page{position:relative}
+.cd-page>*{position:relative;z-index:1}
+.cd-page .cd-orn,.cd-page .cd-star,.cd-page .cd-cloud,.cd-page .cd-stripes,.cd-page .cd-confetti{position:absolute;z-index:0;pointer-events:none}
+.cd-title{font-family:var(--cd-f,var(--f-head))}
+.cd-n{font-family:var(--cd-nf,var(--f-head))}
+.cd-orn{width:30%;aspect-ratio:1}
+.cd-orn svg,.cd-star svg,.cd-cloud svg{width:100%;height:100%;display:block}
+.cd-orn.tl{top:0;left:0}
+.cd-orn.br{bottom:0;right:0;transform:rotate(180deg)}
+/* כלה */
+.cdst-bride{background:#fdf8f5}
+.cdst-bride .cd-d{background:rgba(255,255,255,.82);border-color:#e6cdb0;border-radius:calc(var(--u)*2.4)}
+.cdst-bride .cd-d.shabbat{background:#f8ebe8}
+.cdst-bride .cd-d.wk{border-color:#c9a45c}
+.cdst-bride .cd-n{color:#b0894a;font-weight:400}
+.cdst-bride .cd-d.goal{background:linear-gradient(160deg,#c48b94,#a8646f);border-color:#c9a45c}
+.cdst-bride .cd-title{color:#a8646f;font-weight:400;letter-spacing:.02em}
+.cdst-bride .cd-bar i{background:linear-gradient(90deg,#e8b7bf,#c9a45c)}
+.cdst-bride .cd-grid .wd{color:#b0894a}
+/* בת מצווה */
+.cdst-batmitzvah{background:#fff7fa}
+.cdst-batmitzvah .cd-d{background:rgba(255,255,255,.85);border-color:#f0c6d8;border-radius:calc(var(--u)*2.4)}
+.cdst-batmitzvah .cd-d.shabbat{background:#fbe6ef}
+.cdst-batmitzvah .cd-n{color:#b8487a}
+.cdst-batmitzvah .cd-d.goal{background:linear-gradient(160deg,#e07aa4,#b8487a)}
+.cdst-batmitzvah .cd-bar i{background:linear-gradient(90deg,#f2a7c3,#d8a94a)}
+/* בר מצווה */
+.cdst-barmitzvah{background:#fbfaf5}
+.cd-stripes{left:0;right:0;height:calc(var(--u)*4.5);background:repeating-linear-gradient(180deg,transparent 0 12%,#1f3a5f 12% 30%,transparent 30% 42%,#6f8db3 42% 52%,transparent 52% 64%,#1f3a5f 64% 82%,transparent 82% 100%)}
+.cd-stripes.top{top:calc(var(--u)*-1)}
+.cd-stripes.bot{bottom:calc(var(--u)*-1)}
+.cd-star{width:12%;aspect-ratio:1;opacity:.5}
+.cd-star.s1{top:calc(var(--u)*5);right:calc(var(--u)*2)}
+.cd-star.s2{top:calc(var(--u)*5);left:calc(var(--u)*2)}
+.cdst-barmitzvah .cd-d{border-color:#c7d2e0}
+.cdst-barmitzvah .cd-d.shabbat{background:#eef2f8}
+.cdst-barmitzvah .cd-d.wk{border-color:#c9a45c}
+.cdst-barmitzvah .cd-d.goal{background:#1f3a5f;border-color:#c9a45c}
+.cdst-barmitzvah .cd-d.goal .cd-n{color:#e7c873}
+.cdst-barmitzvah .cd-bar i{background:linear-gradient(90deg,#1f3a5f,#c9a45c)}
+/* ילדים */
+.cd-confetti{inset:0;background:radial-gradient(circle,#f7c948 0 .9%,transparent 1.1%) 0 0/19% 13%,radial-gradient(circle,#5bc0eb 0 .8%,transparent 1%) 7% 5%/23% 17%,radial-gradient(circle,#e0663a 0 .7%,transparent .9%) 3% 9%/17% 21%,radial-gradient(circle,#9bc53d 0 .8%,transparent 1%) 11% 3%/29% 19%;opacity:.55}
+.cdst-kids .cd-d{border:0;border-radius:calc(var(--u)*2.6)}
+.cdst-kids .cd-grid>.cd-d:not(.pad):nth-child(5n+1){background:#fff1c9}
+.cdst-kids .cd-grid>.cd-d:not(.pad):nth-child(5n+2){background:#d9f1fb}
+.cdst-kids .cd-grid>.cd-d:not(.pad):nth-child(5n+3){background:#ffe0d4}
+.cdst-kids .cd-grid>.cd-d:not(.pad):nth-child(5n+4){background:#e4f3d2}
+.cdst-kids .cd-grid>.cd-d:not(.pad):nth-child(5n){background:#efe3fb}
+.cdst-kids .cd-d.goal{background:#e0663a!important}
+.cdst-kids .cd-n{color:#33415c}
+.cdst-kids .cd-bar i{background:linear-gradient(90deg,#f7c948,#e0663a,#5bc0eb,#9bc53d)}
+/* תינוק */
+.cdst-baby{background:#f7fbff}
+.cd-cloud{width:22%;aspect-ratio:2}
+.cd-cloud.c1{top:calc(var(--u)*1);right:calc(var(--u)*2)}
+.cd-cloud.c2{top:calc(var(--u)*3);left:calc(var(--u)*4);width:16%}
+.cd-cloud.c3{bottom:calc(var(--u)*2);left:40%;width:18%}
+.cdst-baby .cd-d{border-color:#cfe0f0;border-radius:calc(var(--u)*3)}
+.cdst-baby .cd-d.shabbat{background:#eaf3fb}
+.cdst-baby .cd-d.goal{background:#8bb7dd}
+.cdst-baby .cd-n{color:#5b8db8}
