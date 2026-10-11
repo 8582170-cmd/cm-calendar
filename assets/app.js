@@ -152,7 +152,7 @@ const todayH=new HDate(new Date());
 const DEFAULT={
   v:2,
   s:{calType:'heb',hebYear:todayH.getFullYear(),gregYear:new Date().getFullYear()+1,gregStart:1,cover:true,
-     showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,showMevarchim:false,showOmer:false,
+     showDst:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,showMevarchim:false,showOmer:false,
      city:'jerusalem',custom:null,candleMins:40,il:true,zmanimMode:'daily',
      zmanim:{sunrise:true,shma:true,sunset:true},
      m_shma:'gra',zmPreset:'ashkenaz',zm:null,secs:false,zlab:{},zround:{},zmode:{},
@@ -392,6 +392,23 @@ function addHebrewExtras(map,start,end){
   const put=(d,item)=>{const k=ymd(d);if(!map.has(k))map.set(k,[]);map.get(k).push(item)};
   const local=ms=>{const dt=new Date(ms);let y,mo,da;try{const f=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(dt).split('-');y=+f[0];mo=+f[1];da=+f[2]}catch(e){y=dt.getFullYear();mo=dt.getMonth()+1;da=dt.getDate()}return new Date(y,mo-1,da,12)};
   const inRange=d=>d>=new Date(start.getFullYear(),start.getMonth(),start.getDate())&&d<=new Date(end.getFullYear(),end.getMonth(),end.getDate(),23);
+  /* מעבר לשעון קיץ / חורף לפי אזור הזמן של המקום */
+  if(s.showDst!==false&&tz){
+    const off=ms=>{try{const p={};new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(ms)).forEach(x=>p[x.type]=x.value);return Math.round((Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms)/60000)}catch(e){return 0}};
+    const wall=(T,o)=>{const d=new Date(T+o*60000);return d.getUTCHours()+':'+String(d.getUTCMinutes()).padStart(2,'0')};
+    let prev=Date.UTC(start.getFullYear(),start.getMonth(),start.getDate()-1,12),po=off(prev);
+    for(let d=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);d<=end;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
+      const cur=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate(),12),co=off(cur);
+      if(co!==po){
+        let lo=prev,hi=cur;while(hi-lo>60000){const mid=Math.floor((lo+hi)/2);if(off(mid)===po)lo=mid;else hi=mid}
+        const T=Math.round(hi/60000)*60000,from=wall(T,po),to=wall(T,co),fwd=co>po;
+        const day=local(T);
+        if(inRange(day))put(day,{cls:'dst',text:(fwd?'שעון קיץ: ב־'+from+' מקדימים ל־'+to:'שעון חורף: ב־'+from+' מחזירים ל־'+to),order:2});
+        po=co;
+      }
+      prev=cur;
+    }
+  }
   const tm=ms=>fmtTime(new Date(ms),'near',tz);
   if(M.molad!==false||M.kl||M.klEnd){
     const y0=new HDate(start).getFullYear()-1,y1=new HDate(end).getFullYear()+1;
