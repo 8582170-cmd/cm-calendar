@@ -498,3 +498,11 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .choice-list{display:flex;flex-direction:column;gap:8px}
 .choice-list .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:10px 14px;gap:2px}
 .choice-list .btn small{font-weight:400;font-size:13px;opacity:.85}
+
+/* empty cover: say what this page is */
+.cover-mark{font-family:var(--f-head);font-weight:700;font-size:calc(var(--u)*16);color:var(--acc);line-height:1}
+.cover-empty .pg-img{border:calc(var(--u)*.4) dashed var(--p-line);border-radius:calc(var(--u)*2)}
+@media print{
+  .page.cover-empty .cover-title:empty{display:block}
+  .page.cover-empty .cover-title:empty::before{content:"לוח שנה";color:inherit}
+}

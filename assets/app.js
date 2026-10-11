@@ -1237,6 +1237,7 @@ function render(){
   if(s.cover){
     const p=pageShell('שער','cover');
     p.appendChild(makeImageBox(()=>state.cover,v=>{state.cover={...state.cover,...v};save();render()},null));
+    if(!(state.cover||{}).img){p.classList.add('cover-empty');const d=p.querySelector('.pg-img .drop');if(d)d.insertAdjacentHTML('afterbegin','<b class="cover-mark">עמוד שער</b>')}
     p.appendChild(editable('cover-title',state.cover.title,'לחצו כאן לכתיבת כותרת, למשל: לוח השנה של משפחת כהן',t=>{state.cover.title=t;save()}));
     p.appendChild(el('div','cover-year',esc(s.calType==='heb'&&(+s.hebStart||7)===7?'שנת '+hebYearStr(+s.hebYear):months[0].year+(months.at(-1).year!==months[0].year?'–'+months.at(-1).year:''))));
     emitExtras('cover');
