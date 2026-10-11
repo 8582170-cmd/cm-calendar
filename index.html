@@ -62,7 +62,7 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:
 /* the luach sheet */
 .sheet{background:var(--sheet);border-radius:6px;box-shadow:var(--shadow);padding:22px 22px 16px;transform:rotate(-1.2deg);border:1px solid var(--line)}
 .sheet-head{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--teal);padding-bottom:10px;margin-bottom:10px}
-.sheet-head b{font-family:var(--f-display);font-weight:900;font-size:44px;line-height:1;color:var(--teal)}
+.sheet-head b{font-family:var(--f-display);font-weight:900;font-size:62px;line-height:1;color:var(--teal)}
 .sheet-head span{font-family:var(--f-display);font-size:22px}
 .sheet-head small{margin-inline-start:auto;color:var(--mute);font-size:13px}
 .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--line);border-inline-start:1px solid var(--line);font-variant-numeric:tabular-nums}
@@ -128,6 +128,19 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .final{text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
 footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);font-size:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
+
+.wall{display:flex;flex-direction:column;transform:rotate(-1deg)}
+.wall .sheet{transform:none}
+.sheet.hist{padding-bottom:14px;border-radius:6px 6px 2px 2px}
+.sheet.cal{border-radius:2px 2px 6px 6px}
+.rings{height:18px;margin-inline:18px;background:radial-gradient(circle at 50% 50%,var(--paper) 0 3px,var(--mute) 3.5px 5px,transparent 5.5px) 0 50%/22px 18px repeat-x}
+.hist-list{list-style:none;margin:0;padding:0;columns:2;column-gap:22px;column-rule:1px solid var(--line);font-size:11.5px;line-height:1.35}
+.hist-list li{break-inside:avoid;padding-block:2px;display:flex;gap:6px}
+.hist-list b{font-family:var(--f-display);font-weight:900;color:var(--teal);flex:none;min-width:2.2em}
+.hist-list .y{color:var(--mute)}
+.hist-list .ev b{color:var(--chag)}
+@media (max-width:980px){.wall{transform:none}}
+@media (max-width:620px){.hist-list{columns:1;font-size:11px}.sheet-head b{font-size:40px}}
 @media (max-width:980px){
   .hero{grid-template-columns:minmax(0,1fr);gap:36px}
   .sheet{transform:none}
@@ -169,11 +182,18 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
         <p class="fine">בלי כרטיס אשראי. משלמים רק כשהלוח מוכן להדפסה.</p>
       </div>
 
-      <figure class="sheet" aria-label="דוגמה לעמוד תשרי תשפ״ז מתוך לוח">
+      <div class="wall" aria-label="דוגמה ללוח קיר פתוח: למעלה אירועים בדברי ימי ישראל, למטה לוח חודש תשרי תשפ״ז">
+      <figure class="sheet hist">
+        <div class="sheet-head"><b>תשרי</b><span>בדברי ימי ישראל</span><small>העמוד העליון</small></div>
+        <ul class="hist-list" id="hist"></ul>
+      </figure>
+      <div class="rings" aria-hidden="true"></div>
+      <figure class="sheet cal">
         <div class="sheet-head"><b>תשרי</b><span>תשפ״ז</span><small>ספטמבר–אוקטובר 2026 · ירושלים</small></div>
         <div class="grid" id="demo"></div>
         <div class="sheet-foot"><span>הדלקת נרות 40 דק׳ לפני השקיעה</span><span>מוצאי שבת לפי צאת הכוכבים</span></div>
       </figure>
+      </div>
     </div>
 
     <section id="what">
@@ -243,8 +263,8 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   /* דוגמת הלוח: תשרי תשפ"ז. א' בתשרי חל בשבת, 12 בספטמבר 2026. */
   const L=['א','ב','ג','ד','ה','ו','ז','ח','ט','י','יא','יב','יג','יד','טו','טז','יז','יח','יט','כ','כא','כב','כג','כד','כה','כו','כז','כח','כט','ל'];
   const heb=i=>{const s=L[i-1];return s.length>1?s.slice(0,-1)+'״'+s.slice(-1):s+'׳'};
-  const marks={1:['chag','ראש השנה'],2:['chag','ר״ה ב׳'],3:['','צום גדליה'],8:['shab','שבת שובה','יציאה 19:17'],7:['','','הדלקה 18:01'],
-    10:['chag','יום כיפור'],14:['','ערב סוכות','הדלקה 17:52'],15:['chag','סוכות','יציאה 19:07'],17:['','','','יום הולדת לנעמה'],
+  const marks={1:['chag','ראש השנה'],2:['chag','ר״ה ב׳'],3:['','צום גדליה'],8:['shab','שבת שובה · האזינו','יציאה 19:17'],16:['','חוה״מ סוכות'],18:['','חוה״מ סוכות'],19:['','חוה״מ סוכות'],20:['','חוה״מ סוכות'],23:['','אסרו חג'],7:['','','הדלקה 18:01'],
+    10:['chag','יום כיפור'],14:['','ערב סוכות','הדלקה 17:52'],15:['chag','סוכות','יציאה 19:07'],17:['','חוה״מ סוכות','','יום הולדת לנעמה'],
     21:['','הושענא רבה','הדלקה 17:42'],22:['chag','שמח״ת','יציאה 18:58'],24:['','','','יארצייט סבא משה'],28:['','','הדלקה 17:34'],29:['shab','בראשית','יציאה 18:50'],30:['','ראש חודש']};
   const g=document.getElementById('demo');let h='';
   ['א','ב','ג','ד','ה','ו','ש'].forEach(w=>h+='<div class="wd">'+w+'</div>');
@@ -256,6 +276,10 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   }
   for(let i=36;i<42;i++)h+='<div class="pad"></div>';
   g.innerHTML=h;
+
+  /* העמוד העליון: מבחר מתוך המאגר לתשרי */
+  const H=[[1,'נעקה״ש רבנו אמנון ממגנצא, בעל ״ונתנה תוקף״','ד׳תשע״ב'],[1,'נשרפו ברומא התלמוד ומפרשיו בפקודת האפיפיור','שי״ד',1],[1,'המלבי״ם','תר״מ'],[3,'המגן אברהם','תמ״ג'],[4,'ר׳ אברהם דנציג, בעל ״חיי אדם״','תקפ״א'],[9,'הגרי״ז מבריסק','תש״כ'],[13,'רבי עקיבא איגר','תקצ״ח'],[18,'רבי נחמן מברסלב','תקע״א'],[19,'הגאון מוילנא','תקנ״ח'],[19,'היהודי הקדוש מפשיסחא','תקע״ד'],[25,'רבי לוי יצחק מברדיצ׳ב, בעל ״קדושת לוי״','תק״ע'],[25,'החתם סופר','ת״ר'],[27,'ר׳ יצחק הזקן, מבעלי התוספות','ד׳תתקמ״ט'],[30,'המהר״ץ חיות','תרט״ז']];
+  document.getElementById('hist').innerHTML=H.map(x=>'<li'+(x[3]?' class="ev"':'')+'><b>'+heb(x[0])+'</b><span>'+x[1]+' <span class="y">('+x[2]+')</span></span></li>').join('');
 
   /* מסלולים מתוך plans.js */
   const P=window.LuchenuPlans,grid=document.getElementById('planGrid');
