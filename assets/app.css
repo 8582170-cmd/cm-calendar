@@ -494,3 +494,7 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .lay-ic .g{flex:1;background:repeating-linear-gradient(90deg,currentColor 0 1px,transparent 1px 4px),repeating-linear-gradient(0deg,currentColor 0 1px,transparent 1px 5px);opacity:.55}
 .lay-ic.two{flex-direction:row;width:52px;border:0;padding:0;gap:4px}
 .lay-ic.two b{flex:1;display:flex;flex-direction:column;border:1.5px solid currentColor;border-radius:3px;padding:3px}
+
+.choice-list{display:flex;flex-direction:column;gap:8px}
+.choice-list .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:10px 14px;gap:2px}
+.choice-list .btn small{font-weight:400;font-size:13px;opacity:.85}

@@ -832,14 +832,39 @@ function addHistBox(p,mo,full){
   if(!n)box.appendChild(el('div','yzp-empty','אין אירועים מסומנים לחודש זה.'));
   p.appendChild(box);
 }
+let HIST_ASKED=false;
 function fitHist(cb){
   if(cb.dataset.fitDone)return;cb.dataset.fitDone='1';
-  const over=()=>cb.scrollHeight>cb.clientHeight+1||cb.scrollWidth>cb.clientWidth+1;
-  cb.style.setProperty('--yzf',1);if(!over())return;
-  /* מקטינים עד שהכל נכנס: חיפוש בינארי על גודל הטקסט */
-  let lo=0.08,hi=1;
-  for(let i=0;i<12;i++){const mid=(lo+hi)/2;cb.style.setProperty('--yzf',mid.toFixed(3));if(over())hi=mid;else lo=mid}
-  cb.style.setProperty('--yzf',lo.toFixed(3));
+  const READ=0.72,over=el=>el.scrollHeight>el.clientHeight+1||el.scrollWidth>el.clientWidth+1;
+  const fitSize=el=>{el.style.setProperty('--yzf',1);if(!over(el))return 1;let lo=0.08,hi=1;for(let i=0;i<12;i++){const mid=(lo+hi)/2;el.style.setProperty('--yzf',mid.toFixed(3));if(over(el))hi=mid;else lo=mid}el.style.setProperty('--yzf',lo.toFixed(3));return lo};
+  const f=fitSize(cb);
+  if(f>=READ)return;
+  const mode=state.s.histOverflow||'ask';
+  const page=cb.closest('.page'),title=((page.querySelector('.pg-month')||{}).textContent||'').trim();
+  if(mode!=='page'){
+    if(mode==='ask'&&!HIST_ASKED){HIST_ASKED=true;setTimeout(()=>askHistOverflow(title,cb.querySelectorAll('.yzp-e').length,Math.round(f*100)),300)}
+    return;
+  }
+  /* עמודים נוספים: גודל קריא, וכל מה שלא נכנס עובר לעמוד הבא */
+  let cur=cb,wrap=page.parentElement,n=1;
+  cur.style.setProperty('--yzf',READ);
+  while(over(cur)&&n<6){
+    const days=[...cur.querySelectorAll(':scope>.yzp-day')],moved=[];
+    while(over(cur)&&days.length>1){const d=days.pop();moved.unshift(d);d.remove()}
+    if(!moved.length)break;
+    n++;
+    const nw=el('div','sheet-wrap cont');nw.style.width=wrap.style.width;nw.style.height=wrap.style.height;
+    const np=el('div',page.className.replace(/\blocked-page\b/,''));np.style.cssText=page.style.cssText;
+    const head=el('div','pg-head');head.appendChild(el('div','pg-month',esc(title)));head.appendChild(el('div','pg-other','דברי הימים · המשך '+(n-1)));np.appendChild(head);
+    const body=el('div','cont-body hist-body');body.dataset.fitDone='1';body.style.setProperty('--yzf',READ);moved.forEach(d=>body.appendChild(d));np.appendChild(body);
+    nw.appendChild(np);nw.appendChild(el('div','sheet-label',esc(title)+' · דברי הימים, המשך'));
+    wrap.after(nw);wrap=nw;cur=body;
+  }
+  if(over(cur))fitSize(cur);
+}
+function askHistOverflow(title,count,pct){
+  const m=modal('<h3>האירועים לא נכנסים בעמוד אחד</h3><p class="hint">בחודש '+esc(title)+' יש '+count+' אירועים בדברי ימי ישראל. כדי שכולם ייכנסו בעמוד אחד, צריך להקטין את הטקסט לכ־'+pct+'% מהגודל הרגיל. מה לעשות?</p><div class="choice-list"><button class="btn primary" type="button" data-ho="page">להוסיף עמוד נוסף<small>הטקסט נשאר בגודל קריא, והחודש מקבל עוד עמוד של דברי הימים</small></button><button class="btn" type="button" data-ho="shrink">להקטין את הטקסט<small>הכל נכנס בעמוד אחד, באותיות קטנות יותר</small></button></div><p class="hint">הבחירה חלה על כל החודשים. אפשר לשנות אותה בהגדרות, בחלק "אירועים בדברי ימי ישראל".</p>');
+  m.addEventListener('click',e=>{const b=e.target.closest('[data-ho]');if(!b)return;state.s.histOverflow=b.dataset.ho;save();m.remove();syncUI();render()});
 }
 function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')}
 function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
@@ -1829,7 +1854,7 @@ function syncUI(){
   $('#rangeRow').hidden=(s.view||'month')==='month';$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליארצייטים.',month:'עמוד לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
-  $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const sel=$('#yzPanelW'),v=String(s.yzPanelW||26);if(![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML('beforeend',opt(v,v+'%'));sel.value=v}$('#panelSide').value=s.panelSide==='right'?'right':'left';document.querySelectorAll('[data-place]').forEach(c=>c.value=placeOf(c.dataset.place));
+  $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const sel=$('#yzPanelW'),v=String(s.yzPanelW||26);if(![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML('beforeend',opt(v,v+'%'));sel.value=v}$('#panelSide').value=s.panelSide==='right'?'right':'left';document.querySelectorAll('[data-place]').forEach(c=>c.value=placeOf(c.dataset.place));
   $('#zmHint').textContent={col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
   $('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
   if(![...$('#hebYear').options].some(o=>+o.value===+s.hebYear))$('#hebYear').insertAdjacentHTML('beforeend',opt(s.hebYear,hebYearStr(+s.hebYear)));
@@ -1919,6 +1944,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.place){state.s.place={...(state.s.place||{}),yz:(state.s.place||{}).yz||placeOf('yz'),[t.dataset.place]:t.value};return set('place',state.s.place)}
   if(t.id==='yzPanelW')return set('yzPanelW',+t.value);
   if(t.id==='yzOverflow')return set('yzOverflow',t.value);
+  if(t.id==='histOverflow'){HIST_ASKED=false;return set('histOverflow',t.value)}
   if(t.dataset.tcol){const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(state.s.tcols||{})};tc[t.dataset.tcol]=t.checked;return set('tcols',tc)}
   if(t.id==='splitCols')return set('splitCols',t.checked);
   if(t.dataset.moon){state.s.moon={...(state.s.moon||{}),[t.dataset.moon]:t.checked};return set('moon',state.s.moon)}
