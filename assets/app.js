@@ -907,7 +907,14 @@ function dateTop(d,hd,long){
     default:return '<span class="d-main">'+esc(long?H:hLab)+'</span><span class="d-sub">'+subG+'</span>';
   }
 }
+function yzHintOnPage(p){
+  if(placeOf('yz')!=='none'||state.s.yzHintOff||RS.yzHint)return;RS.yzHint=true;
+  const h=el('div','yz-hint-page no-print','<div class="yh-t"><b>אפשר להוסיף אירועים בדברי ימי ישראל</b><span>ימי פטירה של גדולי ישראל ואירועים מההיסטוריה היהודית. בכל עת אפשר להוסיף אותם בהגדרות, בשלב "מה יופיע בלוח".</span></div><div class="yh-b"><button class="btn primary" type="button" data-yh="on">להוסיף עכשיו</button><button class="btn" type="button" data-yh="off">לא עכשיו</button></div>');
+  h.addEventListener('click',e=>{const b=e.target.closest('[data-yh]');if(!b)return;e.stopPropagation();if(b.dataset.yh==='on')state.s.place={...(state.s.place||{}),yz:'page'};else state.s.yzHintOff=true;save();syncUI();render()});
+  p.appendChild(h);
+}
 function addMonthGrid(p,mo,evMap){
+  yzHintOnPage(p);
   const s=state.s;
   const head=el('div','pg-head');
   head.appendChild(el('div','pg-month',esc(mo.title)));head.appendChild(el('div','pg-year',esc(mo.year)));head.appendChild(el('div','pg-other',dStyle().endsWith('Only')?'':esc(mo.other)));
@@ -1213,7 +1220,7 @@ function render(){
   yzInvalidate();
   const s=state.s;
   applyPrintPageStyle();
-  stage.querySelectorAll('.sheet-wrap,.err,.yz-hint').forEach(n=>n.remove());
+  stage.querySelectorAll('.sheet-wrap,.err').forEach(n=>n.remove());
   let months;
   try{months=buildMonths()}catch(e){stage.insertAdjacentHTML('beforeend','<div class="err">השנה שנבחרה אינה תקינה.</div>');return}
   monthsCache=months;
@@ -1233,12 +1240,6 @@ function render(){
     evMap=eventsFor(new Date(a.getFullYear(),a.getMonth(),a.getDate()-1,12),b);
   }
 
-  if(placeOf('yz')==='none'&&!s.yzHintOff){
-    const h=el('div','notice yz-hint no-print','<div><b>אפשר להוסיף ללוח אירועים בדברי ימי ישראל</b><span>ימי פטירה של גדולי ישראל ואירועים מההיסטוריה היהודית, כ־3,500 בסך הכל. בכל עת אפשר להוסיף אותם בהגדרות, בשלב "מה יופיע בלוח".</span></div><div class="row"><button class="btn primary small" type="button" id="yzHintOn">להוסיף עכשיו</button><button class="btn small" type="button" id="yzHintOff">לא עכשיו</button></div>');
-    stage.appendChild(h);
-    h.querySelector('#yzHintOn').onclick=()=>{state.s.place={...(state.s.place||{}),yz:'page'};save();syncUI();render()};
-    h.querySelector('#yzHintOff').onclick=()=>{state.s.yzHintOff=true;save();h.remove()};
-  }
   emitExtras('top');
   if(s.cover){
     const p=pageShell('שער','cover');

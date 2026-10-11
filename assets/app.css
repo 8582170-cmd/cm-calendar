@@ -507,6 +507,9 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
   .page.cover-empty .cover-title:empty::before{content:"לוח שנה";color:inherit}
 }
 
-.yz-hint{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:14px}
-.yz-hint>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 300px}
-.yz-hint b{color:var(--ink)}
+.yz-hint-page{position:absolute;z-index:40;top:calc(var(--u)*3);inset-inline:calc(var(--u)*14);display:flex;align-items:center;gap:calc(var(--u)*4);padding:calc(var(--u)*3) calc(var(--u)*4);background:var(--p-paper);border:calc(var(--u)*.4) dashed var(--acc);border-radius:calc(var(--u)*2);box-shadow:0 calc(var(--u)*1) calc(var(--u)*4) rgb(0 0 0 / .12);font-size:calc(var(--u)*3.4);line-height:1.35;color:var(--p-ink)}
+.yz-hint-page .yh-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:calc(var(--u)*.6)}
+.yz-hint-page b{color:var(--acc);font-size:1.15em}
+.yz-hint-page span{color:var(--p-mute)}
+.yz-hint-page .yh-b{display:flex;gap:calc(var(--u)*2);flex:none}
+.yz-hint-page .btn{font-size:calc(var(--u)*3.4);padding:.45em 1em}
