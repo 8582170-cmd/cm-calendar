@@ -1475,7 +1475,7 @@ function openZmanimSettings(){
     /* תפריט אחד לעיגול ולשניות */
     const roundSel=k=>{const z=s.zsecs||{},rd=(s.zround||{})[k]||'auto',v=z[k]===true?'secs':rd;
       return '<select class="zs-in" data-zsround="'+k+'" aria-label="עיגול">'+[['auto','עיגול לחומרא'+(s.secs?' (עם שניות, לפי הכללי)':'')],['down','לדקה, תמיד למטה'],['up','לדקה, תמיד למעלה'],['near','לדקה הקרובה'],['secs','עם שניות, בלי עיגול לדקה']].map(x=>opt(x[0],x[1],x[0]===v)).join('')+'</select>'};
-    let h='<div class="zs-grid zs-all"><div class="zs-h">מופיע</div><div class="zs-h">זמן</div><div class="zs-h">שיטת החישוב</div><div class="zs-h">שם בלוח, עיגול ושניות</div><div class="zs-h">לדוגמה</div>';
+    let h='<div class="zs-grid zs-all"><div class="zs-h">מופיע</div><div class="zs-h">זמן</div><div class="zs-h">שיטת החישוב</div><div class="zs-h">שם בלוח ועיגול</div><div class="zs-h">לדוגמה</div>';
     for(const [k,full,short,dir] of ZMANIM){
       const on=!!s.zmanim[k],lab=(s.zlab||{})[k]||'',rd=(s.zround||{})[k]||'auto';
       let meth,ex;
@@ -1489,7 +1489,7 @@ function openZmanimSettings(){
       }
       h+='<label class="chk"><input type="checkbox" data-zsshow="'+k+'"'+(on?' checked':'')+' aria-label="'+full+' מופיע"></label>'+
         '<div class="zs-name">'+full+'</div><div class="zs-meth">'+meth+'</div>'+
-        '<div class="zs-lab"><input class="zs-in" data-zslab="'+k+'" value="'+esc(lab)+'" placeholder="'+esc(short)+'>'+roundSel(k)+'</div>'+
+        '<div class="zs-lab"><input class="zs-in" data-zslab="'+k+'" value="'+esc(lab)+'" placeholder="'+esc(short)+'">'+roundSel(k)+'</div>'+
         '<div class="zs-ex">'+ex+'</div>';
     }
     h+='</div><h4 class="zs-sub">זמני שבת, חג וצום</h4><div class="zs-grid zs-extra">';
