@@ -183,6 +183,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .mp .cdo.tl{top:0;left:0}.mp .cdo.br{bottom:0;right:0;transform:rotate(180deg)}
 .mp .z.zf{line-height:1.15}
 .mp .z.tf{color:var(--acc);font-weight:700}
+.item{position:relative}.new-badge{position:absolute;top:10px;inset-inline-start:10px;z-index:3;background:#b4231b;color:#fff;font-weight:800;font-size:13px;padding:3px 10px;border-radius:99px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 </style>
 </head>
 <body>
@@ -302,8 +303,9 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     return '<div class="'+cls+'" style="--acc:'+(o.acc||'#1e5a63')+'"><div class="mpi">'+body+'</div></div>';
   }
   const ITEMS=[
-    {f:'org',wide:1,title:'זמנים ודברי הימים, לרוחב',desc:'שני עמודים לכל חודש, לתלייה זה מעל זה: למעלה עמוד מלא של אירועים בדברי ימי ישראל, ולמטה הלוח עם זמני היום בתוך כל יום, טבלת זמנים מלאה בטור ולימוד יומי עם ריבוע לסימון.',chips:['לרוחב','דברי הימים','זמנים בימים','טבלת זמנים','לימוד יומי'],pages:[{kind:'hist',dense:1,land:1,acc:'#7a1f3d'},{land:1,tight:1,zFull:1,zShab:1,acc:'#7a1f3d',zcol:1,learn:1}],preset:'scholar'},
-    {f:'org',title:'בית כנסת עם זמני תפילות',desc:'זמני שחרית, מנחה וערבית בתוך כל יום, מחושבים לפי השקיעה ומעוגלים ל־5 דקות, עם טבלת זמני שבת מתחת ללוח. במסלול המלא.',chips:['זמני תפילות','בית כנסת','מסלול מלא'],pages:[{acc:'#2f4f6f',theme:'block',tf:1,ztable:1,footR:'בית הכנסת · זמני התפילות לפי השקיעה'}],preset:'tfilot'},
+    {isNew:1,f:'org',wide:1,title:'זמנים ודברי הימים, לרוחב',desc:'שני עמודים לכל חודש, לתלייה זה מעל זה: למעלה עמוד מלא של אירועים בדברי ימי ישראל, ולמטה הלוח עם זמני היום בתוך כל יום, טבלת זמנים מלאה בטור ולימוד יומי עם ריבוע לסימון.',chips:['לרוחב','דברי הימים','זמנים בימים','טבלת זמנים','לימוד יומי'],pages:[{kind:'hist',dense:1,land:1,acc:'#7a1f3d'},{land:1,tight:1,zFull:1,zShab:1,acc:'#7a1f3d',zcol:1,learn:1}],preset:'scholar'},
+    {isNew:1,f:'org',title:'בית כנסת עם זמני תפילות',desc:'זמני שחרית, מנחה וערבית בתוך כל יום, מחושבים לפי השקיעה ומעוגלים ל־5 דקות, עם טבלת זמני שבת מתחת ללוח. במסלול המלא.',chips:['זמני תפילות','בית כנסת','מסלול מלא'],pages:[{acc:'#2f4f6f',theme:'block',tf:1,ztable:1,footR:'בית הכנסת · זמני התפילות לפי השקיעה'}],preset:'tfilot'},
+    {isNew:1,f:'view',title:'ספירה לאחור לחתונה או לבר מצווה',desc:'כמה ימים נשארו: טבלה כמו לוח חודשי, לוח מספרים, דף ארוך לגלילה או שרשרת נייר. עם תמונות ומשפטים יפים, ו־6 עיצובים: כלה, בר מצווה, בת מצווה, ילדים ותינוק.',chips:['ספירה לאחור','כלה','בר מצווה'],pages:[{kind:'countdown',acc:'#a8646f'}],preset:'countdown'},
     {f:'org',wide:1,title:'הכל כלול',desc:'כל מה שאפשר בעמוד אחד: זמני היום בטור, לימוד יומי עם מולד ותקופות, עמוד דברי הימים מעל, באנרים בשני הצדדים ותמונות בתוך הימים.',chips:['זמנים','לימוד יומי','מולד ותקופות','דברי הימים','באנרים','תמונות בימים'],pages:[{kind:'hist',dense:1,land:1,acc:'#1e5a63'},{land:1,tight:1,zShab:1,acc:'#1e5a63',zcol:1,learn:1,moon:1,cellImg:1,fam:1,bannerR:'בית הכנסת אהל משה',bannerL:'בברכת שנה טובה'}],preset:'all'},
     {f:'family',title:'משפחתי קלאסי',desc:'תמונה של המשפחה בראש כל חודש, ימי הולדת וימי שנה (יארצייטים) בתוך הימים, וזמני הדלקת נרות.',chips:['קיר A3','תמונה ולוח','קלאסי'],pages:[{img:'a1',cap:'תשרי בגליל',fam:1}],preset:'family'},
     {f:'family',title:'עמוד לתמונה, עמוד ללוח',desc:'לוח קיר שנפתח לשניים: תמונה גדולה למעלה, והחודש מתחת.',chips:['קיר','שני עמודים','עדין'],pages:[{kind:'photo',art:'a2',cap:'חופשה בים',theme:'soft',acc:'#24427a'},{theme:'soft',acc:'#24427a',fam:1}],preset:'split'},
@@ -315,13 +317,12 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     {f:'family',title:'עם שער',desc:'עמוד ראשון עם תמונה וכותרת, למשל ״הלוח של משפחת כהן״.',chips:['עמוד שער','תמונה'],pages:[{kind:'cover',art:'a5',coverTitle:'הלוח של משפחת כהן',acc:'#2f2f3a'}],preset:'cover'},
     {f:'size',title:'שולחני',desc:'לוח לרוחב בגודל 21×15 ס״מ, לעמידה על השולחן.',chips:['שולחני','לרוחב'],pages:[{land:1,img:'a4',acc:'#3d5a2a'}],preset:'desk'},
     {f:'size',title:'למקרר',desc:'A5 עם תמונות קטנות בתוך הימים החשובים.',chips:['A5','תמונות בימים'],pages:[{small:1,cellImg:1,fam:1,acc:'#6b2d4f'}],preset:'fridge'},
-    {f:'view',title:'ספירה לאחור לחתונה או לבר מצווה',desc:'כמה ימים נשארו: טבלה כמו לוח חודשי, לוח מספרים, דף ארוך לגלילה או שרשרת נייר. עם תמונות ומשפטים יפים, ו־6 עיצובים: כלה, בר מצווה, בת מצווה, ילדים ותינוק.',chips:['ספירה לאחור','כלה','בר מצווה'],pages:[{kind:'countdown',acc:'#a8646f'}],preset:'countdown'},
     {f:'view',title:'מתכנן שבועי',desc:'עמוד לכל שבוע, עם מקום לכתוב בכל יום, חגים ואירועים.',chips:['שבועי','מקום לכתיבה'],pages:[{kind:'week',acc:'#1e5a63'}],preset:'week'},
     {f:'view',title:'יומן יומי',desc:'עמוד לכל יום עם שעות, כל זמני היום והאירועים של אותו יום.',chips:['יומי','שעות'],pages:[{kind:'day',acc:'#24427a'}],preset:'day'},
     {f:'view',title:'טבלה',desc:'שורה לכל יום וטור לכל זמן, לתלייה בבית הכנסת או בישיבה.',chips:['טבלה','זמנים'],pages:[{kind:'table',acc:'#7a4a17'}],preset:'table'}
   ];
   const gal=document.getElementById('gal');
-  gal.innerHTML=ITEMS.map(it=>'<article class="item'+(it.wide?' wide':'')+'" data-f="'+it.f+'"><div class="stagebox" tabindex="0" role="button" aria-label="הגדלה: '+it.title+'" data-i="'+ITEMS.indexOf(it)+'">'+it.pages.map(page).join('')+'<span class="zoom-hint">לחצו להגדלה</span></div><h3>'+it.title+'</h3><p>'+it.desc+'</p><div class="chips">'+it.chips.map(c=>'<span>'+c+'</span>').join('')+'</div><a class="btn btn-ghost" href="app.html#preset-'+it.preset+'">להתחיל מהעיצוב הזה</a></article>').join('');
+  gal.innerHTML=ITEMS.map(it=>'<article class="item'+(it.wide?' wide':'')+'" data-f="'+it.f+'">'+(it.isNew?'<span class="new-badge">חדש</span>':'')+'<div class="stagebox" tabindex="0" role="button" aria-label="הגדלה: '+it.title+'" data-i="'+ITEMS.indexOf(it)+'">'+it.pages.map(page).join('')+'<span class="zoom-hint">לחצו להגדלה</span></div><h3>'+it.title+'</h3><p>'+it.desc+'</p><div class="chips">'+it.chips.map(c=>'<span>'+c+'</span>').join('')+'</div><a class="btn btn-ghost" href="app.html#preset-'+it.preset+'">להתחיל מהעיצוב הזה</a></article>').join('');
   const lb=document.getElementById('lb'),lbp=document.getElementById('lbPages');
   const openLb=i=>{const it=ITEMS[i];document.getElementById('lbTitle').textContent=it.title;lbp.className='lb-pages'+(it.wide?' stack':it.pages.length>1?' two':'');lbp.innerHTML=it.pages.map(page).join('');lb.hidden=false;document.body.style.overflow='hidden';document.getElementById('lbClose').focus()};
   const closeLb=()=>{lb.hidden=true;document.body.style.overflow=''};
