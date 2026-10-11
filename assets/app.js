@@ -1083,9 +1083,11 @@ function cdPoster(ST){
   let lastM='';for(const wk of weeks){const f=wk.days.find(Boolean),[k,t]=cdMonthKey(f);if(k!==lastM){wk.label=t.split(' ')[0];lastM=k}}
   const g=el('div','cdp-grid');g.style.gridTemplateRows='auto repeat('+weeks.length+',minmax(0,1fr))';
   g.innerHTML='<div></div>'+WEEKDAYS.map(x=>'<div class="wd">'+x+'</div>').join('')+weeks.map(wk=>'<div class="cdp-m">'+esc(wk.label)+'</div>'+wk.days.map(d=>{if(!d)return '<div></div>';const n=cdN(to,d),hd=new HDate(d);
-    const gi=n===0?cdImg('goal'):null;return '<div class="cdp-d'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+'" data-date="'+iso(d)+'"'+(gi?' style="background:center/cover url('+gi+')"':'')+'><b>'+(n===0?ST.goal:n)+'</b><small>'+(dStyle().startsWith('greg')?d.getDate()+'/'+(d.getMonth()+1):gem(hd.getDate()))+'</small></div>'}).join('')).join('');
+    const im=n===0?cdImg('goal'):d.getTime()===from.getTime()?cdImg('first'):null,q=cdQuote(n),first=(s.calType==='heb'?hd.getDate():d.getDate())===1||d.getTime()===from.getTime();
+    const dt=dStyle().startsWith('greg')?d.getDate()+(first?' '+GREG_MONTHS[d.getMonth()]:''):gem(hd.getDate())+(first?' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())):'');
+    return '<div class="cdp-d'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+(n%7===0&&n?' wk':'')+(im?' has-im':'')+'" data-date="'+iso(d)+'">'+(im?'<img class="cd-im" alt="" src="'+im+'">':'')+'<span class="cdp-dt'+(first?' first':'')+'">'+esc(dt)+'</span><b>'+(n===0?ST.goal:n)+'</b>'+(q?'<em class="cdp-q">'+esc(q)+'</em>':'')+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}).join('')).join('');
   p.appendChild(g);
-  p.insertAdjacentHTML('beforeend','<div class="cdp-legend">צובעים או מסמנים כל יום שעבר. המספר הגדול: כמה ימים נשארו. הקטן: התאריך.</div>');
+  p.insertAdjacentHTML('beforeend','<div class="cdp-legend">המספר הגדול: כמה ימים נשארו. צובעים או מסמנים כל יום שעבר.</div>');
   addFootLine(p);emitExtras('cd-poster');
 }
 /* לוח מספרים: כל הימים בטבלה אחת, למשל 100 ימים = 10×10, מהמספר הגדול לקטן */
