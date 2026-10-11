@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://cm-calendar.vercel.app/sitemap.xml

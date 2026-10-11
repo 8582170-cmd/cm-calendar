@@ -8,7 +8,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const strip=s=>String(s||'').replace(/[֑-ׇ]/g,'');
 const evName=e=>{let x=strip(e.render(st.lang==='he'?'he':'en'));if(st.lang==='he')x=x.replace(/\b(5\d{3})\b/,(m,y)=>gem(+y%1000));return x};
 const PAGE=window.LC_PAGE||{};
-const BUILDER='../app.html';
+const BASE=PAGE.base||'';
+const BUILDER=BASE+'../app.html';
 
 /* ---------- שפה ---------- */
 const T={
@@ -126,7 +127,7 @@ let view=PAGE.view||'month',anchor=TODAY,sub=PAGE.tool||'';
 function readHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const [v,a]=h.split('/');
   if(VIEWS.includes(v)){view=v;if(v==='tools')sub=a||'';else if(a&&/^\d{4}-\d{2}-\d{2}$/.test(a))anchor=fromIso(a)}}
 function go(v,a,s){view=v;if(a)anchor=a;if(s!==undefined)sub=s;const h=v+(v==='tools'?(sub?'/'+sub:''):a?'/'+iso(anchor):'');
-  if(!PAGE.static)history.replaceState(null,'','#'+h);else if(v!==PAGE.view||v==='tools'){location.href=(PAGE.root||'./')+(st.lang==='en'?'?lang=en':'')+'#'+h;return}
+  if(!PAGE.static||(v===PAGE.view&&v!=='tools'))history.replaceState(null,'',PAGE.static?location.pathname+'#'+h:'#'+h);else{location.href=(PAGE.root||'./')+'#'+h;return}
   render();window.scrollTo({top:0})}
 
 /* ---------- תצוגות ---------- */
@@ -337,9 +338,9 @@ function seoBlock(){
   return '<section class="card seo"><h2>'+(HE()?'לוח שנה עברי ל'+cn:'Jewish calendar for '+cn)+'</h2>'+
     (HE()?'<p>לוח השנה העברי-לועזי המקוון מציג את כל החגים והמועדים, ראשי החודשים, פרשות השבוע וזמני כניסת השבת ויציאתה ב'+cn+'. בלחיצה על כל יום רואים את זמני היום המלאים: עלות השחר, הנץ החמה, סוף זמן קריאת שמע ותפילה לפי המג״א והגר״א, מנחה גדולה, פלג המנחה, שקיעה וצאת הכוכבים.</p><p>אפשר להוסיף תזכורות לימי הולדת, ימי נישואין ויארצייטים לפי התאריך העברי, להמיר תאריכים, לחשב תאריך בר מצווה ובת מצווה, ולהוריד את הכל ליומן בטלפון. רוצים לוח מודפס? בלוחנו בונים לוח שנה אישי ל'+hYear(hy)+' עם התמונות והאירועים שלכם.</p>'
       :'<p>This online Hebrew-Gregorian calendar shows all Jewish holidays, Rosh Chodesh, weekly Torah portions and Shabbat candle-lighting and havdalah times for '+cn+'. Click any day for full zmanim: dawn, sunrise, latest Shema and Shacharit (MGA and GRA), mincha, plag, sunset and nightfall.</p><p>Add reminders for Hebrew birthdays, anniversaries and yahrzeits, convert dates, calculate a Bar or Bat Mitzvah date, and export everything to your phone calendar.</p>')+
-    '<div class="links">'+top.map(x=>'<a href="'+root+'zmanim/'+x.id+'.html'+(st.lang==='en'?'?lang=en':'')+'">'+esc(HE()?'זמני היום '+x.he:'Zmanim '+x.en)+'</a>').join('')+'</div></section>';
+    '<div class="links">'+top.map(x=>'<a href="'+root+'zmanim/'+x.id+'.html">'+esc(HE()?'זמני היום '+x.he:'Zmanim '+x.en)+'</a>').join('')+'</div></section>';
 }
-function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t('siteName')+'</span><a href="'+BUILDER+'">'+(HE()?'לוחנו · בניית לוח שנה אישי להדפסה':'Luchenu · personal printed calendars')+'</a><a href="../index.html">'+(HE()?'מסלולים ומחירים':'Plans & pricing')+'</a><span>'+(HE()?'הזמנים מחושבים אסטרונומית ואינם תחליף ללוח של רב הקהילה.':'Times are astronomical calculations.')+'</span>'}
+function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t('siteName')+'</span><a href="'+BUILDER+'">'+(HE()?'לוחנו · בניית לוח שנה אישי להדפסה':'Luchenu · personal printed calendars')+'</a><a href="'+BASE+'../index.html">'+(HE()?'מסלולים ומחירים':'Plans & pricing')+'</a><span>'+(HE()?'הזמנים מחושבים אסטרונומית ואינם תחליף ללוח של רב הקהילה.':'Times are astronomical calculations.')+'</span>'}
 function renderNav(){
   $('#nav').innerHTML=VIEWS.map(v=>'<a href="#'+v+'" data-nav="'+v+'"'+(v===view?' aria-current="page"':'')+'>'+t(v)+'</a>').join('');
   const sel=$('#city');const groups=[...new Set(CITIES.map(c=>c.g))];
@@ -381,7 +382,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#dlg').hidden)closeDlg();const ym=e.target.closest&&e.target.closest('[data-goto]');if(ym&&(e.key==='Enter'||e.key===' ')){e.preventDefault();ym.click()}});
 document.addEventListener('change',e=>{
   const T2=e.target;
-  if(T2.id==='city'){st.city=T2.value;saveSt();evCache.clear();if(PAGE.static&&PAGE.view==='zmanim'&&PAGE.city){location.href=(PAGE.root||'./')+'zmanim/'+st.city+'.html'+(st.lang==='en'?'?lang=en':'');return}render();return}
+  if(T2.id==='city'){st.city=T2.value;saveSt();evCache.clear();if(PAGE.static&&PAGE.city){location.href=(PAGE.root||'./')+PAGE.view+'/'+st.city+'.html';return}render();return}
   if(T2.dataset.opt){st.opts[T2.dataset.opt]=T2.checked;saveSt();evCache.clear();render();return}
   if(T2.id==='zDate'&&T2.value){anchor=fromIso(T2.value);render();return}
 });
