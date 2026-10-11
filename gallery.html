@@ -184,6 +184,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .mp .z.zf{line-height:1.15}
 .mp .z.tf{color:var(--acc);font-weight:700}
 .item{position:relative}.new-badge{position:absolute;top:10px;inset-inline-start:10px;z-index:3;background:#b4231b;color:#fff;font-weight:800;font-size:13px;padding:3px 10px;border-radius:99px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.mp.shot{padding:0!important;background:#fff;overflow:hidden}.mp.shot img{display:block;width:100%;height:100%;object-fit:contain;-webkit-user-select:none;user-select:none;pointer-events:none}
 </style>
 </head>
 <body>
@@ -268,6 +269,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
   const lines=(t,n,narrow)=>'<div class="ms'+(narrow?' narrow':'')+'"><b>'+t+'</b>'+Array.from({length:n},()=>'<div class="ln"></div>').join('')+'</div>';
   const head=(o)=>'<div class="mh"><b>'+(o.title||'תשרי')+'</b><span>'+(o.sub||'תשפ״ז')+'</span><small>'+(o.small||'ספטמבר–אוקטובר 2026')+'</small></div>';
   function page(o){
+    if(o.kind==='img')return '<div class="mp shot'+(o.land?' land':'')+'"><img src="'+o.src+'" alt="'+(o.alt||'')+'" loading="lazy" decoding="async"></div>';
     const cls='mp th-'+(o.theme||'ink')+(o.land?' land':'')+(o.small?' small':'')+(o.tight?' tight':'');
     let body='';
     if(o.kind==='cover')body='<div class="mi full '+o.art+'"></div><div class="ttl">'+o.coverTitle+'</div><div class="yr">שנת תשפ״ז</div>';
@@ -303,7 +305,7 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
     return '<div class="'+cls+'" style="--acc:'+(o.acc||'#1e5a63')+'"><div class="mpi">'+body+'</div></div>';
   }
   const ITEMS=[
-    {isNew:1,f:'org',wide:1,title:'זמנים ודברי הימים, לרוחב',desc:'שני עמודים לכל חודש, לתלייה זה מעל זה: למעלה עמוד מלא של אירועים בדברי ימי ישראל, ולמטה הלוח עם זמני היום בתוך כל יום, טבלת זמנים מלאה בטור ולימוד יומי עם ריבוע לסימון.',chips:['לרוחב','דברי הימים','זמנים בימים','טבלת זמנים','לימוד יומי'],pages:[{kind:'hist',dense:1,land:1,acc:'#7a1f3d'},{land:1,tight:1,zFull:1,zShab:1,acc:'#7a1f3d',zcol:1,learn:1}],preset:'scholar'},
+    {isNew:1,f:'org',wide:1,title:'זמנים ודברי הימים, לרוחב',desc:'לוח אמיתי שהודפס מהבונה, שני עמודים לכל חודש לתלייה זה מעל זה: למעלה עמוד מלא של אירועים בדברי ימי ישראל, ולמטה הלוח עם זמני היום בתוך כל יום, טבלת זמנים מלאה בטור ולימוד יומי עם ריבוע לסימון.',chips:['לרוחב','דברי הימים','זמנים בימים','טבלת זמנים','לימוד יומי'],pages:[{kind:'img',land:1,src:'assets/gallery/scholar-1.webp',alt:'עמוד דברי הימים לחודש תשרי'},{kind:'img',land:1,src:'assets/gallery/scholar-2.webp',alt:'לוח תשרי עם זמני היום ולימוד יומי'}],preset:'scholar'},
     {isNew:1,f:'org',title:'בית כנסת עם זמני תפילות',desc:'זמני שחרית, מנחה וערבית בתוך כל יום, מחושבים לפי השקיעה ומעוגלים ל־5 דקות, עם טבלת זמני שבת מתחת ללוח. במסלול המלא.',chips:['זמני תפילות','בית כנסת','מסלול מלא'],pages:[{acc:'#2f4f6f',theme:'block',tf:1,ztable:1,footR:'בית הכנסת · זמני התפילות לפי השקיעה'}],preset:'tfilot'},
     {isNew:1,f:'view',title:'ספירה לאחור לחתונה או לבר מצווה',desc:'כמה ימים נשארו: טבלה כמו לוח חודשי, לוח מספרים, דף ארוך לגלילה או שרשרת נייר. עם תמונות ומשפטים יפים, ו־6 עיצובים: כלה, בר מצווה, בת מצווה, ילדים ותינוק.',chips:['ספירה לאחור','כלה','בר מצווה'],pages:[{kind:'countdown',acc:'#a8646f'}],preset:'countdown'},
     {f:'org',wide:1,title:'הכל כלול',desc:'כל מה שאפשר בעמוד אחד: זמני היום בטור, לימוד יומי עם מולד ותקופות, עמוד דברי הימים מעל, באנרים בשני הצדדים ותמונות בתוך הימים.',chips:['זמנים','לימוד יומי','מולד ותקופות','דברי הימים','באנרים','תמונות בימים'],pages:[{kind:'hist',dense:1,land:1,acc:'#1e5a63'},{land:1,tight:1,zShab:1,acc:'#1e5a63',zcol:1,learn:1,moon:1,cellImg:1,fam:1,bannerR:'בית הכנסת אהל משה',bannerL:'בברכת שנה טובה'}],preset:'all'},
