@@ -248,6 +248,7 @@ function buildMonths(){
 }
 function hebText(ev){let t='';try{t=ev.render('he')}catch(e){}if(!t)t=ev.getDesc();return stripNikud(t)}
 /* שניות: לכל זמן אפשר לבחור בנפרד (עם / בלי), ואם לא נבחר, לפי ההגדרה הכללית */
+function zdir(key,def){const r=(state.s.zround||{})[key];return r&&r!=='auto'?r:def}
 function secsFor(key){const z=state.s.zsecs||{};return key&&z[key]!=null?!!z[key]:!!state.s.secs}
 function fmtTime(dt,dir,tz,key){
   if(!(dt instanceof Date)||isNaN(dt))return '—';
@@ -498,8 +499,9 @@ function eventsFor(start,end){
       else if(desc.startsWith('Fast begins')){let hr=12;try{hr=+new Intl.DateTimeFormat('en-US',{hour:'numeric',hourCycle:'h23',timeZone:tz}).format(ev.eventTime)}catch(e){}tt=hr>=12?Zd.sunset:Zd.fastStart}
       tt=tt||ev.eventTime;
       const sk=desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'motzash':desc.startsWith('Fast begins')?'fastStart':desc.startsWith('Fast ends')?'fastEnd':'';
-      item={cls:'timed',text:lbl+' '+fmtTime(tt,dir,tz,sk),order:5,
-        tkind:desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'havdalah':'',time:fmtTime(tt,dir,tz,sk)};
+      const dd=zdir(sk,dir);
+      item={cls:'timed',text:lbl+' '+fmtTime(tt,dd,tz,sk),order:5,
+        tkind:desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'havdalah':'',time:fmtTime(tt,dd,tz,sk)};
     }else if(f&flags.PARSHA_HASHAVUA){item={cls:'parasha',text:hebText(ev),order:1}}
     else{
       if(!s.showHolidays&&!(f&(flags.ROSH_CHODESH|flags.SPECIAL_SHABBAT|flags.MODERN_HOLIDAY|flags.SHABBAT_MEVARCHIM|flags.OMER_COUNT|flags.MINOR_FAST)))continue;
@@ -1470,7 +1472,9 @@ function openZmanimSettings(){
   function draw(){
     const s=state.s,Z=zctx(sample()),tz=place().tz;
     q('#zsPreset').value=s.zmPreset||'ashkenaz';q('#zsHint').textContent=ZM_PRESET_HINT[s.zmPreset||'ashkenaz']||'';
-    const secSel=k=>{const z=s.zsecs||{},v=z[k]==null?'':z[k]?'1':'0';return '<select class="zs-in" data-zssecs="'+k+'" aria-label="שניות">'+[['','שניות: לפי הכללי ('+(s.secs?'עם':'בלי')+')'],['1','עם שניות'],['0','בלי שניות']].map(x=>opt(x[0],x[1],x[0]===v)).join('')+'</select>'};
+    /* תפריט אחד לעיגול ולשניות */
+    const roundSel=k=>{const z=s.zsecs||{},rd=(s.zround||{})[k]||'auto',v=z[k]===true?'secs':rd;
+      return '<select class="zs-in" data-zsround="'+k+'" aria-label="עיגול">'+[['auto','עיגול לחומרא'+(s.secs?' (עם שניות, לפי הכללי)':'')],['down','לדקה, תמיד למטה'],['up','לדקה, תמיד למעלה'],['near','לדקה הקרובה'],['secs','עם שניות, בלי עיגול לדקה']].map(x=>opt(x[0],x[1],x[0]===v)).join('')+'</select>'};
     let h='<div class="zs-grid zs-all"><div class="zs-h">מופיע</div><div class="zs-h">זמן</div><div class="zs-h">שיטת החישוב</div><div class="zs-h">שם בלוח, עיגול ושניות</div><div class="zs-h">לדוגמה</div>';
     for(const [k,full,short,dir] of ZMANIM){
       const on=!!s.zmanim[k],lab=(s.zlab||{})[k]||'',rd=(s.zround||{})[k]||'auto';
@@ -1485,14 +1489,14 @@ function openZmanimSettings(){
       }
       h+='<label class="chk"><input type="checkbox" data-zsshow="'+k+'"'+(on?' checked':'')+' aria-label="'+full+' מופיע"></label>'+
         '<div class="zs-name">'+full+'</div><div class="zs-meth">'+meth+'</div>'+
-        '<div class="zs-lab"><input class="zs-in" data-zslab="'+k+'" value="'+esc(lab)+'" placeholder="'+esc(short)+'"><select class="zs-in" data-zsround="'+k+'">'+[['auto','עיגול לחומרא'],['down','תמיד למטה'],['up','תמיד למעלה'],['near','לדקה הקרובה']].map(x=>opt(x[0],x[1],x[0]===rd)).join('')+'</select>'+secSel(k)+'</div>'+
+        '<div class="zs-lab"><input class="zs-in" data-zslab="'+k+'" value="'+esc(lab)+'" placeholder="'+esc(short)+'>'+roundSel(k)+'</div>'+
         '<div class="zs-ex">'+ex+'</div>';
     }
     h+='</div><h4 class="zs-sub">זמני שבת, חג וצום</h4><div class="zs-grid zs-extra">';
     for(const [k,l,ek] of [['motzash','צאת שבת וחג','motzash'],['fastStart','תחילת צום (בבוקר)','fastStart'],['fastEnd','סוף צום דרבנן','fastEnd'],['minchaG','מנחה גדולה','minchaG']].slice(0,3)){
-      h+='<div class="zs-name">'+l+'</div><div class="zs-meth">'+zmMethodCtl(k)+secSel(k)+'</div><div class="zs-ex">'+fmtTime(Z[ek],'near',tz,k)+'</div>';
+      h+='<div class="zs-name">'+l+'</div><div class="zs-meth">'+zmMethodCtl(k)+roundSel(k)+'</div><div class="zs-ex">'+fmtTime(Z[ek],zdir(k,k==='fastStart'?'down':'up'),tz,k)+'</div>';
     }
-    h+='<div class="zs-name">הדלקת נרות</div><div class="zs-meth">'+secSel('candle')+'</div><div class="zs-ex"></div>';
+    h+='<div class="zs-name">הדלקת נרות</div><div class="zs-meth">'+roundSel('candle')+'</div><div class="zs-ex"></div>';
     h+='</div><p class="hint">בכל זמן שמחושב לפי מעלות או דקות יש "ערך אחר…": מקלידים כל מספר ובוחרים מעלות, דקות זמניות (לפי אורך היום) או דקות שוות. הדלקת הנרות נקבעת לפי העיר, בחלק "מיקום וזמני היום".</p>';
     q('#zsBody').innerHTML=h;
   }
@@ -1502,8 +1506,10 @@ function openZmanimSettings(){
     if(t.id==='zsPreset'){if(t.value!=='custom')s.zm={...ZM_PRESETS[t.value]};s.zmPreset=t.value;return changed()}
     if(t.id==='zsDate')return draw();
     if(t.dataset.zsshow){s.zmanim[t.dataset.zsshow]=t.checked;return changed()}
-    if(t.dataset.zssecs){const z={...(s.zsecs||{})};if(t.value==='')delete z[t.dataset.zssecs];else z[t.dataset.zssecs]=t.value==='1';s.zsecs=z;return changed()}
-    if(t.dataset.zsround){s.zround={...(s.zround||{}),[t.dataset.zsround]:t.value};return changed()}
+    if(t.dataset.zsround){const k=t.dataset.zsround,v=t.value,z={...(s.zsecs||{})};
+      if(v==='secs'){z[k]=true;s.zround={...(s.zround||{}),[k]:'auto'}}
+      else{if(v==='auto')delete z[k];else z[k]=false;s.zround={...(s.zround||{}),[k]:v}}
+      s.zsecs=z;return changed()}
     if(t.dataset.zsmode){const z={...(s.zmode||{})};if(t.value)z[t.dataset.zsmode]=t.value;else delete z[t.dataset.zsmode];s.zmode=z;return changed()}
     if(t.dataset.zsf){if(t.value==='__custom'){m.querySelectorAll('[data-zsc="'+t.dataset.zsf+'"]').forEach(c=>c.hidden=false);return}zmSetField(t.dataset.zsf,t.value);return changed()}
   });
