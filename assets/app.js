@@ -685,7 +685,7 @@ function openYzManager(){
   });
   list();
 }
-function placeOf(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.yz||(s.yzPanel===false?'cell':'page');return v==='page'&&(s.view||'month')!=='month'?'col':v}return P[t]||'cell'}
+function placeOf(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.yz||'none';return v==='page'&&(s.view||'month')!=='month'?'col':v}return P[t]||'cell'}
 function yzPanelOn(){return placeOf('yz')==='col'}
 function personalOnly(date,hd){
   const out=[];
@@ -1213,7 +1213,7 @@ function render(){
   yzInvalidate();
   const s=state.s;
   applyPrintPageStyle();
-  stage.querySelectorAll('.sheet-wrap,.err').forEach(n=>n.remove());
+  stage.querySelectorAll('.sheet-wrap,.err,.yz-hint').forEach(n=>n.remove());
   let months;
   try{months=buildMonths()}catch(e){stage.insertAdjacentHTML('beforeend','<div class="err">השנה שנבחרה אינה תקינה.</div>');return}
   monthsCache=months;
@@ -1233,6 +1233,12 @@ function render(){
     evMap=eventsFor(new Date(a.getFullYear(),a.getMonth(),a.getDate()-1,12),b);
   }
 
+  if(placeOf('yz')==='none'&&!s.yzHintOff){
+    const h=el('div','notice yz-hint no-print','<div><b>אפשר להוסיף ללוח אירועים בדברי ימי ישראל</b><span>ימי פטירה של גדולי ישראל ואירועים מההיסטוריה היהודית, כ־3,500 בסך הכל. בכל עת אפשר להוסיף אותם בהגדרות, בשלב "מה יופיע בלוח".</span></div><div class="row"><button class="btn primary small" type="button" id="yzHintOn">להוסיף עכשיו</button><button class="btn small" type="button" id="yzHintOff">לא עכשיו</button></div>');
+    stage.appendChild(h);
+    h.querySelector('#yzHintOn').onclick=()=>{state.s.place={...(state.s.place||{}),yz:'page'};save();syncUI();render()};
+    h.querySelector('#yzHintOff').onclick=()=>{state.s.yzHintOff=true;save();h.remove()};
+  }
   emitExtras('top');
   if(s.cover){
     const p=pageShell('שער','cover');

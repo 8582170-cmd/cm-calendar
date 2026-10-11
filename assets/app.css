@@ -506,3 +506,7 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
   .page.cover-empty .cover-title:empty{display:block}
   .page.cover-empty .cover-title:empty::before{content:"לוח שנה";color:inherit}
 }
+
+.yz-hint{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:14px}
+.yz-hint>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 300px}
+.yz-hint b{color:var(--ink)}
