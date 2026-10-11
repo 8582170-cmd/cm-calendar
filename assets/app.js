@@ -835,11 +835,11 @@ function addHistBox(p,mo,full){
 function fitHist(cb){
   if(cb.dataset.fitDone)return;cb.dataset.fitDone='1';
   const over=()=>cb.scrollHeight>cb.clientHeight+1||cb.scrollWidth>cb.clientWidth+1;
-  let f=1;cb.style.setProperty('--yzf',f);
-  while(over()&&f>0.55){f=+(f-0.05).toFixed(2);cb.style.setProperty('--yzf',f)}
-  if(!over())return;
-  const more=el('div','yzp-more','');cb.appendChild(more);let hid=0;const ds=[...cb.querySelectorAll('.yzp-day')];
-  while(over()&&ds.length){const d=ds.pop();hid+=d.querySelectorAll('.yzp-e').length;d.remove();more.textContent='ועוד '+hid+' אירועים שלא נכנסו. אפשר לבחור תצוגה מקוצרת או לסמן פחות אירועים.'}
+  cb.style.setProperty('--yzf',1);if(!over())return;
+  /* מקטינים עד שהכל נכנס: חיפוש בינארי על גודל הטקסט */
+  let lo=0.08,hi=1;
+  for(let i=0;i<12;i++){const mid=(lo+hi)/2;cb.style.setProperty('--yzf',mid.toFixed(3));if(over())hi=mid;else lo=mid}
+  cb.style.setProperty('--yzf',lo.toFixed(3));
 }
 function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')}
 function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
@@ -1326,14 +1326,8 @@ function shrinkPanels(){
     nw.appendChild(el('div','notice cont-notice','המידע בטור של '+esc(title)+' לא נכנס בעמוד, ולכן נוסף עמוד המשך. כדי לחסוך אותו אפשר להרחיב את הטור, להקטין את גודל הטקסט, לבחור תצוגה מקוצרת, לסמן פחות פריטים, או לבחור בהגדרות "להרחיב את הטור ולהקטין את הלוח".'));
     wrap.after(nw);
     const cOver=()=>cb.scrollHeight>cb.clientHeight+1||cb.scrollWidth>cb.clientWidth+1;
-    let cf=1;fill(cb,()=>false);
-    while(cOver()&&cf>0.5){cf=+(cf-0.05).toFixed(2);cb.style.setProperty('--yzf',cf)}
-    if(cOver()){
-      const more=el('div','yzp-more','');cb.appendChild(more);let hid=0;
-      const ds=[...cb.querySelectorAll('.yzp-day')];
-      while(cOver()&&ds.length){const d=ds.pop();hid+=d.querySelectorAll('.yzp-e').length;const prev=d.previousElementSibling;d.remove();if(prev&&prev.classList.contains('spill-t')&&(!prev.nextElementSibling||prev.nextElementSibling.classList.contains('spill-t')||prev.nextElementSibling===more))prev.remove();more.textContent='ועוד '+hid+' פריטים שלא נכנסו גם בעמוד ההמשך. כדי שייכנסו, בחרו תצוגה מקוצרת או סמנו פחות פריטים.'}
-      nw.querySelector('.cont-notice').textContent+=' שימו לב: גם בעמוד ההמשך לא נכנס הכל ('+hid+' פריטים הושמטו).';
-    }
+    fill(cb,()=>false);cb.style.setProperty('--yzf',1);
+    if(cOver()){let lo=0.08,hi=1;for(let i=0;i<12;i++){const mid=(lo+hi)/2;cb.style.setProperty('--yzf',mid.toFixed(3));if(cOver())hi=mid;else lo=mid}cb.style.setProperty('--yzf',lo.toFixed(3))}
   });
 }
 let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(fit,100)});
