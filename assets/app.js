@@ -152,7 +152,7 @@ const todayH=new HDate(new Date());
 const DEFAULT={
   v:2,
   s:{calType:'heb',hebYear:todayH.getFullYear(),gregYear:new Date().getFullYear()+1,gregStart:1,cover:true,
-     showDst:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,ytsg:'faint',showMevarchim:false,showOmer:false,
+     showDst:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,ytsg:'faint',showIsru:true,showMevarchim:false,showOmer:false,
      city:'jerusalem',custom:null,candleMins:40,il:true,zmanimMode:'daily',
      zmanim:{sunrise:true,shma:true,sunset:true},
      m_shma:'gra',zmPreset:'ashkenaz',zm:null,secs:false,zlab:{},zround:{},zmode:{},
@@ -513,6 +513,14 @@ function eventsFor(start,end){
       const hd=new HDate(d),nm=YTSG[hd.getMonth()+'-'+hd.getDate()];if(!nm)continue;
       const k=ymd(d);if(!map.has(k))map.set(k,[]);
       map.get(k).push(yts==='normal'?{cls:'chag',text:'יו״ט שני של גלויות ('+nm+')',order:0}:{cls:'ytsg',text:'יו״ט שני של גלויות ('+nm+')',order:3});
+    }
+  }
+  /* אסרו חג: היום שאחרי סוכות, פסח ושבועות (בחו״ל יום אחד מאוחר יותר) */
+  if(s.showHolidays&&s.showIsru!==false){
+    const ISRU=s.il?{'7-23':1,'1-22':1,'3-7':1}:{'7-24':1,'1-23':1,'3-8':1};
+    for(let d=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);d<=end;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
+      const hd=new HDate(d);if(!ISRU[hd.getMonth()+'-'+hd.getDate()])continue;
+      const k=ymd(d);if(!map.has(k))map.set(k,[]);map.get(k).push({cls:'',text:'אסרו חג',order:2});
     }
   }
   addHebrewExtras(map,start,end);
