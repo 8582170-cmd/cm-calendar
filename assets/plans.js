@@ -6,7 +6,7 @@
     {id:'free',  name:'ניסיון',  tagline:'בונים, רואים, מתלהבים',
      price:{ils:0, usd:0}, months:13, events:30, downloads:0, watermark:true,
      features:{...ALL},
-     bullets:['בונים ורואים את כל השנה, עם סימן מים חזק','כל האפשרויות פתוחות לניסיון','חודש אחד מלא להורדה, עם סימן מים עדין','פעם אחת לכל כתובת מייל']},
+     bullets:['בונים ורואים את כל השנה (עם סימן מים)','כל האפשרויות פתוחות לניסיון','חודש אחד מלא להורדה']},
     {id:'basic', name:'בסיסי',   tagline:'לוח חודשי פשוט ויפה',
      price:{ils:19, usd:4.9}, months:13, events:30, downloads:1, watermark:false,
      features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true, tfilot:false},
