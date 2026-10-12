@@ -2659,13 +2659,42 @@ function openUpgrade(reason){
   const sub=reason==='events'?'במסלול שלכם אפשר עד '+PLAN().events+' אירועים משפחתיים.':reason&&reason!=='months'&&reason!=='download'?'האפשרות הזאת כלולה במסלול '+need.name+' ומעלה.':'בוחרים מסלול, וכל מה שבניתם נשאר בדיוק כמו שהוא.';
   const m=modal('<h3>'+esc(title)+'</h3><p class="hint">'+esc(sub)+'</p>'+(PLAN().id==='free'?'<div class="sample-offer"><div><b>רוצים לראות קודם איך זה יוצא?</b><span>חודש אחד מלא להורדה בחינם, עם סימן מים עדין.</span></div><button class="btn" type="button" data-sample>חודש לדוגמה בחינם</button></div>':'')+planCards(need.id)+'<p class="hint plan-note">כל מסלול הוא לשנה אחת, ללוח של אותה שנה. בשלב הזה התשלום עוד לא מחובר: הבחירה רק מחליפה את המסלול כדי לבדוק את האתר.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
   m.querySelector('.modal').classList.add('upgrade');
-  m.addEventListener('click',e=>{if(e.target.closest('[data-sample]')){m.remove();openSample();return}const b=e.target.closest('[data-pick]');if(!b)return;LP.setCurrent(b.dataset.pick);m.remove();syncPlanUI();render()});
+  m.addEventListener('click',e=>{if(e.target.closest('[data-sample]')){m.remove();openSample();return}const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});
 }
+/* ---------- תשלום: הזמנה בשרת, עמוד תשלום של נדרים פלוס בלשונית חדשה, ובדיקה חוזרת עד שהתשלום מאושר ---------- */
+const ORDER_KEY='myluach-order';
+function buyPlan(planId){
+  const p=LP.byId(planId);if(!p||p.id==='free')return;
+  const win=window.open('about:blank','_blank');
+  const m=modal('<h3>מסלול '+esc(p.name)+'</h3><p class="hint" id="payMsg">פותחים את עמוד התשלום המאובטח…</p><div class="row"><button class="btn" type="button" id="payCancel">סגירה</button></div>');
+  let stop=false;const close=()=>{stop=true;m.remove()};m.querySelector('#payCancel').onclick=close;
+  const msg=h=>{const x=m.querySelector('#payMsg');if(x)x.innerHTML=h};
+  fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id})})
+   .then(r=>r.json().then(j=>{if(!r.ok||!j.url)throw new Error(j.error||r.status);return j}))
+   .then(j=>{
+     try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}
+     if(win&&!win.closed)win.location.href=j.url;
+     msg('עמוד התשלום נפתח בלשונית חדשה. אחרי התשלום חוזרים לכאן, והמסלול ייפתח לבד.<br><b>סכום: '+j.amount+' ₪</b>'+(win?'':'<br><a href="'+esc(j.url)+'" target="_blank" rel="noopener">לפתיחת עמוד התשלום</a>')+'<br><span class="pay-wait">ממתינים לאישור התשלום…</span>');
+     if(!win){const a=m.querySelector('a[target]');if(a)a.focus()}
+     const t0=Date.now();
+     (function poll(){if(stop)return;
+       fetch('/api/order?id='+j.id).then(r=>r.json()).then(o=>{
+         if(o.status==='paid'){activatePlan(o.plan,j.id);m.remove();const d=modal('<h3>תודה! המסלול '+esc(LP.byId(o.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. מספר ההזמנה: '+j.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}
+         if(o.status==='failed'){msg('התשלום לא עבר. אפשר לנסות שוב, או לפנות אלינו דרך עמוד <a href="terms.html#contact" target="_blank">יצירת קשר</a>.');return}
+         setTimeout(poll,Date.now()-t0<600000?3000:15000)}).catch(()=>setTimeout(poll,5000))})();
+   })
+   .catch(()=>{if(win&&!win.closed)win.close();msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך עמוד <a href="terms.html#contact" target="_blank">יצירת קשר</a>.')});
+}
+function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:orderId,plan:planId,paid:true,at:Date.now()}))}catch(e){}syncPlanUI();render()}
+/* מי שסגר את הדף לפני שהתשלום אושר: בודקים שוב בכניסה הבאה */
+(function(){let o=null;try{o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null')}catch(e){}
+  if(!o||o.paid||!o.id||Date.now()-o.at>7*864e5)return;
+  fetch('/api/order?id='+o.id).then(r=>r.json()).then(x=>{if(x.status==='paid')activatePlan(x.plan,o.id)}).catch(()=>{})})();
 function doPrint(){
   const P=PLAN();
   if(!P.downloads){openUpgrade('download');return}
   const left=LP.downloadsLeft();
-  if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;LP.setCurrent(b.dataset.pick);m.remove();syncPlanUI();render()});return}
+  if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=()=>{LP.useDownload();m.remove();syncPlanUI();setTimeout(()=>window.print(),50)};
 }
@@ -2713,6 +2742,7 @@ document.addEventListener('click',e=>{
 {const z=$('#zmAdv');if(z)z.addEventListener('toggle',()=>{if(z.open&&!canF('advZmanim')){z.open=false;openUpgrade('advZmanim')}})}
 if($('#upgradeBtn'))$('#upgradeBtn').onclick=()=>openUpgrade(null);
 if($('#sampleBtn'))$('#sampleBtn').onclick=openSample;
+if($('#devPlan')&&!(/^(localhost|127\.)/.test(window.location.hostname)||/[?&]dev=1/.test(window.location.search)))$('#devPlan').closest('.dev-plan').remove();
 if($('#devPlan')){$('#devPlan').innerHTML=(LP?LP.PLANS:[]).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');$('#devPlan').onchange=e=>{LP.setCurrent(e.target.value);syncPlanUI();render()}}
 /* ---------- זמני תפילות: עורך ---------- */
 function renderTfilot(){
