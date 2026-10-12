@@ -484,7 +484,7 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .pc-cur{font-size:13px;color:var(--accent);font-weight:700;text-align:center;padding:6px}
 .plan-note{font-size:13px}
 .dev-plan{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));left:10px;z-index:90;background:var(--panel);border:1px dashed var(--danger);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--danger)}
-@media print{body.plan-free:not(.sampling) .stage{display:none!important}body.plan-free:not(.sampling)::after{content:"ההדפסה זמינה במסלולים בתשלום";display:block;font:20px Arial;text-align:center;padding:40px}}
+@media print{body.plan-free:not(.sampling):not(.free-cd) .stage{display:none!important}body.plan-free:not(.sampling):not(.free-cd)::after{content:"ההדפסה זמינה במסלולים בתשלום";display:block;font:20px Arial;text-align:center;padding:40px}}
 
 /* layout choice thumbnails */
 .seg label:has(.lay-ic){display:flex;flex-direction:column;align-items:center;gap:6px;padding-block:10px}

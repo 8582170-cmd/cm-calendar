@@ -4,7 +4,12 @@ const $=s=>document.querySelector(s);
 /* ---------- מסלולים ---------- */
 const LP=window.MyLuachPlans;
 let SAMPLE=null; /* הורדת חודש לדוגמה: {key} בזמן ההדפסה */
-const PLAN=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?LP.current():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
+const PLAN0=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?LP.current():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
+/* לוח ספירה לאחור קצר (עד FREE_CD ימים) פתוח בחינם: בלי סימן מים, ומדפיסים בלי לנצל הורדה */
+const FREE_CD=40;
+function freeCd(){try{return state.s.view==='countdown'&&cdDays().days.length<=FREE_CD}catch(e){return false}}
+const PLAN=()=>{const p=PLAN0();return !SAMPLE&&p.watermark&&freeCd()?{...p,watermark:false,freeCd:true}:p};
+window.addEventListener('beforeprint',()=>document.body.classList.toggle('free-cd',!!PLAN().freeCd));
 const canF=f=>SAMPLE?true:(!LP||LP.can(f));
 function monthCut(months){const n=PLAN().months;return n<months.length&&months[n]?months[n].days[0]:null}
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
@@ -1045,7 +1050,7 @@ function askHistOverflow(title,count,pct){
 function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')}
 function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
 /* שורת תחתית: פרטי הזמנים, ומשמאל "נוצר ב־myluach.org". במסלולים בתשלום אפשר להסתיר את השורה. */
-function creditOn(){return PLAN().watermark||state.s.credit!==false}
+function creditOn(){return PLAN().watermark||PLAN().freeCd||state.s.credit!==false}
 function creditHost(){const h=window.location.host;return /^(localhost|127\.|$)/.test(h)||/vercel\.app$/.test(h)?'myluach.org':h.replace(/^www\./,'')}
 function addFootLine(p){
   const s=state.s,z=s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
@@ -2825,6 +2830,7 @@ function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.set
   fetch('/api/order?id='+o.id).then(r=>r.json()).then(x=>{if(x.status==='paid')activatePlan(x.plan,o.id)}).catch(()=>{})})();
 function doPrint(){
   const P=PLAN();
+  if(P.freeCd){const m=modal('<h3>להדפיס את לוח הספירה?</h3><p class="hint">לוח ספירה לאחור של עד '+FREE_CD+' ימים מורידים ומדפיסים בחינם. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>ביטול</button></div>');m.querySelector('#dlGo').onclick=()=>{m.remove();setTimeout(()=>window.print(),50)};return}
   if(!P.downloads){openUpgrade('download');return}
   const left=LP.downloadsLeft();
   if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
