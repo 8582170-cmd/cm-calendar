@@ -53,7 +53,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
     <label class="full">שם מלא<input type="text" id="name" autocomplete="name"></label>
     <label>מייל (לקבלה)<input type="email" id="mail" autocomplete="email" dir="ltr"></label>
     <label>טלפון<input type="tel" id="phone" autocomplete="tel" dir="ltr"></label>
-    <label class="full">תעודת זהות של בעל הכרטיס<input type="text" id="zeout" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label>
+    <label class="full">תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="zeout" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label>
     <label class="full">הקדשה או הערה (לא חובה)<input type="text" id="note" maxlength="120"></label>
   </div>
   <p class="msg" id="msg">טוען טופס תשלום מאובטח…</p>
@@ -89,7 +89,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
     if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
     if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';msg('בוחרים סכום, ממלאים את פרטי הכרטיס ולוחצים על כפתור התרומה.');setAmt(amount,false)}
     else if(d.Name==='TransactionResponse'){busy=false;const v=d.Value||{};
-      if(v.Status==='Error'){const em=String(v.Message||'');setAmt(amount,false);msg(/zeout/i.test(em)?'נא למלא את מספר תעודת הזהות של בעל הכרטיס.':esc(em||'התרומה לא עברה. בדקו את הפרטים ונסו שוב.'),1)}
+      if(v.Status==='Error'){const em=String(v.Message||'');setAmt(amount,false);msg(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות של בעל הכרטיס.':esc(em||'התרומה לא עברה. בדקו את הפרטים ונסו שוב.'),1)}
       else{$('#card').innerHTML='<div class="done"><b>תודה רבה!</b>התרומה של '+fmt(amount)+' התקבלה.'+(orderId?'<br><span class="fine">מספר אסמכתא: '+orderId.slice(0,8)+'</span>':'')+'<p><a href="./">חזרה לאתר</a></p></div>'}}
   });
   go.onclick=()=>{
@@ -98,7 +98,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
     if(!(amount>=1))return msg('נא לבחור סכום של 1 ₪ לפחות.',1);
     if(name.split(/\s+/).length<2){$('#name').focus();return msg('נא למלא שם פרטי ושם משפחה.',1)}
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){$('#mail').focus();return msg('נא למלא כתובת מייל תקינה.',1)}
-    if(!tzOk(zeout)){$('#zeout').focus();return msg('נא למלא מספר תעודת זהות תקין של בעל הכרטיס (9 ספרות).',1)}
+    if(zeout&&!tzOk(zeout)){$('#zeout').focus();return msg('מספר תעודת הזהות לא תקין. בדקו את הספרות, או השאירו ריק אם הכרטיס אינו ישראלי.',1)}
     try{localStorage.setItem('myluach-buyer',JSON.stringify({name,mail,phone}))}catch(e){}
     busy=true;go.disabled=true;go.textContent='מעבד…';msg('מעבד את התרומה…');
     fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:'donation',amount,email:mail})})

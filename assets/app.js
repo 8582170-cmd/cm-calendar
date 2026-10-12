@@ -2668,7 +2668,7 @@ function buyPlan(planId){
   const price=p.intro?LP.introPrice(p,'ils'):LP.price(p,'ils');
   let saved={};try{saved=JSON.parse(localStorage.getItem('myluach-buyer')||'{}')}catch(e){}
   const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח ומתבצע דרך נדרים פלוס.</p>'+
-    '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס<input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label></div>'+
+    '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label></div>'+
     '<p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>'+
     '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>');
   m.querySelector('.modal').classList.add('pay-modal');
@@ -2679,7 +2679,7 @@ function buyPlan(planId){
   const onMsg=e=>{if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
     if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
     else if(d.Name==='TransactionResponse'){const v=d.Value||{};
-      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);const em=String(v.Message||'');msg(/zeout/i.test(em)?'נא למלא את מספר תעודת הזהות של בעל הכרטיס.':esc(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1);if(/zeout/i.test(em))$m('#payZeout').focus()}
+      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);const em=String(v.Message||'');msg(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות של בעל הכרטיס. מי שאין לו תעודת זהות ישראלית יכול לפנות אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.':esc(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1);if(/zeout/i.test(em))$m('#payZeout').focus()}
       else{go.remove();frame.style.display='none';msg('התשלום התקבל. מאשרים מול השרת…');waitPaid()}}};
   window.addEventListener('message',onMsg);
   const close=()=>{stop=true;window.removeEventListener('message',onMsg);m.remove()};
@@ -2696,7 +2696,7 @@ function buyPlan(planId){
     const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim(),zeout=$m('#payZeout').value.replace(/\D/g,'');
     if(name.split(/\s+/).length<2){msg('נא למלא שם פרטי ושם משפחה.',1);$m('#payName').focus();return}
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){msg('נא למלא כתובת מייל תקינה.',1);$m('#payMail').focus();return}
-    if(!zeout||!tzOk(zeout)){msg('נא למלא מספר תעודת זהות תקין של בעל הכרטיס (9 ספרות).',1);$m('#payZeout').focus();return}
+    if(zeout&&!tzOk(zeout)){msg('מספר תעודת הזהות לא תקין. בדקו את הספרות, או השאירו ריק אם הכרטיס אינו ישראלי.',1);$m('#payZeout').focus();return}
     try{localStorage.setItem('myluach-buyer',JSON.stringify({name,mail,phone}))}catch(e){}
     go.disabled=true;go.textContent='מעבד תשלום…';msg('מעבד תשלום…');
     const send=o=>post({Name:'FinishTransaction2',Value:{...o.tx,Zeout:zeout,FirstName:name,LastName:'',Phone:phone,Mail:mail}});
