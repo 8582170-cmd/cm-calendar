@@ -535,7 +535,8 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 .hl-legend i{width:calc(var(--u)*3);height:calc(var(--u)*3);border-radius:calc(var(--u)*.6);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .hl-rep{grid-column:1/-1;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--panel);font-size:13px}
 
-.page.wm-light::after{opacity:.13}
+/* חודש לדוגמה בחינם: סימן מים אחד, עדין, באמצע הדף */
+.page.wm-light::after{opacity:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='215' text-anchor='middle' transform='rotate%28-24 300 200%29' font-family='Arial' font-size='40' font-weight='700' fill='%23555' fill-opacity='.10'%3EMyLuach.org %C2%B7 %D7%9C%D7%93%D7%95%D7%92%D7%9E%D7%94%3C/text%3E%3C/svg%3E");background-size:80% auto;background-repeat:no-repeat;background-position:center}
 .sample-offer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--soft);border-radius:10px;padding:10px 14px}
 .sample-offer>div{display:flex;flex-direction:column;min-width:0;flex:1 1 240px}
 .sample-offer span{color:var(--mute);font-size:14px}
