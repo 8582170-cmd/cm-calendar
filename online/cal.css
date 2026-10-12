@@ -179,3 +179,4 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .kgrid .goal{background:var(--k);color:#fff;border-color:var(--k)}
 
 .linkbtn{display:block;margin-top:8px;background:none;border:0;color:#cfe1e0;text-decoration:underline;cursor:pointer;padding:0;font-size:13px}
+.logo-img{width:32px;height:32px;display:inline-block;flex:none;border-radius:8px;box-shadow:0 0 0 1.5px rgb(255 255 255 / .35)}
