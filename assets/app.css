@@ -882,3 +882,9 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 .google-btn:hover{background:#f6f8f9}
 .or-sep{display:flex;align-items:center;gap:10px;color:var(--mute,#667);font-size:13px}
 .or-sep::before,.or-sep::after{content:"";flex:1;border-top:1px solid var(--line,#dde)}
+/* דף הספירה לאחור */
+.cdonly{display:none}
+body.cd-app .cdonly{display:inline}
+body.cd-app .nocd{display:none!important}
+body.cd-app #secType .sec-body>:not(#cdRow){display:none!important}
+body.cd-app #sampleBtn{display:none!important}

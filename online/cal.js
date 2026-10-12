@@ -303,7 +303,7 @@ function viewCountdown(back){
     const to=fromIso(o.d),n=dayDiff(TODAY,to),S=CD_ST.find(x=>x[0]===o.st)||CD_ST[0],hd=new HDate(to);
     const w=Math.floor(Math.abs(n)/7),r=Math.abs(n)%7;
     const share=location.origin+location.pathname.replace(/[^/]*$/,'')+(PAGE.root&&PAGE.static?PAGE.root:'')+'#tools/countdown?'+new URLSearchParams(o).toString();
-    const print=BUILDER+'#countdown&'+new URLSearchParams({d:o.d,t:o.t||(HE()?'הספירה לאחור':'Countdown'),st:o.st,l:o.l}).toString();
+    const print=BASE+'../countdown.html#countdown&'+new URLSearchParams({d:o.d,t:o.t||(HE()?'הספירה לאחור':'Countdown'),st:o.st,l:o.l}).toString();
     let mini='';const start=TODAY,end=to<start?start:to;let cnt=0;
     for(let d=new Date(start.getFullYear(),start.getMonth(),1,12);d<=end&&cnt<3;d=new Date(d.getFullYear(),d.getMonth()+1,1,12),cnt++){
       const len=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();let g='<div class="kmo"><b>'+t('gMonths')[d.getMonth()]+'</b><div class="kgrid">'+'<span></span>'.repeat(d.getDay());

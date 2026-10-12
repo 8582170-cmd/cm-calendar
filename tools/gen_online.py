@@ -96,8 +96,10 @@ for k, (th, dh, te, de) in TOOLS.items():
     made.append(page('tools/%s.html' % k, th, dh, {'view': 'tools', 'tool': k, 'root': '../'}, alt='en/tools/%s.html' % k))
     made.append(page('en/tools/%s.html' % k, te, de, {'view': 'tools', 'tool': k, 'lang': 'en', 'root': '../'}, 'en', alt='tools/%s.html' % k))
 
-urls = ['', 'gallery.html', 'app.html', 'terms.html', 'privacy.html', 'online/'] + ['online/' + p for p in made]
+urls = ['', 'gallery.html', 'app.html', 'countdown.html', 'terms.html', 'privacy.html', 'online/'] + ['online/' + p for p in made]
 (ROOT / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     ''.join('  <url><loc>%s/%s</loc></url>\n' % (SITE, u) for u in urls) + '</urlset>\n', encoding='utf-8')
 (ROOT / 'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n' % SITE, encoding='utf-8')
+import subprocess, sys
+subprocess.run([sys.executable, str(ROOT / 'tools' / 'gen_countdown.py')], check=True)
 print(len(made), 'pages')
