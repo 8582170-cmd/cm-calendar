@@ -29,12 +29,30 @@ async function viaMailjet(m) {
 }
 
 const PROVIDERS = { resend: viaResend, brevo: viaBrevo, mailjet: viaMailjet };
-/* only: לשלוח דרך ספק אחד בלבד (לבדיקה מדף הניהול) */
+/* מכסה יומית חינמית של כל ספק (אפשר לשנות במשתני סביבה MAIL_CAP_RESEND וכו'). ספק שהגיע למכסה היום מדולג מראש */
+const CAPS = { resend: 100, brevo: 300, mailjet: 200 };
+const cap = k => +env('MAIL_CAP_' + k.toUpperCase()) || CAPS[k];
+async function sentToday() {
+  try {
+    const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+    const rows = await db('email_log?select=provider&ok=eq.true&created_at=gte.' + day + 'T00:00:00%2B03:00&limit=5000');
+    const n = {}; (rows || []).forEach(r => { n[r.provider] = (n[r.provider] || 0) + 1; }); return n;
+  } catch (e) { return {}; }
+}
+/* only: לשלוח דרך ספק אחד בלבד (לבדיקה מדף הניהול).
+   אחרת: לפי הסדר; ספק שנכשל (מגבלה, חסימה, תקלה) — עוברים מיד לבא. אם כולם "מלאים" לפי הספירה, מנסים בכל זאת את כולם. */
 async function sendMail(m, kind, only) {
   const errs = [];
-  for (const fn of only ? [PROVIDERS[only]].filter(Boolean) : [viaResend, viaBrevo, viaMailjet]) {
+  let order = only ? [only] : ['resend', 'brevo', 'mailjet'];
+  if (!only) {
+    const n = await sentToday();
+    const free = order.filter(k => (n[k] || 0) < cap(k));
+    order = free.concat(order.filter(k => free.indexOf(k) < 0));
+  }
+  for (const k of order) {
+    const fn = PROVIDERS[k]; if (!fn) continue;
     try { const used = await fn(m); if (used) { logMail(used, kind, true); return used; } }
-    catch (e) { errs.push(e.message); logMail(fn.name.replace('via', '').toLowerCase(), kind, false); }
+    catch (e) { errs.push(e.message); console.error('mail fail', k, e.message); logMail(k, kind, false); }
   }
   throw new Error('no mail provider succeeded: ' + (errs.join(' | ') || 'none configured'));
 }
