@@ -362,8 +362,8 @@ function dayDialog(d){
   const hd=new HDate(d),items=(events(addD(d,-1),d).get(iso(d))||[]),Z=zm(d),note=NOTES[iso(d)]||{},rs=remsOn(d);
   const COLORS=['','#fde7a9','#cfe8d5','#d6e4f5','#f3d3df','#e4dcf3'];
   dialog('<h2 id="dlgT">'+t('weekdays')[d.getDay()]+', '+esc(hStr(hd))+'</h2><p class="mute" style="margin:2px 0 10px">'+esc(gStr(d))+' · '+esc(relDays(d))+'</p>'+
-    (items.length?'<div style="margin-bottom:10px">'+items.map(x=>'<div class="ev '+x.cls+'" style="font-size:15px">'+esc(x.txt)+'</div>').join('')+'</div>':'')+
-    (rs.length?'<div style="margin-bottom:10px">'+rs.map(r=>'<div><a href="#" data-redit="'+r.id+'" class="ev rem" style="font-size:15px">'+esc(r.name)+'</a></div>').join('')+'</div>':'')+
+    (items.length?'<div style="margin-bottom:10px">'+items.map(x=>'<div class="ev '+x.cls+'" style="font-size:15px">'+esc(x.txt)+(x.ev&&!x.ev.eventTime?' <a class="gcal-add" href="'+gcalLink(x.txt,d)+'" target="_blank" rel="noopener" title="'+(HE()?'הוספה ליומן גוגל':'Add to Google Calendar')+'">+ '+(HE()?'ליומן':'calendar')+'</a>':'')+'</div>').join('')+'</div>':'')+
+    (rs.length?'<div style="margin-bottom:10px">'+rs.map(r=>'<div><a href="#" data-redit="'+r.id+'" class="ev rem" style="font-size:15px">'+esc(r.name)+'</a> <a class="gcal-add" href="'+gcalLink(r.name,d)+'" target="_blank" rel="noopener">+ '+(HE()?'ליומן גוגל':'Google Calendar')+'</a></div>').join('')+'</div>':'')+
     '<details><summary><b>'+t('zmanim')+' · '+esc(cityName(city()))+'</b></summary><div class="zl" style="margin-top:8px">'+Z.map(z=>'<span>'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>').join('')+'</div></details>'+
     '<div class="fld" style="margin-top:12px">'+t('note')+'<textarea id="nT" rows="2">'+esc(note.text||'')+'</textarea></div>'+
     '<div class="row" style="margin-top:8px;align-items:center"><span class="small">'+t('color')+'</span><span class="colors">'+COLORS.map(c=>'<button type="button" data-col="'+c+'" aria-pressed="'+((note.color||'')===c)+'" style="background:'+(c||'#fff')+'" aria-label="'+(c||'none')+'"></button>').join('')+'</span></div>'+
@@ -379,6 +379,15 @@ function closeDlg(){$('#dlg').hidden=true;document.body.style.overflow=''}
 
 /* ---------- צד, תחתית, קישורים ---------- */
 function builderLink(){const hy=new HDate(anchor).getFullYear();return BUILDER+'#city-'+st.city+'&hy-'+(new HDate(anchor).getMonth()>=7?hy:hy)}
+
+/* יומן חגים וזמני שבת לעיר, להרשמה מיומן גוגל / אייפון (קבצים ב-online/ics/, נוצרים ב-tools/gen_ics.mjs) */
+function icsUrl(){const c=city();return c&&c.id&&!String(c.id).startsWith('custom')?'//'+(window.location.host||'www.myluach.org')+'/online/ics/'+c.id+'.ics':null}
+function calCard(){const u=icsUrl();if(!u)return '';
+  const g='https://calendar.google.com/calendar/r?cid='+encodeURIComponent('webcal:'+u),w='webcal:'+u;
+  return '<div class="card cal-card"><b>'+(HE()?'חגים וזמני שבת ביומן שלכם':'Holidays & Shabbat times in your calendar')+'</b><p class="small mute" style="margin:4px 0 8px">'+(HE()?'חגים, צומות, פרשת השבוע והדלקת נרות ב'+esc(cityName(city()))+', מתעדכן לבד.':'Holidays, fasts, Torah portion and candle lighting for '+esc(cityName(city()))+'. Updates automatically.')+'</p>'+
+    '<div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn" href="'+g+'" target="_blank" rel="noopener">'+(HE()?'ליומן גוגל':'Google Calendar')+'</a><a class="btn" href="'+w+'">'+(HE()?'לאייפון / אאוטלוק':'iPhone / Outlook')+'</a></div></div>'}
+function gcalLink(title,d){const d8=x=>x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0');
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+d8(d)+'/'+d8(addD(d,1))+'&details='+encodeURIComponent(hStr(new HDate(d))+' · myluach.org')}
 function renderSide(){
   const hd=new HDate(TODAY),Z=zm(TODAY),z=k=>fmtT((Z.find(x=>x.k===k)||{}).v);
   let next=null;try{const evs=HebrewCalendar.calendar({start:TODAY,end:addD(TODAY,120),il:city().il,noMinorFast:true,noModern:true,noRoshChodesh:true,noSpecialShabbat:true});next=evs.find(e=>e.getFlags()&flags.CHAG)||evs.find(e=>!(e.getFlags()&flags.PARSHA_HASHAVUA))}catch(e){}
@@ -388,6 +397,7 @@ function renderSide(){
     '<div class="kv" style="margin-top:10px"><span>'+t('sunrise')+'</span><b>'+z('netz')+'</b><span>'+t('sunset')+'</span><b>'+z('shkia')+'</b>'+(cand?'<span>'+t('candles')+'</span><b>'+cand+'</b>':'')+(hav?'<span>'+t('havdalah')+'</span><b>'+hav+'</b>':'')+'</div>'+(par?'<div style="margin-top:8px">'+t('parasha')+': <b>'+esc(par.replace(/^פרשת /,''))+'</b></div>':'')+'<button type="button" class="linkbtn" data-zset="1">⚙ '+esc((HE()?ZPRE[zcfg().pre].he:ZPRE[zcfg().pre].en))+'</button></div>'+
     (next?'<div class="card"><div class="mute small">'+t('nextHoliday')+'</div><div style="font-weight:700;font-size:18px">'+esc(evName(next))+'</div><div class="small">'+esc(gStr(noon(next.getDate().greg())))+' · '+esc(relDays(noon(next.getDate().greg())))+'</div></div>':'')+
     '<div class="card cta"><h3>'+t('ctaT')+'</h3><p>'+t('ctaP')+'</p><a class="btn pri big" href="'+builderLink()+'">'+t('ctaB')+'</a></div>'+
+    calCard()+
     '<div class="card"><b>'+t('tools')+'</b><ul style="margin-top:6px">'+['countdown','convert','barmitzvah','yahrzeit','days'].map(k=>'<li><a href="#tools/'+k+'" data-tool="'+k+'">'+t(k)+'</a></li>').join('')+'</ul></div>';
 }
 function pageH1(){const c=cityName(city());return HE()?'לוח שנה עברי '+c+' · '+monthDays().title:'Hebrew calendar '+c+' · '+monthDays().title}

@@ -2069,7 +2069,7 @@ function openImageOrganizer(){
   const m=modal('<h3>סידור תמונות<small>כאן רואים איזו תמונה תופיע בכל עמוד, ואפשר להוסיף תמונות ולשנות את הסדר.</small></h3>'+
     '<div class="hint"><ol><li>לחצו "הוספת תמונות" ובחרו כמה תמונות ביחד. הן ייכנסו לפי הסדר למקומות הריקים.</li><li>כדי לשנות סדר: גררו תמונה על תמונה אחרת והן יתחלפו, או השתמשו בחצים.</li><li>לחצו "שמירה" כדי להחיל על הלוח.</li></ol></div>'+
     (keys.length?'':'<p class="msg-bad">בפריסה הנוכחית אין מקומות לתמונה. בחרו פריסה "תמונה ולוח" או "עמוד לתמונה", או סמנו עמוד שער.</p>')+
-    '<div class="row"><button class="btn" type="button" id="oAdd">הוספת תמונות</button>'+(CFG.googleClientId?'<button class="btn gphotos-btn" type="button" id="oGP">מ־Google Photos</button>':'')+'<button class="btn small danger" type="button" id="oClear">ריקון הכל</button></div>'+
+    '<div class="row"><button class="btn" type="button" id="oAdd">הוספת תמונות</button>'+(CFG.googleClientId?'<button class="btn gphotos-btn" type="button" id="oGP">מ־Google Photos</button>':'')+(CFG.googleClientId&&CFG.googleApiKey?'<button class="btn" type="button" id="oGD">מגוגל דרייב</button>':'')+'<button class="btn small danger" type="button" id="oClear">ריקון הכל</button></div>'+
     '<p class="hint" id="oMsg" aria-live="polite"></p><div class="org" id="oGrid"></div>'+
     '<div class="row"><button class="btn primary" type="button" id="oSave">שמירה</button><button class="btn" type="button" data-close>ביטול</button></div>');
   m.querySelector('.modal').classList.add('wide');
@@ -2103,6 +2103,11 @@ function openImageOrganizer(){
     try{const blobs=await pickGooglePhotos(say);let i=0;for(let j=0;j<arr.length&&i<blobs.length;j++){if(!arr[j]){arr[j]={img:await compress(blobs[i++])};draw()}}
       const left=blobs.length-i;q('#oMsg').innerHTML=!blobs.length?'<span class="msg-bad">לא נבחרו תמונות.</span>':left>0?'<span class="msg-bad">'+left+' תמונות לא נכנסו כי אין עוד מקומות ריקים.</span>':'<span class="msg-ok">נוספו '+i+' תמונות מ־Google Photos. אפשר לשנות את הסדר ואז לשמור.</span>'}
     catch(e){q('#oMsg').innerHTML='<span class="msg-bad">לא הצלחנו להביא תמונות מ־Google Photos'+(/popup|closed/i.test(e.message)?' (החלון נסגר או נחסם)':'')+'. אפשר לנסות שוב, או להוריד את התמונות למחשב ולהשתמש ב"הוספת תמונות".</span>'}
+    b.disabled=false};
+  if(q('#oGD'))q('#oGD').onclick=async()=>{const b=q('#oGD');b.disabled=true;const say=t=>{q('#oMsg').textContent=t};
+    try{const blobs=await pickDrivePhotos(say);let i=0;for(let j=0;j<arr.length&&i<blobs.length;j++){if(!arr[j]){arr[j]={img:await compress(blobs[i++])};draw()}}
+      const left=blobs.length-i;q('#oMsg').innerHTML=!blobs.length?'':left>0?'<span class="msg-bad">'+left+' תמונות לא נכנסו כי אין עוד מקומות ריקים.</span>':'<span class="msg-ok">נוספו '+i+' תמונות מגוגל דרייב. אפשר לשנות את הסדר ואז לשמור.</span>'}
+    catch(e){q('#oMsg').innerHTML='<span class="msg-bad">לא הצלחנו להביא תמונות מגוגל דרייב. אפשר לנסות שוב, או להוריד את התמונות למחשב ולהשתמש ב"הוספת תמונות".</span>'}
     b.disabled=false};
   q('#oClear').onclick=()=>{arr=arr.map(()=>null);draw()};
   q('#oSave').onclick=()=>{
@@ -2749,9 +2754,44 @@ async function cloudSave(){
     const {error}=await sb.storage.from('calendars').upload(cloudPath(id),new Blob([body],{type:'application/json'}),{upsert:true,contentType:'application/json'});
     if(error)throw error;
     const ix=await readIndex();ix[id]={name:calTitle(),updated:new Date().toISOString(),size:body.length};await writeIndex(ix);
+    if(ix.__feed&&ix.__feed.cal===id)feedSync(false).catch(()=>{});
     const el=$('#saveState');if(el)el.textContent='נשמר בחשבון ובדפדפן הזה';
   }catch(e){console.warn('cloud save',e);const el=$('#saveState');if(el)el.textContent='נשמר בדפדפן הזה (השמירה בחשבון נכשלה, ננסה שוב)';cloudDirty=true}
   cloudBusy=false;if(cloudDirty){clearTimeout(cloudT);cloudT=setTimeout(cloudSave,15000)}
+}
+
+/* ---------- יומן אישי להרשמה: האירועים המשפחתיים של הלוח הפתוח, לשלוש שנים קדימה ---------- */
+function feedIcs(){
+  const d8=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  const escI=t=>String(t).replace(/[\\,;]/g,x=>'\\'+x).replace(/\n/g,'\\n');
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MyLuach//Personal//HE','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:'+escI('MyLuach · '+calTitle()),'X-PUBLISHED-TTL:PT12H','REFRESH-INTERVAL;VALUE=DURATION:PT12H'];
+  const t0=new Date();t0.setHours(12,0,0,0);const from=new Date(t0.getFullYear(),t0.getMonth()-1,1,12);let n=0;
+  for(let d=from,i=0;i<1150;i++,d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
+    const hd=new HDate(d),nx=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12);
+    for(const e of eventsOn(d,hd)){const t=eventLabel(e,d,hd);if(!t)continue;n++;
+      L.push('BEGIN:VEVENT','UID:'+d8(d)+'-'+e.id+'@myluach.org','DTSTAMP:'+stamp,'DTSTART;VALUE=DATE:'+d8(d),'DTEND;VALUE=DATE:'+d8(nx),'SUMMARY:'+escI(t),'DESCRIPTION:'+escI(hebShort(hd)+' '+hebYearStr(hd.getFullYear())),'TRANSP:TRANSPARENT','END:VEVENT')}}
+  L.push('END:VCALENDAR');return {text:L.join('\r\n')+'\r\n',n};
+}
+async function feedSync(create){
+  if(!user)return null;const ix=await readIndex();let f=ix.__feed;
+  if(!f&&!create)return null;
+  if(!f){const a=new Uint8Array(16);crypto.getRandomValues(a);f=ix.__feed={token:[...a].map(x=>x.toString(16).padStart(2,'0')).join(''),cal:state.s.cloudId||null};await writeIndex(ix)}
+  if(f.cal&&state.s.cloudId&&f.cal!==state.s.cloudId&&!create)return f; /* היומן מחובר ללוח אחר */
+  if(create&&state.s.cloudId&&f.cal!==state.s.cloudId){f.cal=state.s.cloudId;ix.__feed=f;await writeIndex(ix)}
+  const {text,n}=feedIcs();
+  await sb.storage.from('calendars').upload(user.id+'/feed-'+f.token+'.ics',new Blob([text],{type:'text/calendar'}),{upsert:true,contentType:'text/calendar'});
+  f.n=n;return f;
+}
+async function feedModal(){
+  const m=modal('<h3>הלוח שלי ביומן בטלפון</h3><p class="hint">ימי ההולדת, ימי השנה (יארצייט) והתזכורות מהלוח הזה יופיעו ביומן גוגל או באייפון, ויתעדכנו לבד כשתוסיפו אירועים כאן.</p><div id="fdBody"><p class="hint">מכינים…</p></div><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+  try{if(!state.s.cloudId)await cloudSave();const f=await feedSync(true);
+    const u='//'+window.location.host+'/api/ical?u='+user.id+'&t='+f.token,g='https://calendar.google.com/calendar/r?cid='+encodeURIComponent('webcal:'+u);
+    m.querySelector('#fdBody').innerHTML='<p>'+(f.n?'ביומן יש '+f.n+' אירועים לשלוש השנים הקרובות.':'<span class="msg-bad">אין עדיין אירועים משפחתיים בלוח. הוסיפו ימי הולדת או ימי שנה, והם יופיעו ביומן.</span>')+'</p>'+
+      '<div class="row"><a class="btn primary" href="'+g+'" target="_blank" rel="noopener">הוספה ליומן גוגל</a><a class="btn" href="webcal:'+u+'">אייפון / אאוטלוק</a><button class="btn" type="button" id="fdCopy">העתקת הקישור</button></div>'+
+      '<p class="hint small">הקישור אישי: מי שיש לו אותו רואה את האירועים שלכם. יומן גוגל מתעדכן בדרך כלל פעם בכמה שעות.</p>';
+    m.querySelector('#fdCopy').onclick=e=>{navigator.clipboard&&navigator.clipboard.writeText('https:'+u);e.target.textContent='הועתק'};
+  }catch(err){m.querySelector('#fdBody').innerHTML='<p class="msg-bad">לא הצלחנו להכין את היומן. נסו שוב בעוד רגע.</p>'}
 }
 async function cloudOpen(id){
   const {data,error}=await sb.storage.from('calendars').download(cloudPath(id));if(error||!data)throw error||new Error('no data');
@@ -2823,13 +2863,15 @@ async function accountModal(){
   const m=modal('<h3>החשבון שלי</h3><p class="hint" dir="auto">'+esc(user.email)+'</p><div id="acBody"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" id="acOut">יציאה מהחשבון</button><button class="btn" type="button" data-close>סגירה</button></div>');
   m.querySelector('.modal').classList.add('acct-modal');
   m.querySelector('#acOut').onclick=async()=>{if(cloudDirty)await cloudSave();await sb.auth.signOut();m.remove()};
-  const ix=await readIndex(),ids=Object.keys(ix).sort((a,b)=>(ix[b].updated||'').localeCompare(ix[a].updated||''));
+  const ix=await readIndex(),ids=Object.keys(ix).filter(k=>!k.startsWith('__')).sort((a,b)=>(ix[b].updated||'').localeCompare(ix[a].updated||''));
   const plan=acctInfo&&acctInfo.plan?LP.byId(acctInfo.plan).name:null;
   const body=m.querySelector('#acBody');if(!body)return;
   body.innerHTML='<p><b>מסלול:</b> '+(plan?esc(plan):'ניסיון (לא נמצאה רכישה בחשבון)')+'</p>'+
     '<h4 class="ac-h">הלוחות שלי</h4>'+(ids.length?'<ul class="ac-list">'+ids.map(id=>'<li'+(id===state.s.cloudId?' class="cur"':'')+'><span><b>'+esc(ix[id].name||'לוח')+'</b><small>'+(id===state.s.cloudId?'פתוח עכשיו · ':'')+'עודכן '+new Date(ix[id].updated).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</small></span>'+(id===state.s.cloudId?'':'<button class="btn" type="button" data-open="'+id+'">פתיחה</button>')+'<button class="btn danger-ghost" type="button" data-delc="'+id+'">מחיקה</button></li>').join('')+'</ul>':'<p class="hint">עוד אין לוחות שמורים בחשבון.</p>')+
     '<div class="row"><button class="btn" type="button" id="acSaveNew">'+(state.s.cloudId&&ix[state.s.cloudId]?'לשמור עותק כלוח נפרד':'לשמור את הלוח הנוכחי בחשבון')+'</button><button class="btn" type="button" id="acNew">לוח חדש ריק</button></div>'+
+    '<div class="row"><button class="btn" type="button" id="acFeed">📅 הלוח שלי ביומן גוגל / בטלפון</button></div>'+
     '<label class="fld">שם הלוח הנוכחי<input type="text" id="acName" maxlength="60" value="'+esc(state.s.calName||'')+'" placeholder="'+esc(calTitle())+'"></label>';
+  body.querySelector('#acFeed').onclick=()=>{m.remove();feedModal()};
   body.querySelector('#acName').onchange=e=>{state.s.calName=e.target.value.trim();save()};
   body.querySelector('#acSaveNew').onclick=async()=>{if(state.s.cloudId&&ix[state.s.cloudId]){delete state.s.cloudId;state.s.calName=(state.s.calName||calTitle())+' (עותק)'}await cloudSave();m.remove();accountModal()};
   body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
@@ -2841,7 +2883,7 @@ async function accountModal(){
 async function onSignedIn(first){
   acctBtn();await refreshAccount();
   if(!first)return;
-  const ix=await readIndex(),ids=Object.keys(ix);
+  const ix=await readIndex(),ids=Object.keys(ix).filter(k=>!k.startsWith('__'));
   if(state.s.cloudId&&ix[state.s.cloudId]){cloudQueue();return}
   if(!ids.length){cloudSave();return}
   /* יש לוחות בחשבון ולוח לא שמור בדפדפן: שואלים */
@@ -2911,6 +2953,23 @@ async function pickGooglePhotos(onMsg){
     try{const b=await fetch(f.baseUrl+'=w2400-h2400',{headers:H}).then(r=>{if(!r.ok)throw 0;return r.blob()});blobs.push(b);onMsg&&onMsg('הורדו '+blobs.length+' מתוך '+items.length+'…')}catch(e){}}
   fetch('https://photospicker.googleapis.com/v1/sessions/'+ses.id,{method:'DELETE',headers:H}).catch(()=>{});
   try{if(w&&!w.closed)w.close()}catch(e){}
+  return blobs;
+}
+
+/* בחירת תמונות מגוגל דרייב (Google Picker). דורש googleApiKey ב-config.js. */
+let gapiP=null;
+function loadGapiPicker(){if(window.google&&google.picker)return Promise.resolve();if(!gapiP)gapiP=loadScript('https://apis.google.com/js/api.js').then(()=>new Promise(ok=>gapi.load('picker',ok))).catch(e=>{gapiP=null;throw e});return gapiP}
+async function pickDrivePhotos(onMsg){
+  if(!CFG.googleClientId||!CFG.googleApiKey)throw new Error('not configured');
+  await loadGIS();await loadGapiPicker();
+  const token=await new Promise((ok,no)=>{const tc=google.accounts.oauth2.initTokenClient({client_id:CFG.googleClientId,scope:'https://www.googleapis.com/auth/drive.file',
+    callback:r=>r&&r.access_token?ok(r.access_token):no(new Error(r&&r.error||'no token')),error_callback:e=>no(new Error(e&&e.type||'popup'))});tc.requestAccessToken()});
+  const docs=await new Promise(ok=>{const view=new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES).setIncludeFolders(true).setSelectFolderEnabled(false);
+    new google.picker.PickerBuilder().addView(view).addView(new google.picker.DocsUploadView()).enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+      .setOAuthToken(token).setDeveloperKey(CFG.googleApiKey).setAppId(String(CFG.googleClientId).split('-')[0]).setLocale('iw').setTitle('בחירת תמונות ללוח')
+      .setCallback(d=>{if(d.action===google.picker.Action.PICKED)ok(d.docs||[]);else if(d.action===google.picker.Action.CANCEL)ok([])}).build().setVisible(true)});
+  const blobs=[];
+  for(const doc of docs){try{const b=await fetch('https://www.googleapis.com/drive/v3/files/'+doc.id+'?alt=media',{headers:{Authorization:'Bearer '+token}}).then(r=>{if(!r.ok)throw 0;return r.blob()});blobs.push(b);onMsg&&onMsg('הורדו '+blobs.length+' מתוך '+docs.length+'…')}catch(e){}}
   return blobs;
 }
 /* בדיקת ספרת ביקורת של תעודת זהות ישראלית */
