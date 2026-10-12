@@ -90,7 +90,7 @@ function zm(d){
   const rows=[
    ['alot',HE()?'עלות השחר':'Dawn (Alot HaShachar)',before(P.alot),angLbl(P.alot)],
    ['mish',HE()?'משיכיר (טלית ותפילין)':'Misheyakir (tallit & tefillin)',before(P.mish),angLbl(P.mish)],
-   ['netz',HE()?'הנץ החמה':'Sunrise',netz,nl],
+   ['netz',HE()?'הנץ החמה':'Sunrise (Netz)',netz,nl],
    P.mga&&C.both?['shmaM',HE()?'סוף זמן ק״ש (מג״א)':'Latest Shema (MGA)',T(ms,3*Hm),HE()?'3 שעות זמניות, '+mgaL:'3 halachic hours, '+mgaL]:null,
    ['shmaG',HE()?'סוף זמן ק״ש (גר״א)':'Latest Shema (GRA)',T(netz,3*H),HE()?'3 שעות זמניות מהנץ עד השקיעה':'3 halachic hours, sunrise to sunset'],
    P.mga&&C.both?['tfilaM',HE()?'סוף זמן תפילה (מג״א)':'Latest Shacharit (MGA)',T(ms,4*Hm),HE()?'4 שעות זמניות':'4 halachic hours']:null,
@@ -99,10 +99,10 @@ function zm(d){
    ['minG',HE()?'מנחה גדולה':'Mincha Gedola',(()=>{const a=T(netz,6.5*H),b=T(netz,6*H+30*6e4);return a&&b?new Date(Math.max(a,b)):a})(),HE()?'המאוחר מחצי שעה זמנית או קבועה אחרי חצות':'later of ½ halachic or fixed hour after midday'],
    ['minK',HE()?'מנחה קטנה':'Mincha Ketana',T(netz,9.5*H),HE()?'9.5 שעות זמניות':'9.5 halachic hours'],
    ['plag',HE()?'פלג המנחה':'Plag HaMincha',T(netz,10.75*H),HE()?'10.75 שעות זמניות':'10.75 halachic hours'],
-   ['shkia',HE()?'שקיעה':'Sunset',shkia,nl],
+   ['shkia',HE()?'שקיעה':'Sunset (Shkiah)',shkia,nl],
    ['tzeit',HE()?'צאת הכוכבים':'Nightfall (Tzeit)',after(P.tzeit),angLbl(P.tzeit)],
    ['rt',HE()?'צאת הכוכבים לר״ת':'Rabbeinu Tam',T(shkia,72*6e4),HE()?'72 דק׳ אחרי השקיעה':'72 min after sunset'],
-   ['chatzotN',HE()?'חצות הלילה':'Midnight',T(netz,18*H),HE()?'12 שעות אחרי חצות היום':'12 hours after midday'],
+   ['chatzotN',HE()?'חצות הלילה':'Midnight (Chatzot HaLaila)',T(netz,18*H),HE()?'12 שעות אחרי חצות היום':'12 hours after midday'],
   ].filter(Boolean);
   return rows.map(([k,n,v,m])=>({k,n,v,m}));
 }
@@ -180,7 +180,7 @@ function shiftMonth(n){
 function shiftYear(n){if(st.mode==='heb'){const hd=new HDate(anchor);let m=hd.getMonth();const y=hd.getFullYear()+n;if(m===13&&!leap(y))m=12;anchor=noon(new HDate(1,m,y).greg())}else anchor=new Date(anchor.getFullYear()+n,anchor.getMonth(),1,12)}
 
 /* שורת זמנים קצרה בכל יום: עלות השחר, חצות, שקיעה */
-const DZ_SHORT={alot:['עה״ש','Dawn'],mish:['משיכיר','Mishey.'],netz:['הנץ','Sunrise'],shmaM:['ק״ש מג״א','Shema MGA'],shmaG:['ק״ש','Shema'],tfilaM:['תפילה מג״א','Tfila MGA'],tfilaG:['תפילה','Tfila'],chatzot:['חצות','Midday'],minG:['מ. גדולה','M. Gedola'],minK:['מ. קטנה','M. Ketana'],plag:['פלג','Plag'],shkia:['שקיעה','Sunset'],tzeit:['צאה״כ','Nightfall'],rt:['ר״ת','R. Tam'],chatzotN:['חצות לילה','Midnight']};
+const DZ_SHORT={alot:['עה״ש','Alot'],mish:['משיכיר','Mishey.'],netz:['הנץ','Netz'],shmaM:['ק״ש מג״א','Shema MGA'],shmaG:['ק״ש','Shema'],tfilaM:['תפילה מג״א','Tfila MGA'],tfilaG:['תפילה','Tfila'],chatzot:['חצות','Chatzot'],minG:['מ. גדולה','M. Gedola'],minK:['מ. קטנה','M. Ketana'],plag:['פלג','Plag'],shkia:['שקיעה','Shkiah'],tzeit:['צאה״כ','Tzeit'],rt:['ר״ת','R. Tam'],chatzotN:['חצות לילה','Chatzot (night)']};
 const DZ_MAX=5,DZ_DEF=['alot','chatzot','shkia'];
 const dzSel=()=>(Array.isArray(st.dzSel)?st.dzSel:DZ_DEF).slice(0,DZ_MAX);
 function dzLine(d){try{const sel=dzSel();if(!sel.length)return '';const Z=zm(d);
