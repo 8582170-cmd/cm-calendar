@@ -2759,21 +2759,53 @@ async function refreshAccount(){
   }catch(e){}
 }
 function acctBtn(){const b=$('#acctBtn');if(!b)return;b.textContent=user?'החשבון שלי':'כניסה';b.title=user?user.email:'כניסה או הרשמה עם מייל'}
+function authErr(e){const m=String(e&&e.message||e||'');
+  if(/invalid login/i.test(m))return 'המייל או הסיסמה שגויים. אם נרשמתם בעבר עם קישור במייל, לחצו "שכחתי סיסמה" כדי לקבוע סיסמה.';
+  if(/already registered|already exists/i.test(m))return 'המייל הזה כבר רשום. נסו להיכנס, או לחצו "שכחתי סיסמה".';
+  if(/not confirmed/i.test(m))return 'צריך לאשר קודם את המייל: לחצו על הקישור ששלחנו אליכם.';
+  if(/at least|password should|weak/i.test(m))return 'הסיסמה צריכה להיות באורך 8 תווים לפחות.';
+  if(/rate|limit|seconds/i.test(m))return 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.';
+  return 'שגיאה: '+esc(m)}
 function loginModal(note){
-  const m=modal('<h3>כניסה ל־MyLuach</h3><p class="hint">'+(note?esc(note)+' ':'')+'מקלידים מייל ומקבלים קישור כניסה. בלי סיסמה. אם אין לכם חשבון, הוא נפתח אוטומטית.</p>'+
-    '<label class="fld">מייל<input type="email" id="lgMail" autocomplete="email" dir="ltr"></label><p class="hint" id="lgMsg"></p>'+
-    '<div class="row"><button class="btn primary" type="button" id="lgGo">שלחו לי קישור כניסה</button><button class="btn" type="button" data-close>ביטול</button></div>'+
-    '<p class="hint small">הלוח שבניתם כאן יישמר בחשבון אחרי הכניסה, ותוכלו לפתוח אותו מכל מכשיר.</p>');
-  try{const b=JSON.parse(localStorage.getItem('myluach-buyer')||'{}');if(b.mail)m.querySelector('#lgMail').value=b.mail}catch(e){}
-  const go=m.querySelector('#lgGo'),msg=(t,bad)=>{const x=m.querySelector('#lgMsg');x.innerHTML=t;x.className='hint'+(bad?' msg-bad':'')};
-  const send=()=>{const mail=m.querySelector('#lgMail').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail))return msg('נא למלא כתובת מייל תקינה.',1);
-    if(!sb)return msg('הכניסה לא זמינה כרגע. נסו לרענן את הדף.',1);
-    go.disabled=true;msg('שולחים…');
-    sb.auth.signInWithOtp({email:mail,options:{emailRedirectTo:window.location.origin+window.location.pathname}}).then(({error})=>{
-      if(error){go.disabled=false;msg(/rate|limit|seconds/i.test(error.message)?'נשלחו יותר מדי מיילים. נסו שוב בעוד כמה דקות.':'השליחה נכשלה: '+esc(error.message),1);return}
-      msg('<b>נשלח!</b> פתחו את המייל מ־MyLuach ולחצו על הקישור. אם הוא לא מגיע תוך דקה, בדקו בתיקיית הספאם.');go.textContent='שליחה חוזרת';go.disabled=false});
-  };
-  go.onclick=send;m.querySelector('#lgMail').onkeydown=e=>{if(e.key==='Enter')send()};setTimeout(()=>m.querySelector('#lgMail').focus(),50);
+  const here=window.location.origin+window.location.pathname;
+  const m=modal('<h3>כניסה ל־MyLuach</h3>'+(note?'<p class="hint">'+esc(note)+'</p>':'')+
+    '<div class="seg lg-tabs" role="tablist"><button type="button" class="on" data-tab="pw">מייל וסיסמה</button><button type="button" data-tab="link">קישור כניסה במייל</button></div>'+
+    '<label class="fld">מייל<input type="email" id="lgMail" autocomplete="email" dir="ltr"></label>'+
+    '<div data-pane="pw"><label class="fld">סיסמה<input type="password" id="lgPass" autocomplete="current-password" dir="ltr" minlength="8"></label>'+
+      '<div class="row"><button class="btn primary" type="button" id="lgIn">כניסה</button><button class="btn" type="button" id="lgUp">הרשמה</button><button class="btn link-btn" type="button" id="lgForgot">שכחתי סיסמה</button></div></div>'+
+    '<div data-pane="link" hidden><p class="hint">בלי סיסמה: מקבלים קישור למייל ולוחצים עליו. אם אין לכם חשבון, הוא נפתח אוטומטית.</p><div class="row"><button class="btn primary" type="button" id="lgGo">שלחו לי קישור כניסה</button></div></div>'+
+    '<p class="hint" id="lgMsg"></p><p class="hint small">הלוח שבניתם כאן יישמר בחשבון אחרי הכניסה, ותוכלו לפתוח אותו מכל מכשיר.</p>'+
+    '<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+  const $l=q=>m.querySelector(q),msg=(t,bad)=>{const x=$l('#lgMsg');x.innerHTML=t;x.className='hint'+(bad?' msg-bad':'')};
+  try{const b=JSON.parse(localStorage.getItem('myluach-buyer')||'{}');if(b.mail)$l('#lgMail').value=b.mail}catch(e){}
+  m.querySelectorAll('[data-tab]').forEach(t=>t.onclick=()=>{m.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('on',x===t));m.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==t.dataset.tab);msg('')});
+  const mailOk=()=>{const v=$l('#lgMail').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){msg('נא למלא כתובת מייל תקינה.',1);$l('#lgMail').focus();return null}if(!sb){msg('הכניסה לא זמינה כרגע. נסו לרענן את הדף.',1);return null}return v};
+  const passOk=()=>{const v=$l('#lgPass').value;if(v.length<8){msg('הסיסמה צריכה להיות באורך 8 תווים לפחות.',1);$l('#lgPass').focus();return null}return v};
+  const busy=(b,on)=>{b.disabled=on};
+  $l('#lgIn').onclick=async()=>{const e=mailOk();if(!e)return;const pw=passOk();if(!pw)return;const b=$l('#lgIn');busy(b,1);msg('נכנסים…');
+    const {error}=await sb.auth.signInWithPassword({email:e,password:pw});busy(b,0);if(error)return msg(authErr(error),1);m.remove()};
+  $l('#lgUp').onclick=async()=>{const e=mailOk();if(!e)return;const pw=passOk();if(!pw)return;const b=$l('#lgUp');busy(b,1);msg('נרשמים…');
+    const {data,error}=await sb.auth.signUp({email:e,password:pw,options:{emailRedirectTo:here}});busy(b,0);if(error)return msg(authErr(error),1);
+    if(data&&data.session){m.remove();return}
+    if(data&&data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length)return msg('המייל הזה כבר רשום. נסו להיכנס, או לחצו "שכחתי סיסמה".',1);
+    msg('<b>כמעט סיימנו!</b> שלחנו מייל לאישור. לחצו על הקישור שבו, ואתם בפנים. אם לא הגיע תוך דקה, בדקו בספאם.')};
+  $l('#lgForgot').onclick=async()=>{const e=mailOk();if(!e)return;const b=$l('#lgForgot');busy(b,1);msg('שולחים…');
+    const {error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:here});busy(b,0);if(error)return msg(authErr(error),1);
+    msg('שלחנו מייל עם קישור לקביעת סיסמה חדשה. לחצו עליו, ותוכלו לבחור סיסמה.')};
+  const send=()=>{const e=mailOk();if(!e)return;const go=$l('#lgGo');busy(go,1);msg('שולחים…');
+    sb.auth.signInWithOtp({email:e,options:{emailRedirectTo:here}}).then(({error})=>{busy(go,0);
+      if(error)return msg(authErr(error),1);
+      msg('<b>נשלח!</b> פתחו את המייל מ־MyLuach ולחצו על הקישור. אם הוא לא מגיע תוך דקה, בדקו בתיקיית הספאם.');go.textContent='שליחה חוזרת'})};
+  $l('#lgGo').onclick=send;
+  $l('#lgPass').onkeydown=e=>{if(e.key==='Enter')$l('#lgIn').click()};
+  setTimeout(()=>$l('#lgMail').value?$l('#lgPass').focus():$l('#lgMail').focus(),50);
+}
+function newPasswordModal(){
+  const m=modal('<h3>סיסמה חדשה</h3><p class="hint">בחרו סיסמה חדשה לחשבון (8 תווים לפחות).</p><label class="fld">סיסמה חדשה<input type="password" id="npPass" autocomplete="new-password" dir="ltr"></label><p class="hint" id="npMsg"></p><div class="row"><button class="btn primary" type="button" id="npGo">שמירה</button><button class="btn" type="button" data-close>אחר כך</button></div>');
+  const go=m.querySelector('#npGo'),msg=(t,bad)=>{const x=m.querySelector('#npMsg');x.innerHTML=t;x.className='hint'+(bad?' msg-bad':'')};
+  go.onclick=async()=>{const pw=m.querySelector('#npPass').value;if(pw.length<8)return msg('הסיסמה צריכה להיות באורך 8 תווים לפחות.',1);go.disabled=true;
+    const {error}=await sb.auth.updateUser({password:pw});go.disabled=false;if(error)return msg(authErr(error),1);m.remove();modal('<h3>הסיסמה נשמרה</h3><p class="hint">מעכשיו אפשר להיכנס עם המייל והסיסמה.</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>')};
+  setTimeout(()=>m.querySelector('#npPass').focus(),50);
 }
 async function accountModal(){
   const m=modal('<h3>החשבון שלי</h3><p class="hint" dir="auto">'+esc(user.email)+'</p><div id="acBody"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" id="acOut">יציאה מהחשבון</button><button class="btn" type="button" data-close>סגירה</button></div>');
@@ -2813,9 +2845,10 @@ function acctInit(){
   try{sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'myluach-auth'}})}catch(e){return}
   let had=false;
   sb.auth.onAuthStateChange((ev,session)=>{
+    if(ev==='PASSWORD_RECOVERY')setTimeout(newPasswordModal,300);
     const u=session&&session.user?{id:session.user.id,email:session.user.email}:null;
     const was=user;user=u;acctBtn();
-    if(u&&(!was||was.id!==u.id))onSignedIn(ev==='SIGNED_IN'&&!had);
+    if(u&&(!was||was.id!==u.id))onSignedIn((ev==='SIGNED_IN'||ev==='PASSWORD_RECOVERY')&&!had);
     if(u)had=true;
     if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
   });
