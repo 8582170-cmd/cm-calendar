@@ -53,7 +53,17 @@ module.exports = async (req, res) => {
     (orders || []).forEach(o => { if (o.coupon && o.status === 'paid') uses[o.coupon] = (uses[o.coupon] || 0) + 1; });
     const defaults = {};
     LP.PLANS.filter(p => PAID.indexOf(p.id) >= 0).forEach(p => { defaults[p.id] = { name: p.name, ils: p.price.ils, usd: p.price.usd, intro: p.intro || 0 }; });
-    json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
+    /* מיילים היום (לפי שעון ישראל) ותזכורות פעילות. אם הטבלאות עוד לא נוצרו: ריק */
+    let mail = null;
+    try {
+      const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+      const logs = await db('email_log?select=provider,kind,ok&created_at=gte.' + day + 'T00:00:00%2B03:00&limit=5000');
+      const rem = await db('reminders?select=status&limit=20000');
+      mail = { today: {}, failed: 0, reminders: { active: 0, pending: 0, off: 0 } };
+      (logs || []).forEach(l => { if (l.ok) mail.today[l.provider] = (mail.today[l.provider] || 0) + 1; else mail.failed++; });
+      (rem || []).forEach(r => { mail.reminders[r.status] = (mail.reminders[r.status] || 0) + 1; });
+    } catch (e) { mail = null; }
+    json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
     console.error('admin', e);
     json(res, 500, { error: 'server error', message: String(e.message || e).slice(0, 200) });

@@ -353,7 +353,7 @@ function viewReminders(){
 function remWhen(r){if(r.rec==='once')return gStr(fromIso(r.date));if(r.rec==='greg')return (HE()?'כל שנה, ':'Every year, ')+r.d+' '+t('gMonths')[r.m-1];if(r.rec==='monthly')return (HE()?'כל חודש עברי ב־':'Every Hebrew month on the ')+hDay(+r.d);
   return (HE()?'כל שנה, ':'Every year, ')+hDay(+r.d)+' '+(+r.m===12?(HE()?'אדר':'Adar'):+r.m===13?(HE()?'אדר ב׳':'Adar II'):hMonthName(+r.m,5785))}
 function nextOcc(r,from=TODAY,max=400){for(let i=0;i<max;i++){const d=addD(from,i);if(remHits(r,d))return d}return null}
-function gcalLink(r,d){if(!d)return '#';const a=iso(d).replace(/-/g,''),b=iso(addD(d,1)).replace(/-/g,'');return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(r.name)+'&dates='+a+'/'+b+'&details='+encodeURIComponent(hStr(new HDate(d)))}
+/* gcalLink מוגדר למטה (מקבל שם או תזכורת) */
 function remIcs(){
   const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MyLuach Online//HE','X-WR-CALNAME:'+t('siteName')],stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
   const e=s=>String(s).replace(/[\\,;]/g,x=>'\\'+x);let n=0;
@@ -369,14 +369,26 @@ function remEditor(id,date){
   if(!r&&v.rec==='greg'){v.d=d0.getDate();v.m=d0.getMonth()+1}
   dialog('<h2 id="dlgT">'+(r?esc(r.name):t('addRem'))+'</h2><div class="row" style="margin-top:10px"><label class="fld" style="flex:1">'+(HE()?'מה להזכיר':'What')+'<input id="rN" value="'+esc(v.name)+'" placeholder="'+(HE()?'למשל: יום הולדת לשירה':'e.g. Sarah\'s birthday')+'"></label></div>'+
     '<div class="row" style="margin-top:8px"><label class="fld">'+(HE()?'חוזר':'Repeats')+'<select id="rR"><option value="heb">'+(HE()?'כל שנה, לפי התאריך העברי':'Yearly, Hebrew date')+'</option><option value="greg">'+(HE()?'כל שנה, לפי התאריך הלועזי':'Yearly, Gregorian date')+'</option><option value="monthly">'+(HE()?'כל חודש עברי':'Every Hebrew month')+'</option><option value="once">'+(HE()?'פעם אחת':'Once')+'</option></select></label><label class="fld">'+(HE()?'תאריך':'Date')+'<input type="date" id="rD" value="'+esc(v.date||iso(d0))+'"></label></div>'+
-    '<div class="fld" style="margin-top:8px">'+(HE()?'התראה ביומן':'Calendar alert')+'<span class="opts">'+[[7,HE()?'שבוע לפני':'a week before'],[2,HE()?'יומיים לפני':'2 days before'],[1,HE()?'יום לפני':'a day before'],[0,HE()?'באותו יום':'same day']].map(([n,l])=>'<label class="chk"><input type="checkbox" data-nt="'+n+'"'+((v.notice||[]).includes(n)?' checked':'')+'> '+l+'</label>').join('')+'</span></div>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'מתי להזכיר':'Remind me')+'<span class="opts">'+[[7,HE()?'שבוע לפני':'a week before'],[2,HE()?'יומיים לפני':'2 days before'],[1,HE()?'יום לפני':'a day before'],[0,HE()?'באותו יום':'same day']].map(([n,l])=>'<label class="chk"><input type="checkbox" data-nt="'+n+'"'+((v.notice||[]).includes(n)?' checked':'')+'> '+l+'</label>').join('')+'</span></div>'+
+    '<div class="fld rem-mail" style="margin-top:10px"><label class="chk"><input type="checkbox" id="rM"'+(v.mail&&v.mail.status!=='off'?' checked':'')+'> 📧 '+(HE()?'לשלוח לי גם תזכורת במייל':'Also email me a reminder')+'</label>'+
+      '<input type="email" id="rE" dir="ltr" placeholder="'+(HE()?'המייל שלכם':'your email')+'" value="'+esc((v.mail&&v.mail.email)||LS.get('mail','')||'')+'"><span class="small mute">'+(HE()?'המייל יישלח בבוקר, לפי מה שסימנתם למעלה (שבוע, יומיים, יום לפני או באותו יום). בפעם הראשונה תקבלו מייל לאישור.':'Sent in the morning, per the alert options above. First time, you will get a confirmation email.')+'</span></div>'+
     '<p class="small mute" id="rP"></p><div class="row"><button class="btn pri" type="button" id="rS">'+t('save')+'</button>'+(r?'<button class="btn" type="button" id="rX">'+t('del')+'</button>':'')+'</div>');
   $('#rR').value=v.rec;
   const build=()=>{const dd=fromIso($('#rD').value||iso(d0)),hh=new HDate(dd),rec=$('#rR').value;const o={id:r?r.id:'r'+Math.random().toString(36).slice(2,9),name:$('#rN').value.trim(),rec,date:iso(dd),notice:[...document.querySelectorAll('[data-nt]:checked')].map(x=>+x.dataset.nt)};
     if(rec==='heb'){o.d=hh.getDate();o.m=hh.getMonth()}else if(rec==='greg'){o.d=dd.getDate();o.m=dd.getMonth()+1}else if(rec==='monthly')o.d=hh.getDate();return o};
   const prev=()=>{const o=build();$('#rP').textContent=remWhen(o)};['rR','rD'].forEach(i=>$('#'+i).addEventListener('input',prev));prev();
-  $('#rS').onclick=()=>{const o=build();if(!o.name){$('#rN').focus();return}if(r)REM[REM.indexOf(r)]=o;else REM.push(o);saveRem();closeDlg();render()};
-  if(r)$('#rX').onclick=()=>{REM=REM.filter(x=>x!==r);saveRem();closeDlg();render()};
+  const tE=()=>{$('#rE').style.display=$('#rM').checked?'':'none'};$('#rM').onchange=tE;tE();
+  $('#rS').onclick=async()=>{const o=build();if(!o.name){$('#rN').focus();return}
+    const wantMail=$('#rM').checked,email=$('#rE').value.trim();o.mail=v.mail||null;
+    if(wantMail){if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('#rE').focus();$('#rP').textContent=HE()?'נא למלא כתובת מייל תקינה.':'Please enter a valid email.';return}
+      LS.set('mail',email);$('#rS').disabled=true;$('#rP').textContent=HE()?'שומרים…':'Saving…';
+      try{const rr=await fetch(BASE+'../api/rem-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice:[0],lang:st.lang,token:o.mail&&o.mail.email===email?o.mail.token:''})});
+        const j=await rr.json();if(!rr.ok||!j.token)throw new Error(j.error||rr.status);o.mail={email,token:j.token,status:j.status}}
+      catch(e){$('#rS').disabled=false;$('#rP').textContent=HE()?'לא הצלחנו לשמור את התזכורת במייל. נסו שוב בעוד רגע.':'Could not save the email reminder. Please try again.';return}}
+    else if(o.mail&&o.mail.token){fetch(BASE+'../api/rem-confirm?t='+o.mail.token+'&off=1').catch(()=>{});o.mail=null}
+    if(r)REM[REM.indexOf(r)]=o;else REM.push(o);saveRem();closeDlg();render();
+    if(o.mail&&o.mail.status==='pending')dialog('<h2 id="dlgT">📧 '+(HE()?'כמעט סיימנו':'Almost done')+'</h2><p>'+(HE()?'שלחנו מייל אישור ל־<b dir="ltr">'+esc(o.mail.email)+'</b>. לחצו על הקישור שבו, והתזכורות במייל יופעלו. אם לא הגיע תוך כמה דקות, בדקו בספאם.':'We sent a confirmation email to <b>'+esc(o.mail.email)+'</b>. Click the link in it to turn on email reminders.')+'</p><div class="row"><button class="btn pri" type="button" data-close>'+(HE()?'הבנתי':'OK')+'</button></div>')};
+  if(r)$('#rX').onclick=()=>{if(r.mail&&r.mail.token)fetch(BASE+'../api/rem-confirm?t='+r.mail.token+'&off=1').catch(()=>{});REM=REM.filter(x=>x!==r);saveRem();closeDlg();render()};
   setTimeout(()=>$('#rN').focus(),30);
 }
 
@@ -409,7 +421,7 @@ function calCard(){const u=icsUrl();if(!u)return '';
   const g='https://calendar.google.com/calendar/r?cid='+encodeURIComponent('webcal:'+u),w='webcal:'+u;
   return '<div class="card cal-card"><b>'+(HE()?'חגים וזמני שבת ביומן שלכם':'Holidays & Shabbat times in your calendar')+'</b><p class="small mute" style="margin:4px 0 8px">'+(HE()?'חגים, צומות, פרשת השבוע והדלקת נרות ב'+esc(cityName(city()))+', מתעדכן לבד.':'Holidays, fasts, Torah portion and candle lighting for '+esc(cityName(city()))+'. Updates automatically.')+'</p>'+
     '<div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn" href="'+g+'" target="_blank" rel="noopener">'+(HE()?'ליומן גוגל':'Google Calendar')+'</a><a class="btn" href="'+w+'">'+(HE()?'לאייפון / אאוטלוק':'iPhone / Outlook')+'</a></div></div>'}
-function gcalLink(title,d){const d8=x=>x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0');
+function gcalLink(title,d){if(title&&typeof title==='object')title=title.name;if(!d)return '#';const d8=x=>x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0');
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+d8(d)+'/'+d8(addD(d,1))+'&details='+encodeURIComponent(hStr(new HDate(d))+' · myluach.org')}
 function renderSide(){
   const hd=new HDate(TODAY),Z=zm(TODAY),z=k=>fmtT((Z.find(x=>x.k===k)||{}).v);

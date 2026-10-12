@@ -1,0 +1,1 @@
+export default {"headers":{"plural-forms":"nplurals=2; plural=(n > 1);","language":"und-x-ashkenaz"},"contexts":{"":{"Tevet":["Teves"]}}}

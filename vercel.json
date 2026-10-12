@@ -1,5 +1,8 @@
 {
   "functions": {
-    "api/*.js": { "includeFiles": "assets/plans.js" }
-  }
+    "api/*.js": { "includeFiles": "{assets/plans.js,api/_hdate/**}" }
+  },
+  "crons": [
+    { "path": "/api/cron-reminders", "schedule": "0 4 * * *" }
+  ]
 }
