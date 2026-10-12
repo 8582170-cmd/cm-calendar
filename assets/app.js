@@ -1054,13 +1054,14 @@ function askHistOverflow(title,count,pct){
 function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')}
 function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
 /* שורת תחתית: פרטי הזמנים, ומשמאל "נוצר ב־myluach.org". במסלולים בתשלום אפשר להסתיר את השורה. */
-function creditOn(){return PLAN().watermark||PLAN().freeCd||state.s.credit!==false}
+/* השורה "הופק ע"י MyLuach.org" מופיעה בכל הדפסה */
+function creditOn(){return true}
 function creditHost(){const h=window.location.host;return /^(localhost|127\.|$)/.test(h)||/vercel\.app$/.test(h)?'myluach.org':h.replace(/^www\./,'')}
 function addFootLine(p){
   const s=state.s,z=s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
   if(!z&&!creditOn())return;
   const f=el('div','pg-foot',z?footText():'<span></span>');
-  if(creditOn())f.insertAdjacentHTML('beforeend','<span class="credit">נוצר ב־'+esc(creditHost())+'</span>');
+  if(creditOn())f.insertAdjacentHTML('beforeend','<span class="credit">הופק ע״י MyLuach.org</span>');
   p.appendChild(f);
 }
 /* ---------- לוח שנתי בעמוד אחד ---------- */

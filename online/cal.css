@@ -204,3 +204,7 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .dzp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin-top:8px}
 @media (max-width:480px){.dzp{grid-template-columns:1fr}}
 .linkbtn2{background:none;border:0;color:var(--acc);text-decoration:underline;cursor:pointer;font-weight:600;font-size:14px;padding:0}
+/* בכל הדפסה: שורה קטנה בתחתית */
+@media print{.main::after{content:"הופק ע״י MyLuach.org";display:block;text-align:center;font-size:9pt;color:#777;margin-top:8px}}
+[dir=ltr] .main::after{content:"Created with MyLuach.org"}
+@media screen{.main::after{content:none!important}}
