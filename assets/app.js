@@ -2668,7 +2668,7 @@ function buyPlan(planId){
   const price=p.intro?LP.introPrice(p,'ils'):LP.price(p,'ils');
   let saved={};try{saved=JSON.parse(localStorage.getItem('myluach-buyer')||'{}')}catch(e){}
   const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח ומתבצע דרך נדרים פלוס.</p>'+
-    '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label></div>'+
+    '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס<input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label></div>'+
     '<p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>'+
     '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>');
   m.querySelector('.modal').classList.add('pay-modal');
@@ -2679,7 +2679,7 @@ function buyPlan(planId){
   const onMsg=e=>{if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
     if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
     else if(d.Name==='TransactionResponse'){const v=d.Value||{};
-      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);msg(esc(v.Message||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1)}
+      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);const em=String(v.Message||'');msg(/zeout/i.test(em)?'נא למלא את מספר תעודת הזהות של בעל הכרטיס.':esc(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1);if(/zeout/i.test(em))$m('#payZeout').focus()}
       else{go.remove();frame.style.display='none';msg('התשלום התקבל. מאשרים מול השרת…');waitPaid()}}};
   window.addEventListener('message',onMsg);
   const close=()=>{stop=true;window.removeEventListener('message',onMsg);m.remove()};
@@ -2693,12 +2693,13 @@ function buyPlan(planId){
   orderP.then(()=>{if(ready)go.disabled=false}).catch(()=>{go.disabled=true;msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
   setTimeout(()=>{if(!ready&&!stop)msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
   go.onclick=()=>{
-    const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim();
+    const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim(),zeout=$m('#payZeout').value.replace(/\D/g,'');
     if(name.split(/\s+/).length<2){msg('נא למלא שם פרטי ושם משפחה.',1);$m('#payName').focus();return}
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){msg('נא למלא כתובת מייל תקינה.',1);$m('#payMail').focus();return}
+    if(!zeout||!tzOk(zeout)){msg('נא למלא מספר תעודת זהות תקין של בעל הכרטיס (9 ספרות).',1);$m('#payZeout').focus();return}
     try{localStorage.setItem('myluach-buyer',JSON.stringify({name,mail,phone}))}catch(e){}
     go.disabled=true;go.textContent='מעבד תשלום…';msg('מעבד תשלום…');
-    const send=o=>post({Name:'FinishTransaction2',Value:{...o.tx,FirstName:name,LastName:'',Phone:phone,Mail:mail}});
+    const send=o=>post({Name:'FinishTransaction2',Value:{...o.tx,Zeout:zeout,FirstName:name,LastName:'',Phone:phone,Mail:mail}});
     orderP.then(o=>{if(!ready){go.disabled=false;go.textContent='לתשלום '+o.amount+' ₪';msg('טופס התשלום עדיין נטען, נסו שוב בעוד רגע.',1);return}send(o)}).catch(()=>{});
   };
   function waitPaid(){const t0=Date.now();
@@ -2709,6 +2710,8 @@ function buyPlan(planId){
         setTimeout(poll,2500)}).catch(()=>setTimeout(poll,5000))})();
   }
 }
+/* בדיקת ספרת ביקורת של תעודת זהות ישראלית */
+function tzOk(t){t=String(t).padStart(9,'0');if(!/^\d{9}$/.test(t))return false;let s=0;for(let i=0;i<9;i++){let d=+t[i]*(i%2+1);s+=d>9?d-9:d}return s%10===0}
 function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:orderId,plan:planId,paid:true,at:Date.now()}))}catch(e){}syncPlanUI();render()}
 /* מי שסגר את הדף לפני שהתשלום אושר: בודקים שוב בכניסה הבאה */
 (function(){let o=null;try{o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null')}catch(e){}
