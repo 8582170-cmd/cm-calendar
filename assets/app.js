@@ -12,7 +12,8 @@ const PLAN0=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',f
 /* לוח ספירה לאחור קצר (עד FREE_CD ימים) פתוח בחינם: בלי סימן מים, ומדפיסים בלי לנצל הורדה */
 const FREE_CD=40;
 function freeCd(){try{return state.s.view==='countdown'&&cdDays().days.length<=FREE_CD}catch(e){return false}}
-const PLAN=()=>{const p=PLAN0();return !SAMPLE&&p.watermark&&freeCd()?{...p,watermark:false,freeCd:true}:p};
+/* לוח ספירה לאחור: בלי סימן מים בכלל. עד FREE_CD ימים גם ההדפסה בחינם; ארוך יותר דורש מסלול להדפסה */
+const PLAN=()=>{const p=PLAN0();if(SAMPLE||!p.watermark)return p;if(freeCd())return {...p,watermark:false,freeCd:true};if(state.s.view==='countdown')return {...p,watermark:false};return p};
 window.addEventListener('beforeprint',()=>document.body.classList.toggle('free-cd',!!PLAN().freeCd));
 const canF=f=>SAMPLE?true:(!LP||LP.can(f));
 function monthCut(months){const n=PLAN().months;return n<months.length&&months[n]?months[n].days[0]:null}
