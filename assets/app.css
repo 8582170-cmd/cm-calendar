@@ -465,7 +465,7 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 0 1 6 0v3H9Z'/%3E%3C/svg%3E") center/contain no-repeat;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 0 1 6 0v3H9Z'/%3E%3C/svg%3E") center/contain no-repeat}
 .page.wm::after{content:"";position:absolute;inset:0;z-index:60;pointer-events:none;opacity:.5;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='170'%3E%3Ctext x='130' y='95' text-anchor='middle' transform='rotate(-28 130 85)' font-family='Arial' font-size='26' font-weight='700' fill='%23a8382c' fill-opacity='.55'%3E%D7%9C%D7%95%D7%97%D7%A0%D7%95 %C2%B7 %D7%92%D7%A8%D7%A1%D7%AA %D7%A0%D7%99%D7%A1%D7%99%D7%95%D7%9F%3C/text%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='170'%3E%3Ctext x='130' y='95' text-anchor='middle' transform='rotate(-28 130 85)' font-family='Arial' font-size='26' font-weight='700' fill='%23a8382c' fill-opacity='.55'%3EMyLuach %C2%B7 %D7%92%D7%A8%D7%A1%D7%AA %D7%A0%D7%99%D7%A1%D7%99%D7%95%D7%9F%3C/text%3E%3C/svg%3E");
   background-size:calc(var(--u)*62) calc(var(--u)*40)}
 .locked-page{display:flex!important;align-items:center;justify-content:center;background:repeating-linear-gradient(135deg,var(--p-paper) 0 calc(var(--u)*3),#f3f5f6 calc(var(--u)*3) calc(var(--u)*3.4))}
 .lock-inner{text-align:center;max-width:70%;display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*3);font-size:calc(var(--u)*4);color:var(--p-ink)}
@@ -833,3 +833,11 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 .tcol small{margin-inline-start:auto}
 .txt-tools .tt-col{display:inline-flex;align-items:center}
 .txt-tools .tt-col input{width:30px;height:26px;padding:0;border:0;background:none;cursor:pointer}
+/* תשלום: טופס נדרים פלוס מוטמע */
+.modal.pay-modal{max-width:560px}
+.pay-who{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.pay-who label{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:600}
+.pay-who label:first-child{grid-column:1/-1}
+.pay-who input{font:inherit;font-weight:400;padding:8px 10px;border:1px solid var(--line,#ccd);border-radius:8px;background:var(--bg,#fff);color:inherit}
+.pay-frame{width:100%;height:300px;border:0;border-radius:10px;background:#fff;transition:height .2s ease}
+@media (max-width:520px){.pay-who{grid-template-columns:minmax(0,1fr)}}

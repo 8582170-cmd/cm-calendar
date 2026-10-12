@@ -2665,25 +2665,47 @@ function openUpgrade(reason){
 const ORDER_KEY='myluach-order';
 function buyPlan(planId){
   const p=LP.byId(planId);if(!p||p.id==='free')return;
-  const win=window.open('about:blank','_blank');
-  const m=modal('<h3>מסלול '+esc(p.name)+'</h3><p class="hint" id="payMsg">פותחים את עמוד התשלום המאובטח…</p><div class="row"><button class="btn" type="button" id="payCancel">סגירה</button></div>');
-  let stop=false;const close=()=>{stop=true;m.remove()};m.querySelector('#payCancel').onclick=close;
-  const msg=h=>{const x=m.querySelector('#payMsg');if(x)x.innerHTML=h};
-  fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id})})
-   .then(r=>r.json().then(j=>{if(!r.ok||!j.url)throw new Error(j.error||r.status);return j}))
-   .then(j=>{
-     try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}
-     if(win&&!win.closed)win.location.href=j.url;
-     msg('עמוד התשלום נפתח בלשונית חדשה. אחרי התשלום חוזרים לכאן, והמסלול ייפתח לבד.<br><b>סכום: '+j.amount+' ₪</b>'+(win?'':'<br><a href="'+esc(j.url)+'" target="_blank" rel="noopener">לפתיחת עמוד התשלום</a>')+'<br><span class="pay-wait">ממתינים לאישור התשלום…</span>');
-     if(!win){const a=m.querySelector('a[target]');if(a)a.focus()}
-     const t0=Date.now();
-     (function poll(){if(stop)return;
-       fetch('/api/order?id='+j.id).then(r=>r.json()).then(o=>{
-         if(o.status==='paid'){activatePlan(o.plan,j.id);m.remove();const d=modal('<h3>תודה! המסלול '+esc(LP.byId(o.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. מספר ההזמנה: '+j.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}
-         if(o.status==='failed'){msg('התשלום לא עבר. אפשר לנסות שוב, או לפנות אלינו דרך עמוד <a href="terms.html#contact" target="_blank">יצירת קשר</a>.');return}
-         setTimeout(poll,Date.now()-t0<600000?3000:15000)}).catch(()=>setTimeout(poll,5000))})();
-   })
-   .catch(()=>{if(win&&!win.closed)win.close();msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך עמוד <a href="terms.html#contact" target="_blank">יצירת קשר</a>.')});
+  const price=p.intro?LP.introPrice(p,'ils'):LP.price(p,'ils');
+  let saved={};try{saved=JSON.parse(localStorage.getItem('myluach-buyer')||'{}')}catch(e){}
+  const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח ומתבצע דרך נדרים פלוס.</p>'+
+    '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label></div>'+
+    '<p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>'+
+    '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>');
+  m.querySelector('.modal').classList.add('pay-modal');
+  const $m=q=>m.querySelector(q),frame=$m('#payFrame'),go=$m('#payGo');
+  const msg=(h,bad)=>{const x=$m('#payMsg');if(x){x.innerHTML=h;x.classList.toggle('msg-bad',!!bad)}};
+  let order=null,stop=false,ready=false;
+  const post=d=>frame.contentWindow&&frame.contentWindow.postMessage(d,'*');
+  const onMsg=e=>{if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
+    if(d.Name==='Height'){ready=true;frame.style.height=(parseInt(d.Value,10)+15)+'px';go.disabled=false;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
+    else if(d.Name==='TransactionResponse'){const v=d.Value||{};
+      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+price;msg(esc(v.Message||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1)}
+      else{go.remove();frame.style.display='none';msg('התשלום התקבל. מאשרים מול השרת…');waitPaid()}}};
+  window.addEventListener('message',onMsg);
+  const close=()=>{stop=true;window.removeEventListener('message',onMsg);m.remove()};
+  $m('#payCancel').onclick=close;
+  frame.addEventListener('load',()=>post({Name:'GetHeight'}));
+  setTimeout(()=>{if(!ready&&!stop)msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
+  go.onclick=()=>{
+    const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim();
+    if(name.split(/\s+/).length<2){msg('נא למלא שם פרטי ושם משפחה.',1);$m('#payName').focus();return}
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){msg('נא למלא כתובת מייל תקינה.',1);$m('#payMail').focus();return}
+    try{localStorage.setItem('myluach-buyer',JSON.stringify({name,mail,phone}))}catch(e){}
+    go.disabled=true;go.textContent='מעבד תשלום…';msg('מעבד תשלום…');
+    const send=o=>post({Name:'FinishTransaction2',Value:{...o.tx,FirstName:name,LastName:'',Phone:phone,Mail:mail}});
+    if(order){send(order);return}
+    fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id,email:mail})})
+     .then(r=>r.json().then(j=>{if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
+     .then(j=>{order=j;try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}send(j)})
+     .catch(()=>{go.disabled=false;go.textContent='לתשלום '+price;msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
+  };
+  function waitPaid(){const t0=Date.now();
+    (function poll(){if(stop||!order)return;
+      fetch('/api/order?id='+order.id).then(r=>r.json()).then(o=>{
+        if(o.status==='paid'){close();activatePlan(o.plan,order.id);modal('<h3>תודה! המסלול '+esc(LP.byId(o.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. מספר הזמנה: '+order.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}
+        if(Date.now()-t0>90000){msg('התשלום התקבל, אבל האישור מהשרת מתעכב. המסלול ייפתח לבד בכניסה הבאה. אם לא, פנו אלינו עם מספר ההזמנה '+order.id.slice(0,8)+'.');setTimeout(poll,15000);return}
+        setTimeout(poll,2500)}).catch(()=>setTimeout(poll,5000))})();
+  }
 }
 function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:orderId,plan:planId,paid:true,at:Date.now()}))}catch(e){}syncPlanUI();render()}
 /* מי שסגר את הדף לפני שהתשלום אושר: בודקים שוב בכניסה הבאה */
