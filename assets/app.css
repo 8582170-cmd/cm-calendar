@@ -877,3 +877,7 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 @media print{.acct-pill{display:none!important}}
 .brand-link{display:inline-flex;align-items:center;gap:10px}
 .brand .logo-img{width:36px;height:36px;display:inline-block}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:10px;font-weight:700;background:#fff;color:#1f1f1f;border:1px solid #c8ccd0}
+.google-btn:hover{background:#f6f8f9}
+.or-sep{display:flex;align-items:center;gap:10px;color:var(--mute,#667);font-size:13px}
+.or-sep::before,.or-sep::after{content:"";flex:1;border-top:1px solid var(--line,#dde)}
