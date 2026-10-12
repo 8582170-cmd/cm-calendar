@@ -8,7 +8,7 @@ data = out.encode('utf-8')
 key = secrets.token_bytes(29)
 enc = bytes(b ^ key[i % len(key)] ^ ((i * 131) & 255) for i, b in enumerate(data))
 k64, d64 = base64.b64encode(key).decode(), base64.b64encode(enc).decode()
-js = ('/* © לוחנו. מאגר דברי הימים מוגן בזכויות יוצרים; אין להעתיק, לשכפל או להפיץ. */\n'
+js = ('/* © MyLuach. מאגר דברי הימים מוגן בזכויות יוצרים; אין להעתיק, לשכפל או להפיץ. */\n'
       '(function(){var k=Uint8Array.from(atob("' + k64 + '"),function(c){return c.charCodeAt(0)}),'
       'b=Uint8Array.from(atob("' + d64 + '"),function(c){return c.charCodeAt(0)});'
       'for(var i=0;i<b.length;i++)b[i]^=k[i%k.length]^((i*131)&255);'

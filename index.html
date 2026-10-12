@@ -3,8 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>לוחנו</title>
+<title>MyLuach · לוח שנה עברי אישי להדפסה, עם תמונות וזמני היום</title>
 <meta name="description" content="הלוח האישי של המשפחה, המוסד או הקהילה: לוח שנה עברי־לועזי להדפסה עם תמונות, אירועים שחוזרים כל שנה וזמני היום לפי העיר והשיטה שלכם.">
+<link rel="canonical" href="https://www.myluach.org/">
+<link rel="alternate" hreflang="he" href="https://www.myluach.org/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MyLuach">
+<meta property="og:locale" content="he_IL">
+<meta property="og:title" content="MyLuach · לוח שנה עברי אישי להדפסה">
+<meta property="og:description" content="בונים לוח שנה עברי־לועזי למשפחה, לבית הכנסת או למוסד: תמונות, ימי הולדת וימי שנה, זמני היום לפי העיר והמנהג. בונים בחינם, משלמים רק על ההורדה.">
+<meta property="og:url" content="https://www.myluach.org/">
+<meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='10' width='52' height='48' rx='8' fill='%231f5c63'/%3E%3Crect x='6' y='10' width='52' height='14' rx='6' fill='%23143f46'/%3E%3Ctext x='32' y='50' font-size='26' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'%3Eא%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","@id":"https://www.myluach.org/#site","name":"MyLuach","url":"https://www.myluach.org/","inLanguage":"he"},
+ {"@type":"WebApplication","name":"MyLuach","url":"https://www.myluach.org/app.html","applicationCategory":"DesignApplication","operatingSystem":"Web","inLanguage":"he",
+  "description":"מחולל לוח שנה עברי־לועזי אישי להדפסה: תמונות, אירועים משפחתיים, זמני היום, דברי הימים ולימודים יומיים.",
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"ILS","description":"בניית הלוח בחינם; תשלום על הורדה והדפסה"}}
+]}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@500;900&display=swap">
 <link rel="prefetch" href="app.html">
@@ -38,7 +57,8 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:
 
 /* nav */
 .nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:20px}
-.logo{font-family:var(--f-display);font-weight:900;font-size:30px;color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+.logo{font-family:var(--f-display);font-weight:900;font-size:28px;color:var(--ink);text-decoration:none;letter-spacing:-.01em;display:inline-flex;align-items:center;gap:10px;direction:ltr}
+.logo-ic{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:9px;background:var(--teal);color:var(--teal-ink);font-size:22px;box-shadow:inset 0 9px 0 rgb(0 0 0 / .18)}
 .nav-links{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .nav-links a{color:var(--ink);text-decoration:none;font-weight:600;padding:6px 10px;border-radius:8px}
 .nav-links a:hover{background:var(--teal-soft)}
@@ -99,6 +119,18 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .steps h3{font-family:var(--f-body);font-size:19px;font-weight:800}
 .steps p{margin:0;color:var(--mute);font-size:16px}
 
+/* audiences */
+.who{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.who-c{display:flex;flex-direction:column;gap:6px;background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:20px;color:var(--ink);text-decoration:none;transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease}
+.who-c:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:var(--shadow)}
+.who-ic{font-size:28px;line-height:1}
+.who-c h3{font-family:var(--f-body);font-size:19px;font-weight:800}
+.who-c p{margin:0;color:var(--mute);font-size:15.5px;flex:1}
+.who-go{color:var(--teal);font-weight:700;font-size:15px}
+.online-strip{margin-top:18px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:16px 20px;border-radius:14px;background:var(--teal-soft);color:var(--ink);text-decoration:none}
+.online-strip span:not(.who-go){color:var(--mute);flex:1;min-width:16em}
+.online-strip:hover .who-go{text-decoration:underline}
+
 /* pricing */
 .cur-toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--sheet);align-self:flex-start}
 .cur-toggle button{font:inherit;font-weight:700;border:0;background:transparent;color:var(--mute);padding:6px 16px;border-radius:999px;cursor:pointer}
@@ -130,7 +162,8 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .faq-list b{color:var(--ink);font-weight:700}
 
 .final{text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
-footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);font-size:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);font-size:14px;display:flex;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
+.foot-links{display:flex;gap:14px;flex-wrap:wrap}.foot-links a{color:var(--mute)}.foot-links a:hover{color:var(--teal)}.foot-note{flex-basis:100%}
 
 
 .wall{display:flex;flex-direction:column;transform:rotate(-1deg)}
@@ -156,12 +189,12 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   .hero{grid-template-columns:minmax(0,1fr);gap:36px}
   .sheet{transform:none}
   .plans{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .features{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .features,.who{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:620px){
   body{padding-inline:16px}
   .nav-links a:not(.btn){display:none}
-  .plans,.features,.steps{grid-template-columns:minmax(0,1fr)}
+  .plans,.features,.steps,.who{grid-template-columns:minmax(0,1fr)}
   .grid>div{min-height:48px;padding:2px 3px;font-size:9px}
   .d b{font-size:13px}.z,.d i{display:none}
   .sheet{padding:14px 12px 10px}.sheet-head b{font-size:32px}
@@ -172,9 +205,10 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 <body>
 <div class="wrap">
   <header class="nav">
-    <a class="logo" href="index.html">לוחנו</a>
+    <a class="logo" href="./"><span class="logo-ic" aria-hidden="true">א</span>MyLuach</a>
     <nav class="nav-links" aria-label="ניווט ראשי">
       <a href="#what">מה בלוח</a>
+      <a href="#who">למי</a>
       <a href="gallery.html">גלריה</a>
       <a href="online/">לוח שנה אונליין</a>
       <a href="#plans">מסלולים</a>
@@ -226,6 +260,22 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
       </div>
     </section>
 
+    <section id="who">
+      <div class="sec-head">
+        <h2>לוח אחד, לכל מי שצריך לוח</h2>
+        <p>בוחרים נקודת התחלה מוכנה, ומשנים ממנה כל פרט. אפשר לראות דוגמאות מלאות ב<a href="gallery.html">גלריה</a>.</p>
+      </div>
+      <div class="who">
+        <a class="who-c" href="app.html#preset-family"><span class="who-ic" aria-hidden="true">👨‍👩‍👧</span><h3>משפחה</h3><p>תמונה לכל חודש, ימי הולדת, ימי נישואין וימי שנה. לקיר, למקרר או לשולחן.</p><span class="who-go">להתחיל ←</span></a>
+        <a class="who-c" href="app.html#preset-shul"><span class="who-ic" aria-hidden="true">🕍</span><h3>בית כנסת וקהילה</h3><p>זמני היום בטור, זמני תפילות קבועים או לפי השקיעה, ובאנרים לתורמים.</p><span class="who-go">להתחיל ←</span></a>
+        <a class="who-c" href="app.html#preset-yeshiva"><span class="who-ic" aria-hidden="true">📖</span><h3>ישיבה וכולל</h3><p>דף יומי, משנה, הלכה יומית ועוד, עם ריבוע לסמן מה הספקתם.</p><span class="who-go">להתחיל ←</span></a>
+        <a class="who-c" href="app.html#preset-scholar"><span class="who-ic" aria-hidden="true">📜</span><h3>לוח תורני מלא</h3><p>כל זמני היום, דברי הימים ויומי דהילולא בעמוד מעל כל חודש.</p><span class="who-go">להתחיל ←</span></a>
+        <a class="who-c" href="app.html#preset-school"><span class="who-ic" aria-hidden="true">🏫</span><h3>בית ספר ומוסד</h3><p>שנת לימודים מספטמבר, ימים צבועים לחופשות ולאירועים, עם מקרא.</p><span class="who-go">להתחיל ←</span></a>
+        <a class="who-c" href="app.html#preset-countdown"><span class="who-ic" aria-hidden="true">⏳</span><h3>ספירה לאחור</h3><p>לחתונה, לבר המצווה או ללידה: לוח לסימון הימים, בעיצוב לכלה או לילדים.</p><span class="who-go">להתחיל ←</span></a>
+      </div>
+      <a class="online-strip" href="online/"><b>מחפשים רק לבדוק תאריך או זמן?</b><span>לוח שנה עברי אונליין, זמני היום וזמני שבת לכל עיר, המרת תאריכים ותזכורות. בחינם.</span><span class="who-go">ללוח האונליין ←</span></a>
+    </section>
+
     <section id="how">
       <div class="sec-head"><h2>איך זה עובד</h2></div>
       <ol class="steps">
@@ -268,8 +318,9 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   </main>
 
   <footer>
-    <span>לוחנו · לוח שנה עברי־לועזי להדפסה</span>
-    <span>התאריכים והזמנים מחושבים לפי הלוח העברי. כדאי לבדוק זמנים הלכתיים מול רב או לוח מקומי.</span>
+    <span>© <span id="yr">2026</span> MyLuach · לוח שנה עברי־לועזי להדפסה</span>
+    <nav class="foot-links" aria-label="קישורים"><a href="gallery.html">גלריה</a><a href="online/">לוח אונליין</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="terms.html#contact">יצירת קשר</a></nav>
+    <span class="foot-note">התאריכים והזמנים מחושבים לפי הלוח העברי. כדאי לבדוק זמנים הלכתיים מול רב או לוח מקומי.</span>
   </footer>
 </div>
 
@@ -306,7 +357,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   }else document.getElementById('hist').innerHTML=H.map(x=>'<li'+(x[3]?' class="ev"':'')+'><b>'+heb(x[0])+'</b><span>'+x[1]+' <span class="y">('+x[2]+')</span></span></li>').join('');
 
   /* מסלולים מתוך plans.js */
-  const P=window.LuchenuPlans,grid=document.getElementById('planGrid');
+  const P=window.MyLuachPlans,grid=document.getElementById('planGrid');
   let cur='ils';try{cur=localStorage.getItem('luchenu-cur')||'ils'}catch(e){}
   function draw(){
     grid.innerHTML=P.PLANS.map(p=>'<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+
@@ -319,9 +370,10 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   document.getElementById('curIls').onclick=()=>{cur='ils';try{localStorage.setItem('luchenu-cur',cur)}catch(e){}draw()};
   document.getElementById('curUsd').onclick=()=>{cur='usd';try{localStorage.setItem('luchenu-cur',cur)}catch(e){}draw()};
   draw();
+  document.getElementById('yr').textContent=new Date().getFullYear();
 })();
 
-;['copy','cut','contextmenu','dragstart'].forEach(ev=>document.addEventListener(ev,e=>{const n=e.target&&e.target.closest?e.target:null;const s=window.getSelection&&window.getSelection();const inH=(x)=>{x=x&&(x.nodeType===1?x:x.parentElement);return x&&x.closest&&x.closest('#hist')};if(inH(n)||(s&&(inH(s.anchorNode)||inH(s.focusNode)))){e.preventDefault();if(e.clipboardData)e.clipboardData.setData('text/plain','© לוחנו')}},true));
+;['copy','cut','contextmenu','dragstart'].forEach(ev=>document.addEventListener(ev,e=>{const n=e.target&&e.target.closest?e.target:null;const s=window.getSelection&&window.getSelection();const inH=(x)=>{x=x&&(x.nodeType===1?x:x.parentElement);return x&&x.closest&&x.closest('#hist')};if(inH(n)||(s&&(inH(s.anchorNode)||inH(s.focusNode)))){e.preventDefault();if(e.clipboardData)e.clipboardData.setData('text/plain','© MyLuach')}},true));
 </script>
 </body>
 </html>

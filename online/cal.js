@@ -1,4 +1,4 @@
-/* לוח עברי אונליין: לוח שנה מקוון פשוט, שמפנה ל"לוחנו" להדפסה ולאפשרויות מתקדמות */
+/* לוח עברי אונליין: לוח שנה מקוון פשוט, שמפנה ל־MyLuach להדפסה ולאפשרויות מתקדמות */
 (function(){
 'use strict';
 const H=window.hebcal;
@@ -13,20 +13,20 @@ const BUILDER=BASE+'../app.html';
 
 /* ---------- שפה ---------- */
 const T={
- he:{siteName:'לוח עברי',city:'עיר',menu:'תפריט',month:'לוח חודשי',year:'לוח שנתי',holidays:'חגים ומועדים',zmanim:'זמני היום',shabbat:'זמני שבת',tools:'כלים',reminders:'תזכורות',
+ he:{siteName:'MyLuach',city:'עיר',menu:'תפריט',month:'לוח חודשי',year:'לוח שנתי',holidays:'חגים ומועדים',zmanim:'זמני היום',shabbat:'זמני שבת',tools:'כלים',reminders:'תזכורות',
   today:'היום',prev:'הקודם',next:'הבא',prevYear:'שנה אחורה',nextYear:'שנה קדימה',hebMode:'עברי',gregMode:'לועזי',jump:'קפיצה לתאריך',go:'מעבר',
   print:'הדפסה ואפשרויות נוספות',printSub:'לוח מעוצב להדפסה, עם התמונות, ימי ההולדת וימי השנה (יארצייטים) שלכם',
-  ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'בלוחנו בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
+  ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'ב־MyLuach בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
   sunrise:'הנץ',sunset:'שקיעה',candles:'הדלקת נרות',havdalah:'יציאה',parasha:'פרשת השבוע',nextHoliday:'החג הבא',inDays:n=>n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים',
   daysAgo:n=>n===1?'אתמול':'לפני '+n+' ימים',fromToday:'מהיום',addRem:'הוספת תזכורת',note:'הערה ליום הזה',color:'צבע ליום',save:'שמירה',del:'מחיקה',close:'סגירה',
   showOmer:'ספירת העומר',showTimes:'הדלקה ויציאה',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
   convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יום שנה (יארצייט)',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
- en:{siteName:'Hebrew Calendar',city:'City',menu:'Menu',month:'Month',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
+ en:{siteName:'MyLuach',city:'City',menu:'Menu',month:'Month',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
   today:'Today',prev:'Previous',next:'Next',prevYear:'Year back',nextYear:'Year ahead',hebMode:'Hebrew',gregMode:'Gregorian',jump:'Jump to date',go:'Go',
   print:'Print & more options',printSub:'A designed calendar to print, with your photos, birthdays and yahrzeits',
-  ctaT:'Want this as a printed calendar?',ctaP:'Luchenu builds a personal Jewish calendar for your family, synagogue or school: photos, family events, zmanim and more.',ctaB:'Build a personal calendar',
+  ctaT:'Want this as a printed calendar?',ctaP:'MyLuach builds a personal Jewish calendar for your family, synagogue or school: photos, family events, zmanim and more.',ctaB:'Build a personal calendar',
   sunrise:'Sunrise',sunset:'Sunset',candles:'Candle lighting',havdalah:'Havdalah',parasha:'Torah portion',nextHoliday:'Next holiday',inDays:n=>n===0?'today':n===1?'tomorrow':'in '+n+' days',
   daysAgo:n=>n===1?'yesterday':n+' days ago',fromToday:'from today',addRem:'Add reminder',note:'Note for this day',color:'Day color',save:'Save',del:'Delete',close:'Close',
   showOmer:'Omer count',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',
@@ -311,7 +311,7 @@ function viewCountdown(back){
       mini+=g+'</div></div>'}
     $('#kOut').innerHTML='<div class="kcard" style="--k:'+S[3]+';--kb:'+S[4]+'"><div class="ktitle">'+esc(o.t||(HE()?'הספירה לאחור':'Countdown'))+'</div><div class="kbig">'+(n===0?S[5]:Math.abs(n))+'</div><div class="ksub">'+(n===0?(HE()?'היום!':'Today!'):n>0?(HE()?'ימים נשארו':'days to go')+(w?' · '+(HE()?w+' שבועות ו־'+r+' ימים':w+' weeks, '+r+' days'):''):(HE()?'ימים עברו':'days ago'))+'</div><div class="kdate">'+t('weekdays')[to.getDay()]+', '+esc(hStr(hd))+' · '+esc(gStr(to))+'</div><div class="kmini">'+mini+'</div></div>'+
       '<div class="row" style="margin-top:12px"><a class="btn pri big" href="'+print+'">🖨 '+(HE()?'הדפסה והורדה בעיצוב מלא':'Print & download the full design')+'</a><button class="btn" type="button" id="kShare">🔗 '+(HE()?'העתקת קישור לשיתוף':'Copy share link')+'</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent((o.t||'')+' · '+(HE()?'עוד '+n+' ימים! ':n+' days to go! ')+share)+'">WhatsApp</a></div>'+
-      '<p class="small mute">'+(HE()?'הקישור מראה לכל מי שמקבל אותו כמה ימים נשארו, ומתעדכן לבד כל יום. הלוח המעוצב להדפסה (פוסטר, עמוד לכל חודש, דף ארוך לגלילה או שרשרת נייר) נבנה בלוחנו.':'The link shows how many days are left and updates daily. The printable design is built in Luchenu.')+'</p>';
+      '<p class="small mute">'+(HE()?'הקישור מראה לכל מי שמקבל אותו כמה ימים נשארו, ומתעדכן לבד כל יום. הלוח המעוצב להדפסה (פוסטר, עמוד לכל חודש, דף ארוך לגלילה או שרשרת נייר) נבנה ב־MyLuach.':'The link shows how many days are left and updates daily. The printable design is built in MyLuach.')+'</p>';
     $('#kShare').onclick=async e=>{try{await navigator.clipboard.writeText(share);e.target.textContent=HE()?'הקישור הועתק':'Copied'}catch(err){prompt('',share)}};
   };
   ['kT','kD','kS','kL'].forEach(i=>$('#'+i).addEventListener('input',draw));draw();
@@ -332,7 +332,7 @@ function remWhen(r){if(r.rec==='once')return gStr(fromIso(r.date));if(r.rec==='g
 function nextOcc(r,from=TODAY,max=400){for(let i=0;i<max;i++){const d=addD(from,i);if(remHits(r,d))return d}return null}
 function gcalLink(r,d){if(!d)return '#';const a=iso(d).replace(/-/g,''),b=iso(addD(d,1)).replace(/-/g,'');return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(r.name)+'&dates='+a+'/'+b+'&details='+encodeURIComponent(hStr(new HDate(d)))}
 function remIcs(){
-  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Luchenu Online//HE','X-WR-CALNAME:'+t('siteName')],stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MyLuach Online//HE','X-WR-CALNAME:'+t('siteName')],stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
   const e=s=>String(s).replace(/[\\,;]/g,x=>'\\'+x);let n=0;
   for(const r of REM){let d=TODAY;for(let k=0;k<(r.rec==='once'?1:r.rec==='monthly'?24:5);k++){const x=nextOcc(r,d,r.rec==='once'?3650:420);if(!x)break;n++;
     L.push('BEGIN:VEVENT','UID:'+r.id+'-'+iso(x)+'@luchenu','DTSTAMP:'+stamp,'DTSTART;VALUE=DATE:'+iso(x).replace(/-/g,''),'DTEND;VALUE=DATE:'+iso(addD(x,1)).replace(/-/g,''),'SUMMARY:'+e(r.name),'DESCRIPTION:'+e(hStr(new HDate(x))));
@@ -396,11 +396,11 @@ function seoBlock(){
   const root=PAGE.root||'./';
   const top=CITIES.filter(x=>x.il).slice(0,14).concat(CITIES.filter(x=>['newyork','brooklyn','lakewood','london','paris','antwerp','losangeles','toronto','montreal'].includes(x.id)));
   return '<section class="card seo"><h2>'+(HE()?'לוח שנה עברי ל'+cn:'Jewish calendar for '+cn)+'</h2>'+
-    (HE()?'<p>לוח השנה העברי-לועזי המקוון מציג את כל החגים והמועדים, ראשי החודשים, פרשות השבוע וזמני כניסת השבת ויציאתה ב'+cn+'. בלחיצה על כל יום רואים את זמני היום המלאים: עלות השחר, הנץ החמה, סוף זמן קריאת שמע ותפילה לפי המג״א והגר״א, מנחה גדולה, פלג המנחה, שקיעה וצאת הכוכבים.</p><p>אפשר להוסיף תזכורות לימי הולדת, ימי נישואין וימי שנה (יארצייטים) לפי התאריך העברי, להמיר תאריכים, לחשב תאריך בר מצווה ובת מצווה, ולהוריד את הכל ליומן בטלפון. רוצים לוח מודפס? בלוחנו בונים לוח שנה אישי ל'+hYear(hy)+' עם התמונות והאירועים שלכם.</p>'
+    (HE()?'<p>לוח השנה העברי-לועזי המקוון מציג את כל החגים והמועדים, ראשי החודשים, פרשות השבוע וזמני כניסת השבת ויציאתה ב'+cn+'. בלחיצה על כל יום רואים את זמני היום המלאים: עלות השחר, הנץ החמה, סוף זמן קריאת שמע ותפילה לפי המג״א והגר״א, מנחה גדולה, פלג המנחה, שקיעה וצאת הכוכבים.</p><p>אפשר להוסיף תזכורות לימי הולדת, ימי נישואין וימי שנה (יארצייטים) לפי התאריך העברי, להמיר תאריכים, לחשב תאריך בר מצווה ובת מצווה, ולהוריד את הכל ליומן בטלפון. רוצים לוח מודפס? ב־MyLuach בונים לוח שנה אישי ל'+hYear(hy)+' עם התמונות והאירועים שלכם.</p>'
       :'<p>This online Hebrew-Gregorian calendar shows all Jewish holidays, Rosh Chodesh, weekly Torah portions and Shabbat candle-lighting and havdalah times for '+cn+'. Click any day for full zmanim: dawn, sunrise, latest Shema and Shacharit (MGA and GRA), mincha, plag, sunset and nightfall.</p><p>Add reminders for Hebrew birthdays, anniversaries and yahrzeits, convert dates, calculate a Bar or Bat Mitzvah date, and export everything to your phone calendar.</p>')+
     '<div class="links">'+top.map(x=>'<a href="'+root+'zmanim/'+x.id+'.html">'+esc(HE()?'זמני היום '+x.he:'Zmanim '+x.en)+'</a>').join('')+'</div></section>';
 }
-function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t('siteName')+'</span><a href="'+BUILDER+'">'+(HE()?'לוחנו · בניית לוח שנה אישי להדפסה':'Luchenu · personal printed calendars')+'</a><a href="'+BASE+'../index.html">'+(HE()?'מסלולים ומחירים':'Plans & pricing')+'</a><span>'+(HE()?'הזמנים מחושבים אסטרונומית ואינם תחליף ללוח של רב הקהילה.':'Times are astronomical calculations.')+'</span>'}
+function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t('siteName')+'</span><a href="'+BUILDER+'">'+(HE()?'MyLuach · בניית לוח שנה אישי להדפסה':'MyLuach · personal printed calendars')+'</a><a href="'+BASE+'../index.html">'+(HE()?'מסלולים ומחירים':'Plans & pricing')+'</a><span>'+(HE()?'הזמנים מחושבים אסטרונומית ואינם תחליף ללוח של רב הקהילה.':'Times are astronomical calculations.')+'</span>'}
 function renderNav(){
   $('#nav').innerHTML=VIEWS.map(v=>{const cur=v==='countdown'?view==='tools'&&sub==='countdown':v==='tools'?view==='tools'&&sub!=='countdown':v===view;return '<a href="#'+v+'" data-nav="'+v+'"'+(cur?' aria-current="page"':'')+'>'+t(v)+'</a>'}).join('');
   const sel=$('#city');const groups=[...new Set(CITIES.map(c=>c.g))];

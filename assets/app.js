@@ -2,7 +2,7 @@
 'use strict';
 const $=s=>document.querySelector(s);
 /* ---------- מסלולים ---------- */
-const LP=window.LuchenuPlans;
+const LP=window.MyLuachPlans;
 let SAMPLE=null; /* הורדת חודש לדוגמה: {key} בזמן ההדפסה */
 const PLAN=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?LP.current():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
 const canF=f=>SAMPLE?true:(!LP||LP.can(f));
@@ -1044,14 +1044,14 @@ function askHistOverflow(title,count,pct){
 }
 function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')}
 function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
-/* שורת תחתית: פרטי הזמנים, ומשמאל "נוצר בלוחנו". במסלולים בתשלום אפשר להסתיר את השורה. */
+/* שורת תחתית: פרטי הזמנים, ומשמאל "נוצר ב־myluach.org". במסלולים בתשלום אפשר להסתיר את השורה. */
 function creditOn(){return PLAN().watermark||state.s.credit!==false}
-function creditHost(){const h=window.location.host;return /^(localhost|127\.|$)/.test(h)?'לוחנו':h.replace(/^www\./,'')}
+function creditHost(){const h=window.location.host;return /^(localhost|127\.|$)/.test(h)||/vercel\.app$/.test(h)?'myluach.org':h.replace(/^www\./,'')}
 function addFootLine(p){
   const s=state.s,z=s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
   if(!z&&!creditOn())return;
   const f=el('div','pg-foot',z?footText():'<span></span>');
-  if(creditOn())f.insertAdjacentHTML('beforeend','<span class="credit">נוצר בלוחנו · '+esc(creditHost())+'</span>');
+  if(creditOn())f.insertAdjacentHTML('beforeend','<span class="credit">נוצר ב־'+esc(creditHost())+'</span>');
   p.appendChild(f);
 }
 /* ---------- לוח שנתי בעמוד אחד ---------- */
@@ -2438,7 +2438,7 @@ $('#exportBtn').onclick=()=>{
 };
 $('#importBtn').onclick=()=>{
   const m=modal('<h3>שחזור מגיבוי</h3><p class="hint">בחרו קובץ גיבוי או הדביקו את טקסט הגיבוי. הנתונים הנוכחיים יוחלפו.</p><div class="row"><button class="btn" type="button" id="imFile">בחירת קובץ</button></div><textarea id="imText" placeholder="הדביקו כאן"></textarea><p class="hint" id="imMsg"></p><div class="row"><button class="btn primary" type="button" id="imGo">שחזור</button><button class="btn" type="button" data-close>ביטול</button></div>');
-  const apply=txt=>{try{state=merge(DEFAULT,JSON.parse(txt));save();syncUI();render();m.remove()}catch(err){m.querySelector('#imMsg').innerHTML='<span class="msg-bad">הטקסט אינו גיבוי תקין של לוחנו.</span>'}};
+  const apply=txt=>{try{state=merge(DEFAULT,JSON.parse(txt));save();syncUI();render();m.remove()}catch(err){m.querySelector('#imMsg').innerHTML='<span class="msg-bad">הטקסט אינו גיבוי תקין של MyLuach.</span>'}};
   m.querySelector('#imGo').onclick=()=>apply(m.querySelector('#imText').value);
   m.querySelector('#imFile').onclick=()=>{const f=$('#fileJson');f.value='';f.onchange=()=>{const r=new FileReader();r.onload=()=>apply(r.result);if(f.files[0])r.readAsText(f.files[0])};f.click()};
 };
@@ -2655,7 +2655,7 @@ function planCards(highlight){
 function openUpgrade(reason){
   if(!LP)return;
   const need=LP.cheapestWith(reason),what=LP.FEATURE_NAMES[reason]||'';
-  const title=reason==='download'?'הורדה והדפסה של הלוח':reason==='months'?'פתיחת כל חודשי השנה':reason?what:'המסלולים של לוחנו';
+  const title=reason==='download'?'הורדה והדפסה של הלוח':reason==='months'?'פתיחת כל חודשי השנה':reason?what:'המסלולים של MyLuach';
   const sub=reason==='events'?'במסלול שלכם אפשר עד '+PLAN().events+' אירועים משפחתיים.':reason&&reason!=='months'&&reason!=='download'?'האפשרות הזאת כלולה במסלול '+need.name+' ומעלה.':'בוחרים מסלול, וכל מה שבניתם נשאר בדיוק כמו שהוא.';
   const m=modal('<h3>'+esc(title)+'</h3><p class="hint">'+esc(sub)+'</p>'+(PLAN().id==='free'?'<div class="sample-offer"><div><b>רוצים לראות קודם איך זה יוצא?</b><span>חודש אחד מלא להורדה בחינם, עם סימן מים עדין.</span></div><button class="btn" type="button" data-sample>חודש לדוגמה בחינם</button></div>':'')+planCards(need.id)+'<p class="hint plan-note">כל מסלול הוא לשנה אחת, ללוח של אותה שנה. בשלב הזה התשלום עוד לא מחובר: הבחירה רק מחליפה את המסלול כדי לבדוק את האתר.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
   m.querySelector('.modal').classList.add('upgrade');
@@ -2844,7 +2844,7 @@ if($('#evIcs'))$('#evIcs').onclick=()=>{
     const d8=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
     const escI=t=>String(t).replace(/[\\,;]/g,x=>'\\'+x).replace(/\n/g,'\\n');
     const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
-    const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Luchenu//HE','CALSCALE:GREGORIAN','X-WR-CALNAME:לוחנו'];let n=0;
+    const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MyLuach//HE','CALSCALE:GREGORIAN','X-WR-CALNAME:MyLuach'];let n=0;
     for(const d of days){
       const hd=new HDate(d),nx=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12);
       const list=eventsOn(d,hd).map(e=>({t:eventLabel(e,d,hd),id:e.id,al:true}));
@@ -2952,7 +2952,7 @@ function selTouchesYz(){const sel=window.getSelection();if(!sel||!sel.rangeCount
   if(yzProt(sel.anchorNode)||yzProt(sel.focusNode))return true;
   const r=sel.getRangeAt(0),c=r.commonAncestorContainer;const root=c.nodeType===1?c:c.parentElement;
   return !!(root&&[...root.querySelectorAll(YZ_PROT)].some(x=>r.intersectsNode(x)))}
-const YZ_NOTE='התוכן של דברי הימים מוגן בזכויות יוצרים · לוחנו';
+const YZ_NOTE='התוכן של דברי הימים מוגן בזכויות יוצרים · MyLuach';
 ['copy','cut'].forEach(ev=>document.addEventListener(ev,e=>{if(!selTouchesYz())return;e.preventDefault();try{e.clipboardData.setData('text/plain',YZ_NOTE)}catch(err){}},true));
 document.addEventListener('contextmenu',e=>{if(yzProt(e.target))e.preventDefault()},true);
 document.addEventListener('dragstart',e=>{if(yzProt(e.target))e.preventDefault()},true);

@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://www.myluach.org/</loc></url>
-  <url><loc>https://www.myluach.org/index.html</loc></url>
   <url><loc>https://www.myluach.org/gallery.html</loc></url>
+  <url><loc>https://www.myluach.org/app.html</loc></url>
+  <url><loc>https://www.myluach.org/terms.html</loc></url>
+  <url><loc>https://www.myluach.org/privacy.html</loc></url>
   <url><loc>https://www.myluach.org/online/</loc></url>
   <url><loc>https://www.myluach.org/online/en/index.html</loc></url>
   <url><loc>https://www.myluach.org/online/zmanim/jerusalem.html</loc></url>

@@ -1,4 +1,4 @@
-/* לוחנו: הגדרת המסלולים. מקור אחד לדף הבית, לדף המסלולים ולמגבלות בבונה הלוח. */
+/* MyLuach: הגדרת המסלולים. מקור אחד לדף הבית, לדף המסלולים ולמגבלות בבונה הלוח. */
 (function(){
   'use strict';
   const ALL = {views:true, banners:true, extraPages:true, advZmanim:true, customSize:true, imageEditor:true, fonts:true, tfilot:true};
@@ -29,7 +29,7 @@
   const get = k => { try { return localStorage.getItem(k) } catch(e) { return null } };
   const put = (k,v) => { try { localStorage.setItem(k,v) } catch(e) {} };
   const byId = id => PLANS.find(p => p.id === id) || PLANS[0];
-  window.LuchenuPlans = {
+  window.MyLuachPlans = {
     PLANS, FEATURE_NAMES, byId,
     current(){ return byId(get(KEY) || 'free') },
     /* שלב 1: המסלול נשמר בדפדפן לבדיקה. בשלב 2 הוא יגיע מהחשבון בשרת. */
