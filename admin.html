@@ -60,6 +60,20 @@ const $=s=>document.querySelector(s),app=$('#app');
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let PW='',D=null,C=null;
 try{PW=sessionStorage.getItem('myluach-admin')||''}catch(e){}
+const MAIL_KIND={confirm:'אישור תזכורת',reminder:'תזכורת',test:'בדיקה'};
+function mailReport(M){
+  const P=['resend','brevo','mailjet'],days=Object.keys(M.byDay||{}).sort().reverse();
+  const tot={failed:0};days.forEach(d=>{const o=M.byDay[d];P.forEach(k=>tot[k]=(tot[k]||0)+(o[k]||0));tot.failed+=o.failed||0});
+  const cell=v=>'<td style="font-variant-numeric:tabular-nums">'+(v||'')+'</td>';
+  return '<section><h2>דוח מיילים</h2><p class="sub">מיילים שהאתר שלח (תזכורות, אישורים, בדיקות) ב-30 הימים האחרונים. מיילי הכניסה לחשבון נשלחים ישירות מ-Supabase ומופיעים בדוחות של השרת שמוגדר שם.</p>'+
+   (days.length?'<div class="scroll"><table class="tbl"><thead><tr><th>תאריך</th>'+P.map(k=>'<th dir="ltr">'+k+'</th>').join('')+'<th>נכשלו</th></tr></thead><tbody>'+
+    days.map(d=>{const o=M.byDay[d];return '<tr><td>'+new Date(d+'T12:00:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})+'</td>'+P.map(k=>cell(o[k])).join('')+'<td class="'+(o.failed?'st-failed':'')+'">'+(o.failed||'')+'</td></tr>'}).join('')+
+    '<tr style="font-weight:800"><td>סה״כ</td>'+P.map(k=>cell(tot[k])).join('')+cell(tot.failed)+'</tr></tbody></table></div>':'<p>עדיין אין נתונים.</p>')+
+   ((M.recent||[]).length?'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">200 המיילים האחרונים</summary><div class="scroll" style="margin-top:8px"><table class="tbl"><thead><tr><th>זמן</th><th>סוג</th><th>נמען</th><th>נושא</th><th>שרת</th><th>מצב</th></tr></thead><tbody>'+
+    M.recent.map(l=>'<tr><td>'+new Date(l.created_at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</td><td>'+esc(MAIL_KIND[l.kind]||l.kind||'')+'</td><td dir="ltr">'+esc(l.to_email||'')+'</td><td>'+esc(l.subject||'')+'</td><td dir="ltr">'+esc(l.provider||'')+'</td><td class="'+(l.ok?'st-paid':'st-failed')+'"'+(l.error?' title="'+esc(l.error)+'"':'')+'>'+(l.ok?'נשלח':'נכשל'+(l.error?' ⓘ':''))+'</td></tr>').join('')+
+    '</tbody></table></div><p class="sub">ב"נכשל" — מעבירים את העכבר על ⓘ לראות את השגיאה. כשמייל נכשל בשרת אחד ועבר לשרת הבא, יופיעו שתי שורות: נכשל ואחריה נשלח.</p></details>':'')+
+   '</section>';
+}
 function api(body){return fetch('/api/admin',{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-admin-password':PW},body:body?JSON.stringify(body):undefined}).then(r=>r.json().then(j=>{if(!r.ok)throw Object.assign(new Error(j.error),{code:r.status,j});return j}))}
 function login(){api().then(d=>{try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}D=d;C=JSON.parse(JSON.stringify(d.config||{}));render()})
   .catch(e=>{const m=$('#lmsg');if(m)m.textContent=e.code===401?'סיסמה שגויה':e.code===503?'לא הוגדרה סיסמה: צריך להוסיף ב-Vercel את המשתנה ADMIN_PASSWORD (לפחות 8 תווים)':'שגיאה: '+(e.j&&e.j.message||e.message);try{sessionStorage.removeItem('myluach-admin')}catch(x){}})}
@@ -89,7 +103,7 @@ function render(){
     (D.mail.failed?'<span class="st-failed">נכשלו: '+D.mail.failed+'</span>':'')+
     '<span>· תזכורות פעילות: <b>'+(D.mail.reminders.active||0)+'</b></span><span>ממתינות לאישור: '+(D.mail.reminders.pending||0)+'</span></div>'+
     '<p class="sub" style="margin-top:12px">שרתי מייל מחוברים (לפי סדר העדיפות): '+(['resend','brevo','mailjet'].filter(k=>(D.mail.providers||{})[k]).map(k=>esc(k)+' ✅').join(' ← ')||'אין')+'</p>'+
-    '<div class="row"><input type="email" id="mtTo" dir="ltr" placeholder="מייל לבדיקה"><select id="mtP">'+['resend','brevo','mailjet'].filter(k=>(D.mail.providers||{})[k]).map(k=>'<option>'+k+'</option>').join('')+'</select><button type="button" id="mtGo">שליחת מייל בדיקה</button><span id="mtMsg"></span></div></section>':'')+
+    '<div class="row"><input type="email" id="mtTo" dir="ltr" placeholder="מייל לבדיקה"><select id="mtP">'+['resend','brevo','mailjet'].filter(k=>(D.mail.providers||{})[k]).map(k=>'<option>'+k+'</option>').join('')+'</select><button type="button" id="mtGo">שליחת מייל בדיקה</button><span id="mtMsg"></span></div></section>'+mailReport(D.mail):'')+
   '<section><h2>הזמנות אחרונות</h2><p class="sub">100 האחרונות. "ממתין" = נפתח חלון תשלום ולא שולם.</p><div class="scroll"><table class="tbl"><thead><tr><th>תאריך</th><th>מסלול</th><th>סכום</th><th>מצב</th><th>קופון</th><th>מייל</th><th>מספר</th></tr></thead><tbody>'+
   (D.orders||[]).map(o=>'<tr><td>'+new Date(o.created_at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</td><td>'+esc(o.plan==='donation'?'תרומה':(D.defaults[o.plan]||{}).name||o.plan)+'</td><td>'+esc(o.amount)+' ₪</td><td class="st-'+esc(o.status)+'">'+({paid:'שולם',pending:'ממתין',failed:'נכשל',underpaid:'שולם חלקית'}[o.status]||esc(o.status))+'</td><td dir="ltr">'+esc(o.coupon||'')+'</td><td dir="ltr">'+esc(o.email||'')+'</td><td dir="ltr">'+esc(o.id.slice(0,8))+'</td></tr>').join('')+
   '</tbody></table></div></section>';

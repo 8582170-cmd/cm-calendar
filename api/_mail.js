@@ -51,13 +51,17 @@ async function sendMail(m, kind, only) {
   }
   for (const k of order) {
     const fn = PROVIDERS[k]; if (!fn) continue;
-    try { const used = await fn(m); if (used) { logMail(used, kind, true); return used; } }
-    catch (e) { errs.push(e.message); console.error('mail fail', k, e.message); logMail(k, kind, false); }
+    try { const used = await fn(m); if (used) { logMail(used, kind, true, m); return used; } }
+    catch (e) { errs.push(e.message); console.error('mail fail', k, e.message); logMail(k, kind, false, m, e.message); }
   }
   throw new Error('no mail provider succeeded: ' + (errs.join(' | ') || 'none configured'));
 }
-function logMail(provider, kind, ok) {
-  db('email_log', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ provider, kind: kind || '', ok }) }).catch(() => {});
+function logMail(provider, kind, ok, m, err) {
+  const base = { provider, kind: kind || '', ok };
+  const full = { ...base, to_email: m && m.to ? String(m.to).slice(0, 200) : null, subject: m && m.subject ? String(m.subject).slice(0, 200) : null, error: err ? String(err).slice(0, 300) : null };
+  const ins = row => db('email_log', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+  /* אם עמודות הדוח עוד לא נוספו (tools/supabase_email_log2.sql) — שומרים לפחות את הבסיס */
+  return ins(full).catch(() => ins(base)).catch(() => {});
 }
 
 /* מסגרת מייל אחידה בעברית */

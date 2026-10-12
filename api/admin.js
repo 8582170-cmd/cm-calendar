@@ -73,6 +73,17 @@ module.exports = async (req, res) => {
       mail = { providers: require('./_mail').configured(), today: {}, failed: 0, reminders: { active: 0, pending: 0, off: 0 } };
       (logs || []).forEach(l => { if (l.ok) mail.today[l.provider] = (mail.today[l.provider] || 0) + 1; else mail.failed++; });
       (rem || []).forEach(r => { mail.reminders[r.status] = (mail.reminders[r.status] || 0) + 1; });
+      /* דוח: 30 ימים אחרונים לפי יום ושרת, ו-200 המיילים האחרונים */
+      const since = new Date(Date.now() - 30 * 864e5).toISOString();
+      const all = await db('email_log?select=created_at,provider,ok&created_at=gte.' + encodeURIComponent(since) + '&order=created_at.desc&limit=20000');
+      const byDay = {};
+      (all || []).forEach(l => {
+        const d = new Date(l.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+        const o = byDay[d] = byDay[d] || { failed: 0 };
+        if (l.ok) o[l.provider] = (o[l.provider] || 0) + 1; else o.failed++;
+      });
+      mail.byDay = byDay;
+      mail.recent = await db('email_log?select=*&order=created_at.desc&limit=200');
     } catch (e) { mail = null; }
     json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
