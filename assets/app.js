@@ -4,7 +4,9 @@ const $=s=>document.querySelector(s);
 /* ---------- מסלולים ---------- */
 const LP=window.MyLuachPlans;
 let SAMPLE=null; /* הורדת חודש לדוגמה: {key} בזמן ההדפסה */
-const PLAN0=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?LP.current():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
+/* בלי כניסה לחשבון רואים 8 חודשים, ובהורדה מבקשים להיכנס (ההרשמה חינם) */
+const AUTH={user:null,ready:false},LOGIN_MONTHS=8;
+const PLAN0=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?(()=>{const c=LP.current();return c.id==='free'&&AUTH.ready&&!AUTH.user?{...c,months:Math.min(c.months,LOGIN_MONTHS),needLogin:true}:c})():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
 /* לוח ספירה לאחור קצר (עד FREE_CD ימים) פתוח בחינם: בלי סימן מים, ומדפיסים בלי לנצל הורדה */
 const FREE_CD=40;
 function freeCd(){try{return state.s.view==='countdown'&&cdDays().days.length<=FREE_CD}catch(e){return false}}
@@ -2651,7 +2653,7 @@ const LOCK_SVG='<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="t
 function lockedPage(months){
   const c=monthCut(months),rest=months.filter(m=>m.days[0]>=c);
   const p=pageShell('עוד '+rest.length+' חודשים','locked');p.classList.add('locked-page');
-  p.innerHTML='<div class="lock-inner"><div class="lock-ic">'+LOCK_SVG+'</div><h2>עוד '+rest.length+' חודשים מחכים לכם</h2><p>'+rest.map(m=>esc(m.title)).join(' · ')+'</p><p class="lock-sub">במסלול הניסיון רואים את 8 החודשים הראשונים. כל מה שבניתם נשמר, ונפתח מיד עם בחירת מסלול.</p><button class="btn primary no-print" type="button" data-upgrade="months">לפתוח את כל השנה</button></div>';
+  p.innerHTML='<div class="lock-inner"><div class="lock-ic">'+LOCK_SVG+'</div><h2>עוד '+rest.length+' חודשים מחכים לכם</h2><p>'+rest.map(m=>esc(m.title)).join(' · ')+'</p>'+(PLAN().needLogin?'<p class="lock-sub">כדי לראות את כל השנה, נכנסים או נרשמים, בחינם. כל מה שבניתם נשמר.</p><button class="btn primary no-print" type="button" data-login="months">כניסה או הרשמה חינם</button>':'<p class="lock-sub">במסלול הניסיון רואים את 8 החודשים הראשונים. כל מה שבניתם נשמר, ונפתח מיד עם בחירת מסלול.</p><button class="btn primary no-print" type="button" data-upgrade="months">לפתוח את כל השנה</button>')+'</div>';
 }
 function planCards(highlight){
   const cur=PLAN();
@@ -2758,7 +2760,8 @@ async function refreshAccount(){
     if(acctInfo.plan&&rank(acctInfo.plan)>rank(LP.current().id)){LP.setCurrent(acctInfo.plan);syncPlanUI();render()}
   }catch(e){}
 }
-function acctBtn(){const b=$('#acctBtn');if(!b)return;b.textContent=user?'החשבון שלי':'כניסה';b.title=user?user.email:'כניסה או הרשמה עם מייל'}
+function acctBtn(){const b=$('#acctBtn');if(!b)return;const ic='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.2-8 5v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1c0-2.8-3.6-5-8-5Z"/></svg>';
+  b.innerHTML=ic+'<span>'+(user?'החשבון שלי':'כניסה / הרשמה')+'</span>';b.title=user?user.email:'כניסה או הרשמה חינם';b.classList.toggle('in',!!user)}
 function authErr(e){const m=String(e&&e.message||e||'');
   if(/invalid login/i.test(m))return 'המייל או הסיסמה שגויים. אם נרשמתם בעבר עם קישור במייל, לחצו "שכחתי סיסמה" כדי לקבוע סיסמה.';
   if(/already registered|already exists/i.test(m))return 'המייל הזה כבר רשום. נסו להיכנס, או לחצו "שכחתי סיסמה".';
@@ -2838,16 +2841,18 @@ async function onSignedIn(first){
   m.querySelector('#wbKeep').onclick=()=>{m.remove();cloudSave()};
 }
 function acctInit(){
-  const hdr=$('#upgradeBtn');
-  if(hdr&&!$('#acctBtn')){const b=document.createElement('button');b.className='btn acct-btn';b.id='acctBtn';b.type='button';hdr.parentNode.insertBefore(b,hdr);b.onclick=()=>user?accountModal():loginModal()}
+  {const b=$('#acctBtn');if(b)b.onclick=()=>user?accountModal():loginModal()}
   acctBtn();
-  if(!window.supabase||!CFG.supabaseUrl){const b=$('#acctBtn');if(b)b.hidden=true;return}
-  try{sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'myluach-auth'}})}catch(e){return}
+  if(!window.supabase||!CFG.supabaseUrl)return;
+  {const b=$('#acctBtn');if(b)b.hidden=false}
+  AUTH.ready=true;
+  try{sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'myluach-auth'}})}catch(e){AUTH.ready=false;return}
+  syncPlanUI();render();
   let had=false;
   sb.auth.onAuthStateChange((ev,session)=>{
     if(ev==='PASSWORD_RECOVERY')setTimeout(newPasswordModal,300);
     const u=session&&session.user?{id:session.user.id,email:session.user.email}:null;
-    const was=user;user=u;acctBtn();
+    const was=user;user=u;AUTH.user=u;acctBtn();if(!!was!==!!u){syncPlanUI();render()}
     if(u&&(!was||was.id!==u.id))onSignedIn((ev==='SIGNED_IN'||ev==='PASSWORD_RECOVERY')&&!had);
     if(u)had=true;
     if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
@@ -2863,6 +2868,7 @@ function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.set
   fetch('/api/order?id='+o.id).then(r=>r.json()).then(x=>{if(x.status==='paid')activatePlan(x.plan,o.id)}).catch(()=>{})})();
 function doPrint(){
   const P=PLAN();
+  if(AUTH.ready&&!AUTH.user){loginModal('כדי להוריד או להדפיס, נכנסים לחשבון. ההרשמה חינם, וכל מה שבניתם נשמר.');return}
   if(P.freeCd){const m=modal('<h3>להדפיס את לוח הספירה?</h3><p class="hint">לוח ספירה לאחור של עד '+FREE_CD+' ימים מורידים ומדפיסים בחינם. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>ביטול</button></div>');m.querySelector('#dlGo').onclick=()=>{m.remove();setTimeout(()=>window.print(),50)};return}
   if(!P.downloads){openUpgrade('download');return}
   const left=LP.downloadsLeft();
@@ -2876,6 +2882,7 @@ const SAMPLE_KEY='luchenu-sample';
 function sampleUsedBy(){try{return localStorage.getItem(SAMPLE_KEY)||''}catch(e){return ''}}
 function claimSample(email){try{localStorage.setItem(SAMPLE_KEY,email)}catch(e){}return true}
 function openSample(){
+  if(AUTH.ready&&!AUTH.user){loginModal('כדי להוריד חודש לדוגמה, נכנסים לחשבון. ההרשמה חינם.');return}
   const used=sampleUsedBy(),ms=monthsCache.length?monthsCache:buildMonths();
   if(used){modal('<h3>כבר הורדתם חודש לדוגמה</h3><p class="hint">החודש לדוגמה כבר נוצל עם הכתובת '+esc(used)+'. כדי להוריד את כל הלוח, בוחרים מסלול.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>').querySelector('.modal').classList.add('upgrade');return}
   const m=modal('<h3>חודש אחד בחינם, בגרסה המלאה</h3><p class="hint">בוחרים חודש ומורידים אותו עם כל האפשרויות פתוחות, עם סימן מים עדין. אפשר פעם אחת לכל כתובת מייל.</p><label class="fld">איזה חודש<select id="smMonth">'+ms.map(mo=>opt(mo.key,mo.title+' '+mo.year)).join('')+'</select></label><label class="fld">כתובת מייל<input id="smEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" dir="ltr"></label><p class="hint" id="smMsg"></p><div class="row"><button class="btn primary" type="button" id="smGo">להוריד את החודש</button><button class="btn" type="button" data-close>ביטול</button></div>');
@@ -2909,6 +2916,7 @@ document.addEventListener('change',e=>{
 },true);
 document.addEventListener('click',e=>{
   if(e.target.closest('.ins')&&!canF('extraPages')){e.stopImmediatePropagation();e.preventDefault();openUpgrade('extraPages');return}
+  const lg=e.target.closest('[data-login]');if(lg){loginModal('כדי לראות את כל השנה, נכנסים או נרשמים. ההרשמה חינם, וכל מה שבניתם נשמר.');return}
   const u=e.target.closest('[data-upgrade]');if(u){openUpgrade(u.dataset.upgrade);return}
 },true);
 {const z=$('#zmAdv');if(z)z.addEventListener('toggle',()=>{if(z.open&&!canF('advZmanim')){z.open=false;openUpgrade('advZmanim')}})}

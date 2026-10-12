@@ -867,3 +867,11 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 .btn.link-btn{border-color:transparent;background:transparent;text-decoration:underline;padding-inline:6px}
 [data-pane]{display:flex;flex-direction:column;gap:10px}
 [data-pane][hidden]{display:none}
+/* כפתור החשבון: ליד הלוגו, בצבע משלו */
+.acct-pill{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:14.5px;font-weight:700;padding:7px 14px 7px 16px;border-radius:999px;border:1.5px solid #d9a441;background:#fff6e3;color:#6b4400;cursor:pointer;white-space:nowrap}
+.acct-pill:hover{background:#ffeec8}
+.acct-pill.in{border-color:var(--line);background:transparent;color:var(--ink)}
+.acct-pill svg{flex:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .acct-pill:not(.in){background:#3a2d12;color:#f3c873;border-color:#8a6a2a}}
+:root[data-theme="dark"] .acct-pill:not(.in){background:#3a2d12;color:#f3c873;border-color:#8a6a2a}
+@media print{.acct-pill{display:none!important}}
