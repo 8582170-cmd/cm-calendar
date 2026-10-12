@@ -2841,23 +2841,28 @@ async function onSignedIn(first){
   m.querySelector('#wbKeep').onclick=()=>{m.remove();cloudSave()};
 }
 function acctInit(){
-  {const b=$('#acctBtn');if(b)b.onclick=()=>user?accountModal():loginModal()}
+  {const b=$('#acctBtn');if(b){b.hidden=false;b.onclick=()=>user?accountModal():(sb?loginModal():modal('<h3>הכניסה לא זמינה כרגע</h3><p class="hint">לא הצלחנו לטעון את מערכת הכניסה. בדקו את החיבור לאינטרנט ורעננו את הדף.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>'))}}
   acctBtn();
-  if(!window.supabase||!CFG.supabaseUrl)return;
-  {const b=$('#acctBtn');if(b)b.hidden=false}
-  AUTH.ready=true;
-  try{sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'myluach-auth'}})}catch(e){AUTH.ready=false;return}
-  syncPlanUI();render();
-  let had=false;
-  sb.auth.onAuthStateChange((ev,session)=>{
-    if(ev==='PASSWORD_RECOVERY')setTimeout(newPasswordModal,300);
-    const u=session&&session.user?{id:session.user.id,email:session.user.email}:null;
-    const was=user;user=u;AUTH.user=u;acctBtn();if(!!was!==!!u){syncPlanUI();render()}
-    if(u&&(!was||was.id!==u.id))onSignedIn((ev==='SIGNED_IN'||ev==='PASSWORD_RECOVERY')&&!had);
-    if(u)had=true;
-    if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
-  });
-  window.addEventListener('beforeunload',()=>{if(user&&cloudDirty)cloudSave()});
+  if(!CFG.supabaseUrl)return;
+  const start=()=>{
+    if(!window.supabase)return false;
+    AUTH.ready=true;
+    try{sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'myluach-auth'}})}catch(e){AUTH.ready=false;return false}
+    syncPlanUI();render();
+    let had=false;
+    sb.auth.onAuthStateChange((ev,session)=>{
+      if(ev==='PASSWORD_RECOVERY')setTimeout(newPasswordModal,300);
+      const u=session&&session.user?{id:session.user.id,email:session.user.email}:null;
+      const was=user;user=u;AUTH.user=u;acctBtn();if(!!was!==!!u){syncPlanUI();render()}
+      if(u&&(!was||was.id!==u.id))onSignedIn((ev==='SIGNED_IN'||ev==='PASSWORD_RECOVERY')&&!had);
+      if(u)had=true;
+      if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
+    });
+    window.addEventListener('beforeunload',()=>{if(user&&cloudDirty)cloudSave()});
+    if(/^#login\b/.test(window.location.hash)){try{history.replaceState(null,'',window.location.pathname)}catch(e){}setTimeout(()=>{if(!user)loginModal()},600)}
+    return true;
+  };
+  if(!start())loadScript('https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js').then(start).catch(()=>{});
 }
 /* בדיקת ספרת ביקורת של תעודת זהות ישראלית */
 function tzOk(t){t=String(t).padStart(9,'0');if(!/^\d{9}$/.test(t))return false;let s=0;for(let i=0;i<9;i++){let d=+t[i]*(i%2+1);s+=d>9?d-9:d}return s%10===0}

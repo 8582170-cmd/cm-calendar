@@ -68,6 +68,8 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:
 .btn-ghost{background:transparent;color:var(--teal)}
 .btn-ghost:hover{background:var(--teal-soft)}
 .nav .btn{padding:8px 16px}
+.nav-links a.nav-login{border:1.5px solid #d9a441;background:#fff6e3;color:#6b4400;border-radius:999px;padding:6px 14px}
+.nav-links a.nav-login:hover{background:#ffeec8}
 
 /* hero */
 .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:48px;align-items:center;padding-block:28px 64px}
@@ -193,7 +195,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 }
 @media (max-width:620px){
   body{padding-inline:16px}
-  .nav-links a:not(.btn){display:none}
+  .nav-links a:not(.btn):not(.nav-login){display:none}
   .plans,.features,.steps,.who{grid-template-columns:minmax(0,1fr)}
   .grid>div{min-height:48px;padding:2px 3px;font-size:9px}
   .d b{font-size:13px}.z,.d i{display:none}
@@ -214,6 +216,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
       <a href="online/">לוח שנה אונליין</a>
       <a href="#plans">מסלולים</a>
       <a href="#faq">שאלות</a>
+      <a class="nav-login" href="app.html#login">כניסה</a>
       <a class="btn btn-primary" href="app.html">לבנות לוח</a>
     </nav>
   </header>
@@ -325,8 +328,8 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   </footer>
 </div>
 
-<script src="assets/plans.js?v=202610121827"></script>
-<script src="assets/demo-tishrei.js?v=202610121827"></script>
+<script src="assets/plans.js?v=202610121845"></script>
+<script src="assets/demo-tishrei.js?v=202610121845"></script>
 <script>
 (function(){
   'use strict';
