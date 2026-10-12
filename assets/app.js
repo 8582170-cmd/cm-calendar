@@ -1054,8 +1054,9 @@ function askHistOverflow(title,count,pct){
 function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')}
 function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
 /* שורת תחתית: פרטי הזמנים, ומשמאל "נוצר ב־myluach.org". במסלולים בתשלום אפשר להסתיר את השורה. */
-/* השורה "הופק ע"י MyLuach.org" מופיעה בכל הדפסה */
-function creditOn(){return true}
+/* השורה "הופק ע"י MyLuach.org" מופיעה בכל הדפסה. רק במסלול המלא אפשר להסתיר אותה. */
+const creditHideOk=()=>{const P=PLAN();return P.id==='full'&&!P.watermark&&!SAMPLE};
+function creditOn(){return !(creditHideOk()&&state.s.credit===false)}
 function creditHost(){const h=window.location.host;return /^(localhost|127\.|$)/.test(h)||/vercel\.app$/.test(h)?'myluach.org':h.replace(/^www\./,'')}
 function addFootLine(p){
   const s=state.s,z=s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
@@ -2281,7 +2282,7 @@ function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?
   $('#hebYear').value=s.hebYear;$('#gregYear').value=s.gregYear;$('#gregStart').value=s.gregStart;$('#hebStart').value=s.hebStart||7;
   $('#cover').checked=!!s.cover;$('#candleMins').value=s.candleMins;$('#il').checked=!!s.il;
   document.querySelectorAll('[data-opt]').forEach(c=>c.checked=!!s[c.dataset.opt]);
-  {const c=document.querySelector('[data-opt=credit]');if(c){c.checked=creditOn();c.disabled=!!PLAN().watermark;$('#creditHint').textContent=PLAN().watermark?'(בלוח לדוגמה השורה תמיד מופיעה)':''}}
+  {const c=document.querySelector('[data-opt=credit]');if(c){c.checked=creditOn();c.disabled=!creditHideOk();$('#creditHint').textContent=creditHideOk()?'':'(אפשר להסתיר רק במסלול המלא)'}}
   document.querySelectorAll('[data-z]').forEach(c=>c.checked=!!s.zmanim[c.dataset.z]);
   ['m_shma','size'].forEach(k=>$('#'+k).value=s[k]);
   {const M=s.moon||{};document.querySelectorAll('[data-moon]').forEach(c=>c.checked=c.dataset.moon==='molad'?M.molad!==false:!!M[c.dataset.moon]);document.querySelectorAll('[data-moonsel]').forEach(c=>c.value=M[c.dataset.moonsel]||'none');const L=s.learn||{};document.querySelectorAll('[data-learn]').forEach(c=>c.checked=!!L[c.dataset.learn])}
@@ -3029,6 +3030,7 @@ function syncPlanUI(){
   const zs=$('#zmAdv>summary');if(zs)zs.classList.toggle('gated',!canF('advZmanim'));
   const co=$('#size option[value=custom]');if(co)co.textContent='מותאם אישית'+(canF('customSize')?'':' (מסלול מלא)');
   const dv=$('#devPlan');if(dv)dv.value=P.id;
+  {const c=document.querySelector('[data-opt=credit]');if(c){c.checked=creditOn();c.disabled=!creditHideOk();const h=$('#creditHint');if(h)h.textContent=creditHideOk()?'':'(אפשר להסתיר רק במסלול המלא)'}}
 }
 document.addEventListener('change',e=>{
   const t=e.target;let f=null;
