@@ -12,13 +12,64 @@ global.window = global.window || {};
 require('../assets/plans.js');
 const LP = global.window.MyLuachPlans;
 const PLAN_NAMES = Object.fromEntries(LP.PLANS.filter(p => p.price.ils > 0).map(p => [p.id, p.name]));
+const PAID = Object.keys(PLAN_NAMES);
 
-function priceFor(plan) {
-  const p = LP.PLANS.find(x => x.id === plan);
-  if (!p || !(p.price.ils > 0)) return null;
-  const off = p.intro || 0;
-  return Math.round(p.price.ils * (100 - off)) / 100;
+/* הגדרות מדף הניהול (טבלת settings, מפתח 'pricing'). אם אין או שיש תקלה: המחירים שבקובץ. */
+async function loadConfig() {
+  try {
+    const rows = await db('settings?key=eq.pricing&select=value');
+    return (rows && rows[0] && rows[0].value) || {};
+  } catch (e) { console.error('config', e.message); return {}; }
 }
+
+/* היום לפי שעון ישראל, בפורמט YYYY-MM-DD, להשוואה מול תאריכי סיום */
+function today() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }); }
+const live = x => x && (!x.until || today() <= x.until);
+
+const isNum = v => typeof v === 'number' && isFinite(v) && v >= 0;
+/* המחירים, הנחות ההיכרות והמבצע הכללי — מה שמוצג לכולם */
+function publicPricing(cfg) {
+  const plans = {};
+  LP.PLANS.forEach(p => {
+    const o = (cfg.plans || {})[p.id] || {};
+    plans[p.id] = {
+      ils: isNum(o.ils) ? +o.ils : p.price.ils,
+      usd: isNum(o.usd) ? +o.usd : p.price.usd,
+      intro: isNum(o.intro) ? +o.intro : (p.intro || 0)
+    };
+  });
+  const s = cfg.sale;
+  const sale = s && s.on && +s.percent > 0 && live(s) ? { percent: +s.percent, plans: s.plans && s.plans.length ? s.plans : PAID, until: s.until || '', label: s.label || '' } : null;
+  return { plans, sale };
+}
+
+/* קופון בתוקף? מחזיר את הקופון או הודעת שגיאה */
+async function checkCoupon(cfg, code, plan) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) return null;
+  const c = (cfg.coupons || []).find(x => String(x.code || '').toUpperCase() === code);
+  if (!c || !c.on || !(+c.percent > 0)) return { error: 'הקוד לא קיים או לא פעיל' };
+  if (!live(c)) return { error: 'תוקף הקוד הסתיים' };
+  if (c.plans && c.plans.length && c.plans.indexOf(plan) < 0) return { error: 'הקוד לא תקף למסלול הזה' };
+  if (+c.max > 0) {
+    const used = await db('orders?coupon=eq.' + encodeURIComponent(code) + '&status=eq.paid&select=id');
+    if ((used || []).length >= +c.max) return { error: 'הקוד נוצל עד הסוף' };
+  }
+  return { code, percent: +c.percent };
+}
+
+/* המחיר הסופי: ההנחה הגבוהה מבין היכרות, מבצע וקופון (לא מצטברות) */
+function finalPrice(pub, plan, coupon) {
+  const p = pub.plans[plan];
+  if (!p || !(p.ils > 0) || PAID.indexOf(plan) < 0) return null;
+  let off = p.intro || 0, why = off ? 'intro' : '';
+  if (pub.sale && pub.sale.plans.indexOf(plan) >= 0 && pub.sale.percent > off) { off = pub.sale.percent; why = 'sale'; }
+  if (coupon && coupon.percent > off) { off = coupon.percent; why = 'coupon'; }
+  off = Math.min(100, Math.max(0, off));
+  return { amount: Math.round(p.ils * (100 - off)) / 100, base: p.ils, off, why };
+}
+
+function priceFor(plan) { const r = finalPrice(publicPricing({}), plan); return r && r.amount; }
 
 function env(k) { return process.env[k] || ''; }
 
@@ -53,4 +104,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { PLAN_NAMES, priceFor, env, db, readBody, json };
+module.exports = { PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };

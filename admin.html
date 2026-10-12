@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ניהול · MyLuach</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='10' width='52' height='48' rx='8' fill='%231f5c63'/%3E%3Ctext x='32' y='50' font-size='26' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'%3Eא%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<style>
+:root{--paper:#f6f7f4;--sheet:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--teal-soft:#e4eeec;--bad:#b3261e;--ok:#1f7a3a;--warn-bg:#fff4d6;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--sheet:#172024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--bad:#ef8a80;--ok:#7fd49a;--warn-bg:#3a3018;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--sheet:#172024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--bad:#ef8a80;--ok:#7fd49a;--warn-bg:#3a3018;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:980px;margin-inline:auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
+h1{margin:0;font-size:28px}
+h2{margin:0 0 4px;font-size:20px}
+.sub{margin:0 0 12px;color:var(--mute);font-size:14px}
+section{background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:18px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);min-width:0}
+input[type=number]{width:90px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
+input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.btn{font:inherit;font-weight:700;padding:8px 16px;border-radius:9px;border:1.5px solid var(--teal);background:transparent;color:var(--teal);cursor:pointer}
+.btn.primary{background:var(--teal);color:var(--teal-ink)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{text-align:start;font-size:13px;color:var(--mute);font-weight:700;padding:6px;border-bottom:1px solid var(--line)}
+.tbl td{padding:6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.scroll{overflow-x:auto}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.row label{display:flex;gap:6px;align-items:center;font-weight:600}
+.plans{display:inline-flex;gap:10px;flex-wrap:wrap}
+.plans label{font-weight:400;display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+.note{font-size:13px;color:var(--mute)}
+.warn{background:var(--warn-bg);border-radius:10px;padding:10px 14px;font-weight:700}
+.msg{font-weight:700}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.st-paid{color:var(--ok);font-weight:700}.st-failed,.st-underpaid{color:var(--bad);font-weight:700}.st-pending{color:var(--mute)}
+.login{max-width:360px;margin:60px auto;display:flex;flex-direction:column;gap:10px}
+.preview{font-size:14px;color:var(--mute)}
+.bar{position:sticky;bottom:0;background:var(--paper);padding-block:10px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <form class="login" id="login">
+    <h1>ניהול MyLuach</h1>
+    <label>סיסמה<br><input type="password" id="pw" autocomplete="current-password" style="width:100%"></label>
+    <button class="btn primary" type="submit">כניסה</button>
+    <span class="msg bad" id="lmsg"></span>
+  </form>
+</div>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let PW='',D=null,C=null;
+try{PW=sessionStorage.getItem('myluach-admin')||''}catch(e){}
+function api(body){return fetch('/api/admin',{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-admin-password':PW},body:body?JSON.stringify(body):undefined}).then(r=>r.json().then(j=>{if(!r.ok)throw Object.assign(new Error(j.error),{code:r.status,j});return j}))}
+function login(){api().then(d=>{try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}D=d;C=JSON.parse(JSON.stringify(d.config||{}));render()})
+  .catch(e=>{const m=$('#lmsg');if(m)m.textContent=e.code===401?'סיסמה שגויה':e.code===503?'לא הוגדרה סיסמה: צריך להוסיף ב-Vercel את המשתנה ADMIN_PASSWORD (לפחות 8 תווים)':'שגיאה: '+(e.j&&e.j.message||e.message);try{sessionStorage.removeItem('myluach-admin')}catch(x){}})}
+$('#login').onsubmit=e=>{e.preventDefault();PW=$('#pw').value;login()};
+if(PW)login();
+
+const IDS=()=>Object.keys(D.defaults);
+const planChecks=(sel,name)=>'<span class="plans">'+IDS().map(id=>'<label><input type="checkbox" data-pl="'+name+'" value="'+id+'"'+(!sel||!sel.length||sel.indexOf(id)>=0?' checked':'')+'>'+esc(D.defaults[id].name)+'</label>').join('')+'</span>';
+const val=v=>v==null?'':v;
+function render(){
+  C.plans=C.plans||{};C.sale=C.sale||{on:false,percent:20,plans:[],until:'',label:''};C.coupons=C.coupons||[];
+  const eff=D.effective||{plans:{}};
+  app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><button class="btn" type="button" id="out">יציאה</button></div>'+
+  (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
+  '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול.</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th></tr></thead><tbody>'+
+  IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td></tr>'}).join('')+
+  '</tbody></table></div></section>'+
+  '<section><h2>מבצע כללי</h2><p class="sub">הנחה לכולם, עם תאריך סיום. מופיעה באתר ליד המחיר. כשיש כמה הנחות, נקבעת הגבוהה מביניהן (הן לא מצטברות).</p>'+
+  '<div class="row"><label><input type="checkbox" id="sOn"'+(C.sale.on?' checked':'')+'> מבצע פעיל</label><label>הנחה % <input type="number" id="sPct" min="0" max="100" value="'+val(C.sale.percent)+'"></label><label>עד תאריך (כולל) <input type="date" id="sUntil" value="'+esc(C.sale.until)+'"></label></div>'+
+  '<div class="row" style="margin-top:10px"><label>כותרת <input type="text" id="sLabel" maxlength="60" placeholder="למשל: מבצע חנוכה" value="'+esc(C.sale.label)+'" style="width:220px"></label><span>מסלולים: '+planChecks(C.sale.plans,'sale')+'</span></div></section>'+
+  '<section><h2>קופונים</h2><p class="sub">קוד שהלקוח מקליד בחלון התשלום. "מקסימום שימושים" 0 = בלי הגבלה. תאריך ריק = בלי תאריך סיום.</p><div class="scroll"><table class="tbl" id="cpn"><thead><tr><th>פעיל</th><th>קוד</th><th>הנחה %</th><th>מסלולים</th><th>עד תאריך</th><th>מקס׳ שימושים</th><th>נוצל</th><th>הערה</th><th></th></tr></thead><tbody>'+
+  C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
+  '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
+  '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
+  '<section><h2>הזמנות אחרונות</h2><p class="sub">100 האחרונות. "ממתין" = נפתח חלון תשלום ולא שולם.</p><div class="scroll"><table class="tbl"><thead><tr><th>תאריך</th><th>מסלול</th><th>סכום</th><th>מצב</th><th>קופון</th><th>מייל</th><th>מספר</th></tr></thead><tbody>'+
+  (D.orders||[]).map(o=>'<tr><td>'+new Date(o.created_at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</td><td>'+esc(o.plan==='donation'?'תרומה':(D.defaults[o.plan]||{}).name||o.plan)+'</td><td>'+esc(o.amount)+' ₪</td><td class="st-'+esc(o.status)+'">'+({paid:'שולם',pending:'ממתין',failed:'נכשל',underpaid:'שולם חלקית'}[o.status]||esc(o.status))+'</td><td dir="ltr">'+esc(o.coupon||'')+'</td><td dir="ltr">'+esc(o.email||'')+'</td><td dir="ltr">'+esc(o.id.slice(0,8))+'</td></tr>').join('')+
+  '</tbody></table></div></section>';
+  bind();preview();
+}
+function collect(){
+  document.querySelectorAll('tr[data-plan]').forEach(tr=>{const o={};tr.querySelectorAll('input[data-k]').forEach(i=>{o[i.dataset.k]=i.value===''?null:+i.value});C.plans[tr.dataset.plan]=o});
+  const pl=n=>[...document.querySelectorAll('input[data-pl="'+n+'"]')].filter(x=>x.checked).map(x=>x.value);
+  C.sale={on:$('#sOn').checked,percent:+$('#sPct').value||0,until:$('#sUntil').value,label:$('#sLabel').value.trim(),plans:pl('sale')};
+  C.coupons=[...document.querySelectorAll('#cpn tbody tr')].map(tr=>{const i=tr.dataset.i,g=k=>tr.querySelector('[data-k="'+k+'"]');
+    return {on:g('on').checked,code:g('code').value.trim().toUpperCase(),percent:+g('percent').value||0,plans:pl('c'+i),until:g('until').value,max:+g('max').value||0,note:g('note').value.trim()}});
+}
+function preview(){
+  collect();const today=new Date().toISOString().slice(0,10);
+  IDS().forEach(id=>{const d=D.defaults[id],o=C.plans[id]||{},ils=o.ils!=null?o.ils:d.ils,intro=o.intro!=null?o.intro:d.intro;
+    let off=intro,why=intro?'היכרות':'';const s=C.sale;
+    if(s.on&&s.percent>off&&(!s.until||today<=s.until)&&(!s.plans.length||s.plans.indexOf(id)>=0)){off=s.percent;why='מבצע'}
+    const el=document.querySelector('[data-prev="'+id+'"]');if(el)el.textContent=(Math.round(ils*(100-off))/100)+' ₪'+(off?' ('+off+'% '+why+')':'')});
+}
+function bind(){
+  $('#out').onclick=()=>{try{sessionStorage.removeItem('myluach-admin')}catch(e){}location.reload()};
+  app.addEventListener('input',preview);
+  $('#addC').onclick=()=>{collect();C.coupons.push({on:true,code:'',percent:10,plans:[],until:'',max:0,note:''});render();const last=document.querySelector('#cpn tbody tr:last-child [data-k="code"]');if(last)last.focus()};
+  app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח?';return}collect();C.coupons.splice(+b.dataset.del,1);render()});
+  $('#save').onclick=()=>{collect();const m=$('#smsg');
+    const bad=C.coupons.find(c=>!c.code||!(c.percent>0));if(bad){m.className='msg bad';m.textContent='לכל קופון צריך קוד והנחה גדולה מ-0';return}
+    $('#save').disabled=true;m.className='msg';m.textContent='שומר…';
+    api({action:'save',config:C}).then(()=>api()).then(d=>{D=d;C=JSON.parse(JSON.stringify(d.config||{}));render();const mm=$('#smsg');mm.className='msg ok';mm.textContent='נשמר. האתר מתעדכן תוך דקה.'})
+      .catch(e=>{$('#save').disabled=false;m.className='msg bad';m.textContent='השמירה נכשלה: '+(e.j&&e.j.message||e.message)})};
+}
+})();
+</script>
+</body></html>

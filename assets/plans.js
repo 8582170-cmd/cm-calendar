@@ -40,11 +40,33 @@
     downloadsLeft(){ return Math.max(0, this.current().downloads - this.downloadsUsed()) },
     price(p, cur){ const v = p.price[cur]; return v === 0 ? 'חינם' : (cur === 'ils' ? v + ' ₪' : '$' + v) },
     fmt(v, cur){ v = Math.round(v * 10) / 10; return cur === 'ils' ? v + ' ₪' : '$' + v },
-    /* הנחת היכרות: אחוז הנחה ברכישה הראשונה של כל נרשם (נאכף בתשלום, בשלב 4) */
-    introPrice(p, cur){ return p.intro ? this.fmt(p.price[cur] * (100 - p.intro) / 100, cur) : null },
+    /* הנחה פעילה למסלול: הגבוהה מבין הנחת ההיכרות למסלול ומבצע כללי פעיל (ההנחות לא מצטברות). קופון נבדק בשרת, בחלון התשלום. */
+    sale: null,
+    off(p){
+      const intro = p.intro || 0, s = this.sale;
+      const saleOn = s && s.percent > 0 && (!s.plans || s.plans.indexOf(p.id) >= 0) && (!s.until || new Date() <= new Date(s.until + 'T23:59:59'));
+      if(saleOn && s.percent >= intro){
+        const d = s.until ? s.until.split('-').reverse().slice(0, 2).join('.') : '';
+        return { pct: s.percent, label: (s.label || s.percent + '% הנחה') + (d ? ' · עד ' + d : ''), labelEn: s.percent + '% off' + (d ? ' until ' + d : '') };
+      }
+      return intro ? { pct: intro, label: intro + '% הנחה ברכישה הראשונה', labelEn: intro + '% off your first purchase' } : null;
+    },
+    introPrice(p, cur){ const o = this.off(p); return o && p.price[cur] ? this.fmt(p.price[cur] * (100 - o.pct) / 100, cur) : null },
     priceHTML(p, cur, en){ const ip = this.introPrice(p, cur); if(!ip) return this.price(p, cur).replace('חינם', en ? 'Free' : 'חינם');
-      return '<s class="was">' + this.price(p, cur) + '</s> ' + ip + '<span class="intro-tag">' + (en ? p.intro + '% off your first purchase' : p.intro + '% הנחה ברכישה הראשונה') + '</span>' },
+      const o = this.off(p); return '<s class="was">' + this.price(p, cur) + '</s> ' + ip + '<span class="intro-tag">' + (en ? o.labelEn : o.label) + '</span>' },
+    /* המחירים והמבצעים שנקבעו בדף הניהול (מהשרת). עד שהם מגיעים מוצגים המחירים שבקובץ הזה. */
+    applyPricing(d){
+      if(!d || !d.plans) return;
+      PLANS.forEach(p => { const o = d.plans[p.id]; if(!o) return;
+        if(o.ils >= 0) p.price.ils = +o.ils; if(o.usd >= 0) p.price.usd = +o.usd; p.intro = +o.intro || 0; });
+      this.sale = d.sale || null;
+    },
+    ready: null,
     /* מי שמסלול ממנו חסרה יכולת: המסלול הזול ביותר שכולל אותה */
     cheapestWith(feature){ return PLANS.find(p => p.id !== 'free' && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' ? true : p.features[feature])) || PLANS[3] }
   };
+  const LPo = window.MyLuachPlans;
+  LPo.ready = (typeof fetch === 'function' && typeof location !== 'undefined' && /^https?:/.test(location.protocol))
+    ? fetch('/api/pricing').then(r => r.ok ? r.json() : null).then(d => { LPo.applyPricing(d); return d }).catch(() => null)
+    : Promise.resolve(null);
 })();

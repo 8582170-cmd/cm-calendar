@@ -2650,7 +2650,7 @@ function lockedPage(months){
 }
 function planCards(highlight){
   const cur=PLAN();
-  return '<div class="plan-cards">'+LP.PLANS.filter(p=>p.id!=='free').map(p=>'<div class="plan-card'+(p.id===highlight?' hl':'')+(p.id===cur.id?' cur':'')+'"><div class="pc-name">'+esc(p.name)+'</div><div class="pc-price">'+(p.intro?'<s>'+LP.price(p,'ils')+'</s> '+LP.introPrice(p,'ils')+'<small> · '+LP.introPrice(p,'usd')+'</small><div class="intro-tag">'+p.intro+'% הנחה ברכישה הראשונה</div>':LP.price(p,'ils')+'<small> · '+LP.price(p,'usd')+'</small>')+'</div><ul>'+p.bullets.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+(p.id===cur.id?'<div class="pc-cur">המסלול שלכם</div>':'<button class="btn'+(p.id===highlight?' primary':'')+'" type="button" data-pick="'+p.id+'">בחירה</button>')+'</div>').join('')+'</div>';
+  return '<div class="plan-cards">'+LP.PLANS.filter(p=>p.id!=='free').map(p=>'<div class="plan-card'+(p.id===highlight?' hl':'')+(p.id===cur.id?' cur':'')+'"><div class="pc-name">'+esc(p.name)+'</div><div class="pc-price">'+(LP.off(p)?'<s>'+LP.price(p,'ils')+'</s> '+LP.introPrice(p,'ils')+'<small> · '+LP.introPrice(p,'usd')+'</small><div class="intro-tag">'+esc(LP.off(p).label)+'</div>':LP.price(p,'ils')+'<small> · '+LP.price(p,'usd')+'</small>')+'</div><ul>'+p.bullets.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+(p.id===cur.id?'<div class="pc-cur">המסלול שלכם</div>':'<button class="btn'+(p.id===highlight?' primary':'')+'" type="button" data-pick="'+p.id+'">בחירה</button>')+'</div>').join('')+'</div>';
 }
 function openUpgrade(reason){
   if(!LP)return;
@@ -2665,10 +2665,10 @@ function openUpgrade(reason){
 const ORDER_KEY='myluach-order';
 function buyPlan(planId){
   const p=LP.byId(planId);if(!p||p.id==='free')return;
-  const price=p.intro?LP.introPrice(p,'ils'):LP.price(p,'ils');
+  const price=LP.introPrice(p,'ils')||LP.price(p,'ils');
   let saved={};try{saved=JSON.parse(localStorage.getItem('myluach-buyer')||'{}')}catch(e){}
   const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח ומתבצע דרך נדרים פלוס.</p>'+
-    '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label></div>'+
+    '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label><label class="pay-coupon">קוד קופון<span><input type="text" id="payCoupon" dir="ltr" autocomplete="off" spellcheck="false"><button class="btn" type="button" id="payCouponGo">החלה</button></span><small id="payCouponMsg"></small></label></div>'+
     '<p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>'+
     '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>');
   m.querySelector('.modal').classList.add('pay-modal');
@@ -2686,10 +2686,18 @@ function buyPlan(planId){
   $m('#payCancel').onclick=close;
   frame.addEventListener('load',()=>post({Name:'GetHeight'}));
   /* ההזמנה נוצרת מיד, כדי להציג את הסכום שהשרת באמת יחייב (במצב בדיקה: הסכום של הבדיקה) */
-  const setAmt=a=>{const t=a+' ₪';go.textContent='לתשלום '+t;const h=m.querySelector('.hint');if(h)h.innerHTML='<b>סכום החיוב: '+esc(t)+'</b>'+(Number(a)!==parseFloat(price)?' <span class="msg-bad">(מצב בדיקה: המחיר הרגיל הוא '+esc(price)+')</span>':' ללוח שנתי')+'. התשלום מאובטח ומתבצע דרך נדרים פלוס.'};
-  const orderP=fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id})})
-    .then(r=>r.json().then(j=>{if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
-    .then(j=>{order=j;setAmt(j.amount);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j});
+  const setAmt=(a,j)=>{j=j||{};const t=a+' ₪';go.textContent='לתשלום '+t;const h=m.querySelector('.hint');if(!h)return;
+    const exp=j.base!=null?Math.round(j.base*(100-(j.off||0)))/100:parseFloat(price),test=Math.abs(Number(a)-exp)>0.001;
+    h.innerHTML='<b>סכום החיוב: '+esc(t)+'</b>'+(j.off&&!test?' <span class="msg-ok">(במקום '+esc(j.base+' ₪')+', '+j.off+'% הנחה)</span>':'')+(test?' <span class="msg-bad">(מצב בדיקה: המחיר הרגיל הוא '+esc(exp+' ₪')+')</span>':' ללוח שנתי')+'. התשלום מאובטח ומתבצע דרך נדרים פלוס.'};
+  const mkOrder=coupon=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id,coupon:coupon||''})})
+    .then(r=>r.json().then(j=>{if(j.error==='coupon')throw Object.assign(new Error('coupon'),{msg:j.message});if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
+    .then(j=>{order=j;setAmt(j.amount,j);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j});
+  let orderP=mkOrder();
+  $m('#payCouponGo').onclick=()=>{const code=$m('#payCoupon').value.trim(),cm=$m('#payCouponMsg');if(!code){cm.textContent='';return}
+    cm.textContent='בודקים…';cm.className='';
+    const np=mkOrder(code);np.then(j=>{orderP=np;cm.textContent=j.why==='coupon'?'הקוד הופעל: '+j.off+'% הנחה':'הקוד תקין, אבל ההנחה הקיימת גדולה ממנו';cm.className='msg-ok'})
+      .catch(e=>{cm.textContent=e.msg||'לא הצלחנו לבדוק את הקוד, נסו שוב';cm.className='msg-bad'})};
+  $m('#payCoupon').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$m('#payCouponGo').click()}};
   orderP.then(()=>{if(ready)go.disabled=false}).catch(()=>{go.disabled=true;msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
   setTimeout(()=>{if(!ready&&!stop)msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
   go.onclick=()=>{

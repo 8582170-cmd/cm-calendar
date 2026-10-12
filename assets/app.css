@@ -841,3 +841,9 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 .pay-who input{font:inherit;font-weight:400;padding:8px 10px;border:1px solid var(--line,#ccd);border-radius:8px;background:var(--bg,#fff);color:inherit}
 .pay-frame{width:100%;height:300px;border:0;border-radius:10px;background:#fff;transition:height .2s ease}
 @media (max-width:520px){.pay-who{grid-template-columns:minmax(0,1fr)}}
+.pay-coupon{grid-column:1/-1}
+.pay-coupon>span{display:flex;gap:8px}
+.pay-coupon>span input{flex:1;min-width:0;text-transform:uppercase}
+.pay-coupon>span .btn{padding-block:6px}
+.pay-coupon small{font-weight:600;min-height:1em}
+.msg-ok{color:#1f7a3a}

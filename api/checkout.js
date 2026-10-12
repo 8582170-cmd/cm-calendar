@@ -1,7 +1,7 @@
 /* יצירת הזמנה, והחזרת פרטי העסקה לטופס התשלום המוטמע של נדרים פלוס (iframe) */
 'use strict';
 const crypto = require('crypto');
-const { priceFor, PLAN_NAMES, env, db, readBody, json } = require('./_lib');
+const { PLAN_NAMES, loadConfig, publicPricing, checkCoupon, finalPrice, env, db, readBody, json } = require('./_lib');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' });
@@ -9,15 +9,28 @@ module.exports = async (req, res) => {
     const b = readBody(req);
     const plan = String(b.plan || '');
     const isDon = plan === 'donation';
-    /* תרומה: הסכום נבחר על ידי התורם (1–100,000 ₪, עד 2 ספרות אחרי הנקודה) */
-    const amount = isDon ? Math.round(Number(b.amount) * 100) / 100 : priceFor(plan);
-    if (!amount || !(amount >= 1 && amount <= 100000)) return json(res, 400, { error: isDon ? 'bad amount' : 'unknown plan' });
+    let amount, coupon = null, info = null;
+    if (isDon) {
+      /* תרומה: הסכום נבחר על ידי התורם (1–100,000 ₪, עד 2 ספרות אחרי הנקודה) */
+      amount = Math.round(Number(b.amount) * 100) / 100;
+      if (!(amount >= 1 && amount <= 100000)) return json(res, 400, { error: 'bad amount' });
+    } else {
+      const cfg = await loadConfig();
+      if (b.coupon) {
+        coupon = await checkCoupon(cfg, b.coupon, plan);
+        if (coupon && coupon.error) return json(res, 400, { error: 'coupon', message: coupon.error });
+      }
+      info = finalPrice(publicPricing(cfg), plan, coupon);
+      if (!info) return json(res, 400, { error: 'unknown plan' });
+      amount = info.amount;
+      if (!(amount >= 1)) return json(res, 400, { error: 'amount too low' });
+    }
     const mosad = env('NEDARIM_MOSAD'), apiValid = env('NEDARIM_API_VALID');
     if (!mosad || !apiValid) return json(res, 503, { error: 'payments not configured' });
     const email = String(b.email || '').trim().slice(0, 200);
     const id = crypto.randomBytes(12).toString('hex');
     const charge = isDon ? amount : (Number(env('NEDARIM_TEST_AMOUNT')) || amount);
-    await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null }) });
+    await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, coupon: coupon ? coupon.code : null }) });
     const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
     /* כל 19 השדות חייבים להישלח, גם ריקים (לפי התיעוד של נדרים פלוס). שם, טלפון ומייל ממלא הדפדפן. */
     const tx = {
@@ -28,7 +41,7 @@ module.exports = async (req, res) => {
       Param1: id, Param2: plan,
       CallBack: site + '/api/nedarim-callback', CallBackMailError: env('NEDARIM_CALLBACK_MAIL_ERROR')
     };
-    json(res, 200, { id, amount: charge, tx });
+    json(res, 200, { id, amount: charge, tx, base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', coupon: coupon ? coupon.code : null });
   } catch (e) {
     console.error('checkout', e);
     json(res, 500, { error: 'server error' });
