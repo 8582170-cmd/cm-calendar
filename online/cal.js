@@ -19,7 +19,7 @@ const T={
   ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'ב־MyLuach בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
   sunrise:'הנץ',sunset:'שקיעה',candles:'הדלקת נרות',havdalah:'יציאה',parasha:'פרשת השבוע',nextHoliday:'החג הבא',inDays:n=>n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים',
   daysAgo:n=>n===1?'אתמול':'לפני '+n+' ימים',fromToday:'מהיום',addRem:'הוספת תזכורת',note:'הערה ליום הזה',color:'צבע ליום',save:'שמירה',del:'מחיקה',close:'סגירה',
-  showOmer:'ספירת העומר',showTimes:'הדלקה ויציאה',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
+  showOmer:'ספירת העומר',showDz:'זמני היום בלוח',showTimes:'הדלקה ויציאה',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
   convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יום שנה (יארצייט)',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
@@ -29,13 +29,13 @@ const T={
   ctaT:'Want this as a printed calendar?',ctaP:'MyLuach builds a personal Jewish calendar for your family, synagogue or school: photos, family events, zmanim and more.',ctaB:'Build a personal calendar',
   sunrise:'Sunrise',sunset:'Sunset',candles:'Candle lighting',havdalah:'Havdalah',parasha:'Torah portion',nextHoliday:'Next holiday',inDays:n=>n===0?'today':n===1?'tomorrow':'in '+n+' days',
   daysAgo:n=>n===1?'yesterday':n+' days ago',fromToday:'from today',addRem:'Add reminder',note:'Note for this day',color:'Day color',save:'Save',del:'Delete',close:'Close',
-  showOmer:'Omer count',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',
+  showOmer:'Omer count',showDz:'Daily times',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',
   convert:'Date converter',countdown:'Countdown',barmitzvah:'Bar / Bat Mitzvah calculator',days:'Days between dates',yahrzeit:'Yahrzeit calculator',
   weekdays:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Shabbat'],wdShort:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
   gMonths:['January','February','March','April','May','June','July','August','September','October','November','December']}
 };
 const LS={get(k,d){try{const v=localStorage.getItem('lc-'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('lc-'+k,JSON.stringify(v))}catch(e){}}};
-const st=Object.assign({lang:'he',city:'jerusalem',mode:'heb',opts:{omer:true,times:true,parasha:true,modern:true}},LS.get('settings',{}));
+const st=Object.assign({lang:'he',city:'jerusalem',mode:'heb',opts:{omer:false,times:true,parasha:true,modern:false,dz:true}},LS.get('settings',{}));
 if(PAGE.lang)st.lang=PAGE.lang;if(PAGE.city)st.city=PAGE.city;
 const t=k=>(T[st.lang]||T.he)[k];
 const HE=()=>st.lang==='he';
@@ -179,6 +179,24 @@ function shiftMonth(n){
   else anchor=new Date(anchor.getFullYear(),anchor.getMonth()+n,1,12)}
 function shiftYear(n){if(st.mode==='heb'){const hd=new HDate(anchor);let m=hd.getMonth();const y=hd.getFullYear()+n;if(m===13&&!leap(y))m=12;anchor=noon(new HDate(1,m,y).greg())}else anchor=new Date(anchor.getFullYear()+n,anchor.getMonth(),1,12)}
 
+/* שורת זמנים קצרה בכל יום: עלות השחר, חצות, שקיעה */
+const DZ_SHORT={alot:['עה״ש','Dawn'],mish:['משיכיר','Mishey.'],netz:['הנץ','Sunrise'],shmaM:['ק״ש מג״א','Shema MGA'],shmaG:['ק״ש','Shema'],tfilaM:['תפילה מג״א','Tfila MGA'],tfilaG:['תפילה','Tfila'],chatzot:['חצות','Midday'],minG:['מ. גדולה','M. Gedola'],minK:['מ. קטנה','M. Ketana'],plag:['פלג','Plag'],shkia:['שקיעה','Sunset'],tzeit:['צאה״כ','Nightfall'],rt:['ר״ת','R. Tam'],chatzotN:['חצות לילה','Midnight']};
+const DZ_MAX=5,DZ_DEF=['alot','chatzot','shkia'];
+const dzSel=()=>(Array.isArray(st.dzSel)?st.dzSel:DZ_DEF).slice(0,DZ_MAX);
+function dzLine(d){try{const sel=dzSel();if(!sel.length)return '';const Z=zm(d);
+  const parts=sel.map(k=>{const z=Z.find(x=>x.k===k);return z&&z.v?'<span>'+esc(DZ_SHORT[k]?DZ_SHORT[k][HE()?0:1]:z.n)+' '+fmtT(z.v)+'</span>':''}).join('');
+  return parts?'<span class="dz">'+parts+'</span>':''}catch(e){return ''}}
+function dzPicker(){
+  const Z=zm(TODAY),sel=new Set(dzSel());
+  dialog('<h2 id="dlgT">'+(HE()?'אילו זמנים יופיעו בכל יום':'Which times to show each day')+'</h2><p class="mute small">'+(HE()?'אפשר לבחור עד '+DZ_MAX+' זמנים. הזמנים מחושבים לפי העיר והשיטה שבחרתם.':'Choose up to '+DZ_MAX+'. Times follow your city and method.')+'</p>'+
+    '<div class="dzp">'+Z.map(z=>'<label class="chk"><input type="checkbox" value="'+z.k+'"'+(sel.has(z.k)?' checked':'')+'> '+esc(z.n)+' <span class="mute small">'+fmtT(z.v)+'</span></label>').join('')+'</div>'+
+    '<p class="small" id="dzMsg"></p><div class="row" style="margin-top:10px"><button class="btn pri" type="button" id="dzOk">'+t('save')+'</button><button class="btn" type="button" id="dzDef">'+(HE()?'ברירת מחדל':'Default')+'</button></div>');
+  const box=$('.dzp'),msg=$('#dzMsg');
+  const upd=()=>{const ch=[...box.querySelectorAll('input:checked')];box.querySelectorAll('input:not(:checked)').forEach(i=>i.disabled=ch.length>=DZ_MAX);msg.textContent=(HE()?'נבחרו ':'Selected ')+ch.length+' / '+DZ_MAX};
+  box.onchange=upd;upd();
+  $('#dzOk').onclick=()=>{st.dzSel=[...box.querySelectorAll('input:checked')].map(i=>i.value);st.opts.dz=st.dzSel.length>0;saveSt();closeDlg();render()};
+  $('#dzDef').onclick=()=>{st.dzSel=DZ_DEF.slice();st.opts.dz=true;saveSt();closeDlg();render()};
+}
 function viewMonth(){
   const M=monthDays(),ev=events(addD(M.days[0],-1),M.days[M.days.length-1]);
   const lead=M.days[0].getDay();
@@ -191,7 +209,8 @@ function viewMonth(){
       '<span class="dn"><b>'+main+'</b><i>'+sec+'</i></span>'+
       items.map(x=>'<span class="ev '+x.cls+'">'+esc(x.txt)+'</span>').join('')+
       remsOn(d).map(r=>'<span class="ev rem">'+esc(r.name)+'</span>').join('')+
-      (note.text?'<span class="ev note">'+esc(note.text)+'</span>':'')+'</button>';
+      (note.text?'<span class="ev note">'+esc(note.text)+'</span>':'')+
+      (st.opts.dz?dzLine(d):'')+'</button>';
   }
   const tot=lead+M.days.length;for(let i=tot;i<Math.ceil(tot/7)*7;i++)g+='<div class="day pad"></div>';
   g+='</div>';
@@ -202,7 +221,7 @@ function viewMonth(){
     '<span class="nav-arrows"><button class="btn" type="button" data-sh="-12" title="'+t('prevYear')+'">«</button><button class="btn" type="button" data-sh="-1" title="'+t('prev')+'">'+(HE()?'→':'←')+'</button><button class="btn" type="button" id="tdy">'+t('today')+'</button><button class="btn" type="button" data-sh="1" title="'+t('next')+'">'+(HE()?'←':'→')+'</button><button class="btn" type="button" data-sh="12" title="'+t('nextYear')+'">»</button></span>'+
     '<details class="jump-d"><summary class="btn">'+t('jump')+'</summary><div class="jump" style="margin-top:6px">'+jumpH+jumpG+'</div></details>'+
     '<a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
-    '<div class="opts no-print">'+[['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'</div>'+
+    '<div class="opts no-print">'+[['dz','showDz'],['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'<button type="button" class="linkbtn2" id="dzPick">⚙ '+(HE()?'בחירת זמנים':'Choose times')+'</button></div>'+
     '<section class="month"><div class="mhead"><h1 class="sr">'+esc(pageH1())+'</h1><h2>'+esc(M.title)+'</h2><span class="mute">'+esc(M.other)+'</span></div>'+g+'</section>'+seoBlock();
   const jd=$('#jD');if(jd)jd.value=String(hdA.getDate());
 }
@@ -429,7 +448,7 @@ function render(){
   renderSide();renderFoot();
   if(!PAGE.static)document.title=(view==='month'?monthDays().title+' · ':t(view)+' · ')+t('siteName');
 }
-function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm})}
+function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm,dzSel:st.dzSel})}
 
 /* ---------- אירועים בממשק ---------- */
 document.addEventListener('click',e=>{
@@ -446,6 +465,7 @@ document.addEventListener('click',e=>{
   const gt=T2.closest('[data-goto]');if(gt){anchor=fromIso(gt.dataset.goto);go('month',anchor);return}
   const re=T2.closest('[data-redit]');if(re){e.preventDefault();remEditor(re.dataset.redit);return}
   if(T2.id==='tdy'){anchor=TODAY;render();return}
+  if(T2.id==='dzPick'){dzPicker();return}
   if(T2.id==='remNew'){remEditor(null);return}
   if(T2.id==='remIcs'){remIcs();return}
   if(T2.id==='jGoG'){const v=$('#jG').value;if(v){anchor=fromIso(v);render();dayDialog(anchor)}return}
