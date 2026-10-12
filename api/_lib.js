@@ -24,7 +24,8 @@ async function db(path, opts = {}) {
   if (!url || !key) throw new Error('missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
   const r = await fetch(url + '/rest/v1/' + path, {
     ...opts,
-    headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'return=representation', ...(opts.headers || {}) }
+    /* מפתח מהסוג החדש (sb_secret_...) עובר רק בכותרת apikey; מפתח JWT ישן עובר גם כ-Bearer */
+    headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }), 'Content-Type': 'application/json', Prefer: 'return=representation', ...(opts.headers || {}) }
   });
   const txt = await r.text();
   if (!r.ok) throw new Error('db ' + r.status + ' ' + txt.slice(0, 300));
