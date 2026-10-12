@@ -2677,7 +2677,7 @@ function buyPlan(planId){
   let order=null,stop=false,ready=false;
   const post=d=>frame.contentWindow&&frame.contentWindow.postMessage(d,'*');
   const onMsg=e=>{if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
-    if(d.Name==='Height'){ready=true;frame.style.height=(parseInt(d.Value,10)+15)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
+    if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
     else if(d.Name==='TransactionResponse'){const v=d.Value||{};
       if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);msg(esc(v.Message||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1)}
       else{go.remove();frame.style.display='none';msg('התשלום התקבל. מאשרים מול השרת…');waitPaid()}}};
