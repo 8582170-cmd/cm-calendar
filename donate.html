@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>תרומה · MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='10' width='52' height='48' rx='8' fill='%231f5c63'/%3E%3Crect x='6' y='10' width='52' height='14' rx='6' fill='%23143f46'/%3E%3Ctext x='32' y='50' font-size='26' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'%3Eא%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@900&display=swap">
+<style>
+:root{--paper:#f6f7f4;--sheet:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--teal-soft:#e4eeec;--bad:#b3261e;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--sheet:#172024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--bad:#ef8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--sheet:#172024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--bad:#ef8a80;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:560px;margin-inline:auto;padding-bottom:48px}
+a{color:var(--teal)}
+.nav{display:flex;justify-content:space-between;align-items:center;padding-block:20px}
+.logo{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:26px;color:var(--ink);text-decoration:none;display:inline-flex;gap:10px;align-items:center;direction:ltr}
+.logo i{font-style:normal;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--teal);color:var(--teal-ink);font-size:20px}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:14px}
+h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:34px;line-height:1.15;margin:0}
+.lead{margin:0;color:var(--mute)}
+.amts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.amts button{font:inherit;font-weight:800;font-size:19px;padding:12px 6px;border-radius:10px;border:1.5px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.amts button[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft);color:var(--teal)}
+.other{display:flex;align-items:center;gap:8px}
+.other input{flex:1}
+label{display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:700}
+input{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);min-width:0}
+input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.who{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.who .full{grid-column:1/-1}
+.frame{width:100%;height:430px;border:0;border-radius:10px;background:#fff}
+.msg{margin:0;font-size:15px;color:var(--mute)}
+.msg.bad{color:var(--bad);font-weight:700}
+.go{font:inherit;font-weight:800;font-size:18px;padding:13px;border-radius:10px;border:0;background:var(--teal);color:var(--teal-ink);cursor:pointer}
+.go:disabled{opacity:.5;cursor:default}
+.done{text-align:center;padding-block:20px}
+.done b{display:block;font-family:"Frank Ruhl Libre",serif;font-size:30px;margin-bottom:6px}
+.fine{font-size:13px;color:var(--mute);margin:0}
+@media (max-width:460px){.who{grid-template-columns:minmax(0,1fr)}.amts button{font-size:17px}}
+</style>
+</head>
+<body><div class="wrap">
+<header class="nav"><a class="logo" href="./"><i aria-hidden="true">א</i>MyLuach</a></header>
+<main class="card" id="card">
+  <h1>תרומה</h1>
+  <p class="lead">בוחרים סכום, ממלאים פרטים ותורמים. התשלום מאובטח ומתבצע דרך נדרים פלוס.</p>
+  <div class="amts" role="group" aria-label="סכום התרומה" id="amts"></div>
+  <label>סכום אחר (₪)<span class="other"><input type="number" id="amt" min="1" max="100000" step="1" inputmode="decimal" dir="ltr" placeholder="למשל 50"></span></label>
+  <div class="who">
+    <label class="full">שם מלא<input type="text" id="name" autocomplete="name"></label>
+    <label>מייל (לקבלה)<input type="email" id="mail" autocomplete="email" dir="ltr"></label>
+    <label>טלפון<input type="tel" id="phone" autocomplete="tel" dir="ltr"></label>
+    <label class="full">תעודת זהות של בעל הכרטיס<input type="text" id="zeout" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label>
+    <label class="full">הקדשה או הערה (לא חובה)<input type="text" id="note" maxlength="120"></label>
+  </div>
+  <p class="msg" id="msg">טוען טופס תשלום מאובטח…</p>
+  <iframe class="frame" id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>
+  <button class="go" type="button" id="go" disabled>לתרומה</button>
+  <p class="fine">הקבלה נשלחת מנדרים פלוס לכתובת המייל שמילאתם.</p>
+</main>
+</div>
+<script>
+(function(){
+  'use strict';
+  const $=s=>document.querySelector(s);
+  const PRESETS=[18,36,52,100,180,360];
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let amount=0,ready=false,busy=false,orderId=null;
+  const frame=$('#frame'),go=$('#go');
+  const msg=(t,bad)=>{const m=$('#msg');m.innerHTML=t;m.classList.toggle('bad',!!bad)};
+  const fmt=a=>(Math.round(a*100)/100)+' ₪';
+  function setAmt(a,fromPreset){amount=a>0?Math.round(a*100)/100:0;
+    document.querySelectorAll('#amts button').forEach(b=>b.setAttribute('aria-pressed',String(fromPreset&&+b.dataset.v===amount)));
+    if(fromPreset)$('#amt').value='';
+    go.textContent=amount?'לתרומה של '+fmt(amount):'לתרומה';go.disabled=!ready||!amount}
+  $('#amts').innerHTML=PRESETS.map(v=>'<button type="button" data-v="'+v+'" aria-pressed="false">'+v+' ₪</button>').join('');
+  $('#amts').onclick=e=>{const b=e.target.closest('button');if(b)setAmt(+b.dataset.v,true)};
+  $('#amt').oninput=e=>setAmt(parseFloat(e.target.value)||0,false);
+  const q=new URLSearchParams(location.search);if(+q.get('amount')>0){$('#amt').value=q.get('amount');setAmt(+q.get('amount'),false)}
+  try{const s=JSON.parse(localStorage.getItem('myluach-buyer')||'{}');if(s.name)$('#name').value=s.name;if(s.mail)$('#mail').value=s.mail;if(s.phone)$('#phone').value=s.phone}catch(e){}
+  const post=d=>frame.contentWindow&&frame.contentWindow.postMessage(d,'*');
+  frame.addEventListener('load',()=>post({Name:'GetHeight'}));
+  setTimeout(()=>{if(!ready)msg('טופס התשלום לא נטען. נסו לרענן את הדף.',1)},12000);
+  function tzOk(t){t=String(t).padStart(9,'0');if(!/^\d{9}$/.test(t))return false;let s=0;for(let i=0;i<9;i++){const d=+t[i]*(i%2+1);s+=d>9?d-9:d}return s%10===0}
+  window.addEventListener('message',e=>{
+    if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
+    if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';msg('בוחרים סכום, ממלאים את פרטי הכרטיס ולוחצים על כפתור התרומה.');setAmt(amount,false)}
+    else if(d.Name==='TransactionResponse'){busy=false;const v=d.Value||{};
+      if(v.Status==='Error'){const em=String(v.Message||'');setAmt(amount,false);msg(/zeout/i.test(em)?'נא למלא את מספר תעודת הזהות של בעל הכרטיס.':esc(em||'התרומה לא עברה. בדקו את הפרטים ונסו שוב.'),1)}
+      else{$('#card').innerHTML='<div class="done"><b>תודה רבה!</b>התרומה של '+fmt(amount)+' התקבלה.'+(orderId?'<br><span class="fine">מספר אסמכתא: '+orderId.slice(0,8)+'</span>':'')+'<p><a href="./">חזרה לאתר</a></p></div>'}}
+  });
+  go.onclick=()=>{
+    if(busy)return;
+    const name=$('#name').value.trim(),mail=$('#mail').value.trim(),phone=$('#phone').value.trim(),zeout=$('#zeout').value.replace(/\D/g,''),note=$('#note').value.trim();
+    if(!(amount>=1))return msg('נא לבחור סכום של 1 ₪ לפחות.',1);
+    if(name.split(/\s+/).length<2){$('#name').focus();return msg('נא למלא שם פרטי ושם משפחה.',1)}
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){$('#mail').focus();return msg('נא למלא כתובת מייל תקינה.',1)}
+    if(!tzOk(zeout)){$('#zeout').focus();return msg('נא למלא מספר תעודת זהות תקין של בעל הכרטיס (9 ספרות).',1)}
+    try{localStorage.setItem('myluach-buyer',JSON.stringify({name,mail,phone}))}catch(e){}
+    busy=true;go.disabled=true;go.textContent='מעבד…';msg('מעבד את התרומה…');
+    fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:'donation',amount,email:mail})})
+      .then(r=>r.json().then(j=>{if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
+      .then(j=>{orderId=j.id;post({Name:'FinishTransaction2',Value:{...j.tx,Zeout:zeout,FirstName:name,LastName:'',Phone:phone,Mail:mail,Comment:(note?note+' · ':'')+j.tx.Comment}})})
+      .catch(()=>{busy=false;setAmt(amount,false);msg('התרומה באתר עדיין לא פעילה. נסו שוב בקרוב.',1)});
+  };
+})();
+</script>
+</body></html>
