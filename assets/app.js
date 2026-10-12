@@ -2677,14 +2677,20 @@ function buyPlan(planId){
   let order=null,stop=false,ready=false;
   const post=d=>frame.contentWindow&&frame.contentWindow.postMessage(d,'*');
   const onMsg=e=>{if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
-    if(d.Name==='Height'){ready=true;frame.style.height=(parseInt(d.Value,10)+15)+'px';go.disabled=false;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
+    if(d.Name==='Height'){ready=true;frame.style.height=(parseInt(d.Value,10)+15)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
     else if(d.Name==='TransactionResponse'){const v=d.Value||{};
-      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+price;msg(esc(v.Message||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1)}
+      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);msg(esc(v.Message||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1)}
       else{go.remove();frame.style.display='none';msg('התשלום התקבל. מאשרים מול השרת…');waitPaid()}}};
   window.addEventListener('message',onMsg);
   const close=()=>{stop=true;window.removeEventListener('message',onMsg);m.remove()};
   $m('#payCancel').onclick=close;
   frame.addEventListener('load',()=>post({Name:'GetHeight'}));
+  /* ההזמנה נוצרת מיד, כדי להציג את הסכום שהשרת באמת יחייב (במצב בדיקה: הסכום של הבדיקה) */
+  const setAmt=a=>{const t=a+' ₪';go.textContent='לתשלום '+t;const h=m.querySelector('.hint');if(h)h.innerHTML='<b>סכום החיוב: '+esc(t)+'</b>'+(Number(a)!==parseFloat(price)?' <span class="msg-bad">(מצב בדיקה: המחיר הרגיל הוא '+esc(price)+')</span>':' ללוח שנתי')+'. התשלום מאובטח ומתבצע דרך נדרים פלוס.'};
+  const orderP=fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id})})
+    .then(r=>r.json().then(j=>{if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
+    .then(j=>{order=j;setAmt(j.amount);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j});
+  orderP.then(()=>{if(ready)go.disabled=false}).catch(()=>{go.disabled=true;msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
   setTimeout(()=>{if(!ready&&!stop)msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
   go.onclick=()=>{
     const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim();
@@ -2693,11 +2699,7 @@ function buyPlan(planId){
     try{localStorage.setItem('myluach-buyer',JSON.stringify({name,mail,phone}))}catch(e){}
     go.disabled=true;go.textContent='מעבד תשלום…';msg('מעבד תשלום…');
     const send=o=>post({Name:'FinishTransaction2',Value:{...o.tx,FirstName:name,LastName:'',Phone:phone,Mail:mail}});
-    if(order){send(order);return}
-    fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id,email:mail})})
-     .then(r=>r.json().then(j=>{if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
-     .then(j=>{order=j;try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}send(j)})
-     .catch(()=>{go.disabled=false;go.textContent='לתשלום '+price;msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
+    orderP.then(o=>{if(!ready){go.disabled=false;go.textContent='לתשלום '+o.amount+' ₪';msg('טופס התשלום עדיין נטען, נסו שוב בעוד רגע.',1);return}send(o)}).catch(()=>{});
   };
   function waitPaid(){const t0=Date.now();
     (function poll(){if(stop||!order)return;
