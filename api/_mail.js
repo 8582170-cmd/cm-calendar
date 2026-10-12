@@ -28,9 +28,11 @@ async function viaMailjet(m) {
   return 'mailjet';
 }
 
-async function sendMail(m, kind) {
+const PROVIDERS = { resend: viaResend, brevo: viaBrevo, mailjet: viaMailjet };
+/* only: לשלוח דרך ספק אחד בלבד (לבדיקה מדף הניהול) */
+async function sendMail(m, kind, only) {
   const errs = [];
-  for (const fn of [viaResend, viaBrevo, viaMailjet]) {
+  for (const fn of only ? [PROVIDERS[only]].filter(Boolean) : [viaResend, viaBrevo, viaMailjet]) {
     try { const used = await fn(m); if (used) { logMail(used, kind, true); return used; } }
     catch (e) { errs.push(e.message); logMail(fn.name.replace('via', '').toLowerCase(), kind, false); }
   }
@@ -51,4 +53,7 @@ function frame({ title, body, button, url, foot }) {
 }
 const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-module.exports = { sendMail, frame, escH };
+function configured() {
+  return { resend: !!env('RESEND_API_KEY'), brevo: !!env('BREVO_API_KEY'), mailjet: !!(env('MAILJET_API_KEY') && env('MAILJET_SECRET_KEY')) };
+}
+module.exports = { sendMail, frame, escH, configured };

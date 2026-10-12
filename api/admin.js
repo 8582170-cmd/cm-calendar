@@ -47,6 +47,17 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
     }
+    if (req.method === 'POST' && b.action === 'mailtest') {
+      const { sendMail, frame, configured } = require('./_mail');
+      const to = String(b.to || '').trim(), prov = String(b.provider || '');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return json(res, 400, { error: 'כתובת מייל לא תקינה' });
+      if (!configured()[prov]) return json(res, 400, { error: 'הספק ' + prov + ' לא מוגדר ב-Vercel' });
+      try {
+        await sendMail({ to, subject: 'בדיקת שליחה דרך ' + prov, text: 'מייל בדיקה מ-MyLuach דרך ' + prov,
+          html: frame({ title: 'בדיקת שליחה', body: 'המייל הזה נשלח דרך <b>' + prov + '</b>. אם קיבלתם אותו, הספק עובד.' }) }, 'test', prov);
+        return json(res, 200, { ok: true });
+      } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); }
+    }
     const cfg = await loadConfig();
     const orders = await db('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at&order=created_at.desc&limit=100');
     const uses = {};
@@ -59,7 +70,7 @@ module.exports = async (req, res) => {
       const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
       const logs = await db('email_log?select=provider,kind,ok&created_at=gte.' + day + 'T00:00:00%2B03:00&limit=5000');
       const rem = await db('reminders?select=status&limit=20000');
-      mail = { today: {}, failed: 0, reminders: { active: 0, pending: 0, off: 0 } };
+      mail = { providers: require('./_mail').configured(), today: {}, failed: 0, reminders: { active: 0, pending: 0, off: 0 } };
       (logs || []).forEach(l => { if (l.ok) mail.today[l.provider] = (mail.today[l.provider] || 0) + 1; else mail.failed++; });
       (rem || []).forEach(r => { mail.reminders[r.status] = (mail.reminders[r.status] || 0) + 1; });
     } catch (e) { mail = null; }
