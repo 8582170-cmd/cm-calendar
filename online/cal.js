@@ -134,6 +134,10 @@ function events(a,b){
     else if(f&flags.PARSHA_HASHAVUA)cls='par';
     else if(f&flags.OMER_COUNT){cls='omer';txt=txt.replace(/^היום /,'')}
     else if(f&(flags.CHAG|flags.MAJOR_FAST))cls='chag';
+    else if(f&flags.ROSH_CHODESH)cls='rc';
+    else if(f&flags.MINOR_FAST)cls='fast';
+    else if(f&(flags.MINOR_HOLIDAY|flags.SPECIAL_SHABBAT))cls='minor';
+    else if(f&flags.MODERN_HOLIDAY)cls='modern';
     if(!map.has(k))map.set(k,[]);map.get(k).push({txt,cls,chag:!!(f&flags.CHAG),f,ev});
   }
   evCache.set(key,map);if(evCache.size>40)evCache.delete(evCache.keys().next().value);return map;
