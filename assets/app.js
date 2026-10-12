@@ -189,7 +189,7 @@ function idbSet(k,v){return new Promise(res=>{if(!db)return res(false);try{const
 let saveT=null;
 function save(){
   $('#saveState').textContent='שומר…';clearTimeout(saveT);
-  saveT=setTimeout(async()=>{const ok=await idbSet('state',state);$('#saveState').textContent=ok?'נשמר בדפדפן הזה':'לא ניתן לשמור בדפדפן הזה. השתמשו ב"שמירת גיבוי".'},400);
+  saveT=setTimeout(async()=>{const ok=await idbSet('state',state);$('#saveState').textContent=ok?'נשמר בדפדפן הזה':'לא ניתן לשמור בדפדפן הזה. השתמשו ב"שמירת גיבוי".';cloudQueue()},400);
 }
 
 let framed=false;try{framed=window.self!==window.top}catch(e){framed=true}
@@ -2689,7 +2689,7 @@ function buyPlan(planId){
   const setAmt=(a,j)=>{j=j||{};const t=a+' ₪';go.textContent='לתשלום '+t;const h=m.querySelector('.hint');if(!h)return;
     const exp=j.base!=null?Math.round(j.base*(100-(j.off||0)))/100:parseFloat(price),test=Math.abs(Number(a)-exp)>0.001;
     h.innerHTML='<b>סכום החיוב: '+esc(t)+'</b>'+(j.off&&!test?' <span class="msg-ok">(במקום '+esc(j.base+' ₪')+', '+j.off+'% הנחה)</span>':'')+(test?' <span class="msg-bad">(מצב בדיקה: המחיר הרגיל הוא '+esc(exp+' ₪')+')</span>':' ללוח שנתי')+'. התשלום מאובטח ומתבצע דרך נדרים פלוס.'};
-  const mkOrder=coupon=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.id,coupon:coupon||''})})
+  const mkOrder=coupon=>authHeaders().then(h=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({plan:p.id,coupon:coupon||''})}))
     .then(r=>r.json().then(j=>{if(j.error==='coupon')throw Object.assign(new Error('coupon'),{msg:j.message});if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
     .then(j=>{order=j;setAmt(j.amount,j);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j});
   let orderP=mkOrder();
@@ -2717,6 +2717,104 @@ function buyPlan(planId){
         if(Date.now()-t0>90000){msg('התשלום התקבל, אבל האישור מהשרת מתעכב. המסלול ייפתח לבד בכניסה הבאה. אם לא, פנו אלינו עם מספר ההזמנה '+order.id.slice(0,8)+'.');setTimeout(poll,15000);return}
         setTimeout(poll,2500)}).catch(()=>setTimeout(poll,5000))})();
   }
+}
+
+/* ---------- חשבון: כניסה עם קישור במייל, הלוחות נשמרים בחשבון, המסלול לפי הרכישות ---------- */
+const CFG=window.MYLUACH_CFG||{};
+let sb=null,user=null,cloudT=null,cloudBusy=false,cloudDirty=false,acctInfo=null;
+const cloudPath=id=>user.id+'/'+id+'.json',INDEX=()=>user.id+'/index.json';
+function authHeaders(){if(!sb)return Promise.resolve({});return sb.auth.getSession().then(r=>{const t=r.data&&r.data.session&&r.data.session.access_token;return t?{Authorization:'Bearer '+t}:{}}).catch(()=>({}))}
+function calTitle(){const s=state.s;return s.calName||((s.calType==='greg'?'לוח '+(s.gregYear||''):'לוח '+(s.hebYear?gemYear(s.hebYear):''))).trim()}
+function gemYear(y){try{return new HDate(1,7,y).renderGematriya().split(' ').pop()}catch(e){return String(y)}}
+async function readIndex(){try{const {data}=await sb.storage.from('calendars').download(INDEX());return data?JSON.parse(await data.text()):{}}catch(e){return {}}}
+async function writeIndex(ix){await sb.storage.from('calendars').upload(INDEX(),new Blob([JSON.stringify(ix)],{type:'application/json'}),{upsert:true,contentType:'application/json'})}
+function cloudQueue(){if(!user)return;cloudDirty=true;clearTimeout(cloudT);cloudT=setTimeout(cloudSave,6000)}
+async function cloudSave(){
+  if(!user||cloudBusy)return;cloudBusy=true;cloudDirty=false;
+  try{
+    if(!state.s.cloudId){state.s.cloudId=(crypto.randomUUID?crypto.randomUUID():'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8));await idbSet('state',state)}
+    const id=state.s.cloudId,body=JSON.stringify(state);
+    const {error}=await sb.storage.from('calendars').upload(cloudPath(id),new Blob([body],{type:'application/json'}),{upsert:true,contentType:'application/json'});
+    if(error)throw error;
+    const ix=await readIndex();ix[id]={name:calTitle(),updated:new Date().toISOString(),size:body.length};await writeIndex(ix);
+    const el=$('#saveState');if(el)el.textContent='נשמר בחשבון ובדפדפן הזה';
+  }catch(e){console.warn('cloud save',e);const el=$('#saveState');if(el)el.textContent='נשמר בדפדפן הזה (השמירה בחשבון נכשלה, ננסה שוב)';cloudDirty=true}
+  cloudBusy=false;if(cloudDirty){clearTimeout(cloudT);cloudT=setTimeout(cloudSave,15000)}
+}
+async function cloudOpen(id){
+  const {data,error}=await sb.storage.from('calendars').download(cloudPath(id));if(error||!data)throw error||new Error('no data');
+  state=merge(DEFAULT,JSON.parse(await data.text()));state.s.cloudId=id;monthsCache=buildMonths();await idbSet('state',state);syncUI();applyMode();render();
+}
+async function cloudDelete(id){await sb.storage.from('calendars').remove([cloudPath(id)]);const ix=await readIndex();delete ix[id];await writeIndex(ix);if(state.s.cloudId===id){delete state.s.cloudId;save()}}
+async function refreshAccount(){
+  let claim=[];try{const o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null');if(o&&o.id)claim=[o.id]}catch(e){}
+  try{const h=await authHeaders();const r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({claim})});if(!r.ok)return;acctInfo=await r.json();
+    const rank=id=>LP.PLANS.findIndex(p=>p.id===id);
+    if(acctInfo.plan&&rank(acctInfo.plan)>rank(LP.current().id)){LP.setCurrent(acctInfo.plan);syncPlanUI();render()}
+  }catch(e){}
+}
+function acctBtn(){const b=$('#acctBtn');if(!b)return;b.textContent=user?'החשבון שלי':'כניסה';b.title=user?user.email:'כניסה או הרשמה עם מייל'}
+function loginModal(note){
+  const m=modal('<h3>כניסה ל־MyLuach</h3><p class="hint">'+(note?esc(note)+' ':'')+'מקלידים מייל ומקבלים קישור כניסה. בלי סיסמה. אם אין לכם חשבון, הוא נפתח אוטומטית.</p>'+
+    '<label class="fld">מייל<input type="email" id="lgMail" autocomplete="email" dir="ltr"></label><p class="hint" id="lgMsg"></p>'+
+    '<div class="row"><button class="btn primary" type="button" id="lgGo">שלחו לי קישור כניסה</button><button class="btn" type="button" data-close>ביטול</button></div>'+
+    '<p class="hint small">הלוח שבניתם כאן יישמר בחשבון אחרי הכניסה, ותוכלו לפתוח אותו מכל מכשיר.</p>');
+  try{const b=JSON.parse(localStorage.getItem('myluach-buyer')||'{}');if(b.mail)m.querySelector('#lgMail').value=b.mail}catch(e){}
+  const go=m.querySelector('#lgGo'),msg=(t,bad)=>{const x=m.querySelector('#lgMsg');x.innerHTML=t;x.className='hint'+(bad?' msg-bad':'')};
+  const send=()=>{const mail=m.querySelector('#lgMail').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail))return msg('נא למלא כתובת מייל תקינה.',1);
+    if(!sb)return msg('הכניסה לא זמינה כרגע. נסו לרענן את הדף.',1);
+    go.disabled=true;msg('שולחים…');
+    sb.auth.signInWithOtp({email:mail,options:{emailRedirectTo:window.location.origin+window.location.pathname}}).then(({error})=>{
+      if(error){go.disabled=false;msg(/rate|limit|seconds/i.test(error.message)?'נשלחו יותר מדי מיילים. נסו שוב בעוד כמה דקות.':'השליחה נכשלה: '+esc(error.message),1);return}
+      msg('<b>נשלח!</b> פתחו את המייל מ־MyLuach ולחצו על הקישור. אם הוא לא מגיע תוך דקה, בדקו בתיקיית הספאם.');go.textContent='שליחה חוזרת';go.disabled=false});
+  };
+  go.onclick=send;m.querySelector('#lgMail').onkeydown=e=>{if(e.key==='Enter')send()};setTimeout(()=>m.querySelector('#lgMail').focus(),50);
+}
+async function accountModal(){
+  const m=modal('<h3>החשבון שלי</h3><p class="hint" dir="auto">'+esc(user.email)+'</p><div id="acBody"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" id="acOut">יציאה מהחשבון</button><button class="btn" type="button" data-close>סגירה</button></div>');
+  m.querySelector('.modal').classList.add('acct-modal');
+  m.querySelector('#acOut').onclick=async()=>{if(cloudDirty)await cloudSave();await sb.auth.signOut();m.remove()};
+  const ix=await readIndex(),ids=Object.keys(ix).sort((a,b)=>(ix[b].updated||'').localeCompare(ix[a].updated||''));
+  const plan=acctInfo&&acctInfo.plan?LP.byId(acctInfo.plan).name:null;
+  const body=m.querySelector('#acBody');if(!body)return;
+  body.innerHTML='<p><b>מסלול:</b> '+(plan?esc(plan):'ניסיון (לא נמצאה רכישה בחשבון)')+'</p>'+
+    '<h4 class="ac-h">הלוחות שלי</h4>'+(ids.length?'<ul class="ac-list">'+ids.map(id=>'<li'+(id===state.s.cloudId?' class="cur"':'')+'><span><b>'+esc(ix[id].name||'לוח')+'</b><small>'+(id===state.s.cloudId?'פתוח עכשיו · ':'')+'עודכן '+new Date(ix[id].updated).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</small></span>'+(id===state.s.cloudId?'':'<button class="btn" type="button" data-open="'+id+'">פתיחה</button>')+'<button class="btn danger-ghost" type="button" data-delc="'+id+'">מחיקה</button></li>').join('')+'</ul>':'<p class="hint">עוד אין לוחות שמורים בחשבון.</p>')+
+    '<div class="row"><button class="btn" type="button" id="acSaveNew">'+(state.s.cloudId&&ix[state.s.cloudId]?'לשמור עותק כלוח נפרד':'לשמור את הלוח הנוכחי בחשבון')+'</button><button class="btn" type="button" id="acNew">לוח חדש ריק</button></div>'+
+    '<label class="fld">שם הלוח הנוכחי<input type="text" id="acName" maxlength="60" value="'+esc(state.s.calName||'')+'" placeholder="'+esc(calTitle())+'"></label>';
+  body.querySelector('#acName').onchange=e=>{state.s.calName=e.target.value.trim();save()};
+  body.querySelector('#acSaveNew').onclick=async()=>{if(state.s.cloudId&&ix[state.s.cloudId]){delete state.s.cloudId;state.s.calName=(state.s.calName||calTitle())+' (עותק)'}await cloudSave();m.remove();accountModal()};
+  body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
+  body.addEventListener('click',async e=>{
+    const o=e.target.closest('[data-open]');if(o){o.disabled=true;o.textContent='פותח…';if(cloudDirty)await cloudSave();try{await cloudOpen(o.dataset.open);m.remove()}catch(err){o.textContent='שגיאה';}return}
+    const d=e.target.closest('[data-delc]');if(d){if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}d.disabled=true;await cloudDelete(d.dataset.delc);m.remove();accountModal()}
+  });
+}
+async function onSignedIn(first){
+  acctBtn();await refreshAccount();
+  if(!first)return;
+  const ix=await readIndex(),ids=Object.keys(ix);
+  if(state.s.cloudId&&ix[state.s.cloudId]){cloudQueue();return}
+  if(!ids.length){cloudSave();return}
+  /* יש לוחות בחשבון ולוח לא שמור בדפדפן: שואלים */
+  const m=modal('<h3>ברוכים השבים!</h3><p class="hint">בחשבון שלכם יש '+ids.length+' לוחות שמורים. לפתוח אחד מהם, או לשמור בחשבון גם את הלוח שפתוח עכשיו?</p><div class="row"><button class="btn primary" type="button" id="wbList">ללוחות שלי</button><button class="btn" type="button" id="wbKeep">לשמור גם את הלוח הנוכחי</button></div>');
+  m.querySelector('#wbList').onclick=()=>{m.remove();accountModal()};
+  m.querySelector('#wbKeep').onclick=()=>{m.remove();cloudSave()};
+}
+function acctInit(){
+  const hdr=$('#upgradeBtn');
+  if(hdr&&!$('#acctBtn')){const b=document.createElement('button');b.className='btn acct-btn';b.id='acctBtn';b.type='button';hdr.parentNode.insertBefore(b,hdr);b.onclick=()=>user?accountModal():loginModal()}
+  acctBtn();
+  if(!window.supabase||!CFG.supabaseUrl){const b=$('#acctBtn');if(b)b.hidden=true;return}
+  try{sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'myluach-auth'}})}catch(e){return}
+  let had=false;
+  sb.auth.onAuthStateChange((ev,session)=>{
+    const u=session&&session.user?{id:session.user.id,email:session.user.email}:null;
+    const was=user;user=u;acctBtn();
+    if(u&&(!was||was.id!==u.id))onSignedIn(ev==='SIGNED_IN'&&!had);
+    if(u)had=true;
+    if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
+  });
+  window.addEventListener('beforeunload',()=>{if(user&&cloudDirty)cloudSave()});
 }
 /* בדיקת ספרת ביקורת של תעודת זהות ישראלית */
 function tzOk(t){t=String(t).padStart(9,'0');if(!/^\d{9}$/.test(t))return false;let s=0;for(let i=0;i<9;i++){let d=+t[i]*(i%2+1);s+=d>9?d-9:d}return s%10===0}
@@ -3078,5 +3176,6 @@ syncPlanUI();
      s.uiMode='wizard';s.step=1;save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   syncUI();applyMode();render();fillLums();
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+  acctInit();
 })();
 })();

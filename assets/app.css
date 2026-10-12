@@ -847,3 +847,17 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 .pay-coupon>span .btn{padding-block:6px}
 .pay-coupon small{font-weight:600;min-height:1em}
 .msg-ok{color:#1f7a3a}
+/* חשבון */
+.acct-btn{white-space:nowrap}
+.fld{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:14px}
+.fld input{font:inherit;font-weight:400;padding:8px 10px;border:1px solid var(--line,#ccd);border-radius:8px;background:var(--bg,#fff);color:inherit}
+.hint.small{font-size:12.5px}
+.modal.acct-modal{max-width:560px}
+.ac-h{margin:6px 0 0;font-size:15px}
+.ac-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ac-list li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line,#dde);border-radius:10px}
+.ac-list li.cur{border-color:var(--accent,#1e5a63)}
+.ac-list li>span{flex:1;display:flex;flex-direction:column;min-width:0}
+.ac-list small{color:var(--mute,#667);font-size:12.5px}
+.ac-list .btn{padding:5px 10px;font-size:13.5px}
+.btn.danger-ghost{color:var(--danger,#b3261e);border-color:transparent;background:transparent}

@@ -1,7 +1,7 @@
 /* יצירת הזמנה, והחזרת פרטי העסקה לטופס התשלום המוטמע של נדרים פלוס (iframe) */
 'use strict';
 const crypto = require('crypto');
-const { PLAN_NAMES, loadConfig, publicPricing, checkCoupon, finalPrice, env, db, readBody, json } = require('./_lib');
+const { getUser, PLAN_NAMES, loadConfig, publicPricing, checkCoupon, finalPrice, env, db, readBody, json } = require('./_lib');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' });
@@ -27,10 +27,11 @@ module.exports = async (req, res) => {
     }
     const mosad = env('NEDARIM_MOSAD'), apiValid = env('NEDARIM_API_VALID');
     if (!mosad || !apiValid) return json(res, 503, { error: 'payments not configured' });
-    const email = String(b.email || '').trim().slice(0, 200);
+    const user = await getUser(req);
+    const email = (String(b.email || '').trim() || (user ? user.email : '')).toLowerCase().slice(0, 200);
     const id = crypto.randomBytes(12).toString('hex');
     const charge = isDon ? amount : (Number(env('NEDARIM_TEST_AMOUNT')) || amount);
-    await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, coupon: coupon ? coupon.code : null }) });
+    await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: coupon ? coupon.code : null }) });
     const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
     /* כל 19 השדות חייבים להישלח, גם ריקים (לפי התיעוד של נדרים פלוס). שם, טלפון ומייל ממלא הדפדפן. */
     const tx = {

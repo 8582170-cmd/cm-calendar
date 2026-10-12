@@ -97,6 +97,20 @@ function readBody(req) {
   return { ...(req.query || {}), ...(b && typeof b === 'object' ? b : {}) };
 }
 
+/* המשתמש המחובר, לפי אסימון הכניסה שהדפדפן שולח (Authorization: Bearer ...). אין אסימון או לא תקף: null */
+async function getUser(req) {
+  const h = String(req.headers.authorization || req.headers.Authorization || '');
+  const token = h.startsWith('Bearer ') ? h.slice(7).trim() : '';
+  if (!token) return null;
+  const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');
+  try {
+    const r = await fetch(url + '/auth/v1/user', { headers: { apikey: key, Authorization: 'Bearer ' + token } });
+    if (!r.ok) return null;
+    const u = await r.json();
+    return u && u.id ? { id: u.id, email: String(u.email || '').toLowerCase() } : null;
+  } catch (e) { return null; }
+}
+
 function json(res, code, obj) {
   res.statusCode = code;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -104,4 +118,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
+module.exports = { getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
