@@ -7,16 +7,17 @@
    NEDARIM_CALLBACK_IPS                    — אופציונלי: רשימת כתובות IP מותרות לקריאה החוזרת, מופרדות בפסיק
    SITE_URL                                — אופציונלי, ברירת מחדל https://www.myluach.org */
 'use strict';
-/* המחירים בשקלים. חייבים להתאים ל-assets/plans.js (המחיר שהלקוח רואה). */
-const PRICES = { basic: 19, family: 49, full: 99 };
-const INTRO = { family: 50 };            // אחוז הנחה ברכישה הראשונה
-const PLAN_NAMES = { basic: 'בסיסי', family: 'משפחתי', full: 'מלא' };
+/* המחירים נקראים מאותו קובץ שהאתר מציג (assets/plans.js), כך שיש מקור אחד בלבד למחירים ולמבצעים. */
+global.window = global.window || {};
+require('../assets/plans.js');
+const LP = global.window.MyLuachPlans;
+const PLAN_NAMES = Object.fromEntries(LP.PLANS.filter(p => p.price.ils > 0).map(p => [p.id, p.name]));
 
 function priceFor(plan) {
-  const p = PRICES[plan];
-  if (!p) return null;
-  const off = INTRO[plan] || 0;
-  return Math.round(p * (100 - off)) / 100;
+  const p = LP.PLANS.find(x => x.id === plan);
+  if (!p || !(p.price.ils > 0)) return null;
+  const off = p.intro || 0;
+  return Math.round(p.price.ils * (100 - off)) / 100;
 }
 
 function env(k) { return process.env[k] || ''; }
@@ -52,4 +53,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { PRICES, INTRO, PLAN_NAMES, priceFor, env, db, readBody, json };
+module.exports = { PLAN_NAMES, priceFor, env, db, readBody, json };
