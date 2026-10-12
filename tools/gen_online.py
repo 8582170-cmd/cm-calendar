@@ -5,7 +5,7 @@
 import json, os, re, pathlib, html
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ON = ROOT / 'online'
-SITE = os.environ.get('SITE', 'https://cm-calendar.vercel.app').rstrip('/')
+SITE = os.environ.get('SITE', 'https://www.myluach.org').rstrip('/')
 TPL = (ON / 'index.html').read_text(encoding='utf-8')
 CITIES = json.loads(re.search(r'window\.LC_CITIES=(\[.*\]);', (ON / 'cities.js').read_text(encoding='utf-8')).group(1))
 
