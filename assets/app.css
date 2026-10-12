@@ -457,7 +457,8 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 
 /* ---------- מסלולים ---------- */
 .brand-link{color:inherit;text-decoration:none}
-.plan-badge{font-size:13px;color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--panel);white-space:nowrap}
+.acct-box{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.plan-badge{font-size:12.5px;color:var(--mute);white-space:nowrap;padding-inline:6px;cursor:default;user-select:none}
 .plan-badge span{color:var(--ink);font-weight:700}
 .upgrade-btn{border-color:var(--accent);color:var(--accent);font-weight:700}
 .gated{position:relative;opacity:.72}
