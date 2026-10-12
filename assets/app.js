@@ -2069,7 +2069,7 @@ function openImageOrganizer(){
   const m=modal('<h3>סידור תמונות<small>כאן רואים איזו תמונה תופיע בכל עמוד, ואפשר להוסיף תמונות ולשנות את הסדר.</small></h3>'+
     '<div class="hint"><ol><li>לחצו "הוספת תמונות" ובחרו כמה תמונות ביחד. הן ייכנסו לפי הסדר למקומות הריקים.</li><li>כדי לשנות סדר: גררו תמונה על תמונה אחרת והן יתחלפו, או השתמשו בחצים.</li><li>לחצו "שמירה" כדי להחיל על הלוח.</li></ol></div>'+
     (keys.length?'':'<p class="msg-bad">בפריסה הנוכחית אין מקומות לתמונה. בחרו פריסה "תמונה ולוח" או "עמוד לתמונה", או סמנו עמוד שער.</p>')+
-    '<div class="row"><button class="btn" type="button" id="oAdd">הוספת תמונות</button><button class="btn small danger" type="button" id="oClear">ריקון הכל</button></div>'+
+    '<div class="row"><button class="btn" type="button" id="oAdd">הוספת תמונות</button>'+(CFG.googleClientId?'<button class="btn gphotos-btn" type="button" id="oGP">מ־Google Photos</button>':'')+'<button class="btn small danger" type="button" id="oClear">ריקון הכל</button></div>'+
     '<p class="hint" id="oMsg" aria-live="polite"></p><div class="org" id="oGrid"></div>'+
     '<div class="row"><button class="btn primary" type="button" id="oSave">שמירה</button><button class="btn" type="button" data-close>ביטול</button></div>');
   m.querySelector('.modal').classList.add('wide');
@@ -2099,6 +2099,11 @@ function openImageOrganizer(){
     const left=files.length-i;
     q('#oMsg').innerHTML=left>0?'<span class="msg-bad">'+left+' תמונות לא נכנסו כי אין עוד מקומות ריקים. אפשר להסיר תמונה ולהוסיף שוב.</span>':'<span class="msg-ok">נוספו '+i+' תמונות. אפשר לשנות את הסדר ואז לשמור.</span>';
   };f.click()};
+  if(q('#oGP'))q('#oGP').onclick=async()=>{const b=q('#oGP');b.disabled=true;const say=t=>{q('#oMsg').textContent=t};
+    try{const blobs=await pickGooglePhotos(say);let i=0;for(let j=0;j<arr.length&&i<blobs.length;j++){if(!arr[j]){arr[j]={img:await compress(blobs[i++])};draw()}}
+      const left=blobs.length-i;q('#oMsg').innerHTML=!blobs.length?'<span class="msg-bad">לא נבחרו תמונות.</span>':left>0?'<span class="msg-bad">'+left+' תמונות לא נכנסו כי אין עוד מקומות ריקים.</span>':'<span class="msg-ok">נוספו '+i+' תמונות מ־Google Photos. אפשר לשנות את הסדר ואז לשמור.</span>'}
+    catch(e){q('#oMsg').innerHTML='<span class="msg-bad">לא הצלחנו להביא תמונות מ־Google Photos'+(/popup|closed/i.test(e.message)?' (החלון נסגר או נחסם)':'')+'. אפשר לנסות שוב, או להוריד את התמונות למחשב ולהשתמש ב"הוספת תמונות".</span>'}
+    b.disabled=false};
   q('#oClear').onclick=()=>{arr=arr.map(()=>null);draw()};
   q('#oSave').onclick=()=>{
     keys.forEach((k,i)=>{const v=arr[i]||{img:null};const o={img:v.img,fit:v.fit,pos:v.pos,px:v.px,zoom:v.zoom,edit:v.edit||null};
@@ -2863,10 +2868,50 @@ function acctInit(){
       if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
     });
     window.addEventListener('beforeunload',()=>{if(user&&cloudDirty)cloudSave()});
+    setTimeout(()=>{if(!user)oneTap()},4000);
     if(/^#login\b/.test(window.location.hash)){try{history.replaceState(null,'',window.location.pathname)}catch(e){}setTimeout(()=>{if(!user)loginModal()},600)}
     return true;
   };
   if(!start())loadScript('https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js').then(start).catch(()=>{});
+}
+
+/* ---------- גוגל: כניסה בלחיצה אחת (One Tap) ובחירת תמונות מ-Google Photos ---------- */
+let gisP=null;
+function loadGIS(){if(window.google&&google.accounts)return Promise.resolve();if(!gisP)gisP=loadScript('https://accounts.google.com/gsi/client').catch(e=>{gisP=null;throw e});return gisP}
+async function sha256hex(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function oneTap(){
+  if(!CFG.googleClientId||!sb||user)return;
+  try{if(sessionStorage.getItem('myluach-onetap-off'))return}catch(e){}
+  try{await loadGIS()}catch(e){return}
+  const raw=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2))+Date.now(),hashed=await sha256hex(raw);
+  google.accounts.id.initialize({client_id:CFG.googleClientId,nonce:hashed,auto_select:false,cancel_on_tap_outside:true,use_fedcm_for_prompt:true,context:'signin',itp_support:true,
+    callback:async r=>{const {error}=await sb.auth.signInWithIdToken({provider:'google',token:r.credential,nonce:raw});if(error)console.warn('one tap',error.message)}});
+  google.accounts.id.prompt(n=>{try{if(n&&n.isDismissedMoment&&n.isDismissedMoment())sessionStorage.setItem('myluach-onetap-off','1')}catch(e){}});
+}
+/* בחירת תמונות מ-Google Photos (Photos Picker API). מחזיר רשימת Blob של תמונות. */
+async function pickGooglePhotos(onMsg){
+  if(!CFG.googleClientId)throw new Error('לא הוגדר חיבור לגוגל');
+  await loadGIS();
+  const token=await new Promise((ok,no)=>{const tc=google.accounts.oauth2.initTokenClient({client_id:CFG.googleClientId,scope:'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+    callback:r=>r&&r.access_token?ok(r.access_token):no(new Error(r&&r.error||'no token')),error_callback:e=>no(new Error(e&&e.type||'popup'))});tc.requestAccessToken()});
+  const H={Authorization:'Bearer '+token};
+  const ses=await fetch('https://photospicker.googleapis.com/v1/sessions',{method:'POST',headers:{...H,'Content-Type':'application/json'},body:'{}'}).then(r=>{if(!r.ok)throw new Error('session '+r.status);return r.json()});
+  const w=window.open(ses.pickerUri+'/autoclose','gphotos','width=1000,height=760');
+  onMsg&&onMsg('בוחרים תמונות בחלון של Google Photos ולוחצים "סיום" (Done)…');
+  const iv=Math.max(2000,parseFloat((ses.pollingConfig||{}).pollInterval||'3')*1000);const t0=Date.now();
+  let done=false;
+  while(!done){await new Promise(r=>setTimeout(r,iv));
+    const st=await fetch('https://photospicker.googleapis.com/v1/sessions/'+ses.id,{headers:H}).then(r=>r.json());
+    done=!!st.mediaItemsSet;if(!done&&Date.now()-t0>15*60000)throw new Error('timeout')}
+  onMsg&&onMsg('מורידים את התמונות שבחרתם…');
+  let items=[],page='';
+  do{const r=await fetch('https://photospicker.googleapis.com/v1/mediaItems?sessionId='+ses.id+'&pageSize=100'+(page?'&pageToken='+page:''),{headers:H}).then(r=>r.json());items=items.concat(r.mediaItems||[]);page=r.nextPageToken||''}while(page);
+  const blobs=[];
+  for(const it of items){const f=it.mediaFile||{};if(it.type&&it.type!=='PHOTO')continue;if(!f.baseUrl)continue;
+    try{const b=await fetch(f.baseUrl+'=w2400-h2400',{headers:H}).then(r=>{if(!r.ok)throw 0;return r.blob()});blobs.push(b);onMsg&&onMsg('הורדו '+blobs.length+' מתוך '+items.length+'…')}catch(e){}}
+  fetch('https://photospicker.googleapis.com/v1/sessions/'+ses.id,{method:'DELETE',headers:H}).catch(()=>{});
+  try{if(w&&!w.closed)w.close()}catch(e){}
+  return blobs;
 }
 /* בדיקת ספרת ביקורת של תעודת זהות ישראלית */
 function tzOk(t){t=String(t).padStart(9,'0');if(!/^\d{9}$/.test(t))return false;let s=0;for(let i=0;i<9;i++){let d=+t[i]*(i%2+1);s+=d>9?d-9:d}return s%10===0}
