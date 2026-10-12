@@ -5,5 +5,5 @@ window.MYLUACH_CFG = {
   /* מזהה הלקוח של גוגל (לא סודי): לכניסה בלחיצה אחת ולבחירת תמונות מ-Google Photos */
   googleClientId: '815305508927-mg878efh7p9q7m1f4bvsq8l26v4dv4lv.apps.googleusercontent.com',
   /* מפתח API של גוגל לבחירת תמונות מהדרייב (מפתח לדפדפן, מוגבל לאתר). ריק = הכפתור לא מוצג */
-  googleApiKey: ''
+  googleApiKey: 'AIzaSyCIl7TBS1Zp1HR-IczKUUhezpAHeBqUCqA'
 };
