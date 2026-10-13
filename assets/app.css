@@ -889,3 +889,63 @@ body.cd-app .cdonly{display:inline}
 body.cd-app .nocd{display:none!important}
 body.cd-app #secType .sec-body>:not(#cdRow){display:none!important}
 body.cd-app #sampleBtn{display:none!important}
+
+/* ---------- דף הספירה לאחור: לוח הבחירות ---------- */
+.cd-sec{display:flex;flex-direction:column;gap:7px;padding-block:8px 10px;border-bottom:1px solid var(--line)}
+.cd-sec:last-child{border-bottom:0}
+.cd-sec h4{margin:0;font-size:14px;color:var(--ink)}
+.cd-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.cd-card{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px 7px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg,#fff);color:var(--ink);cursor:pointer;font:inherit;text-align:center;min-width:0}
+.cd-card:hover{border-color:var(--accent)}
+.cd-card.on{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.cd-card .nm{font-weight:700;font-size:12.5px;line-height:1.2}
+.cd-card small{font-size:10.5px;color:var(--mute);line-height:1.25}
+.cd-card .sw{position:relative;width:100%;aspect-ratio:4/3;border-radius:7px;background:var(--sw-bg);border:1px solid color-mix(in srgb,var(--sw-2) 45%,transparent);display:grid;place-items:center;overflow:hidden}
+.cd-card .sw::before{content:"";position:absolute;inset:auto -10% -30% auto;width:60%;aspect-ratio:1;border-radius:50%;background:var(--sw-2);opacity:.35}
+.cd-card .sw b{position:relative;font-size:26px;color:var(--sw-acc);line-height:1}
+.cd-card .sw i{position:absolute;top:3px;inset-inline-start:5px;font-style:normal;font-size:12px}
+.cd-cards.lay{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}
+.cd-cards.lay svg{width:34px;height:34px;fill:none;stroke:var(--accent);stroke-width:1.6}
+.cd-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.cd-slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
+.cd-slot .nm{font-weight:700;font-size:12.5px}
+.cd-slot small{font-size:10.5px;color:var(--mute);line-height:1.25}
+.cd-slot-b{width:100%;aspect-ratio:1;border:1.5px dashed var(--line);border-radius:10px;background:var(--bg,#fff);cursor:pointer;display:grid;place-items:center;overflow:hidden;padding:0}
+.cd-slot-b:hover{border-color:var(--accent)}
+.cd-slot-b .plus{font-size:26px;color:var(--accent);font-weight:300}
+.cd-slot-b img{width:100%;height:100%;object-fit:cover}
+.cd-slot.has .cd-slot-b{border-style:solid}
+.cd-slot-x{position:absolute;top:-6px;inset-inline-end:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#b3261e;color:#fff;font-size:14px;line-height:22px;cursor:pointer;padding:0}
+.cd-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.cd-chips .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip-n{display:inline-flex;align-items:center;gap:4px;font-size:13px}
+.chip-n input{width:54px;padding:3px 6px}
+#cdBgOp{width:100%}
+@media (max-width:420px){.cd-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* הדגשה בתצוגה אחרי שינוי */
+@keyframes cdFlash{0%{box-shadow:0 0 0 0 rgba(31,92,99,.0)}25%{box-shadow:0 0 0 6px rgba(31,92,99,.55)}100%{box-shadow:0 0 0 0 rgba(31,92,99,0)}}
+.cd-flash{animation:cdFlash 1.6s ease-out}
+.cd-toast{position:fixed;bottom:84px;white-space:nowrap;left:50%;transform:translate(-50%,140%);z-index:60;border:0;border-radius:24px;padding:11px 20px;background:#1f5c63;color:#fff;font:inherit;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer;transition:transform .25s}
+.cd-toast.on{transform:translate(-50%,0)}
+@media print{.cd-toast{display:none}}
+
+/* דף פתיחה ודף סיום */
+.cd-introp{justify-content:center}
+.cdi-in{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*4);text-align:center;padding:calc(var(--u)*8)}
+.cdi-im{max-width:78%;max-height:48%;object-fit:cover;border-radius:calc(var(--u)*3);border:calc(var(--u)*1.2) solid #fff;box-shadow:0 calc(var(--u)*1) calc(var(--u)*4) rgba(0,0,0,.18)}
+.cdi-title{font-family:var(--cd-f,var(--f-head));font-size:calc(var(--u)*14*var(--ts,1));font-weight:700;color:var(--acc);line-height:1.15}
+.cdi-big{display:flex;align-items:baseline;gap:calc(var(--u)*3);color:var(--acc)}
+.cdi-big b{font-family:var(--cd-nf,var(--f-head));font-size:calc(var(--u)*40*var(--ts,1));line-height:1}
+.cdi-big span{font-size:calc(var(--u)*10*var(--ts,1));font-weight:700}
+.cdi-sub{font-size:calc(var(--u)*6*var(--ts,1));color:#555}
+.cdi-txt{font-size:calc(var(--u)*8*var(--ts,1));font-weight:600;color:#333;max-width:80%}
+.cdi-goal{font-size:calc(var(--u)*50);line-height:1}
+.cd-page.has-bg .cdi-in{background:rgba(255,255,255,.72);border-radius:calc(var(--u)*4);margin:calc(var(--u)*8)}
+
+/* עיצובים נוספים */
+.cd-page .cd-frame{position:absolute;inset:calc(var(--u)*4);border:calc(var(--u)*.8) solid #b8954a;outline:calc(var(--u)*.3) solid #b8954a;outline-offset:calc(var(--u)*-2.2);z-index:0;pointer-events:none}
+.cdst-elegant{background:#fbf8f1}
+.cdst-nature{background:#f6faf3}
+.cd-page .cd-waves{position:absolute;inset:auto 0 0 0;height:12%;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 0,transparent 62%,#bfe6ea 63%) 0 0/16% 60% repeat-x,linear-gradient(transparent 30%,#d6eff2 30%);opacity:.8}
+.cdst-trip{background:#f7fcfc}

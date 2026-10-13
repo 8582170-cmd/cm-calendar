@@ -1074,8 +1074,13 @@ const CD_STYLES={
   barmitzvah:{n:'בר מצווה: כחול וזהב, פסי טלית',goal:'✡',acc:'#1f3a5f',font:'Suez One',num:'Suez One'},
   batmitzvah:{n:'בת מצווה: ורוד וזהב, פרחים',goal:'🌸',acc:'#b8487a',font:'Secular One',num:'Secular One'},
   kids:{n:'ילדים: צבעוני ושמח',goal:'🎈',acc:'#e0663a',font:'Playpen Sans Hebrew',num:'Rubik Bubbles'},
-  baby:{n:'לידה ותינוק: תכלת רך, עננים',goal:'👶',acc:'#5b8db8',font:'Playpen Sans Hebrew',num:'Playpen Sans Hebrew'}
+  baby:{n:'לידה ותינוק: תכלת רך, עננים',goal:'👶',acc:'#5b8db8',font:'Playpen Sans Hebrew',num:'Playpen Sans Hebrew'},
+  elegant:{n:'אלגנטי: שחור וזהב',goal:'✨',acc:'#2a2622',font:'Frank Ruhl Libre',num:'Bellefair'},
+  nature:{n:'טבע: ירוק ועלים',goal:'🌿',acc:'#3f7a4f',font:'Assistant',num:'Secular One'},
+  trip:{n:'טיול וחופשה: טורקיז וים',goal:'✈️',acc:'#1d8a96',font:'Varela Round',num:'Rubik Bubbles'}
 };
+/* תיאור קצר לכרטיסי הבחירה: שם, וצבעי רקע לדוגמה */
+const CD_SW={classic:['#fff','#a3462b'],bride:['#fbf1f2','#c9a45c'],barmitzvah:['#eef3f9','#c9a45c'],batmitzvah:['#fdf0f5','#d8a94a'],kids:['#fff7e6','#e0663a'],baby:['#eef5fb','#9cc3e6'],elegant:['#f7f3ea','#b8954a'],nature:['#f0f6ee','#8db87a'],trip:['#e9f7f8','#f0b45a']};
 /* קישוטים מקוריים לכל סגנון (SVG), ממוקמים בפינות העמוד */
 function cdOrnaments(st){
   const flower=(c1,c2)=>'<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M8 8 C 60 20, 90 60, 100 120 S 150 180, 195 192" fill="none" stroke="'+c2+'" stroke-width="2.2"/><path d="M8 8 C 40 50, 30 90, 60 130" fill="none" stroke="'+c2+'" stroke-width="1.6"/>'+
@@ -1089,6 +1094,9 @@ function cdOrnaments(st){
     case 'barmitzvah':return '<div class="cd-stripes top"></div><div class="cd-stripes bot"></div><div class="cd-star s1">'+star('#c9a45c')+'</div><div class="cd-star s2">'+star('#c9a45c')+'</div>';
     case 'kids':return '<div class="cd-confetti"></div>';
     case 'baby':return '<div class="cd-cloud c1">'+cloud('#dbe9f6')+'</div><div class="cd-cloud c2">'+cloud('#e7f0f9')+'</div><div class="cd-cloud c3">'+cloud('#dbe9f6')+'</div>';
+    case 'elegant':return '<div class="cd-frame"></div>';
+    case 'nature':return '<div class="cd-orn tl">'+flower('#b9d8a8','#6a9a5b')+'</div><div class="cd-orn br">'+flower('#b9d8a8','#6a9a5b')+'</div>';
+    case 'trip':return '<div class="cd-waves"></div><div class="cd-cloud c1">'+cloud('#d6eff2')+'</div><div class="cd-cloud c2">'+cloud('#e3f4f6')+'</div>';
     default:return '';
   }
 }
@@ -1174,9 +1182,27 @@ function cdScrollH(){const {days}=cdDays();const months=new Set(days.map(d=>stat
 function cdSetup(p,ST,s){p.classList.add('cd-page','cdst-'+(s.cdStyle||'classic'));if(cdImg('bg')){p.insertAdjacentHTML('beforeend','<img class="cd-bgimg" alt="" src="'+cdImg('bg')+'" style="opacity:'+(+s.cdBgOp||0.25)+'">');p.classList.add('has-bg')}if(ST.acc)p.style.setProperty('--acc',ST.acc);if(ST.font)p.style.setProperty('--cd-f',fontCSS(ST.font));if(ST.num)p.style.setProperty('--cd-nf',fontCSS(ST.num));p.insertAdjacentHTML('beforeend',cdOrnaments(s.cdStyle))}
 function cdMonthKey(d){const s=state.s;if(s.calType==='heb'){const h=new HDate(d);return [h.getFullYear()+'-'+h.getMonth(),hebMonthName(h.getMonth(),isLeap(h.getFullYear()))+' '+hebYearStr(h.getFullYear())]}return [d.getFullYear()+'-'+d.getMonth(),GREG_MONTHS[d.getMonth()]+' '+d.getFullYear()]}
 const cdN=(to,d)=>Math.round((to-d)/864e5);
+/* דף פתיחה ודף סיום: עמוד מלא עם התמונה, הכותרת והתאריך */
+function cdIntroPage(ST){const s=state.s,{to,from}=cdDays(),n=cdN(to,from),im=cdImg('first');
+  const p=pageShell('דף פתיחה','cd-intro');cdSetup(p,ST,s);p.classList.add('cd-introp');
+  p.insertAdjacentHTML('beforeend','<div class="cdi-in">'+(im?'<img class="cdi-im" alt="" src="'+im+'">':'')+'<div class="cdi-title">'+esc(s.cdTitle||'הספירה לאחור')+'</div>'+
+    '<div class="cdi-big"><b>'+n+'</b><span>'+(n===1?'יום':n===2?'יומיים':'ימים')+'</span></div><div class="cdi-sub">'+esc(dateLong(to))+'</div>'+(s.cdIntroText?'<div class="cdi-txt">'+esc(s.cdIntroText)+'</div>':'')+'</div>');
+  addFootLine(p);emitExtras('cd-intro')}
+function cdOutroPage(ST){const s=state.s,{to}=cdDays(),im=cdImg('goal');
+  const p=pageShell('דף סיום','cd-outro');cdSetup(p,ST,s);p.classList.add('cd-introp','cd-outrop');
+  p.insertAdjacentHTML('beforeend','<div class="cdi-in">'+(im?'<img class="cdi-im" alt="" src="'+im+'">':'<div class="cdi-goal">'+ST.goal+'</div>')+'<div class="cdi-title">'+esc(s.cdOutroText||'הגענו! מזל טוב!')+'</div>'+
+    '<div class="cdi-sub">'+esc(s.cdTitle||'')+(s.cdTitle?' · ':'')+esc(dateLong(to))+'</div></div>');
+  addFootLine(p);emitExtras('cd-outro')}
 function countdownPages(){
-  const s=state.s,lay=s.cdLayout||'months',ST=CD_STYLES[s.cdStyle]||CD_STYLES.classic;
+  const s=state.s,ST=CD_STYLES[s.cdStyle]||CD_STYLES.classic;
   if(ST.font)loadFont(ST.font);if(ST.num)loadFont(ST.num);
+  const pg=(s.cdLayout||'months')!=='scroll';/* בדף הארוך לטלפון אין עמודים נפרדים */
+  if(s.cdIntro&&pg)cdIntroPage(ST);
+  cdBody(ST);
+  if(s.cdOutro&&pg)cdOutroPage(ST);
+}
+function cdBody(ST){
+  const s=state.s,lay=s.cdLayout||'months';
   if(lay==='poster')return cdPoster(ST);if(lay==='board')return cdBoard(ST);if(lay==='scroll')return cdScroll(ST);if(lay==='chain')return cdChain(ST);
   const c=cdCfg(),to=dateFromIso(c.to);let from=dateFromIso(c.from);if(from>to)from=to;
   const title=s.cdTitle||'הספירה לאחור';
@@ -1672,6 +1698,7 @@ function render(){
   renderAds();
   hlApply();
   fit();
+  if(CDMODE)requestAnimationFrame(()=>cdApplyFocus());
 }
 stage.addEventListener('click',e=>{
   const b=e.target.closest('.ins');if(!b)return;
@@ -2272,8 +2299,7 @@ function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
   radio('calType',s.calType);radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
-  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';const cs=$('#cdStyle');if(!cs.options.length)cs.innerHTML=Object.entries(CD_STYLES).map(([k,v])=>opt(k,v.n)).join('');cs.value=s.cdStyle||'classic';$('#cdLayout').value=s.cdLayout||'months';$('#cdQEvery').value=String(s.cdQEvery||10);$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;
-    document.querySelectorAll('[data-cdimg]').forEach(b=>{const k=b.dataset.cdimg,has=!!cdImg(k);b.textContent=(has?'החלפת ':'')+{bg:'תמונת רקע',first:'תמונה ביום הראשון',goal:'תמונה ביום היעד'}[k];const d=b.nextElementSibling;if(d)d.hidden=!has});$('#cdBgOpRow').hidden=!cdImg('bg')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
+  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards()}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליומי דהילולא (יארצייטן).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
@@ -2351,7 +2377,7 @@ document.addEventListener('change',e=>{
   if(t.id==='dateStyle'){if(t.value==='hebOnly')state.s.calType='heb';if(t.value==='gregOnly')state.s.calType='greg';return set('dateStyle',t.value)}
   if(['zmanimMode','theme','layout','imgText','view'].includes(t.name))return set(t.name,t.value);
   if(t.name==='orient')return set('orient',t.value);
-  if(t.dataset.opt)return set(t.dataset.opt,t.checked);
+  if(t.dataset.opt){if(/^cd/.test(t.dataset.opt))cdFocus({cdQuotes:'quote',cdIntro:'intro',cdOutro:'outro'}[t.dataset.opt]||'page');return set(t.dataset.opt,t.checked)}
   if(t.dataset.z){state.s.zmanim[t.dataset.z]=t.checked;return set('zmanim',state.s.zmanim)}
   if(t.dataset.bpos){const cur=bannerList().filter(x=>x!==t.dataset.bpos);if(t.checked)cur.push(t.dataset.bpos);state.s.banner='none';return set('banners',['top','right','left','bottom'].filter(x=>cur.includes(x)))}
   if(t.name==='zmSimple'){state.s.zm={...ZM_PRESETS[t.value]};state.s.zmPreset=t.value;if(t.value==='chul'&&!state.s.il){}return set('zmPreset',t.value)}
@@ -2383,8 +2409,8 @@ document.addEventListener('change',e=>{
     case 'hebStart':return set('hebStart',+t.value);
     case 'rangeFrom':case 'rangeTo':return set(t.id,t.value);
     case 'cdDate':case 'cdFrom':if(t.value)set(t.id,t.value);return;
-    case 'cdUnit':case 'cdStyle':case 'cdLayout':case 'cdQTopic':return set(t.id,t.value);
-    case 'cdQEvery':case 'cdBgOp':return set(t.id,+t.value);
+    case 'cdUnit':case 'cdQTopic':cdFocus(t.id==='cdQTopic'?'quote':'page');return set(t.id,t.value);
+    case 'cdQEvery':cdFocus('quote');return set(t.id,Math.max(1,Math.min(60,+t.value||10)));
     case 'cover':case 'showCaption':case 'dedication':case 'il':case 'bannerPer':return set(t.id,t.checked);
     case 'city':{if(!t.value)return;if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);state.s.candleMins=c.candle;state.s.il=c.il}return set('city',t.value)}
     case 'candleMins':return set('candleMins',+t.value);
@@ -3136,9 +3162,50 @@ function icsToEvents(t){
     out.push(o)}
   return out}
 const EV_SAMPLE='﻿שם,סוג,תאריך,חזרה,אחרי השקיעה\nשירה,יום הולדת,12/08/2018,עברי,\nההורים,יום נישואין,03/06/1990,לועזי,\nסבא משה,יום שנה (יארצייט),21/11/2010,עברי,כן\nטיול שנתי,אירוע,15/05/2027,פעם אחת,\n';
+const CD_FOC={first:'intro',goal:'outro',bg:'page'};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cdimg],[data-cdimgdel]');if(!b)return;const k=b.dataset.cdimg||b.dataset.cdimgdel;
-  if(b.dataset.cdimgdel){const o={...(state.cdImgs||{})};delete o[k];state.cdImgs=o;save();syncUI();render();return}
-  const f=v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};save();syncUI();render()};f.maxPx=k==='bg'?2400:1400;pickImage(f)});
+  if(b.dataset.cdimgdel){const o={...(state.cdImgs||{})};delete o[k];state.cdImgs=o;save();syncUI();cdFocus(CD_FOC[k]);render();return}
+  const f=v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};
+    /* תמונת פתיחה או סיום: מוסיפים אוטומטית את הדף המתאים, אם לא בחרו אחרת */
+    if(k==='first'&&state.s.cdIntro===undefined)state.s.cdIntro=true;if(k==='goal'&&state.s.cdOutro===undefined)state.s.cdOutro=true;
+    save();syncUI();cdFocus(CD_FOC[k]);render()};f.maxPx=k==='bg'?2400:1400;pickImage(f)});
+/* כרטיסי עיצוב, צורה ותדירות משפטים בדף הספירה לאחור */
+const CD_LAYS=[['months','עמוד לכל חודש','לוח חודשי רגיל עם מספר גדול בכל יום'],['board','לוח מספרים','כל הימים בטבלה אחת, למשל 10×10'],['poster','פוסטר','כל הימים בדף אחד, שבוע בכל שורה'],['scroll','דף ארוך לטלפון','שורה לכל יום, לגלילה ולשיתוף'],['chain','שרשרת נייר','רצועות לגזירה, תולשים חוליה כל יום']];
+const CD_LAY_ICON={months:'<rect x="3" y="3" width="34" height="34" rx="3"/><path d="M3 12h34M14 12v25M25 12v25M3 20h34M3 28h34"/>',board:'<rect x="3" y="3" width="34" height="34" rx="3"/><path d="M10 3v34M17 3v34M24 3v34M31 3v34M3 10h34M3 17h34M3 24h34M3 31h34"/>',poster:'<rect x="6" y="2" width="28" height="36" rx="2"/><path d="M6 9h28M6 15h28M6 21h28M6 27h28M6 33h28"/>',scroll:'<rect x="12" y="1" width="16" height="38" rx="3"/><path d="M12 8h16M12 14h16M12 20h16M12 26h16M12 32h16"/>',chain:'<ellipse cx="10" cy="20" rx="7" ry="10"/><ellipse cx="20" cy="20" rx="7" ry="10"/><ellipse cx="30" cy="20" rx="7" ry="10"/>'};
+const CD_QE=[1,2,3,5,7,10,14];
+function cdSyncCards(){const s=state.s,st=s.cdStyle||'classic',lay=s.cdLayout||'months',qe=+s.cdQEvery||10;
+  const sc=$('#cdStyleCards');if(sc){if(!sc.children.length)sc.innerHTML=Object.entries(CD_STYLES).map(([k,v])=>{const [bg,c2]=CD_SW[k]||['#fff','#ccc'],nm=v.n.split(':');
+      return '<button type="button" class="cd-card" role="radio" data-cdstyle="'+k+'" style="--sw-bg:'+bg+';--sw-acc:'+(v.acc||'#a3462b')+';--sw-2:'+c2+'"><span class="sw"><b style="font-family:'+esc(fontCSS(v.num||'Frank Ruhl Libre'))+'">7</b><i>'+v.goal+'</i></span><span class="nm">'+esc(nm[0])+'</span>'+(nm[1]?'<small>'+esc(nm[1].trim())+'</small>':'')+'</button>'}).join('');
+    Object.values(CD_STYLES).forEach(v=>v.num&&loadFont(v.num));
+    sc.querySelectorAll('[data-cdstyle]').forEach(b=>{const on=b.dataset.cdstyle===st;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})}
+  const lc=$('#cdLayCards');if(lc){if(!lc.children.length)lc.innerHTML=CD_LAYS.map(([k,n,d])=>'<button type="button" class="cd-card" role="radio" data-cdlay="'+k+'"><svg viewBox="0 0 40 40" aria-hidden="true">'+CD_LAY_ICON[k]+'</svg><span class="nm">'+n+'</span><small>'+d+'</small></button>').join('');
+    lc.querySelectorAll('[data-cdlay]').forEach(b=>{const on=b.dataset.cdlay===lay;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})}
+  const qc=$('#cdQChips');if(qc){qc.innerHTML=CD_QE.map(n=>'<button type="button" class="chip'+(n===qe?' on':'')+'" data-cdqe="'+n+'">'+(n===1?'כל יום':n===7?'כל שבוע':n)+'</button>').join('')+'<label class="chip-n">אחר <input type="number" id="cdQEvery" min="1" max="60" value="'+(CD_QE.includes(qe)?'':qe)+'" placeholder="#"></label>'}
+  const sl=$('#cdSlots');if(sl){sl.innerHTML=[['first','תמונת פתיחה','בדף הפתיחה וביום הראשון'],['bg','תמונת רקע','מאחורי כל העמודים'],['goal','תמונת סיום','ביום היעד ובדף הסיום']].map(([k,n,d])=>{const im=cdImg(k);
+    return '<div class="cd-slot'+(im?' has':'')+'"><button type="button" class="cd-slot-b" data-cdimg="'+k+'" aria-label="'+(im?'החלפת ':'הוספת ')+n+'">'+(im?'<img alt="" src="'+im+'">':'<span class="plus">+</span>')+'</button><span class="nm">'+n+'</span><small>'+d+'</small>'+(im?'<button type="button" class="cd-slot-x" data-cdimgdel="'+k+'" aria-label="הסרת '+n+'">×</button>':'')+'</div>'}).join('')}
+  if($('#cdBgOpRow'))$('#cdBgOpRow').hidden=!cdImg('bg');
+  if($('#cdIntroTxtRow')){$('#cdIntroTxtRow').hidden=!s.cdIntro;$('#cdOutroTxtRow').hidden=!s.cdOutro;if(document.activeElement!==$('#cdIntroText'))$('#cdIntroText').value=s.cdIntroText||'';if(document.activeElement!==$('#cdOutroText'))$('#cdOutroText').value=s.cdOutroText||''}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cdstyle],[data-cdlay],[data-cdqe]');if(!b)return;
+  if(b.dataset.cdstyle){cdFocus('page');return set('cdStyle',b.dataset.cdstyle)}
+  if(b.dataset.cdlay){cdFocus('page');return set('cdLayout',b.dataset.cdlay)}
+  if(b.dataset.cdqe){cdFocus('quote');if(!state.s.cdQuotes)state.s.cdQuotes=true;return set('cdQEvery',+b.dataset.cdqe)}});
+['cdIntroText','cdOutroText','cdTitle'].forEach(id=>{const x=$('#'+id);if(x)x.addEventListener('input',e=>{if(id==='cdTitle'&&!CDMODE)return;state.s[id]=e.target.value;cdFocus(id==='cdIntroText'?'intro':id==='cdOutroText'?'outro':'page');save();rerender()})});
+if($('#cdBgOp'))$('#cdBgOp').addEventListener('input',e=>{state.s.cdBgOp=+e.target.value;cdFocus('page');save();rerender()});
+/* אחרי כל בחירה: מקפיצים בתצוגה המקדימה לעמוד שהשתנה ומדגישים אותו */
+let CDF=null,cdToastT;function cdFocus(k){if(CDMODE)CDF=k||'page'}
+function cdApplyFocus(){if(!CDF)return;const k=CDF;CDF=null;
+  const wraps=[...stage.querySelectorAll('.sheet-wrap')];if(!wraps.length)return;
+  let el=null;
+  if(k==='intro')el=stage.querySelector('[data-key="cd-intro"]')||wraps[0];
+  else if(k==='outro')el=stage.querySelector('[data-key="cd-outro"]')||(stage.querySelector('.goal')||{}).closest?.('.sheet-wrap')||wraps.at(-1);
+  else if(k==='quote'){const q=stage.querySelector('.cd-q,.cdp-q,.cdb-q');el=q?(q.closest('.cd-d,.cdp-d,.cds-r,.cdc-s,.cdb-q')||q):null;if(!el)el=wraps.find(w=>w.dataset.key!=='cd-intro')||wraps[0]}
+  else el=wraps.find(w=>w.dataset.key!=='cd-intro')||wraps[0];
+  const flash=el.classList.contains('sheet-wrap')?el.querySelector('.page'):el;
+  flash.classList.remove('cd-flash');void flash.offsetWidth;flash.classList.add('cd-flash');setTimeout(()=>flash.classList.remove('cd-flash'),1800);
+  if(matchMedia('(min-width:901px)').matches){el.scrollIntoView({behavior:'smooth',block:k==='quote'?'center':'start'})}
+  else{let t=$('#cdToast');if(!t){t=document.createElement('button');t.id='cdToast';t.type='button';t.className='cd-toast';document.body.appendChild(t)}
+    t.textContent='✓ עודכן · לראות בתצוגה ↓';t.onclick=()=>{el.scrollIntoView({behavior:'smooth',block:'start'});t.classList.remove('on')};t.classList.add('on');clearTimeout(cdToastT);cdToastT=setTimeout(()=>t.classList.remove('on'),4500)}}
 if($('#cdQCustom'))$('#cdQCustom').addEventListener('input',e=>{state.s.cdQCustom=e.target.value;save();rerender()});
 if($('#nextYear'))$('#nextYear').onclick=()=>{const s=state.s;if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;save();syncUI();render()};
 if($('#evImport'))$('#evImport').onclick=()=>{
