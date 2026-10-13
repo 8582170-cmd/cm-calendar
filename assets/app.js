@@ -1943,7 +1943,8 @@ function drawLayers(g,W,H,sel){
           if(L.stroke){g.lineWidth=bx.fs*.12;g.strokeStyle=L.strokeColor||'#000';g.strokeText(t,0,yy);g.shadowColor='transparent'}
           g.fillStyle=L.color||'#fff';g.fillText(t,0,yy);g.shadowColor='transparent'});
       }else{
-        const im=ovImg(L.src);if(im.complete&&im.naturalWidth){
+        const im=ovImg(L.src);if(im.complete&&im.naturalWidth&&L.shape==='free'){g.save();if(L.fx)g.scale(-1,1);g.drawImage(im,-bx.w/2,-bx.h/2,bx.w,bx.h);g.restore()}
+        else if(im.complete&&im.naturalWidth){
           const w=bx.w,h=bx.h;g.beginPath();
           if(L.shape==='circle')g.arc(0,0,w/2,0,Math.PI*2);else if(L.shape==='round'&&g.roundRect)g.roundRect(-w/2,-h/2,w,h,Math.min(w,h)*.12);else g.rect(-w/2,-h/2,w,h);
           if(L.shadow){g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=w*.06;g.shadowOffsetY=w*.02;g.fillStyle='#fff';g.fill();g.restore()}
@@ -1966,13 +1967,23 @@ async function openImageEditor(data,onSave){
   ed.layers.forEach(L=>{if(L.type==='text')loadFont(L.font);if(L.src)ovImg(L.src)});
   const m=modal('<h3>עריכת תמונה<small>שיפור צבעים, טקסט על התמונה ותמונה על תמונה. גררו טקסט או תמונה כדי להזיז אותם.</small></h3>'+
     '<div class="ie"><div class="ie-stage"><canvas id="ieC"></canvas></div><div class="ie-side">'+
-    '<div class="seg" role="tablist"><label><input type="radio" name="ieTab" value="fix" checked> שיפור</label><label><input type="radio" name="ieTab" value="text"> טקסט</label><label><input type="radio" name="ieTab" value="img"> תמונה על תמונה</label></div>'+
+    '<div class="seg" role="tablist"><label><input type="radio" name="ieTab" value="fix" checked> שיפור</label><label><input type="radio" name="ieTab" value="text"> טקסט</label><label><input type="radio" name="ieTab" value="img"> תמונה על תמונה</label><label><input type="radio" name="ieTab" value="stk"> מדבקות וכובעים</label></div>'+
     '<div id="iePanel" class="ie-panel"></div></div></div>'+
     '<div class="row"><button class="btn primary" type="button" id="ieSave">שמירה</button><button class="btn" type="button" data-close>ביטול</button></div>');
   m.querySelector('.modal').classList.add('wide','ie-modal');
   const q=x=>m.querySelector(x),cv=q('#ieC'),g=cv.getContext('2d');
-  let tab='fix',sel=-1,basePrev,adjPrev;
-  function rebuild(){basePrev=makeBase(src,ed.rot,ed.flip,900);adjPrev=adjustCanvas(basePrev,ed.adj);cv.width=basePrev.width;cv.height=basePrev.height;redraw()}
+  let tab='fix',sel=-1,basePrev,adjPrev,faces=null,faceI=0;
+  /* זיהוי פנים בתמונה הראשית (פעם אחת לכל סיבוב/היפוך) */
+  async function getFaces(msgEl){if(faces)return faces;if(!window.MyLuachSmart)throw new Error('no-smart');if(msgEl)msgEl.textContent='מזהה פנים בתמונה…';faces=await MyLuachSmart.detectFaces(basePrev);return faces}
+  async function fitToFace(L,msgEl,next){
+    const st=(window.MYLUACH_STICKERS||[]).find(x=>x.id===L.stk)||{fw:1,ay:.9,line:'top'};
+    try{const fs=await getFaces(msgEl);if(!fs.length){if(msgEl)msgEl.textContent='לא מצאנו פנים בתמונה. אפשר לגרור את המדבקה למקום ביד.';return false}
+      if(next)faceI=(faceI+1)%fs.length;const f=fs[Math.min(faceI,fs.length-1)];
+      const im=ovImg(L.src);if(!im.naturalWidth)await new Promise(r=>{im.onload=r;setTimeout(r,800)});
+      Object.assign(L,MyLuachSmart.placeOnFace(f,st,cv.width,cv.height,im.naturalWidth?im.naturalHeight/im.naturalWidth:1));redraw();
+      if(msgEl)msgEl.textContent=fs.length>1?'נמצאו '+fs.length+' פנים. "לפנים הבאות" מעביר את המדבקה.':'✓ הותאם לפנים. אפשר לגרור ולשנות גודל.';return true}
+    catch(e){if(msgEl)msgEl.textContent='הזיהוי האוטומטי לא זמין כרגע (צריך חיבור לאינטרנט). אפשר לגרור את המדבקה למקום ביד.';return false}}
+  function rebuild(){faces=null;faceI=0;basePrev=makeBase(src,ed.rot,ed.flip,900);adjPrev=adjustCanvas(basePrev,ed.adj);cv.width=basePrev.width;cv.height=basePrev.height;redraw()}
   function redraw(){g.clearRect(0,0,cv.width,cv.height);g.drawImage(adjPrev,0,0);drawLayers(g,cv.width,cv.height,true)(ed.layers,sel)}
   let adjT;function readjust(){clearTimeout(adjT);adjT=setTimeout(()=>{adjPrev=adjustCanvas(basePrev,ed.adj);redraw()},40)}
   const slider=(id,label,min,max,val)=>'<label class="fld">'+label+' <span id="'+id+'V">'+val+'</span><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" value="'+val+'"></label>';
@@ -2012,13 +2023,34 @@ async function openImageEditor(data,onSave){
         q('#ieBold').onchange=e=>{L.bold=e.target.checked;redraw()};q('#ieSh').onchange=e=>{L.shadow=e.target.checked;redraw()};q('#ieSt').onchange=e=>{L.stroke=e.target.checked;redraw()};
         q('#ieDel').onclick=()=>{ed.layers.splice(sel,1);sel=-1;panel();redraw()};
       }
+    }else if(tab==='stk'){
+      const SL=window.MYLUACH_STICKERS||[],G={head:'על הראש',face:'על הפנים',neck:'בצוואר',deco:'קישוטים'};
+      let h='<p class="hint" style="margin:0">לוחצים על מדבקה, והיא מתאימה את עצמה לראש בתמונה. אחר כך אפשר לגרור, להגדיל ולסובב.</p>'+
+        Object.entries(G).map(([g,t])=>'<div class="fld">'+t+'<div class="ie-stk">'+SL.filter(x=>x.g===g).map(x=>'<button type="button" class="ie-stk-b" data-stk="'+x.id+'" title="'+esc(x.n)+'"><img alt="" src="'+x.src+'"><span>'+esc(x.n)+'</span></button>').join('')+'</div></div>').join('')+
+        '<p class="hint" id="ieStkMsg" aria-live="polite"></p>';
+      if(L&&L.stk){h+='<div class="ie-sel"><b>המדבקה שנבחרה</b>'+slider('ieW2','גודל',4,150,Math.round(L.w*100))+slider('ieRotI','סיבוב',-60,60,L.rot||0)+
+        '<div class="row"><button class="btn small" type="button" id="ieFit">🎯 התאמה לראש</button><button class="btn small" type="button" id="ieNextF">לפנים הבאות</button><button class="btn small" type="button" id="ieFx">היפוך</button><button class="btn small" type="button" id="ieFront">לקדמה</button><button class="btn small danger" type="button" id="ieDelI">מחיקה</button></div></div>'}
+      P.innerHTML=h;const msg=q('#ieStkMsg');
+      P.querySelectorAll('[data-stk]').forEach(b=>b.onclick=async()=>{const st=SL.find(x=>x.id===b.dataset.stk);await loadImg(st.src);ovImg(st.src);
+        const NL={type:'img',stk:st.id,src:st.src,shape:'free',x:.5,y:st.g==='deco'?.2:.3,w:st.g==='deco'?.28:.35,rot:0};ed.layers.push(NL);sel=ed.layers.length-1;panel();redraw();
+        if(st.g!=='deco')await fitToFace(NL,q('#ieStkMsg'));});
+      if(L&&L.stk){
+        q('#ieW2').addEventListener('input',e=>{L.w=e.target.value/100;q('#ieW2V').textContent=e.target.value;redraw()});
+        q('#ieRotI').addEventListener('input',e=>{L.rot=+e.target.value;q('#ieRotIV').textContent=e.target.value;redraw()});
+        q('#ieFit').onclick=()=>fitToFace(L,msg).then(()=>{q('#ieW2').value=Math.round(L.w*100);q('#ieW2V').textContent=Math.round(L.w*100);q('#ieRotI').value=L.rot;q('#ieRotIV').textContent=L.rot});
+        q('#ieNextF').onclick=()=>fitToFace(L,msg,true);
+        q('#ieFx').onclick=()=>{L.fx=!L.fx;redraw()};
+        q('#ieFront').onclick=()=>{ed.layers.push(ed.layers.splice(sel,1)[0]);sel=ed.layers.length-1;redraw()};
+        q('#ieDelI').onclick=()=>{ed.layers.splice(sel,1);sel=-1;panel();redraw()};
+      }
     }else{
       let h='<button class="btn small" type="button" id="ieAddI">+ הוספת תמונה</button>';
       if(L&&L.type==='img'){
         h+=slider('ieW2','גודל',8,100,Math.round(L.w*100))+slider('ieRotI','סיבוב',-45,45,L.rot||0)+
-          '<label class="fld">צורה<select id="ieShape"><option value="rect">מלבן</option><option value="round">פינות מעוגלות</option><option value="circle">עיגול</option></select></label>'+
+          '<label class="fld">צורה<select id="ieShape"><option value="rect">מלבן</option><option value="round">פינות מעוגלות</option><option value="circle">עיגול</option><option value="free">בלי מסגרת (חתוך)</option></select></label>'+
           '<div class="row"><label class="chk"><input type="checkbox" id="ieBor"'+(L.border?' checked':'')+'> מסגרת</label><label class="fld" style="flex:0 0 auto">צבע מסגרת<input type="color" id="ieBorC" value="'+(L.borderColor||'#ffffff')+'"></label><label class="chk"><input type="checkbox" id="ieShI"'+(L.shadow?' checked':'')+'> צל</label></div>'+
-          '<div class="row"><button class="btn small" type="button" id="ieFront">הבאה לקדמה</button><button class="btn small danger" type="button" id="ieDelI">מחיקת התמונה</button></div>';
+          '<div class="fld">חיתוך חכם<div class="row"><button class="btn small" type="button" id="ieCutBg">✂ הסרת רקע אחיד</button><button class="btn small" type="button" id="ieCutP">✂ חיתוך אדם מהרקע</button><button class="btn small" type="button" id="ieCutF">⭕ עיגול סביב הפנים</button>'+(L.orig?'<button class="btn small" type="button" id="ieCutU">ביטול החיתוך</button>':'')+'</div><span class="hint" id="ieCutMsg" aria-live="polite">למשל: תמונה של כובע על רקע לבן ← "הסרת רקע אחיד", ואז "התאמה לראש".</span></div>'+
+          '<div class="row"><button class="btn small" type="button" id="ieFitI">🎯 התאמה לראש</button><button class="btn small" type="button" id="ieFront">הבאה לקדמה</button><button class="btn small danger" type="button" id="ieDelI">מחיקת התמונה</button></div>';
       }else h+='<p class="hint">הוסיפו תמונה קטנה מעל התמונה הראשית, למשל תמונת פספורט בעיגול, לוגו או מדבקה. לחצו על תמונה קיימת כדי לערוך אותה.</p>';
       P.innerHTML=h;
       q('#ieAddI').onclick=()=>{const fn=async v=>{if(!v.img)return;ovImg(v.img);await loadImg(v.img);ed.layers.push({type:'img',src:v.img,x:.75,y:.3,w:.3,shape:'round',border:true,borderColor:'#ffffff',shadow:true,rot:0});sel=ed.layers.length-1;panel();redraw()};fn.maxPx=1000;pickImage(fn)};
@@ -2031,6 +2063,12 @@ async function openImageEditor(data,onSave){
         q('#ieShI').onchange=e=>{L.shadow=e.target.checked;redraw()};
         q('#ieFront').onclick=()=>{ed.layers.push(ed.layers.splice(sel,1)[0]);sel=ed.layers.length-1;redraw()};
         q('#ieDelI').onclick=()=>{ed.layers.splice(sel,1);sel=-1;panel();redraw()};
+        const cm=q('#ieCutMsg'),busy=t=>{cm.textContent=t;P.querySelectorAll('button').forEach(b=>b.disabled=true)},done=async(nsrc,shape)=>{if(!L.orig)L.orig=L.src;L.src=nsrc;await loadImg(nsrc);ovImg(nsrc);if(shape)L.shape=shape;panel();redraw()};
+        q('#ieCutBg').onclick=async()=>{busy('מסיר את הרקע…');try{const r=await MyLuachSmart.removeUniformBg(L.orig||L.src);await done(r.src,'free');q('#ieCutMsg').textContent=r.removed<.05?'כמעט לא נמצא רקע אחיד להסרה. מתאים לתמונה על רקע לבן או בצבע אחד.':'✓ הרקע הוסר.'}catch(e){panel();q('#ieCutMsg').textContent='לא הצלחנו להסיר את הרקע.'}};
+        q('#ieCutP').onclick=async()=>{busy('מזהה את האדם בתמונה… (בפעם הראשונה זה לוקח כמה שניות)');try{await done(await MyLuachSmart.cutPerson(L.orig||L.src),'free');q('#ieCutMsg').textContent='✓ האדם נחתך מהרקע.'}catch(e){panel();q('#ieCutMsg').textContent='החיתוך החכם לא זמין כרגע (צריך חיבור לאינטרנט). נסו "הסרת רקע אחיד".'}};
+        q('#ieCutF').onclick=async()=>{busy('מחפש פנים…');try{await done(await MyLuachSmart.faceCrop(L.orig||L.src),'circle');L.border=true;redraw();q('#ieCutMsg').textContent='✓ נחתך עיגול סביב הפנים.'}catch(e){panel();q('#ieCutMsg').textContent=e.message==='no-face'?'לא מצאנו פנים בתמונה הזו.':'הזיהוי לא זמין כרגע (צריך חיבור לאינטרנט).'}};
+        if(q('#ieCutU'))q('#ieCutU').onclick=async()=>{L.src=L.orig;delete L.orig;L.shape='round';await loadImg(L.src);panel();redraw()};
+        q('#ieFitI').onclick=()=>fitToFace(L,cm);
       }
     }
   }
@@ -2047,7 +2085,7 @@ async function openImageEditor(data,onSave){
   cv.addEventListener('pointerdown',e=>{
     const r=cv.getBoundingClientRect(),k=cv.width/r.width,x=(e.clientX-r.left)*k,y=(e.clientY-r.top)*k;
     const i=hit(x,y);sel=i;
-    if(i>=0){const L=ed.layers[i];const want=L.type==='text'?'text':'img';if(tab!==want){tab=want;m.querySelectorAll('input[name=ieTab]').forEach(t=>t.checked=t.value===tab)}
+    if(i>=0){const L=ed.layers[i];const want=L.type==='text'?'text':L.stk?'stk':'img';if(tab!==want){tab=want;m.querySelectorAll('input[name=ieTab]').forEach(t=>t.checked=t.value===tab)}
       cv.setPointerCapture(e.pointerId);const ox=x-L.x*cv.width,oy=y-L.y*cv.height;
       const mv=ev=>{const xx=(ev.clientX-r.left)*k,yy=(ev.clientY-r.top)*k;L.x=Math.max(0,Math.min(1,(xx-ox)/cv.width));L.y=Math.max(0,Math.min(1,(yy-oy)/cv.height));redraw()};
       const up=()=>{cv.removeEventListener('pointermove',mv);cv.removeEventListener('pointerup',up)};
@@ -3163,6 +3201,7 @@ function icsToEvents(t){
   return out}
 const EV_SAMPLE='﻿שם,סוג,תאריך,חזרה,אחרי השקיעה\nשירה,יום הולדת,12/08/2018,עברי,\nההורים,יום נישואין,03/06/1990,לועזי,\nסבא משה,יום שנה (יארצייט),21/11/2010,עברי,כן\nטיול שנתי,אירוע,15/05/2027,פעם אחת,\n';
 const CD_FOC={first:'intro',goal:'outro',bg:'page'};
+document.addEventListener('click',e=>{const be=e.target.closest('[data-cdimged]');if(be){const k=be.dataset.cdimged,cur=(state.cdImgs||{})[k];if(cur)openImageEditor(cur,v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};save();syncUI();cdFocus(CD_FOC[k]);render()});return}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cdimg],[data-cdimgdel]');if(!b)return;const k=b.dataset.cdimg||b.dataset.cdimgdel;
   if(b.dataset.cdimgdel){const o={...(state.cdImgs||{})};delete o[k];state.cdImgs=o;save();syncUI();cdFocus(CD_FOC[k]);render();return}
   const f=v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};
@@ -3182,7 +3221,7 @@ function cdSyncCards(){const s=state.s,st=s.cdStyle||'classic',lay=s.cdLayout||'
     lc.querySelectorAll('[data-cdlay]').forEach(b=>{const on=b.dataset.cdlay===lay;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})}
   const qc=$('#cdQChips');if(qc){qc.innerHTML=CD_QE.map(n=>'<button type="button" class="chip'+(n===qe?' on':'')+'" data-cdqe="'+n+'">'+(n===1?'כל יום':n===7?'כל שבוע':n)+'</button>').join('')+'<label class="chip-n">אחר <input type="number" id="cdQEvery" min="1" max="60" value="'+(CD_QE.includes(qe)?'':qe)+'" placeholder="#"></label>'}
   const sl=$('#cdSlots');if(sl){sl.innerHTML=[['first','תמונת פתיחה','בדף הפתיחה וביום הראשון'],['bg','תמונת רקע','מאחורי כל העמודים'],['goal','תמונת סיום','ביום היעד ובדף הסיום']].map(([k,n,d])=>{const im=cdImg(k);
-    return '<div class="cd-slot'+(im?' has':'')+'"><button type="button" class="cd-slot-b" data-cdimg="'+k+'" aria-label="'+(im?'החלפת ':'הוספת ')+n+'">'+(im?'<img alt="" src="'+im+'">':'<span class="plus">+</span>')+'</button><span class="nm">'+n+'</span><small>'+d+'</small>'+(im?'<button type="button" class="cd-slot-x" data-cdimgdel="'+k+'" aria-label="הסרת '+n+'">×</button>':'')+'</div>'}).join('')}
+    return '<div class="cd-slot'+(im?' has':'')+'"><button type="button" class="cd-slot-b" data-cdimg="'+k+'" aria-label="'+(im?'החלפת ':'הוספת ')+n+'">'+(im?'<img alt="" src="'+im+'">':'<span class="plus">+</span>')+'</button><span class="nm">'+n+'</span><small>'+d+'</small>'+(im?'<button type="button" class="cd-slot-x" data-cdimgdel="'+k+'" aria-label="הסרת '+n+'">×</button>':'')+(im?'<button type="button" class="cd-slot-e" data-cdimged="'+k+'" aria-label="עריכת '+n+'">✎ עריכה</button>':'')+'</div>'}).join('')}
   if($('#cdBgOpRow'))$('#cdBgOpRow').hidden=!cdImg('bg');
   if($('#cdIntroTxtRow')){$('#cdIntroTxtRow').hidden=!s.cdIntro;$('#cdOutroTxtRow').hidden=!s.cdOutro;if(document.activeElement!==$('#cdIntroText'))$('#cdIntroText').value=s.cdIntroText||'';if(document.activeElement!==$('#cdOutroText'))$('#cdOutroText').value=s.cdOutroText||''}
 }
