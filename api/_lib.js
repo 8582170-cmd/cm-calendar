@@ -73,7 +73,7 @@ function finalPrice(pub, plan, coupon) {
 
 function priceFor(plan) { const r = finalPrice(publicPricing({}), plan); return r && r.amount; }
 
-function env(k) { return process.env[k] || ''; }
+function env(k) { return String(process.env[k] || '').trim(); }
 
 async function db(path, opts = {}) {
   const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');
