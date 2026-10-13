@@ -9,7 +9,7 @@ const strip=s=>String(s||'').replace(/[֑-ׇ]/g,'');
 const evName=e=>{let x=strip(e.render(st.lang==='he'?'he':'en'));if(st.lang==='he')x=x.replace(/\b(5\d{3})\b/,(m,y)=>gem(+y%1000));return x};
 const PAGE=window.LC_PAGE||{};
 const BASE=PAGE.base||'';
-const BUILDER=BASE+'../app.html';
+const BUILDER=BASE+'../';
 
 /* ---------- שפה ---------- */
 const T={

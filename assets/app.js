@@ -254,6 +254,28 @@ function buildMonths(){
       m++;if(m>11){m=0;y++}
     }
   }
+  return applyStartDate(months);
+}
+/* התחלה מתאריך מדויק: לפני תחילת השנה (עד חודשיים, כעמודים חלקיים) או באמצע החודש הראשון */
+function applyStartDate(months){
+  const s=state.s;if(!s.startDate||!months.length)return months;
+  const sd=dateFromIso(s.startDate);if(!sd||isNaN(sd))return months;
+  const first=months[0].days[0],last=months.at(-1).days.at(-1);
+  if(sd<first){
+    if((first-sd)/864e5>62)return months;
+    const pre=[];let cur=null;
+    for(let d=new Date(sd);d<first;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
+      const hd=new HDate(d),heb=s.calType==='heb',key=heb?'pre-heb-'+hd.getFullYear()+'-'+hd.getMonth():'pre-greg-'+d.getFullYear()+'-'+d.getMonth();
+      if(!cur||cur.key!==key){
+        cur=heb?{key,title:hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())),year:hebYearStr(hd.getFullYear()),other:'',days:[]}:{key,title:GREG_MONTHS[d.getMonth()],year:String(d.getFullYear()),other:'',days:[]};pre.push(cur)}
+      cur.days.push(d)}
+    pre.forEach(mo=>{const hs=mo.days.map(d=>new HDate(d));
+      mo.other=s.calType==='heb'?[...new Set(mo.days.map(d=>GREG_MONTHS[d.getMonth()]))].join('–')+' '+[...new Set(mo.days.map(d=>d.getFullYear()))].join('–'):[...new Set(hs.map(h=>hebMonthName(h.getMonth(),isLeap(h.getFullYear()))))].join('–')+' '+[...new Set(hs.map(h=>hebYearStr(h.getFullYear())))].join('–')});
+    return pre.concat(months)}
+  if(sd>first&&sd<=last){
+    const out=months.filter(mo=>mo.days.at(-1)>=sd);
+    if(out.length)out[0]={...out[0],days:out[0].days.filter(d=>d>=sd)};
+    return out}
   return months;
 }
 function hebText(ev){let t='';try{t=ev.render('he')}catch(e){}if(!t)t=ev.getDesc();return stripNikud(t).replace(/\b(5\d{3})\b/,(m,y)=>hebYearStr(+y))}
@@ -2337,7 +2359,7 @@ function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
   radio('calType',s.calType);radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
-  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards()}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
+  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards()}if($('#startDate')){$('#startDate').value=s.startDate||'';$('#startDateClr').hidden=!s.startDate;$('#startDateRow').hidden=$('#startDateHint').hidden=['week','day','table','countdown'].includes(s.view||'month')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליומי דהילולא (יארצייטן).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
@@ -2446,6 +2468,7 @@ document.addEventListener('change',e=>{
     case 'gregStart':return set('gregStart',+t.value);
     case 'hebStart':return set('hebStart',+t.value);
     case 'rangeFrom':case 'rangeTo':return set(t.id,t.value);
+    case 'startDate':return set('startDate',t.value||'');
     case 'cdDate':case 'cdFrom':if(t.value)set(t.id,t.value);return;
     case 'cdUnit':case 'cdQTopic':cdFocus(t.id==='cdQTopic'?'quote':'page');return set(t.id,t.value);
     case 'cdQEvery':cdFocus('quote');return set(t.id,Math.max(1,Math.min(60,+t.value||10)));
@@ -3245,6 +3268,7 @@ function cdApplyFocus(){if(!CDF)return;const k=CDF;CDF=null;
   if(matchMedia('(min-width:901px)').matches){el.scrollIntoView({behavior:'smooth',block:k==='quote'?'center':'start'})}
   else{let t=$('#cdToast');if(!t){t=document.createElement('button');t.id='cdToast';t.type='button';t.className='cd-toast';document.body.appendChild(t)}
     t.textContent='✓ עודכן · לראות בתצוגה ↓';t.onclick=()=>{el.scrollIntoView({behavior:'smooth',block:'start'});t.classList.remove('on')};t.classList.add('on');clearTimeout(cdToastT);cdToastT=setTimeout(()=>t.classList.remove('on'),4500)}}
+if($('#startDateClr'))$('#startDateClr').onclick=()=>set('startDate','');
 if($('#cdQCustom'))$('#cdQCustom').addEventListener('input',e=>{state.s.cdQCustom=e.target.value;save();rerender()});
 if($('#nextYear'))$('#nextYear').onclick=()=>{const s=state.s;if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;save();syncUI();render()};
 if($('#evImport'))$('#evImport').onclick=()=>{

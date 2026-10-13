@@ -380,5 +380,11 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 
 ;['copy','cut','contextmenu','dragstart'].forEach(ev=>document.addEventListener(ev,e=>{const n=e.target&&e.target.closest?e.target:null;const s=window.getSelection&&window.getSelection();const inH=(x)=>{x=x&&(x.nodeType===1?x:x.parentElement);return x&&x.closest&&x.closest('#hist')};if(inH(n)||(s&&(inH(s.anchorNode)||inH(s.focusNode)))){e.preventDefault();if(e.clipboardData)e.clipboardData.setData('text/plain','© MyLuach')}},true));
 </script>
+<script>
+/* הגעה מהלוח המקוון (/#city-...&hy-...): כפתורי הבנייה בדף ממשיכים עם העיר והשנה שנבחרו */
+(function(){var h=location.hash||'';if(!/^#city-[a-z]+(&hy-\d{4})?$/.test(h))return;
+  document.querySelectorAll('a[href="app.html"]').forEach(function(a){a.setAttribute('href','app.html'+h)});
+  try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}})();
+</script>
 </body>
 </html>
