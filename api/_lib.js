@@ -4,6 +4,8 @@
    NEDARIM_API_VALID                       — קוד האימות לטופס המוטמע (בממשק הניהול של נדרים פלוס, תחת "מפתחות API")
    NEDARIM_CALLBACK_MAIL_ERROR             — אופציונלי: מייל לעדכון אם ההודעה לאתר נכשלה
    NEDARIM_TEST_AMOUNT                     — אופציונלי: לבדיקה, כל חיוב יהיה בסכום הזה (למשל 1)
+   NEDARIM_GROUPE                          — אופציונלי: הקטגוריה (Groupe) שתופיע בנדרים פלוס לכל עסקה
+   NEDARIM_GROUPE_DONATION                 — אופציונלי: קטגוריה אחרת לתרומות (אם ריק, אותה קטגוריה)
    NEDARIM_CALLBACK_IPS                    — אופציונלי: רשימת כתובות IP מותרות לקריאה החוזרת, מופרדות בפסיק
    SITE_URL                                — אופציונלי, ברירת מחדל https://www.myluach.org */
 'use strict';

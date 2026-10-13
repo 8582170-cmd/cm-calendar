@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
       Mosad: mosad, ApiValid: apiValid, Zeout: '', PaymentType: 'Ragil',
       Amount: String(charge), Tashlumim: '1', Currency: '1',
       FirstName: '', LastName: '', Street: '', City: '', Phone: '', Mail: email,
-      Groupe: '', Comment: (isDon ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[plan]) + ' · ' + id.slice(0, 8),
+      Groupe: (isDon && env('NEDARIM_GROUPE_DONATION')) || env('NEDARIM_GROUPE') || '', Comment: (isDon ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[plan]) + ' · ' + id.slice(0, 8),
       Param1: id, Param2: plan,
       CallBack: site + '/api/nedarim-callback', CallBackMailError: env('NEDARIM_CALLBACK_MAIL_ERROR')
     };
