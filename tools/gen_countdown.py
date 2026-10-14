@@ -10,3 +10,12 @@ s=re.sub(r'(<h1 class="brand">.*?</a>)<small>.*?</small>',r'\1<small>לוח ספ
 s=s.replace('<body>','<body class="cd-app">',1)
 (ROOT/'countdown.html').write_text(s,encoding='utf-8')
 print('countdown.html')
+
+# הבונה הפשוט (simple.html): אותו בונה, 4 שלבים בלבד
+t=(ROOT/'app.html').read_text(encoding='utf-8')
+t=re.sub(r'<title>.*?</title>','<title>לוח שנה אישי עם תמונות, בקלות · בונה פשוט · MyLuach</title>',t,count=1,flags=re.S)
+t=t.replace('<link rel="canonical" href="https://www.myluach.org/app.html">','<link rel="canonical" href="https://www.myluach.org/simple.html">\n<meta name="description" content="בונים לוח שנה אישי עם תמונות בארבעה צעדים פשוטים: סוג לוח, עיצוב, תמונת שער ותמונות לכל חודש, ימי הולדת ואירועים. מדפיסים בבית.">',1)
+t=t.replace('<script src="https://cdn.jsdelivr.net/npm/@supabase','<script>window.MYLUACH_MODE=\'simple\'</script>\n<script src="https://cdn.jsdelivr.net/npm/@supabase',1)
+t=t.replace('<body>','<body class="simple-app">',1)
+(ROOT/'simple.html').write_text(t,encoding='utf-8')
+print('simple.html')

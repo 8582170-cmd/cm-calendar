@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>לוח שנה אישי עם תמונות, בקלות · בונה פשוט · MyLuach</title>
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="canonical" href="https://www.myluach.org/simple.html">
+<meta name="description" content="בונים לוח שנה אישי עם תמונות בארבעה צעדים פשוטים: סוג לוח, עיצוב, תמונת שער ותמונות לכל חודש, ימי הולדת ואירועים. מדפיסים בבית.">
+<meta name="description" content="בונים לוח שנה עברי־לועזי להדפסה: תמונות המשפחה, ימי הולדת וימי שנה (יארצייטים), וזמני היום לפי העיר והשיטה שלכם.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
+<link rel="stylesheet" href="assets/app.css?v=202610150500">
+<script src="/assets/a11y.js?v=1" defer></script>
+</head>
+<body class="simple-app">
+
+<div class="app">
+  <header class="bar">
+    <h1 class="brand"><a href="index.html" class="brand-link"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a><small>מחולל לוח שנה עברי־לועזי להדפסה, עם תמונות, זמני היום ותאריכים משפחתיים</small></h1>
+    <div class="acct-box">
+      <button class="acct-pill" id="acctBtn" type="button" hidden>כניסה / הרשמה</button>
+      <span class="plan-badge" id="planBadge"></span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="sampleBtn" type="button" hidden>חודש לדוגמה בחינם</button>
+      <button class="btn" id="liteBtn" type="button" hidden>🎁 לוח חינמי לשנה</button>
+      <button class="btn upgrade-btn" id="upgradeBtn" type="button">שדרוג מסלול</button>
+      <button class="btn" id="modeBtn" type="button"></button>
+      <button class="btn" id="addEvTop" type="button" title="יום הולדת, יום שנה (יארצייט), תזכורת או תמונה ליום מסוים">הוספת אירוע ליום</button>
+      <button class="btn" id="bulkBtn" type="button" title="העלאת כמה תמונות ביחד, תצוגה מקדימה ושינוי הסדר">סידור תמונות</button>
+      <button class="btn primary" id="printBtn" type="button" hidden>הדפסה</button>
+    </div>
+  </header>
+  <nav class="stepper" id="stepper" aria-label="שלבי בניית הלוח"></nav>
+  <section class="welcome" id="welcome" hidden>
+    <h2>לוח שנה משלכם, מוכן להדפסה</h2>
+    <p>בונים לוח עברי־לועזי עם תמונות המשפחה, ימי הולדת וימי שנה (יארצייטים), וזמני היום לפי העיר והשיטה שלכם. האשף מוביל אתכם שלב אחר שלב, והכל נשמר לשנים הבאות.</p>
+    <ul>
+      <li><b>תמונות וטקסט</b>תמונה לכל חודש, ותמונות או ברכות בתוך הימים.</li>
+      <li><b>זמני היום</b>לכל עיר בעולם, לפי מנהג אשכנז, ספרד ועוד.</li>
+      <li><b>תאריכים משפחתיים</b>ימי הולדת וימי שנה (יארצייטים) שחוזרים כל שנה.</li>
+      <li><b>כל גודל</b>לוח קיר, שולחני, למקרר או לכיס.</li>
+    </ul>
+    <button class="btn primary start" type="button" id="startBtn">התחל עכשיו</button>
+    <div class="sub-actions">
+      <button class="btn small" type="button" id="welcomeRestore">יש לי קובץ גיבוי</button>
+      <button class="btn small" type="button" id="welcomeAdv">אני מכיר, לכל ההגדרות</button>
+    </div>
+    <p class="hint" style="margin-top:14px">למטה: דוגמה ללוח. תוכלו לשנות בו הכל.</p>
+  </section>
+  <section class="home" id="home" hidden>
+    <div><h2 id="homeTitle">הלוח שלך</h2><p class="hint" id="homeSub"></p></div>
+    <div class="home-actions">
+      <button class="btn primary" type="button" id="homeEdit">עריכת הלוח</button>
+      <button class="btn" type="button" id="homeNext">לוח חדש לשנה הבאה</button>
+      <button class="btn" type="button" id="homePrint" hidden>הדפסה</button>
+      <button class="btn" type="button" id="homeAdv">כל ההגדרות</button>
+    </div>
+  </section>
+  <div class="notice howto" id="howto"><b>איך מתחילים:</b>
+    <span><b>1.</b> בצד בוחרים שנה, תצוגה (חודשי, שבועי או יומי), עיר וגודל.</span>
+    <span><b>2.</b> לוחצים על כל יום בלוח כדי להוסיף לו יום הולדת, יום שנה (יארצייט), תזכורת או תמונה.</span>
+    <span><b>3.</b> "סידור תמונות" מעלה כמה תמונות ביחד לחודשים, עם תצוגה מקדימה ושינוי סדר.</span>
+    <span><b>4.</b> "+ הוספת עמוד כאן" בין העמודים מוסיף פרסומת, ברכה או דף הערות.</span>
+    <button class="x" type="button" id="howtoClose" aria-label="סגירת ההסבר">×</button></div>
+  <div class="notice" id="frameNotice" hidden><b>להדפסה:</b> כאן אפשר לעצב ולראות את הלוח. ההדפסה עצמה עובדת כשפותחים את קובץ ה־HTML בדפדפן (כרום / אדג׳) ולוחצים "הדפסה". הנתונים נשמרים בכל מקום בנפרד, ולכן מעבירים אותם עם "גיבוי ושחזור".</div>
+
+  <aside class="side">
+    <div class="step-head" id="stepHead"><div class="step-no" id="stepNo"></div><h2 id="stepTitle"></h2><p id="stepDesc"></p></div>
+    <div class="simple-note simple-only">זה הבונה הפשוט: סוג לוח, עיצוב, תמונות ואירועים. <b>רוצים עוד?</b> בבונה המורחב יש זמני היום לפי המנהג שלכם, לימוד יומי, דברי הימים, עיצוב חופשי, באנרים ועמודים נוספים. <a href="app.html">לבונה המורחב ←</a> (כל מה שבניתם עובר איתכם)</div>
+    <details class="sec" open data-step="1" id="secType">
+      <summary><span class="nocd">שנה וסוג לוח</span><span class="cdonly">פרטי הספירה</span></summary>
+      <div class="sec-body">
+        <div class="fld">תצוגה
+          <div class="seg" role="radiogroup" aria-label="תצוגה">
+            <label><input type="radio" name="view" value="month"> חודשי</label>
+            <label><input type="radio" name="view" value="week"> שבועי</label>
+            <label><input type="radio" name="view" value="day"> יומי</label>
+            <label><input type="radio" name="view" value="table"> טבלה</label>
+            <label><input type="radio" name="view" value="year"> שנתי</label>
+          </div>
+        </div>
+        <div class="cd-box" id="cdRow">
+          <div class="cd-sec"><h4>1. למה סופרים ועד מתי</h4>
+          <label class="fld">למה סופרים<input id="cdTitle" placeholder="למשל: הבר מצווה של יוסי"></label>
+          <div class="row"><label class="fld">תאריך היעד<input type="date" id="cdDate"></label><label class="fld">מתחילים לספור מ־<input type="date" id="cdFrom"></label></div>
+          <p class="hint cd-free">לוח ספירה של עד 40 ימים מורידים ומדפיסים בחינם. לוח ארוך יותר: ההדפסה במסלול בתשלום.</p></div>
+
+          <div class="cd-sec"><h4>2. עיצוב</h4><div class="cd-cards" id="cdStyleCards" role="radiogroup" aria-label="עיצוב"></div></div>
+
+          <div class="cd-sec"><h4>3. צורת הלוח</h4><div class="cd-cards lay" id="cdLayCards" role="radiogroup" aria-label="צורה"></div>
+          <label class="fld">איך לספור<select id="cdUnit"><option value="days">ימים: עוד 45 ימים</option><option value="weeks">שבועות וימים: עוד 6 שבועות ו־3 ימים</option></select></label>
+          <label class="chk"><input type="checkbox" data-opt="cdCheck"> ריבוע לסימון בכל יום שעבר</label></div>
+
+          <div class="cd-sec"><h4>4. תמונות</h4>
+          <div class="cd-slots" id="cdSlots"></div>
+          <label class="fld" id="cdBgOpRow">חוזק תמונת הרקע<input type="range" id="cdBgOp" min="0.08" max="1" step="0.01"></label>
+          <label class="chk"><input type="checkbox" data-opt="cdIntro"> דף פתיחה בתחילת הלוח</label>
+          <label class="fld" id="cdIntroTxtRow">טקסט בדף הפתיחה (לא חובה)<input id="cdIntroText" maxlength="120" placeholder="למשל: מתחילים לספור יחד!"></label>
+          <label class="chk"><input type="checkbox" data-opt="cdOutro"> דף סיום בסוף הלוח</label>
+          <label class="fld" id="cdOutroTxtRow">טקסט בדף הסיום (לא חובה)<input id="cdOutroText" maxlength="120" placeholder="למשל: הגענו! מזל טוב!"></label>
+          <p class="hint">תמונה ליום מסוים אחר: לוחצים על היום בלוח ומוסיפים אירוע עם תמונה.</p></div>
+
+          <div class="cd-sec"><h4>5. מה יופיע בכל יום</h4>
+          <label class="fld">תאריך<select id="cdDStyle"><option value="hebMain">עברי ולועזי (עברי מודגש)</option><option value="gregMain">לועזי ועברי (לועזי מודגש)</option><option value="both">עברי ולועזי באותו גודל</option><option value="hebOnly">רק עברי</option><option value="gregOnly">רק לועזי</option></select></label>
+          <label class="chk"><input type="checkbox" data-opt="cdMonthAll"> שם החודש בכל יום (לא רק ביום הראשון)</label>
+          <div class="checks"><label class="chk"><input type="checkbox" data-cdshow="parasha"> פרשת השבוע</label><label class="chk"><input type="checkbox" data-cdshow="chag"> חגים ומועדים</label><label class="chk"><input type="checkbox" data-cdshow="rc"> ראש חודש</label></div>
+          <div class="fld">זמנים (עד 5)<div class="cd-chips" id="cdZChips"></div></div>
+          <label class="fld" id="cdCityRow">עיר לזמנים<select id="cdCity"></select></label></div>
+
+          <div class="cd-sec"><h4>6. משפטים</h4>
+          <label class="chk"><input type="checkbox" data-opt="cdQuotes"> להוסיף משפטים יפים ללוח</label>
+          <div id="cdQBox" class="cd-qbox">
+            <div class="fld">כל כמה ימים<div class="cd-chips" id="cdQChips"></div></div>
+            <label class="fld">נושא<select id="cdQTopic"><option value="auto">לפי העיצוב</option><option value="bride">חתונה</option><option value="barmitzvah">בר מצווה</option><option value="batmitzvah">בת מצווה</option><option value="baby">לידה</option><option value="kids">ילדים</option><option value="classic">כללי</option></select></label>
+            <label class="fld">משפטים משלכם (לא חובה, שורה לכל משפט)<textarea id="cdQCustom" rows="3" placeholder="אם תכתבו כאן, יופיעו המשפטים שלכם במקום המוכנים"></textarea></label>
+          </div></div>
+        </div>
+        <div class="row" id="rangeRow">
+          <label class="fld">מתאריך<input type="date" id="rangeFrom"></label>
+          <label class="fld">עד תאריך<input type="date" id="rangeTo"></label>
+        </div>
+        <p class="hint" id="viewHint"></p>
+        <p class="hint nocd">רוצים לוח ספירה לאחור לחתונה, לבר מצווה או ללידה? <a href="countdown.html">לבונה לוחות הספירה ←</a></p>
+        <label class="chk" id="splitColsRow"><input type="checkbox" id="splitCols"> טורים נפרדים בכל יום: חגים, אירועים אישיים ויומי דהילולא (יארצייטן)</label>
+        <div class="fld" id="tcolsRow">טורים בטבלה
+          <div class="checks">
+            <label class="chk"><input type="checkbox" data-tcol="zmanim"> זמני היום</label>
+            <label class="chk"><input type="checkbox" data-tcol="holidays"> חגים ופרשה</label>
+            <label class="chk"><input type="checkbox" data-tcol="personal"> אירועים אישיים</label>
+            <label class="chk"><input type="checkbox" data-tcol="yz"> יומי דהילולא (יארצייטן)</label>
+            <label class="chk"><input type="checkbox" data-tcol="notes"> טור להערות</label>
+          </div>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="סוג לוח">
+          <label><input type="radio" name="calType" value="heb"> לפי חודשים עבריים</label>
+          <label><input type="radio" name="calType" value="greg"> לפי חודשים לועזיים</label>
+        </div>
+        <label class="fld">הצגת התאריכים<select id="dateStyle">
+          <option value="hebMain">עברי מודגש, לועזי קטן</option>
+          <option value="gregMain">לועזי מודגש, עברי קטן</option>
+          <option value="both">עברי ולועזי באותו גודל</option>
+          <option value="hebOnly">רק עברי</option>
+          <option value="gregOnly">רק לועזי</option></select></label>
+        <div class="row" id="hebYearRow"><label class="fld">שנה עברית<select id="hebYear"></select></label><label class="fld">חודש פתיחה<select id="hebStart"></select></label><button class="btn small" type="button" id="nextYear" title="אותו לוח עם כל האירועים וההגדרות, לשנה הבאה">לשנה הבאה ←</button></div>
+        <div class="row nocd" id="startDateRow"><label class="fld">התחלה מתאריך מדויק (לא חובה)<input type="date" id="startDate"></label><button class="btn small" type="button" id="startDateClr" hidden>ביטול</button></div>
+        <p class="hint nocd" id="startDateHint">אפשר להתחיל גם לפני השנה שבחרתם, למשל שבוע לפני ראש השנה (עד חודשיים לפני), או באמצע החודש הראשון.</p>
+        <div class="row" id="gregYearRow">
+          <label class="fld">שנה לועזית<input id="gregYear" type="number" min="1900" max="2200"></label>
+          <label class="fld">חודש פתיחה<select id="gregStart"></select></label>
+        </div>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" data-opt="showHolidays"> חגים ומועדים</label>
+          <label class="chk"><input type="checkbox" data-opt="showParasha"> פרשת השבוע</label>
+          <label class="chk"><input type="checkbox" data-opt="showRC"> ראש חודש</label>
+          <label class="chk"><input type="checkbox" data-opt="showFasts"> צומות</label>
+          <label class="chk"><input type="checkbox" data-opt="showSpecial"> שבתות מיוחדות</label>
+          <label class="chk"><input type="checkbox" data-opt="showModern"> ימי זיכרון ועצמאות</label>
+          <label class="chk"><input type="checkbox" data-opt="showDst"> מעבר לשעון קיץ וחורף</label>
+          <label class="chk"><input type="checkbox" data-opt="showMevarchim"> שבת מברכים</label>
+          <label class="chk"><input type="checkbox" data-opt="showOmer"> ספירת העומר</label>
+          <label class="chk"><input type="checkbox" data-opt="showIsru"> אסרו חג</label>
+          <label class="chk"><input type="checkbox" data-opt="showChametz"> סוף זמן אכילת וביעור חמץ</label>
+        </div>
+        <label class="fld">הדלקת נרות חנוכה<select id="chanukah"><option value="tzeit">בצאת הכוכבים</option><option value="sunset">בשקיעה</option><option value="none">לא להציג</option></select></label>
+        <label class="fld" id="ytsgRow">יום טוב שני של גלויות<select id="ytsg"><option value="normal">רגיל, כמו חג</option><option value="faint">חלש: קטן ואפור</option><option value="none">לא להציג</option></select></label>
+      </div>
+    </details>
+
+    <details class="sec" open data-step="4">
+      <summary>מה מופיע איפה</summary>
+      <div class="sec-body">
+        <details class="pl-explain" open><summary>איך זה עובד?</summary>
+          <div class="pl-demo" aria-hidden="true"><div class="pl-demo-col">טור</div><div class="pl-demo-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <p>לכל סוג מידע יש תמיד הגדרה אחת מתוך שלוש:</p>
+          <ul>
+            <li><b>בתוך הימים:</b> המידע כתוב בתוך המשבצת של כל יום, מתחת לתאריך.</li>
+            <li><b>בטור:</b> טור צר ליד הלוח, עם שורה לכל יום שיש בו מידע. הימים נשארים נקיים ויש יותר מקום לכתיבה ולתמונות. בלחיצה על "+ הוספה ליד הלוח" בוחרים מה להוסיף (זמנים, אירועים, לימוד, תמונה או מודעה) ואיפה. אפשר כמה טורים, לכל אחד צד ורוחב, ובכל טור כמה דברים אחד מתחת לשני.</li>
+            <li><b>לא להציג:</b> המידע לא מופיע בלוח בכלל.</li>
+            <li><b>ליומי דהילולא (יארצייטן) ודברי הימים יש הגדרה רביעית, "בעמוד נפרד מעל הלוח":</b> כל אירועי החודש מתולדות עם ישראל מודפסים בעמוד משלהם, שנתלה מעל עמוד הלוח של אותו חודש. מתאים כשיש הרבה אירועים שלא נכנסים בתוך הימים או בטור.</li>
+          </ul>
+          <p><b>הכלל:</b> כל סוג מידע שבחרתם להציג ולא שייך לאף טור מופיע בתוך הימים. למשל, סימנתם "לימוד יומי" ובניתם רק טור זמנים: הלימוד יופיע בתוך כל יום. אם רוצים אותו בטור, מוסיפים לו טור והוא עובר לשם.</p>
+          <p>גם כשמוחקים טור, מה שהיה בו חוזר לתוך הימים ולא נעלם. כדי להוריד משהו מהלוח לגמרי, בוחרים בו במפורש "לא להציג".</p>
+        </details>
+        <label class="fld">זמני היום<select id="plZ"><option value="daily">כולם בתוך כל יום</option><option value="shabbat">כולם רק בשבת, בתוך היום</option><option value="col">כולם בטור ליד הלוח</option><option value="custom">לכל זמן בנפרד</option><option value="table">בטבלת שבתות מתחת ללוח</option><option value="none">לא להציג</option></select></label>
+        <p class="hint">לבחור לכל זמן בנפרד אם הוא ביום או בטור: בחלק "מיקום וזמני היום", ברשימת הזמנים.</p>
+        <div id="placeUI"></div>
+        <label class="fld">כשהמידע לא נכנס בטור<select id="yzOverflow"><option value="spill">להמשיך בתאים הריקים ובעמוד המשך</option><option value="widen">להרחיב את הטור ולהקטין את הלוח</option></select></label>
+        <p class="hint">בתצוגה המקדימה אפשר גם למשוך את הפס הצבעוני שבקצה הטור כדי לשנות את רוחבו.</p>
+        <p class="hint">בתצוגת הטבלה יש לכל סוג טור קבוע, ובוחרים אותם ב"טורים בטבלה". "לא להציג" חל על כל התצוגות. שם מוצג מה שלא סימנתם "לא להציג".</p>
+      </div>
+    </details>
+
+    <details class="sec" open data-step="5">
+      <summary>אירועים ותזכורות <span class="tag" id="evCount"></span></summary>
+      <div class="sec-body">
+        <p class="hint">לחצו על כל יום בלוח כדי להוסיף לו טקסט, תמונה, יום הולדת, יום שנה (יארצייט) או תזכורת. אפשר גם לגרור תמונה ישר לתוך יום. אירועים שחוזרים כל שנה יופיעו לבד גם בלוחות הבאים.</p>
+        <div class="listbox" id="evList"></div>
+        <button class="btn" type="button" id="addEvSide">הוספת אירוע</button>
+        <label class="fld">יום שנה (יארצייט) במשפחה נכתב בלוח<select id="persPrefix"><option value="yaz">יא״צ משה כהן</option><option value="ys">יום השנה למשה כהן</option><option value="yosh">יו״ש משה כהן</option><option value="azk">אזכרה למשה כהן</option></select></label>
+        <div class="row ev-tools"><button class="btn small" type="button" id="evImport">ייבוא מקובץ</button><button class="btn small" type="button" id="evIcs">תזכורות ליומן בטלפון</button></div>
+      </div>
+    </details>
+
+    <details class="sec" data-step="5" id="hlSec">
+      <summary>ימים צבועים <span class="tag" id="hlCount"></span></summary>
+      <div class="sec-body">
+        <p class="hint">צובעים ימים בלוח בצבע משלכם, למשל חופשות, ימי לימודים או תורנויות. אפשר עד 10 רשימות, לכל אחת שם וצבע. בוחרים רשימה, לוחצים "לצבוע ימים", ולוחצים על הימים בלוח. לחיצה נוספת על יום מורידה את הצבע.</p>
+        <div id="hlLists" class="hl-lists"></div>
+        <div class="row"><button class="btn" type="button" id="hlAdd">+ רשימה חדשה</button></div>
+        <label class="chk"><input type="checkbox" data-opt="hlLegend"> מקרא בתחתית כל חודש</label>
+      </div>
+    </details>
+
+    <details class="sec" open data-step="3">
+      <summary>מיקום וזמני היום</summary>
+      <div class="sec-body">
+        <div class="loc-now" id="locNow"></div>
+        <label class="fld">חיפוש עיר (כ־150 ערים בארץ ובעולם)<input id="cityFilter" type="search" placeholder="הקלידו שם עיר או מדינה"></label>
+        <label class="fld">עיר<select id="city"></select></label>
+        <details class="sub-box" id="customLoc">
+          <summary>מיקום מדויק מגוגל מפות או לפי קווי אורך ורוחב</summary>
+          <div class="inner">
+            <div class="hint">
+              <ol>
+                <li><a href="https://www.google.com/maps" target="_blank" rel="noopener">פתחו את גוגל מפות</a> ומצאו את המקום.</li>
+                <li>לחצו קליק ימני על הנקודה (בטלפון: לחיצה ארוכה).</li>
+                <li>לחצו על המספרים שמופיעים בראש התפריט, למשל 31.7767, 35.2345. הם מועתקים.</li>
+                <li>הדביקו כאן. אפשר להדביק גם קישור מלא מגוגל מפות.</li>
+              </ol>
+            </div>
+            <div class="row">
+              <label class="fld">קואורדינטות או קישור<input id="gmaps" placeholder="31.7767, 35.2345" dir="ltr"></label>
+              <button class="btn small" type="button" id="gmapsApply">החלה</button>
+            </div>
+            <p class="hint" id="gmapsMsg" aria-live="polite"></p>
+            <button class="btn small" type="button" id="geoBtn" hidden>המיקום הנוכחי שלי</button>
+            <div class="row">
+              <label class="fld">שם המקום<input id="cName" placeholder="למשל: הבית"></label>
+            </div>
+            <div class="row">
+              <label class="fld">קו רוחב<input id="cLat" inputmode="decimal" dir="ltr" placeholder="31.7767"></label>
+              <label class="fld">קו אורך<input id="cLng" inputmode="decimal" dir="ltr" placeholder="35.2345"></label>
+              <label class="fld">גובה (מטר)<input id="cEl" inputmode="numeric" dir="ltr" placeholder="0"></label>
+            </div>
+            <div class="row">
+              <label class="fld">אזור זמן<select id="cTz" dir="ltr"></select></label>
+            </div>
+            <label class="chk"><input type="checkbox" id="cIl"> המקום בארץ ישראל</label>
+            <button class="btn primary small" type="button" id="cSave">שימוש במיקום הזה</button>
+          </div>
+        </details>
+        <div class="row">
+          <label class="fld">הדלקת נרות לפני השקיעה<select id="candleMins">
+            <option value="15">15 דק׳</option><option value="18">18 דק׳</option><option value="20">20 דק׳</option><option value="22">22 דק׳</option><option value="24">24 דק׳</option><option value="30">30 דק׳</option><option value="40">40 דק׳</option></select></label>
+        </div>
+        <label class="chk"><input type="checkbox" id="il"> לוח ארץ ישראל (יום טוב אחד, פרשיות א״י)</label>
+        <div class="fld">איפה מופיעים הזמנים<select id="plZ2">
+          <option value="daily">כולם בתוך כל יום</option><option value="shabbat">כולם רק בשבת, בתוך היום</option><option value="col">כולם בטור ליד הלוח</option><option value="custom">לכל זמן בנפרד (בטבלה למטה)</option><option value="table">בטבלת שבתות מתחת ללוח</option><option value="none">לא להציג</option></select></div>
+        <p class="hint" id="zmHint"></p>
+        <div class="checks" id="zmanimChecks"></div>
+        <div id="zmPlaceBox">
+          <p class="hint"><b>ביום</b> = הזמן כתוב בתוך המשבצת של כל יום, מתחת לתאריך. <b>בטור</b> = הזמן מופיע בטבלה בטור ליד הלוח, שורה לכל יום. אפשר לסמן את שניהם. <b>רק בשבת</b> = בתוך היום רק בימי שבת. זמן בלי שום סימון לא מופיע בלוח.</p>
+          <div class="zp-quick row"><button class="btn small" type="button" data-zpq="day">הכל ביום</button><button class="btn small" type="button" data-zpq="col">הכל בטור</button><button class="btn small" type="button" data-zpq="mix">עיקריים ביום, השאר בטור</button></div>
+          <div id="zmPlace" class="zp-grid"></div>
+          <label class="chk"><input type="checkbox" data-opt="zExplain"> שורת הסבר: לפי איזו שיטה מחושב כל זמן (מודפסת מתחת לטבלת הזמנים או בתחתית הדף)</label>
+        </div>
+        <div class="fld">לפי איזה מנהג לחשב את הזמנים?
+          <div class="zm-cards" role="radiogroup" aria-label="מנהג">
+            <label class="zm-card"><input type="radio" name="zmSimple" value="ashkenaz"><b>אשכנזים</b><span>המקובל ברוב הלוחות והקהילות האשכנזיות בארץ ישראל</span></label>
+            <label class="zm-card"><input type="radio" name="zmSimple" value="sefardi"><b>ספרדים ועדות המזרח</b><span>ע״פ פסקי הגר״ע יוסף זצ״ל</span></label>
+            <label class="zm-card"><input type="radio" name="zmSimple" value="tanya"><b>חב״ד</b><span>לפי שיטת בעל התניא</span></label>
+            <label class="zm-card"><input type="radio" name="zmSimple" value="chul"><b>קהילות בחו״ל</b><span>המקובל ברוב בתי הכנסת באמריקה ובאירופה</span></label>
+          </div>
+        </div>
+        <p class="hint" id="zmAdvNote" hidden></p>
+        <details class="sub-box" id="zmAdv">
+          <summary>הגדרות מתקדמות לזמנים</summary>
+          <div class="inner">
+            <p class="hint">למי שרוצה לדייק: עוד שיטות, בחירת שיטה לכל זמן בנפרד, וערכים מותאמים אישית.</p>
+            <div class="dst-box">
+              <label class="fld">שעון קיץ<select id="dstMode"><option value="auto">אוטומטי לפי המדינה של המקום</option><option value="none">בלי שעון קיץ (שעון חורף כל השנה)</option><option value="custom">תאריכים ושעות משלי</option></select></label>
+              <div id="dstCustom" class="dst-custom" hidden>
+                <div class="row"><span class="dst-l">מתחיל</span><label class="fld">יום<select id="dstSd"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option></select></label><label class="fld">חודש<select id="dstSm"><option value="1">ינואר</option><option value="2">פברואר</option><option value="3">מרץ</option><option value="4">אפריל</option><option value="5">מאי</option><option value="6">יוני</option><option value="7">יולי</option><option value="8">אוגוסט</option><option value="9">ספטמבר</option><option value="10">אוקטובר</option><option value="11">נובמבר</option><option value="12">דצמבר</option></select></label><label class="fld">בשעה<input type="time" id="dstSt" value="02:00"></label></div>
+                <div class="row"><span class="dst-l">נגמר</span><label class="fld">יום<select id="dstEd"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option></select></label><label class="fld">חודש<select id="dstEm"><option value="1">ינואר</option><option value="2">פברואר</option><option value="3">מרץ</option><option value="4">אפריל</option><option value="5">מאי</option><option value="6">יוני</option><option value="7">יולי</option><option value="8">אוגוסט</option><option value="9">ספטמבר</option><option value="10">אוקטובר</option><option value="11">נובמבר</option><option value="12">דצמבר</option></select></label><label class="fld">בשעה<input type="time" id="dstEt" value="02:00"></label></div>
+                <p class="hint">בשעת ההתחלה מקדימים את השעון בשעה, ובשעת הסיום מחזירים אותו בשעה. כל הזמנים בלוח מחושבים לפי זה.</p>
+              </div>
+            </div>
+            <label class="fld">ק״ש ותפילה<select id="m_shma"><option value="gra">גר״א</option><option value="mga">מג״א</option><option value="both">שניהם</option></select></label>
+            <label class="fld">כל השיטות המוכנות<select id="zmPreset">
+              <option value="ashkenaz">אשכנזים, מנהג ארץ ישראל</option>
+              <option value="sefardi">ספרדים, ע״פ הגר״ע יוסף</option>
+              <option value="tuk">הגרי״מ טוקצ׳ינסקי (שקיעה ונץ בגובה)</option>
+              <option value="itim">אשכנזים, נץ מישורי ושקיעה לפי הגובה</option>
+              <option value="gra">גר״א פשוט (צאה״כ 3 כוכבים)</option>
+              <option value="tanya">בעל התניא (חב״ד)</option>
+              <option value="chul">נפוץ בחו״ל (72 דק׳ שוות)</option>
+              <option value="custom">מותאם אישית</option></select></label>
+            <p class="hint" id="zmPresetHint"></p>
+            <button class="btn" type="button" id="zmOpen">בחירת שיטה לכל זמן בנפרד</button>
+            <label class="chk"><input type="checkbox" id="secs"> להציג שניות (למשל 6:24:15)</label>
+            <p class="hint">זו ההגדרה הכללית. ב"בחירת שיטה לכל זמן בנפרד" אפשר לבחור לכל זמן את העיגול: לחומרא, תמיד למטה, תמיד למעלה, לדקה הקרובה, או עם שניות.</p>
+          </div>
+        </details>
+        <p class="hint">הזמנים מעוגלים לחומרא: זמני "סוף" כלפי מטה, וזמני "מן" כלפי מעלה. החישוב אסטרונומי ואינו תחליף ללוח של רב הקהילה.</p>
+      </div>
+    </details>
+
+    <details class="sec" data-step="3" id="tfSec">
+      <summary>זמני תפילות בבית הכנסת <span class="tag">מסלול מלא</span></summary>
+      <div class="sec-body">
+        <p class="hint">לגבאים ולמוסדות: מגדירים כל תפילה פעם אחת, בשעה קבועה או ביחס לזמן היום (למשל מנחה 15 דקות לפני השקיעה), והלוח מחשב אותה לכל יום ומציג אותה בתוך הימים.</p>
+        <div id="tfList" class="tf-list"></div>
+        <div class="row"><button class="btn" type="button" id="tfAdd">+ תפילה</button><button class="btn" type="button" id="tfSample">דוגמה מוכנה</button></div>
+      </div>
+    </details>
+
+    <details class="sec" data-step="4">
+      <summary>מולד, קידוש לבנה, תקופות ולימוד יומי</summary>
+      <div class="sec-body">
+        <label class="chk"><input type="checkbox" data-moon="molad"> זמן המולד בשבת מברכים (בשעון המולד המסורתי)</label>
+        <div class="row">
+          <label class="fld">תחילת קידוש לבנה<select data-moonsel="kl"><option value="none">לא להציג</option><option value="ash">אחרי 3 ימים (אשכנז)</option><option value="sef">אחרי 7 ימים (ספרד)</option><option value="both">שניהם</option></select></label>
+          <label class="fld">סוף זמן קידוש לבנה<select data-moonsel="klEnd"><option value="none">לא להציג</option><option value="rema">רמ״א (חצי חודש)</option><option value="by">שו״ע (ט״ו יום)</option><option value="both">שניהם</option></select></label>
+        </div>
+        <label class="chk"><input type="checkbox" data-moon="tekufa"> תקופות (תקופת שמואל)</label>
+        <label class="chk"><input type="checkbox" data-moon="tal"> תחילת "ותן טל ומטר" (לפי א״י או חו״ל)</label>
+        <p class="hint">זמני קידוש לבנה והתקופות מוצגים בשעון המקומי של המקום שבחרתם. המולד מוצג כמו שמכריזים בבית הכנסת.</p>
+        <div class="fld">לימוד יומי
+          <div class="checks">
+            <label class="chk"><input type="checkbox" data-learn="daf"> דף יומי</label>
+            <label class="chk"><input type="checkbox" data-learn="mishna"> משנה יומית</label>
+            <label class="chk"><input type="checkbox" data-learn="nach"> נ״ך יומי</label>
+            <label class="chk"><input type="checkbox" data-learn="chumash"> חומש יומי (עליה לפי היום בשבוע)</label>
+            <label class="chk"><input type="checkbox" data-learn="tehillim"> תהלים לפי היום בחודש</label>
+            <label class="chk"><input type="checkbox" data-learn="tehillimW"> תהלים לפי היום בשבוע</label>
+            <label class="chk"><input type="checkbox" data-learn="yerushalmi"> ירושלמי יומי</label>
+            <label class="chk"><input type="checkbox" data-learn="rambam"> רמב״ם, פרק אחד ליום</label>
+            <label class="chk"><input type="checkbox" data-learn="rambam3"> רמב״ם, שלושה פרקים ליום</label>
+            <label class="chk"><input type="checkbox" data-learn="smitzvot"> ספר המצוות לרמב״ם</label>
+            <label class="chk"><input type="checkbox" data-learn="kitzur"> הלכה יומית: קיצור שולחן ערוך</label>
+            <label class="chk"><input type="checkbox" data-learn="ahs"> הלכה יומית: ערוך השולחן</label>
+            <label class="chk"><input type="checkbox" data-learn="amud"> עמוד יומי (דרשו)</label>
+            <label class="chk"><input type="checkbox" data-learn="cc"> חפץ חיים יומי</label>
+            <label class="chk"><input type="checkbox" data-learn="shl"> שמירת הלשון יומי</label>
+            <label class="chk"><input type="checkbox" data-learn="avot"> פרקי אבות (שבתות הקיץ)</label>
+            <label class="chk"><input type="checkbox" data-learn="dafw"> דף שבועי</label>
+            <label class="chk"><input type="checkbox" data-learn="box"> ריבוע קטן ליד כל לימוד, לסמן מה הספקתם</label>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" open data-step="1">
+      <summary>גודל הדף</summary>
+      <div class="sec-body">
+        <label class="fld">גודל הלוח<select id="size"></select></label>
+        <div class="row" id="customSizeRow">
+          <label class="fld">רוחב (מ״מ)<input id="customW" type="number" min="50" max="1200"></label>
+          <label class="fld">גובה (מ״מ)<input id="customH" type="number" min="50" max="1200"></label>
+        </div>
+        <div class="fld">כיוון
+          <div class="seg" role="radiogroup" aria-label="כיוון">
+            <label><input type="radio" name="orient" value="portrait"> לאורך</label>
+            <label><input type="radio" name="orient" value="landscape"> לרוחב</label>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec nocd" open data-step="2">
+      <summary>פריסת עמודים</summary>
+      <div class="sec-body">
+        <div class="fld">פריסה
+          <div class="seg" role="radiogroup" aria-label="פריסה">
+            <label><input type="radio" name="layout" value="full"><span class="lay-ic" aria-hidden="true"><i class="g"></i></span> לוח בכל העמוד</label>
+            <label><input type="radio" name="layout" value="same"><span class="lay-ic" aria-hidden="true"><i class="im"></i><i class="g"></i></span> תמונה ולוח באותו עמוד</label>
+            <label><input type="radio" name="layout" value="split"><span class="lay-ic two" aria-hidden="true"><b><i class="im full"></i></b><b><i class="g"></i></b></span> עמוד לתמונה, עמוד ללוח</label>
+          </div>
+        </div>
+        <p class="hint" id="layoutHint"></p>
+        <label class="fld" id="imgRatioFld">גובה התמונה: <span id="imgRatioVal"></span><input type="range" id="imgRatio" min="0" max="60" step="1"></label>
+        <details class="tcol-box"><summary>צבע לכל סוג טקסט</summary>
+          <p class="hint">בוחרים צבע לכל סוג טקסט בלוח. מה שלא שיניתם נשאר בצבעי העיצוב. כותרות, באנרים והקדשות: לוחצים על הטקסט בלוח ובוחרים צבע בסרגל שנפתח מעליו.</p>
+          <div id="tcolList" class="tcol-list"></div>
+          <button class="btn small" type="button" id="tcolReset">כל הצבעים לברירת המחדל</button>
+        </details>
+        <label class="fld">גודל הטקסט בימים (לא משפיע על עמוד דברי הימים): <span id="textScaleVal"></span><input type="range" id="textScale" min="70" max="160" step="5"></label>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" id="cover"> עמוד שער</label>
+          <label class="chk"><input type="checkbox" id="showCaption"> שורת טקסט לתמונה</label>
+          <label class="chk"><input type="checkbox" data-opt="credit"> שורה קטנה "הופק ע״י MyLuach.org" בתחתית הדף <small class="hint" id="creditHint"></small></label>
+          <label class="chk"><input type="checkbox" id="dedication"> שורת הקדשה או חסות בכל חודש</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" open data-step="6">
+      <summary>באנרים</summary>
+      <div class="sec-body">
+        <p class="hint">פס תמונה וטקסט בצד העמוד, למשל לנותן חסות. אחרי הסימון לוחצים על הבאנר בתצוגה המקדימה כדי להעלות תמונה, ומושכים את הפס הצבעוני כדי לשנות את גודלו.</p>
+        <div class="row">
+          <div class="fld" style="flex:1">באנרים (אפשר לסמן כמה)
+            <div class="checks" id="bannerChecks">
+              <label class="chk"><input type="checkbox" data-bpos="top"> למעלה</label>
+              <label class="chk"><input type="checkbox" data-bpos="bottom"> למטה</label>
+              <label class="chk"><input type="checkbox" data-bpos="right"> בצד ימין</label>
+              <label class="chk"><input type="checkbox" data-bpos="left"> בצד שמאל</label>
+            </div>
+          </div>
+        </div>
+        <div id="bannerOpts">
+          <label class="fld">גודל הבאנר: <span id="bannerSizeVal"></span><input type="range" id="bannerSize" min="6" max="40" step="1"></label>
+          <label class="chk"><input type="checkbox" id="bannerPer"> באנר שונה לכל עמוד (אחרת אותו באנר בכל העמודים)</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" data-step="2">
+      <summary>עיצוב</summary>
+      <div class="sec-body">
+        <div class="fld">סגנון
+          <div class="seg" role="radiogroup" aria-label="סגנון">
+            <label><input type="radio" name="theme" value="ink"> קלאסי</label>
+            <label><input type="radio" name="theme" value="block"> בולט</label>
+            <label><input type="radio" name="theme" value="soft"> עדין</label>
+          </div>
+        </div>
+        <div class="fld">צבע<div class="swatches" id="swatches"></div></div>
+        <label class="fld">גופן כותרות ותאריכים<select id="headFont"></select></label>
+        <div class="font-prev" id="headPrev">חשון תשפ״ז · ט״ו</div>
+        <label class="fld">גופן הטקסט הקטן (חגים, זמנים, אירועים)<select id="bodyFont"></select></label>
+        <div class="font-prev small" id="bodyPrev">ראש חודש · הדלקת נרות 16:32 · יום הולדת לשירה</div>
+        <p class="hint">לכל טקסט שכותבים בדף (כותרת, הקדשה, באנר) אפשר לבחור גופן משלו: לוחצים עליו ובוחרים בסרגל שמופיע.</p>
+        <div class="fld">טקסט על תמונות בימים
+          <div class="seg" role="radiogroup" aria-label="טקסט על תמונות">
+            <label><input type="radio" name="imgText" value="auto"> צבע לפי התמונה</label>
+            <label><input type="radio" name="imgText" value="band"> על רקע לבן</label>
+          </div>
+        </div>
+        <p class="hint">"צבע לפי התמונה" כותב לבן על תמונה כהה ושחור על תמונה בהירה, כך שרואים את כל התמונה. אפשר לקבוע צבע אחר לכל יום בחלון העריכה שלו.</p>
+      </div>
+    </details>
+
+    <details class="sec" data-step="6">
+      <summary>עמודים נוספים <span class="tag" id="adCount"></span></summary>
+      <div class="sec-body">
+        <p class="hint">פרסומות, ברכות, דפי הערות או עמודים ריקים. הכי פשוט: לחצו על "+ הוספת עמוד כאן" בין העמודים בלוח, בכל מקום שתרצו.</p>
+        <div class="listbox" id="adList"></div>
+        <div class="row">
+          <label class="fld">סוג<select id="adType"></select></label>
+          <button class="btn small" type="button" id="adAdd">הוספה בסוף הלוח</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" data-step="4">
+      <summary>אירועים בדברי ימי ישראל <span class="tag" id="gedCount"></span></summary>
+      <div class="sec-body">
+        <p class="hint">מאגר "אירועים בדברי ימי ישראל": כ־3,450 רשומות של פטירות גדולי ישראל ואירועים בתולדות עם ישראל, לפי תאריך עברי.</p>
+        <div class="fld">מה להציג בלוח
+          <div class="seg" role="radiogroup" aria-label="יומי דהילולא (יארצייטן)">
+            <label><input type="radio" name="yzMode" value="none"> בלי</label>
+            <label><input type="radio" name="yzMode" value="selected"> רק מסומנים</label>
+            <label><input type="radio" name="yzMode" value="all"> כל המאגר</label>
+          </div>
+        </div>
+        <div class="row" id="yzListRow">
+          <label class="fld">הרשימה הפעילה<select id="yzListSel"></select></label>
+          <button class="btn small" type="button" id="yzListsBtn">הרשימות שלי</button>
+        </div>
+        <p class="hint" id="yzListHint">אפשר לשמור כמה רשימות אישיות, למשל "גדולי חסידות" או "רבני ספרד", ולעבור ביניהן.</p>
+        <div class="row">
+          <label class="fld">סדר בתוך כל יום<select id="yzOrder"><option value="year">לפי שנים, מהקדום לחדש</option><option value="recent">לפי שנים, מהחדש לקדום</option><option value="db">כמו במאגר</option></select></label>
+          <label class="fld">איך לכתוב לפני השם<select id="yzPrefix"><option value="yaz">יא״צ</option><option value="hil">הילולת</option><option value="yoma">יומא דהילולא</option><option value="yod">יו״ד (ראשי תיבות של יומא דהילולא)</option><option value="none">רק השם</option></select></label>
+          <label class="fld">צורת הכתיבה<select id="yzFmt"><option value="short">מקוצרת</option><option value="full">מלאה עם שנה</option></select></label>
+          <label class="chk"><input type="checkbox" data-opt="yzLines"> כל אירוע בשורה נפרדת</label>
+          <label class="fld">גודל הטקסט בעמוד דברי הימים: <span id="histScaleVal"></span><input type="range" id="histScale" min="60" max="160" step="5"></label>
+          <label class="fld">כשהאירועים לא נכנסים בעמוד<select id="histOverflow"><option value="ask">לשאול אותי</option><option value="page">להוסיף עמוד נוסף</option><option value="shrink">להקטין את הטקסט</option></select></label>
+        </div>
+        <label class="chk"><input type="checkbox" id="yzHist"> כולל אירועים בדברי ימי ישראל (לא רק פטירות)</label>
+
+        <p class="hint">היכן יומי דהילולא (יארצייטן) מופיעים (בתוך הימים או בטור נפרד) קובעים ב"מה מופיע איפה".</p>
+        <p class="hint">בלוח שבועי ויומי יש יותר מקום, ולכן מוצגים שם עד פי שלושה.</p>
+        <button class="btn primary" type="button" id="yzManage">ניהול "אירועים בדברי ימי ישראל": סימון, דילוג ועריכה</button>
+        <div class="row"><button class="btn" type="button" id="yzReport">שליחת תיקונים, אירועים והערות למנהל האתר</button><button class="btn" type="button" id="yzInbox" hidden>דיווחים שהתקבלו</button></div>
+        <label class="fld">חיפוש מהיר<input id="yzSearch" type="search" placeholder="שם, כינוי או ספר, למשל: חפץ חיים"></label>
+        <div class="fld" id="yzListTitle"></div>
+        <div class="listbox" id="yzList"></div>
+        <div class="row"><button class="btn small" type="button" id="yzDefaults">סימון הרשימה המומלצת</button><button class="btn small" type="button" id="yzNone">ניקוי הסימונים</button></div>
+        <details class="sub-box">
+          <summary>רשימה ידנית והוספת שם שחסר</summary>
+          <div class="inner">
+            <div class="row"><button class="btn small" type="button" id="gedAll">סמן הכל</button><button class="btn small" type="button" id="gedNone">נקה הכל</button></div>
+            <div class="listbox" id="gedList"></div>
+            <label class="fld">שם<input id="gName" placeholder="למשל: הרב מפוניבז׳"></label>
+            <div class="row">
+              <label class="fld">יום<select id="gDay"></select></label>
+              <label class="fld">חודש<select id="gMonth"></select></label>
+              <button class="btn small" type="button" id="gAdd">הוספה</button>
+            </div>
+          </div>
+        </details>
+      </div>
+    </details>
+    <details class="sec" open data-step="5">
+      <summary>תמונות</summary>
+      <div class="sec-body">
+        <p class="hint">תמונה לכל חודש: לוחצים על אזור התמונה בתצוגה המקדימה, או מעלים כמה תמונות ביחד ומסדרים אותן כאן. תמונה בתוך יום מוסיפים בלחיצה על היום.</p>
+        <button class="btn" type="button" id="bulkBtn2">סידור תמונות לכל החודשים</button>
+        <p class="hint">לעריכת תמונה (שיפור צבעים, טקסט על התמונה, תמונה על תמונה): מרחפים מעל התמונה ולוחצים "עריכה".</p>
+      </div>
+    </details>
+
+    <details class="sec" open data-step="7" id="freeSec">
+      <summary>עיצוב חופשי בתצוגה המקדימה</summary>
+      <div class="sec-body">
+        <div class="hint cdonly-b"><ol>
+          <li><b>כותרות וטקסטים:</b> לוחצים על הכותרת, על השורה שמתחתיה או על הטקסט בדף הפתיחה והסיום, וכותבים. בסרגל שנפתח: גודל, צבע, יישור וגופן.</li>
+          <li><b>תמונות:</b> בשלב 1, ב"תמונות", לוחצים "✎ עריכה" על תמונה: שיפור, טקסט על התמונה, מדבקות וכובעים.</li>
+          <li><b>תמונה ליום מסוים:</b> לוחצים על היום בלוח ומוסיפים אירוע עם תמונה.</li>
+          <li><b>צבעים וגודל טקסט:</b> כאן למטה, או בשלב 2.</li>
+        </ol></div>
+        <div class="hint nocd"><ol>
+          <li><b>הזזת תמונה:</b> תופסים את התמונה וגוררים. <b>הגדלה:</b> כפתורי + ו־− שעל התמונה.</li>
+          <li><b>שינוי גודל:</b> מושכים את הפסים הצבעוניים: מתחת לתמונת החודש, בקצה הבאנרים ובקצה הטור הנפרד.</li>
+          <li><b>טקסטים:</b> לוחצים על כותרת, הקדשה או באנר. בסרגל שנפתח: גודל, יישור וגופן.</li>
+          <li><b>צבעים וסגנון:</b> בשלב 2 (עיצוב), או בכפתור למטה.</li>
+        </ol></div>
+        <div class="fld">צבע מהיר<div class="swatches" id="swatches2"></div></div>
+        <label class="fld">גודל הטקסט בימים: <span id="textScaleVal2"></span><input type="range" id="textScale2" min="70" max="160" step="5"></label>
+      </div>
+    </details>
+
+    <details class="sec" open data-step="8" id="finishSec">
+      <summary>סיום</summary>
+      <div class="sec-body">
+        <p class="hint">הכל נשמר אוטומטית בדפדפן הזה. בפעם הבאה שתיכנסו תגיעו ישר ללוח שלכם.</p>
+        <p class="hint" id="finishPrintHint"></p>
+        <div class="row"><button class="btn primary" type="button" id="finishBtn">סיום: למעבר ללוח שלי</button><button class="btn" type="button" id="printBtn2" hidden>הדפסה / שמירה כ־PDF</button></div>
+      </div>
+    </details>
+
+    <details class="sec" data-step="8">
+      <summary>גיבוי ושחזור</summary>
+      <div class="sec-body">
+        <p class="hint">הכל נשמר אוטומטית בדפדפן הזה ונשאר לשנים הבאות. לגיבוי או להעברה למחשב אחר:</p>
+        <div class="row">
+          <button class="btn" type="button" id="exportBtn">שמירת גיבוי</button>
+          <button class="btn" type="button" id="importBtn">שחזור מגיבוי</button>
+        </div>
+        <div class="row" id="resetRow"></div>
+        <p class="hint" id="saveState">נשמר</p>
+      </div>
+    </details>
+
+    <div class="step-nav" id="stepNav">
+      <button class="btn" type="button" id="stepPrev">→ הקודם</button>
+      <span class="hint" id="stepCount"></span>
+      <button class="btn primary" type="button" id="stepNext">הבא ←</button>
+    </div>
+  </aside>
+
+  <main class="stage" id="stage">
+    <div class="stage-head"><strong id="stageTitle"></strong><span id="stageMeta"></span><span>לחצו על יום כדי להוסיף לו אירוע. גררו תמונה כדי להזיז אותה. משכו את הפסים הצבעוניים כדי לשנות גודל. לחצו על טקסט כדי לערוך, להגדיל או ליישר.</span></div>
+  </main>
+</div>
+
+<input type="file" id="fileOne" accept="image/*" hidden>
+<input type="file" id="fileMany" accept="image/*" multiple hidden>
+<input type="file" id="fileJson" accept="application/json,.json" hidden>
+<div class="dev-plan no-print"><label>מצב בדיקה · מסלול: <select id="devPlan"></select></label></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@hebcal/core@5.10.1/dist/bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@hebcal/learning@5.1.2/dist/bundle.min.js"></script>
+<script>window.MYLUACH_MODE='simple'</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/config.js?v=202610130515"></script>
+<script src="assets/yz.js?v=202610130515"></script>
+<script src="assets/plans.js?v=202610150400"></script>
+<script src="assets/stickers.js?v=202610130515"></script>
+<script src="assets/img-smart.js?v=202610130515"></script>
+<script src="assets/app.js?v=202610150500"></script>
+</body>
+</html>

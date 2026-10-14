@@ -965,3 +965,9 @@ body.cd-app #sampleBtn{display:none!important}
 .cdonly-b{display:none}body.cd-app .cdonly-b{display:block}
 /* לוח חינמי לשנה: שורת הקרדיט בולטת */
 .pg-foot .credit-lite{font-size:calc(var(--u)*3.2);font-weight:800;color:var(--acc);opacity:1;letter-spacing:.01em}
+/* הבונה הפשוט */
+.simple-only{display:none}
+body.simple-app .simple-only{display:block}
+.simple-note{background:#fff7e0;border:1px solid #f0d58a;border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;margin-bottom:10px}
+.simple-note a{font-weight:700}
+body.simple-app #hlSec,body.simple-app #modeBtn,body.simple-app #tfSec{display:none!important}

@@ -7,7 +7,7 @@ let SAMPLE=null,LITE=false; /* הורדת חודש לדוגמה: {key} בזמן 
 /* בלי כניסה לחשבון רואים 8 חודשים, ובהורדה מבקשים להיכנס (ההרשמה חינם) */
 const AUTH={user:null,ready:false},LOGIN_MONTHS=8;
 /* דף הספירה לאחור (countdown.html) משתמש באותו בונה, עם לוח נפרד ושמור בנפרד */
-const CDMODE=window.MYLUACH_MODE==='countdown',SKEY=CDMODE?'state-cd':'state';
+const CDMODE=window.MYLUACH_MODE==='countdown',SIMPLE=window.MYLUACH_MODE==='simple',SKEY=CDMODE?'state-cd':'state';
 const PLAN0=()=>LITE?{...(LP?LP.byId('free'):{}),months:99,watermark:false,lite:true,features:{}}:SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?(()=>{const c=LP.current();return c.id==='free'&&AUTH.ready&&!AUTH.user?{...c,months:Math.min(c.months,LOGIN_MONTHS),needLogin:true}:c})():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
 /* לוח ספירה לאחור קצר (עד FREE_CD ימים) פתוח בחינם: בלי סימן מים, ומדפיסים בלי לנצל הורדה */
 const FREE_CD=40;
@@ -2663,8 +2663,9 @@ const STEPS=[
  ['עיצוב חופשי','בתצוגה המקדימה אפשר לגרור, להגדיל ולעצב כל דבר ישירות.'],
  ['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']];
 const CD_STEPS={1:['פרטי הספירה','למה סופרים, תאריך היעד, העיצוב והצורה, תמונות ומשפטים, וגודל הדף.'],2:['צבעים וגופנים','צבעי הלוח, הגופנים וגודל הטקסט.'],7:['עיצוב חופשי','בתצוגה המקדימה אפשר לגרור, להגדיל ולעצב כל דבר ישירות.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
-const STEP_LIST=()=>CDMODE?[1,2,7,8]:[1,2,3,4,5,6,7,8];
-const stepInfo=n=>CDMODE?CD_STEPS[n]:STEPS[n-1];
+const SIMPLE_STEPS={1:['סוג הלוח','לוח עברי או לועזי, השנה וגודל הדף.'],2:['עיצוב','איך נראה כל עמוד, צבעים וגופנים.'],5:['תמונות ואירועים','תמונת שער, תמונה לכל חודש, ימי הולדת, ימי שנה ואירועים. אפשר גם ללחוץ על כל יום בלוח.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
+const STEP_LIST=()=>CDMODE?[1,2,7,8]:SIMPLE?[1,2,5,8]:[1,2,3,4,5,6,7,8];
+const stepInfo=n=>CDMODE?CD_STEPS[n]:SIMPLE?SIMPLE_STEPS[n]:STEPS[n-1];
 function uiMode(){return state.s.uiMode||'wizard'}
 function applyMode(){
   const s=state.s,mode=uiMode(),SL=STEP_LIST();let n=Math.min(8,Math.max(1,+s.step||1));if(SL.indexOf(n)<0)n=SL.find(x=>x>=n)||SL[SL.length-1];const pos=SL.indexOf(n)+1;

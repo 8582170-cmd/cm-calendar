@@ -129,6 +129,13 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .who-c h3{font-family:var(--f-body);font-size:19px;font-weight:800}
 .who-c p{margin:0;color:var(--mute);font-size:15.5px;flex:1}
 .who-go{color:var(--teal);font-weight:700;font-size:15px}
+.cd-promo{display:flex;flex-wrap:wrap;gap:28px;align-items:center;background:var(--teal-soft);border-radius:20px;padding:32px}
+.cdp-text{flex:1 1 380px;min-width:0}.cdp-text h2{margin-top:0}.cdp-text ul{margin:10px 0 16px;padding-inline-start:20px;line-height:1.8}
+.cdp-text .cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.cdp-vis{flex:0 1 300px;display:flex;flex-direction:column;gap:12px;align-items:center;margin-inline:auto}
+.cdp-card{background:#fff;border-radius:16px;padding:20px 34px;text-align:center;box-shadow:0 10px 26px rgba(0,0,0,.08)}
+.cdp-card b{display:block;color:var(--mute);font-weight:700}.cdp-card strong{display:block;font-family:var(--f-display);font-size:84px;line-height:1;color:var(--teal)}.cdp-card span{font-weight:800}
+.cdp-mini{display:flex;gap:6px}.cdp-mini i{font-style:normal;width:34px;height:34px;border-radius:8px;background:#fff;display:grid;place-items:center;font-weight:700;color:var(--mute)}.cdp-mini i.on{background:var(--teal);color:#fff}
 .online-strip{margin-top:18px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:16px 20px;border-radius:14px;background:var(--teal-soft);color:var(--ink);text-decoration:none}
 .online-strip span:not(.who-go){color:var(--mute);flex:1;min-width:16em}
 .online-strip:hover .who-go{text-decoration:underline}
@@ -204,6 +211,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 #hist,#hist *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .logo-img{display:inline-block;vertical-align:middle;flex:none;margin-inline-end:8px}
 </style>
+<script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -213,6 +221,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
       <a href="#what">מה בלוח</a>
       <a href="#who">למי</a>
       <a href="gallery.html">גלריה</a>
+      <a href="countdown.html">ספירה לאחור</a>
       <a href="online/">לוח שנה אונליין</a>
       <a href="#plans">מסלולים</a>
       <a href="#faq">שאלות</a>
@@ -225,25 +234,25 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
     <div class="hero">
       <div class="hero-text">
         <span class="eyebrow">לוח שנה עברי־לועזי להדפסה</span>
-        <h1>הלוח האישי של <em>המשפחה, המוסד או הקהילה</em> שלכם</h1>
-        <p class="lead">זמני היום לפי העיר והמנהג שלכם, תמונות לכל חודש, ימי הולדת, ימי שנה (יארצייטים) ואירועים שחוזרים כל שנה. מתאים לבית, לבית כנסת, לישיבה, לבית ספר ולכל ארגון. בונים שלב אחר שלב, ומדפיסים לוח קיר, שולחני או למקרר.</p>
+        <h1>לוח שנה אישי עם תמונות, <em>בעיצוב שלכם</em></h1>
+        <p class="lead">מעצבים לוח שנה עברי־לועזי משלכם: תמונה לכל חודש, ימי הולדת, ימי נישואין ויארצייטים שחוזרים כל שנה לפי התאריך העברי או הלועזי, וכל טקסט, צבע וגופן כמו שאתם רוצים. זמני היום מחושבים לעיר ולמנהג שלכם בהגדרה גמישה, ואפשר להוסיף לימוד יומי. להדפסה ולהורדה: לקיר, לשולחן או למקרר.</p>
         <div class="cta">
-          <a class="btn btn-primary" href="app.html">להתחיל לבנות בחינם</a>
-          <a class="btn btn-ghost" href="#plans">לראות מסלולים</a>
+          <a class="btn btn-primary" href="app.html">לעצב לוח בחינם</a>
+          <a class="btn btn-ghost" href="simple.html">בונה פשוט ומהיר</a>
         </div>
         <p class="fine">בלי כרטיס אשראי. משלמים רק כשהלוח מוכן להדפסה.</p>
       </div>
 
-      <div class="wall" aria-label="דוגמה ללוח קיר פתוח: למעלה אירועים בדברי ימי ישראל, למטה לוח חודש תשרי תשפ״ז">
-      <figure class="sheet hist">
-        <div class="sheet-head"><b>תשרי</b><span>דברי הימים</span><small id="histCount">העמוד העליון</small></div>
-        <div class="hist-scroll" tabindex="0" aria-label="כל האירועים בדברי ימי ישראל לחודש תשרי"><ul class="hist-list" id="hist"></ul></div>
-      </figure>
+      <div class="wall" aria-label="דוגמה ללוח קיר: לוח חודש תשרי תשפ״ז, ומתחתיו עמוד דברי הימים">
       <div class="rings" aria-hidden="true"></div>
       <figure class="sheet cal">
         <div class="sheet-head"><b>תשרי</b><span>תשפ״ז</span><small>ספטמבר–אוקטובר 2026 · ירושלים</small></div>
         <div class="grid" id="demo"></div>
         <div class="sheet-foot"><span>הדלקת נרות 40 דק׳ לפני השקיעה</span><span>מוצאי שבת לפי צאת הכוכבים</span></div>
+      </figure>
+      <figure class="sheet hist">
+        <div class="sheet-head"><b>תשרי</b><span>דברי הימים</span><small id="histCount">העמוד העליון</small></div>
+        <div class="hist-scroll" tabindex="0" aria-label="כל האירועים בדברי ימי ישראל לחודש תשרי"><ul class="hist-list" id="hist"></ul></div>
       </figure>
       </div>
     </div>
@@ -254,13 +263,14 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
         <p>מה שהיה מפוזר בין הלוח של בית הכנסת, הלוח מהחנות ורשימת ימי ההולדת על המקרר, בדף אחד.</p>
       </div>
       <div class="features">
-        <div class="feature"><span class="k">7</span><h3>מנהגי זמנים מוכנים</h3><p>אשכנזים, ספרדים, חב״ד, הגר״א ועוד. ולמי שמקפיד: מעלות ודקות לכל זמן בנפרד.</p></div>
-        <div class="feature"><span class="k">3,500</span><h3>אירועים בדברי ימי ישראל</h3><p>ימי פטירה של גדולי ישראל ואירועים מההיסטוריה היהודית. בוחרים מה להציג, ועורכים לעצמכם.</p></div>
-        <div class="feature"><span class="k">∞</span><h3>תאריכים משפחתיים</h3><p>ימי הולדת, ימי נישואין וימי שנה (יארצייטים) לפי התאריך העברי או הלועזי, והם חוזרים מעצמם כל שנה.</p></div>
-        <div class="feature"><span class="k">17</span><h3>לימודים יומיים</h3><p>דף יומי, משנה, נ״ך, ירושלמי, רמב״ם, הלכה יומית ועוד, עם ריבוע קטן לסמן מה הספקתם.</p></div>
+        <div class="feature"><span class="k">✎</span><h3>עיצוב אישי מלא</h3><p>סגנונות, צבעים, גופנים ומסגרות. משנים כל כותרת וטקסט ישירות על הדף, גוררים ומגדילים תמונות, ועורכים אותן עם טקסט ומדבקות.</p></div>
+        <div class="feature"><span class="k">📷</span><h3>התמונות שלכם</h3><p>תמונה לכל חודש, עמוד שער, תמונה בתוך יום מיוחד, ותמונות מהמחשב, מהטלפון, מ־Google Photos או מהדרייב. מעלים הרבה בבת אחת ומסדרים בגרירה.</p></div>
+        <div class="feature"><span class="k">∞</span><h3>התאריכים של המשפחה</h3><p>ימי הולדת, ימי נישואין וימי שנה (יארצייטים) לפי התאריך העברי או הלועזי, והם חוזרים מעצמם כל שנה. אפשר לייבא רשימה מאקסל.</p></div>
+        <div class="feature"><span class="k">7</span><h3>זמני היום בהגדרה גמישה</h3><p>מנהגים מוכנים (אשכנזים, ספרדים, חב״ד, הגר״א ועוד), או שיטה משלכם לכל זמן: מעלות ודקות, עיגול, ובחירה אילו זמנים יופיעו ואיפה.</p></div>
+        <div class="feature"><span class="k">17</span><h3>לימוד יומי</h3><p>דף יומי, משנה, נ״ך, ירושלמי, רמב״ם, הלכה יומית ועוד, עם ריבוע קטן לסמן מה הספקתם.</p></div>
         <div class="feature"><span class="k">8</span><h3>גדלים ופריסות</h3><p>קיר A3 ו־A2, A4, שולחני, מקרר, כיס, Letter, או מידה משלכם. תמונה מעל הלוח, בעמוד נפרד, או לוח מלא.</p></div>
-        <div class="feature"><span class="k">100</span><h3>ספירה לאחור</h3><p>לחתונה, לבר המצווה או ללידה: כמה ימים נשארו, בעיצוב לכלה, לבר מצווה או לילדים, עם תמונות ומשפטים. <a href="countdown.html">ליצירת לוח ספירה</a></p></div>
         <div class="feature"><span class="k">1</span><h3>לחיצה לשנה הבאה</h3><p>הכל נשמר. בשנה הבאה לוחצים על ״לוח חדש לשנה הבאה״, וכל התאריכים והתמונות כבר שם.</p></div>
+        <div class="feature"><span class="k">📜</span><h3>וגם: דברי הימים</h3><p>למי שרוצה: ימי פטירה של גדולי ישראל ומאורעות מתולדות עם ישראל, לבחירתכם.</p></div>
       </div>
     </section>
 
@@ -278,6 +288,25 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
         <a class="who-c" href="countdown.html"><span class="who-ic" aria-hidden="true">⏳</span><h3>ספירה לאחור</h3><p>לחתונה, לבר המצווה או ללידה: לוח לסימון הימים, בעיצוב לכלה או לילדים.</p><span class="who-go">להתחיל ←</span></a>
       </div>
       <a class="online-strip" href="online/"><b>מחפשים רק לבדוק תאריך או זמן?</b><span>לוח שנה עברי אונליין, זמני היום וזמני שבת לכל עיר, המרת תאריכים ותזכורות. בחינם.</span><span class="who-go">ללוח האונליין ←</span></a>
+    </section>
+
+    <section id="countdown" class="cd-promo">
+      <div class="cdp-text">
+        <h2>לוח ספירה לאחור לשמחה שלכם</h2>
+        <p>לחתונה, לבר המצווה, לבת המצווה, ללידה או לטיול: לוח שסופר את הימים, להדפסה ולתלייה על המקרר. הילדים מסמנים כל יום שעבר.</p>
+        <ul>
+          <li>9 עיצובים: כלה, בר מצווה, בת מצווה, ילדים, תינוק, אלגנטי, טבע, טיול וקלאסי</li>
+          <li>דף פתיחה ודף סיום עם תמונות, ותמונת רקע</li>
+          <li>משפטים יפים כל כמה ימים, או משפטים משלכם</li>
+          <li>פרשת השבוע, חגים וזמני היום בכל יום, לפי בחירה</li>
+          <li>כובע, כיפה או כתר על הראש בתמונה, בהתאמה אוטומטית</li>
+        </ul>
+        <div class="cta"><a class="btn btn-primary" href="countdown.html">ליצירת לוח ספירה</a><span class="fine">עד 40 ימים: הורדה והדפסה בחינם</span></div>
+      </div>
+      <div class="cdp-vis" aria-hidden="true">
+        <div class="cdp-card"><b>עוד</b><strong>18</strong><span>ימים לחתונה!</span></div>
+        <div class="cdp-mini"><i>21</i><i>20</i><i>19</i><i class="on">18</i><i>17</i><i>16</i><i>15</i></div>
+      </div>
     </section>
 
     <section id="how">
@@ -305,7 +334,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
     <section id="faq">
       <div class="sec-head"><h2>שאלות</h2></div>
       <div class="faq">
-        <details><summary>אפשר לנסות לפני שמשלמים?</summary><p>כן. במסלול הניסיון בונים את כל הלוח, לכל השנה, עם כל האפשרויות. על כל עמוד יש סימן מים חזק ואי אפשר להוריד אותו, אבל אפשר להוריד חודש אחד לדוגמה בחינם. כשבוחרים מסלול, הכל נשאר והסימן יורד.</p></details>
+        <details><summary>אפשר לנסות לפני שמשלמים?</summary><p>כן. במסלול הניסיון בונים את כל הלוח, לכל השנה, עם כל האפשרויות. בזמן הבנייה יש על העמודים סימן מים. בחינם אפשר להוריד חודש אחד לדוגמה בגרסה המלאה, ופעם אחת גם לוח פשוט לכל השנה בלי סימן מים (עד 3 זמני היום, 10 תמונות ו־25 אירועים). כשבוחרים מסלול, הכל נשאר והסימן יורד.</p></details>
         <details><summary>איך מוסיפים תמונות?</summary><p>יש כמה מקומות לתמונות, ובוחרים מה מתאים לכם:</p><ul class="faq-list"><li><b>תמונה לכל חודש:</b> בראש עמוד הלוח, או בעמוד שלם משלה מול הלוח.</li><li><b>תמונה בתוך יום:</b> למשל תמונה של הילד ביום ההולדת שלו. צבע הכתב משתנה לבד כדי שיהיה קריא על התמונה.</li><li><b>עמוד שער</b> עם תמונה וכותרת, <b>באנרים</b> בצדי הדף, ו<b>עמודים נוספים</b> לברכות, תודות או פרסומות בכל מקום בלוח.</li><li><b>העלאה של הרבה תמונות בבת אחת:</b> בוחרים את כל התמונות, רואים אותן מסודרות לפי חודשים, ומשנים את הסדר בגרירה.</li><li><b>עורך תמונות:</b> הזזה והגדלה של התמונה בתוך המסגרת, שיפור צבעים, טקסט על התמונה ותמונה קטנה על תמונה.</li></ul></details>
         <details><summary>אילו אירועים אישיים אפשר להוסיף?</summary><p>לוחצים על יום בלוח ובוחרים סוג: יום הולדת, יום נישואין, יום שנה (יארצייט), אירוע או תזכורת.</p><ul class="faq-list"><li><b>עברי או לועזי:</b> כל אירוע לפי התאריך העברי או הלועזי, והוא חוזר מעצמו כל שנה. אפשר גם אירוע חד־פעמי בתאריך מסוים.</li><li><b>איפה הם מופיעים:</b> בתוך הימים, או בטור נפרד ליד הלוח, עם או בלי תמונה.</li><li><b>ימים צבועים:</b> עד 10 רשימות בצבעים שלכם, למשל חופשות, ימי לימודים או תורנויות. לוחצים על הימים והם נצבעים, עם מקרא בתחתית החודש.</li><li><b>לשנה הבאה:</b> הכל נשמר ועובר ללוח של השנה הבאה בלחיצה.</li><li><b>כמה אפשר:</b> 30 אירועים במסלול הבסיסי, 120 במשפחתי, ובלי הגבלה במלא.</li></ul></details>
         <details><summary>איך מדפיסים?</summary><p>מורידים קובץ PDF בגודל שבחרתם. אפשר להדפיס בבית, או לשלוח לבית דפוס לכריכה בספירלה.</p></details>
@@ -323,7 +352,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 
   <footer>
     <span>© <span id="yr">2026</span> MyLuach · לוח שנה עברי־לועזי להדפסה</span>
-    <nav class="foot-links" aria-label="קישורים"><a href="gallery.html">גלריה</a><a href="online/">לוח אונליין</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="terms.html#contact">יצירת קשר</a></nav>
+    <nav class="foot-links" aria-label="קישורים"><a href="gallery.html">גלריה</a><a href="online/">לוח אונליין</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="simple.html">בונה פשוט</a><a href="countdown.html">ספירה לאחור</a><a href="terms.html#contact">יצירת קשר</a></nav>
     <span class="foot-note">התאריכים והזמנים מחושבים לפי הלוח העברי. כדאי לבדוק זמנים הלכתיים מול רב או לוח מקומי.</span>
   </footer>
 </div>

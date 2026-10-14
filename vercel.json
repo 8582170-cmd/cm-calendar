@@ -30,6 +30,14 @@
   {
    "source": "/privacy",
    "destination": "/privacy.html"
+  },
+  {
+   "source": "/simple",
+   "destination": "/simple.html"
+  },
+  {
+   "source": "/accessibility",
+   "destination": "/accessibility.html"
   }
  ]
 }
