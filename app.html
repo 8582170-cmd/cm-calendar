@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610130600">
+<link rel="stylesheet" href="assets/app.css?v=202610150230">
 </head>
 <body>
 
@@ -99,7 +99,14 @@
           <label class="fld" id="cdOutroTxtRow">טקסט בדף הסיום (לא חובה)<input id="cdOutroText" maxlength="120" placeholder="למשל: הגענו! מזל טוב!"></label>
           <p class="hint">תמונה ליום מסוים אחר: לוחצים על היום בלוח ומוסיפים אירוע עם תמונה.</p></div>
 
-          <div class="cd-sec"><h4>5. משפטים</h4>
+          <div class="cd-sec"><h4>5. מה יופיע בכל יום</h4>
+          <label class="fld">תאריך<select id="cdDStyle"><option value="hebMain">עברי ולועזי (עברי מודגש)</option><option value="gregMain">לועזי ועברי (לועזי מודגש)</option><option value="both">עברי ולועזי באותו גודל</option><option value="hebOnly">רק עברי</option><option value="gregOnly">רק לועזי</option></select></label>
+          <label class="chk"><input type="checkbox" data-opt="cdMonthAll"> שם החודש בכל יום (לא רק ביום הראשון)</label>
+          <div class="checks"><label class="chk"><input type="checkbox" data-cdshow="parasha"> פרשת השבוע</label><label class="chk"><input type="checkbox" data-cdshow="chag"> חגים ומועדים</label><label class="chk"><input type="checkbox" data-cdshow="rc"> ראש חודש</label></div>
+          <div class="fld">זמנים (עד 5)<div class="cd-chips" id="cdZChips"></div></div>
+          <label class="fld" id="cdCityRow">עיר לזמנים<select id="cdCity"></select></label></div>
+
+          <div class="cd-sec"><h4>6. משפטים</h4>
           <label class="chk"><input type="checkbox" data-opt="cdQuotes"> להוסיף משפטים יפים ללוח</label>
           <div id="cdQBox" class="cd-qbox">
             <div class="fld">כל כמה ימים<div class="cd-chips" id="cdQChips"></div></div>
@@ -506,7 +513,13 @@
     <details class="sec" open data-step="7" id="freeSec">
       <summary>עיצוב חופשי בתצוגה המקדימה</summary>
       <div class="sec-body">
-        <div class="hint"><ol>
+        <div class="hint cdonly-b"><ol>
+          <li><b>כותרות וטקסטים:</b> לוחצים על הכותרת, על השורה שמתחתיה או על הטקסט בדף הפתיחה והסיום, וכותבים. בסרגל שנפתח: גודל, צבע, יישור וגופן.</li>
+          <li><b>תמונות:</b> בשלב 1, ב"תמונות", לוחצים "✎ עריכה" על תמונה: שיפור, טקסט על התמונה, מדבקות וכובעים.</li>
+          <li><b>תמונה ליום מסוים:</b> לוחצים על היום בלוח ומוסיפים אירוע עם תמונה.</li>
+          <li><b>צבעים וגודל טקסט:</b> כאן למטה, או בשלב 2.</li>
+        </ol></div>
+        <div class="hint nocd"><ol>
           <li><b>הזזת תמונה:</b> תופסים את התמונה וגוררים. <b>הגדלה:</b> כפתורי + ו־− שעל התמונה.</li>
           <li><b>שינוי גודל:</b> מושכים את הפסים הצבעוניים: מתחת לתמונת החודש, בקצה הבאנרים ובקצה הטור הנפרד.</li>
           <li><b>טקסטים:</b> לוחצים על כותרת, הקדשה או באנר. בסרגל שנפתח: גודל, יישור וגופן.</li>
@@ -564,6 +577,6 @@
 <script src="assets/plans.js?v=202610130515"></script>
 <script src="assets/stickers.js?v=202610130515"></script>
 <script src="assets/img-smart.js?v=202610130515"></script>
-<script src="assets/app.js?v=202610130600"></script>
+<script src="assets/app.js?v=202610150230"></script>
 </body>
 </html>
