@@ -31,6 +31,9 @@ function clean(c) {
     if (!code || seen[code]) return; seen[code] = 1;
     out.coupons.push({ code, percent: num(x.percent, 0, 100) || 0, plans: planList(x.plans), until: date(x.until), max: Math.max(0, parseInt(x.max, 10) || 0), on: !!x.on, note: String(x.note || '').slice(0, 80) });
   });
+  const t = c.ticker || {};
+  const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
+  out.ticker = { mode: ['auto', 'selected', 'off'].includes(t.mode) ? t.mode : 'auto', ids: ints(t.ids), hide: ints(t.hide) };
   return out;
 }
 
@@ -46,6 +49,15 @@ module.exports = async (req, res) => {
       await db('settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
+    }
+    /* מבזקי דברי הימים: אירועים של תאריך עברי מסוים, או חיפוש */
+    if (req.method === 'POST' && (b.action === 'yzday' || b.action === 'yzsearch')) {
+      const { loadYZ } = require('./_yz'); const { list } = loadYZ();
+      if (b.action === 'yzsearch') { const q = String(b.q || '').trim(); if (q.length < 2) return json(res, 200, { items: [] }); return json(res, 200, { items: list.filter(e => e.t.includes(q)).slice(0, 200) }); }
+      const { HDate } = await import('./_hdate/index.js'); const ds = String(b.date || '');
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(ds) ? new Date(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10), 12) : new Date();
+      const h = new HDate(d), m = h.getMonth(), day = h.getDate(), leap = HDate.isLeapYear(h.getFullYear());
+      return json(res, 200, { heb: h.renderGematriya(true), items: list.filter(e => e.d === day && (e.m === m || (!leap && m === 12 && e.m === 13))) });
     }
     if (req.method === 'POST' && b.action === 'mailtest') {
       const { sendMail, frame, configured } = require('./_mail');

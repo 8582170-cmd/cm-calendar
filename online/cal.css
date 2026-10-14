@@ -210,3 +210,19 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 @media screen{.main::after{content:none!important}}
 .rem-mail{background:#f4f6fd;border-radius:10px;padding:10px 12px}
 .rem-mail input[type=email]{margin-top:6px;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff}
+
+/* מבזקי דברי הימים */
+.tick{display:flex;align-items:stretch;background:#1f3550;color:#fff;font-size:14px;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tick [data-t]::before{content:attr(data-t)}
+.tick-lab{flex:none;background:#c0392b;font-weight:700;padding:7px 12px;white-space:nowrap}
+.tick-win{flex:1;overflow:hidden;position:relative;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.tick-run{display:inline-flex;gap:18px;white-space:nowrap;padding:7px 0;animation:tickMove 60s linear infinite}
+.tick:hover .tick-run,.tick:focus-within .tick-run{animation-play-state:paused}
+.tick-sep{opacity:.5;font-size:10px;align-self:center}
+@keyframes tickMove{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@media (prefers-reduced-motion:reduce){.tick-run{animation:none}.tick-win{overflow-x:auto}}
+@media print{.tick{display:none}}
+.tick-i{cursor:pointer}
+.yz-res{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto;margin-top:10px}
+.yz-i{text-align:right;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 10px;cursor:pointer;font:inherit;line-height:1.5}
+.yz-i:hover{border-color:var(--pri,#3b5bdb)}

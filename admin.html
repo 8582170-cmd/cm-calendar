@@ -42,6 +42,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .login{max-width:360px;margin:60px auto;display:flex;flex-direction:column;gap:10px}
 .preview{font-size:14px;color:var(--mute)}
 .bar{position:sticky;bottom:0;background:var(--paper);padding-block:10px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center}
+.tk-list{max-height:420px;overflow:auto;margin-top:10px;display:flex;flex-direction:column;gap:6px}.tk-i{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -97,6 +98,7 @@ function render(){
   '<section><h2>קופונים</h2><p class="sub">קוד שהלקוח מקליד בחלון התשלום. "מקסימום שימושים" 0 = בלי הגבלה. תאריך ריק = בלי תאריך סיום.</p><div class="scroll"><table class="tbl" id="cpn"><thead><tr><th>פעיל</th><th>קוד</th><th>הנחה %</th><th>מסלולים</th><th>עד תאריך</th><th>מקס׳ שימושים</th><th>נוצל</th><th>הערה</th><th></th></tr></thead><tbody>'+
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
+  tickerSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
     (Object.keys(D.mail.today).length?Object.entries(D.mail.today).map(([k,v])=>'<span><b>'+esc(k)+':</b> '+v+'</span>').join(''):'<span>היום עוד לא נשלחו מיילים</span>')+
@@ -109,6 +111,17 @@ function render(){
   '</tbody></table></div></section>';
   bind();preview();
 }
+function tickerSection(){C.ticker=C.ticker||{mode:'auto',ids:[],hide:[]};const t=C.ticker;
+  return '<section><h2>מבזקי דברי הימים בלוח המקוון</h2><p class="sub">פס מתחלף בראש הלוח המקוון עם האירועים של התאריך העברי של היום. בוחרים כאן אילו אירועים יופיעו.</p>'+
+   '<div class="row"><label>מה להציג <select id="tkMode"><option value="auto">את כל אירועי היום, חוץ ממה שהסרתי</option><option value="selected">רק אירועים שסימנתי</option><option value="off">לא להציג מבזקים</option></select></label>'+
+   '<span>מסומנים: <b>'+t.ids.length+'</b> · הוסרו: <b>'+t.hide.length+'</b></span></div>'+
+   '<div class="row" style="margin-top:10px"><label>תאריך <input type="date" id="tkDate" value="'+new Date().toISOString().slice(0,10)+'"></label><button class="btn" type="button" id="tkDay">הצגת האירועים של התאריך</button>'+
+   '<label>או חיפוש <input type="text" id="tkQ" placeholder="שם או מילה" style="width:180px"></label><button class="btn" type="button" id="tkFind">חיפוש</button></div>'+
+   '<div id="tkList" class="tk-list"></div><p class="sub">אחרי הסימון לוחצים "שמירה" למטה.</p></section>'}
+function tickerList(items,head){const t=C.ticker,sel=t.mode==='selected';const box=$('#tkList');
+  box.innerHTML=(head?'<p><b>'+esc(head)+'</b> · '+items.length+' אירועים</p>':'')+(items.length?items.map(e=>{const on=sel?t.ids.includes(e.id):!t.hide.includes(e.id);
+    return '<label class="tk-i"><input type="checkbox" data-tk="'+e.id+'"'+(on?' checked':'')+'> <span>'+(e.y?'<b>'+esc(e.y)+'</b> · ':'')+esc(e.t)+'</span></label>'}).join(''):'<p>לא נמצאו אירועים.</p>');
+  box.querySelectorAll('[data-tk]').forEach(c=>c.onchange=()=>{const id=+c.dataset.tk,L=sel?t.ids:t.hide,want=sel?c.checked:!c.checked,i=L.indexOf(id);if(want&&i<0)L.push(id);if(!want&&i>=0)L.splice(i,1)})}
 function collect(){
   document.querySelectorAll('tr[data-plan]').forEach(tr=>{const o={};tr.querySelectorAll('input[data-k]').forEach(i=>{o[i.dataset.k]=i.value===''?null:+i.value});C.plans[tr.dataset.plan]=o});
   const pl=n=>[...document.querySelectorAll('input[data-pl="'+n+'"]')].filter(x=>x.checked).map(x=>x.value);
@@ -124,6 +137,9 @@ function preview(){
     const el=document.querySelector('[data-prev="'+id+'"]');if(el)el.textContent=(Math.round(ils*(100-off))/100)+' ₪'+(off?' ('+off+'% '+why+')':'')});
 }
 function bind(){
+  if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
+    $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};
+    $('#tkFind').onclick=()=>{$('#tkList').textContent='מחפש…';api({action:'yzsearch',q:$('#tkQ').value}).then(r=>tickerList(r.items,'תוצאות חיפוש')).catch(e=>{$('#tkList').textContent=e.message})}}
   if($('#mtGo'))$('#mtGo').onclick=()=>{const m=$('#mtMsg');m.textContent='שולח…';api({action:'mailtest',to:$('#mtTo').value,provider:$('#mtP').value}).then(()=>{m.textContent='✅ נשלח. בדקו את תיבת הדואר (וגם בספאם).'}).catch(e=>{m.textContent='❌ '+e.message})};
   $('#out').onclick=()=>{try{sessionStorage.removeItem('myluach-admin')}catch(e){}location.reload()};
   app.addEventListener('input',preview);

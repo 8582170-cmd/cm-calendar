@@ -3030,12 +3030,13 @@ function acctInit(){
       const u=session&&session.user?{id:session.user.id,email:session.user.email}:null;
       const was=user;user=u;AUTH.user=u;acctBtn();if(!!was!==!!u){syncPlanUI();render()}
       if(u&&(!was||was.id!==u.id))onSignedIn((ev==='SIGNED_IN'||ev==='PASSWORD_RECOVERY')&&!had);
-      if(u)had=true;
+      if(u){had=true;let bk=null;try{bk=sessionStorage.getItem('ml-back');if(bk)sessionStorage.removeItem('ml-back')}catch(e){}if(bk)setTimeout(()=>{window.location.href=bk},400)}
       if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
     });
     window.addEventListener('beforeunload',()=>{if(user&&cloudDirty)cloudSave()});
     setTimeout(()=>{if(!user)oneTap()},4000);
-    if(/^#login\b/.test(window.location.hash)){try{history.replaceState(null,'',window.location.pathname)}catch(e){}setTimeout(()=>{if(!user)loginModal()},600)}
+    if(/^#login\b/.test(window.location.hash)){const bm=/[&?]back=([^&]+)/.exec(window.location.hash);if(bm){const bk=decodeURIComponent(bm[1]);if(/^\/[^/]/.test(bk))try{sessionStorage.setItem('ml-back',bk)}catch(e){}}
+      try{history.replaceState(null,'',window.location.pathname)}catch(e){}setTimeout(()=>{if(!user)loginModal()},600)}
     return true;
   };
   if(!start())loadScript('https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js').then(start).catch(()=>{});

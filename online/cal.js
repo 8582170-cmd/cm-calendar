@@ -313,7 +313,7 @@ function viewTools(){
     ['dA','dB'].forEach(i=>$('#'+i).addEventListener('input',c1));['dC','dN'].forEach(i=>$('#'+i).addEventListener('input',c2));c1();c2();return}
 }
 /* ---------- ספירה לאחור ---------- */
-const CD_ST=[['classic','קלאסי','Classic','#1e5a63','#fff','🎉'],['bride','כלה וחתונה','Wedding','#a8646f','#fdf8f5','💍'],['barmitzvah','בר מצווה','Bar Mitzvah','#1f3a5f','#fbfaf5','✡'],['batmitzvah','בת מצווה','Bat Mitzvah','#b8487a','#fff7fa','🌸'],['kids','ילדים','Kids','#e0663a','#fffaf0','🎈'],['baby','לידה ותינוק','Baby','#5b8db8','#f7fbff','👶']];
+const CD_ST=[['classic','קלאסי','Classic','#1e5a63','#fff','🎉'],['bride','כלה וחתונה','Wedding','#a8646f','#fdf8f5','💍'],['barmitzvah','בר מצווה','Bar Mitzvah','#1f3a5f','#fbfaf5','✡'],['batmitzvah','בת מצווה','Bat Mitzvah','#b8487a','#fff7fa','🌸'],['kids','ילדים','Kids','#e0663a','#fffaf0','🎈'],['baby','לידה ותינוק','Baby','#5b8db8','#f7fbff','👶'],['elegant','אלגנטי: שחור וזהב','Elegant','#2a2622','#fbf8f1','✨'],['nature','טבע','Nature','#3f7a4f','#f6faf3','🌿'],['trip','טיול וחופשה','Trip','#1d8a96','#f7fcfc','✈️']];
 const CD_LAY=[['board',HE()?'לוח מספרים: כל הימים בטבלה אחת':'Number board: all days in one table'],['months',HE()?'עמוד לכל חודש':'A page per month'],['poster',HE()?'פוסטר: כל הימים בדף אחד':'Poster: all days on one page'],['scroll',HE()?'דף צר וארוך לגלילה':'Long narrow page to scroll'],['chain',HE()?'שרשרת נייר לגזירה':'Paper chain to cut out']];
 function viewCountdown(back){
   const q=CDQ||LS.get('cd',{});const v={t:q.t||'',d:q.d||iso(addD(TODAY,60)),st:q.st||'bride',l:q.l||'months'};
@@ -334,6 +334,7 @@ function viewCountdown(back){
       mini+=g+'</div></div>'}
     $('#kOut').innerHTML='<div class="kcard" style="--k:'+S[3]+';--kb:'+S[4]+'"><div class="ktitle">'+esc(o.t||(HE()?'הספירה לאחור':'Countdown'))+'</div><div class="kbig">'+(n===0?S[5]:Math.abs(n))+'</div><div class="ksub">'+(n===0?(HE()?'היום!':'Today!'):n>0?(HE()?'ימים נשארו':'days to go')+(w?' · '+(HE()?w+' שבועות ו־'+r+' ימים':w+' weeks, '+r+' days'):''):(HE()?'ימים עברו':'days ago'))+'</div><div class="kdate">'+t('weekdays')[to.getDay()]+', '+esc(hStr(hd))+' · '+esc(gStr(to))+'</div><div class="kmini">'+mini+'</div></div>'+
       '<div class="row" style="margin-top:12px"><a class="btn pri big" href="'+print+'">🖨 '+(HE()?'הדפסה והורדה בעיצוב מלא':'Print & download the full design')+'</a><button class="btn" type="button" id="kShare">🔗 '+(HE()?'העתקת קישור לשיתוף':'Copy share link')+'</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent((o.t||'')+' · '+(HE()?'עוד '+n+' ימים! ':n+' days to go! ')+share)+'">WhatsApp</a></div>'+
+      '<div class="card cta" style="margin-top:12px"><h3>'+(HE()?'בלוח המעוצב להדפסה יש עוד הרבה':'Much more in the printable design')+'</h3><ul class="small" style="margin:6px 0 10px;padding-inline-start:18px">'+(HE()?['דף פתיחה ודף סיום עם תמונות, ותמונת רקע','משפטים יפים כל כמה ימים, או משפטים משלכם','פרשת השבוע, חגים, ראש חודש ועד 5 זמני היום בכל יום','מדבקות וכובעים על התמונות (כיפה, כתר, הינומה) והתאמה אוטומטית לפנים','9 עיצובים ו־5 צורות: עמוד לכל חודש, לוח מספרים, פוסטר, דף לטלפון ושרשרת נייר']:['Opening and closing pages with photos, and a background photo','Nice quotes every few days, or your own','Parasha, holidays, Rosh Chodesh and up to 5 zmanim each day','Stickers and hats on photos with automatic face fitting','9 styles and 5 layouts']).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><a class="btn pri" href="'+print+'">'+(HE()?'לבניית הלוח המעוצב':'Design it')+'</a> <span class="small mute">'+(HE()?'עד 40 ימים: בחינם':'Up to 40 days: free')+'</span></div>'+
       '<p class="small mute">'+(HE()?'הקישור מראה לכל מי שמקבל אותו כמה ימים נשארו, ומתעדכן לבד כל יום. הלוח המעוצב להדפסה (פוסטר, עמוד לכל חודש, דף ארוך לגלילה או שרשרת נייר) נבנה ב־MyLuach.':'The link shows how many days are left and updates daily. The printable design is built in MyLuach.')+'</p>';
     $('#kShare').onclick=async e=>{try{await navigator.clipboard.writeText(share);e.target.textContent=HE()?'הקישור הועתק':'Copied'}catch(err){prompt('',share)}};
   };
@@ -343,7 +344,7 @@ function relDays(d){const n=dayDiff(TODAY,d);return n>=0?t('inDays')(n):t('daysA
 
 /* ---------- תזכורות ---------- */
 function viewReminders(){
-  $('#main').innerHTML='<div class="bar"><h1>'+t('reminders')+'</h1><button class="btn pri" type="button" id="remNew">+ '+t('addRem')+'</button></div>'+
+  $('#main').innerHTML='<div class="bar"><h1>'+t('reminders')+'</h1><span class="row"><button class="btn pri" type="button" id="remNew">+ '+t('addRem')+'</button>'+(HE()?'<button class="btn" type="button" id="remYz">📜 מדברי הימים</button>':'')+'</span></div>'+
     '<div class="card"><p class="small mute" style="margin-top:0">'+(HE()?'ימי הולדת, ימי נישואין, ימי שנה (יארצייטים) ותזכורות. הם מופיעים בלוח, ואפשר להוסיף אותם ליומן בטלפון עם התראה. התזכורות נשמרות בדפדפן הזה.':'Birthdays, anniversaries, yahrzeits and reminders. They show on the calendar and can be added to your phone calendar with alerts. Saved in this browser.')+'</p>'+
     (REM.length?'<div class="tbl-wrap"><table class="t"><tbody>'+REM.map(r=>{const nx=nextOcc(r);return '<tr><td><b>'+esc(r.name)+'</b></td><td>'+esc(remWhen(r))+'</td><td class="mute">'+(nx?esc(gStr(nx))+' · '+esc(relDays(nx)):'')+'</td><td><a class="btn" target="_blank" rel="noopener" href="'+gcalLink(r,nx)+'">Google</a> <button class="btn" type="button" data-redit="'+r.id+'">✎</button></td></tr>'}).join('')+'</tbody></table></div>'+
       '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="remIcs">📅 '+(HE()?'הוספת הכל ליומן בטלפון (קובץ)':'Add all to phone calendar (.ics)')+'</button></div>':'<p>'+(HE()?'עדיין אין תזכורות.':'No reminders yet.')+'</p>')+
@@ -363,15 +364,29 @@ function remIcs(){
     L.push('END:VEVENT');d=addD(x,1)}}
   L.push('END:VCALENDAR');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.join('\r\n')],{type:'text/calendar'}));a.download='reminders.ics';document.body.appendChild(a);a.click();a.remove();
 }
-function remEditor(id,date){
-  const r=id?REM.find(x=>x.id===id):null,d0=date||TODAY,h0=new HDate(d0);
-  const v=r?{...r}:{name:'',rec:'heb',d:h0.getDate(),m:h0.getMonth(),date:iso(d0),notice:[1]};
+/* התאריך הלועזי הקרוב של חודש ויום עבריים (לתזכורת מאירוע בדברי הימים) */
+function nextHeb(m,d){const y=new HDate(TODAY).getFullYear();for(const yy of [y,y+1]){try{const leap=HDate.isLeapYear(yy),mm=m===13&&!leap?12:m;const g=noon(new HDate(Math.min(d,HDate.daysInMonth(mm,yy)),mm,yy).greg());if(g>=TODAY)return g}catch(e){}}return TODAY}
+/* חיפוש באירועי דברי הימים והוספת תזכורת */
+function yzPick(){dialog('<h2 id="dlgT">'+(HE()?'תזכורת מדברי הימים':'Reminder from Jewish history')+'</h2><p class="small mute">'+(HE()?'חפשו שם של צדיק, קהילה או מאורע, ובחרו כדי ליצור תזכורת שנתית לפי התאריך העברי.':'Search and pick an event to create a yearly Hebrew-date reminder.')+'</p><div class="row"><input id="yzQ" style="flex:1" placeholder="'+(HE()?'למשל: החפץ חיים':'e.g. Chafetz Chaim')+'"><button class="btn pri" type="button" id="yzGo">'+(HE()?'חיפוש':'Search')+'</button></div><div id="yzR" class="yz-res"></div>');
+  const go=async()=>{const q=$('#yzQ').value.trim();if(q.length<2)return;$('#yzR').textContent='…';
+    try{const j=await (await fetch(BASE+'../api/ticker?q='+encodeURIComponent(q))).json();const L=j.items||[];
+      $('#yzR').innerHTML=L.length?L.map((e,i)=>'<button type="button" class="yz-i" data-i="'+i+'"><b>'+esc(hDay(e.d))+' '+esc(hebMonthNameNum(e.m))+'</b> '+(e.y?'· '+esc(e.y)+' ':'')+'· '+esc(e.t)+'</button>').join(''):'<p>'+(HE()?'לא נמצא. נסו מילה אחרת.':'Nothing found.')+'</p>';
+      $('#yzR').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const e=L[+b.dataset.i];closeDlg();remEditor(null,null,{m:e.m,d:e.d,name:e.t.split(',')[0].slice(0,80)})})}
+    catch(e){$('#yzR').textContent=HE()?'החיפוש לא זמין כרגע.':'Search unavailable.'}};
+  $('#yzGo').onclick=go;$('#yzQ').addEventListener('keydown',e=>{if(e.key==='Enter')go()});setTimeout(()=>$('#yzQ').focus(),30)}
+function hebMonthNameNum(m){const L=['','ניסן','אייר','סיון','תמוז','אב','אלול','תשרי','חשון','כסלו','טבת','שבט','אדר','אדר ב׳'];return L[m]||''}
+/* חשבון המשתמש מהבונה (אותו אתר): אסימון הכניסה שנשמר בדפדפן */
+function authTok(){try{const o=JSON.parse(localStorage.getItem('myluach-auth')||'null');if(o&&o.access_token&&(o.expires_at||0)*1000>Date.now()+60000)return {tok:o.access_token,email:(o.user&&o.user.email)||''}}catch(e){}return null}
+const loginUrl=()=>BASE+'../app.html#login&back='+encodeURIComponent(location.pathname+location.search+'#reminders');
+function remEditor(id,date,pre){
+  const r=id?REM.find(x=>x.id===id):null,d0=date||(pre&&pre.m?nextHeb(pre.m,pre.d):TODAY),h0=new HDate(d0);
+  const v=r?{...r}:{name:pre?pre.name:'',rec:'heb',d:h0.getDate(),m:h0.getMonth(),date:iso(d0),notice:[1]};
   if(!r&&v.rec==='greg'){v.d=d0.getDate();v.m=d0.getMonth()+1}
   dialog('<h2 id="dlgT">'+(r?esc(r.name):t('addRem'))+'</h2><div class="row" style="margin-top:10px"><label class="fld" style="flex:1">'+(HE()?'מה להזכיר':'What')+'<input id="rN" value="'+esc(v.name)+'" placeholder="'+(HE()?'למשל: יום הולדת לשירה':'e.g. Sarah\'s birthday')+'"></label></div>'+
     '<div class="row" style="margin-top:8px"><label class="fld">'+(HE()?'חוזר':'Repeats')+'<select id="rR"><option value="heb">'+(HE()?'כל שנה, לפי התאריך העברי':'Yearly, Hebrew date')+'</option><option value="greg">'+(HE()?'כל שנה, לפי התאריך הלועזי':'Yearly, Gregorian date')+'</option><option value="monthly">'+(HE()?'כל חודש עברי':'Every Hebrew month')+'</option><option value="once">'+(HE()?'פעם אחת':'Once')+'</option></select></label><label class="fld">'+(HE()?'תאריך':'Date')+'<input type="date" id="rD" value="'+esc(v.date||iso(d0))+'"></label></div>'+
     '<div class="fld" style="margin-top:8px">'+(HE()?'מתי להזכיר':'Remind me')+'<span class="opts">'+[[7,HE()?'שבוע לפני':'a week before'],[2,HE()?'יומיים לפני':'2 days before'],[1,HE()?'יום לפני':'a day before'],[0,HE()?'באותו יום':'same day']].map(([n,l])=>'<label class="chk"><input type="checkbox" data-nt="'+n+'"'+((v.notice||[]).includes(n)?' checked':'')+'> '+l+'</label>').join('')+'</span></div>'+
     '<div class="fld rem-mail" style="margin-top:10px"><label class="chk"><input type="checkbox" id="rM"'+(v.mail&&v.mail.status!=='off'?' checked':'')+'> 📧 '+(HE()?'לשלוח לי גם תזכורת במייל':'Also email me a reminder')+'</label>'+
-      '<input type="email" id="rE" dir="ltr" placeholder="'+(HE()?'המייל שלכם':'your email')+'" value="'+esc((v.mail&&v.mail.email)||LS.get('mail','')||'')+'"><span class="small mute">'+(HE()?'המייל יישלח בבוקר, לפי מה שסימנתם למעלה (שבוע, יומיים, יום לפני או באותו יום). בפעם הראשונה תקבלו מייל לאישור.':'Sent in the morning, per the alert options above. First time, you will get a confirmation email.')+'</span></div>'+
+      (authTok()?'<input type="email" id="rE" dir="ltr" readonly value="'+esc(authTok().email)+'">':'<input type="hidden" id="rE" value=""><span class="small" id="rLogin">'+(HE()?'תזכורות במייל זמינות למשתמשים רשומים. ':'Email reminders need a free account. ')+'<a href="'+loginUrl()+'">'+(HE()?'כניסה / הרשמה בחינם':'Sign in / sign up')+'</a></span>')+'<span class="small mute">'+(HE()?'המייל יישלח בבוקר, לפי מה שסימנתם למעלה (שבוע, יומיים, יום לפני או באותו יום). בפעם הראשונה תקבלו מייל לאישור.':'Sent in the morning, per the alert options above. First time, you will get a confirmation email.')+'</span></div>'+
     '<p class="small mute" id="rP"></p><div class="row"><button class="btn pri" type="button" id="rS">'+t('save')+'</button>'+(r?'<button class="btn" type="button" id="rX">'+t('del')+'</button>':'')+'</div>');
   $('#rR').value=v.rec;
   const build=()=>{const dd=fromIso($('#rD').value||iso(d0)),hh=new HDate(dd),rec=$('#rR').value;const o={id:r?r.id:'r'+Math.random().toString(36).slice(2,9),name:$('#rN').value.trim(),rec,date:iso(dd),notice:[...document.querySelectorAll('[data-nt]:checked')].map(x=>+x.dataset.nt)};
@@ -380,10 +395,10 @@ function remEditor(id,date){
   const tE=()=>{$('#rE').style.display=$('#rM').checked?'':'none'};$('#rM').onchange=tE;tE();
   $('#rS').onclick=async()=>{const o=build();if(!o.name){$('#rN').focus();return}
     const wantMail=$('#rM').checked,email=$('#rE').value.trim();o.mail=v.mail||null;
-    if(wantMail){if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('#rE').focus();$('#rP').textContent=HE()?'נא למלא כתובת מייל תקינה.':'Please enter a valid email.';return}
+    if(wantMail){const A=authTok();if(!A){$('#rP').innerHTML=(HE()?'כדי לקבל תזכורות במייל צריך להתחבר. ':'Please sign in for email reminders. ')+'<a href="'+loginUrl()+'">'+(HE()?'כניסה / הרשמה':'Sign in')+'</a>';return}
       LS.set('mail',email);$('#rS').disabled=true;$('#rP').textContent=HE()?'שומרים…':'Saving…';
-      try{const rr=await fetch(BASE+'../api/rem-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice:[0],lang:st.lang,token:o.mail&&o.mail.email===email?o.mail.token:''})});
-        const j=await rr.json();if(!rr.ok||!j.token)throw new Error(j.error||rr.status);o.mail={email,token:j.token,status:j.status}}
+      try{const rr=await fetch(BASE+'../api/rem-subscribe',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:JSON.stringify({email,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice:[0],lang:st.lang,token:o.mail&&o.mail.email===email?o.mail.token:''})});
+        const j=await rr.json();if(rr.status===401){$('#rS').disabled=false;$('#rP').innerHTML=(HE()?'צריך להתחבר מחדש. ':'Please sign in again. ')+'<a href="'+loginUrl()+'">'+(HE()?'כניסה':'Sign in')+'</a>';return}if(!rr.ok||!j.token)throw new Error(j.error||rr.status);o.mail={email:A.email,token:j.token,status:j.status}}
       catch(e){$('#rS').disabled=false;$('#rP').textContent=HE()?'לא הצלחנו לשמור את התזכורת במייל. נסו שוב בעוד רגע.':'Could not save the email reminder. Please try again.';return}}
     else if(o.mail&&o.mail.token){fetch(BASE+'../api/rem-confirm?t='+o.mail.token+'&off=1').catch(()=>{});o.mail=null}
     if(r)REM[REM.indexOf(r)]=o;else REM.push(o);saveRem();closeDlg();render();
@@ -479,6 +494,7 @@ document.addEventListener('click',e=>{
   if(T2.id==='tdy'){anchor=TODAY;render();return}
   if(T2.id==='dzPick'){dzPicker();return}
   if(T2.id==='remNew'){remEditor(null);return}
+  if(T2.id==='remYz'){yzPick();return}
   if(T2.id==='remIcs'){remIcs();return}
   if(T2.id==='jGoG'){const v=$('#jG').value;if(v){anchor=fromIso(v);render();dayDialog(anchor)}return}
   if(T2.id==='jGoH'){const y=parseHebYear($('#jY').value);if(!(y>3000&&y<7000))return;let m=+$('#jM').value;if(m===13&&!leap(y))m=12;const d=Math.min(+$('#jD').value,HDate.daysInMonth(m,y));anchor=noon(new HDate(d,m,y).greg());st.mode='heb';render();dayDialog(anchor);return}
@@ -499,4 +515,13 @@ window.addEventListener('hashchange',()=>{readHash();render()});
 if(new URLSearchParams(location.search).get('lang')==='en')st.lang='en';
 if(PAGE.year){const y=+PAGE.year;anchor=y>4000?noon(new HDate(1,7,y).greg()):new Date(y,0,1,12);if(y>4000)st.mode='heb';else st.mode='greg';if(y>4000&&new HDate(TODAY).getFullYear()===y)anchor=TODAY;if(y<4000&&TODAY.getFullYear()===y)anchor=TODAY}
 readHash();render();
+/* מבזקי "היום בתולדות ישראל": פס מתחלף בראש הדף. הטקסט מוצג דרך CSS כדי שלא יהיה נוח להעתיק */
+(function ticker(){if(!HE())return;fetch(BASE+'../api/ticker?d='+iso(TODAY)).then(r=>r.json()).then(o=>{const L=(o&&o.items)||[];if(!L.length)return;
+  const top=document.querySelector('header.top');if(!top||document.getElementById('tick'))return;
+  const w=document.createElement('div');w.id='tick';w.className='tick no-print';w.setAttribute('role','region');w.setAttribute('aria-label','היום בתולדות ישראל');
+  const items=L.map((e,i)=>'<span class="tick-i" data-k="'+i+'" title="לחצו להוספת תזכורת שנתית" data-t="'+esc((e.y?e.y+' · ':'')+e.t)+'"></span>').join('<span class="tick-sep" aria-hidden="true">◆</span>');
+  w.innerHTML='<span class="tick-lab" data-t="היום בתולדות ישראל · '+esc(o.date||'')+'"></span><div class="tick-win"><div class="tick-run">'+items+'<span class="tick-sep" aria-hidden="true">◆</span>'+items+'</div></div>';
+  top.after(w);const run=w.querySelector('.tick-run');run.style.animationDuration=Math.max(30,L.reduce((a,e)=>a+e.t.length,0)/7)+'s';
+  w.addEventListener('click',e=>{const x=e.target.closest('[data-k]');if(!x)return;const it=L[+x.dataset.k];remEditor(null,null,{m:it.m,d:it.d,name:it.t.split(',')[0].slice(0,80)})});
+  ['copy','cut','contextmenu','selectstart','dragstart'].forEach(ev=>w.addEventListener(ev,e=>e.preventDefault()))}).catch(()=>{})})();
 })();

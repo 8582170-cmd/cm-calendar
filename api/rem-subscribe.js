@@ -1,7 +1,7 @@
 /* הרשמה לתזכורת במייל מהלוח המקוון. מייל חדש מקבל קודם מייל אישור (כדי שלא ירשמו כתובת של מישהו אחר). */
 'use strict';
 const crypto = require('crypto');
-const { env, db, readBody, json } = require('./_lib');
+const { env, db, readBody, json, getUser } = require('./_lib');
 const { sendMail, frame, escH } = require('./_mail');
 
 const okRule = r => r && ['heb', 'greg', 'monthly', 'once'].includes(r.rec) && (r.rec === 'once' ? /^\d{4}-\d{2}-\d{2}$/.test(r.date) : +r.d >= 1 && +r.d <= 31 && (r.rec === 'monthly' || (+r.m >= 1 && +r.m <= 13)));
@@ -10,7 +10,10 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' });
   try {
     const b = readBody(req);
-    const email = String(b.email || '').trim().toLowerCase().slice(0, 200);
+    /* תזכורות במייל רק למשתמשים רשומים: המייל הוא של החשבון, ולכן לא צריך מייל אישור */
+    const user = await getUser(req);
+    if (!user || !user.email) return json(res, 401, { error: 'login' });
+    const email = user.email.slice(0, 200);
     const name = String(b.name || '').trim().slice(0, 120);
     const rule = b.rule || {};
     const notice = (Array.isArray(b.notice) ? b.notice : [1]).map(Number).filter(n => [0, 1, 2, 3, 7, 14, 30].includes(n)).slice(0, 4);
@@ -31,7 +34,7 @@ module.exports = async (req, res) => {
     /* הגבלות נגד ניצול */
     const mine = await db('reminders?email=eq.' + encodeURIComponent(email) + '&select=status,created_at&order=created_at.desc&limit=200');
     if ((mine || []).filter(r => r.status !== 'off').length >= 100) return json(res, 429, { error: 'too many' });
-    const confirmed = (mine || []).some(r => r.status === 'active');
+    const confirmed = true;
     const token = crypto.randomBytes(16).toString('hex');
     await db('reminders', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, name, rule: cleanRule, notice, lang: b.lang === 'en' ? 'en' : 'he', status: confirmed ? 'active' : 'pending', token }) });
     if (!confirmed) {
