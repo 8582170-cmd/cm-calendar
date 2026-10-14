@@ -98,7 +98,7 @@ function render(){
   '<section><h2>קופונים</h2><p class="sub">קוד שהלקוח מקליד בחלון התשלום. "מקסימום שימושים" 0 = בלי הגבלה. תאריך ריק = בלי תאריך סיום.</p><div class="scroll"><table class="tbl" id="cpn"><thead><tr><th>פעיל</th><th>קוד</th><th>הנחה %</th><th>מסלולים</th><th>עד תאריך</th><th>מקס׳ שימושים</th><th>נוצל</th><th>הערה</th><th></th></tr></thead><tbody>'+
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
-  tickerSection()+voiceSection()+
+  tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
     (Object.keys(D.mail.today).length?Object.entries(D.mail.today).map(([k,v])=>'<span><b>'+esc(k)+':</b> '+v+'</span>').join(''):'<span>היום עוד לא נשלחו מיילים</span>')+
@@ -122,6 +122,21 @@ function tickerList(items,head){const t=C.ticker,sel=t.mode==='selected';const b
   box.innerHTML=(head?'<p><b>'+esc(head)+'</b> · '+items.length+' אירועים</p>':'')+(items.length?items.map(e=>{const on=sel?t.ids.includes(e.id):!t.hide.includes(e.id);
     return '<label class="tk-i"><input type="checkbox" data-tk="'+e.id+'"'+(on?' checked':'')+'> <span>'+(e.y?'<b>'+esc(e.y)+'</b> · ':'')+esc(e.t)+'</span></label>'}).join(''):'<p>לא נמצאו אירועים.</p>');
   box.querySelectorAll('[data-tk]').forEach(c=>c.onchange=()=>{const id=+c.dataset.tk,L=sel?t.ids:t.hide,want=sel?c.checked:!c.checked,i=L.indexOf(id);if(want&&i<0)L.push(id);if(!want&&i>=0)L.splice(i,1)})}
+const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',orders:'הזמנות ותשלומים',free_lite:'הורדות לוח חינמי',email_log:'מיילים שנשלחו'};
+const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',kind:'סוג',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
+let DBS={name:'profiles',q:'',offset:0};
+function dbSection(){return '<section><h2>מסד הנתונים</h2><p class="sub">צפייה בלבד. 50 שורות בכל עמוד, מהחדש לישן.</p><div class="row"><select id="dbT">'+Object.entries(DB_T).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><input type="search" id="dbQ" placeholder="חיפוש (מייל, שם, טלפון)" style="width:220px"><button class="btn" type="button" id="dbGo">הצגה</button><button class="btn" type="button" id="dbCsv">הורדה לאקסל (CSV)</button></div><div id="dbOut" style="margin-top:10px"></div></section>'}
+const HM=['','ניסן','אייר','סיון','תמוז','אב','אלול','תשרי','חשון','כסלו','טבת','שבט','אדר','אדר ב׳'];
+function dbCell(k,v){if(v==null||v==='')return '';if(k==='rule'&&typeof v==='object'){return v.rec==='once'?'פעם אחת: '+v.date:v.rec==='greg'?'כל שנה '+v.d+'/'+v.m+' (לועזי)':v.rec==='monthly'?'כל חודש ב־'+v.d:'כל שנה '+v.d+' '+(HM[v.m]||'')+' (עברי)'}
+  if(/_at$|^created|^last_sent/.test(k)&&/^\d{4}-/.test(v))return new Date(v).toLocaleString('he-IL',{dateStyle:'short',timeStyle:/T/.test(v)?'short':undefined});if(typeof v==='boolean')return v?'✔':'✘';if(Array.isArray(v))return v.join(', ');return String(v)}
+function dbLoad(){const o=$('#dbOut');o.textContent='טוען…';api({action:'table',name:DBS.name,q:DBS.q,offset:DBS.offset}).then(r=>{
+  if(r.error){o.innerHTML='<p class="st-failed">'+esc(r.error)+'</p>';return}
+  o.innerHTML=(r.rows.length?'<div class="scroll"><table class="tbl"><thead><tr>'+r.cols.map(c=>'<th>'+esc(DB_C[c]||c)+'</th>').join('')+'</tr></thead><tbody>'+r.rows.map(x=>'<tr>'+r.cols.map(c=>'<td'+(/email|phone|id/.test(c)?' dir="ltr"':'')+'>'+esc(dbCell(c,x[c]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>אין נתונים.</p>')+
+   '<div class="row" style="margin-top:8px">'+(DBS.offset?'<button class="btn" type="button" id="dbPrev">← הקודמים</button>':'')+(r.more?'<button class="btn" type="button" id="dbNext">הבאים →</button>':'')+'<span class="sub">שורות '+(DBS.offset+1)+'–'+(DBS.offset+r.rows.length)+'</span></div>';
+  if($('#dbPrev'))$('#dbPrev').onclick=()=>{DBS.offset=Math.max(0,DBS.offset-50);dbLoad()};if($('#dbNext'))$('#dbNext').onclick=()=>{DBS.offset+=50;dbLoad()}}).catch(e=>{o.textContent=e.message})}
+function dbCsv(){api({action:'table',name:DBS.name,q:DBS.q,all:1}).then(r=>{const q=x=>'"'+String(x).replace(/"/g,'""')+'"';
+  const csv='\ufeff'+r.cols.map(c=>q(DB_C[c]||c)).join(',')+'\n'+r.rows.map(x=>r.cols.map(c=>q(dbCell(c,x[c]))).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='myluach-'+DBS.name+'.csv';a.click()})}
 function voiceSection(){return '<section id="voiceSec"><h2>תזכורות קוליות בטלפון</h2><p class="sub">שיחות ו־SMS דרך ימות המשיח. <b>כשהמתג כבוי (או שאין טוקן), השירות כבוי לגמרי:</b> הלקוחות לא רואים את האפשרות, ולא נשלחות שיחות.</p><div id="vBox">טוען…</div></section>'}
 function voiceLoad(){api({action:'voiceget'}).then(r=>voiceDraw(r.voice)).catch(e=>{$('#vBox').textContent=e.message})}
 function voiceDraw(v){const f=(k,l,w,ph)=>'<label>'+l+' <input type="text" data-v="'+k+'" value="'+esc(v[k]||'')+'" style="width:'+(w||180)+'px"'+(ph?' placeholder="'+esc(ph)+'"':'')+' dir="auto"></label>';
@@ -153,6 +168,7 @@ function preview(){
 }
 function bind(){
   if($('#vBox'))voiceLoad();
+  if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
     $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};
     $('#tkFind').onclick=()=>{$('#tkList').textContent='מחפש…';api({action:'yzsearch',q:$('#tkQ').value}).then(r=>tickerList(r.items,'תוצאות חיפוש')).catch(e=>{$('#tkList').textContent=e.message})}}

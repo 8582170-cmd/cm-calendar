@@ -50,6 +50,24 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
     }
+    /* צפייה במסד הנתונים (קריאה בלבד) */
+    if (req.method === 'POST' && b.action === 'table') {
+      const T = {
+        profiles: { cols: 'email,phone,phone_verified_at,created_at,updated_at', order: 'created_at.desc', search: ['email', 'phone'] },
+        reminders: { cols: 'email,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['email', 'name'] },
+        voice_reminders: { cols: 'phone,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['phone', 'name'] },
+        orders: { cols: 'created_at,plan,amount,status,email,coupon,paid_at,id', order: 'created_at.desc', search: ['email', 'plan', 'coupon'] },
+        free_lite: { cols: 'email,used_at', order: 'used_at.desc', search: ['email'] },
+        email_log: { cols: 'created_at,kind,to_email,subject,provider,ok,error', order: 'created_at.desc', search: ['to_email', 'subject', 'kind'] }
+      };
+      const t = T[b.name]; if (!t) return json(res, 400, { error: 'table' });
+      const lim = b.all ? 5000 : 50, off = Math.max(0, parseInt(b.offset, 10) || 0);
+      const q = String(b.q || '').trim().replace(/[(),*]/g, ' ').slice(0, 80);
+      let path = b.name + '?select=' + t.cols + '&order=' + t.order + '&limit=' + (lim + 1) + '&offset=' + off;
+      if (q) path += '&or=(' + t.search.map(c => c + '.ilike.*' + encodeURIComponent(q) + '*').join(',') + ')';
+      try { const rows = await db(path); return json(res, 200, { rows: (rows || []).slice(0, lim), more: (rows || []).length > lim, cols: t.cols.split(',') }); }
+      catch (e) { return json(res, 200, { rows: [], cols: t.cols.split(','), error: /does not exist|42P01|PGRST205/.test(e.message) ? 'הטבלה עוד לא נוצרה ב-Supabase' : String(e.message).slice(0, 200) }); }
+    }
     /* הגדרות תזכורות קוליות (ימות המשיח). הטוקן לא חוזר לדפדפן במלואו */
     if (req.method === 'POST' && ['voiceget', 'voicesave', 'voicetest'].includes(b.action)) {
       const V = require('./_voice'); const { loadSetting, saveSetting } = require('./_lib');
