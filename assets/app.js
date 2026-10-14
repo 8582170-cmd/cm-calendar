@@ -3125,7 +3125,7 @@ function liteState(src){const st=structuredClone(src),s=st.s;
   let n=st.cover&&st.cover.img?1:0;for(const k of Object.keys(st.slots||{})){const o=st.slots[k];if(o&&o.img){if(n<LITE_LIM.photos)n++;else st.slots[k]={...o,img:null,edit:null}}}
   return st}
 function liteCounts(){const ev=(state.events||[]).length,ph=(state.cover&&state.cover.img?1:0)+Object.values(state.slots||{}).filter(o=>o&&o.img).length,z=Object.values(state.s.zmanim||{}).filter(Boolean).length;return {ev,ph,z}}
-async function liteApi(method){const t=sb&&(await sb.auth.getSession()).data.session;if(!t)return {status:401};const r=await fetch('/api/free-lite',{method,headers:{Authorization:'Bearer '+t.access_token}});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}
+async function liteApi(method){const t=sb&&(await sb.auth.getSession()).data.session;if(!t)return {status:401};const r=await fetch('/api/user?fn=lite',{method,headers:{Authorization:'Bearer '+t.access_token}});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}
 async function openLite(){
   if(AUTH.ready&&!AUTH.user){loginModal('הלוח החינמי לשנה זמין למשתמשים רשומים (פעם אחת לכל משתמש). ההרשמה חינם.');return}
   const c=liteCounts(),L=LITE_LIM,over=(a,b)=>a>b?' <b class="msg-bad">(יש לכם '+a+', ייכללו '+b+' הראשונים)</b>':'';

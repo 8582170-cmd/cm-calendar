@@ -396,7 +396,7 @@ function remEditor(id,date,pre){
     if(rec==='heb'){o.d=hh.getDate();o.m=hh.getMonth()}else if(rec==='greg'){o.d=dd.getDate();o.m=dd.getMonth()+1}else if(rec==='monthly')o.d=hh.getDate();return o};
   const prev=()=>{const o=build();$('#rP').textContent=remWhen(o)};['rR','rD'].forEach(i=>$('#'+i).addEventListener('input',prev));prev();
   const tE=()=>{$('#rE').style.display=$('#rM').checked?'':'none'};$('#rM').onchange=tE;tE();
-  const A0=()=>authTok(),vApi=async(method,body)=>{const A=A0();if(!A)return {status:401};const r=await fetch(BASE+'../api/'+(body&&body.phoneApi?'phone':'voice-rem'),{method,headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}};
+  const A0=()=>authTok(),vApi=async(method,body)=>{const A=A0();if(!A)return {status:401};const r=await fetch(BASE+'../api/user?fn='+(body&&body.phoneApi?'phone':'voice'),{method,headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}};
   if($('#rPhS')){const vm=t=>{$('#rVMsg').innerHTML=t};
     const send=via=>async()=>{const r=await vApi('POST',{phoneApi:1,action:'send',phone:$('#rPh').value,via});vm(r.status===200?'✓ שלחנו קוד ל־'+esc(r.phone)+'. הקלידו אותו כאן.':r.error==='phone'?'מספר הטלפון לא תקין.':r.status===429?'יותר מדי ניסיונות. נסו שוב בעוד שעה.':r.status===401?'צריך להתחבר. <a href="'+loginUrl()+'">כניסה</a>':'השירות עוד לא זמין. נסו שוב מאוחר יותר.')};
     $('#rPhS').onclick=send('sms');$('#rPhC').onclick=send('call');
