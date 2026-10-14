@@ -3,12 +3,12 @@
 const $=s=>document.querySelector(s);
 /* ---------- מסלולים ---------- */
 const LP=window.MyLuachPlans;
-let SAMPLE=null; /* הורדת חודש לדוגמה: {key} בזמן ההדפסה */
+let SAMPLE=null,LITE=false; /* הורדת חודש לדוגמה: {key} בזמן ההדפסה */
 /* בלי כניסה לחשבון רואים 8 חודשים, ובהורדה מבקשים להיכנס (ההרשמה חינם) */
 const AUTH={user:null,ready:false},LOGIN_MONTHS=8;
 /* דף הספירה לאחור (countdown.html) משתמש באותו בונה, עם לוח נפרד ושמור בנפרד */
 const CDMODE=window.MYLUACH_MODE==='countdown',SKEY=CDMODE?'state-cd':'state';
-const PLAN0=()=>SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?(()=>{const c=LP.current();return c.id==='free'&&AUTH.ready&&!AUTH.user?{...c,months:Math.min(c.months,LOGIN_MONTHS),needLogin:true}:c})():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
+const PLAN0=()=>LITE?{...(LP?LP.byId('free'):{}),months:99,watermark:false,lite:true,features:{}}:SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?(()=>{const c=LP.current();return c.id==='free'&&AUTH.ready&&!AUTH.user?{...c,months:Math.min(c.months,LOGIN_MONTHS),needLogin:true}:c})():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
 /* לוח ספירה לאחור קצר (עד FREE_CD ימים) פתוח בחינם: בלי סימן מים, ומדפיסים בלי לנצל הורדה */
 const FREE_CD=40;
 function freeCd(){try{return state.s.view==='countdown'&&cdDays().days.length<=FREE_CD}catch(e){return false}}
@@ -197,7 +197,7 @@ function idbOpen(){return new Promise(res=>{try{const r=indexedDB.open('luchenu'
 function idbGet(k){return new Promise(res=>{if(!db)return res(null);try{const r=db.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
 function idbSet(k,v){return new Promise(res=>{if(!db)return res(false);try{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>res(false)}catch(e){res(false)}})}
 let saveT=null;
-function save(){
+function save(){if(LITE)return;
   $('#saveState').textContent='שומר…';clearTimeout(saveT);
   saveT=setTimeout(async()=>{const ok=await idbSet(SKEY,state);$('#saveState').textContent=ok?'נשמר בדפדפן הזה':'לא ניתן לשמור בדפדפן הזה. השתמשו ב"שמירת גיבוי".';cloudQueue()},400);
 }
@@ -1085,7 +1085,7 @@ function addFootLine(p){
   const s=state.s,z=s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
   if(!z&&!creditOn())return;
   const f=el('div','pg-foot',z?footText():'<span></span>');
-  if(creditOn())f.insertAdjacentHTML('beforeend','<span class="credit">הופק ע״י MyLuach.org</span>');
+  if(creditOn())f.insertAdjacentHTML('beforeend',LITE?'<span class="credit credit-lite">הופק בחינם ע״י MyLuach.org · עיצוב לוח שנה אישי עם תמונות וזמנים</span>':'<span class="credit">הופק ע״י MyLuach.org</span>');
   p.appendChild(f);
 }
 /* ---------- לוח שנתי בעמוד אחד ---------- */
@@ -3114,6 +3114,35 @@ function doPrint(){
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=()=>{LP.useDownload();m.remove();syncPlanUI();setTimeout(()=>window.print(),50)};
 }
+/* ---------- לוח חינמי לשנה: גרסה מוגבלת, בלי סימן מים, פעם אחת לכל משתמש ---------- */
+const LITE_LIM={events:25,photos:10,zmanim:3};
+function liteState(src){const st=structuredClone(src),s=st.s;
+  s.view='month';s.learn={};s.tfilot=[];s.cols=null;s.place={personal:'cell',yz:'none'};s.yzPanel=false;s.banner='none';s.banners=[];s.dedication=false;s.cover=s.cover!==false;s.credit=true;
+  if(!['daily','shabbat'].includes(s.zmanimMode))s.zmanimMode='daily';
+  const zk=Object.keys(s.zmanim||{}).filter(k=>s.zmanim[k]).slice(0,LITE_LIM.zmanim);s.zmanim=Object.fromEntries(zk.map(k=>[k,true]));
+  st.ads=[];st.events=(st.events||[]).slice(0,LITE_LIM.events);
+  let n=st.cover&&st.cover.img?1:0;for(const k of Object.keys(st.slots||{})){const o=st.slots[k];if(o&&o.img){if(n<LITE_LIM.photos)n++;else st.slots[k]={...o,img:null,edit:null}}}
+  return st}
+function liteCounts(){const ev=(state.events||[]).length,ph=(state.cover&&state.cover.img?1:0)+Object.values(state.slots||{}).filter(o=>o&&o.img).length,z=Object.values(state.s.zmanim||{}).filter(Boolean).length;return {ev,ph,z}}
+async function liteApi(method){const t=sb&&(await sb.auth.getSession()).data.session;if(!t)return {status:401};const r=await fetch('/api/free-lite',{method,headers:{Authorization:'Bearer '+t.access_token}});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}
+async function openLite(){
+  if(AUTH.ready&&!AUTH.user){loginModal('הלוח החינמי לשנה זמין למשתמשים רשומים (פעם אחת לכל משתמש). ההרשמה חינם.');return}
+  const c=liteCounts(),L=LITE_LIM,over=(a,b)=>a>b?' <b class="msg-bad">(יש לכם '+a+', ייכללו '+b+' הראשונים)</b>':'';
+  const m=modal('<h3>לוח חינמי לכל השנה</h3><p class="hint">לוח חודשי לשנה שלמה, <b>בלי סימן מים</b>, בגרסה פשוטה. פעם אחת לכל משתמש.</p><ul class="hint">'+
+    '<li>עד '+L.zmanim+' זמני היום'+over(c.z,L.zmanim)+'</li><li>עד '+L.photos+' תמונות'+over(c.ph,L.photos)+'</li><li>עד '+L.events+' אירועים אישיים'+over(c.ev,L.events)+'</li>'+
+    '<li>חגים, פרשת השבוע וראש חודש</li><li>בלי לימוד יומי, בלי דברי הימים, בלי באנרים ועמודים נוספים</li><li>בתחתית כל עמוד: "הופק בחינם ע״י MyLuach.org"</li></ul>'+
+    '<p class="hint" id="ltMsg"></p><div class="row"><button class="btn primary" type="button" id="ltGo">להורדה והדפסה</button><button class="btn" type="button" data-close>ביטול</button></div><p class="hint">רוצים את כל האפשרויות? '+'<a href="#" id="ltUp">לבחירת מסלול</a></p>');
+  m.querySelector('#ltUp').onclick=e=>{e.preventDefault();m.remove();openUpgrade('download')};
+  const st0=await liteApi('GET').catch(()=>({status:0}));
+  if(st0.status===200&&st0.used&&!st0.open){m.querySelector('#ltMsg').innerHTML='<span class="msg-bad">כבר השתמשתם בלוח החינמי ('+new Date(st0.used_at).toLocaleDateString('he-IL')+'). כדי להוריד לוח נוסף בוחרים מסלול.</span>';m.querySelector('#ltGo').disabled=true;return}
+  m.querySelector('#ltGo').onclick=async()=>{const b=m.querySelector('#ltGo');b.disabled=true;m.querySelector('#ltMsg').textContent='בודקים…';
+    const r=await liteApi('POST').catch(()=>({status:0}));
+    if(r.status===401){m.remove();loginModal('צריך להתחבר מחדש.');return}
+    if(r.status===409){m.querySelector('#ltMsg').innerHTML='<span class="msg-bad">כבר השתמשתם בלוח החינמי.</span>';return}
+    if(r.status!==200){b.disabled=false;m.querySelector('#ltMsg').innerHTML='<span class="msg-bad">השירות לא זמין כרגע. נסו שוב מאוחר יותר.</span>';return}
+    m.remove();const orig=state;state=liteState(orig);LITE=true;document.body.classList.add('lite-print');monthsCache=buildMonths();render();
+    const done=()=>{LITE=false;state=orig;document.body.classList.remove('lite-print');window.removeEventListener('afterprint',done);monthsCache=buildMonths();render();syncPlanUI()};
+    window.addEventListener('afterprint',done);setTimeout(()=>window.print(),500)}}
 /* ---------- חודש לדוגמה בחינם ---------- */
 const SAMPLE_KEY='luchenu-sample';
 /* שלב 1: נשמר בדפדפן. בשלב 2 הבדיקה תעבור לשרת, עם אימות כתובת המייל. */
@@ -3138,7 +3167,7 @@ function syncPlanUI(){
   LP.PLANS.forEach(p=>document.body.classList.toggle('plan-'+p.id,p.id===P.id));
   const b=$('#planBadge');if(b)b.innerHTML='מסלול '+esc(P.name)+(P.downloads?' · <span>'+LP.downloadsLeft()+' הורדות</span>':'');
   const u=$('#upgradeBtn');if(u)u.hidden=P.id==='full';
-  const sb=$('#sampleBtn');if(sb)sb.hidden=P.id!=='free';
+  const sbt=$('#sampleBtn');if(sbt)sbt.hidden=P.id!=='free';const lb=$('#liteBtn');if(lb)lb.hidden=P.id!=='free'||CDMODE;
   const g=(sel,f)=>document.querySelectorAll(sel).forEach(x=>{const l=x.closest('label')||x;l.classList.toggle('gated',!canF(f))});
   g('input[name=view]:not([value=month]):not([value=year]):not([value=countdown])','views');g('[data-bpos]','banners');g('#adAdd','extraPages');
   const zs=$('#zmAdv>summary');if(zs)zs.classList.toggle('gated',!canF('advZmanim'));
@@ -3161,6 +3190,7 @@ document.addEventListener('click',e=>{
 {const z=$('#zmAdv');if(z)z.addEventListener('toggle',()=>{if(z.open&&!canF('advZmanim')){z.open=false;openUpgrade('advZmanim')}})}
 if($('#upgradeBtn'))$('#upgradeBtn').onclick=()=>openUpgrade(null);
 if($('#sampleBtn'))$('#sampleBtn').onclick=openSample;
+if($('#liteBtn'))$('#liteBtn').onclick=openLite;
 if($('#devPlan')&&!(/^(localhost|127\.)/.test(window.location.hostname)||/[?&]dev=1/.test(window.location.search)))$('#devPlan').closest('.dev-plan').remove();
 if($('#devPlan')){$('#devPlan').innerHTML=(LP?LP.PLANS:[]).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');$('#devPlan').onchange=e=>{LP.setCurrent(e.target.value);syncPlanUI();render()}}
 /* ---------- זמני תפילות: עורך ---------- */

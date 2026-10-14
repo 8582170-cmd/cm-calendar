@@ -963,3 +963,5 @@ body.cd-app #sampleBtn{display:none!important}
 .cd-chips .chip:disabled{opacity:.4;cursor:default}
 
 .cdonly-b{display:none}body.cd-app .cdonly-b{display:block}
+/* לוח חינמי לשנה: שורת הקרדיט בולטת */
+.pg-foot .credit-lite{font-size:calc(var(--u)*3.2);font-weight:800;color:var(--acc);opacity:1;letter-spacing:.01em}
