@@ -43,7 +43,8 @@ module.exports = async (req, res) => {
     }
     /* תזכורות קוליות בטלפון (אם ימות המשיח מוגדר) */
     let vsent = 0, vfailed = 0;
-    if (voice.ready()) {
+    if (await voice.ready()) {
+      const vc = await voice.cfg();
       const vr = await db('voice_reminders?status=eq.active&select=id,phone,name,rule,notice,last_sent&order=id&limit=5000').catch(() => []);
       for (const r of vr || []) {
         if (r.last_sent === tIso) continue;
@@ -52,7 +53,7 @@ module.exports = async (req, res) => {
         if (hitN === null) continue;
         const day = addD(today, hitN), heb = await hebStr(day);
         try {
-          await voice.callTTS(r.phone, 'שלום, זוהי תזכורת ממיי לוח. ' + r.name + ', ' + when(hitN) + ', יום ' + WD[day.getDay()] + ', ' + heb + '. חוזר: ' + r.name + ', ' + when(hitN) + '.');
+          await voice.callTTS(r.phone, voice.fill(vc.remCall, { name: r.name, when: when(hitN), weekday: WD[day.getDay()], hebdate: heb }));
           await db('voice_reminders?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_sent: tIso }) });
           vsent++;
         } catch (e) { vfailed++; console.error('voice send', r.id, e.message); }

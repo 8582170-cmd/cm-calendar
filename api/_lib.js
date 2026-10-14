@@ -24,6 +24,15 @@ async function loadConfig() {
   } catch (e) { console.error('config', e.message); return {}; }
 }
 
+/* הגדרה כללית מטבלת settings לפי מפתח (למשל 'voice', 'content'). אין: {} */
+async function loadSetting(key) {
+  try { const rows = await db('settings?key=eq.' + encodeURIComponent(key) + '&select=value'); return (rows && rows[0] && rows[0].value) || {}; }
+  catch (e) { console.error('setting', key, e.message); return {}; }
+}
+async function saveSetting(key, value) {
+  await db('settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ key, value, updated_at: new Date().toISOString() }) });
+}
+
 /* היום לפי שעון ישראל, בפורמט YYYY-MM-DD, להשוואה מול תאריכי סיום */
 function today() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }); }
 const live = x => x && (!x.until || today() <= x.until);
@@ -134,4 +143,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { bestPlan, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
+module.exports = { loadSetting, saveSetting, bestPlan, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };

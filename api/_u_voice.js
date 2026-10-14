@@ -1,7 +1,7 @@
 /* תזכורות קוליות בטלפון: במסלול המלא, עד 50, אחרי אימות מספר הטלפון */
 'use strict';
 const { db, readBody, json, getUser, bestPlan } = require('./_lib');
-const MAX = 50;
+const { cfg, ready } = require('./_voice');
 const okRule = r => r && ['heb', 'greg', 'monthly', 'once'].includes(r.rec) && (r.rec === 'once' ? /^\d{4}-\d{2}-\d{2}$/.test(r.date) : +r.d >= 1 && +r.d <= 31 && (r.rec === 'monthly' || (+r.m >= 1 && +r.m <= 13)));
 module.exports = async (req, res) => {
   const user = await getUser(req);
@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'GET') {
       const rows = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&select=id,name,rule,notice&order=id');
-      return json(res, 200, { items: rows || [], max: MAX });
+      return json(res, 200, { items: rows || [], max: (await cfg()).max });
     }
     const b = readBody(req);
     if (req.method === 'DELETE' || b.action === 'delete') {
@@ -17,6 +17,7 @@ module.exports = async (req, res) => {
       if (id) await db('voice_reminders?id=eq.' + id + '&user_id=eq.' + user.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'off' }) });
       return json(res, 200, { ok: true });
     }
+    if (!(await ready())) return json(res, 503, { error: 'off' });
     if ((await bestPlan(user)) !== 'full') return json(res, 403, { error: 'plan' });
     const prof = await db('profiles?user_id=eq.' + user.id + '&select=phone,phone_verified_at');
     const ph = prof && prof[0] && prof[0].phone_verified_at ? prof[0].phone : null;
@@ -31,6 +32,7 @@ module.exports = async (req, res) => {
       return json(res, 200, { id });
     }
     const mine = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&select=id');
+    const MAX = +(await cfg()).max || 50;
     if ((mine || []).length >= MAX) return json(res, 429, { error: 'max', max: MAX });
     const row = await db('voice_reminders', { method: 'POST', body: JSON.stringify({ user_id: user.id, phone: ph, name, rule: clean, notice }) });
     json(res, 200, { id: row && row[0] && row[0].id });

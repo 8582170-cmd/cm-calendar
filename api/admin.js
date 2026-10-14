@@ -50,6 +50,30 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
     }
+    /* הגדרות תזכורות קוליות (ימות המשיח). הטוקן לא חוזר לדפדפן במלואו */
+    if (req.method === 'POST' && ['voiceget', 'voicesave', 'voicetest'].includes(b.action)) {
+      const V = require('./_voice'); const { loadSetting, saveSetting } = require('./_lib');
+      if (b.action === 'voicesave') {
+        const cur = await loadSetting('voice'), v = b.voice || {}, out = {};
+        const str = (k, n) => { out[k] = String(v[k] == null ? '' : v[k]).slice(0, n || 400); };
+        ['callerId', 'smsFrom', 'smsMethod', 'smsPhones', 'smsText', 'smsFromParam', 'ttsMethod', 'ttsPhones', 'ttsText', 'ttsCallerParam'].forEach(k => str(k, 80));
+        ['codeSms', 'codeCall', 'remCall'].forEach(k => str(k, 400)); str('base', 200);
+        out.enabled = !!v.enabled; out.codeVia = ['sms', 'call', 'both'].includes(v.codeVia) ? v.codeVia : 'both';
+        out.max = Math.max(1, Math.min(500, parseInt(v.max, 10) || 50));
+        out.token = v.token && !/^•+/.test(v.token) ? String(v.token).trim().slice(0, 200) : (cur.token || '');
+        if (v.clearToken) out.token = '';
+        await saveSetting('voice', out); V.clearCache();
+      }
+      if (b.action === 'voicetest') {
+        V.clearCache(); const ph = V.normPhone(b.phone); if (!ph) return json(res, 400, { error: 'מספר טלפון לא תקין' });
+        if (!(await V.cfg()).token) return json(res, 400, { error: 'לא הוגדר טוקן' });
+        try { if (b.kind === 'call') await V.callTTS(ph, 'זוהי שיחת בדיקה ממיי לוח. ההגדרות עובדות.'); else await V.sendSms(ph, 'MyLuach: הודעת בדיקה. ההגדרות עובדות.'); return json(res, 200, { ok: true }); }
+        catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); }
+      }
+      const c = { ...V.DEF, ...(await loadSetting('voice')) };
+      const t = c.token || ''; c.hasToken = !!t; c.token = t ? '••••••' + t.slice(-3) : ''; c.envToken = !!env('YEMOT_TOKEN');
+      return json(res, 200, { voice: c });
+    }
     /* מבזקי דברי הימים: אירועים של תאריך עברי מסוים, או חיפוש */
     if (req.method === 'POST' && (b.action === 'yzday' || b.action === 'yzsearch')) {
       const { loadYZ } = require('./_yz'); const { list } = loadYZ();

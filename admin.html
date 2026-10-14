@@ -98,7 +98,7 @@ function render(){
   '<section><h2>קופונים</h2><p class="sub">קוד שהלקוח מקליד בחלון התשלום. "מקסימום שימושים" 0 = בלי הגבלה. תאריך ריק = בלי תאריך סיום.</p><div class="scroll"><table class="tbl" id="cpn"><thead><tr><th>פעיל</th><th>קוד</th><th>הנחה %</th><th>מסלולים</th><th>עד תאריך</th><th>מקס׳ שימושים</th><th>נוצל</th><th>הערה</th><th></th></tr></thead><tbody>'+
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
-  tickerSection()+
+  tickerSection()+voiceSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
     (Object.keys(D.mail.today).length?Object.entries(D.mail.today).map(([k,v])=>'<span><b>'+esc(k)+':</b> '+v+'</span>').join(''):'<span>היום עוד לא נשלחו מיילים</span>')+
@@ -122,6 +122,21 @@ function tickerList(items,head){const t=C.ticker,sel=t.mode==='selected';const b
   box.innerHTML=(head?'<p><b>'+esc(head)+'</b> · '+items.length+' אירועים</p>':'')+(items.length?items.map(e=>{const on=sel?t.ids.includes(e.id):!t.hide.includes(e.id);
     return '<label class="tk-i"><input type="checkbox" data-tk="'+e.id+'"'+(on?' checked':'')+'> <span>'+(e.y?'<b>'+esc(e.y)+'</b> · ':'')+esc(e.t)+'</span></label>'}).join(''):'<p>לא נמצאו אירועים.</p>');
   box.querySelectorAll('[data-tk]').forEach(c=>c.onchange=()=>{const id=+c.dataset.tk,L=sel?t.ids:t.hide,want=sel?c.checked:!c.checked,i=L.indexOf(id);if(want&&i<0)L.push(id);if(!want&&i>=0)L.splice(i,1)})}
+function voiceSection(){return '<section id="voiceSec"><h2>תזכורות קוליות בטלפון</h2><p class="sub">שיחות ו־SMS דרך ימות המשיח. <b>כשהמתג כבוי (או שאין טוקן), השירות כבוי לגמרי:</b> הלקוחות לא רואים את האפשרות, ולא נשלחות שיחות.</p><div id="vBox">טוען…</div></section>'}
+function voiceLoad(){api({action:'voiceget'}).then(r=>voiceDraw(r.voice)).catch(e=>{$('#vBox').textContent=e.message})}
+function voiceDraw(v){const f=(k,l,w,ph)=>'<label>'+l+' <input type="text" data-v="'+k+'" value="'+esc(v[k]||'')+'" style="width:'+(w||180)+'px"'+(ph?' placeholder="'+esc(ph)+'"':'')+' dir="auto"></label>';
+  const t=(k,l)=>'<label style="display:flex;flex-direction:column;gap:4px;width:100%">'+l+'<textarea data-v="'+k+'" rows="2" style="font:inherit">'+esc(v[k]||'')+'</textarea></label>';
+  $('#vBox').innerHTML='<div class="row"><label><input type="checkbox" data-v="enabled"'+(v.enabled?' checked':'')+'> השירות פעיל (מוצג ללקוחות ושולח שיחות)</label>'+f('max','מקסימום תזכורות למשתמש',70)+'<label>אימות טלפון ב־<select data-v="codeVia"><option value="both">SMS או שיחה (הלקוח בוחר)</option><option value="sms">SMS בלבד</option><option value="call">שיחה בלבד</option></select></label></div>'+
+   '<div class="row" style="margin-top:10px"><label>טוקן ימות המשיח <input type="password" data-v="token" value="'+esc(v.token||'')+'" placeholder="מספר_מערכת:סיסמה" autocomplete="off" style="width:220px" dir="ltr"></label>'+(v.hasToken?'<label><input type="checkbox" data-v="clearToken"> מחיקת הטוקן</label>':'')+f('callerId','מספר מזהה לשיחה',140,'למשל 0771234567')+f('smsFrom','שם/מספר שולח SMS',140)+'</div>'+
+   (v.envToken&&!v.hasToken?'<p class="sub">כרגע נעשה שימוש בטוקן מ-Vercel (YEMOT_TOKEN).</p>':'')+
+   '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+t('codeSms','נוסח SMS לקוד אימות ({code} = הקוד)')+t('codeCall','נוסח השיחה לקוד אימות')+t('remCall','נוסח שיחת התזכורת ({name} שם התזכורת, {when} מתי, {weekday} יום בשבוע, {hebdate} תאריך עברי)')+'</div>'+
+   '<details style="margin-top:10px"><summary style="cursor:pointer">הגדרות טכניות של הממשק (רק אם ימות המשיח מבקשים שמות אחרים)</summary><div class="row" style="margin-top:8px">'+f('base','כתובת API',260)+f('smsMethod','פעולת SMS',100)+f('smsPhones','פרמטר טלפונים',90)+f('smsText','פרמטר טקסט',90)+f('smsFromParam','פרמטר שולח',90)+'</div><div class="row" style="margin-top:6px">'+f('ttsMethod','פעולת שיחה',100)+f('ttsPhones','פרמטר טלפונים',90)+f('ttsText','פרמטר טקסט',90)+f('ttsCallerParam','פרמטר מזהה',90)+'</div></details>'+
+   '<div class="row" style="margin-top:12px"><button class="btn primary" type="button" id="vSave">שמירת הגדרות הטלפון</button><span id="vMsg"></span></div>'+
+   '<div class="row" style="margin-top:10px"><input type="tel" id="vTest" placeholder="מספר לבדיקה" dir="ltr" style="width:150px"><button class="btn" type="button" data-vt="sms">שליחת SMS בדיקה</button><button class="btn" type="button" data-vt="call">שיחת בדיקה</button><span id="vtMsg"></span></div>';
+  $('#vBox').querySelector('[data-v=codeVia]').value=v.codeVia||'both';
+  const read=()=>{const o={};$('#vBox').querySelectorAll('[data-v]').forEach(i=>{o[i.dataset.v]=i.type==='checkbox'?i.checked:i.value});return o};
+  $('#vSave').onclick=()=>{const m=$('#vMsg');m.textContent='שומר…';api({action:'voicesave',voice:read()}).then(r=>{voiceDraw(r.voice);$('#vMsg').textContent='✅ נשמר'}).catch(e=>{m.textContent='❌ '+e.message})};
+  $('#vBox').querySelectorAll('[data-vt]').forEach(b=>b.onclick=()=>{const m=$('#vtMsg');m.textContent='שולח…';api({action:'voicetest',kind:b.dataset.vt,phone:$('#vTest').value}).then(()=>{m.textContent='✅ נשלח'}).catch(e=>{m.textContent='❌ '+e.message})})}
 function collect(){
   document.querySelectorAll('tr[data-plan]').forEach(tr=>{const o={};tr.querySelectorAll('input[data-k]').forEach(i=>{o[i.dataset.k]=i.value===''?null:+i.value});C.plans[tr.dataset.plan]=o});
   const pl=n=>[...document.querySelectorAll('input[data-pl="'+n+'"]')].filter(x=>x.checked).map(x=>x.value);
@@ -137,6 +152,7 @@ function preview(){
     const el=document.querySelector('[data-prev="'+id+'"]');if(el)el.textContent=(Math.round(ils*(100-off))/100)+' ₪'+(off?' ('+off+'% '+why+')':'')});
 }
 function bind(){
+  if($('#vBox'))voiceLoad();
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
     $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};
     $('#tkFind').onclick=()=>{$('#tkList').textContent='מחפש…';api({action:'yzsearch',q:$('#tkQ').value}).then(r=>tickerList(r.items,'תוצאות חיפוש')).catch(e=>{$('#tkList').textContent=e.message})}}

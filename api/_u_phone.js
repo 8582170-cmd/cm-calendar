@@ -2,7 +2,7 @@
 'use strict';
 const crypto = require('crypto');
 const { db, readBody, json, getUser, upsertProfile } = require('./_lib');
-const { ready, normPhone, sendSms, callTTS } = require('./_voice');
+const { ready, cfg, fill, normPhone, sendSms, callTTS } = require('./_voice');
 const H = s => crypto.createHash('sha256').update(String(s)).digest('hex');
 module.exports = async (req, res) => {
   const user = await getUser(req);
@@ -11,19 +11,22 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const p = await db('profiles?user_id=eq.' + user.id + '&select=phone,phone_verified_at');
       const r = p && p[0];
-      return json(res, 200, { phone: r && r.phone_verified_at ? r.phone : null, ready: ready() });
+      const c = await cfg();
+      return json(res, 200, { phone: r && r.phone_verified_at ? r.phone : null, ready: await ready(), via: c.codeVia, max: c.max });
     }
     const b = readBody(req);
     if (b.action === 'send') {
-      if (!ready()) return json(res, 503, { error: 'not configured' });
+      if (!(await ready())) return json(res, 503, { error: 'not configured' });
+      const c = await cfg();
       const phone = normPhone(b.phone); if (!phone) return json(res, 400, { error: 'phone' });
       const since = new Date(Date.now() - 3600e3).toISOString();
       const recent = await db('phone_codes?user_id=eq.' + user.id + '&created_at=gte.' + encodeURIComponent(since) + '&select=id');
       if ((recent || []).length >= 5) return json(res, 429, { error: 'too many' });
       const code = String(crypto.randomInt(100000, 1000000));
       await db('phone_codes', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: user.id, phone, code_hash: H(user.id + code) }) });
-      if (b.via === 'call') await callTTS(phone, 'קוד האימות שלכם למיי לוח הוא: ' + code.split('').join(' ') + '. חוזר: ' + code.split('').join(' '));
-      else await sendSms(phone, 'MyLuach: קוד האימות שלכם הוא ' + code);
+      const via = c.codeVia === 'sms' ? 'sms' : c.codeVia === 'call' ? 'call' : (b.via === 'call' ? 'call' : 'sms');
+      if (via === 'call') await callTTS(phone, fill(c.codeCall, { code: code.split('').join(' ') }));
+      else await sendSms(phone, fill(c.codeSms, { code }));
       return json(res, 200, { ok: true, phone });
     }
     if (b.action === 'check') {
