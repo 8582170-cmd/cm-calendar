@@ -2381,7 +2381,7 @@ function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
   radio('calType',s.calType);radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
-  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards();cdSyncDay()}if($('#startDate')){$('#startDate').value=s.startDate||'';$('#startDateClr').hidden=!s.startDate;$('#startDateRow').hidden=$('#startDateHint').hidden=['week','day','table','countdown'].includes(s.view||'month')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
+  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards();cdSyncDay()}spSync();if($('#startDate')){$('#startDate').value=s.startDate||'';$('#startDateClr').hidden=!s.startDate;$('#startDateRow').hidden=$('#startDateHint').hidden=['week','day','table','countdown'].includes(s.view||'month')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליומי דהילולא (יארצייטן).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
@@ -2664,6 +2664,24 @@ const STEPS=[
  ['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']];
 const CD_STEPS={1:['פרטי הספירה','למה סופרים, תאריך היעד, העיצוב והצורה, תמונות ומשפטים, וגודל הדף.'],2:['צבעים וגופנים','צבעי הלוח, הגופנים וגודל הטקסט.'],7:['עיצוב חופשי','בתצוגה המקדימה אפשר לגרור, להגדיל ולעצב כל דבר ישירות.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
 const SIMPLE_STEPS={1:['סוג הלוח','לוח עברי או לועזי, השנה וגודל הדף.'],2:['עיצוב','איך נראה כל עמוד, צבעים וגופנים.'],5:['תמונות ואירועים','תמונת שער, תמונה לכל חודש, ימי הולדת, ימי שנה ואירועים. אפשר גם ללחוץ על כל יום בלוח.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
+/* עיצובים מוכנים לבונה הפשוט: לחיצה אחת משנה סגנון, צבע, גופנים ופריסה */
+const SIMPLE_PRESETS=[
+ ['classic','קלאסי','ink','#1e5a63','Frank Ruhl Libre','Assistant','same'],['modern','מודרני ונקי','soft','#24427a','Heebo','Heebo','same'],
+ ['bold','בולט ושמח','block','#8a2c2c','Suez One','Rubik','same'],['family','משפחתי חם','soft','#7a4a17','Secular One','Assistant','same'],
+ ['elegant','אלגנטי','ink','#2f2f3a','Bellefair','David Libre','same'],['nature','טבע','soft','#3d5a2a','Alef','Alef','same'],
+ ['kids','ילדים','block','#e0663a','Playpen Sans Hebrew','Playpen Sans Hebrew','same'],['wine','בורדו','ink','#6b2d4f','Frank Ruhl Libre','Assistant','same'],
+ ['sea','ים','soft','#1d6f8a','Rubik','Rubik','same'],['traditional','מסורתי','ink','#5a3e1b','David Libre','David Libre','same'],
+ ['minimal','מינימליסטי','soft','#2b2b2b','Assistant','Assistant','full'],['hand','כתב יד','soft','#6b2d4f','Amatic SC','Assistant','same'],
+ ['pink','ורוד עדין','soft','#b8487a','Secular One','Assistant','same'],['gold','זהב','ink','#9a7a2c','Bellefair','Assistant','same'],
+ ['purple','סגול','block','#5b3f8c','Karantina','Heebo','same'],['torah','תורני','ink','#24427a','Noto Serif Hebrew','Frank Ruhl Libre','full'],
+ ['photo','תמונה בעמוד נפרד','soft','#1e5a63','Heebo','Assistant','split'],['wall','לוח מלא בלי תמונות','block','#24427a','Rubik','Assistant','full']];
+function spSync(){const box=$('#spCards');if(!box)return;const cur=state.s.preset;
+  if(!box.children.length){box.innerHTML=SIMPLE_PRESETS.map(([k,n,th,ac,hf,bf,lay])=>{loadFont(hf);
+    const cells=Array.from({length:14},(_,i)=>'<i'+(i===6||i===13?' class="sh"':'')+'></i>').join('');
+    return '<button type="button" class="sp-card th-'+th+'" data-sp="'+k+'" role="radio" style="--a:'+ac+'"><span class="sp-prev">'+(lay==='full'?'':'<span class="sp-img"></span>')+'<b style="font-family:'+esc(fontCSS(hf))+'">תשרי</b><span class="sp-grid">'+cells+'</span></span><span class="sp-n">'+n+'</span></button>'}).join('')}
+  box.querySelectorAll('[data-sp]').forEach(b=>{const on=b.dataset.sp===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-sp]');if(!b)return;const P=SIMPLE_PRESETS.find(x=>x[0]===b.dataset.sp);if(!P)return;
+  const s=state.s;Object.assign(s,{preset:P[0],theme:P[2],accent:P[3],headFont:P[4],bodyFont:P[5],layout:P[6],tcolors:{}});loadFont(P[4]);loadFont(P[5]);save();syncUI();render()});
 const STEP_LIST=()=>CDMODE?[1,2,7,8]:SIMPLE?[1,2,5,8]:[1,2,3,4,5,6,7,8];
 const stepInfo=n=>CDMODE?CD_STEPS[n]:SIMPLE?SIMPLE_STEPS[n]:STEPS[n-1];
 function uiMode(){return state.s.uiMode||'wizard'}
@@ -2688,7 +2706,11 @@ function applyMode(){
   $('#finishPrintHint').textContent=framed?'כדי להדפיס, הורידו את הקובץ ופתחו אותו בדפדפן במחשב.':'לחצו "הדפסה". בחלון ההדפסה אפשר גם לבחור "שמירה כ־PDF".';
   $('#textScale2').value=s.textScale;$('#textScaleVal2').textContent=s.textScale+'%';
   document.querySelectorAll('#swatches2 .sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.acc===s.accent));
+  setTimeout(fitSide,30);
 }
+/* הלוח שבצד גלול בפני עצמו: הגובה שלו הוא החלק הגלוי במסך, כך שאפשר לגלול אותו עד הסוף בלי לגלול קודם את התצוגה */
+function fitSide(){const sd=document.querySelector('.side');if(!sd)return;if(innerWidth<901){sd.style.maxHeight='';return}const t=Math.max(0,sd.getBoundingClientRect().top);sd.style.maxHeight=Math.max(240,innerHeight-t)+'px'}
+let fitSideRaf=0;window.addEventListener('scroll',()=>{if(!fitSideRaf)fitSideRaf=requestAnimationFrame(()=>{fitSideRaf=0;fitSide()})},{passive:true});window.addEventListener('resize',fitSide);setTimeout(fitSide,300);
 function goMode(m,step){const s=state.s;s.uiMode=m;if(step)s.step=step;save();applyMode();window.scrollTo({top:0,behavior:'smooth'});setTimeout(fit,50)}
 function goStep(n){state.s.step=Math.min(8,Math.max(1,n));state.s.uiMode='wizard';save();applyMode();const sd=$('.side');if(sd)sd.scrollTop=0;window.scrollTo({top:0,behavior:'smooth'})}
 $('#stepper').addEventListener('click',e=>{const b=e.target.closest('[data-goto]');if(b)goStep(+b.dataset.goto)});

@@ -971,3 +971,22 @@ body.simple-app .simple-only{display:block}
 .simple-note{background:#fff7e0;border:1px solid #f0d58a;border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;margin-bottom:10px}
 .simple-note a{font-weight:700}
 body.simple-app #hlSec,body.simple-app #modeBtn,body.simple-app #tfSec{display:none!important}
+/* בונה פשוט: גלריית עיצובים */
+.simple-sec{display:none}
+body.simple-app .simple-sec{display:block}
+body.simple-app .nosimple{display:none!important}
+.sp-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sp-card{display:flex;flex-direction:column;gap:5px;padding:6px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg,#fff);cursor:pointer;font:inherit;color:var(--ink);text-align:center}
+.sp-card:hover{border-color:var(--accent)}
+.sp-card.on{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.sp-prev{display:flex;flex-direction:column;gap:3px;background:#fff;border:1px solid #e3e6e6;border-radius:6px;padding:5px;aspect-ratio:3/4;overflow:hidden}
+.sp-img{flex:0 0 34%;border-radius:3px;background:color-mix(in srgb,var(--a) 22%,#fff)}
+.sp-prev b{font-size:15px;line-height:1.1;color:var(--a);text-align:right}
+.sp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1}
+.sp-grid i{background:#f1f3f3;border-radius:2px;min-height:8px}
+.sp-grid i.sh{background:color-mix(in srgb,var(--a) 30%,#fff)}
+.sp-card.th-block .sp-prev b{background:var(--a);color:#fff;padding:1px 4px;border-radius:3px}
+.sp-card.th-block .sp-grid i{background:color-mix(in srgb,var(--a) 10%,#fff)}
+.sp-card.th-ink .sp-grid i{background:#fff;border:1px solid #d5dada}
+.sp-n{font-size:12.5px;font-weight:700}
+@media (max-width:420px){.sp-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
