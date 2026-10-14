@@ -64,6 +64,17 @@ module.exports = async (req, res) => {
       if (b.action === 'contentreset') { delete all.pages[page]; await saveSetting('content', all); }
       return json(res, 200, { data: all.pages[page] || null });
     }
+    /* IndexNow: מודיע לבינג (ולמנועים נוספים) על כל דפי האתר מתוך מפת האתר */
+    if (req.method === 'POST' && b.action === 'indexnow') {
+      const fs = require('fs'), path = require('path');
+      const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org';
+      let urls = [];
+      try { urls = [...fs.readFileSync(path.join(__dirname, '..', 'sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]); } catch (e) {}
+      if (!urls.length) urls = ['https://' + host + '/'];
+      const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
+      return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length });
+    }
     /* צפייה במסד הנתונים (קריאה בלבד) */
     if (req.method === 'POST' && b.action === 'table') {
       const T = {

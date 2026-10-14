@@ -99,6 +99,7 @@ function render(){
   '<section><h2>קופונים</h2><p class="sub">קוד שהלקוח מקליד בחלון התשלום. "מקסימום שימושים" 0 = בלי הגבלה. תאריך ריק = בלי תאריך סיום.</p><div class="scroll"><table class="tbl" id="cpn"><thead><tr><th>פעיל</th><th>קוד</th><th>הנחה %</th><th>מסלולים</th><th>עד תאריך</th><th>מקס׳ שימושים</th><th>נוצל</th><th>הערה</th><th></th></tr></thead><tbody>'+
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
+  '<section><h2>מנועי חיפוש</h2><p class="sub">שולח לבינג (ול-Yandex) את כל דפי האתר מתוך מפת האתר, כדי שיסרקו אותם מהר. אפשר ללחוץ אחרי כל שינוי גדול באתר.</p><div class="row"><button class="btn" type="button" id="inNow">שליחת כל הדפים לבינג (IndexNow)</button><span id="inMsg"></span></div></section>'+
   cmsSection()+tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
@@ -181,6 +182,7 @@ function preview(){
     const el=document.querySelector('[data-prev="'+id+'"]');if(el)el.textContent=(Math.round(ils*(100-off))/100)+' ₪'+(off?' ('+off+'% '+why+')':'')});
 }
 function bind(){
+  if($('#inNow'))$('#inNow').onclick=()=>{$('#inMsg').textContent='שולח…';api({action:'indexnow'}).then(r=>{$('#inMsg').textContent='✅ נשלחו '+r.count+' דפים'}).catch(e=>{$('#inMsg').textContent='❌ '+e.message})};
   if($('#cmsP')){$('#cmsP').value=CMS.page;$('#cmsP').onchange=e=>{CMS.page=e.target.value;cmsOpen()};
     $('#cmsSave').onclick=()=>{$('#cmsMsg').textContent='שומר…';$('#cmsF').contentWindow.postMessage({type:'cms-collect'},location.origin)};
     $('#cmsReset').onclick=e=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח? כל השינויים בדף יימחקו';return}api({action:'contentreset',page:CMS.page}).then(()=>{b.dataset.sure='';b.textContent='החזרת הדף למקור';cmsOpen()})};cmsOpen()}

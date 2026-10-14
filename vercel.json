@@ -1,7 +1,7 @@
 {
  "functions": {
   "api/*.js": {
-   "includeFiles": "{assets/plans.js,assets/yz.js,api/_hdate/**}"
+   "includeFiles": "{assets/plans.js,assets/yz.js,api/_hdate/**,sitemap.xml}"
   }
  },
  "crons": [
