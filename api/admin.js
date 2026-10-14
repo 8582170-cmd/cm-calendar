@@ -50,6 +50,20 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
     }
+    /* עריכת טקסטים וצבעים של דפי האתר */
+    if (req.method === 'POST' && ['contentget', 'contentsave', 'contentreset'].includes(b.action)) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      const page = String(b.page || '').replace(/[^\w-]/g, '').slice(0, 40); if (!page) return json(res, 400, { error: 'page' });
+      const all = await loadSetting('content'); all.pages = all.pages || {};
+      if (b.action === 'contentsave') {
+        const d = b.data || {}, texts = {}, vars = {};
+        Object.entries(d.texts || {}).slice(0, 2000).forEach(([k, v]) => { if (/^[a-z0-9]+-[a-z0-9]+$/.test(k)) texts[k] = String(v).replace(/<\/?(script|style|iframe|object|embed)[^>]*>/gi, '').replace(/\son\w+="[^"]*"/gi, '').slice(0, 5000); });
+        Object.entries(d.vars || {}).slice(0, 60).forEach(([k, v]) => { if (/^--[\w-]+$/.test(k) && /^#[0-9a-f]{3,8}$/i.test(v)) vars[k] = v; });
+        all.pages[page] = { texts, vars, updated: new Date().toISOString() }; await saveSetting('content', all);
+      }
+      if (b.action === 'contentreset') { delete all.pages[page]; await saveSetting('content', all); }
+      return json(res, 200, { data: all.pages[page] || null });
+    }
     /* צפייה במסד הנתונים (קריאה בלבד) */
     if (req.method === 'POST' && b.action === 'table') {
       const T = {

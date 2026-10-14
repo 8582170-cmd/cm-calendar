@@ -43,6 +43,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .preview{font-size:14px;color:var(--mute)}
 .bar{position:sticky;bottom:0;background:var(--paper);padding-block:10px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center}
 .tk-list{max-height:420px;overflow:auto;margin-top:10px;display:flex;flex-direction:column;gap:6px}.tk-i{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.5}
+.cms-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start}.cms-wrap iframe{flex:1;min-width:0;height:720px;border:1px solid var(--line);border-radius:10px;background:#fff}.cms-vars{flex:0 0 190px;display:flex;flex-direction:column;gap:8px;font-size:14px}.cms-vars label{display:flex;justify-content:space-between;align-items:center;gap:6px}@media (max-width:800px){.cms-wrap{flex-direction:column}.cms-wrap iframe{width:100%;height:560px}.cms-vars{flex-basis:auto;width:100%}}
 </style>
 </head>
 <body>
@@ -98,7 +99,7 @@ function render(){
   '<section><h2>קופונים</h2><p class="sub">קוד שהלקוח מקליד בחלון התשלום. "מקסימום שימושים" 0 = בלי הגבלה. תאריך ריק = בלי תאריך סיום.</p><div class="scroll"><table class="tbl" id="cpn"><thead><tr><th>פעיל</th><th>קוד</th><th>הנחה %</th><th>מסלולים</th><th>עד תאריך</th><th>מקס׳ שימושים</th><th>נוצל</th><th>הערה</th><th></th></tr></thead><tbody>'+
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
-  tickerSection()+voiceSection()+dbSection()+
+  cmsSection()+tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
     (Object.keys(D.mail.today).length?Object.entries(D.mail.today).map(([k,v])=>'<span><b>'+esc(k)+':</b> '+v+'</span>').join(''):'<span>היום עוד לא נשלחו מיילים</span>')+
@@ -122,6 +123,19 @@ function tickerList(items,head){const t=C.ticker,sel=t.mode==='selected';const b
   box.innerHTML=(head?'<p><b>'+esc(head)+'</b> · '+items.length+' אירועים</p>':'')+(items.length?items.map(e=>{const on=sel?t.ids.includes(e.id):!t.hide.includes(e.id);
     return '<label class="tk-i"><input type="checkbox" data-tk="'+e.id+'"'+(on?' checked':'')+'> <span>'+(e.y?'<b>'+esc(e.y)+'</b> · ':'')+esc(e.t)+'</span></label>'}).join(''):'<p>לא נמצאו אירועים.</p>');
   box.querySelectorAll('[data-tk]').forEach(c=>c.onchange=()=>{const id=+c.dataset.tk,L=sel?t.ids:t.hide,want=sel?c.checked:!c.checked,i=L.indexOf(id);if(want&&i<0)L.push(id);if(!want&&i>=0)L.splice(i,1)})}
+const CMS_P={index:'דף הבית',new:'דף הבית: תצוגה חדשה',gallery:'גלריה',donate:'תרומה',terms:'תנאי שימוש',privacy:'פרטיות',accessibility:'הצהרת נגישות'};
+const VAR_N={'--teal':'צבע ראשי','--acc':'צבע ראשי','--ink':'צבע טקסט','--mute':'טקסט משני','--paper':'רקע','--bg':'רקע','--sheet':'רקע כרטיסים','--card':'רקע כרטיסים','--line':'קווים','--gold':'זהב','--accent':'צבע הדגשה','--teal-ink':'טקסט על הצבע הראשי','--teal-soft':'רקע עדין','--chag':'צבע חגים','--chag-soft':'רקע חגים','--acc-soft':'רקע עדין','--warm':'רקע חם','--warm-ink':'טקסט חם','--lav':'רקע סגול','--lav-ink':'טקסט סגול','--bad':'צבע שגיאה','--teal-dark':'צבע ראשי כהה'};
+let CMS={page:'index',data:null};
+function cmsSection(){return '<section><h2>עריכת דפים</h2><p class="sub">בוחרים דף, לוחצים על כל טקסט בתצוגה ומקלידים. בצד משנים צבעים. בסוף לוחצים "שמירת הדף". (מחירים ומסלולים נערכים למעלה, ולא כאן.)</p>'+
+  '<div class="row"><select id="cmsP">'+Object.entries(CMS_P).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><button class="btn primary" type="button" id="cmsSave">שמירת הדף</button><button class="btn danger" type="button" id="cmsReset">החזרת הדף למקור</button><span id="cmsMsg"></span></div>'+
+  '<div class="cms-wrap"><iframe id="cmsF" title="עריכת הדף"></iframe><div id="cmsVars" class="cms-vars"></div></div></section>'}
+function cmsOpen(){const f=$('#cmsF');$('#cmsVars').innerHTML='';$('#cmsMsg').textContent='טוען…';f.src='/'+CMS.page+'.html?cmsedit=1&t='+Date.now()}
+window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const m=e.data||{},f=$('#cmsF');if(!f)return;
+  if(m.type==='cms-hello'){api({action:'contentget',page:CMS.page}).then(r=>{CMS.data=r.data;f.contentWindow.postMessage({type:'cms-load',data:r.data},location.origin)})}
+  if(m.type==='cms-ready'){$('#cmsMsg').textContent='';const V=m.vars||{},cur=(CMS.data&&CMS.data.vars)||{};
+    $('#cmsVars').innerHTML='<b>צבעים</b>'+(Object.keys(V).length?Object.keys(V).map(k=>'<label>'+esc(VAR_N[k]||k)+' <input type="color" data-var="'+esc(k)+'" value="'+esc(cur[k]||V[k])+'"></label>').join(''):'<p class="sub">לדף הזה אין צבעים לעריכה.</p>');
+    $('#cmsVars').querySelectorAll('[data-var]').forEach(i=>i.oninput=()=>f.contentWindow.postMessage({type:'cms-var',name:i.dataset.var,value:i.value},location.origin))}
+  if(m.type==='cms-data'){api({action:'contentsave',page:CMS.page,data:m.data}).then(r=>{CMS.data=r.data;$('#cmsMsg').textContent='✅ נשמר. הדף באתר מתעדכן תוך דקה.'}).catch(err=>{$('#cmsMsg').textContent='❌ '+err.message})}});
 const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',orders:'הזמנות ותשלומים',free_lite:'הורדות לוח חינמי',email_log:'מיילים שנשלחו'};
 const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',kind:'סוג',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
 let DBS={name:'profiles',q:'',offset:0};
@@ -167,6 +181,9 @@ function preview(){
     const el=document.querySelector('[data-prev="'+id+'"]');if(el)el.textContent=(Math.round(ils*(100-off))/100)+' ₪'+(off?' ('+off+'% '+why+')':'')});
 }
 function bind(){
+  if($('#cmsP')){$('#cmsP').value=CMS.page;$('#cmsP').onchange=e=>{CMS.page=e.target.value;cmsOpen()};
+    $('#cmsSave').onclick=()=>{$('#cmsMsg').textContent='שומר…';$('#cmsF').contentWindow.postMessage({type:'cms-collect'},location.origin)};
+    $('#cmsReset').onclick=e=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח? כל השינויים בדף יימחקו';return}api({action:'contentreset',page:CMS.page}).then(()=>{b.dataset.sure='';b.textContent='החזרת הדף למקור';cmsOpen()})};cmsOpen()}
   if($('#vBox'))voiceLoad();
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
