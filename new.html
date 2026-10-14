@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>לוח שנה אישי עם תמונות · MyLuach · תצוגה חדשה</title>
+<meta name="description" content="עיצוב לוח שנה אישי עם תמונות: ימי הולדת ויארצייטים לפי התאריך העברי או הלועזי, זמני היום בהגדרה גמישה ולימוד יומי. להדפסה ולהורדה.">
+<link rel="canonical" href="https://www.myluach.org/">
+<meta name="robots" content="noindex,follow">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap">
+<style>
+:root{--bg:#F7F9F9;--card:#fff;--ink:#13262A;--mute:#465a5e;--line:#E3E9EA;--acc:#1F5C63;--acc-soft:#E4EFEF;--warm:#FDE9E2;--warm-ink:#9A3B22;--lav:#EEEAF6;--lav-ink:#4B3F7A;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1719;--card:#162124;--ink:#e6eeee;--mute:#a8b8ba;--line:#26363a;--acc:#7cc4bd;--acc-soft:#1c2f31;--warm:#3a2620;--warm-ink:#f2b8a5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1719;--card:#162124;--ink:#e6eeee;--mute:#a8b8ba;--line:#26363a;--acc:#7cc4bd;--acc-soft:#1c2f31;--warm:#3a2620;--warm-ink:#f2b8a5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Heebo,Assistant,sans-serif}
+a{color:var(--acc)}
+.w{max-width:1160px;margin:0 auto;padding-inline:16px}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+header nav{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;padding-block:12px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:800;font-size:23px}
+.links{display:flex;flex-wrap:wrap;gap:4px 20px;flex:1 1 auto;font-size:15px;font-weight:500}
+.links a{text-decoration:none;color:var(--mute)}.links a:hover{color:var(--acc)}
+.pill{text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:10px 18px;border:1px solid var(--line);color:var(--ink);background:var(--card)}
+.pill.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.view-sw{font-size:13px;color:var(--mute);text-decoration:none;border:1px dashed var(--line);border-radius:999px;padding:6px 12px}
+.hero{display:flex;flex-wrap:wrap;gap:44px;align-items:center;padding-block:56px 36px}
+.hero-t{flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.eyebrow{align-self:flex-start;font-size:14px;font-weight:700;color:var(--acc);background:var(--acc-soft);padding:6px 12px;border-radius:999px}
+h1{margin:0;font-size:clamp(36px,5.4vw,56px);line-height:1.08;font-weight:800}
+.lead{margin:0;font-size:19px;color:var(--mute)}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.btn{text-decoration:none;font-weight:700;font-size:17px;padding:14px 24px;border-radius:12px;border:1.5px solid var(--line);color:var(--ink);background:var(--card);display:inline-block}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.fine{margin:0;font-size:14px;color:var(--mute)}
+.mock{flex:1 1 400px;min-width:0;display:flex;justify-content:center}
+.sheet{width:100%;max-width:440px;background:var(--card);border-radius:14px;border:1px solid var(--line);box-shadow:0 24px 48px rgba(19,38,42,.12);overflow:hidden}
+.sheet .ph{height:170px;background:var(--acc-soft);display:grid;place-items:center;color:var(--acc);font-weight:700}
+.sheet .in{padding:16px 18px 20px;display:flex;flex-direction:column;gap:10px}
+.sheet .hd{display:flex;justify-content:space-between;align-items:baseline}.sheet .hd b{font-size:26px;color:var(--acc)}.sheet .hd span{font-size:13px;color:var(--mute)}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;font-size:11px;text-align:center}
+.days span{border-radius:6px;padding:8px 0;background:var(--bg)}.days .w0{background:none;color:var(--mute);padding:0}.days .sh{background:var(--acc-soft);font-weight:700}.days .bd{background:var(--warm);color:var(--warm-ink);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}.chips span{padding:4px 9px;border-radius:999px}
+.c1{background:var(--warm);color:var(--warm-ink)}.c2{background:var(--acc-soft);color:var(--acc)}.c3{background:var(--lav);color:var(--lav-ink)}
+section{padding-block:36px}
+h2{margin:0 0 20px;font-size:clamp(26px,3.4vw,34px);font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font-size:19px}.card p{margin:0;font-size:15px;color:var(--mute)}
+.card svg{width:32px;height:32px;fill:none;stroke:var(--acc);stroke-width:1.8}
+.also{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:15px}.also span{background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:999px;color:var(--mute)}
+.promo{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px;display:flex;flex-wrap:wrap;gap:26px;align-items:center}
+.promo .t{flex:1 1 380px;min-width:0}.promo ul{margin:8px 0 16px;padding-inline-start:20px;color:var(--mute)}
+.big{flex:0 1 260px;margin-inline:auto;text-align:center;background:var(--acc-soft);border-radius:16px;padding:22px}.big strong{display:block;font-size:84px;line-height:1;color:var(--acc)}
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.who a{text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}.who a:hover{border-color:var(--acc)}
+.who b{display:block;font-size:17px}.who span{font-size:14px;color:var(--mute)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{display:flex;gap:14px;counter-increment:s}.steps li::before{content:counter(s);flex:none;width:40px;height:40px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800}
+.steps h3{margin:0 0 4px;font-size:18px}.steps p{margin:0;color:var(--mute)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.plan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:8px;position:relative}
+.plan.best{border:2px solid var(--acc)}.plan .tag{position:absolute;top:-12px;inset-inline-start:16px;background:var(--acc);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.plan h3{margin:0}.plan .sub{margin:0;color:var(--mute);font-size:14px}.plan .price{font-size:24px;font-weight:800}.plan .price small{font-size:13px;color:var(--mute);font-weight:500}
+.plan ul{margin:0 0 6px;padding-inline-start:18px;font-size:14.5px;color:var(--mute);flex:1}
+.was{color:var(--mute);font-weight:500;font-size:16px}.intro-tag{display:block;font-size:12px;color:var(--warm-ink);font-weight:700}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:10px}.faq summary{font-weight:700;cursor:pointer}.faq p,.faq ul{color:var(--mute)}
+.final{background:#13262A;color:#fff;border-radius:18px;padding:36px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.final h2{margin:0;color:#fff}.final p{margin:4px 0 0;color:#C9D6D8}.final .btn{background:#fff;color:#13262A;border-color:#fff}
+footer{padding-block:28px 40px;color:var(--mute);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 18px}
+footer a{color:var(--mute)}
+@media (max-width:700px){header{position:static}}
+@media (max-width:560px){.hero{padding-block:32px 20px}.promo,.final{padding:22px}}
+</style>
+<script src="/assets/a11y.js?v=1" defer></script>
+</head>
+<body>
+<header><nav class="w" aria-label="ניווט ראשי">
+  <a class="logo" href="new.html"><img src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
+  <div class="links"><a href="#features">מה בלוח</a><a href="gallery.html">דוגמאות</a><a href="countdown.html">ספירה לאחור</a><a href="online/">לוח מקוון</a><a href="#plans">מחירים</a><a href="#faq">שאלות</a></div>
+  <a class="view-sw" href="index.html?view=classic" id="toClassic">לתצוגה הקלאסית</a>
+  <a class="pill" href="app.html#login">כניסה</a><a class="pill pri" href="app.html">לבנות לוח</a>
+</nav></header>
+<main class="w">
+  <div class="hero">
+    <div class="hero-t">
+      <span class="eyebrow">לוח שנה עברי־לועזי להדפסה</span>
+      <h1>הלוח של המשפחה שלכם.<br>בדיוק כמו שאתם רוצים.</h1>
+      <p class="lead">תמונה לכל חודש, ימי הולדת ויארצייטים במקום הנכון, זמני היום המדויקים לעיר ולמנהג שלכם, ולימוד יומי. מעצבים כל פרט, ומדפיסים בבית או בדפוס.</p>
+      <div class="cta"><a class="btn pri" href="simple.html">בונה פשוט ומהיר</a><a class="btn" href="app.html">עיצוב מלא, שלב אחר שלב</a></div>
+      <p class="fine">בונים בחינם. לוח פשוט לכל השנה להורדה בחינם, פעם אחת למשתמש.</p>
+    </div>
+    <div class="mock" aria-hidden="true"><div class="sheet"><div class="ph">התמונה שלכם לחודש</div><div class="in">
+      <div class="hd"><b>תשרי</b><span>ספטמבר–אוקטובר · תשפ״ז</span></div>
+      <div class="days"><span class="w0">א</span><span class="w0">ב</span><span class="w0">ג</span><span class="w0">ד</span><span class="w0">ה</span><span class="w0">ו</span><span class="w0">ש</span>
+      <span>1</span><span>2</span><span>3</span><span class="bd">4</span><span>5</span><span>6</span><span class="sh">7</span><span>8</span><span>9</span><span class="sh">10</span><span>11</span><span>12</span><span>13</span><span class="sh">14</span></div>
+      <div class="chips"><span class="c1">יום הולדת · שירה בת 9</span><span class="c2">הדלקת נרות 18:02</span><span class="c3">דף יומי: ברכות ב</span></div>
+    </div></div></div>
+  </div>
+
+  <section id="features"><h2>כל מה שהופך לוח לשלכם</h2>
+    <div class="grid">
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8z"/></svg><h3>עיצוב אישי</h3><p>סגנונות, צבעים וגופנים. גוררים, מגדילים ומשנים כל טקסט ישירות על הדף, ועורכים תמונות עם טקסט ומדבקות.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg><h3>התמונות והתאריכים שלכם</h3><p>תמונה לכל חודש ושער, ימי הולדת, ימי נישואין ויארצייטים שחוזרים כל שנה לפי התאריך העברי או הלועזי.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h3>זמני היום בהגדרה גמישה</h3><p>מאות ערים, מנהגים מוכנים או שיטה משלכם לכל זמן, ובחירה אילו זמנים יופיעו ואיפה.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-7a2 2 0 00-2 2v12a2 2 0 012-2h7z"/></svg><h3>לימוד יומי</h3><p>דף יומי, משנה יומית, הלכה יומית ועוד, עם ריבוע לסמן מה הספקתם.</p></div>
+    </div>
+    <div class="also"><strong>וגם:</strong><span>חגים ומועדים</span><span>פרשת השבוע</span><span>8 גדלים ומידה אישית</span><span>שבועי, יומי ושנתי</span><span>דברי הימים</span><span>לחיצה לשנה הבאה</span></div>
+  </section>
+
+  <section id="countdown"><div class="promo">
+    <div class="t"><h2>לוח ספירה לאחור לשמחה שלכם</h2><p>לחתונה, לבר המצווה, ללידה או לטיול: לוח שסופר את הימים, להדפסה ולתלייה על המקרר.</p>
+      <ul><li>9 עיצובים, דף פתיחה ודף סיום עם תמונות</li><li>משפטים יפים כל כמה ימים, או משפטים משלכם</li><li>פרשת השבוע, חגים וזמני היום, לפי בחירה</li><li>כובע, כיפה או כתר על הראש בתמונה, בהתאמה אוטומטית</li></ul>
+      <div class="cta"><a class="btn pri" href="countdown.html">ליצירת לוח ספירה</a><span class="fine">עד 40 ימים: בחינם</span></div></div>
+    <div class="big" aria-hidden="true"><span>עוד</span><strong>18</strong><b>ימים לחתונה!</b></div>
+  </div></section>
+
+  <section id="who"><h2>מתחילים מנקודה מוכנה</h2>
+    <div class="who">
+      <a href="app.html#preset-family"><b>משפחה</b><span>תמונות, ימי הולדת וימי שנה</span></a>
+      <a href="app.html#preset-shul"><b>בית כנסת וקהילה</b><span>זמני היום ותפילות, באנרים לתורמים</span></a>
+      <a href="app.html#preset-yeshiva"><b>ישיבה וכולל</b><span>לימוד יומי עם ריבוע סימון</span></a>
+      <a href="app.html#preset-school"><b>בית ספר ומוסד</b><span>שנת לימודים וימים צבועים</span></a>
+      <a href="online/"><b>רק לבדוק תאריך או זמן?</b><span>הלוח המקוון: זמנים, שבת, המרת תאריכים ותזכורות</span></a>
+    </div>
+  </section>
+
+  <section id="how"><h2>שלושה צעדים ולוח מוכן</h2>
+    <ol class="steps"><li><div><h3>בוחרים שנה, עיר וסגנון</h3><p>בבונה הפשוט זה שלוש לחיצות.</p></div></li><li><div><h3>מוסיפים תמונות ותאריכים</h3><p>גוררים תמונות לחודשים, ומוסיפים אירועים או מייבאים רשימה.</p></div></li><li><div><h3>מדפיסים</h3><p>PDF איכותי לבית או לדפוס, בכל גודל.</p></div></li></ol>
+  </section>
+
+  <section id="plans"><h2>מסלולים</h2><div class="plans" id="planGrid"></div></section>
+
+  <section id="faq"><h2>שאלות</h2><div class="faq">
+        <details><summary>אפשר לנסות לפני שמשלמים?</summary><p>כן. במסלול הניסיון בונים את כל הלוח, לכל השנה, עם כל האפשרויות. בזמן הבנייה יש על העמודים סימן מים. בחינם אפשר להוריד חודש אחד לדוגמה בגרסה המלאה, ופעם אחת גם לוח פשוט לכל השנה בלי סימן מים (עד 3 זמני היום, 10 תמונות ו־25 אירועים). כשבוחרים מסלול, הכל נשאר והסימן יורד.</p></details>
+        <details><summary>איך מוסיפים תמונות?</summary><p>יש כמה מקומות לתמונות, ובוחרים מה מתאים לכם:</p><ul class="faq-list"><li><b>תמונה לכל חודש:</b> בראש עמוד הלוח, או בעמוד שלם משלה מול הלוח.</li><li><b>תמונה בתוך יום:</b> למשל תמונה של הילד ביום ההולדת שלו. צבע הכתב משתנה לבד כדי שיהיה קריא על התמונה.</li><li><b>עמוד שער</b> עם תמונה וכותרת, <b>באנרים</b> בצדי הדף, ו<b>עמודים נוספים</b> לברכות, תודות או פרסומות בכל מקום בלוח.</li><li><b>העלאה של הרבה תמונות בבת אחת:</b> בוחרים את כל התמונות, רואים אותן מסודרות לפי חודשים, ומשנים את הסדר בגרירה.</li><li><b>עורך תמונות:</b> הזזה והגדלה של התמונה בתוך המסגרת, שיפור צבעים, טקסט על התמונה ותמונה קטנה על תמונה.</li></ul></details>
+        <details><summary>אילו אירועים אישיים אפשר להוסיף?</summary><p>לוחצים על יום בלוח ובוחרים סוג: יום הולדת, יום נישואין, יום שנה (יארצייט), אירוע או תזכורת.</p><ul class="faq-list"><li><b>עברי או לועזי:</b> כל אירוע לפי התאריך העברי או הלועזי, והוא חוזר מעצמו כל שנה. אפשר גם אירוע חד־פעמי בתאריך מסוים.</li><li><b>איפה הם מופיעים:</b> בתוך הימים, או בטור נפרד ליד הלוח, עם או בלי תמונה.</li><li><b>ימים צבועים:</b> עד 10 רשימות בצבעים שלכם, למשל חופשות, ימי לימודים או תורנויות. לוחצים על הימים והם נצבעים, עם מקרא בתחתית החודש.</li><li><b>לשנה הבאה:</b> הכל נשמר ועובר ללוח של השנה הבאה בלחיצה.</li><li><b>כמה אפשר:</b> 30 אירועים במסלול הבסיסי, 120 במשפחתי, ובלי הגבלה במלא.</li></ul></details>
+        <details><summary>איך מעצבים לוח שנה אישי עם תמונות?</summary><p>בוחרים שנה וסגנון, מעלים תמונה לכל חודש (או הרבה תמונות בבת אחת), ומוסיפים ימי הולדת ואירועים בלחיצה על היום. כל כותרת, צבע וגופן אפשר לשנות ישירות על הדף. מי שרוצה הכי פשוט, מתחיל ב<a href="simple.html">בונה הפשוט</a>.</p></details>
+        <details><summary>אפשר להוריד לוח שנה להדפסה בחינם?</summary><p>כן. משתמש רשום יכול להוריד פעם אחת לוח חודשי פשוט לכל השנה, בלי סימן מים: עם חגים ופרשת השבוע, עד 3 זמני היום, 10 תמונות ו־25 אירועים. לוח ספירה לאחור של עד 40 ימים מורידים בחינם תמיד.</p></details>
+        <details><summary>איך מקבלים תזכורת ליום הולדת או ליארצייט לפי התאריך העברי?</summary><p>ב<a href="online/#reminders">לוח המקוון</a> מוסיפים תזכורת שחוזרת כל שנה לפי התאריך העברי או הלועזי, ובוחרים לקבל אותה במייל שבוע, יומיים או יום לפני. אפשר גם להוסיף את כל התאריכים ליומן בטלפון.</p></details>
+        <details><summary>איך מדפיסים?</summary><p>מורידים קובץ PDF בגודל שבחרתם. אפשר להדפיס בבית, או לשלוח לבית דפוס לכריכה בספירלה.</p></details>
+        <details><summary>לפי איזו שיטה מחושבים הזמנים?</summary><p>בוחרים מנהג: אשכנזים, ספרדים, חב״ד או חוץ לארץ. בהגדרות המתקדמות אפשר לקבוע לכל זמן שיטה משלו, כולל מעלות מתחת לאופק ודקות קבועות או זמניות.</p></details>
+        <details><summary>מה זה ״אירועים בדברי ימי ישראל״?</summary><p>מאגר של כ־3,500 ימי פטירה של גדולי ישראל ואירועים מההיסטוריה היהודית. בוחרים אילו להציג. מה שתערכו שם משתנה רק אצלכם.</p></details>
+        <details><summary>מה קורה בשנה הבאה?</summary><p>נכנסים, לוחצים על ״לוח חדש לשנה הבאה״, והתאריכים המשפחתיים, התמונות וההגדרות כבר מוכנים. מי שמחדש מקבל הנחה.</p></details>
+      </div></section>
+
+  <section><div class="final"><div><h2>מתחילים לבנות, בלי הרשמה</h2><p>רואים את כל השנה כבר עכשיו. משלמים רק כשמדפיסים.</p></div><a class="btn" href="simple.html">לבונה הפשוט</a></div></section>
+</main>
+<footer class="w"><span>© 2026 MyLuach</span><a href="gallery.html">גלריה</a><a href="online/">לוח מקוון</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="terms.html#contact">יצירת קשר</a></footer>
+<script src="assets/plans.js?v=202610150400"></script>
+<script>
+(function(){
+  try{localStorage.setItem('myluach-view','new')}catch(e){}
+  var h=location.hash||'';if(/^#city-[a-z]+(&hy-\d{4})?$/.test(h)){document.querySelectorAll('a[href="app.html"],a[href="simple.html"]').forEach(function(a){a.setAttribute('href',a.getAttribute('href')+h)});try{history.replaceState(null,'',location.pathname)}catch(e){}}
+  document.getElementById('toClassic').onclick=function(){try{localStorage.setItem('myluach-view','classic')}catch(e){}};
+  var P=window.MyLuachPlans,g=document.getElementById('planGrid');
+  function draw(){g.innerHTML=P.PLANS.map(function(p){return '<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+'<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,'ils')+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div><ul>'+p.bullets.map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><a class="btn'+(p.best?' pri':'')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a></div>'}).join('')}
+  draw();if(P.ready)P.ready.then(function(d){if(d)draw()});
+})();
+</script>
+</body>
+</html>

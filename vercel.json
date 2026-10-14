@@ -38,6 +38,10 @@
   {
    "source": "/accessibility",
    "destination": "/accessibility.html"
+  },
+  {
+   "source": "/new",
+   "destination": "/new.html"
   }
  ]
 }
