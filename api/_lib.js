@@ -113,6 +113,20 @@ async function getUser(req) {
   } catch (e) { return null; }
 }
 
+/* המסלול הגבוה ביותר ששולם ב-400 הימים האחרונים (לפי חשבון או מייל) */
+async function bestPlan(user) {
+  const since = new Date(Date.now() - 400 * 864e5).toISOString();
+  const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
+  const rows = await db('orders?select=plan&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or);
+  const rank = id => LP.PLANS.findIndex(p => p.id === id);
+  let plan = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (!plan || rank(o.plan) > rank(plan))) plan = o.plan; });
+  return plan;
+}
+/* רישום המשתמש במאגר (מייל, ובהמשך טלפון) */
+async function upsertProfile(user, extra) {
+  try { await db('profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: user.id, email: user.email, updated_at: new Date().toISOString(), ...(extra || {}) }) }); } catch (e) { console.error('profile', e.message); }
+}
+
 function json(res, code, obj) {
   res.statusCode = code;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -120,4 +134,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
+module.exports = { bestPlan, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };

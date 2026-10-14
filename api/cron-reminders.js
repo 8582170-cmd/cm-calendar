@@ -4,6 +4,7 @@
 const { env, db, json } = require('./_lib');
 const { sendMail, frame, escH } = require('./_mail');
 const { hits, hebStr, todayIL, addD, iso } = require('./_rem');
+const voice = require('./_voice');
 
 const G_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 const WD = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
@@ -40,7 +41,24 @@ module.exports = async (req, res) => {
       }
       if (rows.length < 1000) break;
     }
-    json(res, 200, { date: tIso, checked, sent, failed });
+    /* תזכורות קוליות בטלפון (אם ימות המשיח מוגדר) */
+    let vsent = 0, vfailed = 0;
+    if (voice.ready()) {
+      const vr = await db('voice_reminders?status=eq.active&select=id,phone,name,rule,notice,last_sent&order=id&limit=5000').catch(() => []);
+      for (const r of vr || []) {
+        if (r.last_sent === tIso) continue;
+        let hitN = null;
+        for (const n of (r.notice || [1]).slice().sort((a, b) => a - b)) { if (await hits(r.rule || {}, addD(today, n))) { hitN = n; break; } }
+        if (hitN === null) continue;
+        const day = addD(today, hitN), heb = await hebStr(day);
+        try {
+          await voice.callTTS(r.phone, 'שלום, זוהי תזכורת ממיי לוח. ' + r.name + ', ' + when(hitN) + ', יום ' + WD[day.getDay()] + ', ' + heb + '. חוזר: ' + r.name + ', ' + when(hitN) + '.');
+          await db('voice_reminders?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_sent: tIso }) });
+          vsent++;
+        } catch (e) { vfailed++; console.error('voice send', r.id, e.message); }
+      }
+    }
+    json(res, 200, { date: tIso, checked, sent, failed, vsent, vfailed });
   } catch (e) {
     console.error('cron', e);
     json(res, 500, { error: 'server error', sent, failed });

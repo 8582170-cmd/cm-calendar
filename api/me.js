@@ -1,12 +1,13 @@
 /* החשבון של המשתמש המחובר: המסלול ששילם עליו (רכישות של 400 הימים האחרונים, לפי חשבון או מייל).
    אפשר לשלוח claim: מספרי הזמנות שבוצעו בדפדפן לפני ההתחברות, כדי לצרף אותן לחשבון. */
 'use strict';
-const { getUser, LP, PAID, db, readBody, json } = require('./_lib');
+const { getUser, LP, PAID, db, readBody, json, upsertProfile } = require('./_lib');
 
 module.exports = async (req, res) => {
   try {
     const user = await getUser(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
+    upsertProfile(user);
     const b = readBody(req);
     const claim = (Array.isArray(b.claim) ? b.claim : String(b.claim || '').split(',')).filter(x => /^[0-9a-f]{24}$/.test(x)).slice(0, 20);
     for (const id of claim) {

@@ -96,6 +96,11 @@ module.exports = async (req, res) => {
       });
       mail.byDay = byDay;
       mail.recent = await db('email_log?select=*&order=created_at.desc&limit=200');
+      try {
+        const pr = await db('profiles?select=phone_verified_at&limit=100000');
+        const vr = await db('voice_reminders?status=eq.active&select=id&limit=100000');
+        mail.users = { total: (pr || []).length, phones: (pr || []).filter(x => x.phone_verified_at).length, voice: (vr || []).length };
+      } catch (e) { mail.users = null; }
     } catch (e) { mail = null; }
     json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
