@@ -574,7 +574,7 @@ function dialog(html){$('#dlgBody').innerHTML=html;$('#dlg').hidden=false;docume
 function closeDlg(){$('#dlg').hidden=true;document.body.style.overflow=''}
 
 /* ---------- צד, תחתית, קישורים ---------- */
-function builderLink(){const hy=new HDate(anchor).getFullYear();return BUILDER+'#city-'+st.city+'&hy-'+(new HDate(anchor).getMonth()>=7?hy:hy)}
+function builderLink(){const hy=new HDate(anchor).getFullYear();return BUILDER+(HE()?'':'en.html')+'#city-'+st.city+'&hy-'+(new HDate(anchor).getMonth()>=7?hy:hy)}
 
 /* יומן חגים וזמני שבת לעיר, להרשמה מיומן גוגל / אייפון (קבצים ב-online/ics/, נוצרים ב-tools/gen_ics.mjs) */
 function icsUrl(){const c=city();return c&&c.id&&!String(c.id).startsWith('custom')?'//'+(window.location.host||'www.myluach.org')+'/online/ics/'+c.id+'.ics':null}

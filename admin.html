@@ -127,7 +127,7 @@ function tickerList(items,head){const t=C.ticker,sel=t.mode==='selected';const b
   box.innerHTML=(head?'<p><b>'+esc(head)+'</b> · '+items.length+' אירועים</p>':'')+(items.length?items.map(e=>{const on=sel?t.ids.includes(e.id):!t.hide.includes(e.id);
     return '<label class="tk-i"><input type="checkbox" data-tk="'+e.id+'"'+(on?' checked':'')+'> <span>'+(e.y?'<b>'+esc(e.y)+'</b> · ':'')+esc(e.t)+'</span></label>'}).join(''):'<p>לא נמצאו אירועים.</p>');
   box.querySelectorAll('[data-tk]').forEach(c=>c.onchange=()=>{const id=+c.dataset.tk,L=sel?t.ids:t.hide,want=sel?c.checked:!c.checked,i=L.indexOf(id);if(want&&i<0)L.push(id);if(!want&&i>=0)L.splice(i,1)})}
-const CMS_P={index:'דף הבית',new:'דף הבית: תצוגה חדשה',gallery:'גלריה',donate:'תרומה',terms:'תנאי שימוש',privacy:'פרטיות',accessibility:'הצהרת נגישות'};
+const CMS_P={index:'דף הבית',en:'דף הבית באנגלית',new:'דף הבית: תצוגה חדשה',gallery:'גלריה',donate:'תרומה',terms:'תנאי שימוש',privacy:'פרטיות',accessibility:'הצהרת נגישות'};
 const VAR_N={'--teal':'צבע ראשי','--acc':'צבע ראשי','--ink':'צבע טקסט','--mute':'טקסט משני','--paper':'רקע','--bg':'רקע','--sheet':'רקע כרטיסים','--card':'רקע כרטיסים','--line':'קווים','--gold':'זהב','--accent':'צבע הדגשה','--teal-ink':'טקסט על הצבע הראשי','--teal-soft':'רקע עדין','--chag':'צבע חגים','--chag-soft':'רקע חגים','--acc-soft':'רקע עדין','--warm':'רקע חם','--warm-ink':'טקסט חם','--lav':'רקע סגול','--lav-ink':'טקסט סגול','--bad':'צבע שגיאה','--teal-dark':'צבע ראשי כהה'};
 (window.MYLUACH_ARTICLES||[]).forEach(([k,t])=>{CMS_P['art-'+k]='מאמר: '+t});
 const cmsUrl=p=>p.startsWith('art-')?'/articles/'+(p==='art-index'?'index':p.slice(4))+'.html':'/'+p+'.html';

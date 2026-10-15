@@ -1091,3 +1091,9 @@ body.simple-app .nosimple{display:none!important}
 .lib-i span{font-size:12.5px;line-height:1.25;padding:0 2px 2px}
 .lib-i:hover,.lib-i:focus-visible{border-color:var(--accent);outline:none}
 .lib-i.busy{opacity:.5;pointer-events:none}
+
+/* English pages (simple-en.html, countdown-en.html) */
+html[lang=en] body,html[lang=en] .page,html[lang=en] .pl-demo{direction:ltr}
+html[lang=en] .page{font-family:var(--f-body),"Assistant",sans-serif}
+html[lang=en] .page.wm::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='170'%3E%3Ctext x='130' y='95' text-anchor='middle' transform='rotate(-28 130 85)' font-family='Arial' font-size='26' font-weight='700' fill='%23a8382c' fill-opacity='.55'%3EMyLuach %C2%B7 TRIAL%3C/text%3E%3C/svg%3E")}
+html[lang=en] .page.wm-light::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='215' text-anchor='middle' transform='rotate%28-24 300 200%29' font-family='Arial' font-size='40' font-weight='700' fill='%23555' fill-opacity='.10'%3EMyLuach.org %C2%B7 SAMPLE%3C/text%3E%3C/svg%3E")}

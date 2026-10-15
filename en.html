@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-cms="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MyLuach · Personal Jewish Calendar with Photos, Zmanim and Hebrew Dates</title>
+<meta name="description" content="Design a personal Hebrew-English calendar with your family photos, birthdays and yahrzeits on the Hebrew date, Shabbat times and zmanim for your city, holidays and Torah portions. Print at home. Also printable countdown calendars.">
+<link rel="canonical" href="https://www.myluach.org/en.html">
+<link rel="alternate" hreflang="en" href="https://www.myluach.org/en.html">
+<link rel="alternate" hreflang="he" href="https://www.myluach.org/">
+<link rel="alternate" hreflang="x-default" href="https://www.myluach.org/">
+<meta property="og:title" content="MyLuach · Personal Jewish Calendar with Photos"><meta property="og:description" content="Your family photos, Hebrew birthdays and yahrzeits, zmanim and Shabbat times, in a printable Jewish calendar."><meta property="og:url" content="https://www.myluach.org/en.html"><meta property="og:image" content="https://www.myluach.org/assets/icon-512.png"><meta property="og:locale" content="en_US">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Rubik:wght@500;700;800&display=swap">
+<style>
+:root{--bg:#FFFCF7;--card:#fff;--ink:#1d2a2c;--mute:#4d5a5c;--line:#ECE6DC;--acc:#1F5C63;--acc-soft:#E4EFEF;--coral:#D9533A;--warm:#FDE3DA;--warm-ink:#8F2F1B;--sun:#FFF1D6;--sun-ink:#8A5B00;--sky:#DDE9FB;--sky-ink:#234E8C;--leaf:#DDF0E2;--leaf-ink:#2E6B43;--lav:#EEEAF6;--lav-ink:#4B3F7A;--f-h:Rubik,Heebo,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a1b;--card:#1a2426;--ink:#e9efef;--mute:#a9b7b9;--line:#2a3739;--acc:#7cc4bd;--acc-soft:#1c2f31;--coral:#f08a72;--warm:#3a2620;--warm-ink:#f2b8a5;--sun:#3a3020;--sun-ink:#f3cf86;--sky:#1e2a3d;--sky-ink:#a9c6f2;--leaf:#1d3124;--leaf-ink:#a6dbb5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121a1b;--card:#1a2426;--ink:#e9efef;--mute:#a9b7b9;--line:#2a3739;--acc:#7cc4bd;--acc-soft:#1c2f31;--coral:#f08a72;--warm:#3a2620;--warm-ink:#f2b8a5;--sun:#3a3020;--sun-ink:#f3cf86;--sky:#1e2a3d;--sky-ink:#a9c6f2;--leaf:#1d3124;--leaf-ink:#a6dbb5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Heebo,Assistant,sans-serif;direction:ltr}
+a{color:var(--acc)}
+.w{max-width:1160px;margin:0 auto;padding-inline:16px}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+header nav{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;padding-block:12px}
+.logo{font-family:var(--f-h);display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:800;font-size:23px}
+.links{display:flex;flex-wrap:wrap;gap:4px 20px;flex:1 1 auto;font-size:15px;font-weight:500}
+.links a{text-decoration:none;color:var(--mute)}.links a:hover{color:var(--acc)}
+.pill{text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:10px 18px;border:1px solid var(--line);color:var(--ink);background:var(--card)}
+.pill.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.view-sw{font-size:13px;color:var(--mute);text-decoration:none;border:1px dashed var(--line);border-radius:999px;padding:6px 12px}
+.hero{display:flex;flex-wrap:wrap;gap:44px;align-items:center;padding-block:56px 36px}
+.hero-t{flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.eyebrow{align-self:flex-start;font-size:14px;font-weight:700;color:var(--acc);background:var(--acc-soft);padding:6px 12px;border-radius:999px}
+h1{margin:0;font-family:var(--f-h);font-size:clamp(36px,5.4vw,58px);line-height:1.1;font-weight:800}
+h1 em{font-style:normal;color:var(--coral)}
+.lead{margin:0;font-size:19px;color:var(--mute)}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.btn{text-decoration:none;font-weight:700;font-size:17px;padding:14px 26px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink);background:var(--card);display:inline-block}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.sun{background:var(--sun);border-color:var(--sun);color:var(--ink)}
+.fine{margin:0;font-size:14px;color:var(--mute)}
+.mock{flex:1 1 420px;min-width:0;display:flex;justify-content:center;align-items:center;min-height:380px;position:relative}
+.fan{position:relative;width:min(100%,460px);height:380px}
+.mo{position:absolute;width:56%;background:var(--card);border-radius:18px;box-shadow:0 16px 34px rgba(42,35,32,.16);overflow:hidden;border:1px solid var(--line)}
+.mo img{display:block;width:100%;aspect-ratio:16/11;object-fit:cover}
+.mo .t{padding:10px 14px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mo .t b{font-family:var(--f-h);font-size:22px}.mo .t span{font-size:12.5px;color:var(--mute)}
+.mo.m1{inset-inline-start:0;top:46px;transform:rotate(4deg)}.mo.m1 b{color:var(--coral)}
+.mo.m3{inset-inline-end:0;top:46px;transform:rotate(-4deg)}.mo.m3 b{color:var(--leaf-ink)}
+.mo.m2{inset-inline-start:22%;top:0;width:58%;z-index:2;box-shadow:0 22px 44px rgba(42,35,32,.22)}.mo.m2 b{color:var(--acc)}
+.mo .days{padding:0 14px 14px}
+@media (max-width:520px){.fan{height:330px}.mo .days{display:none}}
+.sheet{width:100%;max-width:440px;background:var(--card);border-radius:14px;border:1px solid var(--line);box-shadow:0 24px 48px rgba(19,38,42,.12);overflow:hidden}
+.sheet .ph{height:170px;background:var(--acc-soft);display:grid;place-items:center;color:var(--acc);font-weight:700}
+.sheet .in{padding:16px 18px 20px;display:flex;flex-direction:column;gap:10px}
+.sheet .hd{display:flex;justify-content:space-between;align-items:baseline}.sheet .hd b{font-size:26px;color:var(--acc)}.sheet .hd span{font-size:13px;color:var(--mute)}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;font-size:11px;text-align:center}
+.days span{border-radius:6px;padding:8px 0;background:var(--bg)}.days .w0{background:none;color:var(--mute);padding:0}.days .sh{background:var(--acc-soft);font-weight:700}.days .bd{background:var(--warm);color:var(--warm-ink);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}.chips span{padding:4px 9px;border-radius:999px}
+.c1{background:var(--warm);color:var(--warm-ink)}.c2{background:var(--acc-soft);color:var(--acc)}.c3{background:var(--lav);color:var(--lav-ink)}
+section{padding-block:36px}
+h2{margin:0 0 20px;font-family:var(--f-h);font-size:clamp(26px,3.4vw,36px);font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;display:flex;flex-direction:column;gap:8px}
+#features .card{border:0}
+#features .card:nth-child(1){background:var(--warm)}#features .card:nth-child(1) h3,#features .card:nth-child(1) svg{color:var(--warm-ink);stroke:var(--warm-ink)}
+#features .card:nth-child(2){background:var(--sun)}#features .card:nth-child(2) h3,#features .card:nth-child(2) svg{color:var(--sun-ink);stroke:var(--sun-ink)}
+#features .card:nth-child(3){background:var(--sky)}#features .card:nth-child(3) h3,#features .card:nth-child(3) svg{color:var(--sky-ink);stroke:var(--sky-ink)}
+#features .card:nth-child(4){background:var(--leaf)}#features .card:nth-child(4) h3,#features .card:nth-child(4) svg{color:var(--leaf-ink);stroke:var(--leaf-ink)}
+#features .card p{color:var(--ink);opacity:.82}
+.card h3{margin:0;font-family:var(--f-h);font-size:21px}.card p{margin:0;font-size:15px;color:var(--mute)}
+.card svg{width:32px;height:32px;fill:none;stroke:var(--acc);stroke-width:1.8}
+.also{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:15px}.also span{background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:999px;color:var(--mute)}
+.promo{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:30px;display:flex;flex-wrap:wrap;gap:26px;align-items:center}
+.promo .t{flex:1 1 380px;min-width:0}.promo ul{margin:8px 0 16px;padding-inline-start:20px;color:var(--mute)}
+.big{flex:0 1 260px;margin-inline:auto;text-align:center;background:var(--warm);border-radius:22px;padding:22px;transform:rotate(-2deg)}.big strong{display:block;font-family:var(--f-h);font-size:84px;line-height:1;color:var(--coral)}
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.who a{text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.who a:hover{border-color:var(--acc)}
+.who b{display:block;font-size:17px}.who span{font-size:14px;color:var(--mute)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{display:flex;gap:14px;counter-increment:s}.steps li::before{content:counter(s);flex:none;width:40px;height:40px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800}
+.steps h3{margin:0 0 4px;font-size:18px}.steps p{margin:0;color:var(--mute)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.plan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:8px;position:relative}
+.plan.best{border:2px solid var(--acc)}.plan .tag{position:absolute;top:-12px;inset-inline-start:16px;background:var(--acc);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.plan h3{margin:0}.plan .sub{margin:0;color:var(--mute);font-size:14px}.plan .price{font-size:24px;font-weight:800}.plan .price small{font-size:13px;color:var(--mute);font-weight:500}
+.plan ul{margin:0 0 6px;padding-inline-start:18px;font-size:14.5px;color:var(--mute);flex:1}
+.was{color:var(--mute);font-weight:500;font-size:16px}.intro-tag{display:block;font-size:12px;color:var(--warm-ink);font-weight:700}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:10px}.faq summary{font-weight:700;cursor:pointer}.faq p,.faq ul{color:var(--mute)}
+.final{background:var(--acc);color:#fff;border-radius:28px;padding:36px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.final h2{margin:0;color:#fff}.final p{margin:4px 0 0;color:#e1eeec}.final .btn{background:#fff;color:#1d2a2c;border-color:#fff}
+footer{padding-block:28px 40px;color:var(--mute);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 18px}
+footer a{color:var(--mute)}
+@media (max-width:700px){header{position:static}}
+@media (max-width:560px){.hero{padding-block:32px 20px}.promo,.final{padding:22px}}
+</style>
+<script src="/assets/i18n-en-dict.js?v=1"></script>
+<script src="/assets/i18n-en.js?v=1"></script>
+<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/cms.js?v=1" defer></script>
+<script type="application/ld+json" id="faqld"></script>
+</head>
+<body>
+<header><nav class="w" aria-label="Main">
+  <a class="logo" href="en.html"><img src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
+  <div class="links"><a href="#features">What's inside</a><a href="countdown-en.html">Countdown</a><a href="online/en/">Online calendar</a><a href="#plans">Pricing</a><a href="#faq">FAQ</a></div>
+  <a class="view-sw" href="index.html" hreflang="he" lang="he">עברית</a>
+  <a class="pill" href="simple-en.html#login">Sign in</a><a class="pill pri" href="simple-en.html">Build a calendar</a>
+</nav></header>
+<main class="w">
+  <div class="hero">
+    <div class="hero-t">
+      <span class="eyebrow">Printable Hebrew-English calendar</span>
+      <h1>A whole year of <em>your moments</em>, on the wall</h1>
+      <p class="lead">Your family photos for every month, birthdays and yahrzeits on the right Hebrew date, Shabbat times and zmanim for your city and custom, holidays and Torah portions. Design it in minutes and print at home or at a print shop.</p>
+      <div class="cta"><a class="btn pri" href="simple-en.html">Start building, it's free</a><a class="btn sun" href="countdown-en.html">Countdown calendar</a></div>
+      <p class="fine">Building is free. One simple calendar for the whole year is free to download, once per user.</p>
+    </div>
+    <div class="mock" aria-hidden="true"><div class="fan">
+      <div class="mo m1"><img src="/assets/library/sukkot.svg" alt=""><div class="t"><b>Tishrei</b><span>Grandpa’s birthday</span></div></div>
+      <div class="mo m3"><img src="/assets/library/flower-field.svg" alt=""><div class="t"><b>Nisan</b><span>Pesach</span></div></div>
+      <div class="mo m2"><img src="/assets/library/chanukah.svg" alt=""><div class="t"><b>Kislev</b><span>Candles 4:12 pm</span></div>
+        <div class="days"><span class="w0">S</span><span class="w0">M</span><span class="w0">T</span><span class="w0">W</span><span class="w0">T</span><span class="w0">F</span><span class="w0">S</span>
+        <span>1</span><span>2</span><span>3</span><span class="bd">4</span><span>5</span><span>6</span><span class="sh">7</span></div>
+        <div class="chips" style="padding:0 14px 14px"><span class="c1">Sarah turns 9</span><span class="c3">Chanukah</span></div></div>
+    </div></div>
+  </div>
+
+  <section id="features"><h2>Everything that makes it yours</h2>
+    <div class="grid">
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8z"/></svg><h3>Your own design</h3><p>Pick a style from the gallery, and the colors, fonts and layout change together. Edit photos with text and stickers.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg><h3>Your photos and dates</h3><p>A photo for every month and the cover. Birthdays, anniversaries and yahrzeits that repeat every year on the Hebrew or English date.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h3>Zmanim your way</h3><p>About 150 cities in Israel, America, Europe and beyond. Ashkenazi, Sephardi, Chabad or the custom common abroad.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-7a2 2 0 00-2 2v12a2 2 0 012-2h7z"/></svg><h3>The Jewish year, built in</h3><p>Holidays, fasts, Rosh Chodesh, Torah portions, candle lighting and havdalah, Chanukah candles and the Omer.</p></div>
+    </div>
+    <div class="also"><strong>Also:</strong><span>8 page sizes</span><span>Israel or diaspora calendar</span><span>Photo library</span><span>Next year in one click</span><span>Email reminders</span></div>
+  </section>
+
+  <section id="countdown"><div class="promo">
+    <div class="t"><h2>A countdown calendar for your simcha</h2><p>For a wedding, Bar or Bat Mitzvah, a new baby or a trip: a calendar that counts the days, to print and hang on the fridge.</p>
+      <ul><li>9 styles, opening and closing pages with photos</li><li>Nice quotes every few days, or your own</li><li>Torah portion, holidays and zmanim, as you choose</li><li>A kippah, crown or party hat on the photo, fitted automatically</li></ul>
+      <div class="cta"><a class="btn pri" href="countdown-en.html">Make a countdown</a><span class="fine">Up to 40 days: free</span></div></div>
+    <div class="big" aria-hidden="true"><span>Only</span><strong>18</strong><b>days to the wedding!</b></div>
+  </div></section>
+
+  <section id="who"><h2>Made for</h2>
+    <div class="who">
+      <a href="simple-en.html"><b>Families</b><span>Photos of the kids, birthdays and yahrzeits</span></a>
+      <a href="simple-en.html"><b>A gift for grandparents</b><span>A grandchild for every month, and every birthday marked</span></a>
+      <a href="countdown-en.html"><b>Simchas</b><span>Countdown to the wedding or Bar Mitzvah</span></a>
+      <a href="online/en/"><b>Just checking a date?</b><span>The online calendar: zmanim, Shabbat times, date converter and reminders</span></a>
+    </div>
+  </section>
+
+  <section id="how"><h2>Three steps to your calendar</h2>
+    <ol class="steps"><li><div><h3>Choose a year, city and style</h3><p>In the simple builder it takes a few clicks.</p></div></li><li><div><h3>Add photos and dates</h3><p>Drop in photos for the months, and add birthdays and events.</p></div></li><li><div><h3>Print</h3><p>A high-quality PDF for home or a print shop, in any size.</p></div></li></ol>
+  </section>
+
+  <section id="plans"><h2>Pricing</h2><p class="fine" style="margin:-10px 0 16px">One yearly calendar per purchase. Prices are in shekels (₪); the dollar amount is approximate.</p><div class="plans" id="planGrid" data-cms-skip></div></section>
+
+  <section id="faq"><h2>Questions</h2><div class="faq">
+    <details><summary>Can I try it before paying?</summary><p>Yes. Build the whole calendar for the whole year with every option. While you build there is a watermark on the pages. You can download one month free in the full version, and once, a simple calendar for the whole year with no watermark (up to 3 zmanim, 10 photos and 25 events).</p></details>
+    <details><summary>How do Hebrew birthdays and yahrzeits work?</summary><p>Click a day and choose a birthday, anniversary or yahrzeit. Each one repeats every year on its Hebrew date (or English date, if you prefer), so it lands on the right day automatically, every year.</p></details>
+    <details><summary>Which cities and customs are supported?</summary><p>About 150 cities in Israel and around the world, including New York, Brooklyn, Lakewood, Los Angeles, Toronto, London, Paris and Antwerp. You can also set an exact location. Choose Ashkenazi, Sephardi, Chabad or the custom common in communities abroad.</p></details>
+    <details><summary>Is it an Israel or a diaspora calendar?</summary><p>Both. For places outside Israel the calendar follows the diaspora: two days of Yom Tov and the diaspora Torah portion schedule.</p></details>
+    <details><summary>How do I print?</summary><p>You download a PDF in the size you chose. Print at home, or send it to a print shop for spiral binding.</p></details>
+    <details><summary>Is everything in English?</summary><p>The simple builder and the countdown builder are in English, and so is the printed calendar: month names, holidays, Torah portions and zmanim. The full builder with advanced settings is currently in Hebrew.</p></details>
+  </div></section>
+
+  <section><div class="final"><div><h2>Start building, no sign-up needed</h2><p>See the whole year right away. Pay only when you print.</p></div><a class="btn" href="simple-en.html">Start the simple builder</a></div></section>
+</main>
+<footer class="w"><span>© 2026 MyLuach</span><a href="online/en/">Online Jewish calendar</a><a href="countdown-en.html">Countdown calendar</a><a href="index.html" hreflang="he" lang="he">עברית</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="accessibility.html">Accessibility</a></footer>
+<script src="assets/plans.js?v=202610150400"></script>
+<script>
+(function(){
+  var NAMES={free:'Trial',basic:'Basic',family:'Family',full:'Full'},TAG={free:'Build it, see it, love it',basic:'A simple, beautiful monthly calendar',family:'For the whole extended family',full:'Everything open, no limits'};
+  var B={free:['Build and see the whole year (with a watermark)','All options open to try','A simple whole-year calendar to download free, once','Countdown up to 40 days: free'],
+    basic:['A whole year, monthly calendar','Up to 30 family events','Zmanim by 4 main methods','One download of the finished calendar'],
+    family:['All views: monthly, weekly, daily and table','Up to 120 family events','Banners, greeting pages and ads','Photo editor','2 downloads'],
+    full:['Unlimited family events','All zmanim methods and custom values','Any page size','Synagogue prayer times','5 downloads']};
+  var h=location.hash||'';if(/^#city-[a-z]+(&hy-\d{4})?$/.test(h)){document.querySelectorAll('a[href="simple-en.html"]').forEach(function(a){a.setAttribute('href','simple-en.html'+h)});try{history.replaceState(null,'',location.pathname)}catch(e){}}
+  var P=window.MyLuachPlans,g=document.getElementById('planGrid');
+  function usd(p){var v=p.price.usd;if(!v)return '';var ip=P.introPrice(p,'usd');return ' <small>(about '+(ip||('$'+v))+')</small>'}
+  function draw(){g.innerHTML=P.PLANS.map(function(p){return '<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">Best value</span>':'')+'<h3>'+NAMES[p.id]+'</h3><p class="sub">'+TAG[p.id]+'</p><div class="price">'+P.priceHTML(p,'ils',true).replace(/(\d+(?:\.\d+)?) ₪/g,'₪$1')+(p.price.ils?usd(p):'')+'</div><ul>'+B[p.id].map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><a class="btn'+(p.best?' pri':'')+'" href="simple-en.html">'+(p.id==='free'?'Start free':'Build and choose '+NAMES[p.id])+'</a></div>'}).join('')}
+  draw();if(P.ready)P.ready.then(function(d){if(d)draw()});
+  var q=[].map.call(document.querySelectorAll('#faq details'),function(d){return {'@type':'Question',name:d.querySelector('summary').textContent,acceptedAnswer:{'@type':'Answer',text:d.querySelector('p').textContent}}});
+  document.getElementById('faqld').textContent=JSON.stringify({'@context':'https://schema.org','@type':'FAQPage',mainEntity:q});
+})();
+</script>
+</body>
+</html>
