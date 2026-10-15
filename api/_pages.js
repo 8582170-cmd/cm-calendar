@@ -85,6 +85,7 @@ function render(p, all) {
 <article class="art"><h1>${esc(p.title)}</h1><p class="art-meta">${esc(CATS[p.cat] || '')} · ${hdate(p.date)}</p>
 ${p.image ? '<img class="art-hero" src="' + esc(p.image) + '" alt="">' : ''}
 ${body}
+${(p.tags || []).length ? '<p class="art-tags"><span>תגיות:</span>' + p.tags.map(t => '<a href="/articles/?tag=' + encodeURIComponent(t) + '">' + esc(t) + '</a>').join('') + '</p>' : ''}
 ${p.note === false ? '' : '<p class="art-note">' + (p.cat === 'toldot' ? 'המידע נאסף ממקורות היסטוריים ותורניים. מצאתם טעות? נשמח לתיקון.' : 'המאמר נועד להסבר כללי ואינו פסק הלכה. למעשה, כל אחד ינהג כפי שקיבל מרבותיו וישאל את רב הקהילה.') + '</p>'}
 </article></main>
 <aside class="a-side">${c ? `<div class="a-card a-ctac"><b>${esc(c[0])}</b><p>${esc(c[1])}</p><a class="art-btn" href="${c[2]}">${esc(c[3])}</a></div>` : ''}
@@ -99,7 +100,7 @@ const notFound = () => head({ title: 'הדף לא נמצא', desc: '', slug: 'x'
 async function handle(req, res) {
   const q = String((req.query || {}).pg || ''), L = (await load()).items;
   res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120, stale-while-revalidate=600');
-  if (q === '_list') return json(res, 200, { items: L.filter(x => x.published && x.kind !== 'page').map(({ slug, title, desc, cat, date }) => ({ slug, title, desc, cat, date })).sort((a, b) => String(b.date).localeCompare(String(a.date))), cats: CATS });
+  if (q === '_list') return json(res, 200, { items: L.filter(x => x.published && x.kind !== 'page').map(({ slug, title, desc, cat, date, tags }) => ({ slug, title, desc, cat, date, tags: tags || [] })).sort((a, b) => String(b.date).localeCompare(String(a.date))), cats: CATS });
   if (q === '_sitemap') {
     res.statusCode = 200; res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     return res.end('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + L.filter(x => x.published).map(x => `  <url><loc>${SITE}/p/${x.slug}</loc>${x.mod || x.date ? '<lastmod>' + (x.mod || x.date).slice(0, 10) + '</lastmod>' : ''}</url>`).join('\n') + '\n</urlset>\n');
@@ -124,7 +125,7 @@ async function adminAction(b) {
     const old = D.items.find(x => x.slug === (b.oldSlug || slug));
     if (b.oldSlug !== slug && D.items.some(x => x.slug === slug)) return { error: 'כבר יש דף בכתובת הזו' };
     const today = new Date().toISOString().slice(0, 10);
-    const p = { slug, title: String(i.title).trim().slice(0, 200), desc: String(i.desc || '').trim().slice(0, 400), keys: String(i.keys || '').slice(0, 300),
+    const p = { slug, title: String(i.title).trim().slice(0, 200), desc: String(i.desc || '').trim().slice(0, 400), keys: String(i.keys || '').slice(0, 300), tags: [...new Set(String(Array.isArray(i.tags) ? i.tags.join(',') : i.tags || '').split(/[,،]/).map(t => t.trim().slice(0, 40)).filter(Boolean))].slice(0, 12),
       cat: CATS[i.cat] ? i.cat : 'toldot', kind: i.kind === 'page' ? 'page' : 'article', cta: CTA.hasOwnProperty(i.cta) ? i.cta : 'luach',
       image: /^(https?:\/\/|\/)/.test(i.image || '') ? String(i.image).slice(0, 500) : '', body: clean(i.body), published: !!i.published,
       date: /^\d{4}-\d{2}-\d{2}$/.test(i.date || '') ? i.date : (old && old.date) || today, mod: today, token: (old && old.token) || Math.random().toString(36).slice(2, 12), note: i.note !== false };

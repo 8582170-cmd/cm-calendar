@@ -19,7 +19,7 @@ const T={
   ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'ב־MyLuach בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
   sunrise:'הנץ',sunset:'שקיעה',candles:'הדלקת נרות',havdalah:'יציאה',parasha:'פרשת השבוע',nextHoliday:'החג הבא',inDays:n=>n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים',
   daysAgo:n=>n===1?'אתמול':'לפני '+n+' ימים',fromToday:'מהיום',addRem:'הוספת תזכורת',note:'הערה ליום הזה',color:'צבע ליום',save:'שמירה',del:'מחיקה',close:'סגירה',
-  showOmer:'ספירת העומר',showDz:'זמני היום בלוח',showTimes:'הדלקה ויציאה',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
+  showOmer:'ספירת העומר',showLearn:'לימוד יומי',showDz:'זמני היום בלוח',showTimes:'הדלקה ויציאה',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
   convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יום שנה (יארצייט)',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
@@ -29,7 +29,7 @@ const T={
   ctaT:'Want this as a printed calendar?',ctaP:'MyLuach builds a personal Jewish calendar for your family, synagogue or school: photos, family events, zmanim and more.',ctaB:'Build a personal calendar',
   sunrise:'Sunrise',sunset:'Sunset',candles:'Candle lighting',havdalah:'Havdalah',parasha:'Torah portion',nextHoliday:'Next holiday',inDays:n=>n===0?'today':n===1?'tomorrow':'in '+n+' days',
   daysAgo:n=>n===1?'yesterday':n+' days ago',fromToday:'from today',addRem:'Add reminder',note:'Note for this day',color:'Day color',save:'Save',del:'Delete',close:'Close',
-  showOmer:'Omer count',showDz:'Daily times',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',
+  showOmer:'Omer count',showLearn:'Daily learning',showDz:'Daily times',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',
   convert:'Date converter',countdown:'Countdown',barmitzvah:'Bar / Bat Mitzvah calculator',days:'Days between dates',yahrzeit:'Yahrzeit calculator',
   weekdays:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Shabbat'],wdShort:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
   gMonths:['January','February','March','April','May','June','July','August','September','October','November','December']}
@@ -238,7 +238,7 @@ function viewMonth(){
       remsOn(d).map(r=>'<span class="ev rem">'+esc(r.name)+'</span>').join('')+
       apptOn(d).map(a=>'<span class="ev appt"'+(a.color?' style="--ac:'+esc(a.color)+'"':'')+'>'+(a.start_t?esc(a.start_t)+' ':'')+esc(a.title)+'</span>').join('')+
       (note.text?'<span class="ev note">'+esc(note.text)+'</span>':'')+
-      (st.opts.dz?dzLine(d):'')+'</button>';
+      (st.opts.learn?'<span class="lrm">'+lrnFor(d).map(x=>esc(x.v)).join(' · ')+'</span>':'')+(st.opts.dz?dzLine(d):'')+'</button>';
   }
   const tot=lead+M.days.length;for(let i=tot;i<Math.ceil(tot/7)*7;i++)g+='<div class="day pad"></div>';
   g+='</div>';
@@ -249,7 +249,7 @@ function viewMonth(){
     '<span class="nav-arrows"><button class="btn" type="button" data-sh="-12" title="'+t('prevYear')+'">«</button><button class="btn" type="button" data-sh="-1" title="'+t('prev')+'">'+(HE()?'→':'←')+'</button><button class="btn" type="button" id="tdy">'+t('today')+'</button><button class="btn" type="button" data-sh="1" title="'+t('next')+'">'+(HE()?'←':'→')+'</button><button class="btn" type="button" data-sh="12" title="'+t('nextYear')+'">»</button></span>'+
     '<details class="jump-d"><summary class="btn">'+t('jump')+'</summary><div class="jump" style="margin-top:6px">'+jumpH+jumpG+'</div></details>'+
     '<a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
-    '<div class="opts no-print">'+[['dz','showDz'],['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'<button type="button" class="linkbtn2" id="dzPick">⚙ '+(HE()?'בחירת זמנים':'Choose times')+'</button></div>'+
+    '<div class="opts no-print">'+[['dz','showDz'],['learn','showLearn'],['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'<button type="button" class="linkbtn2" id="dzPick">⚙ '+(HE()?'בחירת זמנים':'Choose times')+'</button>'+(st.opts.learn?'<button type="button" class="linkbtn2" id="lrPick">⚙ '+(HE()?'בחירת לימוד':'Choose learning')+'</button>':'')+'</div>'+
     '<section class="month"><div class="mhead"><h1 class="sr">'+esc(pageH1())+'</h1><h2>'+esc(M.title)+'</h2><span class="mute">'+esc(M.other)+'</span></div>'+g+'</section>'+seoBlock();
   const jd=$('#jD');if(jd)jd.value=String(hdA.getDate());
 }
@@ -456,6 +456,40 @@ function remEditor(id,date,pre){
   setTimeout(()=>$('#rN').focus(),30);
 }
 
+
+/* ---------- לימוד יומי ---------- */
+const DAF_T=[['ברכות',64],['שבת',157],['עירובין',105],['פסחים',121],['שקלים',22],['יומא',88],['סוכה',56],['ביצה',40],['ראש השנה',35],['תענית',31],['מגילה',32],['מועד קטן',29],['חגיגה',27],['יבמות',122],['כתובות',112],['נדרים',91],['נזיר',66],['סוטה',49],['גיטין',90],['קידושין',82],['בבא קמא',119],['בבא מציעא',119],['בבא בתרא',176],['סנהדרין',113],['מכות',24],['שבועות',49],['עבודה זרה',76],['הוריות',14],['זבחים',120],['מנחות',110],['חולין',142],['בכורות',61],['ערכין',34],['תמורה',34],['כריתות',28],['מעילה',37],['נדה',73]];
+const DAF_EN=['Berakhot','Shabbat','Eruvin','Pesachim','Shekalim','Yoma','Sukkah','Beitzah','Rosh Hashana','Taanit','Megillah','Moed Katan','Chagigah','Yevamot','Ketubot','Nedarim','Nazir','Sotah','Gittin','Kiddushin','Bava Kamma','Bava Metzia','Bava Batra','Sanhedrin','Makkot','Shevuot','Avodah Zarah','Horayot','Zevachim','Menachot','Chullin','Bekhorot','Arakhin','Temurah','Keritot','Meilah','Niddah'];
+const NACH_HE2={'Joshua':'יהושע','Judges':'שופטים','I Samuel':'שמואל א','II Samuel':'שמואל ב','I Kings':'מלכים א','II Kings':'מלכים ב','Isaiah':'ישעיהו','Jeremiah':'ירמיהו','Ezekiel':'יחזקאל','Hosea':'הושע','Joel':'יואל','Amos':'עמוס','Obadiah':'עובדיה','Jonah':'יונה','Micah':'מיכה','Nachum':'נחום','Nahum':'נחום','Habakkuk':'חבקוק','Zephaniah':'צפניה','Haggai':'חגי','Zechariah':'זכריה','Malachi':'מלאכי','Psalms':'תהלים','Proverbs':'משלי','Job':'איוב','Song of Songs':'שיר השירים','Ruth':'רות','Lamentations':'איכה','Ecclesiastes':'קהלת','Esther':'אסתר','Daniel':'דניאל','Ezra':'עזרא','Nehemiah':'נחמיה','I Chronicles':'דברי הימים א','II Chronicles':'דברי הימים ב'};
+const numH=n=>HE()?gem(+n).replace(/[׳״]/g,''):String(n);
+const numX=x=>String(x).split(':').map(v=>/^\d+$/.test(v)?numH(+v):v).join(':');
+let LRN=null,LRNP=false;
+function lrnLib(){if(LRN)return LRN;if(window.hebcal__learning){LRN=window.hebcal__learning;return LRN}
+  if(!LRNP){LRNP=true;const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@hebcal/learning@5.1.2/dist/bundle.min.js';s.onload=()=>{LRN=window.hebcal__learning||null;evCache.clear();render()};document.head.appendChild(s)}return null}
+const hk=k=>{if(!HE())return k;try{return strip(H.Locale.gettext(k,'he'))}catch(e){return k}};
+const LRN_T={
+  daf:[['דף יומי','Daf Yomi'],d=>{const day=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2020,0,5))/864e5);let n=((day%2711)+2711)%2711;
+    for(let i=0;i<DAF_T.length;i++){const [t,pg]=DAF_T[i];if(n<pg-1){const daf=n+2;let name=HE()?t:DAF_EN[i];if(t==='מעילה'){name=daf<=22?(HE()?'מעילה':'Meilah'):daf<=25?(HE()?'קינים':'Kinnim'):daf<=33?(HE()?'תמיד':'Tamid'):(HE()?'מדות':'Middot')}return name+' '+numH(daf)}n-=pg-1}return ''}],
+  mishna:[['משנה יומית','Mishna Yomit'],d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_T._mi=LRN_T._mi||new L.MishnaYomiIndex();return LRN_T._mi.lookup(new HDate(d)).map(x=>hk(x.k)+' '+numX(x.v)).join(', ')}catch(e){return ''}}],
+  nach:[['נ״ך יומי','Nach Yomi'],d=>{const L=lrnLib();if(!L||!L.NachYomiIndex)return '';try{LRN_T._ni=LRN_T._ni||new L.NachYomiIndex();const r=LRN_T._ni.lookup(new HDate(d));let k=String(r.k||r.name);
+    if(HE()){const h=NACH_HE2[k.replace(/^1 /,'I ').replace(/^2 /,'II ')];k=h||hk(k)}return k+' '+numH(+r.v||+r.chap||0)}catch(e){return ''}}],
+  yerushalmi:[['ירושלמי יומי','Yerushalmi Yomi'],d=>{const L=lrnLib();if(!L||!L.yerushalmiYomi||!L.vilna)return '';try{const r=L.yerushalmiYomi(new HDate(d),L.vilna);return r?hk(r.name)+' '+numX(r.blatt):''}catch(e){return ''}}],
+  rambam:[['רמב״ם (פרק ליום)','Rambam (1 chapter)'],d=>{const L=lrnLib();if(!L||!L.dailyRambam1)return '';try{const r=L.dailyRambam1(new HDate(d));return r?hk(r.name)+' '+numX(r.perek):''}catch(e){return ''}}],
+  tehillim:[['תהלים לפי החודש','Tehillim (monthly)'],d=>{const L=lrnLib();if(!L||!L.dailyPsalms)return '';try{const r=L.dailyPsalms(new HDate(d));return r?numX(r[0])+'–'+numX(r[1]):''}catch(e){return ''}}],
+  cc:[['חפץ חיים','Chafetz Chaim'],d=>{const L=lrnLib();if(!L||!L.chofetzChaim)return '';try{const r=L.chofetzChaim(new HDate(d));return r?hk(r.k)+' '+numX(r.b)+(r.e&&r.e!==r.b?'–'+numX(r.e):''):''}catch(e){return ''}}],
+  shl:[['שמירת הלשון','Shmirat HaLashon'],d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{const r=L.shemiratHaLashon(new HDate(d));return r?hk(r.k)+' '+numX(r.b)+(r.e&&r.e!==r.b?'–'+numX(r.e):''):''}catch(e){return ''}}],
+  dafw:[['דף שבועי','Daf Weekly'],d=>{const L=lrnLib();if(!L||!L.dafWeekly)return '';try{const r=L.dafWeekly(new HDate(d));if(!r)return '';return hk(r.getName?r.getName():r.name)+' '+numX(r.getBlatt?r.getBlatt():r.blatt)}catch(e){return ''}}]
+};
+const LRN_DEF=['daf','mishna','rambam'];
+const lrnSel=()=>(Array.isArray(st.lrnSel)?st.lrnSel:LRN_DEF).filter(k=>LRN_T[k]);
+function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);return v?{k,n:LRN_T[k][0][HE()?0:1],v}:null}).filter(Boolean)}
+const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> <b>'+esc(x.v)+'</b></div>').join('');
+function lrnPicker(){const sel=new Set(lrnSel());
+  dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
+    Object.entries(LRN_T).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
+    '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="lrOk">'+t('save')+'</button></div>');
+  $('#lrOk').onclick=()=>{st.lrnSel=[...document.querySelectorAll('.dzp input:checked')].map(i=>i.value);st.opts.learn=st.lrnSel.length>0;saveSt();closeDlg();render()}}
+
 /* ---------- תצוגה שבועית ויומית ---------- */
 function vTabs(){return '<div class="vtabs no-print" role="tablist">'+[['day',HE()?'יומי':'Day'],['week',HE()?'שבועי':'Week'],['month',HE()?'חודשי':'Month']].map(([k,l])=>'<button type="button" role="tab" data-vw="'+k+'" aria-selected="'+(view===k)+'">'+l+'</button>').join('')+'</div>'}
 const WK_LBL={alot:'עלות השחר',alot2:'עלות השחר ב׳',mish:'משיכיר',netz:'הנץ החמה',shmaM:'סוזק״ש מג״א',shmaG:'סוזק״ש גר״א',tfilaM:'סוז״ת מג״א',tfilaG:'סוז״ת גר״א',musaf:'סוף זמן מוסף',chatzot:'חצות היום',minG:'מנחה גדולה',minK:'מנחה קטנה',plag:'פלג המנחה',shkia:'שקיעה',tzeit:'צאת הכוכבים',ci:'צאה״כ חזו״א',motz:'צאת שבת',rt:'ר״ת',fastE:'סוף צום',chatzotN:'חצות הלילה'};
@@ -475,7 +509,7 @@ function dateNav(unit){
     '<button class="btn today-b" type="button" id="tdy">'+t('today')+'</button>'+
     b(step,ul,'data-wsh',R[1])+b(1,HE()?'חודש':'Month','data-msh',R[1])+b(1,HE()?'שנה':'Year','data-ysh',R[3])+'</span>'}
 function viewWeek(){
-  const a=addD(anchor,-anchor.getDay()),days=Array.from({length:7},(_,i)=>addD(a,i)),ev=events(addD(a,-1),days[6]),W=wkSel();
+  const a=addD(anchor,-anchor.getDay()),days=Array.from({length:7},(_,i)=>addD(a,i)),ev=events(addD(a,-1),days[6]),W=wkSel(),LON=st.opts.learn!==false&&lrnSel().length>0;
   const sat=(ev.get(iso(days[6]))||[]).find(x=>x.cls==='par'),hA=new HDate(days[0]),hB=new HDate(days[6]);
   const range=hDay(hA.getDate())+' '+hMonthName(hA.getMonth(),hA.getFullYear())+' – '+hStr(hB)+' · '+gStr(days[0],false)+' – '+gStr(days[6]);
   const head='<div class="wk-top"><div class="wk-city"><small>'+(HE()?'לוח':'Calendar')+'</small><b>'+esc(cityName(city()))+'</b></div>'+
@@ -487,10 +521,11 @@ function viewWeek(){
       '<div class="wk-dn">'+t('weekdays')[d.getDay()]+'</div>'+
       '<div class="wk-z wk-zm">'+zList(Z,W.m)+'</div>'+
       '<div class="wk-ev">'+dayCellItems(d,ev)+'<button type="button" class="wk-add no-print" data-anew="'+iso(d)+'" title="'+(HE()?'הוספת פגישה':'Add appointment')+'">+</button></div>'+
+      (LON?'<div class="wk-lr">'+lrnHTML(d)+'</div>':'')+
       '<div class="wk-z wk-ze">'+zList(Z,W.e)+'</div>'+
       '<div class="wk-gd">'+d.getDate()+(gFirst||d.getDay()===0?'<small>'+esc(t('gMonths')[d.getMonth()].slice(0,HE()?10:3))+'</small>':'')+'</div></div>'}).join('');
-  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" id="wkPick">⚙ '+(HE()?'אילו זמנים בשבועי':'Choose times')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="week">🖨 '+(HE()?'הדפסת השבוע':'Print week')+'</button><a class="btn pri" href="'+builderLink()+'">'+t('print')+'</a></div>'+
-    '<section class="wk card"><h1 class="sr">'+esc((HE()?'לוח שבועי ':'Weekly calendar ')+cityName(city()))+'</h1>'+head+'<div class="wk-rows">'+rows+'</div>'+
+  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" id="wkPick">⚙ '+(HE()?'אילו זמנים בשבועי':'Choose times')+'</button><button class="btn" type="button" id="lrPick">📖 '+(HE()?'לימוד יומי':'Daily learning')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="week">🖨 '+(HE()?'הדפסת השבוע':'Print week')+'</button><a class="btn pri" href="'+builderLink()+'">'+t('print')+'</a></div>'+
+    '<section class="wk card'+(LON?' wk-l':'')+'"><h1 class="sr">'+esc((HE()?'לוח שבועי ':'Weekly calendar ')+cityName(city()))+'</h1>'+head+'<div class="wk-rows">'+rows+'</div>'+
     '<div class="wk-foot mute small">'+(HE()?'הזמנים לאופק '+esc(cityName(city()))+' לפי '+esc(ZPRE[zcfg().pre].he)+'.<span class="no-print"> מעבר עם העכבר על זמן מראה איך הוא מחושב.</span>':'Times for '+esc(cityName(city()))+', '+esc(ZPRE[zcfg().pre].en)+'.')+'</div></section>'+seoBlock();
 }
 function wkPicker(){
@@ -513,7 +548,7 @@ function viewDay(){
     '<div class="dv-g"><div><div class="dv-ev">'+(ev.get(iso(d))||[]).map(x=>'<span class="ev '+x.cls+'">'+esc(x.txt)+'</span>').join('')+remsOn(d).map(r=>'<span class="ev rem">'+esc(r.name)+'</span>').join('')+((NOTES[iso(d)]||{}).text?'<span class="ev note">'+esc(NOTES[iso(d)].text)+'</span>':'')+allDay+'</div>'+
       (login?'':'<p class="small no-print">'+(HE()?'כדי לרשום פגישות ביומן צריך להתחבר. ':'Sign in to add appointments. ')+'<a href="'+loginUrl('day/'+iso(d))+'">'+(HE()?'כניסה / הרשמה בחינם':'Sign in')+'</a></p>')+
       '<div class="hours">'+hours+'</div></div>'+
-      '<aside class="dv-z"><h2>'+t('zmanim')+'</h2><div class="zl">'+Z.filter(z=>z.v).map(z=>'<span title="'+esc(z.m||'')+'">'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>').join('')+'</div><p class="mute small">'+esc(cityName(city()))+' · '+esc(HE()?ZPRE[zcfg().pre].he:ZPRE[zcfg().pre].en)+'</p></aside></div></section>';
+      '<aside class="dv-z">'+(lrnSel().length?'<h2>'+(HE()?'לימוד יומי':'Daily learning')+'</h2><div class="dv-lr">'+lrnHTML(d)+'</div>':'')+'<h2>'+t('zmanim')+'</h2><div class="zl">'+Z.filter(z=>z.v).map(z=>'<span title="'+esc(z.m||'')+'">'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>').join('')+'</div><p class="mute small">'+esc(cityName(city()))+' · '+esc(HE()?ZPRE[zcfg().pre].he:ZPRE[zcfg().pre].en)+'</p></aside></div></section>';
 }
 function printView(v){if(view!==v)go(v,anchor);setTimeout(()=>window.print(),350)}
 
@@ -622,7 +657,7 @@ function render(){
   document.body.classList.toggle('wide-view',view==='week');{let ps=document.getElementById('pgsz');if(!ps){ps=document.createElement('style');ps.id='pgsz';document.head.appendChild(ps)}ps.textContent=view==='week'?'@page{size:A4 landscape;margin:7mm}':'';}
   if(!PAGE.static)document.title=(view==='month'?monthDays().title+' · ':t(view)+' · ')+t('siteName');
 }
-function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm,dzSel:st.dzSel,wkZ:st.wkZ})}
+function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm,dzSel:st.dzSel,wkZ:st.wkZ,lrnSel:st.lrnSel})}
 
 /* ---------- אירועים בממשק ---------- */
 document.addEventListener('click',e=>{
@@ -648,6 +683,7 @@ document.addEventListener('click',e=>{
   const ysh=T2.closest('[data-ysh]');if(ysh){anchor=new Date(anchor.getFullYear()+(+ysh.dataset.ysh),anchor.getMonth(),Math.min(anchor.getDate(),28),12);render();return}
   const pv=T2.closest('[data-printv]');if(pv){printView(pv.dataset.printv);return}
   if(T2.id==='wkPick'){wkPicker();return}
+  if(T2.id==='lrPick'){lrnPicker();return}
   if(T2.id==='dzPick'){dzPicker();return}
   if(T2.id==='remNew'){remEditor(null);return}
   if(T2.id==='remYz'){yzPick();return}

@@ -50,6 +50,21 @@ HEAD = '''<!doctype html>
 FOOT = '''<footer class="a-foot"><div class="a-foot-in"><span>© MyLuach</span><a href="/">דף הבית</a><a href="/online/">לוח שנה אונליין</a><a href="/articles/">מאמרים</a><a href="/accessibility.html">הצהרת נגישות</a><a href="/privacy.html">פרטיות</a></div></footer>
 </body></html>
 '''
+TAGS = {
+ 'nital': ['מנהגים', 'ניטל', 'טבת'], 'chazon-shamayim-vs-tzikoni': ['זמני היום', 'שיטות חישוב', 'חזון שמיים', 'הרב ציקוני'],
+ 'sof-zman-kriat-shema': ['זמני היום', 'קריאת שמע', 'שעות זמניות', 'גר״א', 'מגן אברהם'],
+ 'rabbeinu-tam': ['זמני היום', 'רבינו תם', 'בין השמשות', 'צאת הכוכבים'], 'rabbeinu-tam-72': ['זמני היום', 'רבינו תם', 'צאת הכוכבים', 'שיטות חישוב'],
+ 'rabbeinu-tam-motzei-shabbat': ['זמני היום', 'רבינו תם', 'מוצאי שבת', 'שבת'], 'shkiat-hachama': ['זמני היום', 'שקיעה', 'שיטות חישוב', 'בין השמשות'],
+ 'shkia-mishorit-nireit': ['זמני היום', 'שקיעה', 'נץ החמה', 'ירושלים'], 'bar-mitzvah-calendar': ['בר מצווה', 'ספירה לאחור', 'לוח שנה אישי'],
+ 'family-photo-calendar-gift': ['לוח שנה אישי', 'מתנות', 'תמונות'], 'rambam-jerusalem': ['תולדות ישראל', 'הרמב״ם', 'ירושלים', 'חברון', 'ימי הודיה'],
+ 'local-purims': ['תולדות ישראל', 'פורים קטן', 'ימי הודיה', 'נסים'], 'megillat-taanit': ['תולדות ישראל', 'בית שני', 'ימי הודיה', 'חנוכה'],
+ 'tet-tevet': ['תולדות ישראל', 'תעניות', 'טבת', 'עזרא הסופר'], 'hurva-rabbi-yehuda-hachasid': ['תולדות ישראל', 'ירושלים', 'תלמידי הגר״א'],
+ 'damascus-affair': ['תולדות ישראל', 'עלילות דם', 'ימי הודיה', 'משה מונטיפיורי'], 'kaf-sivan': ['תולדות ישראל', 'תעניות', 'גזירות ת״ח ות״ט', 'סיון'],
+}
+from urllib.parse import quote
+def tags_html(a):
+    T = a.get('tags') or TAGS.get(a['slug'], [])
+    return ('<p class="art-tags"><span>תגיות:</span>' + ''.join(f'<a href="/articles/?tag={quote(t)}">{esc(t)}</a>' for t in T) + '</p>') if T else ''
 def page(a):
     url = f'{SITE}/articles/{a["slug"]}.html'
     ld = json.dumps([{"@context": "https://schema.org", "@type": "Article", "headline": a['title'], "description": a['desc'], "inLanguage": "he",
@@ -69,6 +84,7 @@ def page(a):
 <h1>{esc(a['title'])}</h1>
 <p class="art-meta">{esc(CATS[a['cat']])} · {hdate(a['date'])}</p>
 {re.sub(r'<div class="art-box"><b>(.*?)</b>', r'<div class="art-box"><h3>\1</h3>', a['body'].strip())}
+{tags_html(a)}
 {(REM + HNOTE) if a['cat'] == 'toldot' else NOTE}
 </article>
 </main>
@@ -91,12 +107,20 @@ def index():
         L = [a for a in ARTICLES if a['cat'] == k]
         if not L: continue
         h += f'<section class="a-cat" data-cat="{k}"><h2>{esc(n)}</h2><div class="a-grid">' + ''.join(
-            f'<a class="a-item" href="{a["slug"]}.html"><b>{esc(a["title"])}</b><span>{esc(a["desc"])}</span></a>' for a in L) + '</div></section>'
+            f'<a class="a-item" href="{a["slug"]}.html" data-tags="{esc("|".join(a.get("tags") or TAGS.get(a["slug"], [])))}"><b>{esc(a["title"])}</b><span>{esc(a["desc"])}</span></a>' for a in L) + '</div></section>'
     h += '<div id="dynArt"></div></main></div>\n'
+    from collections import Counter
+    cnt = Counter(t for a in ARTICLES for t in (a.get('tags') or TAGS.get(a['slug'], [])))
+    cloud = '<nav class="a-tags" aria-label="תגיות">' + ''.join(f'<a href="?tag={quote(t)}" data-tag="{esc(t)}">{esc(t)} <small>{n}</small></a>' for t, n in cnt.most_common() if n >= 2) + '</nav>'
+    h = h.replace('<section class="a-cat"', cloud + '<p class="a-filter" id="aFilter" hidden></p><section class="a-cat"', 1)
     h += '''<script>fetch('/api/pricing?pg=_list').then(function(r){return r.json()}).then(function(d){var L=(d&&d.items)||[];if(!L.length)return;var C=d.cats||{},by={};
 L.forEach(function(a){(by[a.cat]=by[a.cat]||[]).push(a)});var e=function(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
-Object.keys(by).forEach(function(k){var sec=document.querySelector('[data-cat="'+k+'"] .a-grid');var html=by[k].map(function(a){return '<a class="a-item" href="/p/'+e(a.slug)+'"><b>'+e(a.title)+'</b><span>'+e(a.desc)+'</span></a>'}).join('');
-if(sec)sec.insertAdjacentHTML('afterbegin',html);else document.getElementById('dynArt').insertAdjacentHTML('beforeend','<section class="a-cat" data-cat="'+e(k)+'"><h2>'+e(C[k]||'מאמרים')+'</h2><div class="a-grid">'+html+'</div></section>')})}).catch(function(){})</script>
+window.__dynTags=L;Object.keys(by).forEach(function(k){var sec=document.querySelector('[data-cat="'+k+'"] .a-grid');var html=by[k].map(function(a){return '<a class="a-item" href="/p/'+e(a.slug)+'" data-tags="'+e((a.tags||[]).join('|'))+'"><b>'+e(a.title)+'</b><span>'+e(a.desc)+'</span></a>'}).join('');
+if(sec)sec.insertAdjacentHTML('afterbegin',html);else document.getElementById('dynArt').insertAdjacentHTML('beforeend','<section class="a-cat" data-cat="'+e(k)+'"><h2>'+e(C[k]||'מאמרים')+'</h2><div class="a-grid">'+html+'</div></section>')})}).catch(function(){}).then(function(){var tg=new URLSearchParams(location.search).get('tag');if(!tg)return;
+var f=document.getElementById('aFilter');f.hidden=false;f.innerHTML='מאמרים בתגית <b></b> · <a href="./">לכל המאמרים</a>';f.querySelector('b').textContent=tg;
+document.querySelectorAll('.a-tags a').forEach(function(x){if(x.dataset.tag===tg)x.classList.add('on')});
+document.querySelectorAll('.a-item').forEach(function(x){if((x.dataset.tags||'').split('|').indexOf(tg)<0)x.hidden=true});
+document.querySelectorAll('.a-cat').forEach(function(c){if(!c.querySelector('.a-item:not([hidden])'))c.hidden=true});document.title=tg+' · מאמרים · MyLuach'})</script>
 '''
     return h + FOOT
 for a in ARTICLES:
