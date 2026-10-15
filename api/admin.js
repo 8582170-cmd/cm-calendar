@@ -50,6 +50,11 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
     }
+    /* דפים ומאמרים שנוצרים בניהול */
+    if (req.method === 'POST' && /^page(slist|get|save|delete)$/.test(b.action || '')) {
+      try { const out = await require('./_pages').adminAction(b); return json(res, out.error ? 400 : 200, out); }
+      catch (e) { console.error('pages', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
+    }
     /* מאגר התמונות ללקוחות */
     if (req.method === 'POST' && /^lib(get|upload|import|save|delete)$/.test(b.action || '')) {
       try { const out = await require('./_lib_img').adminAction(b); return json(res, out.error ? 400 : 200, out); }
@@ -75,6 +80,7 @@ module.exports = async (req, res) => {
       const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org';
       let urls = [];
       try { urls = [...fs.readFileSync(path.join(__dirname, '..', 'sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]); } catch (e) {}
+      try { urls = urls.concat(await require('./_pages').publicUrls()); } catch (e) {}
       if (!urls.length) urls = ['https://' + host + '/'];
       const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });

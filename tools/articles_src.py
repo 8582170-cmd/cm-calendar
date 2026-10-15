@@ -433,4 +433,4 @@ dict(slug='family-photo-calendar-gift', cat='luach', date='2026-10-15',
 '''),
 ]
 
-CATS = {'zmanim': 'זמני היום', 'minhagim': 'מנהגים', 'luach': 'לוח שנה אישי'}
+CATS = {'toldot': 'תולדות ישראל', 'zmanim': 'זמני היום', 'minhagim': 'מנהגים', 'luach': 'לוח שנה אישי'}

@@ -3,6 +3,8 @@
 const { loadConfig, publicPricing, json } = require('./_lib');
 module.exports = async (req, res) => {
   /* תוכן שנערך בדף הניהול לדף מסוים: ?c=index */
+  /* דפים ומאמרים שנוצרו בניהול: /p/<slug> */
+  if ((req.query || {}).pg) return require('./_pages').handle(req, res);
   const cp = String((req.query || {}).c || '');
   /* מאגר התמונות (רק תמונות פעילות) */
   if (cp === '_lib') {

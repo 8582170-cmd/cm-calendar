@@ -47,7 +47,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 </style>
 <script src="/assets/library/index.js?v=1"></script>
 <script src="/assets/articles-list.js?v=1"></script>
-<style>.libg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}.libc{display:flex;flex-direction:column;gap:4px;border:1px solid #ddd;border-radius:10px;padding:6px;background:#fff}.libc.off{opacity:.45}.libc img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:6px}.libc input:not([type=checkbox]),.libc select{width:100%}</style>
+<style>.libg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}.libc{display:flex;flex-direction:column;gap:4px;border:1px solid #ddd;border-radius:10px;padding:6px;background:#fff}.libc.off{opacity:.45}.libc img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:6px}.libc input:not([type=checkbox]),.libc select{width:100%}.pg-f{display:flex;flex-direction:column;gap:3px;font-size:14px}.pg-tb{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;position:sticky;top:0;background:#fff;padding:6px 0;z-index:2}.pg-tb .btn{padding:4px 10px;font-size:14px}.pg-body{min-height:340px;border:1.5px solid #cfd8da;border-radius:10px;padding:14px 18px;background:#fff;font-size:17px;line-height:1.7;margin-top:6px}.pg-body:focus{outline:2px solid #1f5c63}.pg-body h2{font-size:24px}.pg-body h3{font-size:19px}.pg-body blockquote{border-inline-start:4px solid #b8892d;margin:10px 0;padding:6px 14px;background:#faf6ec}.pg-body .art-box{background:#eef6f4;border-radius:10px;padding:10px 14px;margin:10px 0}.pg-body table{border-collapse:collapse}.pg-body td,.pg-body th{border:1px solid #ccc;padding:6px 10px;min-width:60px}.pg-body img{max-width:100%}.pg-src{width:100%;min-height:340px;font:13px/1.5 monospace;margin-top:6px}</style>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -103,7 +103,7 @@ function render(){
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
   '<section><h2>מנועי חיפוש</h2><p class="sub">שולח לבינג (ול-Yandex) את כל דפי האתר מתוך מפת האתר, כדי שיסרקו אותם מהר. אפשר ללחוץ אחרי כל שינוי גדול באתר.</p><div class="row"><button class="btn" type="button" id="inNow">שליחת כל הדפים לבינג (IndexNow)</button><span id="inMsg"></span></div></section>'+
-  cmsSection()+libSection()+tickerSection()+voiceSection()+dbSection()+
+  cmsSection()+pgSection()+libSection()+tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
     (Object.keys(D.mail.today).length?Object.entries(D.mail.today).map(([k,v])=>'<span><b>'+esc(k)+':</b> '+v+'</span>').join(''):'<span>היום עוד לא נשלחו מיילים</span>')+
@@ -157,12 +157,65 @@ function dbLoad(){const o=$('#dbOut');o.textContent='טוען…';api({action:'t
 function dbCsv(){api({action:'table',name:DBS.name,q:DBS.q,all:1}).then(r=>{const q=x=>'"'+String(x).replace(/"/g,'""')+'"';
   const csv='\ufeff'+r.cols.map(c=>q(DB_C[c]||c)).join(',')+'\n'+r.rows.map(x=>r.cols.map(c=>q(dbCell(c,x[c]))).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='myluach-'+DBS.name+'.csv';a.click()})}
+/* ---------- דפים ומאמרים חדשים ---------- */
+let PG={list:[],cats:{},cur:null,old:''};
+const PG_CTA={luach:'לבניית לוח אישי',online:'ללוח האונליין',zmanim:'לזמני היום',countdown:'ללוח ספירה לאחור',history:'דברי הימים בלוח',none:'בלי'};
+function pgSection(){return '<section id="pgSec"><h2>דפים ומאמרים חדשים</h2><p class="sub">כותבים מאמר או דף חדש, והוא עולה לאתר בכתובת <span dir="ltr">myluach.org/p/…</span>, מוכן לגוגל (נכנס לבד למפת האתר). מאמרים מופיעים גם בדף "מאמרים". המאמרים שכתבתי מראש נערכים למעלה, ב"עריכת דפים".</p>'+
+  '<div class="row"><button class="btn primary" type="button" id="pgNewA">+ מאמר חדש</button><button class="btn" type="button" id="pgNewP">+ דף חדש</button><span id="pgMsg"></span></div><div id="pgList" style="margin-top:10px">טוען…</div><div id="pgEd" hidden></div></section>'}
+function pgLoad(){api({action:'pageslist'}).then(r=>{PG.list=r.items||[];PG.cats=r.cats||{};pgDrawList()}).catch(e=>{$('#pgList').textContent=e.message})}
+function pgDrawList(){const L=PG.list;$('#pgList').innerHTML=L.length?'<div class="scroll"><table class="tbl"><thead><tr><th>כותרת</th><th>סוג</th><th>קטגוריה</th><th>מצב</th><th>עודכן</th><th></th></tr></thead><tbody>'+L.map(p=>'<tr><td><b>'+esc(p.title)+'</b><br><span class="sub" dir="ltr">/p/'+esc(p.slug)+'</span></td><td>'+(p.kind==='page'?'דף':'מאמר')+'</td><td>'+esc(PG.cats[p.cat]||'')+'</td><td>'+(p.published?'✅ באתר':'📝 טיוטה')+'</td><td>'+esc(p.mod||'')+'</td><td><button class="btn" type="button" data-pged="'+esc(p.slug)+'">עריכה</button> <a class="btn" target="_blank" href="/p/'+esc(p.slug)+(p.published?'':'?preview='+esc(p.token))+'">צפייה</a></td></tr>').join('')+'</tbody></table></div>':'<p class="sub">עדיין אין דפים חדשים.</p>'}
+function pgOpen(p){PG.cur=p;PG.old=p.slug||'';const E=$('#pgEd');E.hidden=false;
+  const f=(k,l,w,ph,dir)=>'<label class="pg-f">'+l+'<input data-pg="'+k+'" value="'+esc(p[k]||'')+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+(dir?' dir="'+dir+'"':'')+(w?' style="width:'+w+'"':'')+'></label>';
+  E.innerHTML='<h3 style="margin:16px 0 8px">'+(p.slug?'עריכה: '+esc(p.title):(p.kind==='page'?'דף חדש':'מאמר חדש'))+'</h3>'+
+   '<div class="row">'+f('title','כותרת','420px','למשל: גירוש ספרד ותשעה באב')+f('slug','כתובת (באנגלית)','220px','gerush-sefarad','ltr')+'</div>'+
+   '<div class="row" style="margin-top:8px"><label class="pg-f">סוג<select data-pg="kind"><option value="article">מאמר</option><option value="page">דף רגיל</option></select></label>'+
+   '<label class="pg-f">קטגוריה<select data-pg="cat">'+Object.entries(PG.cats).filter(([k])=>k!=='page').map(([k,v])=>'<option value="'+k+'">'+esc(v)+'</option>').join('')+'</select></label>'+
+   '<label class="pg-f">תיבה בצד<select data-pg="cta">'+Object.entries(PG_CTA).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></label>'+
+   '<label class="pg-f">תאריך<input type="date" data-pg="date" value="'+esc(p.date||new Date().toISOString().slice(0,10))+'"></label></div>'+
+   '<div class="row" style="margin-top:8px">'+f('desc','תיאור קצר (מופיע בגוגל, עד 160 תווים)','520px')+'</div>'+
+   '<div class="row" style="margin-top:8px">'+f('keys','מילות מפתח (מופרדות בפסיק)','420px')+f('image','תמונה ראשית (קישור, לא חובה)','300px','https://…','ltr')+'<button class="btn" type="button" id="pgImgLib">מהמאגר</button></div>'+
+   '<div class="pg-tb" role="toolbar" aria-label="עיצוב טקסט">'+[['h2','כותרת'],['h3','תת־כותרת'],['p','פסקה'],['b','<b>מודגש</b>'],['i','<i>נטוי</i>'],['ul','• רשימה'],['ol','1. רשימה'],['quote','❝ ציטוט'],['link','🔗 קישור'],['img','🖼 תמונה'],['box','▣ תיבה'],['table','▦ טבלה'],['clear','ניקוי עיצוב'],['html','&lt;/&gt; HTML']].map(([k,l])=>'<button type="button" class="btn" data-tb="'+k+'">'+l+'</button>').join('')+'</div>'+
+   '<div id="pgBody" class="pg-body" contenteditable="true" dir="rtl"></div><textarea id="pgSrc" class="pg-src" dir="ltr" hidden></textarea>'+
+   '<div class="row" style="margin-top:10px"><label><input type="checkbox" data-pg="published"'+(p.published?' checked':'')+'> מפורסם באתר</label><label><input type="checkbox" data-pg="note"'+(p.note===false?'':' checked')+'> הערה בסוף המאמר</label></div>'+
+   '<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="pgSave">שמירה</button><button class="btn" type="button" id="pgPrev">תצוגה מקדימה</button><button class="btn" type="button" id="pgClose">סגירה</button>'+(p.slug?'<button class="btn danger" type="button" id="pgDel">מחיקה</button>':'')+'<span id="pgSMsg"></span></div>';
+  E.querySelector('[data-pg=kind]').value=p.kind||'article';E.querySelector('[data-pg=cat]').value=p.cat||'toldot';E.querySelector('[data-pg=cta]').value=p.cta||(p.cat==='toldot'||!p.cat?'history':'luach');
+  $('#pgBody').innerHTML=p.body||'<p>כתבו כאן את המאמר…</p>';try{document.execCommand('defaultParagraphSeparator',false,'p')}catch(e){}
+  E.scrollIntoView({behavior:'smooth',block:'start'});
+  const read=()=>{const o={...PG.cur};E.querySelectorAll('[data-pg]').forEach(i=>{o[i.dataset.pg]=i.type==='checkbox'?i.checked:i.value.trim()});o.body=$('#pgSrc').hidden?$('#pgBody').innerHTML:$('#pgSrc').value;if(!o.slug)o.slug='a-'+Date.now().toString(36);return o};
+  const save=()=>{const o=read(),m=$('#pgSMsg');m.textContent='שומר…';return api({action:'pagesave',page:o,oldSlug:PG.old}).then(r=>{PG.cur=r.page;PG.old=r.page.slug;E.querySelector('[data-pg=slug]').value=r.page.slug;m.textContent='✅ נשמר'+(r.page.published?'. הדף באתר מתעדכן תוך כשתי דקות.':' כטיוטה.');pgLoad();return r.page}).catch(e=>{m.textContent='❌ '+e.message})};
+  $('#pgSave').onclick=save;
+  $('#pgPrev').onclick=()=>{const w=window.open('about:blank');save().then(pg=>{if(pg)w.location='/p/'+pg.slug+'?preview='+pg.token+'&t='+Date.now();else w.close()})};
+  $('#pgClose').onclick=()=>{E.hidden=true};
+  if($('#pgDel'))$('#pgDel').onclick=()=>{if(!confirm('למחוק את הדף לגמרי?'))return;api({action:'pagedelete',slug:PG.old}).then(()=>{E.hidden=true;pgLoad()})};
+  $('#pgImgLib').onclick=()=>{const L=((window.LIBD&&LIBD.items)||[]).concat((window.MYLUACH_LIB_SEED||[]).map(x=>({...x,url:'/'+x.url})));const u=prompt('הדביקו קישור לתמונה, או כתבו מספר מהרשימה:\n'+L.slice(0,40).map((x,i)=>(i+1)+'. '+x.title).join('\n'));if(!u)return;const n=parseInt(u,10);E.querySelector('[data-pg=image]').value=n&&L[n-1]?L[n-1].url:u.trim()};
+}
+/* הוספת בלוק (תיבה, טבלה) אחרי הפסקה שבה נמצא הסמן */
+function pgBlock(B,html){const sel=getSelection();let n=sel.rangeCount?sel.getRangeAt(0).startContainer:null;while(n&&n.parentNode!==B)n=n.parentNode;
+  const t=document.createElement('div');t.innerHTML=html+'<p><br></p>';const frag=[...t.childNodes];if(n)n.after(...frag);else B.append(...frag)}
+function pgCleanPaste(html){const d=new DOMParser().parseFromString(html,'text/html'),OK={H2:1,H3:1,H4:1,P:1,BR:1,B:1,STRONG:1,I:1,EM:1,U:1,UL:1,OL:1,LI:1,BLOCKQUOTE:1,A:1,TABLE:1,THEAD:1,TBODY:1,TR:1,TH:1,TD:1};
+  (function walk(n){[...n.childNodes].forEach(c=>{if(c.nodeType===1){walk(c);if(c.tagName==='H1'){const h=document.createElement('h2');h.innerHTML=c.innerHTML;c.replaceWith(h);return}if(!OK[c.tagName]){c.replaceWith(...c.childNodes);return}[...c.attributes].forEach(a=>{if(!(c.tagName==='A'&&a.name==='href'))c.removeAttribute(a.name)})}else if(c.nodeType!==3)c.remove()})})(d.body);return d.body.innerHTML}
+document.addEventListener('paste',e=>{if(!e.target.closest||!e.target.closest('#pgBody'))return;e.preventDefault();const cd=e.clipboardData,h=cd.getData('text/html'),t=cd.getData('text/plain');
+  document.execCommand('insertHTML',false,h?pgCleanPaste(h):t.split(/\n\s*\n/).map(x=>'<p>'+esc(x).replace(/\n/g,'<br>')+'</p>').join(''))});
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-pged]');if(ed){api({action:'pageget',slug:ed.dataset.pged}).then(r=>pgOpen(r.page)).catch(err=>alert(err.message));return}
+  if(e.target.id==='pgNewA')return pgOpen({kind:'article',cat:'toldot'});
+  if(e.target.id==='pgNewP')return pgOpen({kind:'page',cat:'page',cta:'none'});
+  const tb=e.target.closest('[data-tb]');if(!tb)return;const k=tb.dataset.tb,B=$('#pgBody'),S=$('#pgSrc');
+  if(k==='html'){if(S.hidden){S.value=B.innerHTML;S.hidden=false;B.hidden=true}else{B.innerHTML=S.value;S.hidden=true;B.hidden=false}return}
+  if(!S.hidden)return;B.focus();const X=(c,v)=>document.execCommand(c,false,v);
+  if(k==='h2'||k==='h3'||k==='p')X('formatBlock',k.toUpperCase());else if(k==='b')X('bold');else if(k==='i')X('italic');else if(k==='ul')X('insertUnorderedList');else if(k==='ol')X('insertOrderedList');
+  else if(k==='quote')X('formatBlock','BLOCKQUOTE');else if(k==='clear'){X('removeFormat');X('formatBlock','P')}
+  else if(k==='link'){const u=prompt('כתובת הקישור (למשל https://… או /online/):');if(u)X('createLink',u)}
+  else if(k==='img'){const u=prompt('קישור לתמונה:');if(u)X('insertHTML','<img src="'+esc(u)+'" alt="">')}
+  else if(k==='box')pgBlock(B,'<div class="art-box"><b>כותרת התיבה</b><p>טקסט</p></div>');
+  else if(k==='table')pgBlock(B,'<table><thead><tr><th>כותרת</th><th>כותרת</th><th>כותרת</th></tr></thead><tbody><tr><td> </td><td> </td><td> </td></tr><tr><td> </td><td> </td><td> </td></tr></tbody></table>');
+});
 const LIBC={nature:'טבע ונופים',holy:'מקומות קדושים',mikdash:'בית המקדש',chagim:'חגים ומועדים',shabbat:'שבת',tzadikim:'צדיקים וחכמים',bg:'רקעים ומסגרות'};
 function libSection(){return '<section id="libSec"><h2>מאגר התמונות ללקוחות</h2><p class="sub">התמונות שהלקוחות רואים בבונה תחת "הוספת תמונה ← ממאגר התמונות". מעלים מהמחשב או מייבאים מקישור (למשל מוויקישיתוף או מפיקיויקי, עם רישיון חופשי). כדאי לכתוב בקרדיט את שם הצלם והרישיון. <b>רק תמונות צנועות.</b> האיורים המובנים מופיעים למטה, ואפשר להסתיר כל אחד מהם.</p>'+
   '<div class="row"><select id="libCat">'+Object.entries(LIBC).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><input id="libTitle" placeholder="שם התמונה" style="width:180px"><input id="libCredit" placeholder="קרדיט / רישיון (לא חובה)" style="width:200px"></div>'+
   '<div class="row" style="margin-top:8px"><input type="file" id="libFile" accept="image/jpeg,image/png,image/webp" multiple><span class="sub">או</span><input id="libUrl" dir="ltr" placeholder="https://… קישור ישיר לתמונה" style="width:260px"><button class="btn" type="button" id="libImp">ייבוא מקישור</button><span id="libMsg"></span></div>'+
   '<div id="libBox" style="margin-top:12px">טוען…</div></section>'}
-let LIBD=null;
+var LIBD=null;
 function libLoad(){api({action:'libget'}).then(r=>{LIBD=r;libDraw()}).catch(e=>{$('#libBox').textContent=e.code===500||e.code===400?'המאגר עוד לא מוגדר. הריצו ב-Supabase את tools/supabase_library.sql. ('+e.message+')':e.message})}
 function libDraw(){const L=LIBD.items||[],hide=new Set(LIBD.hideSeed||[]),seed=window.MYLUACH_LIB_SEED||[];
   const card=(x,own)=>'<div class="libc'+((own?x.on:!hide.has(x.id))?'':' off')+'" data-id="'+esc(x.id)+'"><img src="'+esc(own?x.url:'/'+x.url)+'" alt="" loading="lazy">'+
@@ -217,6 +270,7 @@ function bind(){
     $('#cmsReset').onclick=e=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח? כל השינויים בדף יימחקו';return}api({action:'contentreset',page:CMS.page}).then(()=>{b.dataset.sure='';b.textContent='החזרת הדף למקור';cmsOpen()})};cmsOpen()}
   if($('#vBox'))voiceLoad();
   if($('#libBox'))libLoad();
+  if($('#pgList'))pgLoad();
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
     $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};

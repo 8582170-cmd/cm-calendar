@@ -8,18 +8,18 @@
 <link rel="canonical" href="https://www.myluach.org/">
 <meta name="robots" content="noindex,follow">
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Rubik:wght@500;700;800&display=swap">
 <style>
-:root{--bg:#F7F9F9;--card:#fff;--ink:#13262A;--mute:#465a5e;--line:#E3E9EA;--acc:#1F5C63;--acc-soft:#E4EFEF;--warm:#FDE9E2;--warm-ink:#9A3B22;--lav:#EEEAF6;--lav-ink:#4B3F7A;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1719;--card:#162124;--ink:#e6eeee;--mute:#a8b8ba;--line:#26363a;--acc:#7cc4bd;--acc-soft:#1c2f31;--warm:#3a2620;--warm-ink:#f2b8a5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0f1719;--card:#162124;--ink:#e6eeee;--mute:#a8b8ba;--line:#26363a;--acc:#7cc4bd;--acc-soft:#1c2f31;--warm:#3a2620;--warm-ink:#f2b8a5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}
+:root{--bg:#FFFCF7;--card:#fff;--ink:#1d2a2c;--mute:#4d5a5c;--line:#ECE6DC;--acc:#1F5C63;--acc-soft:#E4EFEF;--coral:#D9533A;--warm:#FDE3DA;--warm-ink:#8F2F1B;--sun:#FFF1D6;--sun-ink:#8A5B00;--sky:#DDE9FB;--sky-ink:#234E8C;--leaf:#DDF0E2;--leaf-ink:#2E6B43;--lav:#EEEAF6;--lav-ink:#4B3F7A;--f-h:Rubik,Heebo,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a1b;--card:#1a2426;--ink:#e9efef;--mute:#a9b7b9;--line:#2a3739;--acc:#7cc4bd;--acc-soft:#1c2f31;--coral:#f08a72;--warm:#3a2620;--warm-ink:#f2b8a5;--sun:#3a3020;--sun-ink:#f3cf86;--sky:#1e2a3d;--sky-ink:#a9c6f2;--leaf:#1d3124;--leaf-ink:#a6dbb5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121a1b;--card:#1a2426;--ink:#e9efef;--mute:#a9b7b9;--line:#2a3739;--acc:#7cc4bd;--acc-soft:#1c2f31;--coral:#f08a72;--warm:#3a2620;--warm-ink:#f2b8a5;--sun:#3a3020;--sun-ink:#f3cf86;--sky:#1e2a3d;--sky-ink:#a9c6f2;--leaf:#1d3124;--leaf-ink:#a6dbb5;--lav:#25213a;--lav-ink:#c9bff0;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Heebo,Assistant,sans-serif}
 a{color:var(--acc)}
 .w{max-width:1160px;margin:0 auto;padding-inline:16px}
 header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 header nav{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;padding-block:12px}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:800;font-size:23px}
+.logo{font-family:var(--f-h);display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:800;font-size:23px}
 .links{display:flex;flex-wrap:wrap;gap:4px 20px;flex:1 1 auto;font-size:15px;font-weight:500}
 .links a{text-decoration:none;color:var(--mute)}.links a:hover{color:var(--acc)}
 .pill{text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:10px 18px;border:1px solid var(--line);color:var(--ink);background:var(--card)}
@@ -28,13 +28,25 @@ header nav{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;padding-
 .hero{display:flex;flex-wrap:wrap;gap:44px;align-items:center;padding-block:56px 36px}
 .hero-t{flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:20px}
 .eyebrow{align-self:flex-start;font-size:14px;font-weight:700;color:var(--acc);background:var(--acc-soft);padding:6px 12px;border-radius:999px}
-h1{margin:0;font-size:clamp(36px,5.4vw,56px);line-height:1.08;font-weight:800}
+h1{margin:0;font-family:var(--f-h);font-size:clamp(36px,5.4vw,58px);line-height:1.1;font-weight:800}
+h1 em{font-style:normal;color:var(--coral)}
 .lead{margin:0;font-size:19px;color:var(--mute)}
 .cta{display:flex;flex-wrap:wrap;gap:12px}
-.btn{text-decoration:none;font-weight:700;font-size:17px;padding:14px 24px;border-radius:12px;border:1.5px solid var(--line);color:var(--ink);background:var(--card);display:inline-block}
+.btn{text-decoration:none;font-weight:700;font-size:17px;padding:14px 26px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink);background:var(--card);display:inline-block}
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.sun{background:var(--sun);border-color:var(--sun);color:var(--ink)}
 .fine{margin:0;font-size:14px;color:var(--mute)}
-.mock{flex:1 1 400px;min-width:0;display:flex;justify-content:center}
+.mock{flex:1 1 420px;min-width:0;display:flex;justify-content:center;align-items:center;min-height:380px;position:relative}
+.fan{position:relative;width:min(100%,460px);height:380px}
+.mo{position:absolute;width:56%;background:var(--card);border-radius:18px;box-shadow:0 16px 34px rgba(42,35,32,.16);overflow:hidden;border:1px solid var(--line)}
+.mo img{display:block;width:100%;aspect-ratio:16/11;object-fit:cover}
+.mo .t{padding:10px 14px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mo .t b{font-family:var(--f-h);font-size:22px}.mo .t span{font-size:12.5px;color:var(--mute)}
+.mo.m1{inset-inline-start:0;top:46px;transform:rotate(4deg)}.mo.m1 b{color:var(--coral)}
+.mo.m3{inset-inline-end:0;top:46px;transform:rotate(-4deg)}.mo.m3 b{color:var(--leaf-ink)}
+.mo.m2{inset-inline-start:22%;top:0;width:58%;z-index:2;box-shadow:0 22px 44px rgba(42,35,32,.22)}.mo.m2 b{color:var(--acc)}
+.mo .days{padding:0 14px 14px}
+@media (max-width:520px){.fan{height:330px}.mo .days{display:none}}
 .sheet{width:100%;max-width:440px;background:var(--card);border-radius:14px;border:1px solid var(--line);box-shadow:0 24px 48px rgba(19,38,42,.12);overflow:hidden}
 .sheet .ph{height:170px;background:var(--acc-soft);display:grid;place-items:center;color:var(--acc);font-weight:700}
 .sheet .in{padding:16px 18px 20px;display:flex;flex-direction:column;gap:10px}
@@ -44,17 +56,23 @@ h1{margin:0;font-size:clamp(36px,5.4vw,56px);line-height:1.08;font-weight:800}
 .chips{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}.chips span{padding:4px 9px;border-radius:999px}
 .c1{background:var(--warm);color:var(--warm-ink)}.c2{background:var(--acc-soft);color:var(--acc)}.c3{background:var(--lav);color:var(--lav-ink)}
 section{padding-block:36px}
-h2{margin:0 0 20px;font-size:clamp(26px,3.4vw,34px);font-weight:800}
+h2{margin:0 0 20px;font-family:var(--f-h);font-size:clamp(26px,3.4vw,36px);font-weight:800}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:8px}
-.card h3{margin:0;font-size:19px}.card p{margin:0;font-size:15px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;display:flex;flex-direction:column;gap:8px}
+#features .card{border:0}
+#features .card:nth-child(1){background:var(--warm)}#features .card:nth-child(1) h3,#features .card:nth-child(1) svg{color:var(--warm-ink);stroke:var(--warm-ink)}
+#features .card:nth-child(2){background:var(--sun)}#features .card:nth-child(2) h3,#features .card:nth-child(2) svg{color:var(--sun-ink);stroke:var(--sun-ink)}
+#features .card:nth-child(3){background:var(--sky)}#features .card:nth-child(3) h3,#features .card:nth-child(3) svg{color:var(--sky-ink);stroke:var(--sky-ink)}
+#features .card:nth-child(4){background:var(--leaf)}#features .card:nth-child(4) h3,#features .card:nth-child(4) svg{color:var(--leaf-ink);stroke:var(--leaf-ink)}
+#features .card p{color:var(--ink);opacity:.82}
+.card h3{margin:0;font-family:var(--f-h);font-size:21px}.card p{margin:0;font-size:15px;color:var(--mute)}
 .card svg{width:32px;height:32px;fill:none;stroke:var(--acc);stroke-width:1.8}
 .also{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:15px}.also span{background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:999px;color:var(--mute)}
-.promo{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px;display:flex;flex-wrap:wrap;gap:26px;align-items:center}
+.promo{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:30px;display:flex;flex-wrap:wrap;gap:26px;align-items:center}
 .promo .t{flex:1 1 380px;min-width:0}.promo ul{margin:8px 0 16px;padding-inline-start:20px;color:var(--mute)}
-.big{flex:0 1 260px;margin-inline:auto;text-align:center;background:var(--acc-soft);border-radius:16px;padding:22px}.big strong{display:block;font-size:84px;line-height:1;color:var(--acc)}
+.big{flex:0 1 260px;margin-inline:auto;text-align:center;background:var(--warm);border-radius:22px;padding:22px;transform:rotate(-2deg)}.big strong{display:block;font-family:var(--f-h);font-size:84px;line-height:1;color:var(--coral)}
 .who{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-.who a{text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}.who a:hover{border-color:var(--acc)}
+.who a{text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.who a:hover{border-color:var(--acc)}
 .who b{display:block;font-size:17px}.who span{font-size:14px;color:var(--mute)}
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;list-style:none;margin:0;padding:0;counter-reset:s}
 .steps li{display:flex;gap:14px;counter-increment:s}.steps li::before{content:counter(s);flex:none;width:40px;height:40px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800}
@@ -66,8 +84,8 @@ h2{margin:0 0 20px;font-size:clamp(26px,3.4vw,34px);font-weight:800}
 .plan ul{margin:0 0 6px;padding-inline-start:18px;font-size:14.5px;color:var(--mute);flex:1}
 .was{color:var(--mute);font-weight:500;font-size:16px}.intro-tag{display:block;font-size:12px;color:var(--warm-ink);font-weight:700}
 .faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:10px}.faq summary{font-weight:700;cursor:pointer}.faq p,.faq ul{color:var(--mute)}
-.final{background:#13262A;color:#fff;border-radius:18px;padding:36px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
-.final h2{margin:0;color:#fff}.final p{margin:4px 0 0;color:#C9D6D8}.final .btn{background:#fff;color:#13262A;border-color:#fff}
+.final{background:var(--acc);color:#fff;border-radius:28px;padding:36px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.final h2{margin:0;color:#fff}.final p{margin:4px 0 0;color:#e1eeec}.final .btn{background:#fff;color:#1d2a2c;border-color:#fff}
 footer{padding-block:28px 40px;color:var(--mute);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 18px}
 footer a{color:var(--mute)}
 @media (max-width:700px){header{position:static}}
@@ -79,7 +97,7 @@ footer a{color:var(--mute)}
 <body>
 <header><nav class="w" aria-label="ניווט ראשי">
   <a class="logo" href="new.html"><img src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
-  <div class="links"><a href="#features">מה בלוח</a><a href="gallery.html">דוגמאות</a><a href="countdown.html">ספירה לאחור</a><a href="online/">לוח מקוון</a><a href="#plans">מחירים</a><a href="#faq">שאלות</a></div>
+  <div class="links"><a href="#features">מה בלוח</a><a href="gallery.html">דוגמאות</a><a href="countdown.html">ספירה לאחור</a><a href="online/">לוח מקוון</a><a href="articles/">מאמרים</a><a href="#plans">מחירים</a><a href="#faq">שאלות</a></div>
   <a class="view-sw" href="index.html?view=classic" id="toClassic">לתצוגה הקלאסית</a>
   <a class="pill" href="app.html#login">כניסה</a><a class="pill pri" href="app.html">לבנות לוח</a>
 </nav></header>
@@ -87,17 +105,19 @@ footer a{color:var(--mute)}
   <div class="hero">
     <div class="hero-t">
       <span class="eyebrow">לוח שנה עברי־לועזי להדפסה</span>
-      <h1>הלוח של המשפחה שלכם.<br>בדיוק כמו שאתם רוצים.</h1>
+      <h1>שנה שלמה של <em>רגעים שלכם</em>, על הקיר</h1>
       <p class="lead">תמונה לכל חודש, ימי הולדת ויארצייטים במקום הנכון, זמני היום המדויקים לעיר ולמנהג שלכם, ולימוד יומי. מעצבים כל פרט, ומדפיסים בבית או בדפוס.</p>
-      <div class="cta"><a class="btn pri" href="simple.html">בונה פשוט ומהיר</a><a class="btn" href="app.html">עיצוב מלא, שלב אחר שלב</a></div>
+      <div class="cta"><a class="btn pri" href="simple.html">בונה פשוט ומהיר</a><a class="btn sun" href="app.html">לעצב הכל בעצמי</a></div>
       <p class="fine">בונים בחינם. לוח פשוט לכל השנה להורדה בחינם, פעם אחת למשתמש.</p>
     </div>
-    <div class="mock" aria-hidden="true"><div class="sheet"><div class="ph">התמונה שלכם לחודש</div><div class="in">
-      <div class="hd"><b>תשרי</b><span>ספטמבר–אוקטובר · תשפ״ז</span></div>
-      <div class="days"><span class="w0">א</span><span class="w0">ב</span><span class="w0">ג</span><span class="w0">ד</span><span class="w0">ה</span><span class="w0">ו</span><span class="w0">ש</span>
-      <span>1</span><span>2</span><span>3</span><span class="bd">4</span><span>5</span><span>6</span><span class="sh">7</span><span>8</span><span>9</span><span class="sh">10</span><span>11</span><span>12</span><span>13</span><span class="sh">14</span></div>
-      <div class="chips"><span class="c1">יום הולדת · שירה בת 9</span><span class="c2">הדלקת נרות 18:02</span><span class="c3">דף יומי: ברכות ב</span></div>
-    </div></div></div>
+    <div class="mock" aria-hidden="true"><div class="fan">
+      <div class="mo m1"><img src="/assets/library/sukkot.svg" alt=""><div class="t"><b>תשרי</b><span>יום הולדת לסבא</span></div></div>
+      <div class="mo m3"><img src="/assets/library/flower-field.svg" alt=""><div class="t"><b>ניסן</b><span>דף יומי · פסחים</span></div></div>
+      <div class="mo m2"><img src="/assets/library/chanukah.svg" alt=""><div class="t"><b>כסלו</b><span>הדלקת נרות 16:12</span></div>
+        <div class="days"><span class="w0">א</span><span class="w0">ב</span><span class="w0">ג</span><span class="w0">ד</span><span class="w0">ה</span><span class="w0">ו</span><span class="w0">ש</span>
+        <span>1</span><span>2</span><span>3</span><span class="bd">4</span><span>5</span><span>6</span><span class="sh">7</span></div>
+        <div class="chips" style="padding:0 14px 14px"><span class="c1">שירה בת 9</span><span class="c3">דף יומי</span></div></div>
+    </div></div>
   </div>
 
   <section id="features"><h2>כל מה שהופך לוח לשלכם</h2>
@@ -148,7 +168,7 @@ footer a{color:var(--mute)}
 
   <section><div class="final"><div><h2>מתחילים לבנות, בלי הרשמה</h2><p>רואים את כל השנה כבר עכשיו. משלמים רק כשמדפיסים.</p></div><a class="btn" href="simple.html">לבונה הפשוט</a></div></section>
 </main>
-<footer class="w"><span>© 2026 MyLuach</span><a href="gallery.html">גלריה</a><a href="online/">לוח מקוון</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="terms.html#contact">יצירת קשר</a></footer>
+<footer class="w"><span>© 2026 MyLuach</span><a href="gallery.html">גלריה</a><a href="online/">לוח מקוון</a><a href="articles/">מאמרים</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="terms.html#contact">יצירת קשר</a></footer>
 <script src="assets/plans.js?v=202610150400"></script>
 <script>
 (function(){

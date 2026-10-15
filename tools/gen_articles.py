@@ -3,6 +3,8 @@
 import json, os, re, sys, html
 sys.path.insert(0, os.path.dirname(__file__))
 from articles_src import ARTICLES, CATS, NOTE
+from articles_hist import HIST, HNOTE, REM
+ARTICLES = HIST + ARTICLES
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 OUT = os.path.join(ROOT, 'articles')
 SITE = 'https://www.myluach.org'
@@ -16,6 +18,7 @@ CTA = {
  'zmanim': ('זמני היום לעיר שלכם', 'כל הזמנים, לפי השיטה שלכם: אשכנזים, ספרדים, חזון שמיים, הרב ציקוני, בעל התניא ועוד.', '/online/#zmanim', 'לזמני היום'),
  'shabbat': ('זמני כניסת השבת ויציאתה', 'הדלקת נרות ויציאת שבת לכל עיר, לשבועות הקרובים.', '/online/#shabbat', 'לזמני השבת'),
  'countdown': ('לוח ספירה לאחור מעוצב', 'לחתונה, לבר מצווה או ללידה: עם תמונות, משפטים ופרשת השבוע.', '/countdown.html', 'לבניית לוח ספירה'),
+ 'history': ('דברי ימי ישראל בלוח שלכם', 'בלוח של MyLuach אפשר להציג בכל יום אירועים מתולדות עם ישראל וימי הילולא של צדיקים.', '/app.html', 'לבנות לוח'),
  'luach': ('לוח שנה אישי עם התמונות שלכם', 'לוח עברי-לועזי עם תמונות, ימי הולדת, זמני היום ולימוד יומי, מוכן להדפסה.', '/app.html', 'לבנות לוח'),
 }
 HEAD = '''<!doctype html>
@@ -32,7 +35,7 @@ HEAD = '''<!doctype html>
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/articles.css?v=1">
+<link rel="stylesheet" href="/assets/articles.css?v=2">
 <script type="application/ld+json">{ld}</script>
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/cms.js?v=1" defer></script>
@@ -66,7 +69,7 @@ def page(a):
 <h1>{esc(a['title'])}</h1>
 <p class="art-meta">{esc(CATS[a['cat']])} · {hdate(a['date'])}</p>
 {re.sub(r'<div class="art-box"><b>(.*?)</b>', r'<div class="art-box"><h3>\1</h3>', a['body'].strip())}
-{NOTE}
+{(REM + HNOTE) if a['cat'] == 'toldot' else NOTE}
 </article>
 </main>
 <aside class="a-side" data-cms-skip>
@@ -83,13 +86,18 @@ def index():
     title = 'מאמרים: זמני היום, מנהגים ולוח השנה העברי'
     desc = 'מאמרים והסברים על זמני היום ושיטות החישוב (רבינו תם, שקיעה, סוף זמן ק״ש, חזון שמיים), מנהגים כמו ניטל, ורעיונות ללוח שנה אישי.'
     h = HEAD.format(cms='art-index', title=esc(title), desc=esc(desc), keys='זמני היום, רבינו תם, שקיעה, קריאת שמע, ניטל, לוח שנה אישי', url=url, ogtype='website', site=SITE, ld=ld)
-    h += '<div class="a-wrap a-wrap-1"><main id="main" class="a-main"><h1 class="a-h1">מאמרים</h1><p class="lead">הסברים על זמני היום ושיטות החישוב, מנהגים, ורעיונות ללוח שנה אישי.</p>'
+    h += '<div class="a-wrap a-wrap-1"><main id="main" class="a-main"><h1 class="a-h1">מאמרים</h1><p class="lead">אירועים פחות מוכרים מתולדות ישראל, הסברים על זמני היום ושיטות החישוב, מנהגים, ורעיונות ללוח שנה אישי.</p>'
     for k, n in CATS.items():
         L = [a for a in ARTICLES if a['cat'] == k]
         if not L: continue
-        h += f'<section class="a-cat"><h2>{esc(n)}</h2><div class="a-grid">' + ''.join(
+        h += f'<section class="a-cat" data-cat="{k}"><h2>{esc(n)}</h2><div class="a-grid">' + ''.join(
             f'<a class="a-item" href="{a["slug"]}.html"><b>{esc(a["title"])}</b><span>{esc(a["desc"])}</span></a>' for a in L) + '</div></section>'
-    h += '</main></div>\n'
+    h += '<div id="dynArt"></div></main></div>\n'
+    h += '''<script>fetch('/api/pricing?pg=_list').then(function(r){return r.json()}).then(function(d){var L=(d&&d.items)||[];if(!L.length)return;var C=d.cats||{},by={};
+L.forEach(function(a){(by[a.cat]=by[a.cat]||[]).push(a)});var e=function(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+Object.keys(by).forEach(function(k){var sec=document.querySelector('[data-cat="'+k+'"] .a-grid');var html=by[k].map(function(a){return '<a class="a-item" href="/p/'+e(a.slug)+'"><b>'+e(a.title)+'</b><span>'+e(a.desc)+'</span></a>'}).join('');
+if(sec)sec.insertAdjacentHTML('afterbegin',html);else document.getElementById('dynArt').insertAdjacentHTML('beforeend','<section class="a-cat" data-cat="'+e(k)+'"><h2>'+e(C[k]||'מאמרים')+'</h2><div class="a-grid">'+html+'</div></section>')})}).catch(function(){})</script>
+'''
     return h + FOOT
 for a in ARTICLES:
     open(os.path.join(OUT, a['slug'] + '.html'), 'w').write(page(a))
