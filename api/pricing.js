@@ -4,6 +4,13 @@ const { loadConfig, publicPricing, json } = require('./_lib');
 module.exports = async (req, res) => {
   /* תוכן שנערך בדף הניהול לדף מסוים: ?c=index */
   const cp = String((req.query || {}).c || '');
+  /* מאגר התמונות (רק תמונות פעילות) */
+  if (cp === '_lib') {
+    let lib = { items: [], hideSeed: [] };
+    try { lib = await require('./_lib_img').publicList(); } catch (e) { console.error('lib', e.message); }
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');
+    return json(res, 200, lib);
+  }
   if (cp) {
     const { loadSetting } = require('./_lib');
     const all = await loadSetting('content'), c = ((all && all.pages) || {})[cp] || null;

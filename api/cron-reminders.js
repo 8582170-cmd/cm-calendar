@@ -59,7 +59,30 @@ module.exports = async (req, res) => {
         } catch (e) { vfailed++; console.error('voice send', r.id, e.message); }
       }
     }
-    json(res, 200, { date: tIso, checked, sent, failed, vsent, vfailed });
+    /* פגישות: מייל אחד לכל משתמש עם הפגישות של היום (בבוקר) ושל מחר (יום לפני) */
+    let asent = 0;
+    try {
+      const tmr = iso(addD(today, 1));
+      const ap = await db('appointments?notify=neq.none&date=in.(' + tIso + ',' + tmr + ')&select=id,email,date,start_t,end_t,title,place,notify,last_sent&order=date,start_t&limit=10000');
+      const by = {};
+      for (const a of ap || []) {
+        if (!a.email || a.last_sent === tIso) continue;
+        const isToday = a.date === tIso;
+        if (isToday ? !['morning', 'both'].includes(a.notify) : !['daybefore', 'both'].includes(a.notify)) continue;
+        (by[a.email] = by[a.email] || []).push(a);
+      }
+      for (const [email, L] of Object.entries(by)) {
+        const line = a => (a.date === tIso ? 'היום' : 'מחר') + (a.start_t ? ' ' + a.start_t + (a.end_t ? '–' + a.end_t : '') : '') + ' · ' + a.title + (a.place ? ' (' + a.place + ')' : '');
+        try {
+          await sendMail({ to: email, subject: L.length === 1 ? 'תזכורת לפגישה: ' + L[0].title : 'הפגישות שלך: ' + L.length + ' פגישות',
+            html: frame({ title: 'הפגישות שלך', body: L.map(a => escH(line(a))).join('<br>'), button: 'ליומן', url: site + '/online/#day', foot: 'קיבלתם את המייל כי ביקשתם תזכורת לפגישה ביומן של MyLuach. אפשר לשנות זאת בעריכת הפגישה.' }),
+            text: L.map(line).join('\n') }, 'appointment');
+          await db('appointments?id=in.(' + L.map(a => a.id).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_sent: tIso }) });
+          asent++;
+        } catch (e) { console.error('appt mail', email, e.message); }
+      }
+    } catch (e) { console.error('appt cron', e.message); }
+    json(res, 200, { date: tIso, checked, sent, failed, vsent, vfailed, asent });
   } catch (e) {
     console.error('cron', e);
     json(res, 500, { error: 'server error', sent, failed });

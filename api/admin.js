@@ -50,6 +50,11 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
     }
+    /* מאגר התמונות ללקוחות */
+    if (req.method === 'POST' && /^lib(get|upload|import|save|delete)$/.test(b.action || '')) {
+      try { const out = await require('./_lib_img').adminAction(b); return json(res, out.error ? 400 : 200, out); }
+      catch (e) { console.error('lib', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
+    }
     /* עריכת טקסטים וצבעים של דפי האתר */
     if (req.method === 'POST' && ['contentget', 'contentsave', 'contentreset'].includes(b.action)) {
       const { loadSetting, saveSetting } = require('./_lib');
@@ -80,6 +85,7 @@ module.exports = async (req, res) => {
       const T = {
         profiles: { cols: 'email,phone,phone_verified_at,created_at,updated_at', order: 'created_at.desc', search: ['email', 'phone'] },
         reminders: { cols: 'email,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['email', 'name'] },
+        appointments: { cols: 'email,date,start_t,title,place,notify,created_at', order: 'created_at.desc', search: ['email', 'title'] },
         voice_reminders: { cols: 'phone,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['phone', 'name'] },
         orders: { cols: 'created_at,plan,amount,status,email,coupon,paid_at,id', order: 'created_at.desc', search: ['email', 'plan', 'coupon'] },
         free_lite: { cols: 'email,used_at', order: 'used_at.desc', search: ['email'] },

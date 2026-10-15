@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610150700">
+<link rel="stylesheet" href="assets/app.css?v=202610151200">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body>
@@ -123,6 +123,9 @@
         </div>
         <p class="hint" id="viewHint"></p>
         <p class="hint nocd">רוצים לוח ספירה לאחור לחתונה, לבר מצווה או ללידה? <a href="countdown.html">לבונה לוחות הספירה ←</a></p>
+        <div class="fld" id="wkStyleRow" hidden>עיצוב הלוח השבועי (כל יום בשורה מלאה)
+          <div class="cd-cards lay" id="wkStyleCards" role="radiogroup" aria-label="עיצוב הלוח השבועי"></div>
+        </div>
         <label class="chk" id="splitColsRow"><input type="checkbox" id="splitCols"> טורים נפרדים בכל יום: חגים, אירועים אישיים ויומי דהילולא (יארצייטן)</label>
         <div class="fld" id="tcolsRow">טורים בטבלה
           <div class="checks">
@@ -164,6 +167,8 @@
           <label class="chk"><input type="checkbox" data-opt="showChametz"> סוף זמן אכילת וביעור חמץ</label>
         </div>
         <label class="fld">הדלקת נרות חנוכה<select id="chanukah"><option value="tzeit">בצאת הכוכבים</option><option value="sunset">בשקיעה</option><option value="none">לא להציג</option></select></label>
+        <div class="row"><label class="fld">ניטל<select id="nital"><option value="none">לא להציג</option><option value="dec">בליל 24 בדצמבר</option><option value="jan">בליל 6 בינואר</option><option value="both">בשני התאריכים</option></select></label>
+        <label class="fld">מאיזו שעה<select id="nitalFrom"><option value="shkia">מהשקיעה</option><option value="tzeit">מצאת הכוכבים</option></select></label></div>
         <label class="fld" id="ytsgRow">יום טוב שני של גלויות<select id="ytsg"><option value="normal">רגיל, כמו חג</option><option value="faint">חלש: קטן ואפור</option><option value="none">לא להציג</option></select></label>
       </div>
     </details>
@@ -272,6 +277,8 @@
             <label class="zm-card"><input type="radio" name="zmSimple" value="sefardi"><b>ספרדים ועדות המזרח</b><span>ע״פ פסקי הגר״ע יוסף זצ״ל</span></label>
             <label class="zm-card"><input type="radio" name="zmSimple" value="tanya"><b>חב״ד</b><span>לפי שיטת בעל התניא</span></label>
             <label class="zm-card"><input type="radio" name="zmSimple" value="chul"><b>קהילות בחו״ל</b><span>המקובל ברוב בתי הכנסת באמריקה ובאירופה</span></label>
+            <label class="zm-card"><input type="radio" name="zmSimple" value="chazon"><b>כמו חזון שמיים</b><span>שיטת האשכנזים כפי שמפורטת בלוחות חזון שמיים</span></label>
+            <label class="zm-card"><input type="radio" name="zmSimple" value="tzikoni"><b>הרב איתן ציקוני</b><span>הלוח הממוצע שהציע (72 דק׳ במעלות, נץ ושקיעה אסטרונומיים)</span></label>
           </div>
         </div>
         <p class="hint" id="zmAdvNote" hidden></p>
@@ -290,6 +297,8 @@
             <label class="fld">ק״ש ותפילה<select id="m_shma"><option value="gra">גר״א</option><option value="mga">מג״א</option><option value="both">שניהם</option></select></label>
             <label class="fld">כל השיטות המוכנות<select id="zmPreset">
               <option value="ashkenaz">אשכנזים, מנהג ארץ ישראל</option>
+              <option value="chazon">כמו חזון שמיים</option>
+              <option value="tzikoni">הרב איתן ציקוני (לוח ממוצע)</option>
               <option value="sefardi">ספרדים, ע״פ הגר״ע יוסף</option>
               <option value="tuk">הגרי״מ טוקצ׳ינסקי (שקיעה ונץ בגובה)</option>
               <option value="itim">אשכנזים, נץ מישורי ושקיעה לפי הגובה</option>
@@ -589,6 +598,7 @@
 <script src="assets/plans.js?v=202610150400"></script>
 <script src="assets/stickers.js?v=202610130515"></script>
 <script src="assets/img-smart.js?v=202610130515"></script>
-<script src="assets/app.js?v=202610150700"></script>
+<script src="assets/library/index.js?v=1" defer></script>
+<script src="assets/app.js?v=202610151200"></script>
 </body>
 </html>

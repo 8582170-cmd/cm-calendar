@@ -13,7 +13,7 @@ const BUILDER=BASE+'../';
 
 /* ---------- שפה ---------- */
 const T={
- he:{siteName:'MyLuach',city:'עיר',menu:'תפריט',month:'לוח חודשי',year:'לוח שנתי',holidays:'חגים ומועדים',zmanim:'זמני היום',shabbat:'זמני שבת',tools:'כלים',reminders:'תזכורות',
+ he:{siteName:'MyLuach',city:'עיר',menu:'תפריט',month:'לוח חודשי',week:'לוח שבועי',day:'לוח יומי',year:'לוח שנתי',holidays:'חגים ומועדים',zmanim:'זמני היום',shabbat:'זמני שבת',tools:'כלים',reminders:'תזכורות',
   today:'היום',prev:'הקודם',next:'הבא',prevYear:'שנה אחורה',nextYear:'שנה קדימה',hebMode:'עברי',gregMode:'לועזי',jump:'קפיצה לתאריך',go:'מעבר',
   print:'הדפסה ואפשרויות נוספות',printSub:'לוח מעוצב להדפסה, עם התמונות, ימי ההולדת וימי השנה (יארצייטים) שלכם',
   ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'ב־MyLuach בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
@@ -23,7 +23,7 @@ const T={
   convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יום שנה (יארצייט)',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
- en:{siteName:'MyLuach',city:'City',menu:'Menu',month:'Month',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
+ en:{siteName:'MyLuach',city:'City',menu:'Menu',month:'Month',week:'Week',day:'Day',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
   today:'Today',prev:'Previous',next:'Next',prevYear:'Year back',nextYear:'Year ahead',hebMode:'Hebrew',gregMode:'Gregorian',jump:'Jump to date',go:'Go',
   print:'Print & more options',printSub:'A designed calendar to print, with your photos, birthdays and yahrzeits',
   ctaT:'Want this as a printed calendar?',ctaP:'MyLuach builds a personal Jewish calendar for your family, synagogue or school: photos, family events, zmanim and more.',ctaB:'Build a personal calendar',
@@ -69,56 +69,76 @@ const cityName=c=>HE()?c.he:c.en;
 function loc(){const c=city();return new Location(c.lat,c.lng,c.il,c.tz,c.en,'',undefined,c.el||0)}
 const fmtT=d=>{if(!(d instanceof Date)||isNaN(d))return '—';try{return new Intl.DateTimeFormat(HE()?'he-IL':'en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:city().tz}).format(d)}catch(e){return '—'}};
 /* הגדרות זמנים: מנהג, נץ ושקיעה, צאת שבת והדלקת נרות */
+const ZB={alot2:'16.1',mish:'11.5',netz:'sea',shkia:'sea',gra:'',mga:'19.75',minG:'lechumra',plag:'gra',tzeit:'8.5',motz:'8.5',rt:'72f',ci:'9.28',fastEnd:'6.45'};
 const ZPRE={
-  ashkenaz:{he:'אשכנזים (המקובל בארץ)',en:'Ashkenazi (common in Israel)',alot:'16.1',mish:'11.5',mga:['16.1','16.1'],tzeit:'8.5'},
-  sefardi:{he:'ספרדים, ע״פ הגר״ע יוסף',en:'Sephardi (R. Ovadia Yosef)',alot:'72z',mish:'66z',mga:['72z','72z'],tzeit:'13.5z'},
-  chabad:{he:'חב״ד (בעל התניא)',en:'Chabad (Baal HaTanya)',alot:'16.9',mish:'10.2',mga:['16.9','16.9'],tzeit:'6'},
-  chul:{he:'נפוץ בחו״ל (72 דק׳ שוות)',en:'Common abroad (72 fixed minutes)',alot:'72f',mish:'11',mga:['72f','72f'],tzeit:'8.5'},
-  gra:{he:'גר״א בלבד, בלי מג״א',en:'GRA only',alot:'16.1',mish:'11',mga:null,tzeit:'8.5'}
+  ashkenaz:{he:'אשכנזים (המקובל בארץ)',en:'Ashkenazi (common in Israel)',...ZB,alot:'19.75'},
+  chazon:{he:'כמו חזון שמיים',en:'As in Chazon Shamayim',...ZB,alot:'19.75',shkia:'elevHigh',gra:'sea'},
+  tzikoni:{he:'הרב איתן ציקוני (לוח ממוצע)',en:'R. Eitan Tzikoni (average)',...ZB,alot:'16.1',alot2:'19.75',mga:'16.1',minG:'fixed30',tzeit:'13.5f',fastEnd:'8.5'},
+  itim:{he:'אשכנזים, שקיעה לפי הגובה',en:'Ashkenazi, sunset with elevation',...ZB,alot:'19.75',shkia:'elev',gra:'sea'},
+  tuk:{he:'הגרי״מ טוקצ׳ינסקי (נץ ושקיעה בגובה)',en:'R. Tukaczinsky (elevation)',...ZB,alot:'19.75',netz:'elev',shkia:'elev'},
+  sefardi:{he:'ספרדים, ע״פ הגר״ע יוסף',en:'Sephardi (R. Ovadia Yosef)',...ZB,alot:'72z',alot2:'90z',mish:'66z',netz:'elev',shkia:'elev',mga:'72z',minG:'fixed30',plag:'sefardi',tzeit:'13.5z',motz:'30f',rt:'72z',fastEnd:'20f'},
+  chabad:{he:'חב״ד (בעל התניא)',en:'Chabad (Baal HaTanya)',...ZB,alot:'16.9',mish:'10.2',netz:'amiti',shkia:'amiti',mga:'16.9>6',minG:'zman30',tzeit:'6',fastEnd:'6'},
+  gra:{he:'גר״א פשוט',en:'Simple GRA',...ZB,alot:'16.1',alot2:'19.75',mish:'11',mga:null,minG:'fixed30',tzeit:'7.083'},
+  chul:{he:'נפוץ בחו״ל (72 דק׳ שוות)',en:'Common abroad (72 fixed minutes)',...ZB,alot:'72f',mish:'11',mga:'72f',minG:'fixed30'}
 };
-const zcfg=()=>Object.assign({pre:'ashkenaz',netz:'sea',motz:'8.5',candle:'',both:true},st.zm||{});
-const angLbl=k=>{k=String(k);return k.endsWith('z')?parseFloat(k)+(HE()?' דק׳ זמניות':' zmaniyot min'):k.endsWith('f')?parseFloat(k)+(HE()?' דק׳':' min'):k+'°'};
+const zcfg=()=>{const o=Object.assign({pre:'ashkenaz',netz:'',motz:'',candle:'',both:true},st.zm||{});if(!ZPRE[o.pre])o.pre='ashkenaz';return o};
+const angLbl=k=>{k=String(k);if(k.includes('>')){const [a,b]=k.split('>');return angLbl(a)+' – '+angLbl(b)}return k.endsWith('z')?parseFloat(k)+(HE()?' דק׳ זמניות':' zmaniyot min'):k.endsWith('f')?parseFloat(k)+(HE()?' דק׳':' min'):k+'°'};
+const ZCACHE=new Map();
 function zm(d){
-  const C=zcfg(),P=ZPRE[C.pre]||ZPRE.ashkenaz,L=loc(),z=new Zmanim(L,noon(d),false),ze=new Zmanim(L,noon(d),true),s=f=>{try{const r=f();return r instanceof Date&&!isNaN(r)?r:null}catch(e){return null}};
-  const netz=C.netz==='elev'?s(()=>ze.sunrise()):s(()=>z.seaLevelSunrise()),shkia=C.netz==='elev'?s(()=>ze.sunset()):s(()=>z.seaLevelSunset());
-  const H=netz&&shkia?(shkia-netz)/12:NaN,T=(x,ms)=>x&&isFinite(ms)?new Date(x.getTime()+ms):null;
+  const C=zcfg(),P=ZPRE[C.pre],ck=iso(d)+st.city+JSON.stringify(C)+st.lang;if(ZCACHE.has(ck))return ZCACHE.get(ck);
+  const L=loc(),c=city(),z=new Zmanim(L,noon(d),false),ze=new Zmanim(L,noon(d),true),s=f=>{try{const r=f();return r instanceof Date&&!isNaN(r)?r:null}catch(e){return null}};
+  const sun=(k,up)=>{if(k==='elevHigh')k=(c.el||0)>=400?'elev':'sea';return k==='elev'?s(()=>up?ze.sunrise():ze.sunset()):k==='amiti'?s(()=>z.timeAtAngle(1.583,up)):s(()=>up?z.seaLevelSunrise():z.seaLevelSunset())};
+  const NK=C.netz||P.netz,SK=C.netz||P.shkia;
+  const netz=sun(NK,true),shkia=sun(SK,false);
+  const gN=P.gra&&!C.netz?sun(P.gra,true):netz,gS=P.gra&&!C.netz?sun(P.gra,false):shkia;
+  const H=gN&&gS?(gS-gN)/12:NaN,T=(x,ms)=>x&&isFinite(ms)?new Date(x.getTime()+ms):null;
   const before=k=>{k=String(k);if(k.endsWith('f'))return T(netz,-parseFloat(k)*6e4);if(k.endsWith('z'))return T(netz,-parseFloat(k)*H/60);return s(()=>z.timeAtAngle(parseFloat(k),true))};
   const after=k=>{k=String(k);if(k.endsWith('f'))return T(shkia,parseFloat(k)*6e4);if(k.endsWith('z'))return T(shkia,parseFloat(k)*H/60);return s(()=>z.timeAtAngle(parseFloat(k),false))};
-  const ms=P.mga?before(P.mga[0]):null,me=P.mga?after(P.mga[1]):null,Hm=ms&&me?(me-ms)/12:NaN;
-  const nl=C.netz==='elev'?(HE()?'לפי גובה המקום':'with elevation'):(HE()?'מישורי':'sea level');
-  const mgaL=P.mga?(HE()?'מעלות השחר '+angLbl(P.mga[0])+' עד צאה״כ '+angLbl(P.mga[1]):'dawn '+angLbl(P.mga[0])+' to nightfall '+angLbl(P.mga[1])):'';
+  const [ma,mb]=P.mga?String(P.mga).split('>'):[];const ms=P.mga?before(ma):null,me=P.mga?after(mb||ma):null,Hm=ms&&me?(me-ms)/12:NaN;
+  const nl=k=>k==='elev'?(HE()?'לפי גובה המקום':'with elevation'):k==='elevHigh'?(HE()?'לפי הגובה במקום גבוה':'elevation in high places'):k==='amiti'?(HE()?'אמיתי (1.583°)':'true (1.583°)'):(HE()?'מישורי':'sea level');
+  const mgaL=P.mga?(HE()?'מעלות השחר '+angLbl(ma)+' עד צאה״כ '+angLbl(mb||ma):'dawn '+angLbl(ma)+' to nightfall '+angLbl(mb||ma)):'';
+  const chatzot=s(()=>z.chatzot()),mgF=T(chatzot,30*6e4),mgZ=T(chatzot,H/2),tz=after(P.tzeit);
+  const minG=P.minG==='fixed30'?mgF:P.minG==='zman30'?mgZ:(mgF&&mgZ?new Date(Math.max(mgF,mgZ)):mgF);
+  const plag=P.plag==='sefardi'?T(after('13.5z'),-1.25*H):T(gS,-1.25*H);
+  const motz=C.motz||P.motz;
   const rows=[
-   ['alot',HE()?'עלות השחר':'Dawn (Alot HaShachar)',before(P.alot),angLbl(P.alot)],
-   ['mish',HE()?'משיכיר (טלית ותפילין)':'Misheyakir (tallit & tefillin)',before(P.mish),angLbl(P.mish)],
-   ['netz',HE()?'הנץ החמה':'Sunrise (Netz)',netz,nl],
-   P.mga&&C.both?['shmaM',HE()?'סוף זמן ק״ש (מג״א)':'Latest Shema (MGA)',T(ms,3*Hm),HE()?'3 שעות זמניות, '+mgaL:'3 halachic hours, '+mgaL]:null,
-   ['shmaG',HE()?'סוף זמן ק״ש (גר״א)':'Latest Shema (GRA)',T(netz,3*H),HE()?'3 שעות זמניות מהנץ עד השקיעה':'3 halachic hours, sunrise to sunset'],
-   P.mga&&C.both?['tfilaM',HE()?'סוף זמן תפילה (מג״א)':'Latest Shacharit (MGA)',T(ms,4*Hm),HE()?'4 שעות זמניות':'4 halachic hours']:null,
-   ['tfilaG',HE()?'סוף זמן תפילה (גר״א)':'Latest Shacharit (GRA)',T(netz,4*H),HE()?'4 שעות זמניות':'4 halachic hours'],
-   ['chatzot',HE()?'חצות היום':'Midday (Chatzot)',T(netz,6*H),''],
-   ['minG',HE()?'מנחה גדולה':'Mincha Gedola',(()=>{const a=T(netz,6.5*H),b=T(netz,6*H+30*6e4);return a&&b?new Date(Math.max(a,b)):a})(),HE()?'המאוחר מחצי שעה זמנית או קבועה אחרי חצות':'later of ½ halachic or fixed hour after midday'],
-   ['minK',HE()?'מנחה קטנה':'Mincha Ketana',T(netz,9.5*H),HE()?'9.5 שעות זמניות':'9.5 halachic hours'],
-   ['plag',HE()?'פלג המנחה':'Plag HaMincha',T(netz,10.75*H),HE()?'10.75 שעות זמניות':'10.75 halachic hours'],
-   ['shkia',HE()?'שקיעה':'Sunset (Shkiah)',shkia,nl],
-   ['tzeit',HE()?'צאת הכוכבים':'Nightfall (Tzeit)',after(P.tzeit),angLbl(P.tzeit)],
-   ['rt',HE()?'צאת הכוכבים לר״ת':'Rabbeinu Tam',T(shkia,72*6e4),HE()?'72 דק׳ אחרי השקיעה':'72 min after sunset'],
-   ['chatzotN',HE()?'חצות הלילה':'Midnight (Chatzot HaLaila)',T(netz,18*H),HE()?'12 שעות אחרי חצות היום':'12 hours after midday'],
+   ['alot',HE()?'עלות השחר':'Dawn (Alot HaShachar)',before(P.alot),angLbl(P.alot),'m'],
+   ['alot2',HE()?'עלות השחר ב׳':'Dawn (2nd opinion)',before(P.alot2),angLbl(P.alot2),'m'],
+   ['mish',HE()?'משיכיר (טלית ותפילין)':'Misheyakir (tallit & tefillin)',before(P.mish),angLbl(P.mish),'m'],
+   ['netz',HE()?'הנץ החמה':'Sunrise (Netz)',netz,nl(NK),'m'],
+   P.mga&&C.both?['shmaM',HE()?'סוף זמן ק״ש (מג״א)':'Latest Shema (MGA)',T(ms,3*Hm),HE()?'3 שעות זמניות, '+mgaL:'3 halachic hours, '+mgaL,'m']:null,
+   ['shmaG',HE()?'סוף זמן ק״ש (גר״א)':'Latest Shema (GRA)',T(gN,3*H),HE()?'3 שעות זמניות מהנץ עד השקיעה':'3 halachic hours, sunrise to sunset','m'],
+   P.mga&&C.both?['tfilaM',HE()?'סוף זמן תפילה (מג״א)':'Latest Shacharit (MGA)',T(ms,4*Hm),HE()?'4 שעות זמניות':'4 halachic hours','m']:null,
+   ['tfilaG',HE()?'סוף זמן תפילה (גר״א)':'Latest Shacharit (GRA)',T(gN,4*H),HE()?'4 שעות זמניות':'4 halachic hours','m'],
+   ['chatzot',HE()?'חצות היום':'Midday (Chatzot)',chatzot,HE()?'אמצע היום האסטרונומי':'solar noon','e'],
+   ['minG',HE()?'מנחה גדולה':'Mincha Gedola',minG,P.minG==='fixed30'?(HE()?'חצי שעה אחרי חצות':'30 min after midday'):P.minG==='zman30'?(HE()?'חצי שעה זמנית אחרי חצות':'½ halachic hour after midday'):(HE()?'המאוחר מחצי שעה זמנית או קבועה אחרי חצות':'later of ½ halachic or fixed hour after midday'),'e'],
+   ['musaf',HE()?'סוף זמן מוסף לכתחילה':'Latest Musaf',T(gN,7*H),HE()?'7 שעות זמניות (גר״א)':'7 halachic hours (GRA)','e'],
+   ['minK',HE()?'מנחה קטנה':'Mincha Ketana',T(gN,9.5*H),HE()?'9.5 שעות זמניות':'9.5 halachic hours','e'],
+   ['plag',HE()?'פלג המנחה':'Plag HaMincha',plag,P.plag==='sefardi'?(HE()?'1.25 שעות זמניות לפני צאה״כ':'1.25 hours before nightfall'):(HE()?'1.25 שעות זמניות לפני השקיעה':'1.25 halachic hours before sunset'),'e'],
+   ['shkia',HE()?'שקיעה':'Sunset (Shkiah)',shkia,nl(SK),'e'],
+   ['tzeit',HE()?'צאת הכוכבים':'Nightfall (Tzeit)',tz,angLbl(P.tzeit),'e'],
+   ['ci',HE()?'צאת הכוכבים חזו״א':'Nightfall (Chazon Ish)',after(P.ci),angLbl(P.ci),'e'],
+   ['motz',HE()?'צאת שבת וחג':'Shabbat ends',after(motz),angLbl(motz),'e'],
+   ['rt',HE()?'צאת הכוכבים לר״ת':'Rabbeinu Tam',after(P.rt),angLbl(P.rt),'e'],
+   ['fastE',HE()?'סוף צום דרבנן':'Minor fast ends',after(P.fastEnd),angLbl(P.fastEnd),'e'],
+   ['chatzotN',HE()?'חצות הלילה':'Midnight (Chatzot HaLaila)',s(()=>z.chatzotNight()),HE()?'12 שעות אחרי חצות היום':'12 hours after midday','e'],
   ].filter(Boolean);
-  return rows.map(([k,n,v,m])=>({k,n,v,m}));
+  const out=rows.map(([k,n,v,m,p])=>({k,n,v,m,p}));ZCACHE.set(ck,out);if(ZCACHE.size>400)ZCACHE.delete(ZCACHE.keys().next().value);return out;
 }
 function candleMins(){const c=zcfg().candle;return c?+c:city().candle}
-function havOpts(){const m=zcfg().motz;return m.endsWith('f')?{havdalahMins:parseFloat(m)}:{havdalahDeg:parseFloat(m)}}
+function havOpts(){const C=zcfg(),m=C.motz||ZPRE[C.pre].motz;return m.endsWith('f')?{havdalahMins:parseFloat(m)}:{havdalahDeg:parseFloat(m)}}
 function zmSettings(){
   const C=zcfg();
   dialog('<h2 id="dlgT">'+(HE()?'הגדרות זמנים':'Zmanim settings')+'</h2><p class="small mute">'+(HE()?'ההגדרות חלות על זמני היום, זמני השבת והלוח, ונשמרות בדפדפן.':'Applies to zmanim, Shabbat times and the calendar. Saved in this browser.')+'</p>'+
     '<div class="fld" style="margin-top:8px">'+(HE()?'מנהג':'Custom')+'<select id="zP">'+Object.entries(ZPRE).map(([k,v])=>'<option value="'+k+'"'+(k===C.pre?' selected':'')+'>'+(HE()?v.he:v.en)+'</option>').join('')+'</select></div>'+
-    '<div class="fld" style="margin-top:8px">'+(HE()?'נץ ושקיעה':'Sunrise & sunset')+'<select id="zN"><option value="sea">'+(HE()?'מישורי (גובה פני הים)':'Sea level')+'</option><option value="elev">'+(HE()?'לפי גובה המקום (הנראה)':'With elevation (visible)')+'</option></select></div>'+
-    '<div class="fld" style="margin-top:8px">'+(HE()?'צאת שבת וחג':'Shabbat ends')+'<select id="zM"><option value="8.5">8.5° ('+(HE()?'מקובל':'common')+')</option><option value="7.083">7.083°</option><option value="6">6° ('+(HE()?'חב״ד':'Chabad')+')</option><option value="40f">40 '+(HE()?'דק׳ אחרי השקיעה':'min after sunset')+'</option><option value="50f">50 '+(HE()?'דק׳':'min')+'</option><option value="72f">72 '+(HE()?'דק׳ (רבנו תם)':'min (Rabbeinu Tam)')+'</option></select></div>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'נץ ושקיעה':'Sunrise & sunset')+'<select id="zN"><option value="">'+(HE()?'לפי השיטה':'Per method')+'</option><option value="sea">'+(HE()?'מישורי (גובה פני הים)':'Sea level')+'</option><option value="elev">'+(HE()?'לפי גובה המקום (הנראה)':'With elevation (visible)')+'</option></select></div>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'צאת שבת וחג':'Shabbat ends')+'<select id="zM"><option value="">'+(HE()?'לפי השיטה':'Per method')+'</option><option value="8.5">8.5° ('+(HE()?'מקובל':'common')+')</option><option value="7.083">7.083°</option><option value="6">6° ('+(HE()?'חב״ד':'Chabad')+')</option><option value="40f">40 '+(HE()?'דק׳ אחרי השקיעה':'min after sunset')+'</option><option value="50f">50 '+(HE()?'דק׳':'min')+'</option><option value="72f">72 '+(HE()?'דק׳ (רבנו תם)':'min (Rabbeinu Tam)')+'</option></select></div>'+
     '<div class="fld" style="margin-top:8px">'+(HE()?'הדלקת נרות':'Candle lighting')+'<select id="zC"><option value="">'+(HE()?'לפי העיר ('+city().candle+' דק׳)':'City default ('+city().candle+' min)')+'</option>'+[15,18,20,22,24,30,40].map(n=>'<option value="'+n+'">'+n+(HE()?' דק׳ לפני השקיעה':' min before sunset')+'</option>').join('')+'</select></div>'+
+    '<div class="row" style="margin-top:8px"><label class="fld">'+(HE()?'ניטל':'Nittel')+'<select id="zNt"><option value="none">'+(HE()?'לא להציג':'Hide')+'</option><option value="dec">'+(HE()?'בליל 24 בדצמבר':'Night of Dec 24')+'</option><option value="jan">'+(HE()?'בליל 6 בינואר':'Night of Jan 6')+'</option><option value="both">'+(HE()?'בשני התאריכים':'Both')+'</option></select></label><label class="fld">'+(HE()?'מאיזו שעה':'From')+'<select id="zNf"><option value="shkia">'+(HE()?'מהשקיעה':'Sunset')+'</option><option value="tzeit">'+(HE()?'מצאת הכוכבים':'Nightfall')+'</option></select></label></div>'+
     '<label class="chk" style="margin-top:10px"><input type="checkbox" id="zB"'+(C.both?' checked':'')+'> '+(HE()?'להציג ק״ש ותפילה גם לפי המג״א':'Show MGA times too')+'</label>'+
     '<div class="row" style="margin-top:14px"><button class="btn pri" type="button" id="zS">'+t('save')+'</button></div>');
-  $('#zN').value=C.netz;$('#zM').value=C.motz;$('#zC').value=C.candle;
-  $('#zS').onclick=()=>{st.zm={pre:$('#zP').value,netz:$('#zN').value,motz:$('#zM').value,candle:$('#zC').value,both:$('#zB').checked};saveSt();evCache.clear();closeDlg();render()};
+  $('#zN').value=C.netz;$('#zM').value=C.motz;$('#zC').value=C.candle;$('#zNt').value=C.nital||'none';$('#zNf').value=C.nitalFrom||'shkia';
+  $('#zS').onclick=()=>{ZCACHE.clear();st.zm={pre:$('#zP').value,netz:$('#zN').value,motz:$('#zM').value,candle:$('#zC').value,both:$('#zB').checked,nital:$('#zNt').value,nitalFrom:$('#zNf').value};saveSt();evCache.clear();closeDlg();render()};
 }
 
 /* ---------- אירועים ---------- */
@@ -140,6 +160,13 @@ function events(a,b){
     else if(f&flags.MODERN_HOLIDAY)cls='modern';
     if(!map.has(k))map.set(k,[]);map.get(k).push({txt,cls,chag:!!(f&flags.CHAG),f,ev});
   }
+  /* ניטל, לפי ההגדרה */
+  const NT=zcfg().nital||'none';
+  if(NT!=='none')for(let d=noon(a);d<=b;d=addD(d,1)){const m=d.getMonth(),dd=d.getDate();
+    if(!((NT!=='jan'&&m===11&&dd===24)||(NT!=='dec'&&m===0&&dd===6)))continue;
+    const Z=zm(d),g=k=>(Z.find(x=>x.k===k)||{}).v,fromT=zcfg().nitalFrom==='tzeit';
+    const txt=HE()?'ניטל: מ'+(fromT?'צאה״כ ':'השקיעה ')+fmtT(g(fromT?'tzeit':'shkia'))+' עד חצות הלילה '+fmtT(g('chatzotN')):'Nittel: '+fmtT(g(fromT?'tzeit':'shkia'))+' – '+fmtT(g('chatzotN'));
+    const k=iso(d);if(!map.has(k))map.set(k,[]);map.get(k).push({txt,cls:'nital',chag:false,f:0,ev:{getDesc:()=>'Nittel',eventTime:null}})}
   evCache.set(key,map);if(evCache.size>40)evCache.delete(evCache.keys().next().value);return map;
 }
 
@@ -156,7 +183,7 @@ function remHits(r,d){const hd=new HDate(d);
 const remsOn=d=>REM.filter(r=>remHits(r,d));
 
 /* ---------- ניווט ---------- */
-const VIEWS=['month','year','holidays','zmanim','shabbat','countdown','tools','reminders'];
+const VIEWS=['month','week','day','year','holidays','zmanim','shabbat','countdown','tools','reminders'];
 let view=PAGE.view||'month',anchor=TODAY,sub=PAGE.tool||'',CDQ=null;
 function readHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const [v,a]=h.split('/');
   if(v==='countdown'){view='tools';sub='countdown';return}
@@ -209,6 +236,7 @@ function viewMonth(){
       '<span class="dn"><b>'+main+'</b><i>'+sec+'</i></span>'+
       items.map(x=>'<span class="ev '+x.cls+'">'+esc(x.txt)+'</span>').join('')+
       remsOn(d).map(r=>'<span class="ev rem">'+esc(r.name)+'</span>').join('')+
+      apptOn(d).map(a=>'<span class="ev appt"'+(a.color?' style="--ac:'+esc(a.color)+'"':'')+'>'+(a.start_t?esc(a.start_t)+' ':'')+esc(a.title)+'</span>').join('')+
       (note.text?'<span class="ev note">'+esc(note.text)+'</span>':'')+
       (st.opts.dz?dzLine(d):'')+'</button>';
   }
@@ -217,7 +245,7 @@ function viewMonth(){
   const hdA=new HDate(anchor);
   const jumpH='<span class="jump"><select id="jD">'+Array.from({length:30},(_,i)=>'<option value="'+(i+1)+'">'+hDay(i+1)+'</option>').join('')+'</select><select id="jM">'+HEB_ORDER.map(m=>'<option value="'+m+'"'+(m===hdA.getMonth()?' selected':'')+'>'+(m===12?(HE()?'אדר / אדר א׳':'Adar / Adar I'):m===13?(HE()?'אדר ב׳':'Adar II'):hMonthName(m,5785))+'</option>').join('')+'</select><input id="jY" size="6" value="'+hYear(hdA.getFullYear())+'" aria-label="year"><button class="btn" type="button" id="jGoH">'+t('go')+'</button></span>';
   const jumpG='<span class="jump"><input type="date" id="jG" value="'+iso(anchor)+'"><button class="btn" type="button" id="jGoG">'+t('go')+'</button></span>';
-  $('#main').innerHTML='<div class="bar no-print"><span class="seg" role="group"><button type="button" data-mode="heb" aria-pressed="'+(st.mode==='heb')+'">'+t('hebMode')+'</button><button type="button" data-mode="greg" aria-pressed="'+(st.mode==='greg')+'">'+t('gregMode')+'</button></span>'+
+  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><span class="seg" role="group"><button type="button" data-mode="heb" aria-pressed="'+(st.mode==='heb')+'">'+t('hebMode')+'</button><button type="button" data-mode="greg" aria-pressed="'+(st.mode==='greg')+'">'+t('gregMode')+'</button></span>'+
     '<span class="nav-arrows"><button class="btn" type="button" data-sh="-12" title="'+t('prevYear')+'">«</button><button class="btn" type="button" data-sh="-1" title="'+t('prev')+'">'+(HE()?'→':'←')+'</button><button class="btn" type="button" id="tdy">'+t('today')+'</button><button class="btn" type="button" data-sh="1" title="'+t('next')+'">'+(HE()?'←':'→')+'</button><button class="btn" type="button" data-sh="12" title="'+t('nextYear')+'">»</button></span>'+
     '<details class="jump-d"><summary class="btn">'+t('jump')+'</summary><div class="jump" style="margin-top:6px">'+jumpH+jumpG+'</div></details>'+
     '<a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
@@ -247,12 +275,12 @@ function viewHolidays(){
 }
 function viewZmanim(){
   const d=anchor,Z=zm(d),hd=new HDate(d);
-  const M=monthDays();const keys=['alot','netz','shmaM','shmaG','tfilaG','chatzot','minG','plag','shkia','tzeit'];
+  const M=monthDays();const keys=['alot','netz','shmaM','shmaG','tfilaG','chatzot','minG','plag','shkia','tzeit'].filter(k=>Z.some(z=>z.k===k));
   $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'זמני היום ב'+cityName(city()):'Zmanim for '+cityName(city()))+'</h1><span class="jump"><button class="btn" type="button" data-zd="-1">'+(HE()?'→':'←')+'</button><input type="date" id="zDate" value="'+iso(d)+'"><button class="btn" type="button" data-zd="1">'+(HE()?'←':'→')+'</button></span><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'הגדרות זמנים':'Zmanim settings')+'</button><a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
     '<div class="card"><h2>'+t('weekdays')[d.getDay()]+', '+esc(hStr(hd))+' · '+esc(gStr(d))+'</h2><div class="zl" style="margin-top:10px">'+Z.map(z=>'<span>'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>'+(z.m?'<span class="sub">'+esc(z.m)+'</span>':'')).join('')+'</div>'+
     '<p class="mute small">'+(HE()?'הזמנים מחושבים אסטרונומית לפי מיקום העיר ואינם תחליף ללוח של רב הקהילה.':'Times are calculated astronomically for the city location.')+'</p></div>'+
     '<h2 style="margin:18px 0 8px">'+esc(M.title)+'</h2><div class="tbl-wrap"><table class="t"><thead><tr><th></th>'+keys.map(k=>'<th>'+esc(Z.find(z=>z.k===k).n.replace(/ \(.*\)/,'').replace('סוף זמן ',''))+(k==='shmaM'?' מג״א':k==='shmaG'?' גר״א':'')+'</th>').join('')+'</tr></thead><tbody>'+
-    M.days.map(x=>{const zz=zm(x);return '<tr><td>'+esc(t('wdShort')[x.getDay()]+' '+(st.mode==='heb'?hDay(new HDate(x).getDate()):x.getDate()))+'</td>'+keys.map(k=>'<td>'+fmtT(zz.find(z=>z.k===k).v)+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'+seoBlock();
+    M.days.map(x=>{const zz=zm(x);return '<tr><td>'+esc(t('wdShort')[x.getDay()]+' '+(st.mode==='heb'?hDay(new HDate(x).getDate()):x.getDate()))+'</td>'+keys.map(k=>'<td>'+fmtT((zz.find(z=>z.k===k)||{}).v)+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'+seoBlock();
 }
 function viewShabbat(){
   const a=TODAY,b=addD(TODAY,7*16),ev=events(a,b),rows=[];
@@ -263,7 +291,7 @@ function viewShabbat(){
   $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'זמני כניסת ויציאת שבת ב'+cityName(city()):'Shabbat times in '+cityName(city()))+'</h1><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'הגדרות זמנים':'Zmanim settings')+'</button><a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
     '<div class="tbl-wrap"><table class="t"><thead><tr><th>'+(HE()?'שבת / חג':'Shabbat / Holiday')+'</th><th>'+(HE()?'תאריך':'Date')+'</th><th>'+t('candles')+'</th><th>'+t('havdalah')+'</th></tr></thead><tbody>'+
     rows.map(r=>'<tr><td>'+esc(r.n)+'</td><td>'+t('weekdays')[r.d.getDay()]+' '+esc(gStr(r.d,false))+' · '+esc(hStr(new HDate(r.d),false))+'</td><td>'+r.c+'</td><td>'+r.h+'</td></tr>').join('')+'</tbody></table></div>'+
-    '<p class="mute small">'+(HE()?'הדלקת נרות '+candleMins()+' דקות לפני השקיעה, יציאה '+angLbl(zcfg().motz)+(zcfg().motz.endsWith('f')?' אחרי השקיעה':' מתחת לאופק')+'.':'Candle lighting '+candleMins()+' minutes before sunset; havdalah '+angLbl(zcfg().motz)+'.')+'</p>'+seoBlock();
+    '<p class="mute small">'+(HE()?'הדלקת נרות '+candleMins()+' דקות לפני השקיעה, יציאה '+angLbl(zcfg().motz||ZPRE[zcfg().pre].motz)+(String(zcfg().motz||ZPRE[zcfg().pre].motz).endsWith('f')?' אחרי השקיעה':' מתחת לאופק')+'.':'Candle lighting '+candleMins()+' minutes before sunset; havdalah '+angLbl(zcfg().motz||ZPRE[zcfg().pre].motz)+'.')+'</p>'+seoBlock();
 }
 
 /* ---------- כלים ---------- */
@@ -349,6 +377,7 @@ function viewReminders(){
     (REM.length?'<div class="tbl-wrap"><table class="t"><tbody>'+REM.map(r=>{const nx=nextOcc(r);return '<tr><td><b>'+esc(r.name)+'</b></td><td>'+esc(remWhen(r))+'</td><td class="mute">'+(nx?esc(gStr(nx))+' · '+esc(relDays(nx)):'')+'</td><td><a class="btn" target="_blank" rel="noopener" href="'+gcalLink(r,nx)+'">Google</a> <button class="btn" type="button" data-redit="'+r.id+'">✎</button></td></tr>'}).join('')+'</tbody></table></div>'+
       '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="remIcs">📅 '+(HE()?'הוספת הכל ליומן בטלפון (קובץ)':'Add all to phone calendar (.ics)')+'</button></div>':'<p>'+(HE()?'עדיין אין תזכורות.':'No reminders yet.')+'</p>')+
     '<p class="small mute">'+(HE()?'📧 רוצים תזכורת גם במייל? פותחים תזכורת (✎) ומסמנים "לשלוח לי גם תזכורת במייל".':'📧 Want an email too? Open a reminder (✎) and tick "Also email me a reminder".')+'</p></div>'+
+    apptSection()+
     '<div class="card cta" style="margin-top:12px"><h3>'+t('ctaT')+'</h3><p>'+(HE()?'כל התזכורות שלכם יכולות להופיע בלוח שנה מודפס ומעוצב לבית.':'All your dates can appear in a printed, designed calendar for your home.')+'</p><a class="btn pri" href="'+builderLink()+'">'+t('ctaB')+'</a></div>';
 }
 function remWhen(r){if(r.rec==='once')return gStr(fromIso(r.date));if(r.rec==='greg')return (HE()?'כל שנה, ':'Every year, ')+r.d+' '+t('gMonths')[r.m-1];if(r.rec==='monthly')return (HE()?'כל חודש עברי ב־':'Every Hebrew month on the ')+hDay(+r.d);
@@ -379,7 +408,7 @@ function hebMonthNameNum(m){const L=['','ניסן','אייר','סיון','תמו
 let VOICE_ON=false;fetch(BASE+'../api/pricing').then(r=>r.json()).then(j=>{VOICE_ON=!!(j&&j.voice)}).catch(()=>{});
 /* חשבון המשתמש מהבונה (אותו אתר): אסימון הכניסה שנשמר בדפדפן */
 function authTok(){try{const o=JSON.parse(localStorage.getItem('myluach-auth')||'null');if(o&&o.access_token&&(o.expires_at||0)*1000>Date.now()+60000)return {tok:o.access_token,email:(o.user&&o.user.email)||''}}catch(e){}return null}
-const loginUrl=()=>BASE+'../app.html#login&back='+encodeURIComponent(location.pathname+location.search+'#reminders');
+const loginUrl=h=>BASE+'../app.html#login&back='+encodeURIComponent(location.pathname+location.search+'#'+(h||'reminders'));
 function remEditor(id,date,pre){
   const r=id?REM.find(x=>x.id===id):null,d0=date||(pre&&pre.m?nextHeb(pre.m,pre.d):TODAY),h0=new HDate(d0);
   const v=r?{...r}:{name:pre?pre.name:'',rec:'heb',d:h0.getDate(),m:h0.getMonth(),date:iso(d0),notice:[1]};
@@ -427,6 +456,102 @@ function remEditor(id,date,pre){
   setTimeout(()=>$('#rN').focus(),30);
 }
 
+/* ---------- תצוגה שבועית ויומית ---------- */
+function vTabs(){return '<div class="vtabs no-print" role="tablist">'+[['day',HE()?'יומי':'Day'],['week',HE()?'שבועי':'Week'],['month',HE()?'חודשי':'Month']].map(([k,l])=>'<button type="button" role="tab" data-vw="'+k+'" aria-selected="'+(view===k)+'">'+l+'</button>').join('')+'</div>'}
+const WK_LBL={alot:'עלות השחר',alot2:'עלות השחר ב׳',mish:'משיכיר',netz:'הנץ החמה',shmaM:'סוזק״ש מג״א',shmaG:'סוזק״ש גר״א',tfilaM:'סוז״ת מג״א',tfilaG:'סוז״ת גר״א',musaf:'סוף זמן מוסף',chatzot:'חצות היום',minG:'מנחה גדולה',minK:'מנחה קטנה',plag:'פלג המנחה',shkia:'שקיעה',tzeit:'צאת הכוכבים',ci:'צאה״כ חזו״א',motz:'צאת שבת',rt:'ר״ת',fastE:'סוף צום',chatzotN:'חצות הלילה'};
+const WK_DEF={m:['alot','mish','netz','shmaM','shmaG','tfilaG'],e:['chatzot','minG','plag','shkia','tzeit','rt']},WK_MAX=7;
+function wkSel(){const w=st.wkZ&&Array.isArray(st.wkZ.m)?st.wkZ:WK_DEF;return {m:w.m.slice(0,WK_MAX),e:(w.e||[]).slice(0,WK_MAX)}}
+const zLbl=z=>HE()?(WK_LBL[z.k]||z.n):(DZ_SHORT[z.k]?DZ_SHORT[z.k][1]:z.n);
+function zList(Z,keys){return keys.map(k=>Z.find(z=>z.k===k)).filter(z=>z&&z.v).map(z=>'<div class="wz" title="'+esc(z.n+(z.m?' · '+z.m:''))+'"><span>'+esc(zLbl(z))+'</span><i></i><b>'+fmtT(z.v)+'</b></div>').join('')}
+function dayCellItems(d,ev){const items=ev.get(iso(d))||[],note=NOTES[iso(d)]||{};
+  return items.map(x=>'<span class="ev '+x.cls+'">'+esc(x.txt)+'</span>').join('')+
+    remsOn(d).map(r=>'<span class="ev rem">'+esc(r.name)+'</span>').join('')+
+    apptOn(d).map(a=>'<a href="#" class="ev appt" data-aedit="'+a.id+'"'+(a.color?' style="--ac:'+esc(a.color)+'"':'')+'>'+(a.start_t?esc(a.start_t)+(a.end_t?'–'+esc(a.end_t):'')+' ':'')+esc(a.title)+(a.place?' · '+esc(a.place):'')+'</a>').join('')+
+    (note.text?'<span class="ev note">'+esc(note.text)+'</span>':'')}
+function dateNav(unit){
+  const b=(n,lbl,attr,sym)=>'<button class="btn nb" type="button" '+attr+'="'+n+'" title="'+lbl+'"><span aria-hidden="true" dir="ltr">'+sym+'</span><small>'+lbl+'</small></button>';
+  const R=HE()?['›','‹','»','«']:['‹','›','«','»'];const step=unit==='day'?1:7,ul=unit==='day'?(HE()?'יום':'Day'):(HE()?'שבוע':'Week');
+  return '<span class="dnav">'+b(-1,HE()?'שנה':'Year','data-ysh',R[2])+b(-1,HE()?'חודש':'Month','data-msh',R[0])+b(-step,ul,'data-wsh',R[0])+
+    '<button class="btn today-b" type="button" id="tdy">'+t('today')+'</button>'+
+    b(step,ul,'data-wsh',R[1])+b(1,HE()?'חודש':'Month','data-msh',R[1])+b(1,HE()?'שנה':'Year','data-ysh',R[3])+'</span>'}
+function viewWeek(){
+  const a=addD(anchor,-anchor.getDay()),days=Array.from({length:7},(_,i)=>addD(a,i)),ev=events(addD(a,-1),days[6]),W=wkSel();
+  const sat=(ev.get(iso(days[6]))||[]).find(x=>x.cls==='par'),hA=new HDate(days[0]),hB=new HDate(days[6]);
+  const range=hDay(hA.getDate())+' '+hMonthName(hA.getMonth(),hA.getFullYear())+' – '+hStr(hB)+' · '+gStr(days[0],false)+' – '+gStr(days[6]);
+  const head='<div class="wk-top"><div class="wk-city"><small>'+(HE()?'לוח':'Calendar')+'</small><b>'+esc(cityName(city()))+'</b></div>'+
+    '<div class="wk-mid"><div class="wk-title">'+esc(sat?sat.txt:(HE()?'שבוע':'Week'))+'</div><div class="mute small">'+esc(range)+'</div></div>'+dateNav('week')+'</div>';
+  const rows=days.map(d=>{const hd=new HDate(d),Z=zm(d),items=ev.get(iso(d))||[],chag=items.some(x=>x.chag),note=NOTES[iso(d)]||{};
+    const hFirst=hd.getDate()===1,gFirst=d.getDate()===1;
+    return '<div class="wk-row'+(d.getDay()===6?' sh':'')+(chag?' chag':'')+(iso(d)===iso(TODAY)?' today':'')+'" data-day="'+iso(d)+'" role="button" tabindex="0"'+(note.color?' style="--nc:'+esc(note.color)+'"':'')+' aria-label="'+esc(t('weekdays')[d.getDay()]+', '+hStr(hd)+', '+gStr(d))+'">'+
+      '<div class="wk-hd">'+hDay(hd.getDate())+(hFirst?'<small>'+esc(hMonthName(hd.getMonth(),hd.getFullYear()))+'</small>':'')+'</div>'+
+      '<div class="wk-dn">'+t('weekdays')[d.getDay()]+'</div>'+
+      '<div class="wk-z wk-zm">'+zList(Z,W.m)+'</div>'+
+      '<div class="wk-ev">'+dayCellItems(d,ev)+'<button type="button" class="wk-add no-print" data-anew="'+iso(d)+'" title="'+(HE()?'הוספת פגישה':'Add appointment')+'">+</button></div>'+
+      '<div class="wk-z wk-ze">'+zList(Z,W.e)+'</div>'+
+      '<div class="wk-gd">'+d.getDate()+(gFirst||d.getDay()===0?'<small>'+esc(t('gMonths')[d.getMonth()].slice(0,HE()?10:3))+'</small>':'')+'</div></div>'}).join('');
+  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" id="wkPick">⚙ '+(HE()?'אילו זמנים בשבועי':'Choose times')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="week">🖨 '+(HE()?'הדפסת השבוע':'Print week')+'</button><a class="btn pri" href="'+builderLink()+'">'+t('print')+'</a></div>'+
+    '<section class="wk card"><h1 class="sr">'+esc((HE()?'לוח שבועי ':'Weekly calendar ')+cityName(city()))+'</h1>'+head+'<div class="wk-rows">'+rows+'</div>'+
+    '<div class="wk-foot mute small">'+(HE()?'הזמנים לאופק '+esc(cityName(city()))+' לפי '+esc(ZPRE[zcfg().pre].he)+'.<span class="no-print"> מעבר עם העכבר על זמן מראה איך הוא מחושב.</span>':'Times for '+esc(cityName(city()))+', '+esc(ZPRE[zcfg().pre].en)+'.')+'</div></section>'+seoBlock();
+}
+function wkPicker(){
+  const Z=zm(anchor),W=wkSel(),col=(p,sel)=>Z.filter(z=>z.p===p).map(z=>'<label class="chk"><input type="checkbox" data-wp="'+p+'" value="'+z.k+'"'+(sel.includes(z.k)?' checked':'')+'> '+esc(zLbl(z))+' <span class="mute small">'+fmtT(z.v)+'</span></label>').join('');
+  dialog('<h2 id="dlgT">'+(HE()?'אילו זמנים יופיעו בתצוגה השבועית':'Times in the weekly view')+'</h2><p class="small mute">'+(HE()?'עד '+WK_MAX+' זמנים בכל צד. שיטת החישוב נקבעת ב"שיטת הזמנים".':'Up to '+WK_MAX+' on each side.')+'</p>'+
+    '<div class="wkp"><div><h3>'+(HE()?'זמני בוקר':'Morning')+'</h3>'+col('m',W.m)+'</div><div><h3>'+(HE()?'זמני אחה״צ וערב':'Afternoon & evening')+'</h3>'+col('e',W.e)+'</div></div>'+
+    '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="wpOk">'+t('save')+'</button><button class="btn" type="button" id="wpDef">'+(HE()?'ברירת מחדל':'Default')+'</button></div>');
+  const box=$('.wkp'),upd=()=>['m','e'].forEach(p=>{const L=[...box.querySelectorAll('[data-wp="'+p+'"]')],n=L.filter(i=>i.checked).length;L.forEach(i=>{if(!i.checked)i.disabled=n>=WK_MAX})});box.onchange=upd;upd();
+  $('#wpOk').onclick=()=>{const g=p=>[...box.querySelectorAll('[data-wp="'+p+'"]:checked')].map(i=>i.value);st.wkZ={m:g('m'),e:g('e')};saveSt();closeDlg();render()};
+  $('#wpDef').onclick=()=>{st.wkZ=null;saveSt();closeDlg();render()};
+}
+function viewDay(){
+  const d=anchor,hd=new HDate(d),ev=events(addD(d,-1),d),Z=zm(d),A=apptOn(d),login=!!authTok();
+  const byH={};for(const a of A){const h=a.start_t?+a.start_t.slice(0,2):-1;(byH[h]=byH[h]||[]).push(a)}
+  const aLink=a=>'<a href="#" class="ev appt" data-aedit="'+a.id+'"'+(a.color?' style="--ac:'+esc(a.color)+'"':'')+'>'+(a.start_t?'<b>'+esc(a.start_t)+(a.end_t?'–'+esc(a.end_t):'')+'</b> ':'')+esc(a.title)+(a.place?' · '+esc(a.place):'')+(a.note?'<small> · '+esc(a.note)+'</small>':'')+'</a>';
+  let hours='';for(let h=6;h<=23;h++)hours+='<div class="hr"><span>'+String(h).padStart(2,'0')+':00</span><div>'+(byH[h]||[]).map(aLink).join('')+'<button type="button" class="hr-add no-print" data-anew="'+iso(d)+'" data-ah="'+String(h).padStart(2,'0')+':00" aria-label="'+(HE()?'פגישה ב־':'Appointment at ')+h+':00">+</button></div></div>';
+  const allDay=(byH[-1]||[]).map(aLink).join('');
+  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" data-anew="'+iso(d)+'">+ '+(HE()?'פגישה':'Appointment')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="day">🖨 '+(HE()?'הדפסת היום':'Print day')+'</button></div>'+
+    '<section class="card dv"><div class="wk-top"><div class="wk-mid"><h1 class="dv-t">'+t('weekdays')[d.getDay()]+', '+esc(hStr(hd))+'</h1><div class="mute">'+esc(gStr(d))+' · '+esc(relDays(d))+'</div></div>'+dateNav('day')+'</div>'+
+    '<div class="dv-g"><div><div class="dv-ev">'+(ev.get(iso(d))||[]).map(x=>'<span class="ev '+x.cls+'">'+esc(x.txt)+'</span>').join('')+remsOn(d).map(r=>'<span class="ev rem">'+esc(r.name)+'</span>').join('')+((NOTES[iso(d)]||{}).text?'<span class="ev note">'+esc(NOTES[iso(d)].text)+'</span>':'')+allDay+'</div>'+
+      (login?'':'<p class="small no-print">'+(HE()?'כדי לרשום פגישות ביומן צריך להתחבר. ':'Sign in to add appointments. ')+'<a href="'+loginUrl('day/'+iso(d))+'">'+(HE()?'כניסה / הרשמה בחינם':'Sign in')+'</a></p>')+
+      '<div class="hours">'+hours+'</div></div>'+
+      '<aside class="dv-z"><h2>'+t('zmanim')+'</h2><div class="zl">'+Z.filter(z=>z.v).map(z=>'<span title="'+esc(z.m||'')+'">'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>').join('')+'</div><p class="mute small">'+esc(cityName(city()))+' · '+esc(HE()?ZPRE[zcfg().pre].he:ZPRE[zcfg().pre].en)+'</p></aside></div></section>';
+}
+function printView(v){if(view!==v)go(v,anchor);setTimeout(()=>window.print(),350)}
+
+/* ---------- פגישות (משתמשים רשומים, נשמר בשרת) ---------- */
+let APPT=[];
+const apptOn=d=>{const k=iso(d);return APPT.filter(a=>a.date===k).sort((x,y)=>(x.start_t||'').localeCompare(y.start_t||''))};
+async function apptApi(method,body,qs){const A=authTok();if(!A)return {status:401};try{const r=await fetch(BASE+'../api/user?fn=appt'+(qs||''),{method,headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}catch(e){return {status:0}}}
+async function apptLoad(){if(!authTok())return;const r=await apptApi('GET');if(r.status===200){APPT=r.items||[];render()}}
+const A_COLORS=['','#2a7d86','#2f5f9e','#5a4fb0','#b4501f','#c0392b','#1f8a5b','#a8650a'];
+function apptEditor(id,date,hour){
+  if(!authTok()){dialog('<h2 id="dlgT">'+(HE()?'פגישות ביומן':'Appointments')+'</h2><p>'+(HE()?'רישום פגישות זמין למשתמשים רשומים (בחינם). הפגישות נשמרות בחשבון ומופיעות בכל מכשיר, בלוח החודשי, השבועי והיומי, ואפשר להדפיס אותן ולקבל תזכורת במייל.':'Appointments are available with a free account. They sync across devices, appear in all views, can be printed and can email you a reminder.')+'</p><div class="row"><a class="btn pri" href="'+loginUrl(date?'day/'+iso(date):'reminders')+'">'+(HE()?'כניסה / הרשמה בחינם':'Sign in / sign up')+'</a></div>');return}
+  const a=id?APPT.find(x=>x.id===id):null,v=a?{...a}:{date:iso(date||anchor),start_t:hour||'',end_t:hour?String(Math.min(23,+hour.slice(0,2)+1)).padStart(2,'0')+':00':'',title:'',place:'',note:'',color:'',notify:'none'};
+  dialog('<h2 id="dlgT">'+(a?(HE()?'עריכת פגישה':'Edit appointment'):(HE()?'פגישה חדשה':'New appointment'))+'</h2>'+
+    '<div class="row" style="margin-top:8px"><label class="fld" style="flex:1">'+(HE()?'מה':'What')+'<input id="aT" maxlength="160" value="'+esc(v.title)+'" placeholder="'+(HE()?'למשל: פגישה עם רואה החשבון':'e.g. Meeting with accountant')+'"></label></div>'+
+    '<div class="row" style="margin-top:8px"><label class="fld">'+(HE()?'תאריך':'Date')+'<input type="date" id="aD" value="'+esc(v.date)+'"></label><label class="fld">'+(HE()?'משעה':'From')+'<input type="time" id="aS" value="'+esc(v.start_t||'')+'"></label><label class="fld">'+(HE()?'עד':'To')+'<input type="time" id="aE" value="'+esc(v.end_t||'')+'"></label></div>'+
+    '<div class="row" style="margin-top:8px"><label class="fld" style="flex:1">'+(HE()?'מקום (לא חובה)':'Where (optional)')+'<input id="aP" maxlength="160" value="'+esc(v.place||'')+'"></label></div>'+
+    '<div class="fld" style="margin-top:8px">'+(HE()?'הערה (לא חובה)':'Note (optional)')+'<textarea id="aN" rows="2" maxlength="1000">'+esc(v.note||'')+'</textarea></div>'+
+    '<div class="row" style="margin-top:8px;align-items:center"><span class="small">'+(HE()?'צבע':'Color')+'</span><span class="colors">'+A_COLORS.map(c=>'<button type="button" data-acol="'+c+'" aria-pressed="'+((v.color||'')===c)+'" style="background:'+(c||'#fff')+'" aria-label="'+(c||'none')+'"></button>').join('')+'</span></div>'+
+    '<label class="fld" style="margin-top:8px">📧 '+(HE()?'תזכורת במייל':'Email reminder')+'<select id="aR"><option value="none">'+(HE()?'בלי תזכורת':'None')+'</option><option value="morning">'+(HE()?'בבוקר של יום הפגישה':'Morning of the day')+'</option><option value="daybefore">'+(HE()?'יום לפני':'A day before')+'</option><option value="both">'+(HE()?'יום לפני וגם בבוקר':'Both')+'</option></select></label>'+
+    '<p class="small mute" id="aMsg"></p><div class="row"><button class="btn pri" type="button" id="aSave">'+t('save')+'</button>'+(a?'<button class="btn" type="button" id="aDel">'+t('del')+'</button>':'')+'</div>');
+  $('#aR').value=v.notify||'none';let col=v.color||'';
+  document.querySelectorAll('[data-acol]').forEach(b=>b.onclick=()=>{col=b.dataset.acol;document.querySelectorAll('[data-acol]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
+  $('#aSave').onclick=async()=>{const o={id:a&&a.id,title:$('#aT').value.trim(),date:$('#aD').value,start_t:$('#aS').value,end_t:$('#aE').value,place:$('#aP').value.trim(),note:$('#aN').value.trim(),color:col,notify:$('#aR').value};
+    if(!o.title){$('#aT').focus();return}if(!o.date){$('#aD').focus();return}
+    $('#aSave').disabled=true;$('#aMsg').textContent=HE()?'שומרים…':'Saving…';const r=await apptApi('POST',o);$('#aSave').disabled=false;
+    if(r.status===401){$('#aMsg').innerHTML=(HE()?'צריך להתחבר מחדש. ':'Please sign in again. ')+'<a href="'+loginUrl('reminders')+'">'+(HE()?'כניסה':'Sign in')+'</a>';return}
+    if(r.status!==200){$('#aMsg').textContent=r.status===429?(HE()?'הגעתם למספר הפגישות המרבי.':'Too many appointments.'):(HE()?'לא הצלחנו לשמור. נסו שוב בעוד רגע.':'Could not save. Try again.');return}
+    const row={...o,id:r.id||o.id,start_t:o.start_t||null,end_t:o.end_t||null};if(a)APPT[APPT.indexOf(a)]=row;else APPT.push(row);closeDlg();render()};
+  if(a)$('#aDel').onclick=async()=>{await apptApi('POST',{action:'delete',id:a.id});APPT=APPT.filter(x=>x!==a);closeDlg();render()};
+  setTimeout(()=>$('#aT').focus(),30);
+}
+function apptSection(){
+  const login=!!authTok(),up=APPT.filter(a=>a.date>=iso(TODAY)).sort((x,y)=>(x.date+(x.start_t||'')).localeCompare(y.date+(y.start_t||''))).slice(0,30);
+  return '<div class="card" style="margin-top:12px"><div class="bar" style="margin-bottom:6px"><h2>'+(HE()?'📅 הפגישות שלי':'📅 My appointments')+'</h2><button class="btn pri" type="button" data-anew="">+ '+(HE()?'פגישה חדשה':'New appointment')+'</button></div>'+
+    (!login?'<p class="small">'+(HE()?'פגישות זמינות למשתמשים רשומים (בחינם): נשמרות בחשבון, מופיעות בכל מכשיר ובכל תצוגות הלוח, אפשר להדפיס יומן יומי, שבועי או חודשי ולקבל תזכורת במייל. ':'Free account required. ')+'<a href="'+loginUrl('reminders')+'">'+(HE()?'כניסה / הרשמה':'Sign in')+'</a></p>':
+     (up.length?'<div class="tbl-wrap"><table class="t"><tbody>'+up.map(a=>{const d=fromIso(a.date);return '<tr><td>'+t('weekdays')[d.getDay()]+' '+esc(gStr(d,false))+' · '+esc(hStr(new HDate(d),false))+'</td><td>'+(a.start_t?esc(a.start_t)+(a.end_t?'–'+esc(a.end_t):''):'')+'</td><td><b>'+esc(a.title)+'</b>'+(a.place?' · '+esc(a.place):'')+'</td><td><button class="btn" type="button" data-aedit="'+a.id+'">✎</button></td></tr>'}).join('')+'</tbody></table></div>':'<p class="mute">'+(HE()?'אין פגישות קרובות.':'No upcoming appointments.')+'</p>'))+
+    '<div class="row" style="margin-top:10px"><span class="small">🖨 '+(HE()?'הדפסת יומן:':'Print:')+'</span><button class="btn" type="button" data-printv="day">'+(HE()?'יומי':'Day')+'</button><button class="btn" type="button" data-printv="week">'+(HE()?'שבועי':'Week')+'</button><button class="btn" type="button" data-printv="month">'+(HE()?'חודשי':'Month')+'</button></div></div>'}
+
 /* ---------- חלון יום ---------- */
 function dayDialog(d){
   const hd=new HDate(d),items=(events(addD(d,-1),d).get(iso(d))||[]),Z=zm(d),note=NOTES[iso(d)]||{},rs=remsOn(d);
@@ -434,14 +559,15 @@ function dayDialog(d){
   dialog('<h2 id="dlgT">'+t('weekdays')[d.getDay()]+', '+esc(hStr(hd))+'</h2><p class="mute" style="margin:2px 0 10px">'+esc(gStr(d))+' · '+esc(relDays(d))+'</p>'+
     (items.length?'<div style="margin-bottom:10px">'+items.map(x=>'<div class="ev '+x.cls+'" style="font-size:15px">'+esc(x.txt)+(x.ev&&!x.ev.eventTime?' <a class="gcal-add" href="'+gcalLink(x.txt,d)+'" target="_blank" rel="noopener" title="'+(HE()?'הוספה ליומן גוגל':'Add to Google Calendar')+'">+ '+(HE()?'ליומן':'calendar')+'</a>':'')+'</div>').join('')+'</div>':'')+
     (rs.length?'<div style="margin-bottom:10px">'+rs.map(r=>'<div><a href="#" data-redit="'+r.id+'" class="ev rem" style="font-size:15px">'+esc(r.name)+'</a> <a class="gcal-add" href="'+gcalLink(r.name,d)+'" target="_blank" rel="noopener">+ '+(HE()?'ליומן גוגל':'Google Calendar')+'</a></div>').join('')+'</div>':'')+
+    (apptOn(d).length?'<div style="margin-bottom:10px">'+apptOn(d).map(a=>'<div><a href="#" data-aedit="'+a.id+'" class="ev appt" style="font-size:15px'+(a.color?';--ac:'+esc(a.color):'')+'">'+(a.start_t?esc(a.start_t)+(a.end_t?'–'+esc(a.end_t):'')+' ':'')+esc(a.title)+'</a></div>').join('')+'</div>':'')+
     '<details><summary><b>'+t('zmanim')+' · '+esc(cityName(city()))+'</b></summary><div class="zl" style="margin-top:8px">'+Z.map(z=>'<span>'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>').join('')+'</div></details>'+
     '<div class="fld" style="margin-top:12px">'+t('note')+'<textarea id="nT" rows="2">'+esc(note.text||'')+'</textarea></div>'+
     '<div class="row" style="margin-top:8px;align-items:center"><span class="small">'+t('color')+'</span><span class="colors">'+COLORS.map(c=>'<button type="button" data-col="'+c+'" aria-pressed="'+((note.color||'')===c)+'" style="background:'+(c||'#fff')+'" aria-label="'+(c||'none')+'"></button>').join('')+'</span></div>'+
-    '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="nS">'+t('save')+'</button><button class="btn" type="button" id="dRem">+ '+t('addRem')+'</button><a class="btn" href="#zmanim/'+iso(d)+'" id="dZ">'+t('zmanim')+'</a></div>');
+    '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="nS">'+t('save')+'</button><button class="btn" type="button" id="dRem">+ '+t('addRem')+'</button><button class="btn" type="button" id="dAppt">+ '+(HE()?'פגישה':'Appointment')+'</button><button class="btn" type="button" id="dDay">'+t('day')+'</button><a class="btn" href="#zmanim/'+iso(d)+'" id="dZ">'+t('zmanim')+'</a></div>');
   let col=note.color||'';
   document.querySelectorAll('[data-col]').forEach(b=>b.onclick=()=>{col=b.dataset.col;document.querySelectorAll('[data-col]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
   $('#nS').onclick=()=>{const txt=$('#nT').value.trim();if(txt||col)NOTES[iso(d)]={text:txt,color:col};else delete NOTES[iso(d)];saveNotes();closeDlg();render()};
-  $('#dRem').onclick=()=>remEditor(null,d);
+  $('#dRem').onclick=()=>remEditor(null,d);$('#dAppt').onclick=()=>apptEditor(null,d);$('#dDay').onclick=()=>{closeDlg();go('day',d)};
   $('#dZ').onclick=e=>{e.preventDefault();closeDlg();go('zmanim',d)};
 }
 function dialog(html){$('#dlgBody').innerHTML=html;$('#dlg').hidden=false;document.body.style.overflow='hidden'}
@@ -482,7 +608,7 @@ function seoBlock(){
 }
 function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t('siteName')+'</span><a href="'+BUILDER+'">'+(HE()?'MyLuach · בניית לוח שנה אישי להדפסה':'MyLuach · personal printed calendars')+'</a><a href="'+BASE+'../index.html">'+(HE()?'מסלולים ומחירים':'Plans & pricing')+'</a><span>'+(HE()?'הזמנים מחושבים אסטרונומית ואינם תחליף ללוח של רב הקהילה.':'Times are astronomical calculations.')+'</span>'}
 function renderNav(){
-  $('#nav').innerHTML=VIEWS.map(v=>{const cur=v==='countdown'?view==='tools'&&sub==='countdown':v==='tools'?view==='tools'&&sub!=='countdown':v===view;return '<a href="#'+v+'" data-nav="'+v+'"'+(cur?' aria-current="page"':'')+'>'+t(v)+'</a>'}).join('');
+  $('#nav').innerHTML=VIEWS.filter(v=>v!=='day').map(v=>{const cur=v==='week'?view==='week'||view==='day':v==='countdown'?view==='tools'&&sub==='countdown':v==='tools'?view==='tools'&&sub!=='countdown':v===view;return '<a href="#'+v+'" data-nav="'+v+'"'+(cur?' aria-current="page"':'')+'>'+t(v)+'</a>'}).join('');
   const sel=$('#city');const groups=[...new Set(CITIES.map(c=>c.g))];
   sel.innerHTML=groups.map(g=>'<optgroup label="'+esc(HE()?g:CITIES.find(c=>c.g===g).gen)+'">'+CITIES.filter(c=>c.g===g).map(c=>'<option value="'+c.id+'">'+esc(cityName(c))+'</option>').join('')+'</optgroup>').join('');sel.value=st.city;
   $('#lang').textContent=HE()?'English':'עברית';
@@ -491,17 +617,21 @@ function renderNav(){
 }
 function render(){
   renderNav();
-  ({month:viewMonth,year:viewYear,holidays:viewHolidays,zmanim:viewZmanim,shabbat:viewShabbat,tools:viewTools,reminders:viewReminders}[view]||viewMonth)();
+  ({month:viewMonth,week:viewWeek,day:viewDay,year:viewYear,holidays:viewHolidays,zmanim:viewZmanim,shabbat:viewShabbat,tools:viewTools,reminders:viewReminders}[view]||viewMonth)();
   renderSide();renderFoot();
+  document.body.classList.toggle('wide-view',view==='week');{let ps=document.getElementById('pgsz');if(!ps){ps=document.createElement('style');ps.id='pgsz';document.head.appendChild(ps)}ps.textContent=view==='week'?'@page{size:A4 landscape;margin:7mm}':'';}
   if(!PAGE.static)document.title=(view==='month'?monthDays().title+' · ':t(view)+' · ')+t('siteName');
 }
-function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm,dzSel:st.dzSel})}
+function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm,dzSel:st.dzSel,wkZ:st.wkZ})}
 
 /* ---------- אירועים בממשק ---------- */
 document.addEventListener('click',e=>{
   const T2=e.target;
   const nv=T2.closest('[data-nav]');if(nv){e.preventDefault();$('#nav').classList.remove('open');go(nv.dataset.nav,nv.dataset.nav==='month'?TODAY:null,nv.dataset.nav==='tools'?'':undefined);return}
   const tl=T2.closest('[data-tool]');if(tl){e.preventDefault();go('tools',null,tl.dataset.tool);return}
+  const ae=T2.closest('[data-aedit]');if(ae){e.preventDefault();apptEditor(+ae.dataset.aedit);return}
+  const an=T2.closest('[data-anew]');if(an){e.preventDefault();apptEditor(null,an.dataset.anew?fromIso(an.dataset.anew):anchor,an.dataset.ah||'');return}
+  const re0=T2.closest('[data-redit]');if(re0){e.preventDefault();remEditor(re0.dataset.redit);return}
   const dy=T2.closest('[data-day]');if(dy){dayDialog(fromIso(dy.dataset.day));return}
   const md=T2.closest('[data-mode]');if(md){st.mode=md.dataset.mode;saveSt();render();return}
   const sh=T2.closest('[data-sh]');if(sh){const n=+sh.dataset.sh;if(Math.abs(n)===12)shiftYear(n/12);else shiftMonth(n);render();return}
@@ -512,6 +642,12 @@ document.addEventListener('click',e=>{
   const gt=T2.closest('[data-goto]');if(gt){anchor=fromIso(gt.dataset.goto);go('month',anchor);return}
   const re=T2.closest('[data-redit]');if(re){e.preventDefault();remEditor(re.dataset.redit);return}
   if(T2.id==='tdy'){anchor=TODAY;render();return}
+  const vw=T2.closest('[data-vw]');if(vw){go(vw.dataset.vw,anchor);return}
+  const wsh=T2.closest('[data-wsh]');if(wsh){anchor=addD(anchor,+wsh.dataset.wsh);render();return}
+  const msh=T2.closest('[data-msh]');if(msh){anchor=new Date(anchor.getFullYear(),anchor.getMonth()+(+msh.dataset.msh),Math.min(anchor.getDate(),28),12);render();return}
+  const ysh=T2.closest('[data-ysh]');if(ysh){anchor=new Date(anchor.getFullYear()+(+ysh.dataset.ysh),anchor.getMonth(),Math.min(anchor.getDate(),28),12);render();return}
+  const pv=T2.closest('[data-printv]');if(pv){printView(pv.dataset.printv);return}
+  if(T2.id==='wkPick'){wkPicker();return}
   if(T2.id==='dzPick'){dzPicker();return}
   if(T2.id==='remNew'){remEditor(null);return}
   if(T2.id==='remYz'){yzPick();return}
@@ -534,7 +670,7 @@ window.addEventListener('hashchange',()=>{readHash();render()});
 /* ---------- התחלה ---------- */
 if(new URLSearchParams(location.search).get('lang')==='en')st.lang='en';
 if(PAGE.year){const y=+PAGE.year;anchor=y>4000?noon(new HDate(1,7,y).greg()):new Date(y,0,1,12);if(y>4000)st.mode='heb';else st.mode='greg';if(y>4000&&new HDate(TODAY).getFullYear()===y)anchor=TODAY;if(y<4000&&TODAY.getFullYear()===y)anchor=TODAY}
-readHash();render();
+readHash();render();apptLoad();
 /* מבזקי "היום בתולדות ישראל": פס מתחלף בראש הדף. הטקסט מוצג דרך CSS כדי שלא יהיה נוח להעתיק */
 (function ticker(){if(!HE())return;fetch(BASE+'../api/ticker?d='+iso(TODAY)).then(r=>r.json()).then(o=>{const L=(o&&o.items)||[];if(!L.length)return;
   const top=document.querySelector('header.top');if(!top||document.getElementById('tick'))return;

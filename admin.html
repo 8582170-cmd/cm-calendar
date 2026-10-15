@@ -45,6 +45,8 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .tk-list{max-height:420px;overflow:auto;margin-top:10px;display:flex;flex-direction:column;gap:6px}.tk-i{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.5}
 .cms-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start}.cms-wrap iframe{flex:1;min-width:0;height:720px;border:1px solid var(--line);border-radius:10px;background:#fff}.cms-vars{flex:0 0 190px;display:flex;flex-direction:column;gap:8px;font-size:14px}.cms-vars label{display:flex;justify-content:space-between;align-items:center;gap:6px}@media (max-width:800px){.cms-wrap{flex-direction:column}.cms-wrap iframe{width:100%;height:560px}.cms-vars{flex-basis:auto;width:100%}}
 </style>
+<script src="/assets/library/index.js?v=1"></script>
+<style>.libg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}.libc{display:flex;flex-direction:column;gap:4px;border:1px solid #ddd;border-radius:10px;padding:6px;background:#fff}.libc.off{opacity:.45}.libc img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:6px}.libc input:not([type=checkbox]),.libc select{width:100%}</style>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -100,7 +102,7 @@ function render(){
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
   '<section><h2>מנועי חיפוש</h2><p class="sub">שולח לבינג (ול-Yandex) את כל דפי האתר מתוך מפת האתר, כדי שיסרקו אותם מהר. אפשר ללחוץ אחרי כל שינוי גדול באתר.</p><div class="row"><button class="btn" type="button" id="inNow">שליחת כל הדפים לבינג (IndexNow)</button><span id="inMsg"></span></div></section>'+
-  cmsSection()+tickerSection()+voiceSection()+dbSection()+
+  cmsSection()+libSection()+tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
     (Object.keys(D.mail.today).length?Object.entries(D.mail.today).map(([k,v])=>'<span><b>'+esc(k)+':</b> '+v+'</span>').join(''):'<span>היום עוד לא נשלחו מיילים</span>')+
@@ -137,7 +139,7 @@ window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const
     $('#cmsVars').innerHTML='<b>צבעים</b>'+(Object.keys(V).length?Object.keys(V).map(k=>'<label>'+esc(VAR_N[k]||k)+' <input type="color" data-var="'+esc(k)+'" value="'+esc(cur[k]||V[k])+'"></label>').join(''):'<p class="sub">לדף הזה אין צבעים לעריכה.</p>');
     $('#cmsVars').querySelectorAll('[data-var]').forEach(i=>i.oninput=()=>f.contentWindow.postMessage({type:'cms-var',name:i.dataset.var,value:i.value},location.origin))}
   if(m.type==='cms-data'){api({action:'contentsave',page:CMS.page,data:m.data}).then(r=>{CMS.data=r.data;$('#cmsMsg').textContent='✅ נשמר. הדף באתר מתעדכן תוך דקה.'}).catch(err=>{$('#cmsMsg').textContent='❌ '+err.message})}});
-const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',orders:'הזמנות ותשלומים',free_lite:'הורדות לוח חינמי',email_log:'מיילים שנשלחו'};
+const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',appointments:'פגישות ביומן',orders:'הזמנות ותשלומים',free_lite:'הורדות לוח חינמי',email_log:'מיילים שנשלחו'};
 const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',kind:'סוג',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
 let DBS={name:'profiles',q:'',offset:0};
 function dbSection(){return '<section><h2>מסד הנתונים</h2><p class="sub">צפייה בלבד. 50 שורות בכל עמוד, מהחדש לישן.</p><div class="row"><select id="dbT">'+Object.entries(DB_T).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><input type="search" id="dbQ" placeholder="חיפוש (מייל, שם, טלפון)" style="width:220px"><button class="btn" type="button" id="dbGo">הצגה</button><button class="btn" type="button" id="dbCsv">הורדה לאקסל (CSV)</button></div><div id="dbOut" style="margin-top:10px"></div></section>'}
@@ -152,6 +154,30 @@ function dbLoad(){const o=$('#dbOut');o.textContent='טוען…';api({action:'t
 function dbCsv(){api({action:'table',name:DBS.name,q:DBS.q,all:1}).then(r=>{const q=x=>'"'+String(x).replace(/"/g,'""')+'"';
   const csv='\ufeff'+r.cols.map(c=>q(DB_C[c]||c)).join(',')+'\n'+r.rows.map(x=>r.cols.map(c=>q(dbCell(c,x[c]))).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='myluach-'+DBS.name+'.csv';a.click()})}
+const LIBC={nature:'טבע ונופים',holy:'מקומות קדושים',mikdash:'בית המקדש',chagim:'חגים ומועדים',shabbat:'שבת',tzadikim:'צדיקים וחכמים',bg:'רקעים ומסגרות'};
+function libSection(){return '<section id="libSec"><h2>מאגר התמונות ללקוחות</h2><p class="sub">התמונות שהלקוחות רואים בבונה תחת "הוספת תמונה ← ממאגר התמונות". מעלים מהמחשב או מייבאים מקישור (למשל מוויקישיתוף או מפיקיויקי, עם רישיון חופשי). כדאי לכתוב בקרדיט את שם הצלם והרישיון. <b>רק תמונות צנועות.</b> האיורים המובנים מופיעים למטה, ואפשר להסתיר כל אחד מהם.</p>'+
+  '<div class="row"><select id="libCat">'+Object.entries(LIBC).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><input id="libTitle" placeholder="שם התמונה" style="width:180px"><input id="libCredit" placeholder="קרדיט / רישיון (לא חובה)" style="width:200px"></div>'+
+  '<div class="row" style="margin-top:8px"><input type="file" id="libFile" accept="image/jpeg,image/png,image/webp" multiple><span class="sub">או</span><input id="libUrl" dir="ltr" placeholder="https://… קישור ישיר לתמונה" style="width:260px"><button class="btn" type="button" id="libImp">ייבוא מקישור</button><span id="libMsg"></span></div>'+
+  '<div id="libBox" style="margin-top:12px">טוען…</div></section>'}
+let LIBD=null;
+function libLoad(){api({action:'libget'}).then(r=>{LIBD=r;libDraw()}).catch(e=>{$('#libBox').textContent=e.code===500||e.code===400?'המאגר עוד לא מוגדר. הריצו ב-Supabase את tools/supabase_library.sql. ('+e.message+')':e.message})}
+function libDraw(){const L=LIBD.items||[],hide=new Set(LIBD.hideSeed||[]),seed=window.MYLUACH_LIB_SEED||[];
+  const card=(x,own)=>'<div class="libc'+((own?x.on:!hide.has(x.id))?'':' off')+'" data-id="'+esc(x.id)+'"><img src="'+esc(own?x.url:'/'+x.url)+'" alt="" loading="lazy">'+
+    (own?'<input data-f="title" value="'+esc(x.title||'')+'" placeholder="שם"><select data-f="cat">'+Object.entries(LIBC).map(([k,v])=>'<option value="'+k+'"'+(k===x.cat?' selected':'')+'>'+v+'</option>').join('')+'</select><input data-f="credit" value="'+esc(x.credit||'')+'" placeholder="קרדיט"><label><input type="checkbox" data-f="on"'+(x.on?' checked':'')+'> מוצג ללקוחות</label><button class="btn" type="button" data-libdel="'+esc(x.id)+'">מחיקה</button>'
+      :'<b>'+esc(x.title)+'</b><span class="sub">'+esc(LIBC[x.cat]||'')+' · איור מובנה</span><label><input type="checkbox" data-seed="'+esc(x.id)+'"'+(hide.has(x.id)?'':' checked')+'> מוצג ללקוחות</label>')+'</div>';
+  $('#libBox').innerHTML='<h3 style="margin:6px 0">התמונות שהעליתם ('+L.length+')</h3><div class="libg">'+(L.length?L.map(x=>card(x,1)).join(''):'<p class="sub">עדיין לא הועלו תמונות.</p>')+'</div>'+
+    '<h3 style="margin:14px 0 6px">איורים מובנים ('+seed.length+')</h3><div class="libg">'+seed.map(x=>card(x,0)).join('')+'</div>'+
+    '<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="libSave">שמירת שינויים במאגר</button><span id="libSMsg"></span></div>';
+  $('#libSave').onclick=()=>{const items=[...document.querySelectorAll('#libBox .libc')].filter(c=>c.querySelector('[data-f]')).map(c=>{const g=f=>c.querySelector('[data-f="'+f+'"]');return {id:c.dataset.id,title:g('title').value,cat:g('cat').value,credit:g('credit').value,on:g('on').checked}});
+    const hideSeed=[...document.querySelectorAll('[data-seed]')].filter(i=>!i.checked).map(i=>i.dataset.seed);
+    $('#libSMsg').textContent='שומר…';api({action:'libsave',items,hideSeed}).then(r=>{LIBD=r;libDraw();$('#libSMsg').textContent='✅ נשמר'}).catch(e=>$('#libSMsg').textContent='❌ '+e.message)};
+  document.querySelectorAll('[data-libdel]').forEach(b=>b.onclick=()=>{if(!confirm('למחוק את התמונה מהמאגר?'))return;api({action:'libdelete',id:b.dataset.libdel}).then(libLoad).catch(e=>alert(e.message))})}
+function libResize(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,2200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.86))};im.src=r.result};r.readAsDataURL(file)})}
+document.addEventListener('change',async e=>{if(e.target.id!=='libFile')return;const fs=[...e.target.files];const m=$('#libMsg');let n=0;
+  for(const f of fs){m.textContent='מעלה '+(++n)+' מתוך '+fs.length+'…';try{await api({action:'libupload',data:await libResize(f),cat:$('#libCat').value,title:$('#libTitle').value||f.name.replace(/\.\w+$/,''),credit:$('#libCredit').value})}catch(err){m.textContent='❌ '+err.message;return}}
+  m.textContent='✅ הועלו '+fs.length;e.target.value='';libLoad()});
+document.addEventListener('click',e=>{if(e.target.id!=='libImp')return;const m=$('#libMsg'),u=$('#libUrl').value.trim();if(!u)return;m.textContent='מייבא…';
+  api({action:'libimport',url:u,cat:$('#libCat').value,title:$('#libTitle').value,credit:$('#libCredit').value}).then(()=>{m.textContent='✅ יובא';$('#libUrl').value='';libLoad()}).catch(err=>m.textContent='❌ '+err.message)});
 function voiceSection(){return '<section id="voiceSec"><h2>תזכורות קוליות בטלפון</h2><p class="sub">שיחות ו־SMS דרך ימות המשיח. <b>כשהמתג כבוי (או שאין טוקן), השירות כבוי לגמרי:</b> הלקוחות לא רואים את האפשרות, ולא נשלחות שיחות.</p><div id="vBox">טוען…</div></section>'}
 function voiceLoad(){api({action:'voiceget'}).then(r=>voiceDraw(r.voice)).catch(e=>{$('#vBox').textContent=e.message})}
 function voiceDraw(v){const f=(k,l,w,ph)=>'<label>'+l+' <input type="text" data-v="'+k+'" value="'+esc(v[k]||'')+'" style="width:'+(w||180)+'px"'+(ph?' placeholder="'+esc(ph)+'"':'')+' dir="auto"></label>';
@@ -187,6 +213,7 @@ function bind(){
     $('#cmsSave').onclick=()=>{$('#cmsMsg').textContent='שומר…';$('#cmsF').contentWindow.postMessage({type:'cms-collect'},location.origin)};
     $('#cmsReset').onclick=e=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח? כל השינויים בדף יימחקו';return}api({action:'contentreset',page:CMS.page}).then(()=>{b.dataset.sure='';b.textContent='החזרת הדף למקור';cmsOpen()})};cmsOpen()}
   if($('#vBox'))voiceLoad();
+  if($('#libBox'))libLoad();
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
     $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};

@@ -307,7 +307,9 @@ const ZM_PRESETS={
   itim:{...ZM_BASE,alot:'19.75',alot2:'16.1',mish:'11.5',netz:'sea',shkia:'elev',gra:'sea',mga:'19.75',minchaG:'lechumra',plag:'gra',tzeit:'8.5',motzash:'8.5',rt:'72f',fastEnd:'6.45'},
   gra:{...ZM_BASE,alot:'16.1',alot2:'19.75',mish:'11',netz:'sea',shkia:'sea',mga:'16.1',minchaG:'fixed30',plag:'gra',tzeit:'7.083',motzash:'8.5',rt:'72f',fastEnd:'6.45'},
   tanya:{...ZM_BASE,alot:'16.9',alot2:'16.1',mish:'10.2',netz:'amiti',shkia:'amiti',gra:'amiti',mga:'16.9>6',minchaG:'zman30',plag:'gra',tzeit:'6',motzash:'8.5',rt:'72f',fastEnd:'6'},
-  chul:{...ZM_BASE,alot:'72f',alot2:'16.1',mish:'11',netz:'sea',shkia:'sea',mga:'72f',minchaG:'fixed30',plag:'gra',tzeit:'8.5',motzash:'8.5',rt:'72f',fastEnd:'6.45'}
+  chul:{...ZM_BASE,alot:'72f',alot2:'16.1',mish:'11',netz:'sea',shkia:'sea',mga:'72f',minchaG:'fixed30',plag:'gra',tzeit:'8.5',motzash:'8.5',rt:'72f',fastEnd:'6.45'},
+  chazon:{...ZM_BASE,alot:'19.75',alot2:'16.1',mish:'11.5',netz:'sea',shkia:'elevHigh',gra:'sea',mga:'19.75',minchaG:'lechumra',plag:'gra',tzeit:'8.5',motzash:'8.5',ci:'9.28',rt:'72f',fastStart:'alot',fastEnd:'6.45'},
+  tzikoni:{...ZM_BASE,alot:'16.1',alot2:'19.75',mish:'11.5',netz:'sea',shkia:'sea',gra:'sea',mga:'16.1',minchaG:'fixed30',plag:'gra',tzeit:'13.5f',motzash:'8.5',rt:'72f',fastStart:'alot',fastEnd:'8.5'}
 };
 const ZM_PRESET_HINT={
   ashkenaz:'עלות השחר 90 דק׳ במעלות (19.75°) ו־72 במעלות (16.1°), טלית ותפילין 11.5°, נץ ושקיעה מישוריים, מג״א מעה״ש 90 במעלות, מנחה גדולה לחומרא, צאת שבת 8.5°, ר״ת 72 דק׳, סוף צום 6.45°.',
@@ -317,11 +319,13 @@ const ZM_PRESET_HINT={
   gra:'שיטת הגר״א בפשטות: עלות השחר 72 במעלות, טלית ותפילין 11°, צאה״כ 3 כוכבים בינוניים (7.08°), מנחה גדולה חצי שעה.',
   tanya:'לפי שיטת בעל התניא (נהוג בחב״ד): עלות השחר 16.9°, נץ ושקיעה אמיתיים (מרכז השמש 1.583°), שעות הגר״א מהנץ לשקיעה האמיתיים, צאה״כ 6°.',
   chul:'הנפוץ בקהילות בחו״ל: עלות השחר ומג״א 72 דק׳ שוות, טלית ותפילין 11°, צאה״כ וצאת שבת 8.5°.',
+  chazon:'כמו בלוחות "חזון שמיים" (שיטת האשכנזים): עלות השחר 90 במעלות (19.75°) ו־72 במעלות, טלית ותפילין 11.5°, נץ מישורי, שעות הגר״א מנץ לשקיעה מישוריים, מג״א מעה״ש 90 עד צאה״כ 90 במעלות, מנחה גדולה לחומרא, שקיעה לפי הגובה רק במקומות גבוהים, צאת שבת 8.5°, חזו״א 9.28°, ר״ת 72 דק׳, סוף צום 6.45°.',
+  tzikoni:'לפי הלוח הממוצע שהציע הרב איתן ציקוני (מאמר "זמני היום", אתר דעת): עלות השחר 72 דק׳ במעלות, טלית ותפילין 11.5°, נץ ושקיעה אסטרונומיים, ק״ש ותפילה גר״א מנץ לשקיעה ומג״א מעה״ש עד צאה״כ 72 במעלות, מנחה גדולה חצי שעה, צאה״כ 13.5 דק׳ (לחומרא), מוצאי שבת וחג 8.5°.',
   custom:'שיטה שבחרתם בעצמכם בפירוט שלמטה.'
 };
 const ZM_ALOT=[['19.75','90 דק׳ במעלות (19.75°)'],['16.1','72 דק׳ במעלות (16.1°)'],['16.9','16.9° (בעל התניא)'],['18','18° (חכמי התכונה)'],['19','19°'],['19.8','19.8° (90 דק׳ במעלות, חישוב אחר)'],['25.9','120 דק׳ במעלות (25.9°)'],['26','26°'],['72z','72 דק׳ זמניות'],['90z','90 דק׳ זמניות'],['96z','96 דק׳ זמניות'],['120z','120 דק׳ זמניות'],['60f','60 דק׳ שוות'],['72f','72 דק׳ שוות'],['90f','90 דק׳ שוות'],['96f','96 דק׳ שוות'],['120f','120 דק׳ שוות']];
 const ZM_TZ=[['3.65','3.65° (גאונים)'],['3.7','3.7°'],['3.8','3.8°'],['4.37','4.37°'],['4.61','4.61°'],['4.8','4.8°'],['5.88','5.88°'],['5.95','5.95°'],['6','6° (בעל התניא)'],['6.45','6.45°'],['7.083','7.08° (ג׳ כוכבים בינוניים)'],['7.67','7.67°'],['8.5','8.5°'],['9.28','9.28° (חזו״א, כ־40 דק׳)'],['9.3','9.3°'],['9.75','9.75°'],['16.1','16.1° (ר״ת במעלות)'],['18','18°'],['19.8','19.8°'],['26','26°'],['13.5z','13.5 דק׳ זמניות (ספרדים)'],['18z','18 דק׳ זמניות'],['72z','72 דק׳ זמניות'],['90z','90 דק׳ זמניות'],['96z','96 דק׳ זמניות'],['120z','120 דק׳ זמניות'],['13.5f','13.5 דק׳'],['18f','18 דק׳'],['20f','20 דק׳'],['24f','24 דק׳'],['30f','30 דק׳'],['35f','35 דק׳'],['40f','40 דק׳'],['42f','42 דק׳'],['45f','45 דק׳'],['50f','50 דק׳'],['60f','60 דק׳'],['72f','72 דק׳ (ר״ת)'],['90f','90 דק׳'],['96f','96 דק׳'],['120f','120 דק׳']];
-const ZM_SUN=[['sea','מישורי (גובה פני הים, 0.833°)'],['elev','לפי גובה המקום (קרוב לנראה)'],['amiti','אמיתי: מרכז השמש 1.583° (בעל התניא)']];
+const ZM_SUN=[['sea','מישורי (גובה פני הים, 0.833°)'],['elev','לפי גובה המקום (קרוב לנראה)'],['elevHigh','לפי הגובה רק במקום גבוה (400 מ׳ ומעלה)'],['amiti','אמיתי: מרכז השמש 1.583° (בעל התניא)']];
 const ZM_FIELDS=[
   ['alot','עלות השחר',ZM_ALOT],
   ['alot2','עלות השחר ב׳',ZM_ALOT],
@@ -356,7 +360,7 @@ function zctx(date){
   if(ZC.size>2000)ZC.clear();
   const loc=location(),zs=new Zmanim(loc,date,false),ze=new Zmanim(loc,date,true);
   const safe=fn=>{try{const r=fn();return r instanceof Date&&!isNaN(r)?r:null}catch(e){return null}};
-  const sunAt=(key,rising)=>key==='elev'?(rising?ze.sunrise():ze.sunset()):key==='amiti'?zs.timeAtAngle(1.583,rising):(key==='sea'||!isFinite(parseFloat(key)))?(rising?zs.seaLevelSunrise():zs.seaLevelSunset()):zs.timeAtAngle(parseFloat(key),rising);
+  const sunAt=(key,rising)=>(key==='elevHigh'?key=(+(p.el||0)>=400?'elev':'sea'):0,key==='elev')?(rising?ze.sunrise():ze.sunset()):key==='amiti'?zs.timeAtAngle(1.583,rising):(key==='sea'||!isFinite(parseFloat(key)))?(rising?zs.seaLevelSunrise():zs.seaLevelSunset()):zs.timeAtAngle(parseFloat(key),rising);
   const netz=safe(()=>sunAt(M.netz,true));
   const shkia=safe(()=>sunAt(M.shkia,false));
   const gN=M.gra&&M.gra!=='netz'?safe(()=>sunAt(M.gra,true)):netz;
@@ -604,6 +608,13 @@ function eventsFor(start,end){
     if(dow===6){putX(d,{cls:'timed',text:'נרות חנוכה: אחרי צאת השבת',order:5});return}
     const tt=ch==='sunset'?Z.sunset:Z.tzeit;
     putX(d,{cls:'timed',text:'הדלקת נרות חנוכה '+fmtTime(tt,zdir('chanukah','up'),tz,'chanukah'),order:5});
+  });
+  /* ניטל: מהשקיעה (או מצאת הכוכבים) עד חצות הלילה, בליל 24 בדצמבר ו/או בליל 6 בינואר */
+  const nt=s.nital||'none';
+  if(nt!=='none')eachDay(d=>{const m=d.getMonth(),dd=d.getDate();
+    if(!((nt!=='jan'&&m===11&&dd===24)||(nt!=='dec'&&m===0&&dd===6)))return;
+    const Z=zctx(d),from=s.nitalFrom==='tzeit'?Z.tzeit:Z.sunset;
+    putX(d,{cls:'timed nital',text:'ניטל: מ'+(s.nitalFrom==='tzeit'?'צאה״כ ':'השקיעה ')+fmtTime(from,'down',tz,'nital')+' עד חצות הלילה '+fmtTime(Z.chatzotNight,'up',tz,'nital'),order:5});
   });
   /* זמני תפילות בבית הכנסת (מסלול מלא) */
   const TF=(s.tfilot||[]).filter(t=>t.name&&t.on!==false);
@@ -1075,7 +1086,7 @@ function askHistOverflow(title,count,pct){
   m.addEventListener('click',e=>{const b=e.target.closest('[data-ho]');if(!b)return;state.s.histOverflow=b.dataset.ho;save();m.remove();syncUI();render()});
 }
 function addMonthImage(p,mo,heightMm){addSlotImage(p,mo.key,heightMm,'חודש')}
-function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
+function footText(){const s=state.s,nm={ashkenaz:'שיטת האשכנזים',sefardi:'שיטת הספרדים',tuk:'שיטת הגרי״מ טוקצ׳ינסקי',chazon:'כמו חזון שמיים',tzikoni:'לוח ממוצע (הרב ציקוני)',itim:'שיטת האשכנזים, שקיעה לפי הגובה',tanya:'שיטת בעל התניא',chul:'המקובל בחו״ל',gra:'שיטת הגר״א',custom:'שיטה מותאמת'}[s.zmPreset||'ashkenaz'];return '<span>זמני '+esc(place().name)+' · '+nm+' · ק״ש ותפילה: '+({gra:'גר״א',mga:'מג״א',both:'מג״א וגר״א'}[s.m_shma])+' · הדלקת נרות '+s.candleMins+' דק׳ לפני השקיעה</span><span>'+(s.secs?'':'מעוגל לחומרא')+'</span>'}
 /* שורת תחתית: פרטי הזמנים, ומשמאל "נוצר ב־myluach.org". במסלולים בתשלום אפשר להסתיר את השורה. */
 /* השורה "הופק ע"י MyLuach.org" מופיעה בכל הדפסה. רק במסלול המלא אפשר להסתיר אותה. */
 const creditHideOk=()=>{const P=PLAN();return P.id==='full'&&!P.watermark&&!SAMPLE};
@@ -1552,6 +1563,49 @@ function tablePage(days,evMap){
   addFoot(p);
   applyBanner(p,key);
 }
+/* ---------- עיצובים ללוח השבועי: כל יום שורה מלאה מצד לצד ---------- */
+const WK_STYLES=[
+ ['classic','רגיל','השורות הרגילות, עם טורים לבחירה'],
+ ['luach','לוח קיר','תאריך עברי, יום, זמני בוקר, אירועים, זמני ערב ותאריך לועזי'],
+ ['soft','עתים','כמו לוח קיר, בקווים מנוקדים ועדינים'],
+ ['planner','יומן','תאריך גדול בצד, מקום לכתיבה וזמנים בטור'],
+ ['band','פסים','פס צבעוני לכל יום עם שם היום לאורך'],
+ ['minimal','נקי','מספרים גדולים בשני הצדדים ואירועים באמצע']];
+const WK_ICON={
+ classic:'<rect x="5" y="6" width="30" height="28" rx="2"/><path d="M5 13h30M5 20h30M5 27h30"/>',
+ luach:'<rect x="4" y="6" width="32" height="28" rx="2"/><path d="M4 15h32M4 24h32M10 6v28M15 6v28M25 6v28M30 6v28"/>',
+ soft:'<path d="M4 10h32M4 18h32M4 26h32M4 34h32" stroke-dasharray="2 2"/><path d="M11 6v28M27 6v28" stroke-dasharray="2 2"/>',
+ planner:'<rect x="4" y="6" width="9" height="8" rx="2"/><rect x="4" y="16" width="9" height="8" rx="2"/><rect x="4" y="26" width="9" height="8" rx="2"/><path d="M16 9h20M16 12h14M16 19h20M16 22h14M16 29h20M16 32h14"/>',
+ band:'<rect x="4" y="6" width="32" height="7" rx="1.5"/><rect x="4" y="16" width="32" height="7" rx="1.5"/><rect x="4" y="26" width="32" height="7" rx="1.5"/><path d="M8 6v27"/>',
+ minimal:'<path d="M4 13h32M4 23h32M4 33h32"/><text x="6" y="11" font-size="7" stroke="none" fill="currentColor">7</text><text x="30" y="11" font-size="7" stroke="none" fill="currentColor">ז</text>'};
+const WK_MORN=new Set(['alot','alot2','misheyakir','sunrise','shma','tfila']);
+function wkStyle(){const v=state.s.wkStyle;return WK_STYLES.some(x=>x[0]===v)?v:'classic'}
+function weekStyled(p,days,evMap){
+  const s=state.s,st=wkStyle(),ds=dStyle(),showH=ds!=='gregOnly',showG=ds!=='hebOnly';
+  const box=el('div','wks wks-'+st);
+  if(st==='luach'||st==='soft')box.appendChild(el('div','wks-sub',zOn()?'הזמנים לאופק '+esc(place().name):''));
+  const zl=L=>L.map(z=>'<div class="wz'+(z.b?' zb':'')+'"><span>'+esc(z.k)+'</span><i></i><b>'+esc(z.v)+'</b></div>').join('');
+  for(const d of days){
+    const I=dayItems(d,evMap,false),hd=I.hd,leap=isLeap(hd.getFullYear());
+    const zs=zOn()?zmanimFor(d,true).filter(z=>z.v):[],zm=zs.filter(z=>WK_MORN.has(z.key)),ze=zs.filter(z=>!WK_MORN.has(z.key));
+    const timed=I.items.filter(x=>x.tkind),other=I.all.filter(x=>!x.tkind);
+    const r=el('div','wks-row'+(I.dow===6?' shabbat':'')+(I.chag?' chag':''));
+    r.dataset.date=iso(d);r.tabIndex=0;r.setAttribute('role','button');r.setAttribute('aria-label',WEEKDAYS[I.dow]+' '+hebShort(hd)+'. הוספת אירוע');
+    const H='<div class="wks-hd">'+gem(hd.getDate())+(hd.getDate()===1||I.dow===0?'<small>'+esc(hebMonthName(hd.getMonth(),leap))+'</small>':'')+'</div>';
+    const G='<div class="wks-gd">'+d.getDate()+(d.getDate()===1||I.dow===0?'<small>'+esc(GREG_MONTHS[d.getMonth()])+'</small>':'')+'</div>';
+    const ev='<div class="wks-ev">'+other.map(it=>'<span class="e '+it.cls+'">'+esc(it.text)+'</span>').join('')+'</div>';
+    const big=timed.length?'<div class="wks-big">'+timed.map(t=>'<span><small>'+esc(t.text.replace(t.time,'').trim())+'</small><b>'+esc(t.time)+'</b></span>').join('')+'</div>':'';
+    const img=I.img?'<div class="wks-img"><img alt="" src="'+esc(I.img.img)+'" style="object-fit:'+(I.img.imgFit==='contain'?'contain':'cover')+';object-position:50% '+(I.img.imgPos??50)+'%"></div>':'';
+    const dn='<div class="wks-dn">'+WEEKDAYS[I.dow]+'</div>';
+    let h;
+    if(st==='luach'||st==='soft')h=(showH?H:'<div></div>')+dn+'<div class="wks-z">'+zl(zm)+'</div><div class="wks-mid">'+ev+big+img+'</div><div class="wks-z">'+zl(ze)+'</div>'+(showG?G:'<div></div>');
+    else if(st==='planner')h='<div class="wks-badge">'+(ds==='gregMain'||ds==='gregOnly'?G:H)+dn+(showH&&showG?'<div class="wks-o">'+(ds==='gregMain'?esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),leap)):esc(d.getDate()+' '+GREG_MONTHS[d.getMonth()]))+'</div>':'')+'</div><div class="wks-mid">'+ev+big+'<div class="lines"></div></div>'+(img||'')+(zs.length?'<div class="wks-z">'+zl(zs)+'</div>':'');
+    else if(st==='band')h='<div class="wks-dn">'+WEEKDAYS[I.dow]+'</div><div class="wks-dates">'+(showH?H:'')+(showG?G:'')+'</div><div class="wks-mid">'+ev+big+'</div>'+img+(zs.length?'<div class="wks-z wks-z2">'+zl(zs)+'</div>':'');
+    else h=(showH?H:'<div></div>')+'<div class="wks-mid"><div class="wks-dl">'+WEEKDAYS[I.dow]+'</div>'+ev+big+(zs.length?'<div class="wks-zl">'+zs.map(z=>'<span'+(z.b?' class="zb"':'')+'>'+esc(z.k)+' <b>'+esc(z.v)+'</b></span>').join('')+'</div>':'')+'</div>'+img+(showG?G:'<div></div>');
+    r.innerHTML=h;box.appendChild(r);
+  }
+  p.appendChild(box);
+}
 function weekPage(days,evMap){
   const s=state.s,sat=days[6],sun=days[0],key='w-'+iso(sun);
   const par=(evMap.get(ymd(sat))||[]).find(x=>x.cls==='parasha');
@@ -1564,6 +1618,9 @@ function weekPage(days,evMap){
   p=pageShell(title+(s.layout==='split'?' · לוח':''),key);
   if(s.layout==='same'&&+s.imgRatio>0)addSlotImage(p,key,innerH()*(+s.imgRatio/100),'שבוע');
   {const st=dStyle();if(st==='hebOnly')headRow(p,title,hebR,'');else if(st==='gregOnly')headRow(p,title,gregR,'');else if(st==='gregMain')headRow(p,title,gregR,hebR);else headRow(p,title,hebR,gregR)}
+  if(wkStyle()!=='classic'){weekStyled(p,days,evMap);
+    if(s.dedication)p.appendChild(editable('dedic',(state.slots[key]||{}).dedic,'לחצו להוספת הקדשה או חסות לשבוע זה',t=>{state.slots[key]={...(state.slots[key]||{}),dedic:t};save()}));
+    addFoot(p);applyBanner(p,key);return}
   const [w,h]=pageDims(),wide=w>h;
   const colT=[zAnyCol()?'zmanim':null,placeOf('personal')==='col'?'personal':null,placeOf('yz')==='col'?'yz':null,placeOf('learn')==='col'?'learn':null].filter(Boolean);
   const COLN={zmanim:'זמני היום',personal:'אירועים אישיים',yz:'יומי דהילולא (יארצייטן)',learn:'לימוד ומולד'};
@@ -1661,6 +1718,13 @@ function viewDays(months){
   return days;
 }
 
+function wkSync(){const r=$('#wkStyleRow');if(!r)return;r.hidden=(state.s.view||'month')!=='week';const c=$('#wkStyleCards'),cur=wkStyle();
+  if(!c.children.length)c.innerHTML=WK_STYLES.map(([k,n,d])=>'<button type="button" class="cd-card" role="radio" data-wks="'+k+'"><svg viewBox="0 0 40 40" aria-hidden="true">'+WK_ICON[k]+'</svg><span class="nm">'+n+'</span><small>'+d+'</small></button>').join('');
+  c.querySelectorAll('[data-wks]').forEach(b=>{const on=b.dataset.wks===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-wks]');if(!b)return;const s=state.s,v=b.dataset.wks;s.wkStyle=v;
+  if(v!=='classic'){if(s.zmanimMode==='none'||s.zmanimMode==='table')s.zmanimMode='daily';const on=Object.keys(s.zmanim||{}).filter(k=>s.zmanim[k]);
+    if(on.length<=3&&!LITE)s.zmanim={alot:true,misheyakir:true,sunrise:true,shma:true,tfila:true,chatzot:true,minchaG:true,plag:true,sunset:true,tzeit:true}}
+  save();syncUI();render()});
 /* ---------- render ---------- */
 let monthsCache=[];
 function render(){
@@ -1836,7 +1900,7 @@ const ZM_ROW_FIELD={yereim:'yereim',chatzot:'chatzot',alot:'alot',alot2:'alot2',
 function openZmanimSettings(){
   if(!canF('advZmanim')){openUpgrade('advZmanim');return}
   const m=modal('<h3>שיטה לכל זמן<small>בוחרים שיטה כללית, ואז אפשר לשנות לכל זמן בנפרד את שיטת החישוב, השם, העיגול ואם יופיע. הזמנים לדוגמה מחושבים לתאריך ולמקום שבחרתם.</small></h3>'+
-    '<div class="row"><label class="fld">שיטה כללית לכל הזמנים<select id="zsPreset">'+[['ashkenaz','אשכנזים, מנהג ארץ ישראל'],['sefardi','ספרדים, ע״פ הגר״ע יוסף'],['tuk','הגרי״מ טוקצ׳ינסקי'],['itim','אשכנזים, נץ מישורי ושקיעה לפי הגובה'],['gra','גר״א פשוט'],['tanya','בעל התניא (חב״ד)'],['chul','נפוץ בחו״ל'],['custom','מותאם אישית']].map(x=>opt(x[0],x[1])).join('')+'</select></label>'+
+    '<div class="row"><label class="fld">שיטה כללית לכל הזמנים<select id="zsPreset">'+[['ashkenaz','אשכנזים, מנהג ארץ ישראל'],['chazon','כמו חזון שמיים'],['tzikoni','הרב איתן ציקוני (לוח ממוצע)'],['sefardi','ספרדים, ע״פ הגר״ע יוסף'],['tuk','הגרי״מ טוקצ׳ינסקי'],['itim','אשכנזים, נץ מישורי ושקיעה לפי הגובה'],['gra','גר״א פשוט'],['tanya','בעל התניא (חב״ד)'],['chul','נפוץ בחו״ל'],['custom','מותאם אישית']].map(x=>opt(x[0],x[1])).join('')+'</select></label>'+
     '<label class="fld">תאריך לדוגמה<input type="date" id="zsDate"></label></div>'+
     '<p class="hint" id="zsHint"></p>'+
     '<details class="sub-box"><summary>איך מחושבים זמני ההלכה (הסבר קצר)</summary><div class="inner hint" style="font-size:13px;line-height:1.6">'+
@@ -2151,7 +2215,33 @@ async function openImageEditor(data,onSave){
 
 /* ---------- images ---------- */
 let pendingSlot=null;
-function pickImage(setter){pendingSlot=setter;const f=$('#fileOne');f.value='';f.click()}
+function pickFile(setter){pendingSlot=setter;const f=$('#fileOne');f.value='';f.click()}
+/* הוספת תמונה: מהמחשב / מהטלפון, או ממאגר התמונות */
+function pickImage(setter){
+  const m=modal('<h2>הוספת תמונה</h2><div class="pick2"><button type="button" class="pick-b" id="pkFile"><b>📁 מהמחשב או מהטלפון</b><span>תמונה משלכם</span></button><button type="button" class="pick-b" id="pkLib"><b>🖼 ממאגר התמונות</b><span>טבע, מקומות קדושים, בית המקדש, חגים ושבת</span></button></div><div class="row"><button class="btn" type="button" data-close>ביטול</button></div>');
+  m.querySelector('#pkFile').onclick=()=>{m.remove();pickFile(setter)};m.querySelector('#pkLib').onclick=()=>{m.remove();libPick(setter)};
+  setTimeout(()=>m.querySelector('#pkFile').focus(),20)}
+const LIB_CATS=[['all','הכל'],['nature','טבע ונופים'],['holy','מקומות קדושים'],['mikdash','בית המקדש'],['chagim','חגים ומועדים'],['shabbat','שבת'],['tzadikim','צדיקים וחכמים'],['bg','רקעים ומסגרות']];
+let LIB=null;
+async function libLoad(){if(LIB)return LIB;let srv={items:[],hideSeed:[]};
+  try{const r=await fetch('/api/pricing?c=_lib');if(r.ok)srv=await r.json()}catch(e){}
+  const hide=new Set(srv.hideSeed||[]);LIB=[...(srv.items||[]),...(window.MYLUACH_LIB_SEED||[]).filter(x=>!hide.has(x.id))];return LIB}
+function urlToData(url,max){return new Promise((res,rej)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{try{
+  const w=im.naturalWidth||1600,h=im.naturalHeight||1000,k=Math.min(1,max/Math.max(w,h))||1,c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.88))}catch(e){rej(e)}};im.onerror=rej;im.src=url})}
+async function libPick(setter){
+  const m=modal('<h2>מאגר התמונות</h2><p class="hint">תמונות ואיורים צנועים לשימוש חופשי בלוח: לעמוד השער, לחודשים ולימים. לחצו על תמונה כדי לבחור אותה.</p><div class="lib-tabs" role="tablist"></div><div class="lib-grid" aria-live="polite"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+  m.querySelector('.modal').classList.add('modal-wide');
+  const L=await libLoad(),tabs=m.querySelector('.lib-tabs'),grid=m.querySelector('.lib-grid');
+  const cats=LIB_CATS.filter(([k])=>k==='all'||L.some(x=>x.cat===k));let cur='all';
+  const draw=()=>{tabs.innerHTML=cats.map(([k,n])=>'<button type="button" role="tab" data-lc="'+k+'" aria-selected="'+(k===cur)+'">'+n+'</button>').join('');
+    const items=L.filter(x=>cur==='all'||x.cat===cur);
+    grid.innerHTML=items.length?items.map((x,i)=>'<button type="button" class="lib-i" data-li="'+L.indexOf(x)+'" title="'+esc(x.title||'')+'"><img loading="lazy" alt="'+esc(x.title||'')+'" src="'+esc(x.url)+'"><span>'+esc(x.title||'')+'</span></button>').join(''):'<p class="hint">אין עדיין תמונות בקטגוריה הזו.</p>'};
+  draw();
+  tabs.onclick=e=>{const b=e.target.closest('[data-lc]');if(b){cur=b.dataset.lc;draw()}};
+  grid.onclick=async e=>{const b=e.target.closest('[data-li]');if(!b)return;const x=L[+b.dataset.li];b.classList.add('busy');
+    try{const img=await urlToData(x.url,setter.maxPx||2000);m.remove();setter({img,edit:null,credit:x.credit||''})}
+    catch(err){b.classList.remove('busy');alert('לא הצלחנו לטעון את התמונה. נסו שוב או בחרו תמונה אחרת.')}}}
 $('#fileOne').addEventListener('change',async e=>{const f=e.target.files[0];if(!f||!pendingSlot)return;const fn=pendingSlot;pendingSlot=null;fn({img:await compress(f,fn.maxPx),edit:null})});
 function compress(file,max){max=max||2000;return new Promise(res=>{
   const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
@@ -2382,11 +2472,11 @@ function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
   radio('calType',s.calType);radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
   $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards();cdSyncDay()}spSync();if($('#startDate')){$('#startDate').value=s.startDate||'';$('#startDateClr').hidden=!s.startDate;$('#startDateRow').hidden=$('#startDateHint').hidden=['week','day','table','countdown'].includes(s.view||'month')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
-  {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
+  {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';wkSync();$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליומי דהילולא (יארצייטן).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
   $('#zmHint').textContent={custom:'כל זמן במקום שבחרתם ברשימה למטה: בתוך היום, בטור, או בשניהם.',col:'הזמנים מופיעים בטבלה קטנה בטור נפרד ליד הלוח החודשי: שורה לכל יום.',daily:'הזמנים מופיעים בתחתית כל יום.',shabbat:'הזמנים מופיעים רק בימי שבת.',table:'הזמנים יוצאים מהימים לטבלה מתחת ללוח, עם הדלקת נרות וצאת שבת לכל שבת. כך התמונות בימים נראות במלואן.',none:'בלי זמני היום. הדלקת נרות ויציאה עדיין מופיעים בימי שישי ושבת.'}[s.zmanimMode];
-  $('#ytsg').value=s.ytsg||'faint';$('#chanukah').value=s.chanukah||'tzeit';$('#ytsgRow').hidden=!s.il;$('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
+  $('#ytsg').value=s.ytsg||'faint';$('#chanukah').value=s.chanukah||'tzeit';if($('#nital')){$('#nital').value=s.nital||'none';$('#nitalFrom').value=s.nitalFrom||'shkia';$('#nitalFrom').closest('.fld').hidden=(s.nital||'none')==='none'}$('#ytsgRow').hidden=!s.il;$('#hebYearRow').hidden=s.calType!=='heb';$('#gregYearRow').hidden=s.calType!=='greg';
   if(![...$('#hebYear').options].some(o=>+o.value===+s.hebYear))$('#hebYear').insertAdjacentHTML('beforeend',opt(s.hebYear,hebYearStr(+s.hebYear)));
   $('#hebYear').value=s.hebYear;$('#gregYear').value=s.gregYear;$('#gregStart').value=s.gregStart;$('#hebStart').value=s.hebStart||7;
   $('#cover').checked=!!s.cover;$('#candleMins').value=s.candleMins;$('#il').checked=!!s.il;
@@ -2395,7 +2485,7 @@ function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?
   document.querySelectorAll('[data-z]').forEach(c=>c.checked=!!s.zmanim[c.dataset.z]);
   ['m_shma','size'].forEach(k=>$('#'+k).value=s[k]);
   {const M=s.moon||{};document.querySelectorAll('[data-moon]').forEach(c=>c.checked=c.dataset.moon==='molad'?M.molad!==false:!!M[c.dataset.moon]);document.querySelectorAll('[data-moonsel]').forEach(c=>c.value=M[c.dataset.moonsel]||'none');const L=s.learn||{};document.querySelectorAll('[data-learn]').forEach(c=>c.checked=!!L[c.dataset.learn])}
-  {const pr=s.zmPreset||'ashkenaz',simple=['ashkenaz','sefardi','tanya','chul'];document.querySelectorAll('input[name=zmSimple]').forEach(r=>r.checked=r.value===pr);const n=$('#zmAdvNote');n.hidden=simple.includes(pr);if(!n.hidden)n.textContent='נבחרה שיטה מההגדרות המתקדמות: '+({tuk:'הגרי״מ טוקצ׳ינסקי',itim:'אשכנזים, נץ מישורי ושקיעה לפי הגובה',gra:'גר״א פשוט',custom:'מותאם אישית'}[pr]||pr)+'. לחזרה לשיטה רגילה, בחרו אחת מהאפשרויות למעלה.'}
+  {const pr=s.zmPreset||'ashkenaz',simple=['ashkenaz','sefardi','tanya','chul','chazon','tzikoni'];document.querySelectorAll('input[name=zmSimple]').forEach(r=>r.checked=r.value===pr);const n=$('#zmAdvNote');n.hidden=simple.includes(pr);if(!n.hidden)n.textContent='נבחרה שיטה מההגדרות המתקדמות: '+({tuk:'הגרי״מ טוקצ׳ינסקי',itim:'אשכנזים, נץ מישורי ושקיעה לפי הגובה',gra:'גר״א פשוט',custom:'מותאם אישית'}[pr]||pr)+'. לחזרה לשיטה רגילה, בחרו אחת מהאפשרויות למעלה.'}
   $('#zmPreset').value=s.zmPreset||'ashkenaz';$('#zmPresetHint').textContent=ZM_PRESET_HINT[s.zmPreset||'ashkenaz'];$('#secs').checked=!!s.secs;
   $('#headFont').value=s.headFont||'';$('#bodyFont').value=s.bodyFont||'';
   $('#headPrev').style.fontFamily=s.headFont?fontCSS(s.headFont):({ink:fontCSS('Frank Ruhl Libre'),block:fontCSS('Suez One'),soft:fontCSS('Bellefair')}[s.theme]);
@@ -2503,7 +2593,7 @@ document.addEventListener('change',e=>{
     case 'accentCustom':return set('accent',t.value);
     case 'size':{const z=SIZES[t.value];if(z&&z.o)state.s.orient=z.o;return set('size',t.value)}
     case 'customW':case 'customH':if(+t.value>=50&&+t.value<=1200)set(t.id,+t.value);return;
-    case 'm_shma':case 'ytsg':case 'chanukah':case 'yzPrefix':case 'persPrefix':yzInvalidate&&yzInvalidate();return set(t.id,t.value);
+    case 'm_shma':case 'ytsg':case 'chanukah':case 'nital':case 'nitalFrom':case 'yzPrefix':case 'persPrefix':yzInvalidate&&yzInvalidate();return set(t.id,t.value);
     case 'secs':return set('secs',t.checked);
     case 'zmPreset':{if(t.value!=='custom')state.s.zm={...ZM_PRESETS[t.value]};return set('zmPreset',t.value)}
     case 'headFont':case 'bodyFont':loadFont(t.value);return set(t.id,t.value);
