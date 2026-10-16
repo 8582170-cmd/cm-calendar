@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610151700">
+<link rel="stylesheet" href="assets/app.css?v=202610161400">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body class="simple-app">
@@ -504,7 +504,8 @@
 
         <p class="hint">היכן יומי דהילולא (יארצייטן) מופיעים (בתוך הימים או בטור נפרד) קובעים ב"מה מופיע איפה".</p>
         <p class="hint">בלוח שבועי ויומי יש יותר מקום, ולכן מוצגים שם עד פי שלושה.</p>
-        <button class="btn primary" type="button" id="yzManage">ניהול "אירועים בדברי ימי ישראל": סימון, דילוג ועריכה</button>
+        <button class="btn primary" type="button" id="yzManage">📜 עיון בכל המאגר וסימון לפי חודשים</button>
+        <p class="hint">רואים את כל הרשומות של כל חודש, לפי ימים, ומסמנים בלחיצה מה יופיע בלוח. או חפשו כאן שם מסוים:</p>
         <div class="row"><button class="btn" type="button" id="yzReport">שליחת תיקונים, אירועים והערות למנהל האתר</button><button class="btn" type="button" id="yzInbox" hidden>דיווחים שהתקבלו</button></div>
         <label class="fld">חיפוש מהיר<input id="yzSearch" type="search" placeholder="שם, כינוי או ספר, למשל: חפץ חיים"></label>
         <div class="fld" id="yzListTitle"></div>
@@ -537,6 +538,22 @@
     <details class="sec" open data-step="7" id="freeSec">
       <summary>עיצוב חופשי בתצוגה המקדימה</summary>
       <div class="sec-body">
+        <div class="fx-side" id="fxTools">
+          <p class="fx-lead"><b>עריכה חופשית פעילה בתצוגה המקדימה</b></p>
+          <ol class="hint">
+            <li><b>כל טקסט</b> (שם החודש, ימי השבוע, מספרי הימים, אירועים, זמנים, הטורים שליד הלוח): לוחצים עליו ובסרגל שנפתח מגדילים, מקטינים, צובעים, מדגישים, עורכים או מסתירים.</li>
+            <li><b>הזזה:</b> תופסים את הטקסט וגוררים. לדיוק: החצים במקלדת (עם Shift קפיצה גדולה).</li>
+            <li><b>קווי הטבלה:</b> מושכים את הקווים המקווקווים כדי לשנות רוחב עמודות וגובה שורות, וגם את גובה שורת ימי השבוע.</li>
+            <li><b>טקסט שמופיע בכל החודשים</b> (כמו שם החודש או ימי השבוע): מסמנים "בכל החודשים" בסרגל כדי שהשינוי יחול על כולם.</li>
+          </ol>
+          <label class="chk adv-only"><input type="checkbox" id="fxAdv"> עריכה חופשית בתצוגה המקדימה</label>
+          <div class="row fx-lines">
+            <label class="fld">עובי הקווים<select id="fxLw"><option value="">רגיל</option><option value="0">בלי קווים</option><option value="0.1">דק מאוד</option><option value="0.15">דק</option><option value="0.4">עבה</option><option value="0.6">עבה מאוד</option><option value="1">מודגש</option></select></label>
+            <label class="fld">סוג קו<select id="fxLs"><option value="">רציף</option><option value="dashed">מקווקו</option><option value="dotted">מנוקד</option><option value="double">כפול</option></select></label>
+            <label class="fld">צבע הקווים<span class="row" style="gap:4px;margin:0"><input type="color" id="fxLc" aria-label="צבע הקווים"><button class="btn small" type="button" data-fxs="lc0">רגיל</button></span></label>
+          </div>
+          <div class="row"><button class="btn small" type="button" data-fx="undo" data-fxs="undo" disabled>↶ ביטול הפעולה האחרונה</button><button class="btn small" type="button" data-fxs="grid">איפוס הקווים והגדלים</button><button class="btn small" type="button" data-fxs="texts">איפוס הטקסטים</button><button class="btn small" type="button" data-fxs="all">איפוס כל העיצוב החופשי</button></div>
+        </div>
         <div class="hint cdonly-b"><ol>
           <li><b>כותרות וטקסטים:</b> לוחצים על הכותרת, על השורה שמתחתיה או על הטקסט בדף הפתיחה והסיום, וכותבים. בסרגל שנפתח: גודל, צבע, יישור וגופן.</li>
           <li><b>תמונות:</b> בשלב 1, ב"תמונות", לוחצים "✎ עריכה" על תמונה: שיפור, טקסט על התמונה, מדבקות וכובעים.</li>
@@ -606,6 +623,6 @@
 <script src="assets/stickers.js?v=202610130515"></script>
 <script src="assets/img-smart.js?v=202610130515"></script>
 <script src="assets/library/index.js?v=1" defer></script>
-<script src="assets/app.js?v=202610151700"></script>
+<script src="assets/app.js?v=202610161400"></script>
 </body>
 </html>

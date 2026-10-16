@@ -195,7 +195,7 @@ function merge(base,inc){
   if(!inc||typeof inc!=='object')return out;
   out.s=Object.assign(out.s,inc.s||{});
   if(inc.s&&inc.s.paper&&!inc.s.size)out.s.size={A4:'a4',A3:'wall',A5:'fridge',Letter:'letter'}[inc.s.paper]||'a4';
-  ['slots','cover','banner','bannersData','textStyles','yzEdit','colImgs','cdImgs'].forEach(k=>{if(inc[k])out[k]=inc[k]});
+  ['slots','cover','banner','bannersData','textStyles','yzEdit','colImgs','cdImgs','fx'].forEach(k=>{if(inc[k])out[k]=inc[k]});
   ['events','customGedolim','ads','yzCustom'].forEach(k=>{if(Array.isArray(inc[k]))out[k]=inc[k]});
   out.events=out.events.map(e=>e.rec?e:{...e,rec:e.cal||'heb'});
   return out;
@@ -1025,6 +1025,7 @@ function pageShell(label,key){
   const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
+  fxLines(p);
   for(const [k,v] of Object.entries(s.tcolors||{}))if(v)p.style.setProperty('--c-'+k,v);
   if(s.headFont)p.style.setProperty('--f-head',fontCSS(s.headFont));
   if(s.bodyFont)p.style.setProperty('--f-body',fontCSS(s.bodyFont));
@@ -1397,7 +1398,7 @@ function addMonthGrid(p,mo,evMap){
   head.appendChild(el('div','pg-month',esc(mo.title)));head.appendChild(el('div','pg-year',esc(mo.year)));head.appendChild(el('div','pg-other',dStyle().endsWith('Only')?'':esc(mo.other)));
   p.appendChild(head);
   const lead=mo.days[0].getDay(),total=lead+mo.days.length,rows=Math.ceil(total/7);
-  const grid=el('div','grid');grid.style.gridTemplateRows='auto repeat('+rows+',minmax(0,1fr))';
+  const grid=el('div','grid');fxGridStyle(grid,rows);
   WEEKDAYS.forEach(w=>grid.appendChild(el('div','wd',w)));
   for(let i=0;i<lead;i++)grid.appendChild(el('div','cell pad'));
   for(const d of mo.days){
@@ -1832,7 +1833,9 @@ function render(){
   $('#stageMeta').textContent=RS.count+' עמודים · '+sz+' · '+Math.round(W)+'×'+Math.round(H)+' מ״מ · '+place().name;
   renderAds();
   hlApply();
+  fxApply();
   fit();
+  fxDecorate();
   if(CDMODE)requestAnimationFrame(()=>cdApplyFocus());
 }
 stage.addEventListener('click',e=>{
@@ -2021,6 +2024,182 @@ tt.addEventListener('click',e=>{const a=e.target.dataset.a;if(!a||!ttEl)return;
   if(a==='up')st.fs=+Math.min(4,(st.fs||1)*1.15).toFixed(3);else if(a==='dn')st.fs=+Math.max(.3,(st.fs||1)/1.15).toFixed(3);
   else if(a==='reset'){delete state.textStyles[id];applyTextStyle(ttEl);save();placeTT();return}else st.al=a;
   state.textStyles[id]=st;applyTextStyle(ttEl);save();placeTT()});
+
+/* ---------- עיצוב חופשי (שלב 7): הזזה, הגדלה ועריכה של כל טקסט, וגרירת קווי הטבלה ----------
+   state.fx = {t:{key:{dx,dy,fs,t,co,b,hide}}, grid:{cols:[7], rows:{N:[...]}, head:mm}, lines:{w,st,c}} */
+function FX(){if(!state.fx||typeof state.fx!=='object')state.fx={};const f=state.fx;if(!f.t||typeof f.t!=='object')f.t={};if(!f.grid||typeof f.grid!=='object')f.grid={};if(!f.grid.rows)f.grid.rows={};if(!f.lines)f.lines={};return f}
+function fxOn(){return document.body.classList.contains('fx-on')}
+const FX_SKIP='[contenteditable=true],[contenteditable=""],.pg-img,.rsz,.no-print,button,input,select,label,.img-tools,.fx-h,.notice,.sheet-label,.drop';
+function fxOwnText(n){for(const c of n.childNodes)if(c.nodeType===3&&c.nodeValue.trim())return true;return false}
+function fxSig(n){return n.tagName.toLowerCase()+'.'+(n.classList[0]||'')}
+function fxSel(sig){const [t,c]=sig.split('.');return t+(c?'.'+CSS.escape(c):'')}
+function fxKind(pk){const m=String(pk).match(/^(mi|h|w|t|d|x)-/);return m?m[1]:pk==='cover'?'cover':'m'}
+function fxAnchor(n){
+  const w=n.closest('.sheet-wrap'),pk=(w&&w.dataset.key)||'';
+  const d=n.closest('[data-date]');if(d)return ['d:'+d.dataset.date,d,pk];
+  const c=n.closest('[data-col]');if(c)return ['c:'+pk+':'+c.dataset.col,c,pk];
+  return ['p:'+pk,n.closest('.page'),pk]}
+function fxOk(n){return n&&n.nodeType===1&&n.closest('.page')&&!n.closest(FX_SKIP)&&!n.classList.contains('page')&&(fxOwnText(n)||n.dataset.fxo!=null)}
+function fxKeys(n){
+  const [ak,a,pk]=fxAnchor(n);if(!a)return null;const sig=fxSig(n);let i=0;
+  for(const x of a.querySelectorAll(fxSel(sig))){if(x===n)break;if(fxSig(x)===sig&&fxOk(x))i++}
+  return {k:ak+'|'+sig+'|'+i,g:ak.startsWith('p:')?'g:'+fxKind(pk)+'|'+sig+'|'+i:null}}
+function fxGet(K){const T=FX().t;return {...(K.g&&T[K.g]||{}),...(T[K.k]||{})}}
+function fxStyle(n,st){
+  if(n.dataset.fxo==null)n.dataset.fxo=n.textContent;
+  n.style.fontSize='';n.style.translate='';n.style.color='';n.style.fontWeight='';n.classList.remove('fx-hidden');
+  if(n.dataset.fxd==null)n.dataset.fxd=getComputedStyle(n).display;
+  if(st.t!=null){n.textContent=st.t;n.dataset.fxt=1}else if(n.dataset.fxt){n.textContent=n.dataset.fxo;delete n.dataset.fxt}
+  if(st.fs&&st.fs!==1)n.style.fontSize=(parseFloat(getComputedStyle(n).fontSize)*st.fs).toFixed(2)+'px';
+  if(st.dx||st.dy){if(n.dataset.fxd==='inline')n.style.display='inline-block';n.style.translate=(+st.dx||0).toFixed(2)+'mm '+(+st.dy||0).toFixed(2)+'mm'}
+  if(st.co)n.style.color=st.co;
+  if(st.b!=null)n.style.fontWeight=st.b?'700':'400';
+  if(st.hide)n.classList.add('fx-hidden');
+}
+/* אחרי כל ציור: מחילים את השינויים השמורים */
+function fxApply(){
+  const T=FX().t;if(!Object.keys(T).length)return;
+  const cnt=new Map();
+  for(const n of stage.querySelectorAll('.page *')){
+    if(!fxOk(n))continue;const [ak,,pk]=fxAnchor(n),sig=fxSig(n),ck=ak+'|'+sig,i=cnt.get(ck)||0;cnt.set(ck,i+1);
+    const k=ak+'|'+sig+'|'+i,g=ak.startsWith('p:')?'g:'+fxKind(pk)+'|'+sig+'|'+i:null;
+    if(T[k]||(g&&T[g]))fxStyle(n,{...(g&&T[g]||{}),...(T[k]||{})});
+  }
+}
+function fxLines(p){const L=FX().lines;if(L.w!=null)p.style.setProperty('--lw',L.w+'mm');if(L.st)p.style.setProperty('--ls',L.st);if(L.c)p.style.setProperty('--p-line',L.c)}
+function fxGridStyle(grid,rows){
+  const G=FX().grid;grid.dataset.rows=rows;
+  if(Array.isArray(G.cols)&&G.cols.length===7)grid.style.gridTemplateColumns=G.cols.map(v=>'minmax(0,'+(+v||1)+'fr)').join(' ');
+  const R=G.rows[rows];
+  grid.style.gridTemplateRows=(G.head?(+G.head).toFixed(2)+'mm':'auto')+' '+(Array.isArray(R)&&R.length===rows?R.map(v=>'minmax(0,'+(+v||1)+'fr)').join(' '):'repeat('+rows+',minmax(0,1fr))');
+}
+/* היסטוריה לביטול */
+const FXH=[];
+function fxPush(){FXH.push(JSON.stringify(FX()));if(FXH.length>60)FXH.shift();fxUndoBtn()}
+function fxUndo(){if(!FXH.length)return;state.fx=JSON.parse(FXH.pop());fxUnselect();save();render();fxUndoBtn()}
+function fxUndoBtn(){document.querySelectorAll('[data-fx="undo"]').forEach(b=>b.disabled=!FXH.length)}
+
+/* סרגל הכלים של טקסט נבחר */
+const fxb=el('div','fx-bar no-print');fxb.hidden=true;
+fxb.innerHTML='<span class="fx-tip">✥ גררו להזזה</span><button type="button" data-fx="dn" title="הקטנה">A−</button><button type="button" data-fx="up" title="הגדלה">A+</button><button type="button" data-fx="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fx="co" aria-label="צבע"></label><button type="button" data-fx="edit" title="עריכת הטקסט">✎ עריכה</button><button type="button" data-fx="hide" title="הסתרה / הצגה">הסתרה</button><label class="fx-all" title="אותו שינוי בכל העמודים מאותו סוג"><input type="checkbox" data-fx="all"> בכל החודשים</label><button type="button" data-fx="reset" title="חזרה למקור">↺ איפוס</button><button type="button" data-fx="undo" title="ביטול הפעולה האחרונה">↶</button><button type="button" data-fx="x" title="סגירה">✕</button>';
+document.body.appendChild(fxb);
+let FXS=null; /* {n,K} */
+function fxScopeKey(){if(!FXS)return null;const all=fxb.querySelector('[data-fx="all"]');return all.checked&&FXS.K.g?FXS.K.g:FXS.K.k}
+function fxPlace(){if(!FXS||!FXS.n.isConnected){fxb.hidden=true;return}const r=FXS.n.getBoundingClientRect();fxb.style.top=Math.max(4,r.top-46)+'px';fxb.style.left=Math.max(4,Math.min(innerWidth-fxb.offsetWidth-4,r.left+r.width/2-fxb.offsetWidth/2))+'px'}
+function fxSelect(n){
+  fxUnselect();const K=fxKeys(n);if(!K)return;FXS={n,K};n.classList.add('fx-sel');
+  const T=FX().t,all=fxb.querySelector('[data-fx="all"]');all.parentElement.hidden=!K.g;all.checked=!!(K.g&&T[K.g]&&!T[K.k]);
+  const st=fxGet(K);fxb.querySelector('[data-fx="co"]').value=st.co||rgbHex(getComputedStyle(n).color);
+  fxb.querySelector('[data-fx="hide"]').textContent=st.hide?'הצגה':'הסתרה';
+  fxb.hidden=false;fxUndoBtn();fxPlace();
+}
+function fxUnselect(){if(FXS&&FXS.n){FXS.n.classList.remove('fx-sel');if(FXS.n.isContentEditable){FXS.n.blur()}}FXS=null;fxb.hidden=true}
+function fxSet(fn){if(!FXS)return;fxPush();const T=FX().t,k=fxScopeKey(),st={...(T[k]||{})};fn(st);
+  for(const x of Object.keys(st))if(st[x]==null||st[x]===''||(x==='fs'&&st[x]===1)||((x==='dx'||x==='dy')&&!st[x]))delete st[x];
+  if(Object.keys(st).length)T[k]=st;else delete T[k];
+  save();
+  if(k===FXS.K.g){const n=FXS.n;render();const again=fxFind(FXS.K.k);if(again)fxSelect(again);else fxUnselect()}else{fxStyle(FXS.n,fxGet(FXS.K));fxPlace()}
+}
+function fxFind(k){for(const n of stage.querySelectorAll('.page *')){if(!fxOk(n))continue;const K=fxKeys(n);if(K&&K.k===k)return n}return null}
+fxb.addEventListener('mousedown',e=>{if(e.target.tagName!=='INPUT')e.preventDefault()});
+fxb.addEventListener('click',e=>{const b=e.target.closest('[data-fx]');if(!b||!FXS)return;const a=b.dataset.fx;
+  if(a==='x')return fxUnselect();
+  if(a==='undo')return fxUndo();
+  if(a==='all'){const T=FX().t;if(b.checked&&T[FXS.K.k]&&FXS.K.g){fxPush();T[FXS.K.g]={...(T[FXS.K.g]||{}),...T[FXS.K.k]};delete T[FXS.K.k];save();const k=FXS.K.k;render();const n=fxFind(k);if(n){fxSelect(n);fxb.querySelector('[data-fx="all"]').checked=true}}return}
+  if(a==='up')return fxSet(st=>st.fs=+Math.min(5,(st.fs||1)*1.12).toFixed(3));
+  if(a==='dn')return fxSet(st=>st.fs=+Math.max(.25,(st.fs||1)/1.12).toFixed(3));
+  if(a==='b')return fxSet(st=>{const cur=st.b!=null?st.b:+getComputedStyle(FXS.n).fontWeight>=600;st.b=!cur});
+  if(a==='hide'){fxSet(st=>st.hide=st.hide?null:1);b.textContent=fxGet(FXS.K).hide?'הצגה':'הסתרה';return}
+  if(a==='reset'){fxPush();const T=FX().t;delete T[FXS.K.k];if(fxb.querySelector('[data-fx="all"]').checked&&FXS.K.g)delete T[FXS.K.g];save();const k=FXS.K.k;render();const n=fxFind(k);if(n)fxSelect(n);else fxUnselect();return}
+  if(a==='edit'){const n=FXS.n;n.contentEditable='true';n.spellcheck=false;n.focus();const r=document.createRange();r.selectNodeContents(n);const s=getSelection();s.removeAllRanges();s.addRange(r);
+    const done=()=>{n.removeEventListener('blur',done);n.removeAttribute('contenteditable');const v=n.textContent.trim();if(FXS&&FXS.n===n)fxSet(st=>st.t=v===(n.dataset.fxo||'').trim()?null:v)};
+    n.addEventListener('blur',done);n.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter'){ev.preventDefault();n.blur()}if(ev.key==='Escape'){n.textContent=fxGet(FXS.K).t??n.dataset.fxo;n.blur()}})}
+});
+fxb.querySelector('[data-fx="co"]').addEventListener('change',e=>fxSet(st=>st.co=e.target.value));
+window.addEventListener('scroll',fxPlace,true);window.addEventListener('resize',()=>setTimeout(fxPlace,150));
+function fxPick(t){if(!t||!t.closest||t.closest(FX_SKIP))return null;let n=t;while(n&&!n.classList.contains('page')){if(fxOk(n))return n;n=n.parentElement}return null}
+let fxDragged=false;
+stage.addEventListener('click',e=>{
+  if(!fxOn())return;
+  if(fxDragged){fxDragged=false;e.preventDefault();e.stopImmediatePropagation();return}
+  if(FXS&&FXS.n.isContentEditable&&FXS.n.contains(e.target)){e.stopImmediatePropagation();return}
+  const n=fxPick(e.target);if(!n){if(!e.target.closest('.fx-h'))fxUnselect();return}
+  e.preventDefault();e.stopImmediatePropagation();fxSelect(n);
+},true);
+stage.addEventListener('pointerdown',e=>{
+  if(!fxOn()||e.button!==0)return;const n=fxPick(e.target);if(!n||n.isContentEditable)return;
+  const sx=e.clientX,sy=e.clientY,f=screenMM(n),K=fxKeys(n);if(!K)return;const st0=fxGet(K);let moved=false,pushed=false;
+  const mv=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved&&Math.hypot(dx,dy)<4)return;
+    if(!moved){moved=true;if(!FXS||FXS.n!==n)fxSelect(n);n.classList.add('fx-drag')}
+    ev.preventDefault();const st={...st0,dx:+((+st0.dx||0)+dx*f).toFixed(2),dy:+((+st0.dy||0)+dy*f).toFixed(2)};
+    if(n.dataset.fxd==null)n.dataset.fxd=getComputedStyle(n).display;if(n.dataset.fxd==='inline')n.style.display='inline-block';
+    n.style.translate=st.dx+'mm '+st.dy+'mm';fxPlace()};
+  const up=ev=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);n.classList.remove('fx-drag');
+    if(!moved)return;fxDragged=true;setTimeout(()=>fxDragged=false,400);
+    const dx=ev.clientX-sx,dy=ev.clientY-sy;fxSet(st=>{st.dx=+((+st.dx||0)+dx*f).toFixed(2);st.dy=+((+st.dy||0)+dy*f).toFixed(2)})};
+  addEventListener('pointermove',mv,{passive:false});addEventListener('pointerup',up);addEventListener('pointercancel',up);
+},true);
+stage.addEventListener('pointerover',e=>{if(!fxOn())return;stage.querySelectorAll('.fx-hov').forEach(x=>x.classList.remove('fx-hov'));const n=fxPick(e.target);if(n)n.classList.add('fx-hov')});
+document.addEventListener('keydown',e=>{if(!fxOn()||!FXS||FXS.n.isContentEditable)return;if(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable]'))return;
+  const step=e.shiftKey?3:0.5,M={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]}[e.key];
+  if(M){e.preventDefault();fxSet(st=>{st.dx=+((+st.dx||0)+M[0]).toFixed(2);st.dy=+((+st.dy||0)+M[1]).toFixed(2)})}
+  else if(e.key==='Escape')fxUnselect();
+  else if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();fxUndo()}});
+
+/* ידיות לגרירת קווי הטבלה */
+function fxDecorate(){
+  stage.querySelectorAll('.fx-h').forEach(x=>x.remove());
+  if(!fxOn()){fxUnselect();stage.querySelectorAll('.fx-hov').forEach(x=>x.classList.remove('fx-hov'));return}
+  if(FXS&&!FXS.n.isConnected)fxUnselect();
+  stage.querySelectorAll('.page .grid[data-rows]').forEach(grid=>{
+    const cs=getComputedStyle(grid),C=cs.gridTemplateColumns.split(' ').map(parseFloat),R=cs.gridTemplateRows.split(' ').map(parseFloat);
+    if(C.length!==7||C.some(isNaN)||R.some(isNaN))return;
+    const rtl=cs.direction==='rtl',rows=+grid.dataset.rows;
+    let acc=0;for(let i=0;i<6;i++){acc+=C[i];const h=el('div','fx-h fx-hv no-print');h.title='גררו כדי לשנות את רוחב העמודות';h.style.insetInlineStart=acc+'px';h.dataset.i=i;grid.appendChild(h);fxDragLine(h,grid,'c',i,C,R,rtl,rows)}
+    acc=0;for(let j=0;j<rows;j++){acc+=R[j];const h=el('div','fx-h fx-hh no-print');h.title=j?'גררו כדי לשנות את גובה השורות':'גררו כדי לשנות את גובה שורת ימי השבוע';h.style.top=acc+'px';grid.appendChild(h);fxDragLine(h,grid,'r',j,C,R,rtl,rows)}
+  });
+  stage.querySelectorAll('.page .yz-panel').forEach(p=>p.classList.add('fx-col'));
+}
+function fxDragLine(h,grid,kind,i,C0,R0,rtl,rows){
+  h.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();h.setPointerCapture(e.pointerId);h.classList.add('on');
+    const sc=grid.getBoundingClientRect().width/grid.offsetWidth||1,sx=e.clientX,sy=e.clientY;let C=C0.slice(),R=R0.slice();
+    const tplC=()=>C.map(v=>'minmax(0,'+v.toFixed(2)+'fr)').join(' ');
+    const tplR=()=>R[0].toFixed(2)+'px '+R.slice(1).map(v=>'minmax(0,'+v.toFixed(2)+'fr)').join(' ');
+    const mv=ev=>{
+      if(kind==='c'){let d=(ev.clientX-sx)/sc;if(rtl)d=-d;const tot=C0[i]+C0[i+1],min=Math.max(12,tot*.12);const a=Math.max(min,Math.min(tot-min,C0[i]+d));C[i]=a;C[i+1]=tot-a;grid.style.gridTemplateColumns=tplC();
+        h.style.insetInlineStart=C.slice(0,i+1).reduce((x,y)=>x+y,0)+'px'}
+      else{const d=(ev.clientY-sy)/sc;
+        if(i===0){R[0]=Math.max(8,R0[0]+d);const rest=R0[0]+R0.slice(1).reduce((x,y)=>x+y,0)-R[0];const k=rest/R0.slice(1).reduce((x,y)=>x+y,0);R=[R[0]].concat(R0.slice(1).map(v=>v*k))}
+        else{const tot=R0[i]+R0[i+1],min=Math.max(10,tot*.12);const a=Math.max(min,Math.min(tot-min,R0[i]+d));R[i]=a;R[i+1]=tot-a}
+        grid.style.gridTemplateRows=tplR();h.style.top=R.slice(0,i+1).reduce((x,y)=>x+y,0)+'px'}
+    };
+    const up=()=>{h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',up);h.removeEventListener('pointercancel',up);h.classList.remove('on');
+      fxPush();const G=FX().grid,avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+      if(kind==='c'){const m=avg(C);G.cols=C.map(v=>+(v/m).toFixed(3))}
+      else{const body=R.slice(1),m=avg(body);G.rows[rows]=body.map(v=>+(v/m).toFixed(3));
+        if(i===0){const pg=grid.closest('.page');G.head=+(R[0]*pageDims()[0]/pg.offsetWidth).toFixed(2)}}
+      save();render()};
+    h.addEventListener('pointermove',mv);h.addEventListener('pointerup',up);h.addEventListener('pointercancel',up);
+  });
+}
+function fxSideInit(){
+  const box=$('#fxTools');if(!box)return;const L=FX().lines;
+  box.querySelector('#fxLw').value=L.w!=null?String(L.w):'';box.querySelector('#fxLs').value=L.st||'';box.querySelector('#fxLc').value=L.c||'#c6ccd2';
+}
+(function(){
+  const box=$('#fxTools');if(!box)return;
+  const setL=(k,v)=>{fxPush();const L=FX().lines;if(v===''||v==null)delete L[k];else L[k]=v;save();render()};
+  box.addEventListener('change',e=>{const t=e.target;if(t.id==='fxLw')setL('w',t.value===''?null:+t.value);else if(t.id==='fxLs')setL('st',t.value);else if(t.id==='fxLc')setL('c',t.value);else if(t.id==='fxAdv'){state.s.fxOn=t.checked;save();applyMode()}});
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-fxs]');if(!b)return;const a=b.dataset.fxs;
+    if(a==='undo')return fxUndo();
+    if(a==='lc0')return setL('c',null);
+    if(a==='grid'){fxPush();const f=FX();f.grid={rows:{}};save();render();return}
+    if(a==='texts'){if(!confirm('לבטל את כל השינויים בטקסטים (הזזה, גודל, צבע ועריכה)?'))return;fxPush();FX().t={};fxUnselect();save();render();return}
+    if(a==='all'){if(!confirm('לבטל את כל העיצוב החופשי: טקסטים, קווים וגדלי עמודות ושורות?'))return;fxPush();state.fx={};fxUnselect();save();render();fxSideInit()}
+  });
+  fxSideInit();
+})();
 
 /* ---------- image editor ---------- */
 function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src})}
@@ -2356,7 +2535,7 @@ stage.addEventListener('click',e=>{
   if(PAINT){hlToggle(c.dataset.date);return}
   openEventEditor({date:c.dataset.date});
 });
-stage.addEventListener('keydown',e=>{const c=e.target.closest&&e.target.closest('[data-date]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openEventEditor({date:c.dataset.date})}});
+stage.addEventListener('keydown',e=>{if(e.target.isContentEditable)return;const c=e.target.closest&&e.target.closest('[data-date]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openEventEditor({date:c.dataset.date})}});
 stage.addEventListener('dragover',e=>{const c=e.target.closest('[data-date]');if(c){e.preventDefault();stage.querySelectorAll('[data-date].over').forEach(x=>x.classList.remove('over'));c.classList.add('over')}});
 stage.addEventListener('dragleave',e=>{const c=e.target.closest('[data-date]');if(c)c.classList.remove('over')});
 stage.addEventListener('drop',async e=>{
@@ -2814,6 +2993,7 @@ function applyMode(){
   $('#stepNo').textContent='שלב '+pos+' מתוך '+SL.length;$('#stepTitle').textContent=stepInfo(n)[0];$('#stepDesc').textContent=stepInfo(n)[1];
   $('#stepCount').textContent=pos+' / '+SL.length;$('#stepPrev').disabled=pos===1;
   $('#stepNext').textContent=n===8?'סיום':'הבא';
+  {const on=(mode==='wizard'&&n===7)||(mode==='adv'&&!!s.fxOn);if(document.body.classList.contains('fx-on')!==on){document.body.classList.toggle('fx-on',on);try{fxDecorate()}catch(e){}}const c=$('#fxAdv');if(c)c.checked=!!s.fxOn}
   $('#modeBtn').textContent=mode==='adv'?'מצב שלב אחר שלב':mode==='home'?'עריכה':'כל ההגדרות בבת אחת';
   const yr=s.calType==='heb'?'שנת '+hebYearStr(+s.hebYear):'שנת '+s.gregYear;
   $('#homeTitle').textContent=CDMODE?'לוח הספירה שלך'+(s.cdTitle?': '+s.cdTitle:''):'הלוח שלך ל'+yr;
