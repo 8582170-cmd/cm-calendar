@@ -712,8 +712,12 @@ readHash();render();apptLoad();
   const top=document.querySelector('header.top');if(!top||document.getElementById('tick'))return;
   const w=document.createElement('div');w.id='tick';w.className='tick no-print';w.setAttribute('role','region');w.setAttribute('aria-label','היום בתולדות ישראל');
   const items=L.map((e,i)=>'<span class="tick-i" data-k="'+i+'" title="לחצו להוספת תזכורת שנתית" data-t="'+esc((e.y?e.y+' · ':'')+e.t)+'"></span>').join('<span class="tick-sep" aria-hidden="true">◆</span>');
-  w.innerHTML='<span class="tick-lab" data-t="היום בתולדות ישראל · '+esc(o.date||'')+'"></span><div class="tick-win"><div class="tick-run">'+items+'<span class="tick-sep" aria-hidden="true">◆</span>'+items+'</div></div>';
-  top.after(w);const run=w.querySelector('.tick-run');run.style.animationDuration=Math.max(30,L.reduce((a,e)=>a+e.t.length,0)/7)+'s';
+  const one=items+'<span class="tick-sep" aria-hidden="true">◆</span>';
+  w.innerHTML='<span class="tick-lab" data-t="היום בתולדות ישראל · '+esc(o.date||'')+'"></span><div class="tick-win"><div class="tick-run">'+one+'</div></div>';
+  top.after(w);const run=w.querySelector('.tick-run'),win=w.querySelector('.tick-win');
+  /* חוזרים על הרשימה מספיק פעמים כדי שהפס תמיד יהיה מלא, ומהירות קבועה (כ־55 פיקסלים בשנייה) */
+  const fit=()=>{run.innerHTML=one;const w1=run.scrollWidth||1,k=Math.max(1,Math.ceil(win.clientWidth/w1)+1),half=one.repeat(k);run.innerHTML=half+half;run.style.animationDuration=Math.max(20,(w1*k)/55)+'s'};
+  fit();let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(fit,300)});
   w.addEventListener('click',e=>{const x=e.target.closest('[data-k]');if(!x)return;const it=L[+x.dataset.k];remEditor(null,null,{m:it.m,d:it.d,name:it.t.split(',')[0].slice(0,80)})});
   ['copy','cut','contextmenu','selectstart','dragstart'].forEach(ev=>w.addEventListener(ev,e=>e.preventDefault()))}).catch(()=>{})})();
 })();

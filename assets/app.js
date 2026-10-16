@@ -833,29 +833,30 @@ function openYzEditor(id,after,preset){
 }
 function openYzManager(){
   const s=state.s;
-  const m=modal('<h3>אירועים בדברי ימי ישראל<small>מסמנים מה יופיע בלוח, מורידים סימון כדי לדלג, ועורכים טקסט או תאריך.</small></h3>'+
+  const m=modal('<h3>כל המאגר: אירועים בדברי ימי ישראל<small>בוחרים חודש ורואים את כל הרשומות שלו לפי ימים. ✓ = יופיע בלוח. אפשר לסמן יום שלם או את כל החודש בלחיצה, ולערוך טקסט או תאריך.</small></h3>'+
     '<p class="hint" id="ymMode"></p>'+
-    '<div class="row" id="ymListRow"><label class="fld">מסמנים ברשימה<select id="ymList"></select></label><button class="btn small" type="button" id="ymLists">הרשימות שלי</button></div>'+
-    '<div class="row"><label class="fld">חיפוש<input id="ymQ" type="search" placeholder="שם, כינוי, ספר או שנה"></label>'+
-    '<label class="fld">חודש<select id="ymM">'+opt('all','כל החודשים')+HEB_ORDER.map(x=>opt(x,YZ_MONTH_NAME(x))).join('')+'</select></label></div>'+
+    '<div class="row" id="ymListRow"><label class="fld">מסמנים ברשימה<select id="ymLs"></select></label><button class="btn small" type="button" id="ymLists">הרשימות שלי</button></div>'+
+    '<div class="ym-tabs" role="tablist" aria-label="חודש">'+[['all','כל החודשים']].concat(HEB_ORDER.map(x=>[String(x),YZ_MONTH_NAME(x)])).map(([k,n])=>'<button type="button" role="tab" data-ymtab="'+k+'">'+esc(n)+'</button>').join('')+'</div>'+
+    '<div class="row"><label class="fld" style="flex:1">חיפוש (לא חובה)<input id="ymQ" type="search" placeholder="שם, כינוי, ספר או שנה"></label>'+
+    '<select id="ymM" hidden>'+opt('all','כל החודשים')+HEB_ORDER.map(x=>opt(x,YZ_MONTH_NAME(x))).join('')+'</select></div>'+
     '<div class="row"><label class="fld">להציג<select id="ymF"><option value="all">הכל</option><option value="on">רק מסומנים</option><option value="off">רק לא מסומנים</option><option value="edited">רק ערוכים</option><option value="custom">רק שהוספתי</option></select></label>'+
     '<label class="fld">מיון<select id="ymO"><option value="date">לפי התאריך בשנה</option><option value="year">לפי שנים, מהקדום לחדש</option><option value="recent">לפי שנים, מהחדש לקדום</option></select></label>'+
     '<label class="fld">תקופה<select id="ymE">'+YZ_ERAS.map(x=>opt(x[0],x[1])).join('')+'</select></label>'+
-    '<label class="fld">סוג<select id="ymP"><option value="1">פטירות</option><option value="0">אירועים</option><option value="all">הכל</option></select></label>'+
+    '<label class="fld">סוג<select id="ymP"><option value="all">הכל</option><option value="1">פטירות</option><option value="0">אירועים</option></select></label>'+
     '</div>'+
-    '<div class="row"><button class="btn small" type="button" id="ymAll">סימון כל הרשימה</button><button class="btn small" type="button" id="ymNone">הסרת סימון מכל הרשימה</button><button class="btn small" type="button" id="ymAdd">+ הוספת רשומה</button><span class="hint" id="ymCount"></span></div>'+
-    '<div class="ym-list" id="ymList"></div>'+
+    '<div class="row"><button class="btn small" type="button" id="ymAll">✓ סימון כל מה שמוצג</button><button class="btn small" type="button" id="ymNone">הסרת הסימון ממה שמוצג</button><button class="btn small" type="button" id="ymAdd">+ הוספת רשומה</button><span class="hint" id="ymCount"></span></div>'+
+    '<div class="ym-list" id="ymRows"></div>'+
     '<div class="row"><button class="btn primary" type="button" data-close>סיום</button></div>');
   m.querySelector('.modal').classList.add('wide');
   const q=x=>m.querySelector(x);
   const startM=monthsCache[0]&&monthsCache[0].key.startsWith('heb-')?String(new HDate(new Date()).getMonth()):'7';
   q('#ymM').value=startM;
-  let shown=[];
+  let shown=[],ymLim=600;
   function list(){
     const qv=q('#ymQ').value.trim(),mo=q('#ymM').value,f=q('#ymF').value,pv=q('#ymP').value;const sv='all';
     const words=qv?qv.replace(/["'״׳]/g,'').split(/\s+/):null;
     const mode=state.s.yzMode||'selected';
-    q('#ymList').innerHTML=yzListOptions();q('#ymListRow').hidden=mode==='all';
+    q('#ymLs').innerHTML=yzListOptions();q('#ymListRow').hidden=mode==='all';
     q('#ymMode').innerHTML=mode==='all'?'מצב "כל המאגר": הכל מוצג, חוץ ממה שהורדתם ממנו את הסימון.':mode==='none'?'<span class="msg-bad">יומי דהילולא (יארצייטן) כבויים כרגע. הסימונים יישמרו ויופיעו כשתבחרו "רק מסומנים".</span>':'מצב "רק מסומנים": בלוח יופיע רק מה שמסומן ברשימה הפעילה.';
     const order=HEB_ORDER;
     shown=yzAll().filter(e=>(mo==='all'||e.m==+mo)&&(pv==='all'||String(e.p?1:0)===pv)&&(sv==='all'||(sv==='custom'?e.custom:(!e.custom&&e.src===sv)))&&(!words||yzMatches(e,words)));
@@ -867,20 +868,22 @@ function openYzManager(){
     else if(so==='recent')shown.sort((a,b)=>(isNaN(b.yn)?-1:b.yn)-(isNaN(a.yn)?-1:a.yn)||order.indexOf(a.m)-order.indexOf(b.m)||a.d-b.d);
     else shown.sort((a,b)=>order.indexOf(a.m)-order.indexOf(b.m)||a.d-b.d||yk(a)-yk(b));
     const byYear=so!=='date';
-    const lim=400,part=shown.slice(0,lim);let h='',last='';
+    q('#ymM').closest('.modal').querySelectorAll('[data-ymtab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.ymtab===mo)));
+    const lim=mo==='all'&&!words?ymLim:100000,part=shown.slice(0,lim);let h='',last='';
     for(const e of part){if(byYear){h+=yzRow(e,true);continue}const k=e.m+'-'+e.d;if(k!==last){last=k;h+='<div class="ym-day"><b>'+gem(e.d)+' '+YZ_MONTH_NAME(e.m)+'</b><button class="btn small" type="button" data-ymday="'+k+'">סימון כל היום</button><button class="btn small" type="button" data-ymdayoff="'+k+'">הסרה מכל היום</button></div>'}h+=yzRow(e,false)}
-    q('#ymList').innerHTML=h||'<p class="hint">לא נמצאו רשומות.</p>';
-    q('#ymCount').textContent=shown.length+' רשומות'+(shown.length>lim?' (מוצגות '+lim+' הראשונות, צמצמו בחיפוש)':'');
+    q('#ymRows').innerHTML=(h||'<p class="hint">לא נמצאו רשומות.</p>')+(shown.length>lim?'<button class="btn" type="button" id="ymMore" style="margin:8px auto;display:block">הצגת עוד '+Math.min(600,shown.length-lim)+'</button>':'');
+    const on=shown.filter(e=>yzVisible(e)).length;q('#ymCount').textContent=shown.length+' רשומות · '+on+' מסומנות להצגה';
   }
-  const changed=()=>{save();rerender();renderYz()};
-  ['#ymQ','#ymM','#ymF','#ymP','#ymO','#ymE'].forEach(x=>q(x).addEventListener('input',list));
-  q('#ymList').addEventListener('change',e=>{state.s.yzListId=e.target.value;save();syncUI();rerender();list()});
+  const changed=()=>{if((state.s.yzMode||'selected')==='none'){state.s.yzMode='selected';syncUI()}save();rerender();renderYz()};
+  ['#ymQ','#ymM','#ymF','#ymP','#ymO','#ymE'].forEach(x=>q(x).addEventListener('input',()=>{ymLim=600;list()}));
+  m.addEventListener('click',ev=>{const b=ev.target.closest('[data-ymtab]');if(b){q('#ymM').value=b.dataset.ymtab;ymLim=600;list();return}if(ev.target.id==='ymMore'){ymLim+=600;list()}});
+  q('#ymLs').addEventListener('change',e=>{state.s.yzListId=e.target.value;save();syncUI();rerender();list()});
   q('#ymLists').onclick=()=>openYzLists(list);
   q('#ymAll').onclick=()=>{shown.forEach(e=>yzSetVisible(e.id,true));changed();list()};
   q('#ymNone').onclick=()=>{shown.forEach(e=>yzSetVisible(e.id,false));changed();list()};
   q('#ymAdd').onclick=()=>openYzEditor(null,list,{m:q('#ymM').value==='all'?7:+q('#ymM').value});
-  q('#ymList').addEventListener('change',ev=>{const id=ev.target.dataset.yzv;if(id!=null){yzSetVisible(id,ev.target.checked);changed()}});
-  q('#ymList').addEventListener('click',ev=>{
+  q('#ymRows').addEventListener('change',ev=>{const id=ev.target.dataset.yzv;if(id!=null){yzSetVisible(id,ev.target.checked);changed()}});
+  q('#ymRows').addEventListener('click',ev=>{
     const t=ev.target;
     if(t.dataset.yzed)return openYzEditor(t.dataset.yzed,list);
     const k=t.dataset.ymday||t.dataset.ymdayoff;if(k){const on=!!t.dataset.ymday;shown.filter(e=>e.m+'-'+e.d===k).forEach(e=>yzSetVisible(e.id,on));changed();list()}

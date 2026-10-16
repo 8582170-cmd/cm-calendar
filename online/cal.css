@@ -215,8 +215,9 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .tick{display:flex;align-items:stretch;background:#1f3550;color:#fff;font-size:14px;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .tick [data-t]::before{content:attr(data-t)}
 .tick-lab{flex:none;background:#c0392b;font-weight:700;padding:7px 12px;white-space:nowrap}
-.tick-win{flex:1;overflow:hidden;position:relative;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
-.tick-run{display:inline-flex;gap:18px;white-space:nowrap;padding:7px 0;animation:tickMove 60s linear infinite}
+.tick-win{flex:1;overflow:hidden;position:relative;direction:ltr;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.tick-run{display:flex;width:max-content;gap:18px;white-space:nowrap;padding:7px 0;animation:tickMove 60s linear infinite;direction:ltr}
+.tick-run>*{direction:rtl;unicode-bidi:isolate}
 .tick:hover .tick-run,.tick:focus-within .tick-run{animation-play-state:paused}
 .tick-sep{opacity:.5;font-size:10px;align-self:center}
 @keyframes tickMove{from{transform:translateX(-50%)}to{transform:translateX(0)}}

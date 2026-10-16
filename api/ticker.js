@@ -24,6 +24,6 @@ module.exports = async (req, res) => {
     let items = list.filter(ok);
     items = tk.mode === 'selected' ? items.filter(e => ids.has(e.id)) : items.filter(e => !(tk.hide || []).includes(e.id));
     res.setHeader('Cache-Control', 'public, max-age=600');
-    json(res, 200, { date: h.renderGematriya(true), items: items.slice(0, 20).map(e => ({ m: e.m, d: e.d, y: e.y, t: e.t })) });
+    json(res, 200, { date: h.renderGematriya(true), items: items.slice(0, 40).map(e => ({ m: e.m, d: e.d, y: e.y, t: e.t })) });
   } catch (e) { console.error('ticker', e); json(res, 200, { items: [] }); }
 };

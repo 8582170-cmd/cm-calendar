@@ -1000,5 +1000,7 @@
 "מעבד תשלום…": "Processing payment…",
 "טופס התשלום עדיין נטען, נסו שוב בעוד רגע.": "The payment form is still loading, try again in a moment.",
 "התשלום התקבל, אבל האישור מהשרת מתעכב. המסלול ייפתח לבד בכניסה הבאה. אם לא, פנו אלינו עם מספר ההזמנה": "Payment received, but the confirmation from the server is delayed. Your plan will open automatically next time you sign in. If not, contact us with order number",
-"טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך": "The payment form didn't load. Try refreshing the page, and if it happens again contact us through"
+"טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך": "The payment form didn't load. Try refreshing the page, and if it happens again contact us through",
+"📜 עיון בכל המאגר וסימון לפי חודשים": "📜 Browse the whole database and mark by month",
+"רואים את כל הרשומות של כל חודש, לפי ימים, ומסמנים בלחיצה מה יופיע בלוח. או חפשו כאן שם מסוים:": "See all records of each month, by day, and click to mark what appears in the calendar. Or search for a name here:"
 }
