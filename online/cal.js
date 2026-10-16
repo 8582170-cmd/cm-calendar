@@ -444,7 +444,7 @@ function remEditor(id,date,pre){
     if($('#rV')&&$('#rV').checked){const A=authTok();if(!A){$('#rS').disabled=false;$('#rP').innerHTML='לתזכורת קולית צריך להתחבר. <a href="'+loginUrl()+'">כניסה / הרשמה</a>';return}
       $('#rS').disabled=true;$('#rP').textContent='שומרים את התזכורת הקולית…';
       const rv=await vApi('POST',{id:o.voice&&o.voice.id,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice.filter(n=>n<=7):[0]});$('#rS').disabled=false;
-      if(rv.status===403){$('#rP').innerHTML='תזכורת קולית זמינה במסלול המלא. <a href="'+BASE+'../#plans">למסלולים</a>';return}
+      if(rv.status===403){$('#rP').innerHTML='תזכורת קולית זמינה במסלול המלא. <a href="'+BASE+'../pricing.html">למסלולים</a>';return}
       if(rv.status===409){$('#rVBox').hidden=false;$('#rP').textContent='מאמתים את מספר הטלפון (פעם אחת), ואז לוחצים שוב "שמירה".';return}
       if(rv.status===429){$('#rP').textContent='הגעתם למקסימום של '+(rv.max||50)+' תזכורות קוליות.';return}
       if(rv.status!==200){$('#rP').textContent='לא הצלחנו לשמור את התזכורת הקולית. נסו שוב.';return}

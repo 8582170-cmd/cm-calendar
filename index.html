@@ -65,7 +65,9 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:
 .nav-links{display:flex;gap:2px;align-items:center;flex-wrap:nowrap;white-space:nowrap}
 .nav-links a{color:var(--ink);text-decoration:none;font-weight:600;padding:6px 8px;border-radius:8px}
 .nav-links a.btn-primary{color:var(--teal-ink);margin-inline-start:6px}
-@media (max-width:1180px){.nav-links a{font-size:15px;padding:6px 6px}.nav-links .view-new{display:none}}
+@media (max-width:1400px){.nav-links .view-new{display:none}}
+@media (max-width:1180px){.nav-links a{font-size:15px;padding:6px 6px}}
+@media (max-width:1100px){.nav-links a[href$="#who"]{display:none}}
 @media (max-width:1020px){.nav-links a:nth-child(-n+3){display:none}}
 @media (max-width:820px){.nav-links a:not(.btn):not(.nav-login){display:none}}
 .nav-links a:hover{background:var(--teal-soft)}
@@ -167,6 +169,7 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .plan li::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-top:.6em}
 .plan .btn{width:100%}
 .note{color:var(--mute);font-size:15px;margin-top:18px}
+.plans.compact .plan{padding:18px 18px 16px;gap:8px}.plans.compact .plan h3{font-size:22px}.plans.compact .price{font-size:28px}
 
 /* faq */
 .faq{display:flex;flex-direction:column;max-width:780px}
@@ -240,7 +243,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
       <a href="countdown.html">ספירה לאחור</a>
       <a href="online/">לוח שנה אונליין</a>
       <a href="articles/">מאמרים</a>
-      <a href="#plans">מסלולים</a>
+      <a href="pricing.html">מסלולים</a>
       <a href="#faq">שאלות</a>
       <a class="view-new" href="new.html">✨ תצוגה חדשה</a>
       <a class="nav-login" href="app.html#login">כניסה</a>
@@ -258,7 +261,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
           <a class="btn btn-primary" href="app.html">לעצב לוח בחינם</a>
           <a class="btn btn-ghost" href="simple.html">בונה פשוט ומהיר</a>
         </div>
-        <p class="fine">בלי כרטיס אשראי. משלמים רק כשהלוח מוכן להדפסה.</p>
+        <p class="fine">בונים ורואים הכל בחינם, בלי כרטיס אשראי. הדפסה בלי סימן מים <span id="fromPrice">החל מ־19 ₪</span> ללוח שנתי · <a href="pricing.html">המחירים</a></p>
       </div>
 
       <div class="wall" aria-label="דוגמה ללוח קיר: לוח חודש תשרי תשפ״ז, ומתחתיו עמוד דברי הימים">
@@ -338,15 +341,15 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 
     <section id="plans">
       <div class="sec-head">
-        <h2>מסלולים</h2>
-        <p>משלמים פעם אחת ללוח של שנה שלמה. אפשר להתחיל בחינם ולבחור מסלול כשהלוח מוכן.</p>
+        <h2>כמה זה עולה?</h2>
+        <p>בונים ורואים את כל הלוח בחינם. משלמים פעם אחת, רק כשהלוח מוכן להדפסה.</p>
         <div class="cur-toggle" role="group" aria-label="מטבע">
           <button type="button" id="curIls" aria-pressed="true">₪ שקלים</button>
           <button type="button" id="curUsd" aria-pressed="false">$ דולרים</button>
         </div>
       </div>
-      <div class="plans" id="planGrid" data-cms-skip></div>
-      <p class="note">כל מסלול תקף ללוח של שנה אחת. מי שמחדש בשנה הבאה מקבל הנחה, וכל מה שבנה עובר איתו.</p>
+      <div class="plans compact" id="planGrid" data-cms-skip></div>
+      <p class="note">כל מסלול תקף ללוח של שנה אחת. <a href="pricing.html">להשוואה המלאה בין המסלולים ←</a></p>
     </section>
 
     <section id="faq">
@@ -373,7 +376,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 
   <footer>
     <span>© <span id="yr">2026</span> MyLuach · לוח שנה עברי־לועזי להדפסה</span>
-    <nav class="foot-links" aria-label="קישורים"><a href="gallery.html">גלריה</a><a href="online/">לוח אונליין</a><a href="articles/">מאמרים</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="simple.html">בונה פשוט</a><a href="countdown.html">ספירה לאחור</a><a href="terms.html#contact">יצירת קשר</a></nav>
+    <nav class="foot-links" aria-label="קישורים"><a href="gallery.html">גלריה</a><a href="pricing.html">מחירים</a><a href="online/">לוח אונליין</a><a href="articles/">מאמרים</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="simple.html">בונה פשוט</a><a href="countdown.html">ספירה לאחור</a><a href="terms.html#contact">יצירת קשר</a></nav>
     <span class="foot-note">התאריכים והזמנים מחושבים לפי הלוח העברי. כדאי לבדוק זמנים הלכתיים מול רב או לוח מקומי.</span>
   </footer>
 </div>
@@ -411,13 +414,14 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   }else document.getElementById('hist').innerHTML=H.map(x=>'<li'+(x[3]?' class="ev"':'')+'><b>'+heb(x[0])+'</b><span>'+x[1]+' <span class="y">('+x[2]+')</span></span></li>').join('');
 
   /* מסלולים מתוך plans.js */
-  const P=window.MyLuachPlans,grid=document.getElementById('planGrid');
+  const P=window.MyLuachPlans,grid=document.getElementById('planGrid'),COMPACT=grid.classList.contains('compact');
   let cur='ils';try{cur=localStorage.getItem('luchenu-cur')||'ils'}catch(e){}
   function draw(){
     grid.innerHTML=P.PLANS.map(p=>'<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+
       '<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,cur)+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div>'+
-      '<ul>'+p.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul>'+
-      '<a class="btn '+(p.best?'btn-primary':'btn-ghost')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a></div>').join('');
+      (COMPACT?'':'<ul>'+p.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul>')+
+      (COMPACT?'':'<a class="btn '+(p.best?'btn-primary':'btn-ghost')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a>')+'</div>').join('');
+    const fp=document.getElementById('fromPrice');if(fp){const paid=P.PLANS.filter(p=>p.price[cur]>0).sort((a,b)=>a.price[cur]-b.price[cur])[0];if(paid)fp.textContent='החל מ־'+(P.introPrice(paid,cur)||P.price(paid,cur))}
     document.getElementById('curIls').setAttribute('aria-pressed',cur==='ils');
     document.getElementById('curUsd').setAttribute('aria-pressed',cur==='usd');
   }
