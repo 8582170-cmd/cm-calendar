@@ -15,3 +15,7 @@ create table if not exists public.downloads (
 create index if not exists downloads_created_idx on public.downloads (created_at desc);
 create index if not exists downloads_email_idx on public.downloads (lower(email));
 alter table public.downloads enable row level security;
+
+-- דוגמיות של לוחות שהורדו (בלי תמונות), לבדיקת תקינות. דלי פרטי.
+alter table public.downloads add column if not exists snap text;
+insert into storage.buckets (id, name, public) values ('samples', 'samples', false) on conflict (id) do nothing;

@@ -33,6 +33,7 @@ function clean(c) {
   });
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
+  out.sampleRate = Math.max(0, Math.min(100, parseInt(c.sampleRate == null ? 100 : c.sampleRate, 10) || 0));
   out.ticker = { mode: ['auto', 'selected', 'off'].includes(t.mode) ? t.mode : 'auto', ids: ints(t.ids), hide: ints(t.hide) };
   return out;
 }
@@ -86,6 +87,14 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
       return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length });
     }
+    /* דוגמית של לוח שהורד: התוכן המלא (בלי תמונות), לפתיחה בבונה לקריאה בלבד */
+    if (req.method === 'POST' && b.action === 'snapget') {
+      const p = String(b.path || ''); if (!/^[0-9]{4}-[0-9]{2}\/[a-z0-9]{8,40}\.json$/.test(p)) return json(res, 400, { error: 'path' });
+      const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');
+      const r = await fetch(url + '/storage/v1/object/samples/' + p, { headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }) } });
+      if (!r.ok) return json(res, 404, { error: 'הדוגמית לא נמצאה' });
+      return json(res, 200, { snap: JSON.parse(await r.text()) });
+    }
     /* צפייה במסד הנתונים (קריאה בלבד) */
     if (req.method === 'POST' && b.action === 'table') {
       const T = {
@@ -95,7 +104,7 @@ module.exports = async (req, res) => {
         voice_reminders: { cols: 'phone,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['phone', 'name'] },
         orders: { cols: 'created_at,plan,amount,status,email,coupon,paid_at,id', order: 'created_at.desc', search: ['email', 'plan', 'coupon'] },
         free_lite: { cols: 'email,used_at', order: 'used_at.desc', search: ['email'] },
-        downloads: { cols: 'created_at,email,kind,plan,cal,view,size,pages,page', order: 'created_at.desc', search: ['email', 'kind', 'cal'] },
+        downloads: { cols: 'created_at,email,kind,plan,cal,view,size,pages,page,snap', order: 'created_at.desc', search: ['email', 'kind', 'cal'] },
         email_log: { cols: 'created_at,kind,to_email,subject,provider,ok,error', order: 'created_at.desc', search: ['to_email', 'subject', 'kind'] }
       };
       const t = T[b.name]; if (!t) return json(res, 400, { error: 'table' });

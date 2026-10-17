@@ -144,7 +144,7 @@ window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const
     $('#cmsVars').querySelectorAll('[data-var]').forEach(i=>i.oninput=()=>f.contentWindow.postMessage({type:'cms-var',name:i.dataset.var,value:i.value},location.origin))}
   if(m.type==='cms-data'){api({action:'contentsave',page:CMS.page,data:m.data}).then(r=>{CMS.data=r.data;$('#cmsMsg').textContent='✅ נשמר. הדף באתר מתעדכן תוך דקה.'}).catch(err=>{$('#cmsMsg').textContent='❌ '+err.message})}});
 const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',appointments:'פגישות ביומן',orders:'הזמנות ותשלומים',downloads:'הורדות והדפסות',free_lite:'מימוש הלוח החינמי',email_log:'מיילים שנשלחו'};
-const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',kind:'סוג',cal:'לוח',view:'תצוגה',size:'גודל',pages:'עמודים',page:'מאיזה דף',date:'תאריך',start_t:'שעה',title:'כותרת',place:'מקום',notify:'תזכורת',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
+const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',snap:'דוגמית',kind:'סוג',cal:'לוח',view:'תצוגה',size:'גודל',pages:'עמודים',page:'מאיזה דף',date:'תאריך',start_t:'שעה',title:'כותרת',place:'מקום',notify:'תזכורת',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
 let DBS={name:'profiles',q:'',offset:0};
 const ACT_T=[['downloads','הורדות והדפסות'],['reminders','תזכורות במייל'],['voice_reminders','תזכורות קוליות'],['appointments','פגישות ביומן'],['free_lite','מימוש הלוח החינמי']];
 let ACT={name:'downloads',q:'',offset:0};
@@ -156,8 +156,16 @@ function actSection(){const d=D.dl,sum=o=>Object.values(o||{}).reduce((a,b)=>a+b
   '<div class="row act-stats"><span><b>תזכורות במייל:</b> פעילות '+(r.active||0)+' · ממתינות לאישור '+(r.pending||0)+' · כבויות '+(r.off||0)+'</span>'+(u.voice!=null?'<span><b>תזכורות קוליות פעילות:</b> '+u.voice+'</span>':'')+'</div>'+
   '<div class="row" role="tablist">'+ACT_T.map(([k,v])=>'<button class="btn'+(ACT.name===k?' primary':'')+'" type="button" data-act="'+k+'">'+v+'</button>').join('')+'</div>'+
   '<div class="row"><input type="search" id="actQ" placeholder="חיפוש לפי מייל, שם או טלפון" style="width:240px"><button class="btn" type="button" id="actGo">חיפוש</button><button class="btn" type="button" id="actCsv">הורדה לאקסל (CSV)</button></div>'+
-  '<div id="actOut" style="margin-top:10px"></div></section>'}
-function actBind(){if(!$('#actOut'))return;$('#actQ').value=ACT.q;
+  '<div id="actOut" style="margin-top:10px"></div>'+
+  '<p class="sub" style="margin-top:12px">דוגמיות: בכל הורדה נשמר (לפי השיעור שנקבע כאן) עותק של תוכן הלוח, בלי התמונות, ואפשר לפתוח אותו בכפתור "פתיחה" ברשימת ההורדות. <label>שיעור דגימה: <input type="number" id="sRate" min="0" max="100" style="width:70px"> %</label> (0 = לא לשמור. אחרי שינוי לוחצים "שמירה" למטה.)</p></section>'}
+/* פתיחת דוגמית בבונה (חלון חדש, קריאה בלבד) */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-snap]');if(!b)return;
+  const w=window.open((b.dataset.cd?'/countdown.html':'/app.html')+'#snapview','_blank');if(!w){alert('הדפדפן חסם את החלון. אפשרו חלונות קופצים לדף הזה.');return}
+  let st=null,ready=false;const send=()=>{if(st&&ready)w.postMessage({type:'snap',state:st},location.origin)};
+  const on=ev=>{if(ev.source===w&&ev.data&&ev.data.type==='snap-ready'){ready=true;send();window.removeEventListener('message',on)}};window.addEventListener('message',on);
+  api({action:'snapget',path:b.dataset.snap}).then(r=>{st=r.snap;send()}).catch(err=>{try{w.close()}catch(x){}alert(err.message||'שגיאה')})});
+function actBind(){if(!$('#actOut'))return;
+  if($('#sRate')){$('#sRate').value=C.sampleRate==null?100:C.sampleRate;$('#sRate').oninput=e=>{C.sampleRate=Math.max(0,Math.min(100,+e.target.value||0))}}$('#actQ').value=ACT.q;
   const go=()=>{ACT.q=$('#actQ').value.trim();ACT.offset=0;tvLoad(ACT,'actOut')};
   document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{ACT={name:b.dataset.act,q:$('#actQ').value.trim(),offset:0};document.querySelectorAll('[data-act]').forEach(x=>x.classList.toggle('primary',x===b));tvLoad(ACT,'actOut')});
   $('#actGo').onclick=go;$('#actQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#actCsv').onclick=()=>tvCsv(ACT);tvLoad(ACT,'actOut')}
@@ -169,7 +177,7 @@ function dbCell(k,v){if(v==null||v==='')return k==='email'?'(לא מחובר)':'
 function dbLoad(){tvLoad(DBS,'dbOut')}
 function tvLoad(S,out){const o=$('#'+out);o.textContent='טוען…';api({action:'table',name:S.name,q:S.q,offset:S.offset}).then(r=>{
   if(r.error){o.innerHTML='<p class="st-failed">'+esc(r.error)+'</p>';return}
-  o.innerHTML=(r.rows.length?'<div class="scroll"><table class="tbl"><thead><tr>'+r.cols.map(c=>'<th>'+esc(DB_C[c]||c)+'</th>').join('')+'</tr></thead><tbody>'+r.rows.map(x=>'<tr>'+r.cols.map(c=>'<td'+(/email|phone|id/.test(c)?' dir="ltr"':'')+'>'+esc(dbCell(c,x[c]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>אין נתונים.</p>')+
+  o.innerHTML=(r.rows.length?'<div class="scroll"><table class="tbl"><thead><tr>'+r.cols.map(c=>'<th>'+esc(DB_C[c]||c)+'</th>').join('')+'</tr></thead><tbody>'+r.rows.map(x=>'<tr>'+r.cols.map(c=>c==='snap'?'<td>'+(x.snap?'<button class="btn small" type="button" data-snap="'+esc(x.snap)+'" data-cd="'+(/countdown/.test(x.page||'')||x.kind==='countdown'?1:'')+'">פתיחה</button>':'')+'</td>':'<td'+(/email|phone|id/.test(c)?' dir="ltr"':'')+'>'+esc(dbCell(c,x[c]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>אין נתונים.</p>')+
    '<div class="row" style="margin-top:8px">'+(S.offset?'<button class="btn" type="button" id="'+out+'Prev">← הקודמים</button>':'')+(r.more?'<button class="btn" type="button" id="'+out+'Next">הבאים →</button>':'')+'<span class="sub">שורות '+(S.offset+1)+'–'+(S.offset+r.rows.length)+'</span></div>';
   if($('#'+out+'Prev'))$('#'+out+'Prev').onclick=()=>{S.offset=Math.max(0,S.offset-50);tvLoad(S,out)};if($('#'+out+'Next'))$('#'+out+'Next').onclick=()=>{S.offset+=50;tvLoad(S,out)}}).catch(e=>{o.textContent=e.message})}
 function dbCsv(){tvCsv(DBS)}
