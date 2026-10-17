@@ -13,6 +13,14 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');
     return json(res, 200, lib);
   }
+  /* חיפוש מיקום (מיקוד / כתובת / נקודה) */
+  if (cp === '_geo') return require('./_geo')(req, res, json);
+  /* אתר שומר שבת: האם עכשיו שבת או חג במיקום של הגולש */
+  if (cp === '_shabbat') {
+    res.setHeader('Cache-Control', 'private, no-store');
+    try { const S = require('./_shabbat'); return json(res, 200, await S.status(Date.now(), S.placeOf(req), await loadConfig())); }
+    catch (e) { console.error('shabbat', e.message); return json(res, 200, { on: false, closed: false }); }
+  }
   if (cp) {
     const { loadSetting } = require('./_lib');
     const all = await loadSetting('content'), c = ((all && all.pages) || {})[cp] || null;

@@ -1132,3 +1132,4 @@ body.fx-on .page .fx-sel[contenteditable]{cursor:text;background:#fff8}
 .fx-bar input[type=color]{width:28px;height:26px;border:0;padding:0;background:none;cursor:pointer}
 @media print{.fx-h,.fx-bar{display:none!important}.fx-sel,.fx-hov{outline:0!important}.fx-hidden{visibility:hidden!important;opacity:1!important}}
 .snap-bar{position:sticky;top:0;z-index:95;background:#7a1f1f;color:#fff;text-align:center;padding:6px 10px;font-size:14px;font-weight:700}
+.geo-pick{margin:-2px 0 8px;width:100%}

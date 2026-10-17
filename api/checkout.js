@@ -25,6 +25,8 @@ module.exports = async (req, res) => {
       amount = info.amount;
       if (!(amount >= 1)) return json(res, 400, { error: 'amount too low' });
     }
+    /* אתר שומר שבת: לא פותחים תשלום בשבת ובחג (לפי מיקום הגולש) */
+    if (await require('./_shabbat').closedNow(req, await loadConfig())) return json(res, 423, { error: 'shabbat' });
     const mosad = env('NEDARIM_MOSAD'), apiValid = env('NEDARIM_API_VALID');
     if (!mosad || !apiValid) return json(res, 503, { error: 'payments not configured' });
     const user = await getUser(req);

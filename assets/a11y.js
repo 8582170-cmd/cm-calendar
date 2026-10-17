@@ -2,6 +2,8 @@
 (function(){
   'use strict';
   if (window.__mlA11y) return; window.__mlA11y = true;
+  /* אתר שומר שבת */
+  try { var sh = document.createElement('script'); sh.src = '/assets/shabbat.js?v=1'; sh.async = true; (document.head || document.documentElement).appendChild(sh); } catch (e) {}
   var KEY = 'myluach-a11y', st = {};
   try { st = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch (e) {}
   var css = '' +

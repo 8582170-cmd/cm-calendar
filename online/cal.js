@@ -64,7 +64,7 @@ function parseHebYear(v){v=String(v||'').trim();if(/^\d{4}$/.test(v))return +v;c
 
 /* ---------- מקום וזמנים ---------- */
 const CITIES=window.LC_CITIES||[];
-const city=()=>CITIES.find(c=>c.id===st.city)||CITIES[0];
+const city=()=>(st.city==='custom'&&st.custom&&isFinite(st.custom.lat))?st.custom:CITIES.find(c=>c.id===st.city)||CITIES[0];
 const cityName=c=>HE()?c.he:c.en;
 function loc(){const c=city();return new Location(c.lat,c.lng,c.il,c.tz,c.en,'',undefined,c.el||0)}
 const fmtT=d=>{if(!(d instanceof Date)||isNaN(d))return '—';try{return new Intl.DateTimeFormat(HE()?'he-IL':'en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:city().tz}).format(d)}catch(e){return '—'}};
@@ -645,7 +645,7 @@ function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t
 function renderNav(){
   $('#nav').innerHTML=VIEWS.filter(v=>v!=='day').map(v=>{const cur=v==='week'?view==='week'||view==='day':v==='countdown'?view==='tools'&&sub==='countdown':v==='tools'?view==='tools'&&sub!=='countdown':v===view;return '<a href="#'+v+'" data-nav="'+v+'"'+(cur?' aria-current="page"':'')+'>'+t(v)+'</a>'}).join('');
   const sel=$('#city');const groups=[...new Set(CITIES.map(c=>c.g))];
-  sel.innerHTML=groups.map(g=>'<optgroup label="'+esc(HE()?g:CITIES.find(c=>c.g===g).gen)+'">'+CITIES.filter(c=>c.g===g).map(c=>'<option value="'+c.id+'">'+esc(cityName(c))+'</option>').join('')+'</optgroup>').join('');sel.value=st.city;
+  sel.innerHTML=groups.map(g=>'<optgroup label="'+esc(HE()?g:CITIES.find(c=>c.g===g).gen)+'">'+CITIES.filter(c=>c.g===g).map(c=>'<option value="'+c.id+'">'+esc(cityName(c))+'</option>').join('')+'</optgroup>').join('')+'<optgroup label="'+(HE()?'המיקום שלי':'My location')+'">'+(st.custom?'<option value="custom">'+esc(cityName(st.custom))+'</option>':'')+'<option value="__geo">📍 '+(HE()?'המיקום שלי, מיקוד או כתובת…':'My location, zip or address…')+'</option></optgroup>';sel.value=city().id;
   $('#lang').textContent=HE()?'English':'עברית';
   document.documentElement.lang=st.lang;document.documentElement.dir=HE()?'rtl':'ltr';
   document.querySelectorAll('[data-t]').forEach(x=>x.textContent=t(x.dataset.t));
@@ -657,7 +657,13 @@ function render(){
   document.body.classList.toggle('wide-view',view==='week');{let ps=document.getElementById('pgsz');if(!ps){ps=document.createElement('style');ps.id='pgsz';document.head.appendChild(ps)}ps.textContent=view==='week'?'@page{size:A4 landscape;margin:7mm}':'';}
   if(!PAGE.static)document.title=(view==='month'?monthDays().title+' · ':t(view)+' · ')+t('siteName');
 }
-function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,mode:st.mode,opts:st.opts,zm:st.zm,dzSel:st.dzSel,wkZ:st.wkZ,lrnSel:st.lrnSel})}
+/* מיקום שלי / מיקוד / כתובת (assets/geo.js נטען רק כשצריך) */
+function pickGeo(){const go=()=>window.MyLuachGeo.open({en:!HE(),near:(lat,lng)=>{let b=null,bd=1e9;for(const c of CITIES){const r=Math.PI/180,x=(c.lat-lat)*r,y=(c.lng-lng)*r,h=Math.sin(x/2)**2+Math.cos(lat*r)*Math.cos(c.lat*r)*Math.sin(y/2)**2,d=12742*Math.asin(Math.sqrt(h));if(d<bd){bd=d;b=c}}return b?{tz:b.tz,el:b.el,km:bd,candle:b.candle}:null}}).then(p=>{
+    if(!p)return;let b=null,bd=1e9;for(const c of CITIES){const d=Math.hypot(c.lat-p.lat,(c.lng-p.lng)*Math.cos(p.lat*Math.PI/180))*111;if(d<bd){bd=d;b=c}}
+    st.custom={id:'custom',he:p.name,en:p.name,g:'',gen:'',lat:p.lat,lng:p.lng,el:p.el,tz:p.tz,il:p.il,candle:b&&bd<10?b.candle:(p.il?30:18)};st.city='custom';saveSt();evCache.clear();
+    if(PAGE.static&&PAGE.city){location.href=(PAGE.root||'./')+'#'+(PAGE.view||'month');return}render()});
+  if(window.MyLuachGeo)return go();const s=document.createElement('script');s.src='/assets/geo.js?v=1';s.onload=go;document.head.appendChild(s)}
+function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,custom:st.custom,mode:st.mode,opts:st.opts,zm:st.zm,dzSel:st.dzSel,wkZ:st.wkZ,lrnSel:st.lrnSel})}
 
 /* ---------- אירועים בממשק ---------- */
 document.addEventListener('click',e=>{
@@ -697,6 +703,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#dlg').hidden)closeDlg();const ym=e.target.closest&&e.target.closest('[data-goto]');if(ym&&(e.key==='Enter'||e.key===' ')){e.preventDefault();ym.click()}});
 document.addEventListener('change',e=>{
   const T2=e.target;
+  if(T2.id==='city'&&T2.value==='__geo'){T2.value=city().id;pickGeo();return}
   if(T2.id==='city'){st.city=T2.value;saveSt();evCache.clear();if(PAGE.static&&PAGE.city){location.href=(PAGE.root||'./')+PAGE.view+'/'+st.city+'.html';return}render();return}
   if(T2.dataset.opt){st.opts[T2.dataset.opt]=T2.checked;saveSt();evCache.clear();render();return}
   if(T2.id==='zDate'&&T2.value){anchor=fromIso(T2.value);render();return}

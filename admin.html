@@ -103,6 +103,7 @@ function render(){
   '<section><h2>קופונים</h2><p class="sub">קוד שהלקוח מקליד בחלון התשלום. "מקסימום שימושים" 0 = בלי הגבלה. תאריך ריק = בלי תאריך סיום.</p><div class="scroll"><table class="tbl" id="cpn"><thead><tr><th>פעיל</th><th>קוד</th><th>הנחה %</th><th>מסלולים</th><th>עד תאריך</th><th>מקס׳ שימושים</th><th>נוצל</th><th>הערה</th><th></th></tr></thead><tbody>'+
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
+  shabbatSection()+
   '<section><h2>מנועי חיפוש</h2><p class="sub">שולח לבינג (ול-Yandex) את כל דפי האתר מתוך מפת האתר, כדי שיסרקו אותם מהר. אפשר ללחוץ אחרי כל שינוי גדול באתר.</p><div class="row"><button class="btn" type="button" id="inNow">שליחת כל הדפים לבינג (IndexNow)</button><span id="inMsg"></span></div></section>'+
   cmsSection()+pgSection()+libSection()+tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
@@ -164,6 +165,15 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-snap]');if
   let st=null,ready=false;const send=()=>{if(st&&ready)w.postMessage({type:'snap',state:st},location.origin)};
   const on=ev=>{if(ev.source===w&&ev.data&&ev.data.type==='snap-ready'){ready=true;send();window.removeEventListener('message',on)}};window.addEventListener('message',on);
   api({action:'snapget',path:b.dataset.snap}).then(r=>{st=r.snap;send()}).catch(err=>{try{w.close()}catch(x){}alert(err.message||'שגיאה')})});
+function shabbatSection(){const S=C.shabbat=Object.assign({on:true,yt:true,before:0,after:0,deg:8.5},C.shabbat||{});
+  return '<section><h2>אתר שומר שבת</h2><p class="sub">בשבת ובחג האתר סגור לגולשים ומציג "שבת שלום" עם שעת החזרה. הזמנים לפי המיקום של כל גולש (לפי המיקום שבחר באתר, או לפי האינטרנט שלו). גם התשלום חסום בזמן הזה. דף הניהול לא נסגר.</p>'+
+  '<div class="row"><label class="chk"><input type="checkbox" id="shOn"'+(S.on?' checked':'')+'> האתר סגור בשבת</label><label class="chk"><input type="checkbox" id="shYt"'+(S.yt?' checked':'')+'> וגם ביום טוב (2 ימים בחו״ל)</label></div>'+
+  '<div class="row"><label class="fld">כמה דקות לפני השקיעה לסגור<input type="number" id="shB" min="0" max="120" value="'+(+S.before||0)+'" style="width:90px"></label>'+
+  '<label class="fld">צאת הכוכבים<select id="shDeg">'+[[7.083,'3 כוכבים בינוניים (7.08°)'],[8.5,'3 כוכבים קטנים (8.5°)'],[11.5,'זהיר יותר (11.5°)'],[16.1,'רבנו תם בקירוב (16.1°)']].map(([v,l])=>'<option value="'+v+'"'+(+S.deg===v?' selected':'')+'>'+l+'</option>').join('')+'</select></label>'+
+  '<label class="fld">כמה דקות אחרי צאת הכוכבים לפתוח<input type="number" id="shA" min="0" max="120" value="'+(+S.after||0)+'" style="width:90px"></label></div>'+
+  '<p class="sub">אחרי שינוי לוחצים "שמירה" למטה.</p></section>'}
+function shabbatBind(){if(!$('#shOn'))return;const S=C.shabbat;
+  $('#shOn').onchange=e=>{S.on=e.target.checked};$('#shYt').onchange=e=>{S.yt=e.target.checked};$('#shB').oninput=e=>{S.before=+e.target.value||0};$('#shA').oninput=e=>{S.after=+e.target.value||0};$('#shDeg').onchange=e=>{S.deg=+e.target.value}}
 function actBind(){if(!$('#actOut'))return;
   if($('#sRate')){$('#sRate').value=C.sampleRate==null?100:C.sampleRate;$('#sRate').oninput=e=>{C.sampleRate=Math.max(0,Math.min(100,+e.target.value||0))}}
   {const est=()=>{const px=+$('#sPx').value,q=+$('#sQ').value;const bpp={35:.8,55:1.1,75:1.6,90:2.8}[q]||1.1;$('#sEst').textContent='בערך '+Math.max(1,Math.round(px*px*.66*bpp/8/1024))+'KB לתמונה'};
@@ -302,7 +312,7 @@ function bind(){
   if($('#vBox'))voiceLoad();
   if($('#libBox'))libLoad();
   if($('#pgList'))pgLoad();
-  actBind();
+  actBind();shabbatBind();
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
     $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};

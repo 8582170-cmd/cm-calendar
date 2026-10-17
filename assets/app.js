@@ -2836,6 +2836,11 @@ $('#addEvSide').onclick=$('#addEvTop').onclick=()=>openEventEditor({});
 $('#adAdd').onclick=()=>{if(!canF('extraPages')){openUpgrade('extraPages');return}state.ads.push({id:uid(),type:$('#adType').value,after:'end',img:null,text:''});save();render()};
 $('#adList').addEventListener('click',e=>{const id=e.target.dataset&&e.target.dataset.addel;if(id)removeExtra(id)});
 
+/* המיקום שלי / מיקוד / כתובת */
+if($('#geoPick'))$('#geoPick').onclick=()=>{if(!window.MyLuachGeo)return;
+  MyLuachGeo.open({en:EN,near:(lat,lng)=>{const n=nearest(lat,lng);return {tz:n.city.tz,el:n.city.el,km:n.km}}}).then(p=>{if(!p)return;
+    const n=nearest(p.lat,p.lng);state.s.custom={name:p.name,lat:p.lat,lng:p.lng,el:p.el,tz:p.tz,il:p.il};state.s.il=p.il;
+    state.s.candleMins=n.km<10?n.city.candle:(p.il?30:18);$('#cityFilter').value='';set('city','custom')})};
 /* custom location */
 function fillFromCoords(lat,lng,name){
   const n=nearest(lat,lng);

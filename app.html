@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610180350">
+<link rel="stylesheet" href="assets/app.css?v=202610181010">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body>
@@ -224,6 +224,7 @@
         <div class="loc-now" id="locNow"></div>
         <label class="fld">חיפוש עיר (כ־150 ערים בארץ ובעולם)<input id="cityFilter" type="search" placeholder="הקלידו שם עיר או מדינה"></label>
         <label class="fld">עיר<select id="city"></select></label>
+        <button class="btn small geo-pick" type="button" id="geoPick">📍 המיקום שלי, או לפי מיקוד / כתובת</button>
         <details class="sub-box" id="customLoc">
           <summary>מיקום מדויק מגוגל מפות או לפי קווי אורך ורוחב</summary>
           <div class="inner">
@@ -616,6 +617,7 @@
 <script src="assets/stickers.js?v=202610130515"></script>
 <script src="assets/img-smart.js?v=202610130515"></script>
 <script src="assets/library/index.js?v=1" defer></script>
-<script src="assets/app.js?v=202610180350"></script>
+<script src="assets/geo.js?v=1"></script>
+<script src="assets/app.js?v=202610181010"></script>
 </body>
 </html>
