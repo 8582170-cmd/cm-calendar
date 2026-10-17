@@ -131,6 +131,19 @@ async function bestPlan(user) {
   let plan = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (!plan || rank(o.plan) > rank(plan))) plan = o.plan; });
   return plan;
 }
+/* המסלול ששולם, ממתי, וכמה הורדות בתשלום נוצלו מאז (טבלת downloads; אם עוד לא נוצרה: used=null) */
+async function planInfo(user) {
+  const since = new Date(Date.now() - 400 * 864e5).toISOString();
+  const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
+  const rows = await db('orders?select=plan,paid_at&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or + '&order=paid_at.asc');
+  const rank = id => LP.PLANS.findIndex(p => p.id === id);
+  let best = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (!best || rank(o.plan) >= rank(best.plan))) best = o; });
+  if (!best) return { plan: null, limit: 0, used: 0, left: 0 };
+  const limit = (LP.PLANS.find(p => p.id === best.plan) || {}).downloads || 0;
+  let used = null;
+  try { const d = await db('downloads?select=id&kind=eq.paid&user_id=eq.' + user.id + '&created_at=gte.' + encodeURIComponent(best.paid_at) + '&limit=1000'); used = (d || []).length; } catch (e) { used = null; }
+  return { plan: best.plan, since: best.paid_at, limit, used, left: used == null ? null : Math.max(0, limit - used) };
+}
 /* רישום המשתמש במאגר (מייל, ובהמשך טלפון) */
 async function upsertProfile(user, extra) {
   try { await db('profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: user.id, email: user.email, updated_at: new Date().toISOString(), ...(extra || {}) }) }); } catch (e) { console.error('profile', e.message); }
@@ -143,4 +156,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { loadSetting, saveSetting, bestPlan, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
+module.exports = { loadSetting, saveSetting, bestPlan, planInfo, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };

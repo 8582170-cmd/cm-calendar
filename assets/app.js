@@ -10,7 +10,7 @@ const AUTH={user:null,ready:false},LOGIN_MONTHS=8;
 const CDMODE=window.MYLUACH_MODE==='countdown',SIMPLE=window.MYLUACH_MODE==='simple',SKEY=CDMODE?'state-cd':'state';
 /* גרסה באנגלית (simple-en.html, countdown-en.html): תאריכים, חגים וכיוון הדף באנגלית; טקסטי הממשק מתורגמים ב-assets/i18n-en.js */
 const EN=document.documentElement.lang==='en';const PGN=n=>EN?n.replace(/^(countdown|simple)\.html/,'$1-en.html'):n;
-const PLAN0=()=>LITE?{...(LP?LP.byId('free'):{}),months:99,watermark:false,lite:true,features:{}}:SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?(()=>{const c=LP.current();return c.id==='free'&&AUTH.ready&&!AUTH.user?{...c,months:Math.min(c.months,LOGIN_MONTHS),needLogin:true}:c})():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
+const PLAN0=()=>LITE?{...(LP?LP.byId('free'):{}),months:99,watermark:false,lite:true,features:{}}:SAMPLE?{...(LP?LP.byId('full'):{}),months:99,watermark:'light',features:new Proxy({},{get:()=>true})}:LP?(()=>{let c=LP.current();if(AUTH.ready&&!AUTH.user)c=LP.byId('free');return c.id==='free'&&AUTH.ready&&!AUTH.user?{...c,months:Math.min(c.months,LOGIN_MONTHS),needLogin:true}:c})():{months:99,events:Infinity,downloads:99,watermark:false,features:new Proxy({},{get:()=>true})};
 /* לוח ספירה לאחור קצר (עד FREE_CD ימים) פתוח בחינם: בלי סימן מים, ומדפיסים בלי לנצל הורדה */
 const FREE_CD=40;
 function freeCd(){try{return state.s.view==='countdown'&&cdDays().days.length<=FREE_CD}catch(e){return false}}
@@ -3250,7 +3250,10 @@ async function refreshAccount(){
   let claim=[];try{const o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null');if(o&&o.id)claim=[o.id]}catch(e){}
   try{const h=await authHeaders();const r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({claim})});if(!r.ok)return;acctInfo=await r.json();
     const rank=id=>LP.PLANS.findIndex(p=>p.id===id);
-    if(acctInfo.plan&&rank(acctInfo.plan)>rank(LP.current().id)){LP.setCurrent(acctInfo.plan);syncPlanUI();render()}
+    const sp=acctInfo.plan||'free',was=LP.current().id;
+    if(sp!==was)LP.setCurrent(sp);
+    if(acctInfo.dl&&acctInfo.dl.used!=null){try{localStorage.setItem('luchenu-downloads',String(acctInfo.dl.used))}catch(e){}}
+    if(sp!==was||acctInfo.dl){syncPlanUI();render()}
   }catch(e){}
 }
 function acctBtn(){const b=$('#acctBtn');if(!b)return;const ic='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.2-8 5v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1c0-2.8-3.6-5-8-5Z"/></svg>';
@@ -3436,7 +3439,14 @@ function doPrint(){
   const left=LP.downloadsLeft();
   if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
-  m.querySelector('#dlGo').onclick=()=>{LP.useDownload();m.remove();syncPlanUI();logDl('paid');setTimeout(ourPrint,50)};
+  m.querySelector('#dlGo').onclick=async()=>{const b=m.querySelector('#dlGo');b.disabled=true;b.textContent='בודקים…';
+    let r={status:0},j={};
+    try{const h=await authHeaders();const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:/simple/.test(location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
+    if(r.status===401){m.remove();loginModal('צריך להתחבר מחדש כדי להדפיס.');return}
+    if(r.status===403){m.remove();await refreshAccount();modal('<h3>לא נמצא תשלום בחשבון</h3><p class="hint">לא מצאנו מסלול ששולם בחשבון '+esc((user&&user.email)||'')+'. אם שילמתם עם כתובת מייל אחרת, התחברו איתה. אם שילמתם עכשיו, נסו שוב בעוד דקה.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
+    if(r.status===409){m.remove();try{localStorage.setItem('luchenu-downloads',String(j.limit||P.downloads))}catch(e){}syncPlanUI();doPrint();return}
+    if(r.ok&&j.left!=null){try{localStorage.setItem('luchenu-downloads',String(Math.max(0,(j.limit||P.downloads)-j.left)))}catch(e){}}else if(!j.reprint)LP.useDownload();
+    m.remove();syncPlanUI();setTimeout(ourPrint,50)};
 }
 /* ---------- לוח חינמי לשנה: גרסה מוגבלת, בלי סימן מים, פעם אחת לכל משתמש ---------- */
 const LITE_LIM={events:25,photos:10,zmanim:3};
