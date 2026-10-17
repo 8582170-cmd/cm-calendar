@@ -51,7 +51,7 @@ function publicPricing(cfg) {
   });
   const s = cfg.sale;
   const sale = s && s.on && +s.percent > 0 && live(s) ? { percent: +s.percent, plans: s.plans && s.plans.length ? s.plans : PAID, until: s.until || '', label: s.label || '' } : null;
-  return { plans, sale };
+  return { plans, sale, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate };
 }
 
 /* קופון בתוקף? מחזיר את הקופון או הודעת שגיאה */

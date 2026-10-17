@@ -3444,7 +3444,7 @@ function doPrint(){
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=async()=>{const b=m.querySelector('#dlGo');b.disabled=true;b.textContent='בודקים…';
     let r={status:0},j={};
-    try{const h=await authHeaders();const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',snap:snapOf(),cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
+    try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
     if(r.status===401){m.remove();loginModal('צריך להתחבר מחדש כדי להדפיס.');return}
     if(r.status===403){m.remove();await refreshAccount();modal('<h3>לא נמצא תשלום בחשבון</h3><p class="hint">לא מצאנו מסלול ששולם בחשבון '+esc((user&&user.email)||'')+'. אם שילמתם עם כתובת מייל אחרת, התחברו איתה. אם שילמתם עכשיו, נסו שוב בעוד דקה.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
     if(r.status===409){m.remove();try{localStorage.setItem('luchenu-downloads',String(j.limit||P.downloads))}catch(e){}syncPlanUI();doPrint();return}
@@ -3500,9 +3500,17 @@ function openSample(){
   };
 }
 /* רישום ההורדה בשרת, לדף הניהול (לא חוסם את ההדפסה) */
-function snapOf(){const strip=v=>{if(typeof v==='string')return /^(data|blob):/.test(v)?null:v;if(Array.isArray(v))return v.map(strip);if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=strip(v[k]);return o}return v};
-  try{const o=strip(JSON.parse(JSON.stringify(state)));o._snap={at:new Date().toISOString(),page:window.location.pathname,plan:(LP&&LP.current().id)||''};return o}catch(e){return null}}
-async function logDl(kind,extra){const sn=snapOf();try{const h=await Promise.race([authHeaders().catch(()=>({})),new Promise(r=>setTimeout(()=>r({}),2000))]);const s=state.s;
+/* דוגמית לבדיקת תקינות: עותק של הלוח. התמונות מוקטנות מאוד (לבדיקת המיקום), לפי התדירות שנקבעה בניהול, ואחרת מושמטות */
+function snapThumb(src){return new Promise(res=>{const im=new Image();im.onload=()=>{try{const k=Math.min(1,220/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.55))}catch(e){res(null)}};im.onerror=()=>res(null);im.src=src;setTimeout(()=>res(null),4000)})}
+function snapOf(){let raw;try{raw=JSON.parse(JSON.stringify(state))}catch(e){return Promise.resolve(null)}
+  const meta={at:new Date().toISOString(),page:window.location.pathname,plan:(LP&&LP.current().id)||''};
+  return (async()=>{let rate=20;try{const d=LP&&LP.ready?await Promise.race([LP.ready,new Promise(r=>setTimeout(()=>r(null),800))]):null;if(d&&d.snapImg!=null)rate=+d.snapImg}catch(e){}
+    const withImg=Math.random()*100<rate,cache=new Map();let n=0;
+    const walk=async v=>{if(typeof v==='string'){if(/^blob:/.test(v))return null;if(/^data:image\//.test(v)){if(!withImg||n>=80)return null;if(!cache.has(v)){n++;cache.set(v,await snapThumb(v))}return cache.get(v)}return /^data:/.test(v)?null:v}
+      if(Array.isArray(v)){const a=[];for(const x of v)a.push(await walk(x));return a}
+      if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=await walk(v[k]);return o}return v};
+    try{const o=await walk(raw);o._snap={...meta,img:withImg};return o}catch(e){return null}})()}
+async function logDl(kind,extra){const snP=snapOf();try{const sn=await snP;const h=await Promise.race([authHeaders().catch(()=>({})),new Promise(r=>setTimeout(()=>r({}),2000))]);const s=state.s;
   const cal=($('#stageTitle')||{}).textContent||'';const sz=s.size==='custom'?'custom':s.size;
   fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind,snap:sn,plan:(LP&&LP.current().id)||'',cal:cal.slice(0,120),view:s.view||'month',size:sz,pages:RS.count,page:CDMODE?'countdown':document.body.classList.contains('simple')||/simple/.test(window.location.pathname)?'simple':'app',...(extra||{})})}).catch(()=>{})}catch(e){console.warn('logDl',e)}}
 function syncPlanUI(){
@@ -3846,7 +3854,7 @@ syncPlanUI();
   {const h=window.location.hash||'';if(!CDMODE&&(h.startsWith('#countdown&')||h==='#preset-countdown')){window.location.replace(PGN('countdown.html')+(h==='#preset-countdown'?'':h));return}}
   const saved=SNAPVIEW?await new Promise(res=>{window.addEventListener('message',e=>{if(e.origin===window.location.origin&&e.data&&e.data.type==='snap')res(e.data.state)});window.opener.postMessage({type:'snap-ready'},window.location.origin)}):await idbGet(SKEY);
   if(saved)state=merge(DEFAULT,saved);
-  if(SNAPVIEW){SNAPPLAN=(saved&&saved._snap&&saved._snap.plan)||'';state.s.uiMode='adv';document.body.classList.add('snapview');document.body.insertAdjacentHTML('afterbegin','<div class="snap-bar no-print">דוגמית של לוח שהורד · לקריאה בלבד · התמונות לא נשמרות בדוגמית · שינויים כאן לא נשמרים</div>')}
+  if(SNAPVIEW){SNAPPLAN=(saved&&saved._snap&&saved._snap.plan)||'';state.s.uiMode='adv';document.body.classList.add('snapview');document.body.insertAdjacentHTML('afterbegin','<div class="snap-bar no-print">דוגמית של לוח שהורד · לקריאה בלבד · '+(saved&&saved._snap&&saved._snap.img?'התמונות מוקטנות':'בדוגמית הזאת לא נשמרו תמונות')+' · שינויים כאן לא נשמרים</div>')}
   if(CDMODE){const s=state.s;if(!saved||s.view!=='countdown'){Object.assign(s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',orient:'portrait',zmanimMode:'none',cover:false})}s.view='countdown';document.body.classList.add('cd-app')}
   else if(state.s.view==='countdown')state.s.view='month';
   if(!state.s.uiMode)state.s.uiMode=saved?'adv':'wizard';

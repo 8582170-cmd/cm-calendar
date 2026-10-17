@@ -157,7 +157,7 @@ function actSection(){const d=D.dl,sum=o=>Object.values(o||{}).reduce((a,b)=>a+b
   '<div class="row" role="tablist">'+ACT_T.map(([k,v])=>'<button class="btn'+(ACT.name===k?' primary':'')+'" type="button" data-act="'+k+'">'+v+'</button>').join('')+'</div>'+
   '<div class="row"><input type="search" id="actQ" placeholder="חיפוש לפי מייל, שם או טלפון" style="width:240px"><button class="btn" type="button" id="actGo">חיפוש</button><button class="btn" type="button" id="actCsv">הורדה לאקסל (CSV)</button></div>'+
   '<div id="actOut" style="margin-top:10px"></div>'+
-  '<p class="sub" style="margin-top:12px">דוגמיות: בכל הורדה נשמר (לפי השיעור שנקבע כאן) עותק של תוכן הלוח, בלי התמונות, ואפשר לפתוח אותו בכפתור "פתיחה" ברשימת ההורדות. <label>שיעור דגימה: <input type="number" id="sRate" min="0" max="100" style="width:70px"> %</label> (0 = לא לשמור. אחרי שינוי לוחצים "שמירה" למטה.)</p></section>'}
+  '<p class="sub" style="margin-top:12px">דוגמיות: בכל הורדה נשמר (לפי השיעור שנקבע כאן) עותק של תוכן הלוח, בלי התמונות, ואפשר לפתוח אותו בכפתור "פתיחה" ברשימת ההורדות. <label>שיעור דגימה: <input type="number" id="sRate" min="0" max="100" style="width:70px"> %</label> · <label>מתוכן, עם תמונות מוקטנות: <input type="number" id="sImg" min="0" max="100" style="width:70px"> %</label> (0 = לא לשמור. אחרי שינוי לוחצים "שמירה" למטה.)</p></section>'}
 /* פתיחת דוגמית בבונה (חלון חדש, קריאה בלבד) */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-snap]');if(!b)return;
   const w=window.open((b.dataset.cd?'/countdown.html':'/app.html')+'#snapview','_blank');if(!w){alert('הדפדפן חסם את החלון. אפשרו חלונות קופצים לדף הזה.');return}
@@ -165,7 +165,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-snap]');if
   const on=ev=>{if(ev.source===w&&ev.data&&ev.data.type==='snap-ready'){ready=true;send();window.removeEventListener('message',on)}};window.addEventListener('message',on);
   api({action:'snapget',path:b.dataset.snap}).then(r=>{st=r.snap;send()}).catch(err=>{try{w.close()}catch(x){}alert(err.message||'שגיאה')})});
 function actBind(){if(!$('#actOut'))return;
-  if($('#sRate')){$('#sRate').value=C.sampleRate==null?100:C.sampleRate;$('#sRate').oninput=e=>{C.sampleRate=Math.max(0,Math.min(100,+e.target.value||0))}}$('#actQ').value=ACT.q;
+  if($('#sRate')){$('#sRate').value=C.sampleRate==null?100:C.sampleRate;$('#sRate').oninput=e=>{C.sampleRate=Math.max(0,Math.min(100,+e.target.value||0))}}
+  if($('#sImg')){$('#sImg').value=C.sampleImgRate==null?20:C.sampleImgRate;$('#sImg').oninput=e=>{C.sampleImgRate=Math.max(0,Math.min(100,+e.target.value||0))}}$('#actQ').value=ACT.q;
   const go=()=>{ACT.q=$('#actQ').value.trim();ACT.offset=0;tvLoad(ACT,'actOut')};
   document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{ACT={name:b.dataset.act,q:$('#actQ').value.trim(),offset:0};document.querySelectorAll('[data-act]').forEach(x=>x.classList.toggle('primary',x===b));tvLoad(ACT,'actOut')});
   $('#actGo').onclick=go;$('#actQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#actCsv').onclick=()=>tvCsv(ACT);tvLoad(ACT,'actOut')}
