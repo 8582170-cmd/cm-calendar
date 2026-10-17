@@ -17,6 +17,10 @@ function freeCd(){try{return state.s.view==='countdown'&&cdDays().days.length<=F
 /* לוח ספירה לאחור: בלי סימן מים בכלל. עד FREE_CD ימים גם ההדפסה בחינם; ארוך יותר דורש מסלול להדפסה */
 const PLAN=()=>{const p=PLAN0();if(SAMPLE||!p.watermark)return p;if(freeCd())return {...p,watermark:false,freeCd:true};if(state.s.view==='countdown')return {...p,watermark:false};return p};
 window.addEventListener('beforeprint',()=>document.body.classList.toggle('free-cd',!!PLAN().freeCd));
+/* הדפסה שלא דרך הכפתורים באתר (Ctrl+P או תפריט הדפדפן): נרשמת בדף הניהול כ"הדפסה מהדפדפן" */
+let OURPRINT=false,BRPRINT_T=0;
+function ourPrint(){OURPRINT=true;try{window.print()}finally{setTimeout(()=>{OURPRINT=false},1500)}}
+window.addEventListener('beforeprint',()=>{if(OURPRINT||Date.now()-BRPRINT_T<5000)return;BRPRINT_T=Date.now();try{logDl('browser',{wm:PLAN().watermark?1:0})}catch(e){}});
 const canF=f=>SAMPLE?true:(!LP||LP.can(f));
 function monthCut(months){const n=PLAN().months;return n<months.length&&months[n]?months[n].days[0]:null}
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
@@ -3427,12 +3431,12 @@ function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.set
 function doPrint(){
   const P=PLAN();
   if(AUTH.ready&&!AUTH.user){loginModal('כדי להוריד או להדפיס, נכנסים לחשבון. ההרשמה חינם, וכל מה שבניתם נשמר.');return}
-  if(P.freeCd){const m=modal('<h3>להדפיס את לוח הספירה?</h3><p class="hint">לוח ספירה לאחור של עד '+FREE_CD+' ימים מורידים ומדפיסים בחינם. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>ביטול</button></div>');m.querySelector('#dlGo').onclick=()=>{m.remove();logDl('countdown');setTimeout(()=>window.print(),50)};return}
+  if(P.freeCd){const m=modal('<h3>להדפיס את לוח הספירה?</h3><p class="hint">לוח ספירה לאחור של עד '+FREE_CD+' ימים מורידים ומדפיסים בחינם. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>ביטול</button></div>');m.querySelector('#dlGo').onclick=()=>{m.remove();logDl('countdown');setTimeout(ourPrint,50)};return}
   if(!P.downloads){openUpgrade('download');return}
   const left=LP.downloadsLeft();
   if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
-  m.querySelector('#dlGo').onclick=()=>{LP.useDownload();m.remove();syncPlanUI();logDl('paid');setTimeout(()=>window.print(),50)};
+  m.querySelector('#dlGo').onclick=()=>{LP.useDownload();m.remove();syncPlanUI();logDl('paid');setTimeout(ourPrint,50)};
 }
 /* ---------- לוח חינמי לשנה: גרסה מוגבלת, בלי סימן מים, פעם אחת לכל משתמש ---------- */
 const LITE_LIM={events:25,photos:10,zmanim:3};
@@ -3462,7 +3466,7 @@ async function openLite(){
     if(r.status!==200){b.disabled=false;m.querySelector('#ltMsg').innerHTML='<span class="msg-bad">השירות לא זמין כרגע. נסו שוב מאוחר יותר.</span>';return}
     m.remove();const orig=state;state=liteState(orig);LITE=true;document.body.classList.add('lite-print');monthsCache=buildMonths();render();
     const done=()=>{LITE=false;state=orig;document.body.classList.remove('lite-print');window.removeEventListener('afterprint',done);monthsCache=buildMonths();render();syncPlanUI()};
-    window.addEventListener('afterprint',done);logDl('lite');setTimeout(()=>window.print(),500)}}
+    window.addEventListener('afterprint',done);logDl('lite');setTimeout(ourPrint,500)}}
 /* ---------- חודש לדוגמה בחינם ---------- */
 const SAMPLE_KEY='luchenu-sample';
 /* שלב 1: נשמר בדפדפן. בשלב 2 הבדיקה תעבור לשרת, עם אימות כתובת המייל. */
@@ -3479,13 +3483,13 @@ function openSample(){
     if(!claimSample(email)){m.querySelector('#smMsg').innerHTML='<span class="msg-bad">הכתובת הזאת כבר השתמשה בחודש לדוגמה.</span>';return}
     SAMPLE={key:m.querySelector('#smMonth').value};document.body.classList.add('sampling');m.remove();render();
     const done=()=>{SAMPLE=null;document.body.classList.remove('sampling');window.removeEventListener('afterprint',done);render();syncPlanUI()};
-    window.addEventListener('afterprint',done);logDl('sample',{email});setTimeout(()=>window.print(),400);
+    window.addEventListener('afterprint',done);logDl('sample',{email});setTimeout(ourPrint,400);
   };
 }
 /* רישום ההורדה בשרת, לדף הניהול (לא חוסם את ההדפסה) */
-async function logDl(kind,extra){try{const h=await authHeaders().catch(()=>({}));const s=state.s;
+async function logDl(kind,extra){try{const h=await Promise.race([authHeaders().catch(()=>({})),new Promise(r=>setTimeout(()=>r({}),2000))]);const s=state.s;
   const cal=($('#stageTitle')||{}).textContent||'';const sz=s.size==='custom'?'custom':s.size;
-  fetch('/api/user?fn=dl',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind,plan:(LP&&LP.current().id)||'',cal:cal.slice(0,120),view:s.view||'month',size:sz,pages:RS.count,page:CDMODE?'countdown':document.body.classList.contains('simple')||/simple/.test(location.pathname)?'simple':'app',...(extra||{})})}).catch(()=>{})}catch(e){}}
+  fetch('/api/user?fn=dl',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind,plan:(LP&&LP.current().id)||'',cal:cal.slice(0,120),view:s.view||'month',size:sz,pages:RS.count,page:CDMODE?'countdown':document.body.classList.contains('simple')||/simple/.test(location.pathname)?'simple':'app',...(extra||{})})}).catch(()=>{})}catch(e){console.warn('logDl',e)}}
 function syncPlanUI(){
   if(!LP)return;const P=PLAN();
   LP.PLANS.forEach(p=>document.body.classList.toggle('plan-'+p.id,p.id===P.id));
