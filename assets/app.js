@@ -3519,7 +3519,7 @@ document.addEventListener('click',e=>{
 if($('#upgradeBtn'))$('#upgradeBtn').onclick=()=>openUpgrade(null);
 if($('#sampleBtn'))$('#sampleBtn').onclick=openSample;
 if($('#liteBtn'))$('#liteBtn').onclick=openLite;
-if($('#devPlan')&&!(/^(localhost|127\.)/.test(window.location.hostname)||/[?&]dev=1/.test(window.location.search)))$('#devPlan').closest('.dev-plan').remove();
+if($('#devPlan')&&!(/^(localhost|127\.)/.test(window.location.hostname)||(/[?&]dev=1/.test(window.location.search)&&(()=>{try{return !!sessionStorage.getItem('myluach-admin')}catch(e){return false}})())))$('#devPlan').closest('.dev-plan').remove();
 if($('#devPlan')){$('#devPlan').innerHTML=(LP?LP.PLANS:[]).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');$('#devPlan').onchange=e=>{LP.setCurrent(e.target.value);syncPlanUI();render()}}
 /* ---------- זמני תפילות: עורך ---------- */
 function renderTfilot(){
