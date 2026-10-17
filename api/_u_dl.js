@@ -5,7 +5,7 @@ const crypto = require('crypto');
 /* דוגמית: שמירת תוכן הלוח (בלי תמונות) בדלי הפרטי samples, לפי שיעור הדגימה שנקבע בניהול */
 async function saveSnap(snap) {
   if (!snap || typeof snap !== 'object') return null;
-  const body = JSON.stringify(snap); if (body.length > 1500000) return null;
+  const body = JSON.stringify(snap); if (body.length > 4000000) return null;
   const rate = (await loadConfig()).sampleRate; if (Math.random() * 100 >= (rate == null ? 100 : +rate)) return null;
   const path = new Date().toISOString().slice(0, 7) + '/' + crypto.randomBytes(12).toString('hex') + '.json';
   const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');

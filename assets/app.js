@@ -3501,15 +3501,15 @@ function openSample(){
 }
 /* רישום ההורדה בשרת, לדף הניהול (לא חוסם את ההדפסה) */
 /* דוגמית לבדיקת תקינות: עותק של הלוח. התמונות מוקטנות מאוד (לבדיקת המיקום), לפי התדירות שנקבעה בניהול, ואחרת מושמטות */
-function snapThumb(src){return new Promise(res=>{const im=new Image();im.onload=()=>{try{const k=Math.min(1,220/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.55))}catch(e){res(null)}};im.onerror=()=>res(null);im.src=src;setTimeout(()=>res(null),4000)})}
+function snapThumb(src,px,q){return new Promise(res=>{const im=new Image();im.onload=()=>{try{const k=Math.min(1,(px||220)/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',(q||55)/100))}catch(e){res(null)}};im.onerror=()=>res(null);im.src=src;setTimeout(()=>res(null),4000)})}
 function snapOf(){let raw;try{raw=JSON.parse(JSON.stringify(state))}catch(e){return Promise.resolve(null)}
   const meta={at:new Date().toISOString(),page:window.location.pathname,plan:(LP&&LP.current().id)||''};
-  return (async()=>{let rate=20;try{const d=LP&&LP.ready?await Promise.race([LP.ready,new Promise(r=>setTimeout(()=>r(null),800))]):null;if(d&&d.snapImg!=null)rate=+d.snapImg}catch(e){}
+  return (async()=>{let rate=20,px=220,q=55;try{const d=LP&&LP.ready?await Promise.race([LP.ready,new Promise(r=>setTimeout(()=>r(null),800))]):null;if(d){if(d.snapImg!=null)rate=+d.snapImg;if(d.snapPx)px=+d.snapPx;if(d.snapQ)q=+d.snapQ}}catch(e){}
     const withImg=Math.random()*100<rate,cache=new Map();let n=0;
-    const walk=async v=>{if(typeof v==='string'){if(/^blob:/.test(v))return null;if(/^data:image\//.test(v)){if(!withImg||n>=80)return null;if(!cache.has(v)){n++;cache.set(v,await snapThumb(v))}return cache.get(v)}return /^data:/.test(v)?null:v}
+    const walk=async v=>{if(typeof v==='string'){if(/^blob:/.test(v))return null;if(/^data:image\//.test(v)){if(!withImg||n>=80)return null;if(!cache.has(v)){n++;cache.set(v,await snapThumb(v,px,q))}return cache.get(v)}return /^data:/.test(v)?null:v}
       if(Array.isArray(v)){const a=[];for(const x of v)a.push(await walk(x));return a}
       if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=await walk(v[k]);return o}return v};
-    try{const o=await walk(raw);o._snap={...meta,img:withImg};return o}catch(e){return null}})()}
+    try{const o=await walk(raw);o._snap={...meta,img:withImg,px,q};return o}catch(e){return null}})()}
 async function logDl(kind,extra){const snP=snapOf();try{const sn=await snP;const h=await Promise.race([authHeaders().catch(()=>({})),new Promise(r=>setTimeout(()=>r({}),2000))]);const s=state.s;
   const cal=($('#stageTitle')||{}).textContent||'';const sz=s.size==='custom'?'custom':s.size;
   fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind,snap:sn,plan:(LP&&LP.current().id)||'',cal:cal.slice(0,120),view:s.view||'month',size:sz,pages:RS.count,page:CDMODE?'countdown':document.body.classList.contains('simple')||/simple/.test(window.location.pathname)?'simple':'app',...(extra||{})})}).catch(()=>{})}catch(e){console.warn('logDl',e)}}

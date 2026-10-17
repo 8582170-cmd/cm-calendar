@@ -34,6 +34,8 @@ function clean(c) {
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
   out.sampleImgRate = Math.max(0, Math.min(100, parseInt(c.sampleImgRate == null ? 20 : c.sampleImgRate, 10) || 0));
+  out.sampleImgPx = Math.max(80, Math.min(1600, parseInt(c.sampleImgPx, 10) || 220));
+  out.sampleImgQ = Math.max(20, Math.min(95, parseInt(c.sampleImgQ, 10) || 55));
   out.sampleRate = Math.max(0, Math.min(100, parseInt(c.sampleRate == null ? 100 : c.sampleRate, 10) || 0));
   out.ticker = { mode: ['auto', 'selected', 'off'].includes(t.mode) ? t.mode : 'auto', ids: ints(t.ids), hide: ints(t.hide) };
   return out;
