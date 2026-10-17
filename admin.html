@@ -92,6 +92,7 @@ function render(){
   C.plans=C.plans||{};C.sale=C.sale||{on:false,percent:20,plans:[],until:'',label:''};C.coupons=C.coupons||[];
   const eff=D.effective||{plans:{}};
   app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><button class="btn" type="button" id="out">יציאה</button></div>'+
+  actSection()+
   (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
   '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול.</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th></tr></thead><tbody>'+
   IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td></tr>'}).join('')+
@@ -142,19 +143,37 @@ window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const
     $('#cmsVars').innerHTML='<b>צבעים</b>'+(Object.keys(V).length?Object.keys(V).map(k=>'<label>'+esc(VAR_N[k]||k)+' <input type="color" data-var="'+esc(k)+'" value="'+esc(cur[k]||V[k])+'"></label>').join(''):'<p class="sub">לדף הזה אין צבעים לעריכה.</p>');
     $('#cmsVars').querySelectorAll('[data-var]').forEach(i=>i.oninput=()=>f.contentWindow.postMessage({type:'cms-var',name:i.dataset.var,value:i.value},location.origin))}
   if(m.type==='cms-data'){api({action:'contentsave',page:CMS.page,data:m.data}).then(r=>{CMS.data=r.data;$('#cmsMsg').textContent='✅ נשמר. הדף באתר מתעדכן תוך דקה.'}).catch(err=>{$('#cmsMsg').textContent='❌ '+err.message})}});
-const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',appointments:'פגישות ביומן',orders:'הזמנות ותשלומים',free_lite:'הורדות לוח חינמי',email_log:'מיילים שנשלחו'};
-const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',kind:'סוג',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
+const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',appointments:'פגישות ביומן',orders:'הזמנות ותשלומים',downloads:'הורדות והדפסות',free_lite:'מימוש הלוח החינמי',email_log:'מיילים שנשלחו'};
+const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',kind:'סוג',cal:'לוח',view:'תצוגה',size:'גודל',pages:'עמודים',page:'מאיזה דף',date:'תאריך',start_t:'שעה',title:'כותרת',place:'מקום',notify:'תזכורת',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
 let DBS={name:'profiles',q:'',offset:0};
+const ACT_T=[['downloads','הורדות והדפסות'],['reminders','תזכורות במייל'],['voice_reminders','תזכורות קוליות'],['appointments','פגישות ביומן'],['free_lite','מימוש הלוח החינמי']];
+let ACT={name:'downloads',q:'',offset:0};
+function actSection(){const d=D.dl,sum=o=>Object.values(o||{}).reduce((a,b)=>a+b,0),by=o=>Object.entries(o||{}).map(([k,v])=>esc(DL_K[k]||k)+': '+v).join(' · ');
+  const r=(D.mail&&D.mail.reminders)||{},u=(D.mail&&D.mail.users)||{};
+  return '<section><h2>הורדות ותזכורות</h2>'+
+  (!d||d.missing?'<p class="st-failed">רישום ההורדות עוד לא פעיל: צריך להריץ ב-Supabase את הקובץ tools/supabase_downloads.sql (פעם אחת). מאותו רגע כל הורדה תירשם כאן.</p>':
+   '<div class="row act-stats"><span><b>היום:</b> '+sum(d.today)+(sum(d.today)?' ('+by(d.today)+')':'')+'</span><span><b>7 ימים:</b> '+sum(d.week)+'</span><span><b>30 ימים:</b> '+sum(d.month)+(sum(d.month)?' ('+by(d.month)+')':'')+'</span><span><b>משתמשים שהורידו (30 ימים):</b> '+d.users+'</span></div>')+
+  '<div class="row act-stats"><span><b>תזכורות במייל:</b> פעילות '+(r.active||0)+' · ממתינות לאישור '+(r.pending||0)+' · כבויות '+(r.off||0)+'</span>'+(u.voice!=null?'<span><b>תזכורות קוליות פעילות:</b> '+u.voice+'</span>':'')+'</div>'+
+  '<div class="row" role="tablist">'+ACT_T.map(([k,v])=>'<button class="btn'+(ACT.name===k?' primary':'')+'" type="button" data-act="'+k+'">'+v+'</button>').join('')+'</div>'+
+  '<div class="row"><input type="search" id="actQ" placeholder="חיפוש לפי מייל, שם או טלפון" style="width:240px"><button class="btn" type="button" id="actGo">חיפוש</button><button class="btn" type="button" id="actCsv">הורדה לאקסל (CSV)</button></div>'+
+  '<div id="actOut" style="margin-top:10px"></div></section>'}
+function actBind(){if(!$('#actOut'))return;$('#actQ').value=ACT.q;
+  const go=()=>{ACT.q=$('#actQ').value.trim();ACT.offset=0;tvLoad(ACT,'actOut')};
+  document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{ACT={name:b.dataset.act,q:$('#actQ').value.trim(),offset:0};document.querySelectorAll('[data-act]').forEach(x=>x.classList.toggle('primary',x===b));tvLoad(ACT,'actOut')});
+  $('#actGo').onclick=go;$('#actQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#actCsv').onclick=()=>tvCsv(ACT);tvLoad(ACT,'actOut')}
 function dbSection(){return '<section><h2>מסד הנתונים</h2><p class="sub">צפייה בלבד. 50 שורות בכל עמוד, מהחדש לישן.</p><div class="row"><select id="dbT">'+Object.entries(DB_T).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><input type="search" id="dbQ" placeholder="חיפוש (מייל, שם, טלפון)" style="width:220px"><button class="btn" type="button" id="dbGo">הצגה</button><button class="btn" type="button" id="dbCsv">הורדה לאקסל (CSV)</button></div><div id="dbOut" style="margin-top:10px"></div></section>'}
 const HM=['','ניסן','אייר','סיון','תמוז','אב','אלול','תשרי','חשון','כסלו','טבת','שבט','אדר','אדר ב׳'];
-function dbCell(k,v){if(v==null||v==='')return '';if(k==='rule'&&typeof v==='object'){return v.rec==='once'?'פעם אחת: '+v.date:v.rec==='greg'?'כל שנה '+v.d+'/'+v.m+' (לועזי)':v.rec==='monthly'?'כל חודש ב־'+v.d:'כל שנה '+v.d+' '+(HM[v.m]||'')+' (עברי)'}
+const DL_K={paid:'מסלול בתשלום',lite:'לוח חינמי לשנה',sample:'חודש לדוגמה',countdown:'ספירה לאחור'},DL_P={free:'ניסיון',basic:'בסיסי',family:'משפחתי',full:'מלא'};
+function dbCell(k,v){if(v==null||v==='')return k==='email'?'(לא מחובר)':'';if(k==='kind'&&DL_K[v])return DL_K[v];{const M={status:{active:'פעילה',pending:'ממתינה לאישור',off:'כבויה'},view:{month:'חודשי',week:'שבועי',day:'יומי',table:'טבלה',year:'שנתי',countdown:'ספירה'},page:{app:'בונה מורחב',simple:'בונה פשוט',countdown:'ספירה לאחור'},notify:{none:'בלי',morning:'בבוקר',daybefore:'יום לפני',both:'יום לפני ובבוקר'}}[k];if(M&&M[v])return M[v]}if(k==='plan'&&DL_P[v])return DL_P[v];if(k==='rule'&&typeof v==='object'){return v.rec==='once'?'פעם אחת: '+v.date:v.rec==='greg'?'כל שנה '+v.d+'/'+v.m+' (לועזי)':v.rec==='monthly'?'כל חודש ב־'+v.d:'כל שנה '+v.d+' '+(HM[v.m]||'')+' (עברי)'}
   if(/_at$|^created|^last_sent/.test(k)&&/^\d{4}-/.test(v))return new Date(v).toLocaleString('he-IL',{dateStyle:'short',timeStyle:/T/.test(v)?'short':undefined});if(typeof v==='boolean')return v?'✔':'✘';if(Array.isArray(v))return v.join(', ');return String(v)}
-function dbLoad(){const o=$('#dbOut');o.textContent='טוען…';api({action:'table',name:DBS.name,q:DBS.q,offset:DBS.offset}).then(r=>{
+function dbLoad(){tvLoad(DBS,'dbOut')}
+function tvLoad(S,out){const o=$('#'+out);o.textContent='טוען…';api({action:'table',name:S.name,q:S.q,offset:S.offset}).then(r=>{
   if(r.error){o.innerHTML='<p class="st-failed">'+esc(r.error)+'</p>';return}
   o.innerHTML=(r.rows.length?'<div class="scroll"><table class="tbl"><thead><tr>'+r.cols.map(c=>'<th>'+esc(DB_C[c]||c)+'</th>').join('')+'</tr></thead><tbody>'+r.rows.map(x=>'<tr>'+r.cols.map(c=>'<td'+(/email|phone|id/.test(c)?' dir="ltr"':'')+'>'+esc(dbCell(c,x[c]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>אין נתונים.</p>')+
-   '<div class="row" style="margin-top:8px">'+(DBS.offset?'<button class="btn" type="button" id="dbPrev">← הקודמים</button>':'')+(r.more?'<button class="btn" type="button" id="dbNext">הבאים →</button>':'')+'<span class="sub">שורות '+(DBS.offset+1)+'–'+(DBS.offset+r.rows.length)+'</span></div>';
-  if($('#dbPrev'))$('#dbPrev').onclick=()=>{DBS.offset=Math.max(0,DBS.offset-50);dbLoad()};if($('#dbNext'))$('#dbNext').onclick=()=>{DBS.offset+=50;dbLoad()}}).catch(e=>{o.textContent=e.message})}
-function dbCsv(){api({action:'table',name:DBS.name,q:DBS.q,all:1}).then(r=>{const q=x=>'"'+String(x).replace(/"/g,'""')+'"';
+   '<div class="row" style="margin-top:8px">'+(S.offset?'<button class="btn" type="button" id="'+out+'Prev">← הקודמים</button>':'')+(r.more?'<button class="btn" type="button" id="'+out+'Next">הבאים →</button>':'')+'<span class="sub">שורות '+(S.offset+1)+'–'+(S.offset+r.rows.length)+'</span></div>';
+  if($('#'+out+'Prev'))$('#'+out+'Prev').onclick=()=>{S.offset=Math.max(0,S.offset-50);tvLoad(S,out)};if($('#'+out+'Next'))$('#'+out+'Next').onclick=()=>{S.offset+=50;tvLoad(S,out)}}).catch(e=>{o.textContent=e.message})}
+function dbCsv(){tvCsv(DBS)}
+function tvCsv(S){const DBS=S;api({action:'table',name:DBS.name,q:DBS.q,all:1}).then(r=>{const q=x=>'"'+String(x).replace(/"/g,'""')+'"';
   const csv='\ufeff'+r.cols.map(c=>q(DB_C[c]||c)).join(',')+'\n'+r.rows.map(x=>r.cols.map(c=>q(dbCell(c,x[c]))).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='myluach-'+DBS.name+'.csv';a.click()})}
 /* ---------- דפים ומאמרים חדשים ---------- */
@@ -271,6 +290,7 @@ function bind(){
   if($('#vBox'))voiceLoad();
   if($('#libBox'))libLoad();
   if($('#pgList'))pgLoad();
+  actBind();
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
     $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};

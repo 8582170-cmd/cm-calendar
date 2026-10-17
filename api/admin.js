@@ -95,6 +95,7 @@ module.exports = async (req, res) => {
         voice_reminders: { cols: 'phone,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['phone', 'name'] },
         orders: { cols: 'created_at,plan,amount,status,email,coupon,paid_at,id', order: 'created_at.desc', search: ['email', 'plan', 'coupon'] },
         free_lite: { cols: 'email,used_at', order: 'used_at.desc', search: ['email'] },
+        downloads: { cols: 'created_at,email,kind,plan,cal,view,size,pages,page', order: 'created_at.desc', search: ['email', 'kind', 'cal'] },
         email_log: { cols: 'created_at,kind,to_email,subject,provider,ok,error', order: 'created_at.desc', search: ['to_email', 'subject', 'kind'] }
       };
       const t = T[b.name]; if (!t) return json(res, 400, { error: 'table' });
@@ -150,6 +151,16 @@ module.exports = async (req, res) => {
       } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); }
     }
     const cfg = await loadConfig();
+    /* הורדות: 30 הימים האחרונים לפי סוג */
+    let dl = null;
+    try {
+      const since = new Date(Date.now() - 30 * 864e5).toISOString(), day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }), wk = Date.now() - 7 * 864e5;
+      const rows = await db('downloads?select=kind,created_at,email&created_at=gte.' + encodeURIComponent(since) + '&limit=50000');
+      dl = { today: {}, week: {}, month: {}, users: 0 }; const us = new Set();
+      (rows || []).forEach(r => { const t = new Date(r.created_at); dl.month[r.kind] = (dl.month[r.kind] || 0) + 1; if (t.getTime() >= wk) dl.week[r.kind] = (dl.week[r.kind] || 0) + 1;
+        if (t.toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }) === day) dl.today[r.kind] = (dl.today[r.kind] || 0) + 1; if (r.email) us.add(r.email); });
+      dl.users = us.size;
+    } catch (e) { dl = { missing: /does not exist|42P01|PGRST205/.test(e.message) }; }
     const orders = await db('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at&order=created_at.desc&limit=100');
     const uses = {};
     (orders || []).forEach(o => { if (o.coupon && o.status === 'paid') uses[o.coupon] = (uses[o.coupon] || 0) + 1; });
@@ -181,7 +192,7 @@ module.exports = async (req, res) => {
         mail.users = { total: (pr || []).length, phones: (pr || []).filter(x => x.phone_verified_at).length, voice: (vr || []).length };
       } catch (e) { mail.users = null; }
     } catch (e) { mail = null; }
-    json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
+    json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, dl, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
     console.error('admin', e);
     json(res, 500, { error: 'server error', message: String(e.message || e).slice(0, 200) });
