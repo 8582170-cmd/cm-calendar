@@ -3514,7 +3514,10 @@ function snapOf(){let raw;try{raw=JSON.parse(JSON.stringify(state))}catch(e){ret
     const walk=async v=>{if(typeof v==='string'){if(/^blob:/.test(v))return null;if(/^data:image\//.test(v)){if(!withImg||n>=80)return null;if(!cache.has(v)){n++;cache.set(v,await snapThumb(v,px,q))}return cache.get(v)}return /^data:/.test(v)?null:v}
       if(Array.isArray(v)){const a=[];for(const x of v)a.push(await walk(x));return a}
       if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=await walk(v[k]);return o}return v};
-    try{const o=await walk(raw);o._snap={...meta,img:withImg,px,q};return o}catch(e){return null}})()}
+    try{let o=await walk(raw);o._snap={...meta,img:withImg,px,q};
+      /* העותק לבדיקה מוגבל בגודל (ההורדה של הלקוח לא). גדול מדי: בלי תמונות */
+      if(withImg&&JSON.stringify(o).length>3500000){const drop=v=>typeof v==='string'?(/^data:/.test(v)?null:v):Array.isArray(v)?v.map(drop):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,drop(x)])):v;o=drop(o);o._snap={...meta,img:false,big:true}}
+      return JSON.stringify(o).length>3800000?null:o}catch(e){return null}})()}
 async function logDl(kind,extra){const snP=snapOf();try{const sn=await snP;const h=await Promise.race([authHeaders().catch(()=>({})),new Promise(r=>setTimeout(()=>r({}),2000))]);const s=state.s;
   const cal=($('#stageTitle')||{}).textContent||'';const sz=s.size==='custom'?'custom':s.size;
   fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind,snap:sn,plan:(LP&&LP.current().id)||'',cal:cal.slice(0,120),view:s.view||'month',size:sz,pages:RS.count,page:CDMODE?'countdown':document.body.classList.contains('simple')||/simple/.test(window.location.pathname)?'simple':'app',...(extra||{})})}).catch(()=>{})}catch(e){console.warn('logDl',e)}}

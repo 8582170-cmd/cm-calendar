@@ -1,8 +1,12 @@
 /* דפים ומאמרים שנוצרים מדף הניהול: נשמרים ב-settings → pages, ומוצגים בכתובת /p/<slug> (מוכנים לגוגל, נבנים בשרת) */
 'use strict';
-const { loadSetting, saveSetting, json } = require('./_lib');
+const { loadSetting, saveSetting, json, loadConfig } = require('./_lib');
 const SITE = 'https://www.myluach.org';
-const CATS = { toldot: 'תולדות ישראל', zmanim: 'זמני היום', minhagim: 'מנהגים', luach: 'לוח שנה אישי', page: 'דף' };
+const CATS = { toldot: 'תולדות ישראל', zmanim: 'זמני היום', minhagim: 'מנהגים', luach: 'לוח שנה אישי', parasha: 'דברי תורה: פרשת השבוע', yomi: 'דברי תורה: עניינא דיומא', hilula: 'דברי תורה: מבעלי ההילולא', page: 'דף' };
+/* מדור "דברי תורה": קטגוריות נפרדות, בכתובת /torah/. כשהמדור כבוי בניהול, הדפים שלו לא מוצגים בכלל */
+const TORAH = { parasha: 'פרשת השבוע', yomi: 'עניינא דיומא', hilula: 'מבעלי ההילולא' };
+const isTorah = p => !!TORAH[p.cat];
+async function torahOn() { try { const c = await loadConfig(); return !!(c.torah && c.torah.on); } catch (e) { return false; } }
 const CTA = {
   online: ['לוח שנה עברי אונליין', 'חגים, זמני היום וזמני שבת לכל עיר, בתצוגה חודשית, שבועית ויומית.', '/online/', 'ללוח האונליין'],
   zmanim: ['זמני היום לעיר שלכם', 'כל הזמנים, לפי השיטה שלכם.', '/online/#zmanim', 'לזמני היום'],
@@ -81,15 +85,15 @@ function render(p, all) {
   const c = CTA[p.cta || 'luach'];
   const rel = all.filter(x => x.published && x.kind !== 'page' && x.slug !== p.slug && x.cat === p.cat).slice(0, 5);
   h += `<div class="a-wrap"><main id="main" class="a-main">
-<nav class="crumbs" aria-label="מיקום"><a href="/">MyLuach</a> › <a href="/articles/">מאמרים</a> › <span>${esc(CATS[p.cat] || '')}</span></nav>
-<article class="art"><h1>${esc(p.title)}</h1><p class="art-meta">${esc(CATS[p.cat] || '')} · ${hdate(p.date)}</p>
+<nav class="crumbs" aria-label="מיקום"><a href="/">MyLuach</a> › ${isTorah(p) ? '<a href="/torah/">דברי תורה</a> › <span>' + esc(TORAH[p.cat]) + '</span>' : '<a href="/articles/">מאמרים</a> › <span>' + esc(CATS[p.cat] || '') + '</span>'}</nav>
+<article class="art"><h1>${esc(p.title)}</h1><p class="art-meta">${esc(isTorah(p) ? 'דברי תורה · ' + TORAH[p.cat] : CATS[p.cat] || '')} · ${hdate(p.date)}</p>
 ${p.image ? '<img class="art-hero" src="' + esc(p.image) + '" alt="">' : ''}
 ${body}
-${(p.tags || []).length ? '<p class="art-tags"><span>תגיות:</span>' + p.tags.map(t => '<a href="/articles/?tag=' + encodeURIComponent(t) + '">' + esc(t) + '</a>').join('') + '</p>' : ''}
-${p.note === false ? '' : '<p class="art-note">' + (p.cat === 'toldot' ? 'המידע נאסף ממקורות היסטוריים ותורניים. מצאתם טעות? נשמח לתיקון.' : 'המאמר נועד להסבר כללי ואינו פסק הלכה. למעשה, כל אחד ינהג כפי שקיבל מרבותיו וישאל את רב הקהילה.') + '</p>'}
+${(p.tags || []).length ? '<p class="art-tags"><span>תגיות:</span>' + p.tags.map(t => '<a href="' + (isTorah(p) ? '/torah/' : '/articles/') + '?tag=' + encodeURIComponent(t) + '">' + esc(t) + '</a>').join('') + '</p>' : ''}
+${p.note === false || isTorah(p) ? '' : '<p class="art-note">' + (p.cat === 'toldot' ? 'המידע נאסף ממקורות היסטוריים ותורניים. מצאתם טעות? נשמח לתיקון.' : 'המאמר נועד להסבר כללי ואינו פסק הלכה. למעשה, כל אחד ינהג כפי שקיבל מרבותיו וישאל את רב הקהילה.') + '</p>'}
 </article></main>
 <aside class="a-side">${c ? `<div class="a-card a-ctac"><b>${esc(c[0])}</b><p>${esc(c[1])}</p><a class="art-btn" href="${c[2]}">${esc(c[3])}</a></div>` : ''}
-${rel.length ? `<div class="a-card"><b>עוד ב${esc(CATS[p.cat] || 'מאמרים')}</b><ul>${rel.map(x => `<li><a href="/p/${esc(x.slug)}">${esc(x.title)}</a></li>`).join('')}</ul><a href="/articles/">כל המאמרים ←</a></div>` : '<div class="a-card"><a href="/articles/">לכל המאמרים ←</a></div>'}
+${rel.length ? `<div class="a-card"><b>עוד ב${esc(CATS[p.cat] || 'מאמרים')}</b><ul>${rel.map(x => `<li><a href="/p/${esc(x.slug)}">${esc(x.title)}</a></li>`).join('')}</ul><a href="${isTorah(p) ? '/torah/' : '/articles/'}">${isTorah(p) ? 'כל דברי התורה' : 'כל המאמרים'} ←</a></div>` : '<div class="a-card"><a href="/articles/">לכל המאמרים ←</a></div>'}
 </aside></div>
 `;
   return h + FOOT;
@@ -98,19 +102,39 @@ const notFound = () => head({ title: 'הדף לא נמצא', desc: '', slug: 'x'
 
 /* בקשות ציבוריות: /p/<slug>, רשימה (JSON), מפת אתר */
 async function handle(req, res) {
-  const q = String((req.query || {}).pg || ''), L = (await load()).items;
+  const q = String((req.query || {}).pg || ''), on = await torahOn(), ALL = (await load()).items, L = ALL.filter(x => on || !isTorah(x));
   res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120, stale-while-revalidate=600');
-  if (q === '_list') return json(res, 200, { items: L.filter(x => x.published && x.kind !== 'page').map(({ slug, title, desc, cat, date, tags }) => ({ slug, title, desc, cat, date, tags: tags || [] })).sort((a, b) => String(b.date).localeCompare(String(a.date))), cats: CATS });
+  if (q === '_torah') return torahPage(req, res, on, L);
+  if (q === '_list') return json(res, 200, { items: L.filter(x => x.published && x.kind !== 'page' && !isTorah(x)).map(({ slug, title, desc, cat, date, tags }) => ({ slug, title, desc, cat, date, tags: tags || [] })).sort((a, b) => String(b.date).localeCompare(String(a.date))), cats: Object.fromEntries(Object.entries(CATS).filter(([k]) => !TORAH[k])) });
   if (q === '_sitemap') {
     res.statusCode = 200; res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    return res.end('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + L.filter(x => x.published).map(x => `  <url><loc>${SITE}/p/${x.slug}</loc>${x.mod || x.date ? '<lastmod>' + (x.mod || x.date).slice(0, 10) + '</lastmod>' : ''}</url>`).join('\n') + '\n</urlset>\n');
+    return res.end('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + (on ? '  <url><loc>' + SITE + '/torah/</loc></url>\n' : '') + L.filter(x => x.published).map(x => `  <url><loc>${SITE}/p/${x.slug}</loc>${x.mod || x.date ? '<lastmod>' + (x.mod || x.date).slice(0, 10) + '</lastmod>' : ''}</url>`).join('\n') + '\n</urlset>\n');
   }
-  const p = L.find(x => x.slug === q);
+  const p = ALL.find(x => x.slug === q);
   const preview = p && !p.published && (req.query || {}).preview === p.token;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  if (!p || (!p.published && !preview)) { res.statusCode = 404; return res.end(notFound()); }
+  const tokOk = p && (req.query || {}).preview === p.token;
+  if (!p || (!p.published && !preview) || (isTorah(p) && !on && !tokOk)) { res.statusCode = 404; return res.end(notFound()); }
+  if (isTorah(p) && !on) res.setHeader('Cache-Control', 'no-store');
   if (preview) res.setHeader('Cache-Control', 'no-store');
   res.statusCode = 200; res.end(render(p, L));
+}
+/* דף המדור: /torah/ (כבוי בניהול: 404) */
+function torahPage(req, res, on, L) {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  if (!on) { res.statusCode = 404; return res.end(notFound()); }
+  const tag = String((req.query || {}).tag || '').slice(0, 40);
+  const items = L.filter(x => x.published && isTorah(x) && (!tag || (x.tags || []).includes(tag))).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const p = { slug: 'torah', title: tag ? 'דברי תורה: ' + tag : 'דברי תורה', desc: 'דברי תורה על פרשת השבוע, בעניינא דיומא, ואמרות וסיפורים מבעלי ההילולא.', published: true, kind: 'page' };
+  let h = head(p, SITE + '/torah/' + (tag ? '?tag=' + encodeURIComponent(tag) : ''), null);
+  const card = x => `<li><a href="/p/${esc(x.slug)}"><b>${esc(x.title)}</b></a>${x.desc ? '<br><span>' + esc(x.desc) + '</span>' : ''}</li>`;
+  h += `<div class="a-wrap a-wrap-1"><main id="main" class="a-main"><nav class="crumbs" aria-label="מיקום"><a href="/">MyLuach</a> › ${tag ? '<a href="/torah/">דברי תורה</a> › <span>' + esc(tag) + '</span>' : '<span>דברי תורה</span>'}</nav>
+<article class="art"><h1>${esc(p.title)}</h1><p>${esc(p.desc)}</p>`;
+  if (!items.length) h += '<p>בקרוב יעלו כאן דברי תורה.</p>';
+  for (const [k, n] of Object.entries(TORAH)) { const G = items.filter(x => x.cat === k); if (G.length) h += `<h2>${esc(n)}</h2><ul class="torah-list">${G.map(card).join('')}</ul>`; }
+  h += '</article></main></div>\n';
+  if (tag) res.setHeader('X-Robots-Tag', 'noindex');
+  res.statusCode = 200; return res.end(h + FOOT);
 }
 /* פעולות מדף הניהול */
 async function adminAction(b) {
@@ -134,5 +158,5 @@ async function adminAction(b) {
   }
   return { error: 'action' };
 }
-async function publicUrls() { return (await load()).items.filter(x => x.published).map(x => SITE + '/p/' + x.slug); }
+async function publicUrls() { const on = await torahOn(); return (await load()).items.filter(x => x.published && (on || !isTorah(x))).map(x => SITE + '/p/' + x.slug).concat(on ? [SITE + '/torah/'] : []); }
 module.exports = { handle, adminAction, publicUrls, clean, CATS };

@@ -202,6 +202,7 @@ function tvCsv(S){const DBS=S;api({action:'table',name:DBS.name,q:DBS.q,all:1}).
 let PG={list:[],cats:{},cur:null,old:''};
 const PG_CTA={luach:'לבניית לוח אישי',online:'ללוח האונליין',zmanim:'לזמני היום',countdown:'ללוח ספירה לאחור',history:'דברי הימים בלוח',none:'בלי'};
 function pgSection(){return '<section id="pgSec"><h2>דפים ומאמרים חדשים</h2><p class="sub">כותבים מאמר או דף חדש, והוא עולה לאתר בכתובת <span dir="ltr">myluach.org/p/…</span>, מוכן לגוגל (נכנס לבד למפת האתר). מאמרים מופיעים גם בדף "מאמרים". המאמרים שכתבתי מראש נערכים למעלה, ב"עריכת דפים".</p>'+
+  '<div class="row" style="background:#f3f7f6;border-radius:10px;padding:8px 10px"><label class="chk"><input type="checkbox" id="torahOn"'+((C.torah||{}).on?' checked':'')+'> <b>מדור "דברי תורה" פעיל</b></label><span class="sub">מאמרים בקטגוריות "דברי תורה" (פרשת השבוע, עניינא דיומא, מבעלי ההילולא) מופיעים בכתובת <span dir="ltr">myluach.org/torah</span>. כשהמדור כבוי, הם לא מוצגים באתר בכלל, גם אם הם מפורסמים. אחרי שינוי לוחצים "שמירה".</span></div>'+
   '<div class="row"><button class="btn primary" type="button" id="pgNewA">+ מאמר חדש</button><button class="btn" type="button" id="pgNewP">+ דף חדש</button><span id="pgMsg"></span></div><div id="pgList" style="margin-top:10px">טוען…</div><div id="pgEd" hidden></div></section>'}
 function pgLoad(){api({action:'pageslist'}).then(r=>{PG.list=r.items||[];PG.cats=r.cats||{};pgDrawList()}).catch(e=>{$('#pgList').textContent=e.message})}
 function pgDrawList(){const L=PG.list;$('#pgList').innerHTML=L.length?'<div class="scroll"><table class="tbl"><thead><tr><th>כותרת</th><th>סוג</th><th>קטגוריה</th><th>מצב</th><th>עודכן</th><th></th></tr></thead><tbody>'+L.map(p=>'<tr><td><b>'+esc(p.title)+'</b><br><span class="sub" dir="ltr">/p/'+esc(p.slug)+'</span></td><td>'+(p.kind==='page'?'דף':'מאמר')+'</td><td>'+esc(PG.cats[p.cat]||'')+'</td><td>'+(p.published?'✅ באתר':'📝 טיוטה')+'</td><td>'+esc(p.mod||'')+'</td><td><button class="btn" type="button" data-pged="'+esc(p.slug)+'">עריכה</button> <a class="btn" target="_blank" href="/p/'+esc(p.slug)+(p.published?'':'?preview='+esc(p.token))+'">צפייה</a></td></tr>').join('')+'</tbody></table></div>':'<p class="sub">עדיין אין דפים חדשים.</p>'}
@@ -313,6 +314,7 @@ function bind(){
   if($('#libBox'))libLoad();
   if($('#pgList'))pgLoad();
   actBind();shabbatBind();
+  if($('#torahOn'))$('#torahOn').onchange=e=>{C.torah={...(C.torah||{}),on:e.target.checked}};
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
     $('#tkDay').onclick=()=>{$('#tkList').textContent='טוען…';api({action:'yzday',date:$('#tkDate').value}).then(r=>tickerList(r.items,r.heb)).catch(e=>{$('#tkList').textContent=e.message})};

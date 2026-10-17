@@ -98,7 +98,7 @@ footer a{color:var(--mute)}
 <body>
 <header><nav class="w" aria-label="ניווט ראשי">
   <a class="logo" href="new.html"><img src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a><a class="lang-sw" href="en.html" hreflang="en" lang="en" title="English version"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>EN</a>
-  <div class="links"><a href="#features">מה בלוח</a><a href="gallery.html">דוגמאות</a><a href="countdown.html">ספירה לאחור</a><a href="online/">לוח מקוון</a><a href="articles/">מאמרים</a><a href="pricing.html">מחירים</a><a href="#faq">שאלות</a></div>
+  <div class="links"><a href="#features">מה בלוח</a><a href="gallery.html">דוגמאות</a><a href="countdown.html">ספירה לאחור</a><a href="online/">לוח מקוון</a><a href="articles/">מאמרים</a><a href="/torah/" class="nav-torah" style="display:none">דברי תורה</a><a href="pricing.html">מחירים</a><a href="#faq">שאלות</a></div>
   <a class="view-sw" href="index.html?view=classic" id="toClassic">לתצוגה הקלאסית</a>
   <a class="pill" href="app.html#login">כניסה</a><a class="pill pri" href="app.html">לבנות לוח</a>
 </nav></header>
@@ -178,7 +178,7 @@ footer a{color:var(--mute)}
   document.getElementById('toClassic').onclick=function(){try{localStorage.setItem('myluach-view','classic')}catch(e){}};
   var P=window.MyLuachPlans,g=document.getElementById('planGrid');
   function draw(){g.innerHTML=P.PLANS.map(function(p){return '<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+'<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,'ils')+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div><ul>'+p.bullets.map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><a class="btn'+(p.best?' pri':'')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a></div>'}).join('')}
-  draw();if(P.ready)P.ready.then(function(d){if(d)draw()});
+  draw();if(P.ready)P.ready.then(function(d){if(d)draw();if(d&&d.torah)document.querySelectorAll('.nav-torah').forEach(function(a){a.style.display=''})});
 })();
 </script>
 </body>

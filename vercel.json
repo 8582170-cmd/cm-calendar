@@ -12,6 +12,14 @@
  ],
  "rewrites": [
   {
+   "source": "/torah",
+   "destination": "/api/pricing?pg=_torah"
+  },
+  {
+   "source": "/torah/",
+   "destination": "/api/pricing?pg=_torah"
+  },
+  {
    "source": "/admin",
    "destination": "/admin.html"
   },

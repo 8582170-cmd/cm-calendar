@@ -9,6 +9,7 @@ const voice = require('./_voice');
 const G_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 const WD = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const when = n => n === 0 ? 'היום' : n === 1 ? 'מחר' : n === 2 ? 'מחרתיים' : n === 7 ? 'בעוד שבוע' : 'בעוד ' + n + ' ימים';
+const { isHoly } = require('./_shabbat');
 
 module.exports = async (req, res) => {
   const secret = env('CRON_SECRET');
@@ -16,6 +17,12 @@ module.exports = async (req, res) => {
   const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
   const today = todayIL(), tIso = iso(today);
   let sent = 0, failed = 0, checked = 0;
+  /* שומר שבת: בשבת ובחג לא שולחים כלום. בערב שבת/חג (הריצה בבוקר, לפני 12:00) שולחים גם את מה שהיה אמור לצאת בשבת ובחג */
+  if (await isHoly(today, true, true)) return json(res, 200, { date: tIso, skipped: 'shabbat' });
+  const days = [0]; for (let k = 1; k < 4 && await isHoly(addD(today, k), true, true); k++) days.push(k);
+  /* תזכורת שהייתה אמורה לצאת ביום today+k (k ב-days): המרחק שלה מהיום */
+  const dueIn = async (r) => { const N = (r.notice || [1]).slice().sort((a, b) => a - b);
+    for (const k of days) for (const n of N) { if (await hits(r.rule || {}, addD(today, k + n))) return k + n; } return null; };
   try {
     for (let from = 0; ; from += 1000) {
       const rows = await db('reminders?status=eq.active&select=id,email,name,rule,notice,token,last_sent&order=id&offset=' + from + '&limit=1000');
@@ -23,8 +30,7 @@ module.exports = async (req, res) => {
       for (const r of rows) {
         checked++;
         if (r.last_sent === tIso) continue;
-        let hitN = null;
-        for (const n of (r.notice || [1]).slice().sort((a, b) => a - b)) { if (await hits(r.rule || {}, addD(today, n))) { hitN = n; break; } }
+        const hitN = await dueIn(r);
         if (hitN === null) continue;
         const day = addD(today, hitN), heb = await hebStr(day);
         const gStr = day.getDate() + ' ב' + G_MONTHS[day.getMonth()] + ' ' + day.getFullYear();
@@ -48,8 +54,7 @@ module.exports = async (req, res) => {
       const vr = await db('voice_reminders?status=eq.active&select=id,phone,name,rule,notice,last_sent&order=id&limit=5000').catch(() => []);
       for (const r of vr || []) {
         if (r.last_sent === tIso) continue;
-        let hitN = null;
-        for (const n of (r.notice || [1]).slice().sort((a, b) => a - b)) { if (await hits(r.rule || {}, addD(today, n))) { hitN = n; break; } }
+        const hitN = await dueIn(r);
         if (hitN === null) continue;
         const day = addD(today, hitN), heb = await hebStr(day);
         try {
@@ -62,17 +67,20 @@ module.exports = async (req, res) => {
     /* פגישות: מייל אחד לכל משתמש עם הפגישות של היום (בבוקר) ושל מחר (יום לפני) */
     let asent = 0;
     try {
-      const tmr = iso(addD(today, 1));
-      const ap = await db('appointments?notify=neq.none&date=in.(' + tIso + ',' + tmr + ')&select=id,email,date,start_t,end_t,title,place,notify,last_sent&order=date,start_t&limit=10000');
+      /* בבוקר של היום (ושל שבת/חג שאחריו), ויום לפני (כולל מה שאחרי השבת/החג) */
+      const morn = days.map(k => iso(addD(today, k))), before = days.map(k => iso(addD(today, k + 1)));
+      const all = [...new Set(morn.concat(before))];
+      const ap = await db('appointments?notify=neq.none&date=in.(' + all.join(',') + ')&select=id,email,date,start_t,end_t,title,place,notify,last_sent&order=date,start_t&limit=10000');
       const by = {};
       for (const a of ap || []) {
         if (!a.email || a.last_sent === tIso) continue;
-        const isToday = a.date === tIso;
-        if (isToday ? !['morning', 'both'].includes(a.notify) : !['daybefore', 'both'].includes(a.notify)) continue;
+        const ok = (morn.includes(a.date) && ['morning', 'both'].includes(a.notify)) || (before.includes(a.date) && ['daybefore', 'both'].includes(a.notify));
+        if (!ok) continue;
         (by[a.email] = by[a.email] || []).push(a);
       }
+      const rel = ds => { const [y, m, d] = ds.split('-').map(Number), n = Math.round((new Date(y, m - 1, d, 12) - today) / 864e5); return n <= 2 ? when(n) : 'ביום ' + WD[new Date(y, m - 1, d, 12).getDay()]; };
       for (const [email, L] of Object.entries(by)) {
-        const line = a => (a.date === tIso ? 'היום' : 'מחר') + (a.start_t ? ' ' + a.start_t + (a.end_t ? '–' + a.end_t : '') : '') + ' · ' + a.title + (a.place ? ' (' + a.place + ')' : '');
+        const line = a => rel(a.date) + (a.start_t ? ' ' + a.start_t + (a.end_t ? '–' + a.end_t : '') : '') + ' · ' + a.title + (a.place ? ' (' + a.place + ')' : '');
         try {
           await sendMail({ to: email, subject: L.length === 1 ? 'תזכורת לפגישה: ' + L[0].title : 'הפגישות שלך: ' + L.length + ' פגישות',
             html: frame({ title: 'הפגישות שלך', body: L.map(a => escH(line(a))).join('<br>'), button: 'ליומן', url: site + '/online/#day', foot: 'קיבלתם את המייל כי ביקשתם תזכורת לפגישה ביומן של MyLuach. אפשר לשנות זאת בעריכת הפגישה.' }),
@@ -82,7 +90,7 @@ module.exports = async (req, res) => {
         } catch (e) { console.error('appt mail', email, e.message); }
       }
     } catch (e) { console.error('appt cron', e.message); }
-    json(res, 200, { date: tIso, checked, sent, failed, vsent, vfailed, asent });
+    json(res, 200, { date: tIso, days: days.length, checked, sent, failed, vsent, vfailed, asent });
   } catch (e) {
     console.error('cron', e);
     json(res, 500, { error: 'server error', sent, failed });

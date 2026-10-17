@@ -65,4 +65,6 @@ function placeOf(req) {
   return { lat, lng, tz, il };
 }
 async function closedNow(req, conf) { try { return (await status(Date.now(), placeOf(req), conf)).closed; } catch (e) { return false; } }
-module.exports = { status, placeOf, closedNow, cfgOf, sunAlt, descend };
+/* האם התאריך (Date של צהריים מקומי) שבת או יום טוב */
+async function isHoly(d, il, yt) { const f = await holyFn(il !== false, yt !== false); return !!f([d.getFullYear(), d.getMonth() + 1, d.getDate()]); }
+module.exports = { isHoly, status, placeOf, closedNow, cfgOf, sunAlt, descend };
