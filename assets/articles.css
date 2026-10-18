@@ -66,3 +66,8 @@ a{color:var(--teal)}
 .a-filter{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin:12px 0 0}
 .a-item[hidden],.a-cat[hidden]{display:none}
 .torah-list{list-style:none;padding:0;margin:0 0 18px}.torah-list li{padding:10px 0;border-bottom:1px solid #e3e6e5}.torah-list li span{color:#5c686c;font-size:15px}
+.art audio{width:100%;margin:6px 0 14px}.art video{width:100%;max-height:70vh;border-radius:10px;background:#000;margin:8px 0 14px}
+.art .art-video{position:relative;padding-top:56.25%;margin:8px 0 16px;border-radius:10px;overflow:hidden;background:#000}.art .art-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.art figure{margin:10px 0 16px}.art figure img{max-width:100%;border-radius:10px}.art figcaption{font-size:14px;color:#5c686c;text-align:center;margin-top:4px}
+.art .art-file{display:inline-block;border:1px solid #d5dcda;border-radius:8px;padding:6px 12px;text-decoration:none}
+.art .art-pdf iframe{width:100%;height:75vh;border:1px solid #d5dcda;border-radius:10px;margin:8px 0 6px}

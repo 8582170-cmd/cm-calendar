@@ -20,7 +20,7 @@ const HB = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'י�
 const hdate = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); return m ? (+m[3]) + ' ב' + HB[+m[2] - 1] + ' ' + m[1] : ''; };
 
 /* ניקוי HTML: רק תגיות טקסט בסיסיות */
-const ALLOW = { h2: [], h3: [], h4: [], p: [], br: [], b: [], strong: [], i: [], em: [], u: [], s: [], ul: [], ol: [], li: [], blockquote: [], a: ['href'], img: ['src', 'alt'],
+const ALLOW = { h2: [], h3: [], h4: [], p: [], br: [], b: [], strong: [], i: [], em: [], u: [], s: [], ul: [], ol: [], li: [], blockquote: [], a: ['href', 'class'], img: ['src', 'alt'], audio: ['src'], video: ['src', 'poster'], source: ['src', 'type'],
   table: [], thead: [], tbody: [], tr: [], th: [], td: [], div: ['class'], span: ['class'], hr: [], figure: [], figcaption: [], small: [], sup: [], sub: [] };
 function clean(html) {
   let s = String(html || '').slice(0, 300000);
@@ -34,11 +34,13 @@ function clean(html) {
       const r = new RegExp('\\s' + a + '\\s*=\\s*("([^"]*)"|\'([^\']*)\'|([^\\s>]+))', 'i').exec(attrs); if (!r) continue;
       let v = r[2] ?? r[3] ?? r[4] ?? '';
       if ((a === 'href' || a === 'src') && !/^(https?:\/\/|\/|#|[\w.-]+\.html)/i.test(v.trim())) continue;
-      if (a === 'class') v = v.split(/\s+/).filter(c => /^(art-box|art-note|small|lead|art-btn|ghost)$/.test(c)).join(' ');
+      if (a === 'class') v = v.split(/\s+/).filter(c => /^(art-box|art-note|small|lead|art-btn|ghost|art-yt|art-file|art-embed)$/.test(c)).join(' ');
+      if (a === 'type' && !/^(audio|video)\/[\w.+-]+$/.test(v)) continue;
       if (v) out += ' ' + a + '="' + esc(v) + '"';
     }
     if (tag === 'a' && /href="https?:/.test(out) && !/myluach\.org/.test(out)) out += ' rel="noopener" target="_blank"';
     if (tag === 'img') out += ' loading="lazy"';
+    if (tag === 'audio' || tag === 'video') out += ' controls preload="metadata"' + (tag === 'video' ? ' playsinline' : '');
     return '<' + tag + out + '>';
   });
 }
@@ -74,13 +76,29 @@ ${ld ? '<script type="application/ld+json">' + ld.replace(/</g, '\\u003c') + '</
 }
 const FOOT = `<footer class="a-foot"><div class="a-foot-in"><span>© MyLuach</span><a href="/">דף הבית</a><a href="/online/">לוח שנה אונליין</a><a href="/articles/">מאמרים</a><a href="/accessibility.html">הצהרת נגישות</a><a href="/privacy.html">פרטיות</a></div></footer>
 </body></html>`;
+/* קישור שסומן "להטמעה": מוצג בדף כנגן או כתצוגה, לפי סוג הקישור */
+function embedHTML(u) {
+  let m; const fr = src => '<div class="art-video"><iframe src="' + esc(src) + '" title="תוכן מוטמע" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>';
+  if ((m = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/.exec(u))) return fr('https://www.youtube-nocookie.com/embed/' + m[1]);
+  if ((m = /vimeo\.com\/(?:video\/)?(\d{5,12})/.exec(u))) return fr('https://player.vimeo.com/video/' + m[1]);
+  if ((m = /drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/.exec(u))) return fr('https://drive.google.com/file/d/' + m[1] + '/preview');
+  if ((m = /docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([\w-]{20,})/.exec(u))) return fr('https://docs.google.com/' + m[1] + '/d/' + m[2] + '/preview');
+  const path = u.split(/[?#]/)[0].toLowerCase();
+  if (/\.(mp3|m4a|ogg|oga|wav|aac|opus)$/.test(path)) return '<audio src="' + esc(u) + '" controls preload="metadata"></audio>';
+  if (/\.(mp4|webm|mov|m4v)$/.test(path)) return '<video src="' + esc(u) + '" controls preload="metadata" playsinline></video>';
+  if (/\.(jpe?g|png|webp|gif|svg)$/.test(path)) return '<figure><img src="' + esc(u) + '" alt="" loading="lazy"></figure>';
+  if (/\.pdf$/.test(path)) return '<div class="art-pdf"><iframe src="' + esc(u) + '" title="מסמך" loading="lazy"></iframe><a class="art-file" href="' + esc(u) + '" target="_blank" rel="noopener">📄 פתיחת המסמך בחלון חדש</a></div>';
+  return null;
+}
 function render(p, all) {
   const url = SITE + '/p/' + p.slug, art = p.kind !== 'page';
   const ld = JSON.stringify(art ? [{ '@context': 'https://schema.org', '@type': 'Article', headline: p.title, description: p.desc, inLanguage: 'he', datePublished: p.date, dateModified: p.mod || p.date, mainEntityOfPage: url,
     author: { '@type': 'Organization', name: 'MyLuach' }, publisher: { '@type': 'Organization', name: 'MyLuach', logo: { '@type': 'ImageObject', url: SITE + '/assets/icon-512.png' } }, ...(p.image ? { image: p.image } : {}) },
     { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'MyLuach', item: SITE + '/' }, { '@type': 'ListItem', position: 2, name: 'מאמרים', item: SITE + '/articles/' }, { '@type': 'ListItem', position: 3, name: p.title, item: url }] }] : null);
   let h = head(p, url, art ? ld : null);
-  const body = clean(p.body).replace(/<div class="art-box"><b>([\s\S]*?)<\/b>/g, '<div class="art-box"><h3>$1</h3>');
+  const body = clean(p.body).replace(/<div class="art-box"><b>([\s\S]*?)<\/b>/g, '<div class="art-box"><h3>$1</h3>')
+    .replace(/<a href="(https?:\/\/[^"]+)" class="art-embed"[^>]*>[\s\S]*?<\/a>/g, (m, u) => embedHTML(u.replace(/&amp;/g, '&')) || '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a>')
+    .replace(/<a href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})" class="art-yt"[^>]*>[\s\S]*?<\/a>/g, (m, id) => '<div class="art-video"><iframe src="https://www.youtube-nocookie.com/embed/' + id + '" title="סרטון" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>');
   if (!art) return h + `<div class="a-wrap a-wrap-1"><main id="main" class="a-main"><article class="art"><h1>${esc(p.title)}</h1>${body}</article></main></div>\n` + FOOT;
   const c = CTA[p.cta || 'luach'];
   const rel = all.filter(x => x.published && x.kind !== 'page' && x.slug !== p.slug && x.cat === p.cat).slice(0, 5);

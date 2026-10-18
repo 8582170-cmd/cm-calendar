@@ -27,7 +27,22 @@ async function addImage(buf, type, meta) {
   return it;
 }
 /* פעולות מדף הניהול */
+/* העלאת קובץ למאמר (תמונה, שמע, וידאו, PDF): כתובת העלאה חתומה, והדפדפן מעלה ישירות ל-Supabase (בלי מגבלת הגודל של השרת) */
+const MEDIA = /^(image\/(jpeg|png|webp|gif|svg\+xml)|audio\/[\w.+-]+|video\/(mp4|webm|ogg|quicktime)|application\/pdf)$/;
+async function mediaSign(b) {
+  const type = String(b.type || ''), size = +b.size || 0;
+  if (!MEDIA.test(type)) return { error: 'סוג קובץ לא נתמך (תמונה, שמע, וידאו או PDF)' };
+  if (!(size > 0) || size > 50 * 1024 * 1024) return { error: 'הקובץ גדול מ-50MB (המגבלה של האחסון החינמי)' };
+  const ext = (String(b.name || '').match(/\.([a-z0-9]{1,5})$/i) || [, type.split('/')[1].replace(/\W.*/, '')])[1].toLowerCase();
+  const path = 'media/' + new Date().toISOString().slice(0, 7) + '/' + require('node:crypto').randomBytes(8).toString('hex') + '.' + ext;
+  const key = env('SUPABASE_SERVICE_ROLE_KEY');
+  const r = await fetch(base() + '/storage/v1/object/upload/sign/library/' + path, { method: 'POST', headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }), 'Content-Type': 'application/json' }, body: '{}' });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.url) return { error: 'storage ' + r.status + ' ' + (j.message || j.error || '') };
+  return { upload: base() + '/storage/v1' + j.url, url: base() + '/storage/v1/object/public/library/' + path };
+}
 async function adminAction(b) {
+  if (b.action === 'libmedia') return mediaSign(b);
   const L = await load();
   if (b.action === 'libget') return { ...L, cats: CATS };
   if (b.action === 'libupload') {

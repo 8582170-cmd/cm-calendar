@@ -63,7 +63,7 @@ module.exports = async (req, res) => {
       catch (e) { console.error('pages', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
     }
     /* מאגר התמונות ללקוחות */
-    if (req.method === 'POST' && /^lib(get|upload|import|save|delete)$/.test(b.action || '')) {
+    if (req.method === 'POST' && /^lib(get|upload|import|save|delete|media)$/.test(b.action || '')) {
       try { const out = await require('./_lib_img').adminAction(b); return json(res, out.error ? 400 : 200, out); }
       catch (e) { console.error('lib', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
     }
