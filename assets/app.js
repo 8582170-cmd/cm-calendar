@@ -3890,7 +3890,7 @@ async function trayLoad(){if(CDMODE||SNAPVIEW)return;const v=await idbGet(TKEY);
 function thumbOf(img){return new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,220/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res(img);im.src=img})}
 async function trayAdd(img,meta){const t={id:'t'+uid(),img,th:await thumbOf(img),used:0,...(meta||{})};TRAY.push(t);return t}
 function trayShow(){const b=$('#tray');if(!b)return;const s=state.s,mode=s.uiMode,n=+s.step||1;
-  const on=!CDMODE&&!SNAPVIEW&&((mode==='wizard'&&n===5)||(mode==='adv'&&(TRAY.length>0||!!s.trayOn)));
+  const on=!CDMODE&&!SNAPVIEW&&((mode==='wizard'&&(n===5||(SIMPLE&&n<8)))||(mode==='adv'&&(TRAY.length>0||!!s.trayOn)));
   b.hidden=!on;document.body.classList.toggle('tray-on',on);b.classList.toggle('min',!!s.trayMin)}
 function trayDraw(){const L=$('#trayList');if(!L)return;
   L.innerHTML=TRAY.length?TRAY.map(t=>'<div class="tray-i'+(t.used?' used':'')+(TSEL===t.id?' sel':'')+'" draggable="true" data-ti="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(TSEL===t.id)+'" title="'+(t.from?'מאת '+esc(t.from)+' · ':'')+'גררו לחודש או ליום, או לחצו ואז בחרו מקום"><img src="'+t.th+'" alt="" draggable="false">'+(t.used?'<span class="tray-ok" aria-label="בשימוש">✓</span>':'')+(t.from?'<span class="tray-from">'+esc(t.from)+'</span>':'')+'<button type="button" class="tray-x" data-tx="'+t.id+'" aria-label="הסרה מהמגש">×</button></div>').join('')
@@ -4077,6 +4077,8 @@ $('#shareBtn').onclick=shareModal;
   const saved=SNAPVIEW?await new Promise(res=>{window.addEventListener('message',e=>{if(e.origin===window.location.origin&&e.data&&e.data.type==='snap')res(e.data.state)});window.opener.postMessage({type:'snap-ready'},window.location.origin)}):await idbGet(SKEY);
   if(saved)state=merge(DEFAULT,saved);
   else if(SIMPLE){state.s.cover=false;state.s.pageBg='soft'}
+  /* המסלול המהיר בלוח שכבר התחיל: שער ריק יורד (נשאר כפתור להוספה), ורקע עדין אם לא נבחר רקע */
+  if(SIMPLE&&saved&&!state.s.fast1){const c=state.cover||{};if(!c.img&&!c.title)state.s.cover=false;if(!state.s.pageBg)state.s.pageBg='soft';state.s.fast1=1}
   if(SNAPVIEW){SNAPPLAN=(saved&&saved._snap&&saved._snap.plan)||'';state.s.uiMode='adv';document.body.classList.add('snapview');document.body.insertAdjacentHTML('afterbegin','<div class="snap-bar no-print">דוגמית של לוח שהורד · לקריאה בלבד · '+(saved&&saved._snap&&saved._snap.img?'התמונות מוקטנות':'בדוגמית הזאת לא נשמרו תמונות')+' · שינויים כאן לא נשמרים</div>')}
   if(CDMODE){const s=state.s;if(!saved||s.view!=='countdown'){Object.assign(s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',orient:'portrait',zmanimMode:'none',cover:false})}s.view='countdown';document.body.classList.add('cd-app')}
   else if(state.s.view==='countdown')state.s.view='month';
