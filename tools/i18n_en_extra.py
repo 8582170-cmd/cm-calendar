@@ -145,6 +145,7 @@ EXACT = {
 }
 # (regex, replacement) — applied to whole text nodes
 RE = [
+ (r'^🖼 עריכת התמונות ביום \((\d+)\): סידור, גודל, היפוך$', r'🖼 Edit the photos on this day (\1): layout, size, flip'),
  (r'^מחכות לאישור \((\d+)\)$', r'Waiting for approval (\1)'), (r'^(\d+) מחכות$', r'\1 waiting'), (r'^מאת (.+)$', r'From \1'),
  (r'^(.+) בתוך היום$', r'\1 in the day'), (r'^(.+) בטור$', r'\1 in a column'), (r'^(.+) רק בשבת$', r'\1 on Shabbat only'),
  (r'^(\d+) דק׳$', r'\1 min'), (r'^צבע (#[0-9a-fA-F]{3,8})$', r'Color \1'), (r'^(\d+)% מהדף$', r'\1% of the page'),

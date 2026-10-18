@@ -2669,6 +2669,7 @@ function openEventEditor({date,id,img,kind}){
     '<div class="row" id="mImgOpts" hidden><label class="fld">תצוגת התמונה<select id="mFit"><option value="cover">ממלאת את כל התא</option><option value="contain">כל התמונה, בלי חיתוך</option></select></label><label class="fld">איזה חלק לראות<select id="mPos"><option value="50">מרכז</option><option value="15">חלק עליון</option><option value="85">חלק תחתון</option></select></label><label class="fld">צבע הטקסט ביום<select id="mTone"><option value="auto">לפי ההגדרה הכללית</option><option value="light">לבן</option><option value="dark">שחור</option><option value="band">על רקע לבן</option></select></label></div>'+
     '<div class="preview-line" id="mPrev"></div>'+
     '<p class="hint" id="mMsg"></p>'+
+    dayImgsBtn(date||(editing&&editing.rec==='once'?editing.date:''))+
     '<div class="row"><button class="btn primary" type="button" id="mSave">שמירה</button>'+(editing?'<button class="btn danger" type="button" id="mDel">מחיקה</button>':'')+'<button class="btn" type="button" data-close>ביטול</button></div>');
 
   const q=s=>m.querySelector(s);
@@ -3969,6 +3970,10 @@ function dayImgsEl(key,evs,L){L=L||dayLayout(key,evs);const g=diGrid(L.dir),box=
   L.order.forEach((id,i)=>{const e=evs.find(x=>x.id===id);if(!e)return;const w=el('div','c-im');w.dataset.id=id;if(!g)w.style.flexBasis='calc('+L.sizes[i]+'% - 1px)';
     const im=el('img');im.src=e.img;im.alt='';im.draggable=false;imgXform(im,L.im[id],e);w.appendChild(im);box.appendChild(w)});
   return box}
+/* כפתור בחלון של יום: עריכת התמונות שכבר ביום (כמו הכפתור הקטן 🖼 בתא) */
+function dayImgsBtn(date){if(!date)return '';const n=dayImgEvents(date).length;if(!n)return '';
+  return '<div class="row"><button class="btn di-open" type="button" data-di-open="'+date+'">🖼 עריכת התמונות ביום ('+n+'): סידור, גודל, היפוך</button></div>'}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-di-open]');if(!b)return;const mb=b.closest('.modal-back');if(mb)mb.remove();openDayImages(b.dataset.diOpen)});
 function dayImgEvents(date){const d=dateFromIso(date);return eventsOn(d,new HDate(d)).filter(e=>e.img)}
 function openDayImages(date){
   let evs=dayImgEvents(date);const cell=stage.querySelector('[data-date="'+date+'"]');
@@ -4136,6 +4141,7 @@ function quickEvent({date,img,trayId}){
       '<label><input type="radio" name="qR" value="once"><span>רק השנה</span></label></div>'+
     '<div class="q-img"><img id="qImg" alt=""><button type="button" class="btn" id="qPic"></button><button type="button" class="btn" id="qPicX">הסרה</button></div>'+
     '<p class="hint" id="qMsg" aria-live="polite"></p>'+
+    dayImgsBtn(date)+
     '<div class="row"><button class="btn primary" type="button" id="qSave">הוספה</button><button class="btn" type="button" id="qMore">עוד אפשרויות</button><button class="btn" type="button" data-close>ביטול</button></div>');
   const q=x=>m.querySelector(x);
   const draw=()=>{const k=KINDS[kind];q('#qAsk').textContent=k.ask;q('#qName').placeholder=k.ph;
