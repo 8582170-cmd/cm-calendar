@@ -17,9 +17,9 @@ const T={
   today:'היום',prev:'הקודם',next:'הבא',prevYear:'שנה אחורה',nextYear:'שנה קדימה',hebMode:'עברי',gregMode:'לועזי',jump:'קפיצה לתאריך',go:'מעבר',
   print:'הדפסה ואפשרויות נוספות',printSub:'לוח מעוצב להדפסה, עם התמונות, ימי ההולדת וימי השנה (יארצייטים) שלכם',
   ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'ב־MyLuach בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
-  sunrise:'הנץ',sunset:'שקיעה',candles:'הדלקת נרות',havdalah:'מוצאי שבת',parasha:'פרשת השבוע',nextHoliday:'החג הבא',inDays:n=>n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים',
+  sunrise:'הנץ',sunset:'שקיעה',candles:'הדלקת נרות',havdalah:'צאת השבת',parasha:'פרשת השבוע',nextHoliday:'החג הבא',inDays:n=>n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים',
   daysAgo:n=>n===1?'אתמול':'לפני '+n+' ימים',fromToday:'מהיום',addRem:'הוספת תזכורת',note:'הערה ליום הזה',color:'צבע ליום',save:'שמירה',del:'מחיקה',close:'סגירה',
-  showOmer:'ספירת העומר',showLearn:'לימוד יומי',showDz:'זמני היום בלוח',showTimes:'הדלקת נרות ומוצאי שבת',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
+  showOmer:'ספירת העומר',showLearn:'לימוד יומי',showDz:'זמני היום בלוח',showTimes:'הדלקת נרות וצאת השבת',showParasha:'פרשת השבוע',showModern:'ימי זיכרון ועצמאות',
   convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יום שנה (יארצייט)',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
@@ -150,7 +150,7 @@ function events(a,b){
   for(const ev of evs){
     const f=ev.getFlags(),d=ev.getDate().greg(),k=iso(d),desc=ev.getDesc();let txt=strip(ev.render(st.lang==='he'?'he':'en')),cls='';
     if(HE())txt=txt.replace(/\b(5\d{3})\b/,(m,y)=>hYear(+y));
-    if(ev.eventTime instanceof Date){txt=(desc.startsWith('Candle')?t('candles'):desc.startsWith('Havdalah')?(HE()?(ev.getDate().greg().getDay()===6?'מוצאי שבת':'מוצאי חג'):t('havdalah')):txt.replace(/[:\s]*\d{1,2}:\d{2}.*/,''))+' '+fmtT(ev.eventTime);cls='time'}
+    if(ev.eventTime instanceof Date){txt=(desc.startsWith('Candle')?t('candles'):desc.startsWith('Havdalah')?(HE()?(ev.getDate().greg().getDay()===6?'צאת השבת':'צאת החג'):t('havdalah')):txt.replace(/[:\s]*\d{1,2}:\d{2}.*/,''))+' '+fmtT(ev.eventTime);cls='time'}
     else if(f&flags.PARSHA_HASHAVUA)cls='par';
     else if(f&flags.OMER_COUNT){cls='omer';txt=txt.replace(/^היום /,'')}
     else if(f&(flags.CHAG|flags.MAJOR_FAST))cls='chag';
@@ -292,7 +292,7 @@ function viewShabbat(){
   $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'זמני כניסת ויציאת שבת ב'+cityName(city()):'Shabbat times in '+cityName(city()))+'</h1><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'הגדרות זמנים':'Zmanim settings')+'</button><a class="btn pri" href="'+builderLink()+'">🖨 '+t('print')+'</a></div>'+
     '<div class="tbl-wrap"><table class="t"><thead><tr><th>'+(HE()?'שבת / חג':'Shabbat / Holiday')+'</th><th>'+(HE()?'תאריך':'Date')+'</th><th>'+t('candles')+'</th><th>'+t('havdalah')+'</th></tr></thead><tbody>'+
     rows.map(r=>'<tr><td>'+esc(r.n)+'</td><td>'+t('weekdays')[r.d.getDay()]+' '+esc(gStr(r.d,false))+' · '+esc(hStr(new HDate(r.d),false))+'</td><td>'+r.c+'</td><td>'+r.h+'</td></tr>').join('')+'</tbody></table></div>'+
-    '<p class="mute small">'+(HE()?'הדלקת נרות '+candleMins()+' דקות לפני השקיעה, מוצאי שבת '+angLbl(zcfg().motz||ZPRE[zcfg().pre].motz)+(String(zcfg().motz||ZPRE[zcfg().pre].motz).endsWith('f')?' אחרי השקיעה':' מתחת לאופק')+'.':'Candle lighting '+candleMins()+' minutes before sunset; havdalah '+angLbl(zcfg().motz||ZPRE[zcfg().pre].motz)+'.')+'</p>'+seoBlock();
+    '<p class="mute small">'+(HE()?'הדלקת נרות '+candleMins()+' דקות לפני השקיעה, צאת השבת '+angLbl(zcfg().motz||ZPRE[zcfg().pre].motz)+(String(zcfg().motz||ZPRE[zcfg().pre].motz).endsWith('f')?' אחרי השקיעה':' מתחת לאופק')+'.':'Candle lighting '+candleMins()+' minutes before sunset; havdalah '+angLbl(zcfg().motz||ZPRE[zcfg().pre].motz)+'.')+'</p>'+seoBlock();
 }
 
 /* ---------- כלים ---------- */

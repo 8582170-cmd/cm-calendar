@@ -566,7 +566,7 @@ function eventsFor(start,end){
     if(/chametz/i.test(desc))continue;
     if(ev.eventTime instanceof Date&&/^Chanukah/.test(desc)){if(!s.showHolidays)continue;const k0=ymd(ev.getDate().greg());if(!map.has(k0))map.set(k0,[]);map.get(k0).push({cls:'',text:hebText(ev).replace(/[:\s]*\d{1,2}:\d{2}.*/,''),order:2});continue}
     if(ev.eventTime instanceof Date){
-      const lbl=desc.startsWith('Candle')?'הדלקת נרות':desc.startsWith('Havdalah')?(ev.getDate().greg().getDay()===6?'מוצ״ש':'מוצאי חג'):desc.startsWith('Fast begins')?'תחילת הצום':desc.startsWith('Fast ends')?'סוף הצום':hebText(ev).replace(/[:\s]*\d{1,2}:\d{2}.*/,'');
+      const lbl=desc.startsWith('Candle')?'הדלקת נרות':desc.startsWith('Havdalah')?(ev.getDate().greg().getDay()===6?'צאת השבת':'צאת החג'):desc.startsWith('Fast begins')?'תחילת הצום':desc.startsWith('Fast ends')?'סוף הצום':hebText(ev).replace(/[:\s]*\d{1,2}:\d{2}.*/,'');
       const dir=desc.startsWith('Candle')||desc.startsWith('Fast begins')?'down':'up';
       const gd=ev.getDate().greg(),Zd=zctx(new Date(gd.getFullYear(),gd.getMonth(),gd.getDate(),12));let tt=ev.eventTime;
       if(desc.startsWith('Candle'))tt=(f&flags.LIGHT_CANDLES_TZEIS)?Zd.motzash:(Zd.sunset?new Date(Zd.sunset.getTime()-(+s.candleMins)*60000):tt);
