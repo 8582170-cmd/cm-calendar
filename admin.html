@@ -360,7 +360,16 @@ function libCatsDraw(){const C=(LIBD&&LIBD.cats)||[],b=$('#libCatsBox');if(!b)re
   $('#libAddCat').onclick=()=>{const n=$('#libNewCat').value.trim();if(n)go({op:'add',name:n})};
   b.querySelectorAll('[data-cren]').forEach(x=>x.onclick=()=>go({op:'rename',id:x.dataset.cren,name:b.querySelector('[data-cn="'+x.dataset.cren+'"]').value}));
   b.querySelectorAll('[data-cdel]').forEach(x=>x.onclick=()=>{if(confirm('למחוק את הקטגוריה? התמונות שבה יעברו ל"טבע ונופים".'))go({op:'delete',id:x.dataset.cdel})})}
-function libDraw(){libCats();libCatsDraw();const L=LIBD.items||[],hide=new Set(LIBD.hideSeed||[]),seed=window.MYLUACH_LIB_SEED||[];
+/* שמירה אוטומטית של שם, קטגוריה, קרדיט והצגה של כל תמונה (מיד אחרי שינוי), ושמירה של שינויים שעוד לא נשמרו כשהרשימה מצוירת מחדש */
+const LIBDIRTY={};let LIBT=0;
+function libCardVals(c){const g=f=>c.querySelector('[data-f="'+f+'"]');return {id:c.dataset.id,title:g('title').value,cat:g('cat').value,credit:g('credit').value,on:g('on').checked}}
+function libAutoSave(){clearTimeout(LIBT);LIBT=setTimeout(()=>{const items=Object.values(LIBDIRTY);if(!items.length)return;const m=$('#libSMsg');if(m)m.textContent='שומר…';
+  api({action:'libsave',items}).then(r=>{items.forEach(x=>{if(LIBDIRTY[x.id]===x)delete LIBDIRTY[x.id]});(r.items||[]).forEach(n=>{const o=(LIBD.items||[]).find(y=>y.id===n.id);if(o)Object.assign(o,n)});if(m)m.textContent='✅ נשמר אוטומטית'})
+    .catch(e=>{if(m)m.textContent='❌ לא נשמר: '+e.message+' (נסו שוב בכפתור השמירה)'})},700)}
+window.addEventListener("beforeunload",e=>{if(Object.keys(LIBDIRTY).length){e.preventDefault();e.returnValue=""}});
+document.addEventListener('input',e=>{const c=e.target.closest&&e.target.closest('#libBox .libc');if(!c||!e.target.dataset.f)return;LIBDIRTY[c.dataset.id]=libCardVals(c);libAutoSave()});
+document.addEventListener('change',e=>{const c=e.target.closest&&e.target.closest('#libBox .libc');if(!c||!e.target.dataset.f)return;LIBDIRTY[c.dataset.id]=libCardVals(c);libAutoSave()});
+function libDraw(){libCats();libCatsDraw();(LIBD.items||[]).forEach(x=>{const d=LIBDIRTY[x.id];if(d)Object.assign(x,{title:d.title,cat:d.cat,credit:d.credit,on:d.on})});const L=LIBD.items||[],hide=new Set(LIBD.hideSeed||[]),seed=window.MYLUACH_LIB_SEED||[];
   const card=(x,own)=>'<div class="libc'+((own?x.on:!hide.has(x.id))?'':' off')+'" data-id="'+esc(x.id)+'"><img src="'+esc(own?x.url:'/'+x.url)+'" alt="" loading="lazy">'+
     (own?'<input data-f="title" value="'+esc(x.title||'')+'" placeholder="שם"><select data-f="cat">'+Object.entries(LIBC).map(([k,v])=>'<option value="'+k+'"'+(k===x.cat?' selected':'')+'>'+v+'</option>').join('')+'</select><input data-f="credit" value="'+esc(x.credit||'')+'" placeholder="קרדיט"><label><input type="checkbox" data-f="on"'+(x.on?' checked':'')+'> מוצג ללקוחות</label><button class="btn" type="button" data-libdel="'+esc(x.id)+'">מחיקה</button>'
       :'<b>'+esc(x.title)+'</b><span class="sub">'+esc(LIBC[x.cat]||'')+' · איור מובנה</span><label><input type="checkbox" data-seed="'+esc(x.id)+'"'+(hide.has(x.id)?'':' checked')+'> מוצג ללקוחות</label>')+'</div>';
