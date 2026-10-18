@@ -1037,6 +1037,7 @@ function pageShell(label,key){
   const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
+  if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown')p.classList.add('pbg','pbg-'+s.pageBg);
   fxLines(p);
   for(const [k,v] of Object.entries(s.tcolors||{}))if(v)p.style.setProperty('--c-'+k,v);
   if(s.headFont)p.style.setProperty('--f-head',fontCSS(s.headFont));
@@ -1048,6 +1049,17 @@ function pageShell(label,key){
   stage.appendChild(wrap);RS.count++;
   return p;
 }
+/* רקע לעמוד: גוונים ועיטורים עדינים בצבע הלוח, שמודפסים גם הם */
+const PAGE_BGS=[['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
+function bgPickSync(){const cur=state.s.pageBg||'none';document.querySelectorAll('[data-bgpick]').forEach(box=>{
+  if(!box.children.length)box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+'"><i></i><i></i><i></i></span><span class="bgp-n">'+n+'</span></button>').join('');
+  box.style.setProperty('--acc',state.s.accent);
+  box.querySelectorAll('[data-pbg]').forEach(b=>{const on=b.dataset.pbg===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})})}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-pbg]');if(b){state.s.pageBg=b.dataset.pbg;save();render();return}
+  if(e.target.closest('[data-cover-on]')){state.s.cover=true;save();render();const w=stage.querySelector('.sheet-wrap');if(w)w.scrollIntoView({behavior:'smooth',block:'start'});try{syncUI()}catch(err){}return}
+  if(e.target.closest('[data-cover-off]')){state.s.cover=false;save();render();try{syncUI()}catch(err){}}
+});
 function slotSetter(key){return v=>{state.slots[key]={...(state.slots[key]||{}),...v};save();render()}}
 function innerH(){const [,h]=pageDims();return h-18*unitK()}
 function screenMM(el){const pg=el.closest('.page');const k=pg.getBoundingClientRect().width/pg.offsetWidth;return 1/(k*96/25.4)}
@@ -1775,7 +1787,7 @@ function render(){
   let months;
   try{months=buildMonths()}catch(e){stage.insertAdjacentHTML('beforeend','<div class="err">השנה שנבחרה אינה תקינה.</div>');return}
   monthsCache=months;
-  stage.querySelectorAll('.ins').forEach(n=>n.remove());
+  stage.querySelectorAll('.ins,.cover-add').forEach(n=>n.remove());
   RS={labels:{top:'תחילת הלוח',start:'אחרי השער',end:'סוף הלוח'},emitted:new Set(['top','start','end']),slots:[],count:0,tc:{},curKey:''};
   state.ads.forEach(a=>{if(typeof a.after==='number')a.after=(months[a.after]||{}).key||'end'});
   const ih=innerH(),view=s.view==='year'||s.view==='countdown'?s.view:canF('views')?(s.view||'month'):'month';
@@ -1794,6 +1806,7 @@ function render(){
   emitExtras('top');
   if(s.cover&&!SAMPLE){
     const p=pageShell('שער','cover');
+    {const lb=p.parentNode.querySelector('.sheet-label');if(lb&&!LITE)lb.insertAdjacentHTML('beforeend',' · <button type="button" class="linkbtn no-print" data-cover-off>הסרת דף השער</button>')}
     p.appendChild(makeImageBox(()=>state.cover,v=>{state.cover={...state.cover,...v};save();render()},null));
     if(!(state.cover||{}).img){p.classList.add('cover-empty');const d=p.querySelector('.pg-img .drop');if(d)d.insertAdjacentHTML('afterbegin','<b class="cover-mark">עמוד שער</b>')}
     p.appendChild(editable('cover-title',state.cover.title,'לחצו כאן לכתיבת כותרת, למשל: לוח השנה של משפחת כהן',t=>{state.cover.title=t;save()}));
@@ -1838,6 +1851,9 @@ function render(){
   const wraps=[...stage.querySelectorAll('.sheet-wrap')];
   if(wraps.length)mkIns('top',wraps[0],'beforebegin');
   wraps.forEach(w=>{if(w.dataset.key)mkIns(w.dataset.key,w,'afterend')});
+  /* בלי דף שער: כפתור גדול להוספה, במקום שבו השער היה מופיע */
+  if(!s.cover&&!SAMPLE&&!LITE&&!SNAPVIEW&&view!=='countdown'&&wraps.length){const ca=el('button','cover-add no-print','<b>＋ הוספת דף שער</b><span>עמוד פתיחה עם תמונה גדולה וכותרת, למשל "לוח השנה של משפחת כהן"</span>');ca.type='button';ca.dataset.coverOn='1';(stage.querySelector('.ins')||wraps[0]).insertAdjacentElement('beforebegin',ca)}
+  bgPickSync();
 
   const viewName={month:'חודשי',week:'שבועי',day:'יומי',table:'טבלה שבועית',year:'שנתי',countdown:'ספירה לאחור'}[view];
   $('#stageTitle').textContent='לוח '+viewName+' · '+(s.calType==='heb'&&(+s.hebStart||7)===7?'שנת '+hebYearStr(+s.hebYear):months[0].title+' '+months[0].year+' – '+months.at(-1).title+' '+months.at(-1).year);
@@ -2894,7 +2910,7 @@ function bindReset(){
   $('#resetRow').innerHTML='<button class="btn small danger" type="button" id="resetBtn">איפוס הכל</button>';
   $('#resetBtn').onclick=()=>{
     $('#resetRow').innerHTML='<span class="hint">למחוק את כל התמונות, האירועים וההגדרות?</span><button class="btn small danger" type="button" id="resetYes">כן, למחוק</button><button class="btn small" type="button" id="resetNo">ביטול</button>';
-    $('#resetYes').onclick=()=>{state=structuredClone(DEFAULT);state.events=[];save();bindReset();syncUI();render()};
+    $('#resetYes').onclick=()=>{state=structuredClone(DEFAULT);state.events=[];if(SIMPLE){state.s.cover=false;state.s.pageBg='soft'}save();bindReset();syncUI();render()};
     $('#resetNo').onclick=bindReset;
   };
 }
@@ -3340,7 +3356,7 @@ async function accountModal(){
   body.querySelector('#acFeed').onclick=()=>{m.remove();feedModal()};
   body.querySelector('#acName').onchange=e=>{state.s.calName=e.target.value.trim();save()};
   body.querySelector('#acSaveNew').onclick=async()=>{if(state.s.cloudId&&ix[state.s.cloudId]){delete state.s.cloudId;state.s.calName=(state.s.calName||calTitle())+' (עותק)'}await cloudSave();m.remove();accountModal()};
-  body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';if(CDMODE)Object.assign(state.s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',zmanimMode:'none',cover:false});monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
+  body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';if(SIMPLE){state.s.cover=false;state.s.pageBg='soft'}if(CDMODE)Object.assign(state.s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',zmanimMode:'none',cover:false});monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
   body.addEventListener('click',async e=>{
     const o=e.target.closest('[data-open]');if(o){o.disabled=true;o.textContent='פותח…';if(cloudDirty)await cloudSave();try{await cloudOpen(o.dataset.open);m.remove()}catch(err){o.textContent='שגיאה';}return}
     const d=e.target.closest('[data-delc]');if(d){if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}d.disabled=true;await cloudDelete(d.dataset.delc);m.remove();accountModal()}
@@ -4060,6 +4076,7 @@ $('#shareBtn').onclick=shareModal;
   {const h=window.location.hash||'';if(!CDMODE&&(h.startsWith('#countdown&')||h==='#preset-countdown')){window.location.replace(PGN('countdown.html')+(h==='#preset-countdown'?'':h));return}}
   const saved=SNAPVIEW?await new Promise(res=>{window.addEventListener('message',e=>{if(e.origin===window.location.origin&&e.data&&e.data.type==='snap')res(e.data.state)});window.opener.postMessage({type:'snap-ready'},window.location.origin)}):await idbGet(SKEY);
   if(saved)state=merge(DEFAULT,saved);
+  else if(SIMPLE){state.s.cover=false;state.s.pageBg='soft'}
   if(SNAPVIEW){SNAPPLAN=(saved&&saved._snap&&saved._snap.plan)||'';state.s.uiMode='adv';document.body.classList.add('snapview');document.body.insertAdjacentHTML('afterbegin','<div class="snap-bar no-print">דוגמית של לוח שהורד · לקריאה בלבד · '+(saved&&saved._snap&&saved._snap.img?'התמונות מוקטנות':'בדוגמית הזאת לא נשמרו תמונות')+' · שינויים כאן לא נשמרים</div>')}
   if(CDMODE){const s=state.s;if(!saved||s.view!=='countdown'){Object.assign(s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',orient:'portrait',zmanimMode:'none',cover:false})}s.view='countdown';document.body.classList.add('cd-app')}
   else if(state.s.view==='countdown')state.s.view='month';

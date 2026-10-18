@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610181800">
+<link rel="stylesheet" href="assets/app.css?v=202610181930">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body class="cd-app">
@@ -435,6 +435,7 @@
       <summary>בחירת עיצוב</summary>
       <div class="sec-body">
         <p class="hint" style="margin-top:0">לוחצים על עיצוב, וכל הלוח משתנה: צבעים, גופנים ופריסה.</p>
+        <div class="fld">רקע לעמוד<div class="bg-pick" data-bgpick role="radiogroup" aria-label="רקע לעמוד"></div></div>
         <div class="sp-cards" id="spCards" role="radiogroup" aria-label="עיצוב הלוח"></div>
         <p class="hint">רוצים לבחור בעצמכם צבע לכל טקסט, גופנים ופריסה? <a href="app.html">בבונה המורחב</a> (כל מה שבניתם עובר איתכם).</p>
       </div>
@@ -451,6 +452,7 @@
           </div>
         </div>
         <div class="fld">צבע<div class="swatches" id="swatches"></div></div>
+        <div class="fld">רקע לעמוד<div class="bg-pick" data-bgpick role="radiogroup" aria-label="רקע לעמוד"></div></div>
         <label class="fld">גופן כותרות ותאריכים<select id="headFont"></select></label>
         <div class="font-prev" id="headPrev">חשון תשפ״ז · ט״ו</div>
         <label class="fld">גופן הטקסט הקטן (חגים, זמנים, אירועים)<select id="bodyFont"></select></label>
@@ -635,6 +637,6 @@
 <script src="assets/library/index.js?v=1" defer></script>
 <script src="assets/geo.js?v=1"></script>
 <script src="assets/hpick.js?v=1"></script>
-<script src="assets/app.js?v=202610181800"></script>
+<script src="assets/app.js?v=202610181930"></script>
 </body>
 </html>

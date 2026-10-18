@@ -1,6 +1,18 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'רקע לעמוד': 'Page background',
+ 'לבן': 'White',
+ 'הילה עדינה': 'Soft glow',
+ 'גוון עליון': 'Top tint',
+ 'נייר חם': 'Warm paper',
+ 'נקודות': 'Dots',
+ 'מסגרת': 'Frame',
+ 'פינות מעוטרות': 'Decorated corners',
+ 'גלים': 'Waves',
+ '＋ הוספת דף שער': '＋ Add a cover page',
+ 'הסרת דף השער': 'Remove the cover page',
+ 'עמוד פתיחה עם תמונה גדולה וכותרת, למשל "לוח השנה של משפחת כהן"': 'An opening page with a large photo and a title, e.g. "The Cohen Family Calendar"',
  '📷 מגש התמונות': '📷 Photo tray',
  '+ הוספת תמונות': '+ Add photos',
  'מילוי אוטומטי': 'Auto-fill',
