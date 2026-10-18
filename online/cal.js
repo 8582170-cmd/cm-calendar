@@ -249,7 +249,7 @@ function viewMonth(){
   $('#main').innerHTML=vTabs()+'<div class="bar no-print"><span class="seg" role="group"><button type="button" data-mode="heb" aria-pressed="'+(st.mode==='heb')+'">'+t('hebMode')+'</button><button type="button" data-mode="greg" aria-pressed="'+(st.mode==='greg')+'">'+t('gregMode')+'</button></span>'+
     '<span class="nav-arrows"><button class="btn" type="button" data-sh="-12" title="'+t('prevYear')+'">«</button><button class="btn" type="button" data-sh="-1" title="'+t('prev')+'">'+(HE()?'→':'←')+'</button><button class="btn" type="button" id="tdy">'+t('today')+'</button><button class="btn" type="button" data-sh="1" title="'+t('next')+'">'+(HE()?'←':'→')+'</button><button class="btn" type="button" data-sh="12" title="'+t('nextYear')+'">»</button></span>'+
     '<details class="jump-d"><summary class="btn">'+t('jump')+'</summary><div class="jump" style="margin-top:6px">'+jumpH+jumpG+'</div></details>'+
-    '<button class="btn pri" type="button" id="prM">🖨 '+(HE()?'הדפסת החודש':'Print month')+'</button><a class="btn" href="'+builderLink()+'">'+(HE()?'✨ לוח מעוצב עם תמונות':'✨ Designed calendar')+'</a></div>'+
+    '<button class="btn pri" type="button" id="prM">🖨 '+(HE()?'הדפסה':'Print')+'</button><a class="btn" href="'+builderLink()+'">'+(HE()?'✨ לוח מעוצב עם תמונות':'✨ Designed calendar')+'</a></div>'+
     '<div class="opts no-print">'+[['dz','showDz'],['learn','showLearn'],['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'<button type="button" class="linkbtn2" id="dzPick">⚙ '+(HE()?'בחירת זמנים':'Choose times')+'</button>'+(st.opts.learn?'<button type="button" class="linkbtn2" id="lrPick">⚙ '+(HE()?'בחירת לימוד':'Choose learning')+'</button>':'')+'</div>'+
     '<section class="month"><div class="mhead"><h1 class="sr">'+esc(pageH1())+'</h1><h2>'+esc(M.title)+'</h2><span class="mute">'+esc(M.other)+'</span>'+(st.opts.dz||st.opts.times?'<span class="zh">'+esc(horizon())+'</span>':'')+'</div>'+g+'</section>'+seoBlock();
   const jd=$('#jD');if(jd)jd.value=String(hdA.getDate());
@@ -525,7 +525,7 @@ function viewWeek(){
       (LON?'<div class="wk-lr">'+lrnHTML(d)+'</div>':'')+
       '<div class="wk-z wk-ze">'+zList(Z,W.e)+'</div>'+
       '<div class="wk-gd">'+d.getDate()+(gFirst||d.getDay()===0?'<small>'+esc(t('gMonths')[d.getMonth()].slice(0,HE()?10:3))+'</small>':'')+'</div></div>'}).join('');
-  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" id="wkPick">⚙ '+(HE()?'אילו זמנים בשבועי':'Choose times')+'</button><button class="btn" type="button" id="lrPick">📖 '+(HE()?'לימוד יומי':'Daily learning')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="week">🖨 '+(HE()?'הדפסת השבוע':'Print week')+'</button><a class="btn pri" href="'+builderLink()+'">'+t('print')+'</a></div>'+
+  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" id="wkPick">⚙ '+(HE()?'אילו זמנים בשבועי':'Choose times')+'</button><button class="btn" type="button" id="lrPick">📖 '+(HE()?'לימוד יומי':'Daily learning')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="week">🖨 '+(HE()?'הדפסה':'Print')+'</button><a class="btn" href="'+builderLink()+'">'+(HE()?'✨ לוח מעוצב עם תמונות':'✨ Designed calendar')+'</a></div>'+printHead()+
     '<section class="wk card'+(LON?' wk-l':'')+'"><h1 class="sr">'+esc((HE()?'לוח שבועי ':'Weekly calendar ')+cityName(city()))+'</h1>'+head+'<div class="wk-rows">'+rows+'</div>'+
     '<div class="wk-foot mute small">'+(HE()?'הזמנים לאופק '+esc(cityName(city()))+' לפי '+esc(ZPRE[zcfg().pre].he)+'.<span class="no-print"> מעבר עם העכבר על זמן מראה איך הוא מחושב.</span>':'Times for '+esc(cityName(city()))+', '+esc(ZPRE[zcfg().pre].en)+'.')+'</div></section>'+seoBlock();
 }
@@ -544,7 +544,7 @@ function viewDay(){
   const aLink=a=>'<a href="#" class="ev appt" data-aedit="'+a.id+'"'+(a.color?' style="--ac:'+esc(a.color)+'"':'')+'>'+(a.start_t?'<b>'+esc(a.start_t)+(a.end_t?'–'+esc(a.end_t):'')+'</b> ':'')+esc(a.title)+(a.place?' · '+esc(a.place):'')+(a.note?'<small> · '+esc(a.note)+'</small>':'')+'</a>';
   let hours='';for(let h=6;h<=23;h++)hours+='<div class="hr"><span>'+String(h).padStart(2,'0')+':00</span><div>'+(byH[h]||[]).map(aLink).join('')+'<button type="button" class="hr-add no-print" data-anew="'+iso(d)+'" data-ah="'+String(h).padStart(2,'0')+':00" aria-label="'+(HE()?'פגישה ב־':'Appointment at ')+h+':00">+</button></div></div>';
   const allDay=(byH[-1]||[]).map(aLink).join('');
-  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" data-anew="'+iso(d)+'">+ '+(HE()?'פגישה':'Appointment')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="day">🖨 '+(HE()?'הדפסת היום':'Print day')+'</button></div>'+
+  $('#main').innerHTML=vTabs()+'<div class="bar no-print"><button class="btn" type="button" data-anew="'+iso(d)+'">+ '+(HE()?'פגישה':'Appointment')+'</button><button class="btn" type="button" data-zset="1">⚙ '+(HE()?'שיטת הזמנים':'Method')+'</button><button class="btn" type="button" data-printv="day">🖨 '+(HE()?'הדפסה':'Print')+'</button></div>'+printHead()+
     '<section class="card dv"><div class="wk-top"><div class="wk-mid"><h1 class="dv-t">'+t('weekdays')[d.getDay()]+', '+esc(hStr(hd))+'</h1><div class="mute">'+esc(gStr(d))+' · '+esc(relDays(d))+'</div></div>'+dateNav('day')+'</div>'+
     '<div class="dv-g"><div><div class="dv-ev">'+(ev.get(iso(d))||[]).map(x=>'<span class="ev '+x.cls+'">'+esc(x.txt)+'</span>').join('')+remsOn(d).map(r=>'<span class="ev rem">'+esc(r.name)+'</span>').join('')+((NOTES[iso(d)]||{}).text?'<span class="ev note">'+esc(NOTES[iso(d)].text)+'</span>':'')+allDay+'</div>'+
       (login?'':'<p class="small no-print">'+(HE()?'כדי לרשום פגישות ביומן צריך להתחבר. ':'Sign in to add appointments. ')+'<a href="'+loginUrl('day/'+iso(d))+'">'+(HE()?'כניסה / הרשמה בחינם':'Sign in')+'</a></p>')+
@@ -573,6 +573,8 @@ function printMonth(){
   const done=()=>{document.body.classList.remove('print-month');window.removeEventListener('afterprint',done);render()};
   window.addEventListener('afterprint',done);
   const im=box.querySelector('img'),go2=()=>setTimeout(()=>window.print(),150);if(im&&!im.complete){im.onload=go2;im.onerror=go2}else go2()}
+/* כותרת שמופיעה רק בהדפסה של התצוגה השבועית והיומית: הלוגו ולאיזה אופק הזמנים */
+const printHead=()=>'<div class="print-head"><div class="pm-logo"><img src="/assets/logo.svg?v=2" alt=""><span>MyLuach</span></div><div class="pm-loc">'+esc(horizon())+'</div></div>';
 function printView(v){if(view!==v)go(v,anchor);setTimeout(()=>window.print(),350)}
 
 /* ---------- פגישות (משתמשים רשומים, נשמר בשרת) ---------- */

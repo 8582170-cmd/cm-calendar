@@ -377,3 +377,12 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
   .pm-z{margin-top:auto;font-size:7.4pt;color:#3d4a4e;display:flex;flex-direction:column}
   .pm-foot{text-align:center;font-size:8.5pt;color:#6b7679;margin-top:4px}
 }
+.print-head{display:none}
+@media print{
+  .print-head{display:flex!important;align-items:center;justify-content:space-between;border-bottom:2px solid #1e5a63;padding-bottom:4px;margin-bottom:6px}
+  .print-head .pm-logo{display:flex;align-items:center;gap:8px;font:800 20pt "Frank Ruhl Libre",serif;color:#1e5a63}
+  .print-head .pm-logo img{width:40px;height:40px}
+  .print-head .pm-loc{font-size:10pt;font-weight:700;color:#1e5a63}
+}
+@media print{body.wide-view .print-head{padding-bottom:2px;margin-bottom:3px}body.wide-view .print-head .pm-logo{font-size:15pt}body.wide-view .print-head .pm-logo img{width:28px;height:28px}}
+@media print{body.wide-view .main::after{display:none}body.wide-view .wk-z{line-height:1.1}}
