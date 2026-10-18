@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ '2 למעלה ו־2 למטה': '2 on top, 2 below',
+ '2 למעלה ו־1 למטה': '2 on top, 1 below',
+ '1 למעלה ו־2 למטה': '1 on top, 2 below',
+ '⇋ היפוך': '⇋ Flip',
+ '▣ כל התמונה': '▣ Whole photo',
+ 'גוררים תמונה כדי להזיז אותה בתוך השטח שלה. מושכים את הפסים כדי לשנות כמה מקום כל תמונה תופסת. ליד כל תמונה: הגדלה והקטנה, היפוך, ו"כל התמונה" כדי לראות אותה בלי חיתוך.': 'Drag a photo to move it inside its area. Pull the bars to change how much space each photo takes. Next to each photo: zoom, flip, and "Whole photo" to see it uncropped.',
  'נוף לכל חודש': 'Landscape for each month',
  'איורי חגים': 'Holiday illustrations',
  'מעוגל ומרווח': 'Rounded and airy',
