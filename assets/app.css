@@ -1301,3 +1301,13 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .credit-logo{height:1.25em;width:auto;vertical-align:-.25em;margin-inline-end:.35em}
 @media print{.page.wm.wm-free::after{opacity:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='215' text-anchor='middle' transform='rotate%28-24 300 200%29' font-family='Arial' font-size='44' font-weight='700' fill='%23555' fill-opacity='.08'%3EMyLuach.org%3C/text%3E%3C/svg%3E");background-size:70% auto;background-repeat:no-repeat;background-position:center}}
 @media print{.t-round .cell{box-shadow:0 0 0 calc(var(--u)*.4) color-mix(in srgb,var(--acc) 48%,transparent)!important}}
+/* רמז בריחוף על יום: מה קורה בלחיצה */
+@media screen and (hover:hover){
+  .cell[data-date]:hover::after{content:"לחצו להוספת תמונה או אירוע";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;pointer-events:none;
+    background:var(--acc);color:#fff;font-family:var(--f-body);font-size:calc(var(--u)*2.3);font-weight:700;line-height:1.3;padding:calc(var(--u)*.5) calc(var(--u)*1.4);border-radius:calc(var(--u)*1.6);white-space:normal;text-align:center;width:max-content;max-width:88%;box-shadow:0 1px 4px rgb(0 0 0 / .25)}
+  .cell.has-img[data-date]:hover::after{content:"לחצו להוספה · 🖼 לעריכת התמונות"}
+  html[lang="en"] .cell[data-date]:hover::after{content:"Click to add a photo or event"}
+  html[lang="en"] .cell.has-img[data-date]:hover::after{content:"Click to add · 🖼 edit photos"}
+  body.tray-picking .cell[data-date]:hover::after{content:"לחצו כדי לשים כאן את התמונה"}
+  #stage.painting .cell[data-date]:hover::after,body.snapview .cell[data-date]:hover::after{display:none}
+}
