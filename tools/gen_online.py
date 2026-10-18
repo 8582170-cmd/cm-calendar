@@ -39,7 +39,7 @@ def page(path, title, desc, page, lang='he', alt=None):
     s = TPL
     s = re.sub(r'<title>.*?</title>', '<title>' + html.escape(title) + '</title>', s, flags=re.S)
     s = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="' + html.escape(desc) + '">', s)
-    s = s.replace('href="cal.css"', 'href="' + base + 'cal.css"').replace('src="cities.js"', 'src="' + base + 'cities.js"').replace('src="cal.js"', 'src="' + base + 'cal.js"')
+    s = re.sub(r'(href|src)="(cal\.css|cities\.js|cal\.js)(\?v=\w+)?"', lambda m: m.group(1) + '="' + base + m.group(2) + (m.group(3) or '') + '"', s)
     page = dict(page, static=True, base=base)
     if alt: page['alt'] = '../' * depth + alt
     s = s.replace('<script>window.LC_PAGE=window.LC_PAGE||{};</script>', '<script>window.LC_PAGE=' + json.dumps(page, ensure_ascii=False) + ';</script>')
@@ -103,3 +103,6 @@ urls = ['', 'gallery.html', 'app.html', 'countdown.html', 'terms.html', 'privacy
 import subprocess, sys
 subprocess.run([sys.executable, str(ROOT / 'tools' / 'gen_countdown.py')], check=True)
 print(len(made), 'pages')
+# גרסאות לקבצים (נגד מטמון ישן)
+import subprocess, sys
+subprocess.run([sys.executable, str(ROOT / 'tools/bust_online.py')], check=True)
