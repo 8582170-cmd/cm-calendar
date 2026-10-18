@@ -21,6 +21,8 @@ module.exports = async (req, res) => {
     try { const S = require('./_shabbat'); return json(res, 200, await S.status(Date.now(), S.placeOf(req), await loadConfig())); }
     catch (e) { console.error('shabbat', e.message); return json(res, 200, { on: false, closed: false }); }
   }
+  /* שיתוף לוח עם המשפחה: המשתתפים (בלי הרשמה) */
+  if (cp === '_share') return require('./_share').pub(req, res);
   if (cp) {
     const { loadSetting } = require('./_lib');
     const all = await loadSetting('content'), c = ((all && all.pages) || {})[cp] || null;

@@ -999,7 +999,10 @@ function makeImageBox(get,setv,heightMm){
   }
   box.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();box.classList.add('over')});
   box.addEventListener('dragleave',()=>box.classList.remove('over'));
-  box.addEventListener('drop',async e=>{e.preventDefault();e.stopPropagation();box.classList.remove('over');const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))setv({img:await compress(f),edit:null})});
+  box.addEventListener('drop',async e=>{e.preventDefault();e.stopPropagation();box.classList.remove('over');document.body.classList.remove('tray-dragging');
+    const tid=trayDropId(e);if(tid){const t=trayItem(tid);if(t){setv({img:t.img,edit:null,zoom:1,px:50,pos:50});trayPlaced(tid)}return}
+    const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))setv({img:await compress(f),edit:null})});
+  box._setv=setv;
   return box;
 }
 function editable(cls,text,ph,onSave,multi){
@@ -2542,13 +2545,14 @@ function openImageOrganizer(){
 stage.addEventListener('click',e=>{
   const c=e.target.closest('[data-date]');if(!c||e.target.closest('[contenteditable]'))return;
   if(PAINT){hlToggle(c.dataset.date);return}
-  openEventEditor({date:c.dataset.date});
+  if(SIMPLE)quickEvent({date:c.dataset.date});else openEventEditor({date:c.dataset.date});
 });
-stage.addEventListener('keydown',e=>{if(e.target.isContentEditable)return;const c=e.target.closest&&e.target.closest('[data-date]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openEventEditor({date:c.dataset.date})}});
+stage.addEventListener('keydown',e=>{if(e.target.isContentEditable)return;const c=e.target.closest&&e.target.closest('[data-date]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(SIMPLE)quickEvent({date:c.dataset.date});else openEventEditor({date:c.dataset.date})}});
 stage.addEventListener('dragover',e=>{const c=e.target.closest('[data-date]');if(c){e.preventDefault();stage.querySelectorAll('[data-date].over').forEach(x=>x.classList.remove('over'));c.classList.add('over')}});
 stage.addEventListener('dragleave',e=>{const c=e.target.closest('[data-date]');if(c)c.classList.remove('over')});
 stage.addEventListener('drop',async e=>{
-  const c=e.target.closest('[data-date]');if(!c)return;e.preventDefault();c.classList.remove('over');
+  const c=e.target.closest('[data-date]');if(!c)return;e.preventDefault();c.classList.remove('over');document.body.classList.remove('tray-dragging');
+  const tid=trayDropId(e);if(tid){trayToDay(c.dataset.date,tid);return}
   const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(!f||!f.type.startsWith('image/'))return;
   openEventEditor({date:c.dataset.date,img:await compress(f,1000),kind:'other'});
 });
@@ -2973,7 +2977,7 @@ const STEPS=[
  ['עיצוב חופשי','בתצוגה המקדימה אפשר לגרור, להגדיל ולעצב כל דבר ישירות.'],
  ['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']];
 const CD_STEPS={1:['פרטי הספירה','למה סופרים, תאריך היעד, העיצוב והצורה, תמונות ומשפטים, וגודל הדף.'],2:['צבעים וגופנים','צבעי הלוח, הגופנים וגודל הטקסט.'],7:['עיצוב חופשי','בתצוגה המקדימה אפשר לגרור, להגדיל ולעצב כל דבר ישירות.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
-const SIMPLE_STEPS={1:['סוג הלוח','לוח עברי או לועזי, השנה וגודל הדף.'],2:['עיצוב','איך נראה כל עמוד, צבעים וגופנים.'],5:['תמונות ואירועים','תמונת שער, תמונה לכל חודש, ימי הולדת, ימי שנה ואירועים. אפשר גם ללחוץ על כל יום בלוח.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
+const SIMPLE_STEPS={1:['סוג הלוח','לוח עברי או לועזי, השנה וגודל הדף.'],2:['עיצוב','איך נראה כל עמוד, צבעים וגופנים.'],5:['תמונות ואירועים','המסלול המהיר: מעלים את כל התמונות למגש שבתחתית המסך, גוררים כל תמונה לחודש או ליום (או "מילוי אוטומטי"), ולוחצים על יום כדי להוסיף יום הולדת או אירוע.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
 /* עיצובים מוכנים לבונה הפשוט: לחיצה אחת משנה סגנון, צבע, גופנים ופריסה */
 const SIMPLE_PRESETS=[
  ['classic','קלאסי','ink','#1e5a63','Frank Ruhl Libre','Assistant','same'],['modern','מודרני ונקי','soft','#24427a','Heebo','Heebo','same'],
@@ -3018,6 +3022,7 @@ function applyMode(){
   $('#textScale2').value=s.textScale;$('#textScaleVal2').textContent=s.textScale+'%';
   document.querySelectorAll('#swatches2 .sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.acc===s.accent));
   setTimeout(fitSide,30);
+  try{trayShow()}catch(e){}
 }
 /* הלוח שבצד גלול בפני עצמו: הגובה שלו הוא החלק הגלוי במסך, כך שאפשר לגלול אותו עד הסוף בלי לגלול קודם את התצוגה */
 function fitSide(){const sd=document.querySelector('.side');if(!sd)return;if(innerWidth<901){sd.style.maxHeight='';return}const t=Math.max(0,sd.getBoundingClientRect().top);sd.style.maxHeight=Math.max(240,innerHeight-t)+'px'}
@@ -3367,6 +3372,7 @@ function acctInit(){
       if(ev==='PASSWORD_RECOVERY')setTimeout(newPasswordModal,300);
       const u=session&&session.user?{id:session.user.id,email:session.user.email}:null;
       const was=user;user=u;AUTH.user=u;acctBtn();if(!!was!==!!u){syncPlanUI();render()}
+      if(u&&(!was||was.id!==u.id))setTimeout(shareCheck,1500);
       if(u&&(!was||was.id!==u.id))onSignedIn((ev==='SIGNED_IN'||ev==='PASSWORD_RECOVERY')&&!had);
       if(u){had=true;let bk=null;try{bk=sessionStorage.getItem('ml-back');if(bk)sessionStorage.removeItem('ml-back')}catch(e){}if(bk)setTimeout(()=>{window.location.href=bk},400)}
       if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
@@ -3857,6 +3863,195 @@ document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.datase
 document.addEventListener('click',e=>{const k=e.target.dataset&&e.target.dataset.tcolX;if(k){const o={...(state.s.tcolors||{})};delete o[k];state.s.tcolors=o;save();renderTColors();rerender();return}
   if(e.target.id==='tcolReset'){state.s.tcolors={};save();renderTColors();rerender()}});
 syncPlanUI();
+/* ---------- המסלול המהיר: מגש תמונות, הוספה מהירה ליום, ושיתוף עם המשפחה ---------- */
+/* מגש התמונות: מעלים הרבה תמונות בבת אחת, ומשם גוררים כל תמונה לחודש או ליום.
+   בטלפון: נוגעים בתמונה, ואז במקום שבו היא צריכה להיות. המגש נשמר בדפדפן בנפרד מהלוח (TKEY). */
+const TKEY=SKEY+'-tray';
+let TRAY=[],TSEL=null;
+function trayItem(id){return TRAY.find(t=>t.id===id)}
+function traySave(){idbSet(TKEY,TRAY)}
+async function trayLoad(){if(CDMODE||SNAPVIEW)return;const v=await idbGet(TKEY);TRAY=Array.isArray(v)?v:[];trayDraw();trayShow()}
+function thumbOf(img){return new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,220/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res(img);im.src=img})}
+async function trayAdd(img,meta){const t={id:'t'+uid(),img,th:await thumbOf(img),used:0,...(meta||{})};TRAY.push(t);return t}
+function trayShow(){const b=$('#tray');if(!b)return;const s=state.s,mode=s.uiMode,n=+s.step||1;
+  const on=!CDMODE&&!SNAPVIEW&&((mode==='wizard'&&n===5)||(mode==='adv'&&(TRAY.length>0||!!s.trayOn)));
+  b.hidden=!on;document.body.classList.toggle('tray-on',on);b.classList.toggle('min',!!s.trayMin)}
+function trayDraw(){const L=$('#trayList');if(!L)return;
+  L.innerHTML=TRAY.length?TRAY.map(t=>'<div class="tray-i'+(t.used?' used':'')+(TSEL===t.id?' sel':'')+'" draggable="true" data-ti="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(TSEL===t.id)+'" title="'+(t.from?'מאת '+esc(t.from)+' · ':'')+'גררו לחודש או ליום, או לחצו ואז בחרו מקום"><img src="'+t.th+'" alt="" draggable="false">'+(t.used?'<span class="tray-ok" aria-label="בשימוש">✓</span>':'')+(t.from?'<span class="tray-from">'+esc(t.from)+'</span>':'')+'<button type="button" class="tray-x" data-tx="'+t.id+'" aria-label="הסרה מהמגש">×</button></div>').join('')
+    :'<div class="tray-empty"><b>המסלול המהיר:</b> ① מעלים את כל התמונות לכאן בבת אחת ② גוררים כל תמונה לחודש או ליום, או לוחצים "מילוי אוטומטי" ③ לוחצים על יום כדי להוסיף יום הולדת או אירוע</div>';
+  const n=TRAY.filter(t=>!t.used).length;$('#trayCount').textContent=TRAY.length?(n?n+' מחכות':'כולן בלוח ✓'):'';
+  $('#trayFill').hidden=!TRAY.some(t=>!t.used)}
+function traySelect(id){TSEL=TSEL===id?null:id;document.body.classList.toggle('tray-picking',!!TSEL);trayDraw();
+  const bar=$('#trayPickBar');if(bar)bar.hidden=!TSEL}
+function trayPlaced(id){const t=trayItem(id);if(t){t.used=1;traySave()}if(TSEL)traySelect(null);trayDraw()}
+/* מקומות לתמונות: עמוד השער וכל המקומות בעמודים, לפי הסדר */
+function photoKeys(){return (state.s.cover?['cover']:[]).concat([...new Set(RS.slots)])}
+function slotHas(k){const o=k==='cover'?state.cover:state.slots[k];return !!(o&&o.img)}
+function slotPut(k,img){const o={img,edit:null,zoom:1,px:50,pos:50};if(k==='cover')state.cover={...state.cover,...o};else state.slots[k]={...(state.slots[k]||{}),...o}}
+function trayFill(){const free=TRAY.filter(t=>!t.used);let i=0;
+  for(const k of photoKeys()){if(i>=free.length)break;if(!slotHas(k)){slotPut(k,free[i].img);free[i].used=1;i++}}
+  traySave();save();render();trayDraw();
+  const left=free.length-i,few=photoKeys().length<4;
+  trayNote((i?(i===1?'נכנסה תמונה אחת':'נכנסו '+i+' תמונות')+' למקומות הריקים. ':'אין מקומות ריקים לתמונות. ')+(left&&few?'כדי שתהיה תמונה לכל חודש, בחרו בשלב "עיצוב" פריסה עם תמונה. ':'')+(left?'אפשר גם לגרור תמונה ליום, או על תמונה קיימת כדי להחליף.':''))}
+function trayNote(t){let n=$('#trayNote');if(!n)return;n.textContent=t;n.hidden=false;clearTimeout(trayNote.t);trayNote.t=setTimeout(()=>n.hidden=true,6000)}
+function trayHelp(){modal('<h3>המסלול המהיר<small>לוח עם תמונות ותאריכים בכמה דקות</small></h3><ol class="fast-steps">'+
+  '<li><b>מעלים את כל התמונות בבת אחת.</b> לוחצים "הוספת תמונות" ובוחרים כמה שרוצים. הן נכנסות למגש בתחתית המסך.</li>'+
+  '<li><b>שמים כל תמונה במקום.</b> גוררים תמונה מהמגש לחודש (לראש העמוד) או ליום מסוים. בטלפון: נוגעים בתמונה ואז במקום. "מילוי אוטומטי" ממלא את כל החודשים הריקים לפי הסדר.</li>'+
+  '<li><b>מוסיפים תאריכים.</b> לוחצים על יום בלוח, כותבים שם ובוחרים: יום הולדת, יום נישואין, יום שנה או אירוע. הוא יחזור כל שנה לפי התאריך העברי או הלועזי.</li>'+
+  '<li><b>מזמינים את המשפחה.</b> "שיתוף עם המשפחה" שולח קישור, וכל אחד מוסיף ימי הולדת ותמונות בלי הרשמה.</li>'+
+  '<li><b>מדפיסים.</b> בשלב האחרון מורידים קובץ PDF.</li></ol>'+
+  '<p class="hint">הכל נשמר לבד בדפדפן. רוצים יותר אפשרויות? <a href="app.html">בבונה המלא</a> יש זמני היום לפי המנהג, לימוד יומי, דברי הימים ועיצוב חופשי.</p>'+
+  '<div class="row"><button class="btn primary" type="button" data-close>הבנתי</button></div>')}
+$('#trayAdd').onclick=()=>{const f=$('#fileMany');f.value='';f.onchange=async()=>{
+  const files=[...f.files].filter(x=>x.type.startsWith('image/')).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  trayNote('מכין '+files.length+' תמונות…');for(const x of files){await trayAdd(await compress(x));trayDraw()}traySave();
+  trayNote(files.length?'נוספו '+files.length+' תמונות. גררו כל תמונה לחודש או ליום, או לחצו "מילוי אוטומטי".':'')};f.click()};
+$('#trayFill').onclick=trayFill;$('#trayHelp').onclick=trayHelp;
+$('#trayMin').onclick=()=>{state.s.trayMin=!state.s.trayMin;save();trayShow()};
+$('#trayPickX').onclick=()=>traySelect(null);
+$('#trayList').addEventListener('click',e=>{const x=e.target.closest('[data-tx]');if(x){e.stopPropagation();TRAY=TRAY.filter(t=>t.id!==x.dataset.tx);if(TSEL===x.dataset.tx)traySelect(null);traySave();trayDraw();return}
+  const t=e.target.closest('[data-ti]');if(t)traySelect(t.dataset.ti)});
+$('#trayList').addEventListener('keydown',e=>{const t=e.target.closest('[data-ti]');if(t&&(e.key==='Enter'||e.key===' ')){e.preventDefault();traySelect(t.dataset.ti)}});
+$('#trayList').addEventListener('dragstart',e=>{const t=e.target.closest('[data-ti]');if(!t)return;e.dataTransfer.setData('text/x-mltray',t.dataset.ti);e.dataTransfer.effectAllowed='copy';document.body.classList.add('tray-dragging')});
+$('#trayList').addEventListener('dragend',()=>document.body.classList.remove('tray-dragging'));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&TSEL)traySelect(null)});
+/* תמונה מהמגש שנגררה או נבחרה: למקום של תמונה (setv של התיבה) או ליום */
+function trayDropId(e){try{return e.dataTransfer&&e.dataTransfer.getData('text/x-mltray')||''}catch(err){return ''}}
+async function trayToDay(date,id){const t=trayItem(id);if(!t)return;const img=await compress(await (await fetch(t.img)).blob(),1000);quickEvent({date,img,trayId:id})}
+stage.addEventListener('click',e=>{if(!TSEL)return;
+  const box=e.target.closest('.pg-img');
+  if(box&&box._setv){e.preventDefault();e.stopPropagation();const t=trayItem(TSEL);if(t){box._setv({img:t.img,edit:null,zoom:1,px:50,pos:50});trayPlaced(t.id)}return}
+  const c=e.target.closest('[data-date]');if(c){e.preventDefault();e.stopPropagation();const id=TSEL;traySelect(null);trayToDay(c.dataset.date,id)}},true);
+
+/* הוספה מהירה ליום (בבונה הפשוט, ובכל מקום שנגררת תמונה מהמגש ליום) */
+const QK=[['birthday','יום הולדת'],['anniversary','יום נישואין'],['yahrzeit','יום שנה'],['event','אירוע']];
+function quickEvent({date,img,trayId}){
+  const base=dateFromIso(date),hd=new HDate(base),leap=isLeap(hd.getFullYear());
+  const hTxt=gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),leap),gTxt=base.getDate()+(EN?' ':' ב')+GREG_MONTHS[base.getMonth()];
+  let kind=img?'event':'birthday',rec=KINDS[kind].rec,pic=img||null;
+  const m=modal('<h3>'+esc(hTxt+' '+hebYearStr(hd.getFullYear()))+'<small>'+esc(gTxt+' '+base.getFullYear())+'</small></h3>'+
+    '<div class="q-kinds" role="radiogroup" aria-label="סוג">'+QK.map(([k,n])=>'<label><input type="radio" name="qK" value="'+k+'"'+(k===kind?' checked':'')+'><span>'+n+'</span></label>').join('')+'</div>'+
+    '<label class="fld"><span id="qAsk"></span><input type="text" id="qName" maxlength="60" autocomplete="off"></label>'+
+    '<div class="seg q-rec" role="radiogroup" aria-label="חוזר">'+
+      '<label><input type="radio" name="qR" value="heb"><span>כל שנה ב־'+esc(hTxt)+'</span></label>'+
+      '<label><input type="radio" name="qR" value="greg"><span>כל שנה ב־'+esc(gTxt)+'</span></label>'+
+      '<label><input type="radio" name="qR" value="once"><span>רק השנה</span></label></div>'+
+    '<div class="q-img"><img id="qImg" alt=""><button type="button" class="btn" id="qPic"></button><button type="button" class="btn" id="qPicX">הסרה</button></div>'+
+    '<p class="hint" id="qMsg" aria-live="polite"></p>'+
+    '<div class="row"><button class="btn primary" type="button" id="qSave">הוספה</button><button class="btn" type="button" id="qMore">עוד אפשרויות</button><button class="btn" type="button" data-close>ביטול</button></div>');
+  const q=x=>m.querySelector(x);
+  const draw=()=>{const k=KINDS[kind];q('#qAsk').textContent=k.ask;q('#qName').placeholder=k.ph;
+    m.querySelectorAll('input[name=qR]').forEach(r=>r.checked=r.value===rec);
+    q('#qImg').hidden=q('#qPicX').hidden=!pic;if(pic)q('#qImg').src=pic;q('#qPic').textContent=pic?'החלפת תמונה':'📷 תמונה ליום (לא חובה)'};
+  m.addEventListener('change',e=>{if(e.target.name==='qK'){kind=e.target.value;if(!q('#qName').value)rec=KINDS[kind].rec;draw()}if(e.target.name==='qR')rec=e.target.value});
+  q('#qPic').onclick=()=>{const s=async v=>{pic=v.img;draw()};s.maxPx=1000;pickImage(s)};
+  q('#qPicX').onclick=()=>{pic=null;draw()};
+  const build=()=>{const o={id:uid(),kind,name:q('#qName').value.trim(),rec,img:pic,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null};
+    if(rec==='heb'){o.day=hd.getDate();o.month=hd.getMonth();o.year=''}else if(rec==='greg'){o.day=base.getDate();o.month=base.getMonth()+1;o.year=''}else o.date=date;return o};
+  const add=()=>{const o=build();if(!o.name&&!o.img){q('#qMsg').innerHTML='<span class="msg-bad">כתבו שם או הוסיפו תמונה.</span>';q('#qName').focus();return null}
+    if(state.events.length>=PLAN().events){m.remove();openUpgrade('events');return null}
+    state.events.push(o);if(trayId)trayPlaced(trayId);save();renderEvents();render();fillLums();return o};
+  q('#qSave').onclick=()=>{if(add())m.remove()};
+  q('#qName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();q('#qSave').click()}});
+  q('#qMore').onclick=()=>{const has=q('#qName').value.trim()||pic;if(!has){m.remove();openEventEditor({date,img:pic||undefined});return}const o=add();if(o){m.remove();openEventEditor({id:o.id})}};
+  draw();setTimeout(()=>q('#qName').focus(),30);
+}
+
+/* ---------- שיתוף עם המשפחה ---------- */
+/* בעל הלוח (מחובר) יוצר קישור. מי שמקבל אותו מוסיף ימי הולדת ותמונות בדף share.html, בלי הרשמה.
+   התוספות נכנסות ללוח כשבעל הלוח פותח אותו: אוטומטית, או אחרי אישור, לפי מה שבחר. */
+let SHARE=null;
+const cntEv=n=>n===1?'תאריך אחד':n+' תאריכים',cntPh=n=>n===1?'תמונה אחת':n+' תמונות';
+function gotTxt(r){return (r.ev?cntEv(r.ev):'')+(r.ev&&r.ph?' ו־':'')+(r.ph?cntPh(r.ph)+' (במגש התמונות, בשלב "תמונות ואירועים")':'')}
+async function shareApi(body){const h=await authHeaders();const r=await fetch('/api/user?fn=share',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||'http'),{code:j.error||r.status});return j}
+const shareLink=s=>window.location.origin+'/share.html?k='+s.id;
+function shareMonths(){return photoKeys().map(k=>({k,t:slotLabel(k)}))}
+function shareToast(t){const d=el('button','cd-toast',esc(t));d.type='button';document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));const off=()=>{d.classList.remove('on');setTimeout(()=>d.remove(),400)};d.onclick=off;setTimeout(off,8000)}
+function shareBadge(){const b=$('#shareN');if(!b)return;const n=SHARE&&SHARE.items?SHARE.items.length:0;b.hidden=!n;b.textContent=n}
+/* קבלת תוספות: אירועים ללוח, תמונות למגש (ואם ביקשו חודש ריק, ישר לחודש) */
+async function shareAccept(items){
+  const ok=[];let ev=0,ph=0,full=false;
+  for(const it of items){
+    try{
+      if(it.kind==='event'){
+        if(state.events.length>=PLAN().events){full=true;break}
+        const d=it.data||{},o={id:uid(),kind:KINDS[d.kind]?d.kind:'event',name:String(d.name||''),rec:d.rec,img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null,from:it.who||''};
+        if(d.rec==='once')o.date=d.date;else{o.day=d.day;o.month=d.month;o.year=d.year||''}
+        if(it.url){o.img=await urlToData(it.url,1000);o.imgLum=await imageLum(o.img)}
+        state.events.push(o);ev++;
+      }else if(it.url){
+        const img=await urlToData(it.url,2400),k=it.data&&it.data.month;const t=await trayAdd(img,{from:it.who||''});
+        if(k&&photoKeys().includes(k)&&!slotHas(k)){slotPut(k,img);t.used=1}ph++;
+      }
+      ok.push(it.id);
+    }catch(e){console.warn('share item',e)}
+  }
+  if(ok.length){traySave();save();renderEvents();render();trayDraw();trayShow();
+    try{const j=await shareApi({action:'done',sid:state.s.shareId,ids:ok,st:'ok'});SHARE=j}catch(e){}}
+  shareBadge();
+  return {ev,ph,full,n:ok.length};
+}
+async function shareCheck(){
+  if(!user||!state.s.shareId||CDMODE||SNAPVIEW)return;
+  try{SHARE=await shareApi({action:'get',sid:state.s.shareId})}catch(e){return}
+  if(!SHARE.share){delete state.s.shareId;save();SHARE=null;return}
+  if(SHARE.items.length&&SHARE.share.auto){const r=await shareAccept(SHARE.items);if(r.n){trayNote('נוסף מהמשפחה: '+gotTxt(r));shareToast('נוסף ללוח מהמשפחה: '+gotTxt(r))}}
+  shareBadge();
+}
+function itemHTML(it){const d=it.data||{};const K={birthday:'יום הולדת',anniversary:'יום נישואין',yahrzeit:'יום שנה',event:'אירוע',other:'אירוע'};
+  let what;
+  if(it.kind==='event'){const when=d.rec==='heb'?gem(d.day)+' '+hebMonthOpt(d.month)+(d.year?' '+hebYearStr(d.year):''):d.rec==='greg'?d.day+'.'+d.month+(d.year?'.'+d.year:''):(d.date||'').split('-').reverse().join('.');
+    what='<b>'+esc(K[d.kind]||'אירוע')+': '+esc(d.name)+'</b><span>'+esc(when)+(d.rec==='heb'?' (עברי)':d.rec==='greg'?' (לועזי)':'')+'</span>'}
+  else{const mo=(SHARE.share.months||[]).find(x=>x.k===d.month);what='<b>תמונה'+(mo?' ל'+esc(mo.t):'')+'</b>'+(d.note?'<span>'+esc(d.note)+'</span>':'')}
+  return '<li class="sh-it" data-sid="'+it.id+'">'+(it.url?'<img src="'+esc(it.url)+'" alt="" loading="lazy">':'<span class="sh-ic">'+(it.kind==='event'?'🎂':'📷')+'</span>')+
+    '<div class="sh-t">'+what+'<small>מאת '+esc(it.who||'')+'</small></div><button type="button" class="btn" data-acc="'+it.id+'">הוספה</button><button type="button" class="btn sh-no" data-rej="'+it.id+'" aria-label="לא להוסיף">✕</button></li>'}
+async function shareModal(){
+  if(CDMODE)return;
+  if(!sb){modal('<h3>השיתוף לא זמין כרגע</h3><p class="hint">לא הצלחנו לטעון את מערכת הכניסה. בדקו את החיבור לאינטרנט ורעננו את הדף.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
+  if(!user){loginModal('כדי לשתף את הלוח עם המשפחה צריך להיכנס לחשבון (בחינם). הלוח יישמר בחשבון, והתוספות של המשפחה יגיעו אליו.');return}
+  const m=modal('<h3>שיתוף עם המשפחה<small>שולחים קישור, וכל אחד מוסיף ימי הולדת, אירועים ותמונות, בלי הרשמה</small></h3><div id="shBody"><p class="hint">טוען…</p></div>');
+  m.querySelector('.modal').classList.add('wide');
+  const body=m.querySelector('#shBody'),q=x=>m.querySelector(x);
+  const fail=e=>{body.innerHTML='<p class="msg-bad">'+(e&&e.code==='setup'?'השיתוף עוד לא הופעל באתר (חסרות טבלאות במסד הנתונים).':'לא הצלחנו להתחבר. נסו שוב בעוד רגע.')+'</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>'};
+  const intro=()=>{body.innerHTML='<ol class="fast-steps"><li>יוצרים קישור ושולחים אותו בוואטסאפ או במייל.</li><li>כל מי שמקבל אותו מוסיף ימי הולדת, ימי נישואין, אירועים ותמונות, ובוחר לאיזה חודש.</li><li>התוספות מגיעות ללוח שלכם: אתם מאשרים כל אחת, או שהן נכנסות לבד.</li></ol>'+
+      '<label class="fld"><span>השם שלכם, כפי שיופיע בהזמנה</span><input type="text" id="shOwner" maxlength="40" placeholder="למשל: משפחת כהן"></label>'+
+      '<label class="chk"><input type="checkbox" id="shAuto"> להכניס את התוספות ללוח בלי אישור שלי</label>'+
+      '<div class="row"><button class="btn primary" type="button" id="shCreate">יצירת קישור לשיתוף</button><button class="btn" type="button" data-close>ביטול</button></div>';
+    q('#shCreate').onclick=async()=>{const b=q('#shCreate');b.disabled=true;b.textContent='יוצר…';
+      try{if(!state.s.cloudId)await cloudSave().catch(()=>{});
+        SHARE=await shareApi({action:'create',title:calTitle(),owner:q('#shOwner').value.trim(),auto:q('#shAuto').checked,months:shareMonths(),cal:state.s.calType});
+        state.s.shareId=SHARE.share.id;save();draw()}catch(e){fail(e)}}};
+  const draw=()=>{const s=SHARE.share,link=shareLink(s),items=SHARE.items||[],used=SHARE.used||{photos:0};
+    const msg=(s.owner?s.owner+' מזמינים אתכם':'הוזמנתם')+' להוסיף ימי הולדת, אירועים ותמונות ללוח השנה שלנו: '+link;
+    body.innerHTML='<div class="sh-link"><input type="text" id="shUrl" readonly value="'+esc(link)+'" aria-label="הקישור לשיתוף" dir="ltr"><button class="btn primary" type="button" id="shCopy">העתקה</button>'+
+      '<a class="btn sh-wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">וואטסאפ</a><a class="btn" href="mailto:?subject='+encodeURIComponent('מוסיפים ללוח השנה המשפחתי')+'&body='+encodeURIComponent(msg)+'">מייל</a></div>'+
+      '<label class="chk"><input type="checkbox" id="shAuto"'+(s.auto?' checked':'')+'> להכניס תוספות ללוח בלי אישור שלי</label>'+
+      '<label class="chk"><input type="checkbox" id="shOn"'+(s.active?' checked':'')+'> הקישור פעיל (אפשר להוסיף דרכו)</label>'+
+      '<p class="hint">תמונות: נשלחו '+used.photos+' מתוך '+SHARE.limit+' שאפשר לקבל ללוח הזה'+(SHARE.limit<=5?' (במסלול המשפחתי והמלא: הרבה יותר)':'')+'. התמונות שתאשרו נכנסות למגש התמונות, ואם ביקשו חודש שעדיין אין בו תמונה, ישר לחודש.</p>'+
+      '<h4 class="sh-h">מחכות לאישור ('+items.length+')</h4>'+(items.length?'<div class="row"><button class="btn primary" type="button" id="shAll">הוספת הכל ללוח</button></div><ul class="sh-list">'+items.map(itemHTML).join('')+'</ul>':'<p class="hint">עוד לא הגיעו תוספות. אחרי ששולחים את הקישור, מה שהמשפחה מוסיפה יופיע כאן.</p>')+
+      '<p class="hint" id="shMsg" aria-live="polite"></p><div class="row"><button class="btn" type="button" id="shRef">רענון</button><button class="btn" type="button" data-close>סגירה</button></div>';
+    q('#shCopy').onclick=()=>{const i=q('#shUrl');i.select();try{navigator.clipboard.writeText(i.value)}catch(e){document.execCommand('copy')}q('#shCopy').textContent='הועתק ✓'};
+    const set=async p=>{try{SHARE=await shareApi({action:'set',sid:s.id,...p});draw()}catch(e){q('#shMsg').textContent='לא נשמר. נסו שוב.'}};
+    q('#shAuto').onchange=e=>set({auto:e.target.checked});q('#shOn').onchange=e=>set({active:e.target.checked});
+    q('#shRef').onclick=async()=>{try{SHARE=await shareApi({action:'get',sid:s.id});shareBadge();draw()}catch(e){fail(e)}};
+    const acc=async L=>{q('#shMsg').textContent='מוסיף…';const r=await shareAccept(L);draw();
+      q('#shMsg').innerHTML=(r.n?'<span class="msg-ok">נוסף ללוח: '+gotTxt(r)+'.</span> ':'')+(r.full?'<span class="msg-bad">הגעתם למספר האירועים של המסלול. </span><button type="button" class="linkbtn" id="shUp">שדרוג מסלול</button>':'');
+      const u=q('#shUp');if(u)u.onclick=()=>{m.remove();openUpgrade('events')}};
+    if(q('#shAll'))q('#shAll').onclick=()=>acc(SHARE.items);
+    m.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>{b.disabled=true;acc(SHARE.items.filter(x=>String(x.id)===b.dataset.acc))});
+    m.querySelectorAll('[data-rej]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{SHARE=await shareApi({action:'done',sid:s.id,ids:[+b.dataset.rej],st:'no'});shareBadge();draw()}catch(e){b.disabled=false}});
+  };
+  try{
+    if(state.s.shareId){SHARE=await shareApi({action:'get',sid:state.s.shareId});
+      if(!SHARE.share){delete state.s.shareId;save();intro();return}
+      const mo=shareMonths();if(JSON.stringify(mo)!==JSON.stringify(SHARE.share.months||[])||calTitle()!==SHARE.share.title)shareApi({action:'set',sid:state.s.shareId,months:mo,title:calTitle()}).catch(()=>{});
+      shareBadge();draw()}
+    else intro();
+  }catch(e){fail(e)}
+}
+$('#shareBtn').onclick=shareModal;
+
 /* boot */
 (async function(){
   fillStatic();bindReset();
@@ -3907,7 +4102,7 @@ syncPlanUI();
      for(const k in p){if(k==='place'||k==='learn'||k==='moon')s[k]={...(s[k]||{}),...p[k]};else s[k]=p[k]}
      if(m[1]==='school'&&!(s.hl||[]).length)s.hl=[{id:'h'+uid(),name:'חופשות',color:'#f6d365',days:{},show:true,repeat:'none'},{id:'h'+uid(),name:'ימי הורים',color:'#a7c7e7',days:{},show:true,repeat:'none'}];
      s.uiMode='wizard';s.step=1;save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
-  syncUI();applyMode();render();fillLums();
+  syncUI();applyMode();render();fillLums();trayLoad();
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
   acctInit();
 })();

@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610181130">
+<link rel="stylesheet" href="assets/app.css?v=202610181800">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body class="simple-app">
@@ -31,6 +31,7 @@
       <button class="btn upgrade-btn" id="upgradeBtn" type="button">שדרוג מסלול</button>
       <button class="btn" id="modeBtn" type="button"></button>
       <button class="btn" id="addEvTop" type="button" title="יום הולדת, יום שנה (יארצייט), תזכורת או תמונה ליום מסוים">הוספת אירוע ליום</button>
+      <button class="btn nocd" id="shareBtn" type="button" title="שולחים קישור, וכל המשפחה מוסיפה ימי הולדת ותמונות בלי הרשמה">👨‍👩‍👧 שיתוף עם המשפחה<span class="badge" id="shareN" hidden></span></button>
       <button class="btn" id="bulkBtn" type="button" title="העלאת כמה תמונות ביחד, תצוגה מקדימה ושינוי הסדר">סידור תמונות</button>
       <button class="btn primary" id="printBtn" type="button" hidden>הדפסה</button>
     </div>
@@ -604,6 +605,14 @@
   <main class="stage" id="stage">
     <div class="stage-head"><strong id="stageTitle"></strong><span id="stageMeta"></span><span>לחצו על יום כדי להוסיף לו אירוע. גררו תמונה כדי להזיז אותה. משכו את הפסים הצבעוניים כדי לשנות גודל. לחצו על טקסט כדי לערוך, להגדיל או ליישר.</span></div>
   </main>
+  <section class="tray no-print" id="tray" hidden aria-label="מגש התמונות">
+    <div class="tray-head"><b>📷 מגש התמונות</b><span class="tray-count" id="trayCount"></span>
+      <span class="tray-tip">גררו תמונה לחודש או ליום · בטלפון: נוגעים בתמונה ואז במקום</span>
+      <span class="tray-btns"><button class="btn primary" type="button" id="trayAdd">+ הוספת תמונות</button><button class="btn" type="button" id="trayFill" hidden>מילוי אוטומטי</button><button class="btn" type="button" id="trayHelp">איך זה עובד?</button><button class="btn tray-min" type="button" id="trayMin" aria-label="הקטנה והגדלה של המגש">▾</button></span></div>
+    <div class="tray-list" id="trayList"></div>
+    <p class="tray-note" id="trayNote" hidden aria-live="polite"></p>
+  </section>
+  <div class="tray-pick no-print" id="trayPickBar" hidden>לחצו על מקום לתמונה או על יום בלוח <button class="btn" type="button" id="trayPickX">ביטול</button></div>
 </div>
 
 <input type="file" id="fileOne" accept="image/*" hidden>
@@ -626,6 +635,6 @@
 <script src="assets/library/index.js?v=1" defer></script>
 <script src="assets/geo.js?v=1"></script>
 <script src="assets/hpick.js?v=1"></script>
-<script src="assets/app.js?v=202610181130"></script>
+<script src="assets/app.js?v=202610181800"></script>
 </body>
 </html>

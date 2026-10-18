@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>מוסיפים ללוח המשפחתי · MyLuach</title>
+<meta name="description" content="הוזמנתם להוסיף ימי הולדת, אירועים ותמונות ללוח שנה משפחתי ב־MyLuach.">
+<meta name="robots" content="noindex">
+<meta property="og:type" content="website"><meta property="og:site_name" content="MyLuach"><meta property="og:locale" content="he_IL">
+<meta property="og:title" content="הוזמנתם להוסיף ללוח השנה המשפחתי">
+<meta property="og:description" content="ימי הולדת, ימי נישואין ותמונות: מוסיפים בכמה שניות, בלי הרשמה.">
+<meta property="og:image" content="https://www.myluach.org/assets/icon-512.png">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f6f7f4;--sheet:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-soft:#e4eeec;--bad:#b3261e;--ok:#1d7a46;
+  --f-display:"Frank Ruhl Libre","Times New Roman",serif;--f-body:"Assistant","Arial Hebrew",Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6}
+a{color:var(--teal)}
+.top{background:var(--sheet);border-bottom:1px solid var(--line)}
+.top-in{max-width:760px;margin:auto;padding:10px 16px;display:flex;align-items:center;gap:8px}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:900;font-size:21px;color:var(--ink);text-decoration:none}
+main{max-width:760px;margin:auto;padding:20px 16px 60px}
+h1{font-family:var(--f-display);font-size:clamp(26px,5vw,36px);line-height:1.2;margin:4px 0 6px}
+.sub{color:var(--mute);margin:0 0 18px}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:18px;margin:0 0 16px}
+.card h2{margin:0 0 4px;font-size:21px}
+.card .hint{color:var(--mute);font-size:15px;margin:0 0 12px}
+label{display:block;font-weight:700;margin:10px 0 4px;font-size:15px}
+input[type=text],input[type=date],select{font:inherit;width:100%;padding:9px 11px;border:1px solid #c9d1ce;border-radius:10px;background:#fff;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.row>*{flex:1 1 120px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips label{margin:0;font-weight:600}
+.chips input{position:absolute;opacity:0}
+.chips span{display:inline-block;padding:7px 13px;border:1.5px solid var(--line);border-radius:999px;cursor:pointer;background:#fff}
+.chips input:checked+span{border-color:var(--teal);background:var(--teal-soft);color:var(--teal)}
+.chips input:focus-visible+span{outline:2px solid var(--teal);outline-offset:2px}
+.btn{font:inherit;font-weight:700;border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:10px;padding:9px 16px;cursor:pointer}
+.btn.pri{background:var(--teal);color:#fff}
+.btn:disabled{opacity:.55;cursor:default}
+.msg{margin:10px 0 0;font-weight:600}.msg.bad{color:var(--bad)}.msg.ok{color:var(--ok)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}
+.th{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fafbf9;font-size:14px}
+.th img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.th .in{padding:6px}
+.th select{padding:5px 6px;font-size:14px}
+.th .x{float:left;border:0;background:none;font-size:18px;cursor:pointer;color:var(--mute)}
+.th.done{opacity:.75}.th .st{font-weight:700}
+.sent{list-style:none;padding:0;margin:0}.sent li{padding:6px 0;border-bottom:1px dashed var(--line)}
+.sent li::before{content:"✓ ";color:var(--ok);font-weight:800}
+.ev-img{display:flex;gap:10px;align-items:center;margin-top:10px}.ev-img img{width:70px;height:56px;object-fit:cover;border-radius:8px}
+.state{text-align:center;padding:40px 10px}
+.foot{color:var(--mute);font-size:14px;text-align:center;margin-top:26px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="logo" href="/"><img src="/assets/logo.svg?v=2" alt="" width="32" height="32">MyLuach</a></div></header>
+<main id="main">
+  <div id="loading" class="state">טוען…</div>
+  <div id="bad" class="state" hidden><h1>הקישור לא נמצא</h1><p class="sub">ייתכן שהקישור הועתק חלקית. בקשו מבעל הלוח לשלוח אותו שוב.</p><a class="btn" href="/">לאתר MyLuach</a></div>
+  <div id="closed" class="state" hidden><h1>הקישור סגור</h1><p class="sub">בעל הלוח סגר את האפשרות להוסיף ללוח.</p><a class="btn" href="/simple.html">לבנות לוח משלכם</a></div>
+  <div id="app" hidden>
+    <h1 id="title"></h1>
+    <p class="sub" id="lead"></p>
+
+    <section class="card">
+      <label for="who">השם שלכם</label>
+      <input type="text" id="who" maxlength="40" placeholder="למשל: דודה רחל" autocomplete="name">
+      <p class="hint" style="margin:6px 0 0">כך בעל הלוח יידע ממי הגיעה כל תוספת.</p>
+    </section>
+
+    <section class="card" id="evCard">
+      <h2>🎂 יום הולדת, יום נישואין או אירוע</h2>
+      <p class="hint">מה שתוסיפו יופיע ביום הזה בלוח<span id="evAuto"></span>.</p>
+      <div class="chips" role="radiogroup" aria-label="סוג">
+        <label><input type="radio" name="kind" value="birthday" checked><span>יום הולדת</span></label>
+        <label><input type="radio" name="kind" value="anniversary"><span>יום נישואין</span></label>
+        <label><input type="radio" name="kind" value="yahrzeit"><span>יום שנה (יארצייט)</span></label>
+        <label><input type="radio" name="kind" value="event"><span>אירוע</span></label>
+      </div>
+      <label for="evName" id="evAsk">של מי?</label>
+      <input type="text" id="evName" maxlength="60" placeholder="למשל: שירה">
+      <div id="recBox">
+        <label>לפי איזה תאריך חוגגים?</label>
+        <div class="chips" role="radiogroup" aria-label="תאריך">
+          <label><input type="radio" name="rec" value="heb" checked><span>עברי</span></label>
+          <label><input type="radio" name="rec" value="greg"><span>לועזי</span></label>
+        </div>
+      </div>
+      <div id="hebBox" class="row" style="margin-top:6px">
+        <div><label for="hD">יום</label><select id="hD"></select></div>
+        <div><label for="hM">חודש</label><select id="hM"></select></div>
+        <div style="flex:0 0 auto"><button type="button" class="btn" data-hpick="hM,hD">📅 בחירה מהלוח</button></div>
+      </div>
+      <div id="gregBox" hidden><label for="gD">תאריך</label><input type="date" id="gD"></div>
+      <div id="onceBox" hidden><label for="oD">התאריך</label><input type="date" id="oD"></div>
+      <label for="evYear" id="yLab">שנה (לא חובה, כדי שיופיע גיל)</label>
+      <input type="text" id="evYear" maxlength="8" placeholder="למשל: תשנ״ה או 1995" inputmode="text">
+      <div class="ev-img"><button type="button" class="btn" id="evImgBtn">📷 תמונה ליום הזה (לא חובה)</button><img id="evImg" alt="" hidden><button type="button" class="btn" id="evImgX" hidden>הסרה</button></div>
+      <div style="margin-top:14px"><button type="button" class="btn pri" id="evSend">הוספה ללוח</button></div>
+      <p class="msg" id="evMsg" aria-live="polite"></p>
+    </section>
+
+    <section class="card" id="phCard">
+      <h2>📷 תמונות ללוח</h2>
+      <p class="hint" id="phHint">בוחרים תמונות מהטלפון או מהמחשב, ואם רוצים גם לאיזה חודש הן מתאימות.</p>
+      <button type="button" class="btn" id="phPick">בחירת תמונות</button>
+      <div class="thumbs" id="thumbs"></div>
+      <button type="button" class="btn pri" id="phSend" hidden>שליחת התמונות</button>
+      <p class="msg" id="phMsg" aria-live="polite"></p>
+    </section>
+
+    <section class="card" id="sentCard" hidden>
+      <h2>מה שהוספתם</h2>
+      <ul class="sent" id="sent"></ul>
+    </section>
+    <p class="foot">רוצים לוח משלכם? <a href="/simple.html">בונים לוח שנה עם תמונות בחינם ב־MyLuach</a></p>
+  </div>
+  <input type="file" id="files" accept="image/*" multiple hidden>
+  <input type="file" id="file1" accept="image/*" hidden>
+</main>
+<script src="/assets/hpick.js?v=1"></script>
+<script src="/assets/a11y.js?v=2" defer></script>
+<script>
+(function(){
+  'use strict';
+  var $=function(s){return document.querySelector(s)};
+  var K=new URLSearchParams(location.search).get('k')||(location.hash.match(/k=([\w-]+)/)||[])[1]||'';
+  var API='/api/pricing?c=_share&k='+encodeURIComponent(K),INFO=null,evImg=null,photos=[];
+  function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל'];var r=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
+  var HM=[[7,'תשרי'],[8,'חשוון'],[9,'כסלו'],[10,'טבת'],[11,'שבט'],[12,'אדר (אדר א׳)'],[13,'אדר ב׳'],[1,'ניסן'],[2,'אייר'],[3,'סיוון'],[4,'תמוז'],[5,'אב'],[6,'אלול']];
+  var ASK={birthday:['של מי?','למשל: שירה'],anniversary:['של מי?','למשל: ההורים'],yahrzeit:['שם הנפטר','למשל: סבא משה'],event:['מה האירוע?','למשל: חתונה של יוסי']};
+  $('#hD').innerHTML=Array.from({length:30},function(_,i){return '<option value="'+(i+1)+'">'+gem(i+1)+'</option>'}).join('');
+  $('#hM').innerHTML=HM.map(function(m){return '<option value="'+m[0]+'">'+m[1]+'</option>'}).join('');
+  try{var w=localStorage.getItem('myluach-share-who');if(w)$('#who').value=w}catch(e){}
+  function show(id){['loading','bad','closed','app'].forEach(function(x){$('#'+x).hidden=x!==id})}
+  function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function who(){var v=$('#who').value.trim();if(!v){$('#who').focus();$('#who').scrollIntoView({block:'center',behavior:'smooth'});return ''}try{localStorage.setItem('myluach-share-who',v)}catch(e){}return v}
+  function err(j,r){if(r&&r.status===423)return 'האתר שומר שבת: אפשר להוסיף אחרי צאת השבת או החג.';
+    var e=j&&j.error;return e==='closed'?'בעל הלוח סגר את האפשרות להוסיף.':e==='photos'?'הגעתם למספר התמונות שאפשר לשלוח ללוח הזה.':e==='events'?'הגעתם למספר האירועים שאפשר לשלוח ללוח הזה.':e==='event'?'בדקו שמילאתם שם ותאריך.':'משהו השתבש. נסו שוב בעוד רגע.'}
+  function post(body){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){if(!r.ok)throw {j:j,r:r};return j})})}
+  function sent(t){$('#sentCard').hidden=false;$('#sent').insertAdjacentHTML('beforeend','<li>'+esc(t)+'</li>')}
+  function compress(file,max){return new Promise(function(res,rej){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){var k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?res(b):rej()},'image/jpeg',0.86)};im.onerror=function(){URL.revokeObjectURL(u);rej()};im.src=u})}
+  function upload(blob,w){return post({action:'sign',who:w,type:'image/jpeg',size:blob.size}).then(function(j){return fetch(j.upload,{method:'PUT',headers:{'Content-Type':'image/jpeg','x-upsert':'true'},body:blob}).then(function(r){if(!r.ok)throw {j:{}};return j.path})})}
+
+  /* אירוע */
+  function kind(){return document.querySelector('input[name=kind]:checked').value}
+  function rec(){return kind()==='event'?'once':document.querySelector('input[name=rec]:checked').value}
+  function drawEv(){var k=kind(),r=rec();$('#evAsk').textContent=ASK[k][0];$('#evName').placeholder=ASK[k][1];
+    $('#recBox').hidden=k==='event';$('#hebBox').hidden=r!=='heb';$('#gregBox').hidden=r!=='greg';$('#onceBox').hidden=r!=='once';
+    $('#yLab').hidden=$('#evYear').hidden=r!=='heb';
+    $('#yLab').textContent=k==='yahrzeit'?'שנת הפטירה (לא חובה)':k==='anniversary'?'שנת החתונה (לא חובה, כדי שיופיע כמה שנים)':'שנת הלידה (לא חובה, כדי שיופיע גיל)'}
+  document.addEventListener('change',function(e){if(e.target.name==='kind'||e.target.name==='rec')drawEv()});
+  function hebYear(v){v=String(v||'').trim().replace(/["׳״']/g,'');if(!v)return '';if(/^\d+$/.test(v)){var n=+v;return n<3000?'':n}
+    var L={'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400},n=0;for(var i=0;i<v.length;i++)n+=L[v[i]]||0;return n?5000+n:''}
+  $('#evImgBtn').onclick=function(){var f=$('#file1');f.value='';f.onchange=function(){var x=f.files[0];if(!x)return;compress(x,1000).then(function(b){evImg=b;$('#evImg').src=URL.createObjectURL(b);$('#evImg').hidden=$('#evImgX').hidden=false})};f.click()};
+  $('#evImgX').onclick=function(){evImg=null;$('#evImg').hidden=$('#evImgX').hidden=true};
+  $('#evSend').onclick=function(){
+    var w=who();if(!w){$('#evMsg').className='msg bad';$('#evMsg').textContent='כתבו קודם את השם שלכם.';return}
+    var k=kind(),r=rec(),ev={kind:k,name:$('#evName').value.trim(),rec:r};
+    if(!ev.name){$('#evMsg').className='msg bad';$('#evMsg').textContent='כתבו '+(k==='event'?'מה האירוע':'שם')+'.';$('#evName').focus();return}
+    if(r==='heb'){ev.day=+$('#hD').value;ev.month=+$('#hM').value;var y=hebYear($('#evYear').value);if(y)ev.year=y}
+    else{var v=(r==='greg'?$('#gD'):$('#oD')).value;if(!v){$('#evMsg').className='msg bad';$('#evMsg').textContent='בחרו תאריך.';return}
+      if(r==='greg'){var p=v.split('-');ev.day=+p[2];ev.month=+p[1];ev.year=+p[0]}else ev.date=v}
+    var b=$('#evSend');b.disabled=true;$('#evMsg').className='msg';$('#evMsg').textContent='שולח…';
+    (evImg?upload(evImg,w):Promise.resolve(null)).then(function(path){return post({action:'add',who:w,kind:'event',ev:ev,img:path})}).then(function(){
+      var label=(document.querySelector('input[name=kind]:checked').parentNode.textContent)+': '+ev.name;sent(label+(evImg?' (עם תמונה)':''));
+      $('#evMsg').className='msg ok';$('#evMsg').textContent='נוסף! אפשר להוסיף עוד.';$('#evName').value='';$('#evYear').value='';evImg=null;$('#evImg').hidden=$('#evImgX').hidden=true;$('#evName').focus();
+    }).catch(function(x){$('#evMsg').className='msg bad';$('#evMsg').textContent=err(x&&x.j,x&&x.r)}).then(function(){b.disabled=false});
+  };
+
+  /* תמונות */
+  function monthSel(i){var M=INFO.months||[];if(!M.length)return '';return '<select data-m="'+i+'" aria-label="לאיזה חודש"><option value="">לבחירת בעל הלוח</option>'+M.map(function(m){return '<option value="'+esc(m.k)+'">'+esc(m.t)+'</option>'}).join('')+'</select>'}
+  function drawPh(){$('#thumbs').innerHTML=photos.map(function(p,i){return '<div class="th'+(p.done?' done':'')+'"><img src="'+p.url+'" alt=""><div class="in">'+(p.done?'<span class="st">✓ נשלחה</span>':(p.err?'<span class="msg bad">'+esc(p.err)+'</span>':'')+'<button type="button" class="x" data-x="'+i+'" aria-label="הסרה">×</button>'+monthSel(i))+'</div></div>'}).join('');
+    var left=photos.filter(function(p){return !p.done}).length;$('#phSend').hidden=!left;$('#phSend').textContent=left>1?'שליחת '+left+' התמונות':'שליחת התמונה'}
+  $('#phPick').onclick=function(){var f=$('#files');f.value='';f.onchange=function(){[].slice.call(f.files).filter(function(x){return /^image\//.test(x.type)}).forEach(function(x){photos.push({file:x,url:URL.createObjectURL(x),month:''})});drawPh()};f.click()};
+  $('#thumbs').addEventListener('click',function(e){var x=e.target.dataset.x;if(x!=null){photos.splice(+x,1);drawPh()}});
+  $('#thumbs').addEventListener('change',function(e){var m=e.target.dataset.m;if(m!=null)photos[+m].month=e.target.value});
+  $('#phSend').onclick=function(){
+    var w=who();if(!w){$('#phMsg').className='msg bad';$('#phMsg').textContent='כתבו קודם את השם שלכם.';return}
+    var b=$('#phSend');b.disabled=true;var todo=photos.filter(function(p){return !p.done}),n=0,bad=null;
+    (function next(){var p=todo.shift();if(!p){b.disabled=false;drawPh();
+        if(n){sent(n===1?'תמונה אחת':n+' תמונות');}
+        $('#phMsg').className='msg '+(bad?'bad':'ok');$('#phMsg').textContent=bad||('נשלח! '+(INFO.auto?'התמונות ייכנסו ללוח.':'בעל הלוח יראה אותן ויוסיף ללוח.'));return}
+      $('#phMsg').className='msg';$('#phMsg').textContent='שולח '+(n+1)+'…';
+      compress(p.file,2400).then(function(bl){return upload(bl,w)}).then(function(path){return post({action:'add',who:w,kind:'photo',img:path,month:p.month})})
+        .then(function(){p.done=true;p.err='';n++;drawPh();next()})
+        .catch(function(x){bad=err(x&&x.j,x&&x.r);p.err='לא נשלחה';drawPh();if(x&&x.j&&x.j.error==='photos'){b.disabled=false;$('#phMsg').className='msg bad';$('#phMsg').textContent=bad;if(n)sent(n+' תמונות');return}next()})})();
+  };
+
+  if(!K){show('bad');return}
+  fetch(API).then(function(r){return r.json().then(function(j){return {r:r,j:j}})}).then(function(x){
+    if(!x.r.ok){show('bad');return}INFO=x.j;if(!INFO.active){show('closed');return}
+    $('#title').textContent=(INFO.owner?INFO.owner+' מזמינים אתכם':'הוזמנתם')+' להוסיף ללוח: '+INFO.title;
+    $('#lead').textContent='מוסיפים ימי הולדת, ימי נישואין, אירועים ותמונות של המשפחה, והם ייכנסו ללוח השנה'+(INFO.auto?'.':' אחרי שבעל הלוח יאשר אותם.')+' לא צריך להירשם.';
+    $('#evAuto').textContent=INFO.auto?'':', אחרי שבעל הלוח יאשר';
+    if(INFO.photosLeft<=0){$('#phHint').textContent='אי אפשר לשלוח עוד תמונות ללוח הזה.';$('#phPick').disabled=true}
+    document.title='מוסיפים ללוח: '+INFO.title+' · MyLuach';
+    drawEv();show('app');
+  }).catch(function(){show('bad')});
+})();
+</script>
+</body>
+</html>

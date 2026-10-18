@@ -94,6 +94,7 @@ module.exports = async (req, res) => {
     let backup = null; try { backup = await require('./_backup').run(); } catch (e) { backup = { error: String(e.message).slice(0, 120) }; console.error('backup', e.message); }
     /* ניקוי דוגמיות הורדה ישנות */
     let cleaned = 0; try { const cfg = await require('./_lib').loadConfig(); cleaned = await require('./_usage').cleanSamples(cfg.sampleKeepDays == null ? 365 : +cfg.sampleKeepDays); } catch (e) { console.error('clean samples', e.message); }
+    try { await require('./_share').clean(); } catch (e) { console.error('clean shares', e.message); }
     json(res, 200, { date: tIso, days: days.length, cleaned, backup, checked, sent, failed, vsent, vfailed, asent });
   } catch (e) {
     console.error('cron', e);
