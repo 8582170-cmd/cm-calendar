@@ -334,3 +334,46 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .lr-card .lr-day.cur{background:color-mix(in srgb,var(--acc,#1e5a63) 7%,transparent);border-radius:8px;padding:6px 8px;border-top:0}
 .lr-card .lr-d{font-size:12px;color:var(--mute,#5c686c);font-weight:700;margin-bottom:2px}
 .lr-card .lr{font-size:14px;line-height:1.35}.lr-card .lr span{color:var(--mute,#5c686c)}
+.zh{font-size:12.5px;color:var(--mute,#5c686c);font-weight:600}
+.mhead .zh{margin-inline-start:auto}
+.dv-z .zh{margin:-4px 0 6px}
+#printM{display:none}
+@media print{
+  body.print-month>*:not(#printM){display:none!important}
+  body.print-month #printM{display:block!important;font-family:Assistant,Arial,sans-serif;color:#1d2a2e}
+  .pm-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;border-bottom:2px solid #1e5a63;padding-bottom:6px}
+  .pm-logo{display:flex;align-items:center;gap:8px;font:800 22pt "Frank Ruhl Libre",serif;color:#1e5a63}
+  .pm-logo img{width:46px;height:46px}
+  .pm-title{flex:1;text-align:center}.pm-title b{font:900 24pt "Frank Ruhl Libre",serif;display:block;line-height:1}.pm-title span{font-size:10pt;color:#5c686c}
+  .pm-loc{font-size:10pt;font-weight:700;color:#1e5a63;min-width:150px;text-align:end}
+  .pm-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid #9aa5a8;border-inline-start:1px solid #9aa5a8}
+  .pm-wd{text-align:center;font-weight:700;font-size:10pt;padding:3px 0;background:#eef3f2!important;border-inline-end:1px solid #9aa5a8;border-bottom:1px solid #9aa5a8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pm-day{min-height:var(--rh,27mm);border-inline-end:1px solid #9aa5a8;border-bottom:1px solid #9aa5a8;padding:2px 4px;font-size:8pt;line-height:1.2;display:flex;flex-direction:column;gap:1px;break-inside:avoid}
+  .pm-day.sh,.pm-day.chag{background:#f5f1e6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pm-dn{display:flex;justify-content:space-between;align-items:baseline}.pm-dn b{font:800 13pt "Frank Ruhl Libre",serif}.pm-dn i{font-style:normal;font-size:8pt;color:#5c686c}
+  .pm-ev{font-weight:600}.pm-ev.chag,.pm-ev.hol{color:#8a1c1c}
+  .pm-z{margin-top:auto;font-size:7.4pt;color:#3d4a4e;display:flex;flex-direction:column}
+  .pm-foot{text-align:center;font-size:8.5pt;color:#6b7679;margin-top:4px}
+  body.print-month .main::after{display:none}
+}
+.zh{font-size:12.5px;color:var(--mute,#5c686c);font-weight:600}
+.mhead .zh{margin-inline-start:auto}
+.dv-z .zh{margin:-4px 0 6px}
+#printM{display:none}
+@media print{
+  body.print-month>*:not(#printM){display:none!important}
+  body.print-month #printM{display:block!important;font-family:Assistant,Arial,sans-serif;color:#1d2a2e}
+  .pm-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;border-bottom:2px solid #1e5a63;padding-bottom:6px}
+  .pm-logo{display:flex;align-items:center;gap:8px;font:800 22pt "Frank Ruhl Libre",serif;color:#1e5a63}
+  .pm-logo img{width:46px;height:46px}
+  .pm-title{flex:1;text-align:center}.pm-title b{font:900 24pt "Frank Ruhl Libre",serif;display:block;line-height:1}.pm-title span{font-size:10pt;color:#5c686c}
+  .pm-loc{font-size:10pt;font-weight:700;color:#1e5a63;min-width:150px;text-align:end}
+  .pm-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid #9aa5a8;border-inline-start:1px solid #9aa5a8}
+  .pm-wd{text-align:center;font-weight:700;font-size:10pt;padding:3px 0;background:#eef3f2!important;border-inline-end:1px solid #9aa5a8;border-bottom:1px solid #9aa5a8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pm-day{min-height:var(--rh,27mm);border-inline-end:1px solid #9aa5a8;border-bottom:1px solid #9aa5a8;padding:2px 4px;font-size:8pt;line-height:1.2;display:flex;flex-direction:column;gap:1px;break-inside:avoid}
+  .pm-day.sh,.pm-day.chag{background:#f5f1e6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pm-dn{display:flex;justify-content:space-between;align-items:baseline}.pm-dn b{font:800 13pt "Frank Ruhl Libre",serif}.pm-dn i{font-style:normal;font-size:8pt;color:#5c686c}
+  .pm-ev{font-weight:600}.pm-ev.chag,.pm-ev.hol{color:#8a1c1c}
+  .pm-z{margin-top:auto;font-size:7.4pt;color:#3d4a4e;display:flex;flex-direction:column}
+  .pm-foot{text-align:center;font-size:8.5pt;color:#6b7679;margin-top:4px}
+}
