@@ -1436,6 +1436,9 @@ function headRow(p,big,year,other){
 }
 const DSTYLES={hebMain:'עברי מודגש, לועזי קטן',gregMain:'לועזי מודגש, עברי קטן',both:'עברי ולועזי שווים',hebOnly:'רק עברי',gregOnly:'רק לועזי'};
 function dStyle(){const s=state.s;return DSTYLES[s.dateStyle]?s.dateStyle:(s.calType==='greg'?'gregMain':'hebMain')}
+/* שם החודש בקטן בכל יום, לפי צורת הצגת התאריכים */
+function dayMonthTxt(d,hd){const st=dStyle(),hm=hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())),gm=GREG_MONTHS[d.getMonth()];
+  return st==='hebOnly'?hm:st==='gregOnly'?gm:st==='gregMain'?gm+' · '+hm:hm+' · '+gm}
 function dateTop(d,hd,long){
   const s=state.s,st=dStyle(),leap=isLeap(hd.getFullYear());
   const H=gem(hd.getDate()),G=String(d.getDate());
@@ -1479,6 +1482,7 @@ function addMonthGrid(p,mo,evMap){
     const hDay=gem(hd.getDate());
     c.setAttribute('aria-label',hDay+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+', '+d.getDate()+(EN?' ':' ב')+GREG_MONTHS[d.getMonth()]+'. הוספת אירוע');
     c.appendChild(el('div','d-top'+(dStyle()==='both'?' both':''),dateTop(d,hd)));
+    if(s.dayMonth)c.appendChild(el('div','d-mon',esc(dayMonthTxt(d,hd))));
     for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;c.appendChild(e)}
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
@@ -4313,6 +4317,7 @@ document.addEventListener('click',e=>{const s=state.s;
     if(fresh||!s.preset){const P=SIMPLE_PRESETS[0];Object.assign(s,{preset:P[0],theme:P[2],accent:P[3],headFont:P[4],bodyFont:P[5],layout:P[6]})}
     if(fresh||!s.pageBg||s.pageBg==='soft')s.pageBg='month';
     s.fast3=1;save()}
+  if(SIMPLE&&!state.s.fast5){state.s.dayMonth=true;state.s.fast5=1;save()}
   if(SIMPLE&&!state.s.fast4){const s=state.s;if(!saved||s.city==='jerusalem')s.noTimes=true;s.fast4=1;save()}
   loadFont(state.s.headFont);loadFont(state.s.bodyFont);Object.values(state.textStyles||{}).forEach(t=>t.ff&&loadFont(t.ff));
   /* הגעה מהלוח המקוון: #countdown&d=...&t=...&st=...&l=... */

@@ -1311,3 +1311,6 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
   body.tray-picking .cell[data-date]:hover::after{content:"לחצו כדי לשים כאן את התמונה"}
   #stage.painting .cell[data-date]:hover::after,body.snapview .cell[data-date]:hover::after{display:none}
 }
+.d-mon{font-size:calc(var(--u)*1.95*var(--ts));color:var(--p-mute);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:calc(var(--u)*-.1)}
+.t-round .d-mon{padding-inline:calc(var(--u)*.8)}
+.cell.has-img .d-mon{background:rgb(255 255 255 / .84);border-radius:calc(var(--u)*.6);padding:0 calc(var(--u)*.6);align-self:flex-start}

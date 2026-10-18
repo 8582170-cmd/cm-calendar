@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610190100">
+<link rel="stylesheet" href="assets/app.css?v=202610190120">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body class="simple-app">
@@ -150,6 +150,7 @@
           <option value="both">עברי ולועזי באותו גודל</option>
           <option value="hebOnly">רק עברי</option>
           <option value="gregOnly">רק לועזי</option></select></label>
+        <label class="chk"><input type="checkbox" data-opt="dayMonth"> שם החודש בקטן בכל יום</label>
         <div class="row" id="hebYearRow"><label class="fld">שנה עברית<select id="hebYear"></select></label><label class="fld">חודש פתיחה<select id="hebStart"></select></label><button class="btn small" type="button" id="nextYear" title="אותו לוח עם כל האירועים וההגדרות, לשנה הבאה">לשנה הבאה ←</button></div>
         <div class="row nocd" id="startDateRow"><label class="fld">התחלה מתאריך מדויק (לא חובה)<input type="date" id="startDate"></label><button class="btn small" type="button" id="startDateClr" hidden>ביטול</button></div>
         <p class="hint nocd" id="startDateHint">אפשר להתחיל גם לפני השנה שבחרתם, למשל שבוע לפני ראש השנה (עד חודשיים לפני), או באמצע החודש הראשון.</p>
@@ -647,12 +648,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="assets/config.js?v=202610130515"></script>
 <script src="assets/yz.js?v=202610180500"></script>
-<script src="assets/plans.js?v=202610190100"></script>
+<script src="assets/plans.js?v=202610190120"></script>
 <script src="assets/stickers.js?v=202610130515"></script>
 <script src="assets/img-smart.js?v=202610130515"></script>
 <script src="assets/library/index.js?v=1" defer></script>
 <script src="assets/geo.js?v=1"></script>
 <script src="assets/hpick.js?v=1"></script>
-<script src="assets/app.js?v=202610190100"></script>
+<script src="assets/app.js?v=202610190120"></script>
 </body>
 </html>

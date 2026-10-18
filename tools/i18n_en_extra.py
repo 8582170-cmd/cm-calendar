@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'שם החודש בקטן בכל יום': 'Month name in small type on every day',
  'בונים ורואים את כל השנה': 'Build and see the whole year',
  'לוח פשוט לכל השנה להורדה (עד 3 זמנים, 10 תמונות ו־25 אירועים)': 'A simple whole-year calendar to download (up to 3 zmanim, 10 photos and 25 events)',
  'הדפסה בחינם': 'Print for free',
