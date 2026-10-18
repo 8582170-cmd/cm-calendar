@@ -1084,7 +1084,7 @@ function monthArt(key,kind){key=String(key||'').replace(/^(mi-|h-)/,'');let hm=n
   if(/^heb-\d+$/.test(key))hm=+key.slice(4);else if(mo&&mo.days&&mo.days.length)hm=new HDate(mo.days[Math.floor(mo.days.length/2)]).getMonth();
   else{const d=/^(?:w|d|t)-(\d{4}-\d{2}-\d{2})$/.exec(key);if(d)hm=new HDate(dateFromIso(d[1])).getMonth()}
   if(hm==null&&monthsCache[0])hm=new HDate(monthsCache[0].days[0]).getMonth();
-  return hm?new URL('assets/library/'+(kind==='art'?MONTH_ART[hm]:'nat-'+MONTH_NAT[hm])+'.svg',document.baseURI).href:''}
+  return hm?new URL('assets/library/'+(kind==='art'?MONTH_ART[hm]+'.svg':'nat-'+MONTH_NAT[hm]+'.jpg'),document.baseURI).href:''}
 const PAGE_BGS=[['month','נוף לכל חודש'],['art','איורי חגים'],['custom','תמונה משלכם'],['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
 function bgOwn(){const f=v=>{if(!v.img)return;state.s.pageBgImg=v.img;state.s.pageBg='custom';save();render()};f.maxPx=1800;pickImage(f)}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-bgop]')){state.s.pageBgOp=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120)}});
@@ -1093,7 +1093,7 @@ function bgOffSync(){const b=$('#bgOffBtn');if(!b)return;const cur=state.s.pageB
   b.hidden=CDMODE||!(img||(cur==='none'&&state.s.pageBgPrev));b.textContent=img?'✕ בלי תמונות רקע':'↺ להחזיר את תמונות הרקע'}
 $('#bgOffBtn').onclick=()=>{const s=state.s,cur=s.pageBg||'none';if(IMGBG(cur)){s.pageBgPrev=cur;s.pageBg='none'}else if(s.pageBgPrev){s.pageBg=s.pageBgPrev;delete s.pageBgPrev}save();render()};
 function bgPickSync(){bgOffSync();const cur=state.s.pageBg||'none';document.querySelectorAll('[data-bgpick]').forEach(box=>{
-  if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(IMGBG(k)?' pbg-img':'')+'"'+(k==='month'||k==='art'?' style="--bgimg:url('+new URL(k==='art'?'assets/library/rosh-hashana.svg':'assets/library/nat-elul.svg',document.baseURI).href+');--bgop:.7"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
+  if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(IMGBG(k)?' pbg-img':'')+'"'+(k==='month'||k==='art'?' style="--bgimg:url('+new URL(k==='art'?'assets/library/rosh-hashana.svg':'assets/library/nat-elul.jpg',document.baseURI).href+');--bgop:.7"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
     box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="0.8" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button>')}
   box.style.setProperty('--acc',state.s.accent);
   {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);

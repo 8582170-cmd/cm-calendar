@@ -1300,3 +1300,4 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .e.ml{white-space:pre-line;overflow:visible;text-overflow:clip}
 .credit-logo{height:1.25em;width:auto;vertical-align:-.25em;margin-inline-end:.35em}
 @media print{.page.wm.wm-free::after{opacity:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='215' text-anchor='middle' transform='rotate%28-24 300 200%29' font-family='Arial' font-size='44' font-weight='700' fill='%23555' fill-opacity='.08'%3EMyLuach.org%3C/text%3E%3C/svg%3E");background-size:70% auto;background-repeat:no-repeat;background-position:center}}
+@media print{.t-round .cell{box-shadow:0 0 0 calc(var(--u)*.4) color-mix(in srgb,var(--acc) 48%,transparent)!important}}
