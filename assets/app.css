@@ -1122,7 +1122,7 @@ body.fx-on .page .fx-sel[contenteditable]{cursor:text;background:#fff8}
 .fx-hv::after{top:0;bottom:0;left:4px;border-left-width:2px}
 .fx-hh::after{left:0;right:0;top:4px;border-top-width:2px}
 .fx-h:hover::after,.fx-h.on::after{opacity:1;border-style:solid}
-.fx-bar{position:fixed;z-index:60;display:flex;gap:3px;align-items:center;flex-wrap:wrap;max-width:min(96vw,640px);background:#1f2a33;color:#fff;border-radius:10px;padding:4px 6px;box-shadow:0 6px 18px #0004;font-size:13px}
+.fx-bar{position:fixed;z-index:60;display:flex;gap:3px;align-items:center;flex-wrap:wrap;max-width:min(96vw,900px);background:#1f2a33;color:#fff;border-radius:10px;padding:4px 6px;box-shadow:0 6px 18px #0004;font-size:13px}
 .fx-bar[hidden]{display:none}
 .fx-bar button{background:transparent;border:1px solid #ffffff33;color:#fff;border-radius:7px;padding:3px 8px;font:inherit;cursor:pointer;min-height:28px}
 .fx-bar button:hover{background:#ffffff1f}
@@ -1317,11 +1317,9 @@ body.tray-picking .pg-img{cursor:copy}
 .d-sub .d-mn{font-size:.85em}
 /* גודל הטבלה בעיצוב החופשי */
 .grid.gh{flex:0 0 auto!important;height:var(--gh)}
-.page>.grid.gw,.grid-row>.grid.gw{width:var(--gw);flex-basis:var(--gw)!important;flex-grow:0!important;align-self:center}
+.page>.grid.gw{width:var(--gw);align-self:center}.grid-row>.grid.gw{width:var(--gw);flex-basis:var(--gw)!important;flex-grow:0!important;align-self:center}
 .grid-row>.grid.gh{align-self:flex-start}
-.fx-gsz{position:absolute;z-index:6;width:16px;height:16px;border-radius:50%;background:var(--accent,#1f5c63);border:2px solid #fff;box-shadow:0 1px 4px rgb(0 0 0 / .35)}
-.fx-gsz-h{left:50%;bottom:-9px;transform:translateX(-50%);cursor:ns-resize}
-.fx-gsz-w{top:50%;inset-inline-end:-9px;transform:translateY(-50%);cursor:ew-resize}
+.fx-gsz{position:absolute;z-index:9;width:16px;height:16px;border-radius:50%;background:var(--accent,#1f5c63);border:2px solid #fff;box-shadow:0 1px 4px rgb(0 0 0 / .35)}
 /* תיבות כיתוב ותמונה חופשיות */
 .fxbox{position:absolute;z-index:5;pointer-events:none;display:flex;align-items:center;justify-content:center}
 body.fx-on .fxbox{pointer-events:auto;cursor:move;outline:1px dashed rgb(31 92 99 / .5)}
@@ -1359,10 +1357,19 @@ body.tray-open .mla-btn{left:272px!important}
 /* הטבלה הראשית בעיצוב החופשי: גודל, הזזה */
 .fxt{position:relative}
 .fxt.gh{flex:0 0 auto!important;height:var(--gh)}
-.page>.fxt.gw,.grid-row>.fxt.gw{width:var(--gw);flex-basis:var(--gw)!important;flex-grow:0!important;align-self:center}
-.fx-gsz-c{left:-9px;bottom:-9px;cursor:nesw-resize;border-radius:4px}
-[dir=ltr] .fx-gsz-c{left:auto;right:-9px}
+.page>.fxt.gw{width:var(--gw);align-self:center}.grid-row>.fxt.gw{width:var(--gw);flex-basis:var(--gw)!important;flex-grow:0!important;align-self:center}
 .fx-tmove{position:absolute;top:-14px;left:50%;transform:translate(-50%,-100%);z-index:7;background:var(--accent,#1f5c63);color:#fff;font:600 12px/1 Assistant,Arial,sans-serif;padding:5px 10px;border-radius:999px;cursor:move;white-space:nowrap;box-shadow:0 1px 4px rgb(0 0 0 / .3)}
 body.fx-on .cell[data-date]:hover::after{display:none}
 .ie-layer{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
 .fx-scope{display:inline-flex;border:1px solid rgb(255 255 255 / .35);border-radius:8px;overflow:hidden}.fx-scope button{border:0!important;border-radius:0!important;font-size:12px!important;padding:4px 7px!important;opacity:.75}.fx-scope button[aria-pressed=true]{background:#fff!important;color:#1f5c63!important;opacity:1;font-weight:700}
+
+/* ידיות הגודל של הטבלה: 4 פינות (הגדלה יחסית) ו־4 צדדים (רק גובה או רק רוחב) */
+.fx-gsz::before{content:"";position:absolute;inset:-7px}
+.fx-gsz-t{top:-9px;left:50%;margin-left:-8px;cursor:ns-resize}
+.fx-gsz-b{bottom:-9px;left:50%;margin-left:-8px;cursor:ns-resize}
+.fx-gsz-l{left:-9px;top:50%;margin-top:-8px;cursor:ew-resize}
+.fx-gsz-r{right:-9px;top:50%;margin-top:-8px;cursor:ew-resize}
+.fx-gsz-cn{border-radius:4px}
+.fx-gsz-tl{top:-9px;left:-9px;cursor:nwse-resize}.fx-gsz-br{bottom:-9px;right:-9px;cursor:nwse-resize}
+.fx-gsz-tr{top:-9px;right:-9px;cursor:nesw-resize}.fx-gsz-bl{bottom:-9px;left:-9px;cursor:nesw-resize}
+.fx-grip{cursor:grab;font-size:18px;line-height:1;padding:2px 4px;opacity:.8;touch-action:none;user-select:none}.fx-grip:active{cursor:grabbing}

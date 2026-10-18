@@ -2,6 +2,12 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+    'גררו כדי לשנות את הגובה (מלמעלה)': 'Drag to change the height (top)',
+    'גררו כדי לשנות את הגובה (מלמטה)': 'Drag to change the height (bottom)',
+    'גררו כדי לשנות את הרוחב (משמאל)': 'Drag to change the width (left)',
+    'גררו כדי לשנות את הרוחב (מימין)': 'Drag to change the width (right)',
+    'גררו כדי להגדיל או להקטין את כל הטבלה': 'Drag to resize the whole table',
+    'גררו כדי להזיז את סרגל העריכה': 'Drag to move the edit bar',
  '📄 בעמוד': '📄 This page',
  '🔒 בכל הלוח': '🔒 Whole calendar',
  '🅣 טקסט על הדף': '🅣 Text on the page',

@@ -2192,12 +2192,21 @@ function fxUndoBtn(){document.querySelectorAll('[data-fx="undo"]').forEach(b=>b.
 
 /* סרגל הכלים של טקסט נבחר */
 const fxb=el('div','fx-bar no-print');fxb.hidden=true;
-fxb.innerHTML='<span class="fx-tip">✥ גררו להזזה</span><button type="button" data-fx="dn" title="הקטנה">A−</button><button type="button" data-fx="up" title="הגדלה">A+</button><button type="button" data-fx="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fx="co" aria-label="צבע"></label><button type="button" data-fx="edit" title="עריכת הטקסט">✎ עריכה</button><button type="button" data-fx="hide" title="הסתרה / הצגה">הסתרה</button><span class="fx-scope" role="group" aria-label="על מה השינוי חל"><button type="button" data-fx="scope" data-fxsc="one" title="השינוי רק בטקסט הזה">🔓 רק זה</button><button type="button" data-fx="scope" data-fxsc="page" title="כל הטקסטים מהסוג הזה בעמוד הזה">📄 בעמוד</button><button type="button" data-fx="scope" data-fxsc="all" title="כל הטקסטים מהסוג הזה בכל הלוח">🔒 בכל הלוח</button></span><button type="button" data-fx="reset" title="חזרה למקור">↺ איפוס</button><button type="button" data-fx="undo" title="ביטול הפעולה האחרונה">↶</button><button type="button" data-fx="x" title="סגירה">✕</button>';
+fxb.innerHTML='<span class="fx-grip" title="גררו כדי להזיז את סרגל העריכה">⠿</span><span class="fx-tip">✥ גררו להזזה</span><button type="button" data-fx="dn" title="הקטנה">A−</button><button type="button" data-fx="up" title="הגדלה">A+</button><button type="button" data-fx="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fx="co" aria-label="צבע"></label><button type="button" data-fx="edit" title="עריכת הטקסט">✎ עריכה</button><button type="button" data-fx="hide" title="הסתרה / הצגה">הסתרה</button><span class="fx-scope" role="group" aria-label="על מה השינוי חל"><button type="button" data-fx="scope" data-fxsc="one" title="השינוי רק בטקסט הזה">🔓 רק זה</button><button type="button" data-fx="scope" data-fxsc="page" title="כל הטקסטים מהסוג הזה בעמוד הזה">📄 בעמוד</button><button type="button" data-fx="scope" data-fxsc="all" title="כל הטקסטים מהסוג הזה בכל הלוח">🔒 בכל הלוח</button></span><button type="button" data-fx="reset" title="חזרה למקור">↺ איפוס</button><button type="button" data-fx="undo" title="ביטול הפעולה האחרונה">↶</button><button type="button" data-fx="x" title="סגירה">✕</button>';
 document.body.appendChild(fxb);
 let FXS=null; /* {n,K} */
 function fxScopeKey(){if(!FXS)return null;const sc=FXS.scope||'one';return sc==='all'?FXS.K.ct:sc==='page'?FXS.K.pt:FXS.K.k}
 function fxScopeUI(){fxb.querySelectorAll('[data-fxsc]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.fxsc===(FXS&&FXS.scope))))}
-function fxPlace(){if(!FXS||!FXS.n.isConnected){fxb.hidden=true;return}const r=FXS.n.getBoundingClientRect();fxb.style.top=Math.max(4,r.top-46)+'px';fxb.style.left=Math.max(4,Math.min(innerWidth-fxb.offsetWidth-4,r.left+r.width/2-fxb.offsetWidth/2))+'px'}
+let FXBP=null; /* מיקום שהמשתמש גרר אליו את סרגל העריכה */
+function fxPlace(){if(!FXS||!FXS.n.isConnected){fxb.hidden=true;return}
+  if(FXBP){fxb.style.left=Math.max(0,Math.min(innerWidth-fxb.offsetWidth,FXBP.x))+'px';fxb.style.top=Math.max(0,Math.min(innerHeight-fxb.offsetHeight,FXBP.y))+'px';return}
+  /* הסרגל מעל הפריט ולא עליו; אם אין מקום למעלה, מתחתיו */
+  const r=FXS.n.getBoundingClientRect(),H=fxb.offsetHeight;let top=r.top-H-10;if(top<4)top=r.bottom+10;if(top+H>innerHeight-4&&r.top-H-10>=4)top=r.top-H-10;
+  fxb.style.top=Math.max(4,top)+'px';fxb.style.left=Math.max(4,Math.min(innerWidth-fxb.offsetWidth-4,r.left+r.width/2-fxb.offsetWidth/2))+'px'}
+fxb.addEventListener('pointerdown',e=>{const g=e.target.closest('.fx-grip');if(!g)return;e.preventDefault();e.stopPropagation();const r=fxb.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top;
+  const mv=ev=>{FXBP={x:ev.clientX-ox,y:ev.clientY-oy};fxPlace()};const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up)};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up)});
+fxb.addEventListener('dblclick',e=>{if(e.target.closest('.fx-grip')){FXBP=null;fxPlace()}});
 function fxSelect(n){
   fxUnselect();const K=fxKeys(n);if(!K)return;FXS={n,K};n.classList.add('fx-sel');
   const T=FX().t,own=T[K.k]&&Object.keys(T[K.k]).some(x=>x!=='t');FXS.scope=own?'one':T[K.pt]?'page':(T[K.ct]?'all':fxDefScope(n));fxScopeUI();
@@ -2324,7 +2333,9 @@ function fxBoxDecorate(){
   stage.querySelectorAll('.fxbox').forEach(n=>{n.appendChild(el('span','fxb-rs no-print'));n.classList.toggle('sel',n.dataset.bid===FXB)});
   stage.querySelectorAll('.fx-tmove').forEach(x=>x.remove());
   stage.querySelectorAll(FXT_SEL).forEach(g=>{const add=(c,t)=>{const h=el('div','fx-h fx-gsz '+c+' no-print');h.title=t;g.appendChild(h);return h};
-    add('fx-gsz-h','גררו כדי לשנות את גובה הטבלה');add('fx-gsz-w','גררו כדי לשנות את רוחב הטבלה');add('fx-gsz-c','גררו כדי להגדיל או להקטין את כל הטבלה');
+    [['t','גררו כדי לשנות את הגובה (מלמעלה)'],['b','גררו כדי לשנות את הגובה (מלמטה)'],['l','גררו כדי לשנות את הרוחב (משמאל)'],['r','גררו כדי לשנות את הרוחב (מימין)'],
+     ['tl','גררו כדי להגדיל או להקטין את כל הטבלה'],['tr','גררו כדי להגדיל או להקטין את כל הטבלה'],['bl','גררו כדי להגדיל או להקטין את כל הטבלה'],['br','גררו כדי להגדיל או להקטין את כל הטבלה']]
+      .forEach(([c,t])=>{const h=add('fx-gsz-'+c+(c.length>1?' fx-gsz-cn':''),t);h.dataset.ed=c});
     const mv=el('div','fx-h fx-tmove no-print','✥ הזזת הטבלה');mv.title='גררו כדי להזיז את כל הטבלה';g.appendChild(mv)});
   fxBoxBar();
 }
@@ -2336,13 +2347,27 @@ stage.addEventListener('pointerdown',e=>{
     const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(moved){if(!C.tx&&!C.ty){delete C.tx;delete C.ty}save();render()}};
     addEventListener('pointermove',mv);addEventListener('pointerup',up);return}
   const gs=e.target.closest('.fx-gsz');
-  if(gs){e.preventDefault();e.stopPropagation();const g=gs.parentNode,par=g.parentNode,pr=par.getBoundingClientRect(),gr=g.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,H=gs.classList.contains('fx-gsz-h'),Cn=gs.classList.contains('fx-gsz-c');
-    const G=fxtCfg(fxtKind(g)),rtl=getComputedStyle(g).direction==='rtl';let vh=null,vw=null;fxPush();
-    const mv=ev=>{const dy=ev.clientY-sy,dx=(ev.clientX-sx)*(rtl?-1:1);
-      if(H||Cn){vh=Math.max(25,Math.min(100,(gr.height+(Cn?dx*gr.height/gr.width*2:dy))/pr.height*100));g.classList.add('gh');g.style.setProperty('--gh',vh+'%')}
-      if(!H){vw=Math.max(30,Math.min(100,(gr.width+2*dx)/pr.width*100));g.classList.add('gw');g.style.setProperty('--gw',vw+'%')}};
-    const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);
-      if(vh!=null){G.hp=+vh.toFixed(1);if(vh>=99.5)delete G.hp}if(vw!=null){G.wp=+vw.toFixed(1);if(vw>=99.5)delete G.wp}if(vh!=null||vw!=null){save();render()}};
+  if(gs){e.preventDefault();e.stopPropagation();const g=gs.parentNode,par=g.parentNode,pr=par.getBoundingClientRect(),gr=g.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,ed=gs.dataset.ed||'b';
+    const G=fxtCfg(fxtKind(g)),f=screenMM(g),T=ed.includes('t'),B=ed.includes('b'),Lf=ed.includes('l'),R=ed.includes('r'),corner=ed.length>1;
+    let pw0=G.wp||Math.min(100,gr.width/pr.width*100),ph0=G.hp||Math.min(100,gr.height/pr.height*100);
+    /* הצד שנשאר במקום: הצד שמול הידית */
+    const ax=Lf?'right':R?'left':null,ay=T?'bottom':B?'top':null;let tx=+G.tx||0,ty=+G.ty||0,vh=null,vw=null,moved=false;
+    /* כיול: קובעים את הגודל הנוכחי באחוזים כך שבדיוק יתאים למה שרואים, וכך המימד השני לא זז */
+    const calib=()=>{g.classList.add('gh','gw');g.style.setProperty('--gh',ph0+'%');g.style.setProperty('--gw',pw0+'%');let r=g.getBoundingClientRect();
+      if(r.height)ph0*=gr.height/r.height;if(r.width)pw0*=gr.width/r.width;g.style.setProperty('--gh',ph0+'%');g.style.setProperty('--gw',pw0+'%');vh=ph0;vw=pw0};
+    const mv=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved){if(Math.hypot(dx,dy)<2)return;moved=true;fxPush();calib()}
+      let sw=1,sh=1;
+      if(Lf)sw=(gr.width-dx)/gr.width;else if(R)sw=(gr.width+dx)/gr.width;
+      if(T)sh=(gr.height-dy)/gr.height;else if(B)sh=(gr.height+dy)/gr.height;
+      if(corner){const k=(sw+sh)/2;sw=sh=k}
+      if(T||B){vh=Math.max(20,Math.min(Math.max(100,ph0),ph0*sh));g.classList.add('gh');g.style.setProperty('--gh',vh+'%')}
+      if(Lf||R){vw=Math.max(25,Math.min(Math.max(100,pw0),pw0*sw));g.classList.add('gw');g.style.setProperty('--gw',vw+'%')}
+      /* מיישרים כך שהצד שמול הידית לא זז */
+      g.style.translate=tx+'mm '+ty+'mm';const r=g.getBoundingClientRect();
+      if(ax)tx+=(gr[ax]-r[ax])*f;if(ay)ty+=(gr[ay]-r[ay])*f;g.style.translate=tx+'mm '+ty+'mm'};
+    const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(!moved)return;
+      G.hp=+vh.toFixed(2);G.wp=+vw.toFixed(2);if(vw>=99.5&&vw<=100.5)delete G.wp;
+      G.tx=+tx.toFixed(1);G.ty=+ty.toFixed(1);if(!G.tx&&!G.ty){delete G.tx;delete G.ty}save();render()};
     addEventListener('pointermove',mv);addEventListener('pointerup',up);return}
   const n=e.target.closest('.fxbox');if(!n)return;
   e.preventDefault();e.stopPropagation();const id=n.dataset.bid,b=fxBoxGet(id);if(!b)return;
@@ -2364,7 +2389,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-fxadd]');i
 
 /* ידיות לגרירת קווי הטבלה */
 function fxDecorate(){
-  stage.querySelectorAll('.fx-h').forEach(x=>x.remove());
+  stage.querySelectorAll('.fx-hv,.fx-hh').forEach(x=>x.remove());
   if(!fxOn()){fxUnselect();stage.querySelectorAll('.fx-hov').forEach(x=>x.classList.remove('fx-hov'));return}
   if(FXS&&!FXS.n.isConnected)fxUnselect();
   stage.querySelectorAll('.page .grid[data-rows]').forEach(grid=>{
