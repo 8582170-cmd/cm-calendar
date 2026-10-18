@@ -28,7 +28,11 @@ async function addImage(buf, type, meta) {
   if (buf.length > 8 * 1024 * 1024) throw new Error('size');
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), path = id + '.' + ext;
   const url = await put(path, buf, type);
-  const L = await load(); const it = cleanItem({ ...meta, id, url, path }); L.items.unshift(it); await saveSetting('library', L);
+  const L = await load();
+  /* שם אוטומטי: שם הקטגוריה ומספר עולה (אם לא נכתב שם) */
+  if (!String(meta.title || '').trim() && meta.catName) { const base = String(meta.catName).trim().slice(0, 60), re = new RegExp('^' + base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' (\\d+)$');
+    let n = 0; L.items.forEach(x => { const m = re.exec(String(x.title || '')); if (m) n = Math.max(n, +m[1]); }); meta = { ...meta, title: base + ' ' + (n + 1) }; }
+  const it = cleanItem({ ...meta, id, url, path }); L.items.unshift(it); await saveSetting('library', L);
   return it;
 }
 /* פעולות מדף הניהול */
