@@ -106,3 +106,5 @@ print(len(made), 'pages')
 # גרסאות לקבצים (נגד מטמון ישן)
 import subprocess, sys
 subprocess.run([sys.executable, str(ROOT / 'tools/bust_online.py')], check=True)
+subprocess.run([sys.executable, str(ROOT / 'tools/gen_articles.py')], check=True)
+subprocess.run([sys.executable, str(ROOT / 'tools/gen_landing.py')], check=True)

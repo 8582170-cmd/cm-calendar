@@ -3,9 +3,9 @@
 import pathlib,re
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 s=(ROOT/'app.html').read_text(encoding='utf-8')
-s=re.sub(r'<title>.*?</title>','<title>לוח ספירה לאחור להדפסה · חתונה, בר מצווה, לידה · MyLuach</title>',s,count=1,flags=re.S)
+s=re.sub(r'<title>.*?</title>','<title>לוח ספירה לאחור בעיצוב אישי להדפסה · לחתונה, לבר מצווה וללידה | MyLuach</title>',s,count=1,flags=re.S)
 s=re.sub(r'<meta name="description" content="[^"]*">','',s,count=1)
-s=s.replace('<link rel="canonical" href="https://www.myluach.org/app.html">','<link rel="canonical" href="https://www.myluach.org/countdown.html">\n<link rel="alternate" hreflang="he" href="https://www.myluach.org/countdown.html">\n<link rel="alternate" hreflang="en" href="https://www.myluach.org/countdown-en.html">\n<meta name="description" content="לוח ספירה לאחור להדפסה: לחתונה, לבר מצווה, לבת מצווה, ללידה או לטיול. 9 עיצובים, תמונות פתיחה וסיום, משפטים, פרשת השבוע וזמני היום. עד 40 יום: הורדה בחינם.">',1)
+s=s.replace('<link rel="canonical" href="https://www.myluach.org/app.html">','<link rel="canonical" href="https://www.myluach.org/countdown.html">\n<link rel="alternate" hreflang="he" href="https://www.myluach.org/countdown.html">\n<link rel="alternate" hreflang="en" href="https://www.myluach.org/countdown-en.html">\n<meta name="description" content="לוח ספירה לאחור אישי: מעצבים לבד, עם התמונות, השמות והמשפטים שלכם, לחתונה, לבר מצווה, לבת מצווה, ללידה או לטיול. 9 עיצובים, פרשת השבוע וזמני היום. עד 40 יום בחינם.">',1)
 s=s.replace('<script src="https://cdn.jsdelivr.net/npm/@supabase','<script>window.MYLUACH_MODE=\'countdown\'</script>\n<script src="https://cdn.jsdelivr.net/npm/@supabase',1)
 s=re.sub(r'(<h1 class="brand">.*?</a>)<small>.*?</small>',r'\1<small>לוח ספירה לאחור להדפסה: לחתונה, לבר מצווה, ללידה ולכל יום מיוחד</small>',s,count=1,flags=re.S)
 s=s.replace('<body>','<body class="cd-app">',1)
