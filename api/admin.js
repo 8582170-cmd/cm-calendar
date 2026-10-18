@@ -35,6 +35,7 @@ function clean(c) {
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
   out.sampleImgRate = Math.max(0, Math.min(100, parseInt(c.sampleImgRate == null ? 20 : c.sampleImgRate, 10) || 0));
   { const sh = c.shabbat || {}; out.shabbat = { on: sh.on !== false, yt: sh.yt !== false, before: Math.max(0, Math.min(120, parseInt(sh.before, 10) || 0)), after: Math.max(0, Math.min(120, parseInt(sh.after, 10) || 0)), deg: Math.max(3, Math.min(20, parseFloat(sh.deg) || 8.5)) }; }
+  out.sampleKeepDays = Math.max(0, Math.min(3650, parseInt(c.sampleKeepDays == null ? 365 : c.sampleKeepDays, 10) || 0));
   out.torah = { on: !!(c.torah && c.torah.on) };
   out.sampleImgPx = Math.max(80, Math.min(1600, parseInt(c.sampleImgPx, 10) || 220));
   out.sampleImgQ = Math.max(20, Math.min(95, parseInt(c.sampleImgQ, 10) || 55));
@@ -92,6 +93,8 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
       return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length });
     }
+    /* מד שימוש באחסון ובמסד הנתונים */
+    if (req.method === 'POST' && b.action === 'usage') { try { return json(res, 200, await require('./_usage').usage()); } catch (e) { return json(res, 500, { error: String(e.message || e).slice(0, 200) }); } }
     /* דוגמית של לוח שהורד: התוכן המלא (בלי תמונות), לפתיחה בבונה לקריאה בלבד */
     if (req.method === 'POST' && b.action === 'snapget') {
       const p = String(b.path || ''); if (!/^[0-9]{4}-[0-9]{2}\/[a-z0-9]{8,40}\.json$/.test(p)) return json(res, 400, { error: 'path' });

@@ -92,7 +92,7 @@ function render(){
   C.plans=C.plans||{};C.sale=C.sale||{on:false,percent:20,plans:[],until:'',label:''};C.coupons=C.coupons||[];
   const eff=D.effective||{plans:{}};
   app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><button class="btn" type="button" id="out">יציאה</button></div>'+
-  actSection()+
+  actSection()+usageSection()+
   (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
   '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול.</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th></tr></thead><tbody>'+
   IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td></tr>'}).join('')+
@@ -165,6 +165,17 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-snap]');if
   let st=null,ready=false;const send=()=>{if(st&&ready)w.postMessage({type:'snap',state:st},location.origin)};
   const on=ev=>{if(ev.source===w&&ev.data&&ev.data.type==='snap-ready'){ready=true;send();window.removeEventListener('message',on)}};window.addEventListener('message',on);
   api({action:'snapget',path:b.dataset.snap}).then(r=>{st=r.snap;send()}).catch(err=>{try{w.close()}catch(x){}alert(err.message||'שגיאה')})});
+const fmtB=n=>'<span dir="ltr">'+(n==null?'—':n<1024*1024?Math.round(n/1024)+' KB':n<1024**3?(n/1024/1024).toFixed(1)+' MB':(n/1024**3).toFixed(2)+' GB')+'</span>';
+function usageSection(){return '<section><h2>שימוש באחסון</h2><p class="sub">כמה מקום תפוס ב-Supabase, מול המגבלה של המסלול החינמי (קבצים: 1GB, מסד נתונים: 500MB, קובץ בודד: 50MB). הבדיקה לוקחת כמה שניות.</p>'+
+  '<div class="row"><button class="btn" type="button" id="usGo">בדיקת השימוש</button><label>מחיקה אוטומטית של דוגמיות הורדה אחרי <input type="number" id="sKeep" min="0" max="3650" style="width:80px"> ימים</label><span class="sub">(0 = לא למחוק. אחרי שינוי לוחצים "שמירה")</span></div><div id="usOut" style="margin-top:10px"></div></section>'}
+function usageBind(){if(!$('#usGo'))return;$('#sKeep').value=C.sampleKeepDays==null?365:C.sampleKeepDays;$('#sKeep').oninput=e=>{C.sampleKeepDays=Math.max(0,+e.target.value||0)};
+  $('#usGo').onclick=()=>{const o=$('#usOut');o.textContent='בודקים…';api({action:'usage'}).then(u=>{
+    const B=u.buckets||{},tot=Object.values(B).reduce((a,b)=>a+(b.bytes||0),0),bar=(v,max)=>{const p=Math.min(100,Math.round(v/max*100));return '<div style="background:#e6ebea;border-radius:6px;height:12px;overflow:hidden;margin:4px 0 10px"><div style="width:'+p+'%;height:100%;background:'+(p>85?'#b4231b':p>60?'#d08a1a':'#1e5a63')+'"></div></div>'};
+    const BN={calendars:'לוחות שמורים של משתמשים',samples:'דוגמיות הורדה',library:'מאגר התמונות ללקוחות'},TN={profiles:'משתמשים',orders:'הזמנות',downloads:'הורדות',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',appointments:'פגישות',email_log:'מיילים שנשלחו',free_lite:'מימוש לוח חינמי'};
+    o.innerHTML='<p><b>קבצים בסך הכל: '+fmtB(tot)+' מתוך <span dir="ltr">1 GB</span></b></p>'+bar(tot,1024**3)+
+      '<table class="tbl"><thead><tr><th>דלי</th><th>קבצים</th><th>נפח</th><th>הקובץ הגדול ביותר</th></tr></thead><tbody>'+Object.entries(B).map(([k,b])=>'<tr><td>'+esc(BN[k]||k)+'</td>'+(b.error?'<td colspan="3">'+esc(b.error)+'</td>':'<td>'+b.files+(b.capped?'+':'')+'</td><td>'+fmtB(b.bytes)+'</td><td'+(b.biggest>40*1024*1024?' class="st-failed"':'')+'>'+fmtB(b.biggest)+'</td>')+'</tr>').join('')+'</tbody></table>'+
+      (u.db!=null?'<p style="margin-top:14px"><b>מסד הנתונים: '+fmtB(u.db)+' מתוך <span dir="ltr">500 MB</span></b></p>'+bar(u.db,500*1024*1024):'<p class="sub" style="margin-top:14px">גודל מסד הנתונים: כדי לראות אותו צריך להריץ פעם אחת ב-Supabase את הקוד שבקובץ tools/supabase_usage.sql.</p>')+
+      '<p style="margin-top:8px"><b>שורות בטבלאות:</b> '+Object.entries(u.tables||{}).filter(([,v])=>v!=null).map(([k,v])=>esc(TN[k]||k)+': '+v.toLocaleString('he-IL')).join(' · ')+'</p>'}).catch(e=>{o.textContent=e.message})}}
 function shabbatSection(){const S=C.shabbat=Object.assign({on:true,yt:true,before:0,after:0,deg:8.5},C.shabbat||{});
   return '<section><h2>אתר שומר שבת</h2><p class="sub">בשבת ובחג האתר סגור לגולשים ומציג "שבת שלום" עם שעת החזרה. הזמנים לפי המיקום של כל גולש (לפי המיקום שבחר באתר, או לפי האינטרנט שלו). גם התשלום חסום בזמן הזה. דף הניהול לא נסגר.</p>'+
   '<div class="row"><label class="chk"><input type="checkbox" id="shOn"'+(S.on?' checked':'')+'> האתר סגור בשבת</label><label class="chk"><input type="checkbox" id="shYt"'+(S.yt?' checked':'')+'> וגם ביום טוב (2 ימים בחו״ל)</label></div>'+
@@ -313,7 +324,7 @@ function bind(){
   if($('#vBox'))voiceLoad();
   if($('#libBox'))libLoad();
   if($('#pgList'))pgLoad();
-  actBind();shabbatBind();
+  actBind();shabbatBind();usageBind();
   if($('#torahOn'))$('#torahOn').onchange=e=>{C.torah={...(C.torah||{}),on:e.target.checked}};
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
