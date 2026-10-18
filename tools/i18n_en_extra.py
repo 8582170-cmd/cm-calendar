@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'נוף לכל חודש': 'Landscape for each month',
+ 'איורי חגים': 'Holiday illustrations',
+ 'מעוגל ומרווח': 'Rounded and airy',
+ 'מעוגל': 'Rounded',
  '✕ בלי תמונות רקע': '✕ No background images',
  '↺ להחזיר את תמונות הרקע': '↺ Bring back the background images',
  'התמונות ביום הזה': 'Photos on this day',

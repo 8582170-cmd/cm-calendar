@@ -1255,3 +1255,20 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .di-pct{color:var(--mute);font-size:12px;min-width:34px;text-align:center}
 .di-del{color:#b3261e}
 .bg-off{margin-inline-start:auto;padding:4px 12px;font-size:13.5px}
+
+/* ---------- עיצוב "מעוגל ומרווח": תאים מעוגלים עם רווח ביניהם ---------- */
+.t-round{--f-head:"Rubik",sans-serif;--p-line:transparent}
+.t-round .grid{border:0;gap:calc(var(--u)*1.1)}
+.t-round .wd{border:0;border-radius:calc(var(--u)*1.6);background:var(--acc);color:#fff;padding:calc(var(--u)*.9) 0}
+.t-round .cell{border:0;border-radius:calc(var(--u)*2.4);background:rgb(255 255 255 / .8);box-shadow:0 0 0 calc(var(--u)*.22) color-mix(in srgb,var(--acc) 22%,transparent),0 calc(var(--u)*.4) calc(var(--u)*1.2) rgb(0 0 0 / .06)}
+.t-round .cell.shabbat{background:color-mix(in srgb,var(--acc) 16%,rgb(255 255 255 / .9))}
+.t-round .cell.pad{background:transparent;box-shadow:none}
+.t-round .cell[data-date]:hover{box-shadow:0 0 0 calc(var(--u)*.5) var(--acc)}
+.t-round .pg-head{border-bottom:0}
+.t-round .d-main{font-weight:600}
+.t-round .d-z{border-top-color:color-mix(in srgb,var(--acc) 18%,transparent)}
+.sp-card.th-round .sp-prev b{color:var(--a)}
+.sp-card.th-round .sp-grid{gap:2px}
+.sp-card.th-round .sp-grid i{background:color-mix(in srgb,var(--a) 12%,#fff);border-radius:3px}
+/* המסלול המהיר: בתצוגה על המסך בלי סימן מים */
+@media screen{body.simple-app .page.wm::after{content:none}}

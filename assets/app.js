@@ -1037,9 +1037,9 @@ function pageShell(label,key){
   const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
-  if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown'&&!(key==='cover'&&(s.pageBg==='month'||s.pageBg==='custom'))){
+  if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown'&&!(key==='cover'&&IMGBG(s.pageBg))){
     p.classList.add('pbg','pbg-'+s.pageBg);
-    if(s.pageBg==='month'||s.pageBg==='custom'){const u=s.pageBg==='custom'?s.pageBgImg:monthArt(key);
+    if(IMGBG(s.pageBg)){const u=s.pageBg==='custom'?s.pageBgImg:monthArt(key,s.pageBg);
       if(u){p.classList.add('pbg-img');p.style.setProperty('--bgimg','url("'+u+'")');p.style.setProperty('--bgop',String(s.pageBgOp??0.32))}}}
   fxLines(p);
   for(const [k,v] of Object.entries(s.tcolors||{}))if(v)p.style.setProperty('--c-'+k,v);
@@ -1054,25 +1054,28 @@ function pageShell(label,key){
 }
 /* רקע לעמוד: גוונים ועיטורים עדינים בצבע הלוח, שמודפסים גם הם */
 /* איור לכל חודש (מהמאגר), לפי החודש העברי. בלוח לועזי: לפי החודש העברי של אמצע החודש */
+const IMGBG=k=>k==='month'||k==='art'||k==='custom';
+/* נוף טבעי לכל חודש (assets/library/nat-*.svg, נוצר ב-tools/gen_nature.py) */
+const MONTH_NAT={7:'tishrei',8:'cheshvan',9:'kislev',10:'tevet',11:'shvat',12:'adar',13:'adar',1:'nisan',2:'iyar',3:'sivan',4:'tamuz',5:'av',6:'elul'};
 const MONTH_ART={7:'rosh-hashana',8:'forest-mist',9:'chanukah',10:'starry-night',11:'tu-bishvat',12:'purim',13:'purim',1:'pesach',2:'lag-baomer',3:'shavuot',4:'sea-sunset',5:'jerusalem-walls',6:'sunrise-mountains'};
-function monthArt(key){key=String(key||'').replace(/^(mi-|h-)/,'');let hm=null;
+function monthArt(key,kind){key=String(key||'').replace(/^(mi-|h-)/,'');let hm=null;
   const mo=monthsCache.find(m=>m.key===key);
   if(/^heb-\d+$/.test(key))hm=+key.slice(4);else if(mo&&mo.days&&mo.days.length)hm=new HDate(mo.days[Math.floor(mo.days.length/2)]).getMonth();
   else{const d=/^(?:w|d|t)-(\d{4}-\d{2}-\d{2})$/.exec(key);if(d)hm=new HDate(dateFromIso(d[1])).getMonth()}
   if(hm==null&&monthsCache[0])hm=new HDate(monthsCache[0].days[0]).getMonth();
-  return hm?new URL('assets/library/'+MONTH_ART[hm]+'.svg',document.baseURI).href:''}
-const PAGE_BGS=[['month','איור לכל חודש'],['custom','תמונה משלכם'],['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
+  return hm?new URL('assets/library/'+(kind==='art'?MONTH_ART[hm]:'nat-'+MONTH_NAT[hm])+'.svg',document.baseURI).href:''}
+const PAGE_BGS=[['month','נוף לכל חודש'],['art','איורי חגים'],['custom','תמונה משלכם'],['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
 function bgOwn(){const f=v=>{if(!v.img)return;state.s.pageBgImg=v.img;state.s.pageBg='custom';save();render()};f.maxPx=1800;pickImage(f)}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-bgop]')){state.s.pageBgOp=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120)}});
 let bgOpT=0;
-function bgOffSync(){const b=$('#bgOffBtn');if(!b)return;const cur=state.s.pageBg||'none',img=cur==='month'||cur==='custom';
+function bgOffSync(){const b=$('#bgOffBtn');if(!b)return;const cur=state.s.pageBg||'none',img=IMGBG(cur);
   b.hidden=CDMODE||!(img||(cur==='none'&&state.s.pageBgPrev));b.textContent=img?'✕ בלי תמונות רקע':'↺ להחזיר את תמונות הרקע'}
-$('#bgOffBtn').onclick=()=>{const s=state.s,cur=s.pageBg||'none';if(cur==='month'||cur==='custom'){s.pageBgPrev=cur;s.pageBg='none'}else if(s.pageBgPrev){s.pageBg=s.pageBgPrev;delete s.pageBgPrev}save();render()};
+$('#bgOffBtn').onclick=()=>{const s=state.s,cur=s.pageBg||'none';if(IMGBG(cur)){s.pageBgPrev=cur;s.pageBg='none'}else if(s.pageBgPrev){s.pageBg=s.pageBgPrev;delete s.pageBgPrev}save();render()};
 function bgPickSync(){bgOffSync();const cur=state.s.pageBg||'none';document.querySelectorAll('[data-bgpick]').forEach(box=>{
-  if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(k==='month'||k==='custom'?' pbg-img':'')+'"'+(k==='month'?' style="--bgimg:url('+new URL('assets/library/rosh-hashana.svg',document.baseURI).href+');--bgop:.55"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
+  if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(IMGBG(k)?' pbg-img':'')+'"'+(k==='month'||k==='art'?' style="--bgimg:url('+new URL(k==='art'?'assets/library/rosh-hashana.svg':'assets/library/nat-elul.svg',document.baseURI).href+');--bgop:.7"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
     box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="0.8" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button>')}
   box.style.setProperty('--acc',state.s.accent);
-  {const img=cur==='month'||cur==='custom',par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);
+  {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);
    const cp=box.querySelector('[data-pbg="custom"] .bgp-prev');if(cp){if(state.s.pageBgImg){cp.style.setProperty('--bgimg','url("'+state.s.pageBgImg+'")');cp.style.setProperty('--bgop','.6');cp.innerHTML=''}}}
   box.querySelectorAll('[data-pbg]').forEach(b=>{const on=b.dataset.pbg===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})})}
 document.addEventListener('click',e=>{
@@ -3019,6 +3022,7 @@ const CD_STEPS={1:['פרטי הספירה','למה סופרים, תאריך הי
 const SIMPLE_STEPS={1:['סוג הלוח','לוח עברי או לועזי, השנה וגודל הדף.'],2:['עיצוב','איך נראה כל עמוד, צבעים וגופנים.'],5:['תמונות ואירועים','המסלול המהיר: מעלים את כל התמונות למגש שבתחתית המסך, גוררים כל תמונה לחודש או ליום (או "מילוי אוטומטי"), ולוחצים על יום כדי להוסיף יום הולדת או אירוע.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
 /* עיצובים מוכנים לבונה הפשוט: לחיצה אחת משנה סגנון, צבע, גופנים ופריסה */
 const SIMPLE_PRESETS=[
+ ['round','מעוגל ומרווח','round','#1e5a63','Rubik','Assistant','full'],
  ['classic','קלאסי','ink','#1e5a63','Frank Ruhl Libre','Assistant','same'],['modern','מודרני ונקי','soft','#24427a','Heebo','Heebo','same'],
  ['bold','בולט ושמח','block','#8a2c2c','Suez One','Rubik','same'],['family','משפחתי חם','soft','#7a4a17','Secular One','Assistant','same'],
  ['elegant','אלגנטי','ink','#2f2f3a','Bellefair','David Libre','same'],['nature','טבע','soft','#3d5a2a','Alef','Alef','same'],
@@ -4199,6 +4203,13 @@ $('#shareBtn').onclick=shareModal;
   if(!state.s.yzInit){state.s.yzInit=true;['rambam','rashbi','gra','chafetz','babasali','besht','ramchal','rachel','chazonish','ovadia'].forEach(k=>delete state.s.gedolim[k]);yzSel();save()}
   if(!state.s.addAmnon){state.s.addAmnon=1;(state.s.yzLists||[]).forEach(l=>{if(l.sel&&!(state.s.yzHide||{})['7'])l.sel['7']=1});if(state.s.yzSel)state.s.yzSel['7']=1}
   if(!state.s.histPage2){state.s.histPage2=1;if((state.s.place||{}).yz==='col')state.s.place={...(state.s.place||{}),yz:'page'}}
+  /* המסלול המהיר: עיצוב מעוגל, נוף לכל חודש, בלי עמודי דברי הימים בין החודשים, ומזמני היום רק השקיעה */
+  if(SIMPLE&&!state.s.fast3){const s=state.s,fresh=!saved;
+    if(fresh||(s.place||{}).yz==='page')s.place={...(s.place||{}),yz:'none'};
+    const z=s.zmanim||{},dz=Object.keys(z).filter(k=>z[k]).sort().join(',');if(fresh||dz==='shma,sunrise,sunset')s.zmanim={sunset:true};
+    if(fresh||!s.preset){const P=SIMPLE_PRESETS[0];Object.assign(s,{preset:P[0],theme:P[2],accent:P[3],headFont:P[4],bodyFont:P[5],layout:P[6]})}
+    if(fresh||!s.pageBg||s.pageBg==='soft')s.pageBg='month';
+    s.fast3=1;save()}
   loadFont(state.s.headFont);loadFont(state.s.bodyFont);Object.values(state.textStyles||{}).forEach(t=>t.ff&&loadFont(t.ff));
   /* הגעה מהלוח המקוון: #countdown&d=...&t=...&st=...&l=... */
   {const h=window.location.hash||'';if(h.startsWith('#countdown&')){const q=new URLSearchParams(h.slice(11)),s=state.s;s.view='countdown';s.cover=false;s.zmanimMode='none';
