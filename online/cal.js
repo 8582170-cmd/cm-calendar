@@ -210,7 +210,7 @@ function shiftYear(n){if(st.mode==='heb'){const hd=new HDate(anchor);let m=hd.ge
 const DZ_SHORT={alot:['עה״ש','Alot'],mish:['משיכיר','Mishey.'],netz:['הנץ','Netz'],shmaM:['ק״ש מג״א','Shema MGA'],shmaG:['ק״ש','Shema'],tfilaM:['תפילה מג״א','Tfila MGA'],tfilaG:['תפילה','Tfila'],chatzot:['חצות','Chatzot'],minG:['מ. גדולה','M. Gedola'],minK:['מ. קטנה','M. Ketana'],plag:['פלג','Plag'],shkia:['שקיעה','Shkiah'],tzeit:['צאה״כ','Tzeit'],rt:['ר״ת','R. Tam'],chatzotN:['חצות לילה','Chatzot (night)']};
 const DZ_MAX=5,DZ_DEF=['alot','chatzot','shkia'];
 const dzSel=()=>(Array.isArray(st.dzSel)?st.dzSel:DZ_DEF).slice(0,DZ_MAX);
-const horizon=()=>(HE()?'זמנים לאופק ':'Times for ')+cityName(city());
+const horizon=()=>(HE()?'הזמנים לאופק ':'Times for ')+cityName(city());
 function dzLine(d){try{const sel=dzSel();if(!sel.length)return '';const Z=zm(d);
   const parts=sel.map(k=>{const z=Z.find(x=>x.k===k);return z&&z.v?'<span>'+esc(DZ_SHORT[k]?DZ_SHORT[k][HE()?0:1]:z.n)+' '+fmtT(z.v)+'</span>':''}).join('');
   return parts?'<span class="dz">'+parts+'</span>':''}catch(e){return ''}}
