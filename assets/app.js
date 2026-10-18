@@ -1068,6 +1068,7 @@ function pageShell(label,key){
   if(s.bodyFont)p.style.setProperty('--f-body',fontCSS(s.bodyFont));
   const wrap=el('div','sheet-wrap');wrap.appendChild(p);
   if(label)wrap.appendChild(el('div','sheet-label',esc(label)));
+  if(key&&!CDMODE){const qa=el('div','sheet-add no-print');qa.innerHTML='<button type="button" data-fxquick="text" title="שדה טקסט שאפשר להזיז ולהגדיל, מעל הלוח, מתחתיו או בצדדים">＋ טקסט</button><button type="button" data-fxquick="img" title="שדה תמונה שאפשר להזיז ולהגדיל בכל מקום בדף">＋ תמונה</button>';wrap.appendChild(qa)}
   if(key){wrap.dataset.key=key;RS.labels[key]=label;RS.emitted.add(key)}
   RS.curKey=key||label||'';RS.tc={};
   stage.appendChild(wrap);RS.count++;
@@ -2315,7 +2316,7 @@ function fxBoxEdit(id){const n=stage.querySelector('.fxbox[data-bid="'+id+'"] .f
   n.onblur=()=>{n.contentEditable='false';n.classList.remove('editing');const b=fxBoxGet(id);if(b&&b.t!==n.innerText.trim()){fxPush();b.t=n.innerText.trim();save()}}}
 /* העמוד שרואים עכשיו במרכז המסך */
 function fxVisibleKey(){let best=null,bd=1e9;const cy=innerHeight/2;stage.querySelectorAll('.sheet-wrap[data-key]').forEach(w=>{const r=w.getBoundingClientRect();const d=r.top<=cy&&r.bottom>=cy?0:Math.min(Math.abs(r.top-cy),Math.abs(r.bottom-cy));if(d<bd){bd=d;best=w.dataset.key}});return best}
-function fxBoxAdd(kind){const k=fxVisibleKey();if(!k)return;fxPush();const all=$('#fxbAll')&&$('#fxbAll').checked&&fxKind(k)==='m';
+function fxBoxAdd(kind,key){const k=key||fxVisibleKey();if(!k)return;fxPush();const all=$('#fxbAll')&&$('#fxbAll').checked&&fxKind(k)==='m';
   const b={id:'b'+uid(),k:all?'g:m':k,kind,x:kind==='text'?25:35,y:kind==='text'?8:10,w:kind==='text'?50:30,h:kind==='text'?7:20,t:'',fs:6};
   fxBoxes().push(b);FXB=b.id;fxBoxSave();
   if(kind==='img')fxBoxImg(b);else setTimeout(()=>fxBoxEdit(b.id),50);fxBoxBar()}
@@ -4429,10 +4430,10 @@ async function shareModal(){
 }
 $('#shareBtn').onclick=shareModal;
 /* כפתור "טקסט על הדף": עובר לעיצוב החופשי ומוסיף תיבת כיתוב לעמוד שרואים */
-function fxQuickAdd(kind){const s=state.s,on=fxOn();if(!on){if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7)}else{s.fxOn=true;save();applyMode()}}
-  setTimeout(()=>{try{fxBoxAdd(kind)}catch(e){}},on?0:350)}
+function fxQuickAdd(kind,key){const s=state.s,on=fxOn();if(!on){if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7)}else{s.fxOn=true;save();applyMode()}}
+  setTimeout(()=>{try{fxBoxAdd(kind,key)}catch(e){}},on?0:350)}
 $('#addTextTop').onclick=()=>fxQuickAdd('text');
-document.addEventListener('click',e=>{const b=e.target.closest('[data-fxquick]');if(b){e.preventDefault();fxQuickAdd(b.dataset.fxquick)}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-fxquick]');if(b){e.preventDefault();e.stopPropagation();const w=b.closest('.sheet-wrap');fxQuickAdd(b.dataset.fxquick,w&&w.dataset.key)}},true);
 
 /* ---------- מיקום וזמנים בבונה הפשוט, וזמנים לעוד ערים ---------- */
 function cityOpts(cur,withNone){let h=withNone?'<option value="">בלי מיקום (בלי זמנים)</option>':'';

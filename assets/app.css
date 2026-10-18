@@ -82,7 +82,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .loc-now{font-size:13px;color:var(--mute)}
 .loc-now b{color:var(--ink)}
 
-.stage{min-width:0;display:flex;flex-direction:column;gap:22px;align-items:center}
+.stage{min-width:0;display:flex;flex-direction:column;gap:34px;align-items:center}
 .stage-head{align-self:stretch;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;color:var(--mute);font-size:14px}
 .stage-head strong{color:var(--ink);font-size:16px}
 .sheet-wrap{position:relative;flex:none}
@@ -1380,3 +1380,6 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .pg-head>.fx-tmove{z-index:12;background:#c9731d}
 .fxt:not(.pg-head)>.fx-gsz-t,.fxt:not(.pg-head)>.fx-gsz-tl,.fxt:not(.pg-head)>.fx-gsz-tr{top:2px}
 .fxt:not(.pg-head)>.fx-tmove{top:auto;bottom:-12px;transform:translateY(100%)}
+.sheet-add{position:absolute;top:-27px;left:0;display:flex;gap:4px}
+.sheet-add button{font:inherit;font-size:12px;font-weight:600;line-height:1;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--card,#fff);color:var(--accent);cursor:pointer}
+.sheet-add button:hover{background:var(--accent);color:var(--accent-ink,#fff)}
