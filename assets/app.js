@@ -2517,10 +2517,11 @@ function pickImage(setter){
   const m=modal('<h2>הוספת תמונה</h2><div class="pick2"><button type="button" class="pick-b" id="pkFile"><b>📁 מהמחשב או מהטלפון</b><span>תמונה משלכם</span></button><button type="button" class="pick-b" id="pkLib"><b>🖼 ממאגר התמונות</b><span>טבע, מקומות קדושים, בית המקדש, חגים ושבת</span></button></div><div class="row"><button class="btn" type="button" data-close>ביטול</button></div>');
   m.querySelector('#pkFile').onclick=()=>{m.remove();pickFile(setter)};m.querySelector('#pkLib').onclick=()=>{m.remove();libPick(setter)};
   setTimeout(()=>m.querySelector('#pkFile').focus(),20)}
-const LIB_CATS=[['all','הכל'],['nature','טבע ונופים'],['holy','מקומות קדושים'],['mikdash','בית המקדש'],['chagim','חגים ומועדים'],['shabbat','שבת'],['tzadikim','צדיקים וחכמים'],['bg','רקעים ומסגרות']];
+let LIB_CATS=[['all','הכל'],['nature','טבע ונופים'],['holy','מקומות קדושים'],['mikdash','בית המקדש'],['chagim','חגים ומועדים'],['shabbat','שבת'],['tzadikim','צדיקים וחכמים'],['bg','רקעים ומסגרות']];
 let LIB=null;
 async function libLoad(){if(LIB)return LIB;let srv={items:[],hideSeed:[]};
   try{const r=await fetch('/api/pricing?c=_lib');if(r.ok)srv=await r.json()}catch(e){}
+  (srv.cats||[]).forEach(c=>{if(c&&c.id&&!LIB_CATS.some(x=>x[0]===c.id))LIB_CATS.push([c.id,String(c.name||'')])});
   const hide=new Set(srv.hideSeed||[]);LIB=[...(srv.items||[]),...(window.MYLUACH_LIB_SEED||[]).filter(x=>!hide.has(x.id))];return LIB}
 function urlToData(url,max){return new Promise((res,rej)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{try{
   const w=im.naturalWidth||1600,h=im.naturalHeight||1000,k=Math.min(1,max/Math.max(w,h))||1,c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);

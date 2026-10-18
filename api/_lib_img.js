@@ -15,9 +15,14 @@ async function remove(path) {
   await fetch(base() + '/storage/v1/object/library', { method: 'DELETE', headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: [path] }) }).catch(() => {});
 }
 const TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/svg+xml': 'svg' };
-const cleanItem = x => ({ id: String(x.id), url: String(x.url), path: String(x.path || ''), cat: CATS.includes(x.cat) ? x.cat : 'nature',
+/* קטגוריות: הקבועות (CATS) ועוד קטגוריות שנוספו בניהול (L.cats = [{id, name}]) */
+let ALLOWED = CATS.slice();
+const cleanItem = x => ({ id: String(x.id), url: String(x.url), path: String(x.path || ''), cat: ALLOWED.includes(x.cat) ? x.cat : 'nature',
   title: String(x.title || '').slice(0, 80), credit: String(x.credit || '').slice(0, 160), on: x.on !== false, at: x.at || new Date().toISOString() });
-async function load() { const v = await loadSetting('library'); return { items: Array.isArray(v.items) ? v.items : [], hideSeed: Array.isArray(v.hideSeed) ? v.hideSeed : [] }; }
+async function load() { const v = await loadSetting('library');
+  const cats = (Array.isArray(v.cats) ? v.cats : []).filter(c => c && /^c[a-z0-9]{3,12}$/.test(c.id) && c.name).map(c => ({ id: c.id, name: String(c.name).slice(0, 40) }));
+  ALLOWED = CATS.concat(cats.map(c => c.id));
+  return { items: Array.isArray(v.items) ? v.items : [], hideSeed: Array.isArray(v.hideSeed) ? v.hideSeed : [], cats }; }
 async function addImage(buf, type, meta) {
   const ext = TYPES[type]; if (!ext) throw new Error('type');
   if (buf.length > 8 * 1024 * 1024) throw new Error('size');
@@ -44,7 +49,16 @@ async function mediaSign(b) {
 async function adminAction(b) {
   if (b.action === 'libmedia') return mediaSign(b);
   const L = await load();
-  if (b.action === 'libget') return { ...L, cats: CATS };
+  if (b.action === 'libget') return { ...L, fixed: CATS };
+  /* קטגוריה חדשה, שינוי שם או מחיקה (תמונות מקטגוריה שנמחקה עוברות ל"טבע ונופים") */
+  if (b.action === 'libcat') {
+    const name = String(b.name || '').trim().slice(0, 40);
+    if (b.op === 'add') { if (!name) return { error: 'name' }; if (L.cats.length >= 30) return { error: 'too many' }; L.cats.push({ id: 'c' + Date.now().toString(36).slice(-8), name }); }
+    else { const c = L.cats.find(x => x.id === b.id); if (!c) return { error: 'id' };
+      if (b.op === 'rename') { if (!name) return { error: 'name' }; c.name = name; }
+      else if (b.op === 'delete') { L.cats = L.cats.filter(x => x !== c); L.items.forEach(x => { if (x.cat === c.id) x.cat = 'nature'; }); } }
+    await saveSetting('library', L); await load(); return { ok: true, ...L, fixed: CATS };
+  }
   if (b.action === 'libupload') {
     const m = /^data:(image\/[\w+.-]+);base64,(.+)$/.exec(String(b.data || '')); if (!m) return { error: 'data' };
     return { item: await addImage(Buffer.from(m[2], 'base64'), m[1], b) };
@@ -70,5 +84,5 @@ async function adminAction(b) {
   }
   return { error: 'action' };
 }
-async function publicList() { const L = await load(); return { items: L.items.filter(x => x.on).map(({ id, url, cat, title, credit }) => ({ id, url, cat, title, credit })), hideSeed: L.hideSeed }; }
+async function publicList() { const L = await load(); return { items: L.items.filter(x => x.on).map(({ id, url, cat, title, credit }) => ({ id, url, cat, title, credit })), hideSeed: L.hideSeed, cats: L.cats }; }
 module.exports = { adminAction, publicList, CATS };

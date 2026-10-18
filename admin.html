@@ -342,14 +342,25 @@ document.addEventListener('click',e=>{
   else if(k==='box')pgBlock(B,'<div class="art-box"><b>כותרת התיבה</b><p>טקסט</p></div>');
   else if(k==='table')pgBlock(B,'<table><thead><tr><th>כותרת</th><th>כותרת</th><th>כותרת</th></tr></thead><tbody><tr><td> </td><td> </td><td> </td></tr><tr><td> </td><td> </td><td> </td></tr></tbody></table>');
 });
-const LIBC={nature:'טבע ונופים',holy:'מקומות קדושים',mikdash:'בית המקדש',chagim:'חגים ומועדים',shabbat:'שבת',tzadikim:'צדיקים וחכמים',bg:'רקעים ומסגרות'};
+const LIBC0={nature:'טבע ונופים',holy:'מקומות קדושים',mikdash:'בית המקדש',chagim:'חגים ומועדים',shabbat:'שבת',tzadikim:'צדיקים וחכמים',bg:'רקעים ומסגרות'};
+let LIBC={...LIBC0};
+function libCats(){LIBC={...LIBC0};((LIBD&&LIBD.cats)||[]).forEach(c=>LIBC[c.id]=c.name);const sel=$('#libCat');if(sel){const v=sel.value;sel.innerHTML=Object.entries(LIBC).map(([k,n])=>'<option value="'+k+'">'+esc(n)+'</option>').join('');if(LIBC[v])sel.value=v}}
 function libSection(){return '<section id="libSec"><h2>מאגר התמונות ללקוחות</h2><p class="sub">התמונות שהלקוחות רואים בבונה תחת "הוספת תמונה ← ממאגר התמונות". מעלים מהמחשב או מייבאים מקישור (למשל מוויקישיתוף או מפיקיויקי, עם רישיון חופשי). כדאי לכתוב בקרדיט את שם הצלם והרישיון. <b>רק תמונות צנועות.</b> האיורים המובנים מופיעים למטה, ואפשר להסתיר כל אחד מהם.</p>'+
   '<div class="row"><select id="libCat">'+Object.entries(LIBC).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><input id="libTitle" placeholder="שם התמונה" style="width:180px"><input id="libCredit" placeholder="קרדיט / רישיון (לא חובה)" style="width:200px"></div>'+
   '<div class="row" style="margin-top:8px"><input type="file" id="libFile" accept="image/jpeg,image/png,image/webp" multiple><span class="sub">או</span><input id="libUrl" dir="ltr" placeholder="https://… קישור ישיר לתמונה" style="width:260px"><button class="btn" type="button" id="libImp">ייבוא מקישור</button><span id="libMsg"></span></div>'+
+  '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">קטגוריות</summary><div id="libCatsBox" style="margin-top:8px"></div></details>'+
   '<div id="libBox" style="margin-top:12px">טוען…</div></section>'}
 var LIBD=null;
 function libLoad(){api({action:'libget'}).then(r=>{LIBD=r;libDraw()}).catch(e=>{$('#libBox').textContent=e.code===500||e.code===400?'המאגר עוד לא מוגדר. הריצו ב-Supabase את tools/supabase_library.sql. ('+e.message+')':e.message})}
-function libDraw(){const L=LIBD.items||[],hide=new Set(LIBD.hideSeed||[]),seed=window.MYLUACH_LIB_SEED||[];
+function libCatsDraw(){const C=(LIBD&&LIBD.cats)||[],b=$('#libCatsBox');if(!b)return;
+  b.innerHTML='<p class="sub">הקטגוריות הקבועות: '+Object.values(LIBC0).join(' · ')+'. כאן מוסיפים קטגוריות משלכם. הן מופיעות ללקוחות כלשונית במאגר, ברגע שיש בהן תמונה מוצגת.</p>'+
+    C.map(c=>'<div class="row" style="margin:4px 0"><input data-cn="'+c.id+'" value="'+esc(c.name)+'" style="width:200px"><button class="btn" type="button" data-cren="'+c.id+'">שמירת שם</button><button class="btn" type="button" data-cdel="'+c.id+'">מחיקה</button></div>').join('')+
+    '<div class="row" style="margin-top:6px"><input id="libNewCat" placeholder="שם קטגוריה חדשה, למשל: ירושלים העתיקה" style="width:260px"><button class="btn primary" type="button" id="libAddCat">הוספת קטגוריה</button><span id="libCMsg"></span></div>';
+  const go=(o)=>{$('#libCMsg').textContent='שומר…';api({action:'libcat',...o}).then(r=>{LIBD=r;libDraw();$('#libCMsg')&&($('#libCMsg').textContent='✅ נשמר')}).catch(e=>$('#libCMsg').textContent='❌ '+e.message)};
+  $('#libAddCat').onclick=()=>{const n=$('#libNewCat').value.trim();if(n)go({op:'add',name:n})};
+  b.querySelectorAll('[data-cren]').forEach(x=>x.onclick=()=>go({op:'rename',id:x.dataset.cren,name:b.querySelector('[data-cn="'+x.dataset.cren+'"]').value}));
+  b.querySelectorAll('[data-cdel]').forEach(x=>x.onclick=()=>{if(confirm('למחוק את הקטגוריה? התמונות שבה יעברו ל"טבע ונופים".'))go({op:'delete',id:x.dataset.cdel})})}
+function libDraw(){libCats();libCatsDraw();const L=LIBD.items||[],hide=new Set(LIBD.hideSeed||[]),seed=window.MYLUACH_LIB_SEED||[];
   const card=(x,own)=>'<div class="libc'+((own?x.on:!hide.has(x.id))?'':' off')+'" data-id="'+esc(x.id)+'"><img src="'+esc(own?x.url:'/'+x.url)+'" alt="" loading="lazy">'+
     (own?'<input data-f="title" value="'+esc(x.title||'')+'" placeholder="שם"><select data-f="cat">'+Object.entries(LIBC).map(([k,v])=>'<option value="'+k+'"'+(k===x.cat?' selected':'')+'>'+v+'</option>').join('')+'</select><input data-f="credit" value="'+esc(x.credit||'')+'" placeholder="קרדיט"><label><input type="checkbox" data-f="on"'+(x.on?' checked':'')+'> מוצג ללקוחות</label><button class="btn" type="button" data-libdel="'+esc(x.id)+'">מחיקה</button>'
       :'<b>'+esc(x.title)+'</b><span class="sub">'+esc(LIBC[x.cat]||'')+' · איור מובנה</span><label><input type="checkbox" data-seed="'+esc(x.id)+'"'+(hide.has(x.id)?'':' checked')+'> מוצג ללקוחות</label>')+'</div>';
