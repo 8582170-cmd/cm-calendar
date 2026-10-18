@@ -93,6 +93,8 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
       return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length });
     }
+    /* גיבוי לגוגל שיטס עכשיו */
+    if (req.method === 'POST' && b.action === 'backup') { const B = require('./_backup'); if (!B.ready()) return json(res, 200, { notReady: true }); try { return json(res, 200, await B.run()); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 200) }); } }
     /* מד שימוש באחסון ובמסד הנתונים */
     if (req.method === 'POST' && b.action === 'usage') { try { return json(res, 200, await require('./_usage').usage()); } catch (e) { return json(res, 500, { error: String(e.message || e).slice(0, 200) }); } }
     /* דוגמית של לוח שהורד: התוכן המלא (בלי תמונות), לפתיחה בבונה לקריאה בלבד */
