@@ -2321,10 +2321,13 @@ function fxBoxAdd(kind){const k=fxVisibleKey();if(!k)return;fxPush();const all=$
   if(kind==='img')fxBoxImg(b);else setTimeout(()=>fxBoxEdit(b.id),50);fxBoxBar()}
 /* גרירה ושינוי גודל של תיבה, וידיות לגודל הטבלה */
 /* הטבלה הראשית של העמוד (חודש, שבוע, יום, טבלה): גודל ומיקום. בחודש נשמר ב-FX().grid, באחרים ב-FX().tbl[סוג] */
-const FXT_SEL='.page .grid[data-rows],.page .week,.page .day-body,.page .wt-wrap';
-function fxtKind(n){return n.matches('.grid')?'month':n.matches('.week')?'week':n.matches('.day-body')?'day':'table'}
+const FXT_SEL='.page .grid[data-rows],.page .week,.page .day-body,.page .wt-wrap,.page>.pg-head';
+function fxtKind(n){return n.matches('.pg-head')?'head':n.matches('.grid')?'month':n.matches('.week')?'week':n.matches('.day-body')?'day':'table'}
 function fxtCfg(kind){const f=FX();if(kind==='month')return f.grid;if(!f.tbl||typeof f.tbl!=='object')f.tbl={};if(!f.tbl[kind])f.tbl[kind]={};return f.tbl[kind]}
 function fxtApply(){stage.querySelectorAll(FXT_SEL).forEach(n=>{const C=fxtCfg(fxtKind(n));n.classList.add('fxt');
+  if(n.matches('.pg-head')){/* כותרת החודש: קנה מידה (גם לטקסט), גובה ורוחב במ"מ */
+    if(C.sc)n.style.setProperty('--u',(unitK()*C.sc).toFixed(4)+'mm');else n.style.removeProperty('--u');n.style.height=C.hmm?C.hmm+'mm':'';n.style.width=C.wmm?C.wmm+'mm':'';n.classList.toggle('hset',!!C.hmm);
+    n.style.translate=(C.tx||C.ty)?(+C.tx||0)+'mm '+(+C.ty||0)+'mm':'';return}
   n.classList.toggle('gh',!!C.hp);n.classList.toggle('gw',!!C.wp);if(C.hp)n.style.setProperty('--gh',C.hp+'%');if(C.wp)n.style.setProperty('--gw',C.wp+'%');
   n.style.translate=(C.tx||C.ty)?(+C.tx||0)+'mm '+(+C.ty||0)+'mm':''})}
 function fxBoxDecorate(){
@@ -2336,7 +2339,7 @@ function fxBoxDecorate(){
     [['t','גררו כדי לשנות את הגובה (מלמעלה)'],['b','גררו כדי לשנות את הגובה (מלמטה)'],['l','גררו כדי לשנות את הרוחב (משמאל)'],['r','גררו כדי לשנות את הרוחב (מימין)'],
      ['tl','גררו כדי להגדיל או להקטין את כל הטבלה'],['tr','גררו כדי להגדיל או להקטין את כל הטבלה'],['bl','גררו כדי להגדיל או להקטין את כל הטבלה'],['br','גררו כדי להגדיל או להקטין את כל הטבלה']]
       .forEach(([c,t])=>{const h=add('fx-gsz-'+c+(c.length>1?' fx-gsz-cn':''),t);h.dataset.ed=c});
-    const mv=el('div','fx-h fx-tmove no-print','✥ הזזת הטבלה');mv.title='גררו כדי להזיז את כל הטבלה';g.appendChild(mv)});
+    const hd=g.matches('.pg-head'),mv=el('div','fx-h fx-tmove no-print',hd?'✥ הזזת הכותרת':'✥ הזזת הטבלה');mv.title=hd?'גררו כדי להזיז את הכותרת':'גררו כדי להזיז את כל הטבלה';g.appendChild(mv)});
   fxBoxBar();
 }
 stage.addEventListener('pointerdown',e=>{
@@ -2351,22 +2354,28 @@ stage.addEventListener('pointerdown',e=>{
     const G=fxtCfg(fxtKind(g)),f=screenMM(g),T=ed.includes('t'),B=ed.includes('b'),Lf=ed.includes('l'),R=ed.includes('r'),corner=ed.length>1;
     let pw0=G.wp||Math.min(100,gr.width/pr.width*100),ph0=G.hp||Math.min(100,gr.height/pr.height*100);
     /* הצד שנשאר במקום: הצד שמול הידית */
+    const HD=g.matches('.pg-head'),sc0=+G.sc||1,hm0=gr.height*f,wm0=gr.width*f;let sc=sc0,hm=null,wm=null;
     const ax=Lf?'right':R?'left':null,ay=T?'bottom':B?'top':null;let tx=+G.tx||0,ty=+G.ty||0,vh=null,vw=null,moved=false;
     /* כיול: קובעים את הגודל הנוכחי באחוזים כך שבדיוק יתאים למה שרואים, וכך המימד השני לא זז */
     const calib=()=>{g.classList.add('gh','gw');g.style.setProperty('--gh',ph0+'%');g.style.setProperty('--gw',pw0+'%');let r=g.getBoundingClientRect();
       if(r.height)ph0*=gr.height/r.height;if(r.width)pw0*=gr.width/r.width;g.style.setProperty('--gh',ph0+'%');g.style.setProperty('--gw',pw0+'%');vh=ph0;vw=pw0};
-    const mv=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved){if(Math.hypot(dx,dy)<2)return;moved=true;fxPush();calib()}
+    const mv=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved){if(Math.hypot(dx,dy)<2)return;moved=true;fxPush();if(!HD)calib()}
       let sw=1,sh=1;
       if(Lf)sw=(gr.width-dx)/gr.width;else if(R)sw=(gr.width+dx)/gr.width;
       if(T)sh=(gr.height-dy)/gr.height;else if(B)sh=(gr.height+dy)/gr.height;
-      if(corner){const k=(sw+sh)/2;sw=sh=k}
+      /* בפינה: גודל יחסי, לפי ההטלה של הגרירה על האלכסון (כך שגם בכותרת נמוכה וארוכה זה לא קופץ) */
+      if(corner){const ux=Lf?-1:1,uy=T?-1:1,W=gr.width,Hh=gr.height;const k=Math.max(.2,1+(dx*ux*W+dy*uy*Hh)/(W*W+Hh*Hh));sw=sh=k}
+      if(HD){if(corner){const k=Math.max(.4/sc0,Math.min(4/sc0,sw));sc=sc0*k;g.style.setProperty('--u',(unitK()*sc).toFixed(4)+'mm');if(G.hmm){hm=hm0*k;g.style.height=hm+'mm'}if(G.wmm){wm=wm0*k;g.style.width=wm+'mm'}}
+        else{if(T||B){hm=Math.max(6,hm0*sh);g.style.height=hm+'mm';g.classList.add('hset')}if(Lf||R){wm=Math.max(30,wm0*sw);g.style.width=wm+'mm'}}}
+      else{
       if(T||B){vh=Math.max(20,Math.min(Math.max(100,ph0),ph0*sh));g.classList.add('gh');g.style.setProperty('--gh',vh+'%')}
-      if(Lf||R){vw=Math.max(25,Math.min(Math.max(100,pw0),pw0*sw));g.classList.add('gw');g.style.setProperty('--gw',vw+'%')}
+      if(Lf||R){vw=Math.max(25,Math.min(Math.max(100,pw0),pw0*sw));g.classList.add('gw');g.style.setProperty('--gw',vw+'%')}}
       /* מיישרים כך שהצד שמול הידית לא זז */
       g.style.translate=tx+'mm '+ty+'mm';const r=g.getBoundingClientRect();
       if(ax)tx+=(gr[ax]-r[ax])*f;if(ay)ty+=(gr[ay]-r[ay])*f;g.style.translate=tx+'mm '+ty+'mm'};
     const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(!moved)return;
-      G.hp=+vh.toFixed(2);G.wp=+vw.toFixed(2);if(vw>=99.5&&vw<=100.5)delete G.wp;
+      if(HD){if(sc!==sc0){G.sc=+sc.toFixed(3);if(Math.abs(G.sc-1)<.01)delete G.sc}if(hm!=null)G.hmm=+hm.toFixed(1);if(wm!=null)G.wmm=+wm.toFixed(1)}
+      else{G.hp=+vh.toFixed(2);G.wp=+vw.toFixed(2);if(vw>=99.5&&vw<=100.5)delete G.wp}
       G.tx=+tx.toFixed(1);G.ty=+ty.toFixed(1);if(!G.tx&&!G.ty){delete G.tx;delete G.ty}save();render()};
     addEventListener('pointermove',mv);addEventListener('pointerup',up);return}
   const n=e.target.closest('.fxbox');if(!n)return;
@@ -4420,8 +4429,10 @@ async function shareModal(){
 }
 $('#shareBtn').onclick=shareModal;
 /* כפתור "טקסט על הדף": עובר לעיצוב החופשי ומוסיף תיבת כיתוב לעמוד שרואים */
-$('#addTextTop').onclick=()=>{const s=state.s;if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7)}else{s.fxOn=true;save();applyMode()}
-  setTimeout(()=>{try{fxBoxAdd('text')}catch(e){}},350)};
+function fxQuickAdd(kind){const s=state.s,on=fxOn();if(!on){if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7)}else{s.fxOn=true;save();applyMode()}}
+  setTimeout(()=>{try{fxBoxAdd(kind)}catch(e){}},on?0:350)}
+$('#addTextTop').onclick=()=>fxQuickAdd('text');
+document.addEventListener('click',e=>{const b=e.target.closest('[data-fxquick]');if(b){e.preventDefault();fxQuickAdd(b.dataset.fxquick)}});
 
 /* ---------- מיקום וזמנים בבונה הפשוט, וזמנים לעוד ערים ---------- */
 function cityOpts(cur,withNone){let h=withNone?'<option value="">בלי מיקום (בלי זמנים)</option>':'';

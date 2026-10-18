@@ -1358,7 +1358,7 @@ body.tray-open .mla-btn{left:272px!important}
 .fxt{position:relative}
 .fxt.gh{flex:0 0 auto!important;height:var(--gh)}
 .page>.fxt.gw{width:var(--gw);align-self:center}.grid-row>.fxt.gw{width:var(--gw);flex-basis:var(--gw)!important;flex-grow:0!important;align-self:center}
-.fx-tmove{position:absolute;top:-14px;left:50%;transform:translate(-50%,-100%);z-index:7;background:var(--accent,#1f5c63);color:#fff;font:600 12px/1 Assistant,Arial,sans-serif;padding:5px 10px;border-radius:999px;cursor:move;white-space:nowrap;box-shadow:0 1px 4px rgb(0 0 0 / .3)}
+.fx-tmove{position:absolute;top:-12px;inset-inline-start:26px;transform:translateY(-100%);z-index:7;background:var(--accent,#1f5c63);color:#fff;font:600 12px/1 Assistant,Arial,sans-serif;padding:5px 10px;border-radius:999px;cursor:move;white-space:nowrap;box-shadow:0 1px 4px rgb(0 0 0 / .3)}
 body.fx-on .cell[data-date]:hover::after{display:none}
 .ie-layer{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
 .fx-scope{display:inline-flex;border:1px solid rgb(255 255 255 / .35);border-radius:8px;overflow:hidden}.fx-scope button{border:0!important;border-radius:0!important;font-size:12px!important;padding:4px 7px!important;opacity:.75}.fx-scope button[aria-pressed=true]{background:#fff!important;color:#1f5c63!important;opacity:1;font-weight:700}
@@ -1373,3 +1373,10 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .fx-gsz-tl{top:-9px;left:-9px;cursor:nwse-resize}.fx-gsz-br{bottom:-9px;right:-9px;cursor:nwse-resize}
 .fx-gsz-tr{top:-9px;right:-9px;cursor:nesw-resize}.fx-gsz-bl{bottom:-9px;left:-9px;cursor:nesw-resize}
 .fx-grip{cursor:grab;font-size:18px;line-height:1;padding:2px 4px;opacity:.8;touch-action:none;user-select:none}.fx-grip:active{cursor:grabbing}
+.pg-head.hset{align-items:center}
+.page>.pg-head.fxt{box-sizing:border-box}
+.fx-quick{display:inline-flex;gap:4px}.fx-quick .btn{padding:3px 9px;font-size:13px}
+.pg-head>.fx-gsz{z-index:11;background:#c9731d}
+.pg-head>.fx-tmove{z-index:12;background:#c9731d}
+.fxt:not(.pg-head)>.fx-gsz-t,.fxt:not(.pg-head)>.fx-gsz-tl,.fxt:not(.pg-head)>.fx-gsz-tr{top:2px}
+.fxt:not(.pg-head)>.fx-tmove{top:auto;bottom:-12px;transform:translateY(100%)}
