@@ -17,6 +17,14 @@ body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Assistant"
 h1{margin:0;font-size:28px}
 h2{margin:0 0 4px;font-size:20px}
 .sub{margin:0 0 12px;color:var(--mute);font-size:14px}
+/* כיווץ ופתיחה של כל חלק בניהול (נשמר בדפדפן) */
+section>h2{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
+section>h2::before{content:"▾";font-size:.8em;color:var(--mute,#5c686c);transition:transform .15s}
+section.fold>h2::before{transform:rotate(90deg)}
+section.fold>*:not(h2){display:none!important}
+section.fold{padding-block:10px}section.fold>h2{margin:0}
+.fold-all{position:fixed;bottom:12px;left:12px;z-index:50;display:flex;gap:6px}
+.fold-all button{font:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #c9d1ce;background:#fff;cursor:pointer;box-shadow:0 2px 8px rgb(0 0 0 / .12)}
 section{background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:18px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);min-width:0}
@@ -443,6 +451,21 @@ function bind(){
     api({action:'save',config:C}).then(()=>api()).then(d=>{D=d;C=JSON.parse(JSON.stringify(d.config||{}));render();const mm=$('#smsg');mm.className='msg ok';mm.textContent='נשמר. האתר מתעדכן תוך דקה.'})
       .catch(e=>{$('#save').disabled=false;m.className='msg bad';m.textContent='השמירה נכשלה: '+(e.j&&e.j.message||e.message)})};
 }
+})();
+</script>
+<script>
+/* כיווץ חלקים בניהול: לחיצה על הכותרת מכווצת או פותחת, והמצב נשמר בדפדפן */
+(function(){
+  var K='adm-fold',F={};try{F=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+  function key(sec){var h=sec.querySelector(':scope>h2');return h?h.textContent.trim().slice(0,40):''}
+  function save(){try{localStorage.setItem(K,JSON.stringify(F))}catch(e){}}
+  function apply(){document.querySelectorAll('section').forEach(function(sec){var k=key(sec);if(k)sec.classList.toggle('fold',!!F[k])})}
+  document.addEventListener('click',function(e){var h=e.target.closest('section>h2');if(!h||e.target.closest('a,button,input,select,label'))return;var sec=h.parentNode,k=key(sec);F[k]=!sec.classList.contains('fold');if(!F[k])delete F[k];save();sec.classList.toggle('fold',!!F[k])});
+  new MutationObserver(function(){apply();bar()}).observe(document.body,{childList:true,subtree:true});
+  function bar(){if(document.querySelector('.fold-all')||!document.querySelector('section>h2'))return;var b=document.createElement('div');b.className='fold-all';
+    b.innerHTML='<button type="button" data-f="1">כיווץ הכל</button><button type="button" data-f="0">פתיחת הכל</button>';
+    b.onclick=function(e){var t=e.target.closest('[data-f]');if(!t)return;var on=t.dataset.f==='1';F={};document.querySelectorAll('section').forEach(function(sec){var k=key(sec);if(k&&on)F[k]=1});save();apply()};document.body.appendChild(b)}
+  apply();bar();
 })();
 </script>
 </body></html>
