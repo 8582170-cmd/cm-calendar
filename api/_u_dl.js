@@ -1,7 +1,7 @@
 /* רישום הורדה/הדפסה של לוח, לדף הניהול. עובד גם בלי התחברות (אז בלי מייל, אלא אם נמסר בבקשה). */
 'use strict';
 const { db, json, getUser, readBody, planInfo, loadConfig, env } = require('./_lib');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 /* דוגמית: שמירת תוכן הלוח (בלי תמונות) בדלי הפרטי samples, לפי שיעור הדגימה שנקבע בניהול */
 async function saveSnap(snap) {
   if (!snap || typeof snap !== 'object') return null;

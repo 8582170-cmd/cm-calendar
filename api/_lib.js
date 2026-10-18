@@ -10,9 +10,9 @@
    SITE_URL                                — אופציונלי, ברירת מחדל https://www.myluach.org */
 'use strict';
 /* המחירים נקראים מאותו קובץ שהאתר מציג (assets/plans.js), כך שיש מקור אחד בלבד למחירים ולמבצעים. */
-global.window = global.window || {};
+globalThis.window = globalThis.window || {};
 require('../assets/plans.js');
-const LP = global.window.MyLuachPlans;
+const LP = globalThis.window.MyLuachPlans;
 const PLAN_NAMES = Object.fromEntries(LP.PLANS.filter(p => p.price.ils > 0).map(p => [p.id, p.name]));
 const PAID = Object.keys(PLAN_NAMES);
 

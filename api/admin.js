@@ -1,7 +1,7 @@
 /* דף הניהול: קריאה ושמירה של המחירים, המבצע והקופונים, ורשימת הזמנות אחרונות.
    הגישה בסיסמה: משתנה הסביבה ADMIN_PASSWORD ב-Vercel. */
 'use strict';
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { LP, PAID, loadConfig, publicPricing, env, db, readBody, json } = require('./_lib');
 
 function okPass(given) {
@@ -83,10 +83,9 @@ module.exports = async (req, res) => {
     }
     /* IndexNow: מודיע לבינג (ולמנועים נוספים) על כל דפי האתר מתוך מפת האתר */
     if (req.method === 'POST' && b.action === 'indexnow') {
-      const fs = require('fs'), path = require('path');
       const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org';
       let urls = [];
-      try { urls = [...fs.readFileSync(path.join(__dirname, '..', 'sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]); } catch (e) {}
+      try { const sm = await (await fetch('https://' + host + '/sitemap.xml')).text(); urls = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]); } catch (e) {}
       try { urls = urls.concat(await require('./_pages').publicUrls()); } catch (e) {}
       if (!urls.length) urls = ['https://' + host + '/'];
       const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' },

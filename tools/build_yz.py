@@ -14,4 +14,6 @@ js = ('/* © MyLuach. מאגר דברי הימים מוגן בזכויות יו�
       'for(var i=0;i<b.length;i++)b[i]^=k[i%k.length]^((i*131)&255);'
       'var o=JSON.parse(new TextDecoder().decode(b));window.YZ=o.YZ;window.YZ_DEFAULT_SEL=o.SEL})();\n')
 (ROOT / 'assets/yz.js').write_text(js, encoding='utf-8')
+# אותו מאגר לפונקציות השרת (בלי קריאת קבצים, כדי שיעבוד גם ב-Cloudflare)
+(ROOT / 'api/_yzdata.js').write_text('/* נוצר אוטומטית מ-tools/build_yz.py */\nmodule.exports = { k: ' + json.dumps(k64) + ', d: ' + json.dumps(d64) + ' };\n', encoding='utf-8')
 print('entries:', len(json.loads(out)['YZ']), 'bytes:', len(js))

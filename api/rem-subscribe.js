@@ -1,6 +1,6 @@
 /* הרשמה לתזכורת במייל מהלוח המקוון. מייל חדש מקבל קודם מייל אישור (כדי שלא ירשמו כתובת של מישהו אחר). */
 'use strict';
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { env, db, readBody, json, getUser } = require('./_lib');
 const { sendMail, frame, escH } = require('./_mail');
 

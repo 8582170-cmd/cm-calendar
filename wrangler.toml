@@ -1,0 +1,5 @@
+# הגדרות ל-Cloudflare Pages (האתר + פונקציות השרת שבתיקייה functions/, שמריצות את הקוד שב-api/)
+name = "myluach"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]

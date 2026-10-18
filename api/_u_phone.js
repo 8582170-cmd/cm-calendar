@@ -1,6 +1,6 @@
 /* אימות מספר טלפון לתזכורות קוליות: שולחים קוד ב-SMS (או בשיחה), והמשתמש מקליד אותו */
 'use strict';
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { db, readBody, json, getUser, upsertProfile } = require('./_lib');
 const { ready, cfg, fill, normPhone, sendSms, callTTS } = require('./_voice');
 const H = s => crypto.createHash('sha256').update(String(s)).digest('hex');

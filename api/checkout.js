@@ -1,6 +1,6 @@
 /* יצירת הזמנה, והחזרת פרטי העסקה לטופס התשלום המוטמע של נדרים פלוס (iframe) */
 'use strict';
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { getUser, PLAN_NAMES, loadConfig, publicPricing, checkCoupon, finalPrice, env, db, readBody, json } = require('./_lib');
 
 module.exports = async (req, res) => {
