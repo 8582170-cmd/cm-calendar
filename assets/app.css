@@ -1271,4 +1271,8 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .sp-card.th-round .sp-grid{gap:2px}
 .sp-card.th-round .sp-grid i{background:color-mix(in srgb,var(--a) 12%,#fff);border-radius:3px}
 /* המסלול המהיר: בתצוגה על המסך בלי סימן מים */
-@media screen{body.simple-app .page.wm::after{content:none}}
+@media screen{body:not(.wm-screen) .page.wm::after{content:none}}
+.wm-note{flex-basis:100%;font-size:13px;color:#8a4b00;background:#fff4e0;border:1px solid #f1d4a8;border-radius:8px;padding:5px 10px}
+.t-round .d-top{justify-content:flex-start;align-self:flex-start;background:color-mix(in srgb,var(--acc) 13%,#fff);border-radius:999px;padding:calc(var(--u)*.35) calc(var(--u)*1.5);gap:calc(var(--u)*1.2);max-width:100%}
+.t-round .d-main{font-size:calc(var(--u)*3.9*var(--ts))}
+.t-round .cell.shabbat .d-top,.t-round .cell.chag .d-top{background:color-mix(in srgb,var(--acc) 24%,#fff)}

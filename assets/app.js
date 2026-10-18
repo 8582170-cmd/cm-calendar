@@ -1805,8 +1805,14 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-wks]');if(
   save();syncUI();render()});
 /* ---------- render ---------- */
 let monthsCache=[];
+/* סימן המים לא מוצג על המסך, אלא רק בהדפסה (לפי המסלול), או כשהלוח עובר את מה שמותר בהורדה החינמית (אירועים, תמונות) */
+function photoCount(){let n=(state.cover&&state.cover.img)?1:0;for(const k in state.slots||{})if(state.slots[k]&&state.slots[k].img)n++;for(const e of state.events)if(e.img)n++;return n}
+function wmScreen(){const p=PLAN();if(!p.watermark||SAMPLE||LITE)return '';const L=p.id==='free'||!p.id?LITE_LIM:{events:p.events,photos:Infinity};
+  const ev=state.events.length,ph=photoCount();if(ev>L.events)return 'יש בלוח '+ev+' אירועים, יותר מ־'+L.events+' שאפשר בחינם, ולכן מופיע סימן מים.';
+  if(ph>L.photos)return 'יש בלוח '+ph+' תמונות, יותר מ־'+L.photos+' שאפשר בחינם, ולכן מופיע סימן מים.';return ''}
 function render(){
   yzInvalidate();
+  {const w=wmScreen();document.body.classList.toggle('wm-screen',!!w);const n=$('#wmNote');if(n){n.hidden=!w;n.innerHTML=w?esc(w)+' <button type="button" class="linkbtn" data-upgrade="events">למסלולים</button>':''}}
   const s=state.s;
   applyPrintPageStyle();
   stage.querySelectorAll('.sheet-wrap,.err').forEach(n=>n.remove());
