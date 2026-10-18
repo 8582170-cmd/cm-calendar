@@ -1365,3 +1365,4 @@ body.tray-open .mla-btn{left:272px!important}
 .fx-tmove{position:absolute;top:-14px;left:50%;transform:translate(-50%,-100%);z-index:7;background:var(--accent,#1f5c63);color:#fff;font:600 12px/1 Assistant,Arial,sans-serif;padding:5px 10px;border-radius:999px;cursor:move;white-space:nowrap;box-shadow:0 1px 4px rgb(0 0 0 / .3)}
 body.fx-on .cell[data-date]:hover::after{display:none}
 .ie-layer{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.fx-scope{display:inline-flex;border:1px solid rgb(255 255 255 / .35);border-radius:8px;overflow:hidden}.fx-scope button{border:0!important;border-radius:0!important;font-size:12px!important;padding:4px 7px!important;opacity:.75}.fx-scope button[aria-pressed=true]{background:#fff!important;color:#1f5c63!important;opacity:1;font-weight:700}

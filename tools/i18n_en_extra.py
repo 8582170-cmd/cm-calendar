@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ '🔓 רק זה': '🔓 Just this',
+ '📄 בעמוד': '📄 This page',
+ '🔒 בכל הלוח': '🔒 Whole calendar',
  '🅣 טקסט על הדף': '🅣 Text on the page',
  'השכבה שנבחרה': 'Selected layer',
  'שקיפות': 'Opacity',

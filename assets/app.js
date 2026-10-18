@@ -2147,8 +2147,14 @@ function fxOk(n){return n&&n.nodeType===1&&n.closest('.page')&&!n.closest(FX_SKI
 function fxKeys(n){
   const [ak,a,pk]=fxAnchor(n);if(!a)return null;const sig=fxSig(n);let i=0;
   for(const x of a.querySelectorAll(fxSel(sig))){if(x===n)break;if(fxSig(x)===sig&&fxOk(x))i++}
-  return {k:ak+'|'+sig+'|'+i,g:ak.startsWith('p:')?'g:'+fxKind(pk)+'|'+sig+'|'+i:null}}
-function fxGet(K){const T=FX().t;return {...(K.g&&T[K.g]||{}),...(T[K.k]||{})}}
+  const ty=fxType(n);return {k:ak+'|'+sig+'|'+i,g:ak.startsWith('p:')?'g:'+fxKind(pk)+'|'+sig+'|'+i:null,ct:'ct:'+ty,pt:'pt:'+fxPageKey(n)+'|'+ty}}
+/* סוג הטקסט (למשל: מספרי הימים, שורת הזמנים, אירוע אישי). שינוי "בכל הלוח" או "בעמוד" חל על כל הטקסטים מאותו סוג */
+const FX_NOCLS=/^(fx-|has-|sel$|over$|ml$|editing$)/;
+function fxType(n){return n.tagName.toLowerCase()+'.'+[...n.classList].filter(c=>!FX_NOCLS.test(c)).sort().join('.')+'@'+((n.parentElement&&n.parentElement.classList[0])||'')}
+function fxPageKey(n){const w=n.closest('.sheet-wrap');return (w&&w.dataset.key)||''}
+function fxGet(K){const T=FX().t;return {...(K.ct&&T[K.ct]||{}),...(K.pt&&T[K.pt]||{}),...(K.g&&T[K.g]||{}),...(T[K.k]||{})}}
+/* ברירת המחדל: אירועים אישיים ותזכורות רק באותו מקום, וכל השאר (ימים, זמנים, כותרות) בכל הלוח */
+function fxDefScope(n){return n.closest('.e.personal,.e.reminder')||n.matches('.e.personal,.e.reminder')?'one':'all'}
 function fxStyle(n,st){
   if(n.dataset.fxo==null)n.dataset.fxo=n.textContent;
   n.style.fontSize='';n.style.translate='';n.style.color='';n.style.fontWeight='';n.classList.remove('fx-hidden');
@@ -2166,8 +2172,8 @@ function fxApply(){
   const cnt=new Map();
   for(const n of stage.querySelectorAll('.page *')){
     if(!fxOk(n))continue;const [ak,,pk]=fxAnchor(n),sig=fxSig(n),ck=ak+'|'+sig,i=cnt.get(ck)||0;cnt.set(ck,i+1);
-    const k=ak+'|'+sig+'|'+i,g=ak.startsWith('p:')?'g:'+fxKind(pk)+'|'+sig+'|'+i:null;
-    if(T[k]||(g&&T[g]))fxStyle(n,{...(g&&T[g]||{}),...(T[k]||{})});
+    const k=ak+'|'+sig+'|'+i,g=ak.startsWith('p:')?'g:'+fxKind(pk)+'|'+sig+'|'+i:null,ty=fxType(n),ct='ct:'+ty,pt='pt:'+fxPageKey(n)+'|'+ty;
+    if(T[k]||(g&&T[g])||T[ct]||T[pt]){const st={...(T[ct]||{}),...(T[pt]||{}),...(g&&T[g]||{}),...(T[k]||{})};if(T[ct]&&T[ct].t!=null&&!(T[k]&&T[k].t!=null))delete st.t;fxStyle(n,st)}
   }
 }
 function fxLines(p){const L=FX().lines;if(L.w!=null)p.style.setProperty('--lw',L.w+'mm');if(L.st)p.style.setProperty('--ls',L.st);if(L.c)p.style.setProperty('--p-line',L.c)}
@@ -2186,14 +2192,15 @@ function fxUndoBtn(){document.querySelectorAll('[data-fx="undo"]').forEach(b=>b.
 
 /* סרגל הכלים של טקסט נבחר */
 const fxb=el('div','fx-bar no-print');fxb.hidden=true;
-fxb.innerHTML='<span class="fx-tip">✥ גררו להזזה</span><button type="button" data-fx="dn" title="הקטנה">A−</button><button type="button" data-fx="up" title="הגדלה">A+</button><button type="button" data-fx="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fx="co" aria-label="צבע"></label><button type="button" data-fx="edit" title="עריכת הטקסט">✎ עריכה</button><button type="button" data-fx="hide" title="הסתרה / הצגה">הסתרה</button><label class="fx-all" title="אותו שינוי בכל העמודים מאותו סוג"><input type="checkbox" data-fx="all"> בכל החודשים</label><button type="button" data-fx="reset" title="חזרה למקור">↺ איפוס</button><button type="button" data-fx="undo" title="ביטול הפעולה האחרונה">↶</button><button type="button" data-fx="x" title="סגירה">✕</button>';
+fxb.innerHTML='<span class="fx-tip">✥ גררו להזזה</span><button type="button" data-fx="dn" title="הקטנה">A−</button><button type="button" data-fx="up" title="הגדלה">A+</button><button type="button" data-fx="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fx="co" aria-label="צבע"></label><button type="button" data-fx="edit" title="עריכת הטקסט">✎ עריכה</button><button type="button" data-fx="hide" title="הסתרה / הצגה">הסתרה</button><span class="fx-scope" role="group" aria-label="על מה השינוי חל"><button type="button" data-fx="scope" data-fxsc="one" title="השינוי רק בטקסט הזה">🔓 רק זה</button><button type="button" data-fx="scope" data-fxsc="page" title="כל הטקסטים מהסוג הזה בעמוד הזה">📄 בעמוד</button><button type="button" data-fx="scope" data-fxsc="all" title="כל הטקסטים מהסוג הזה בכל הלוח">🔒 בכל הלוח</button></span><button type="button" data-fx="reset" title="חזרה למקור">↺ איפוס</button><button type="button" data-fx="undo" title="ביטול הפעולה האחרונה">↶</button><button type="button" data-fx="x" title="סגירה">✕</button>';
 document.body.appendChild(fxb);
 let FXS=null; /* {n,K} */
-function fxScopeKey(){if(!FXS)return null;const all=fxb.querySelector('[data-fx="all"]');return all.checked&&FXS.K.g?FXS.K.g:FXS.K.k}
+function fxScopeKey(){if(!FXS)return null;const sc=FXS.scope||'one';return sc==='all'?FXS.K.ct:sc==='page'?FXS.K.pt:FXS.K.k}
+function fxScopeUI(){fxb.querySelectorAll('[data-fxsc]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.fxsc===(FXS&&FXS.scope))))}
 function fxPlace(){if(!FXS||!FXS.n.isConnected){fxb.hidden=true;return}const r=FXS.n.getBoundingClientRect();fxb.style.top=Math.max(4,r.top-46)+'px';fxb.style.left=Math.max(4,Math.min(innerWidth-fxb.offsetWidth-4,r.left+r.width/2-fxb.offsetWidth/2))+'px'}
 function fxSelect(n){
   fxUnselect();const K=fxKeys(n);if(!K)return;FXS={n,K};n.classList.add('fx-sel');
-  const T=FX().t,all=fxb.querySelector('[data-fx="all"]');all.parentElement.hidden=!K.g;all.checked=!!(K.g&&T[K.g]&&!T[K.k]);
+  const T=FX().t,own=T[K.k]&&Object.keys(T[K.k]).some(x=>x!=='t');FXS.scope=own?'one':T[K.pt]?'page':(T[K.ct]?'all':fxDefScope(n));fxScopeUI();
   const st=fxGet(K);fxb.querySelector('[data-fx="co"]').value=st.co||rgbHex(getComputedStyle(n).color);
   fxb.querySelector('[data-fx="hide"]').textContent=st.hide?'הצגה':'הסתרה';
   fxb.hidden=false;fxUndoBtn();fxPlace();
@@ -2203,21 +2210,25 @@ function fxSet(fn){if(!FXS)return;fxPush();const T=FX().t,k=fxScopeKey(),st={...
   for(const x of Object.keys(st))if(st[x]==null||st[x]===''||(x==='fs'&&st[x]===1)||((x==='dx'||x==='dy')&&!st[x]))delete st[x];
   if(Object.keys(st).length)T[k]=st;else delete T[k];
   save();
-  if(k===FXS.K.g){const n=FXS.n;render();const again=fxFind(FXS.K.k);if(again)fxSelect(again);else fxUnselect()}else{fxStyle(FXS.n,fxGet(FXS.K));fxPlace()}
+  if(k!==FXS.K.k){const sc=FXS.scope,kk=FXS.K.k;render();const again=fxFind(kk);if(again){fxSelect(again);FXS.scope=sc;fxScopeUI()}else fxUnselect()}else{fxStyle(FXS.n,fxGet(FXS.K));fxPlace()}
 }
 function fxFind(k){for(const n of stage.querySelectorAll('.page *')){if(!fxOk(n))continue;const K=fxKeys(n);if(K&&K.k===k)return n}return null}
 fxb.addEventListener('mousedown',e=>{if(e.target.tagName!=='INPUT')e.preventDefault()});
 fxb.addEventListener('click',e=>{const b=e.target.closest('[data-fx]');if(!b||!FXS)return;const a=b.dataset.fx;
   if(a==='x')return fxUnselect();
   if(a==='undo')return fxUndo();
+  if(a==='scope'){const sc=b.dataset.fxsc,T=FX().t,K=FXS.K;FXS.scope=sc;fxScopeUI();
+    /* מעבר מ"רק זה" לרמה רחבה יותר: השינויים של הטקסט הזה עוברים לכל הטקסטים מאותו סוג */
+    if(sc!=='one'&&T[K.k]){const {t,...rest}=T[K.k];if(Object.keys(rest).length){fxPush();const dst=sc==='all'?K.ct:K.pt;T[dst]={...(T[dst]||{}),...rest};if(t!=null)T[K.k]={t};else delete T[K.k];save();const k=K.k;render();const n=fxFind(k);if(n){fxSelect(n);FXS.scope=sc;fxScopeUI()}}}
+    return}
   if(a==='all'){const T=FX().t;if(b.checked&&T[FXS.K.k]&&FXS.K.g){fxPush();T[FXS.K.g]={...(T[FXS.K.g]||{}),...T[FXS.K.k]};delete T[FXS.K.k];save();const k=FXS.K.k;render();const n=fxFind(k);if(n){fxSelect(n);fxb.querySelector('[data-fx="all"]').checked=true}}return}
   if(a==='up')return fxSet(st=>st.fs=+Math.min(5,(st.fs||1)*1.12).toFixed(3));
   if(a==='dn')return fxSet(st=>st.fs=+Math.max(.25,(st.fs||1)/1.12).toFixed(3));
   if(a==='b')return fxSet(st=>{const cur=st.b!=null?st.b:+getComputedStyle(FXS.n).fontWeight>=600;st.b=!cur});
   if(a==='hide'){fxSet(st=>st.hide=st.hide?null:1);b.textContent=fxGet(FXS.K).hide?'הצגה':'הסתרה';return}
-  if(a==='reset'){fxPush();const T=FX().t;delete T[FXS.K.k];if(fxb.querySelector('[data-fx="all"]').checked&&FXS.K.g)delete T[FXS.K.g];save();const k=FXS.K.k;render();const n=fxFind(k);if(n)fxSelect(n);else fxUnselect();return}
+  if(a==='reset'){fxPush();const T=FX().t,sc=FXS.scope;delete T[FXS.K.k];if(FXS.K.g)delete T[FXS.K.g];if(sc==='all')delete T[FXS.K.ct];if(sc==='page')delete T[FXS.K.pt];save();const k=FXS.K.k;render();const n=fxFind(k);if(n)fxSelect(n);else fxUnselect();return}
   if(a==='edit'){const n=FXS.n;n.contentEditable='true';n.spellcheck=false;n.focus();const r=document.createRange();r.selectNodeContents(n);const s=getSelection();s.removeAllRanges();s.addRange(r);
-    const done=()=>{n.removeEventListener('blur',done);n.removeAttribute('contenteditable');const v=n.textContent.trim();if(FXS&&FXS.n===n)fxSet(st=>st.t=v===(n.dataset.fxo||'').trim()?null:v)};
+    const done=()=>{n.removeEventListener('blur',done);n.removeAttribute('contenteditable');const v=n.textContent.trim();if(FXS&&FXS.n===n){const sc=FXS.scope;FXS.scope='one';fxSet(st=>st.t=v===(n.dataset.fxo||'').trim()?null:v);if(FXS)FXS.scope=sc;fxScopeUI()}};
     n.addEventListener('blur',done);n.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter'){ev.preventDefault();n.blur()}if(ev.key==='Escape'){n.textContent=fxGet(FXS.K).t??n.dataset.fxo;n.blur()}})}
 });
 fxb.querySelector('[data-fx="co"]').addEventListener('change',e=>fxSet(st=>st.co=e.target.value));
