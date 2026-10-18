@@ -468,11 +468,12 @@ let LRN=null,LRNP=false;
 function lrnLib(){if(LRN)return LRN;if(window.hebcal__learning){LRN=window.hebcal__learning;return LRN}
   if(!LRNP){LRNP=true;const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@hebcal/learning@5.1.2/dist/bundle.min.js';s.onload=()=>{LRN=window.hebcal__learning||null;evCache.clear();render()};document.head.appendChild(s)}return null}
 const hk=k=>{if(!HE())return k;try{return strip(H.Locale.gettext(k,'he'))}catch(e){return k}};
+const LRN_C={};/* מטמון של הספרייה (לא בתוך LRN_T, שהוא רשימת הבחירה) */
 const LRN_T={
   daf:[['דף יומי','Daf Yomi'],d=>{const day=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2020,0,5))/864e5);let n=((day%2711)+2711)%2711;
     for(let i=0;i<DAF_T.length;i++){const [t,pg]=DAF_T[i];if(n<pg-1){const daf=n+2;let name=HE()?t:DAF_EN[i];if(t==='מעילה'){name=daf<=22?(HE()?'מעילה':'Meilah'):daf<=25?(HE()?'קינים':'Kinnim'):daf<=33?(HE()?'תמיד':'Tamid'):(HE()?'מדות':'Middot')}return name+' '+numH(daf)}n-=pg-1}return ''}],
-  mishna:[['משנה יומית','Mishna Yomit'],d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_T._mi=LRN_T._mi||new L.MishnaYomiIndex();return LRN_T._mi.lookup(new HDate(d)).map(x=>hk(x.k)+' '+numX(x.v)).join(', ')}catch(e){return ''}}],
-  nach:[['נ״ך יומי','Nach Yomi'],d=>{const L=lrnLib();if(!L||!L.NachYomiIndex)return '';try{LRN_T._ni=LRN_T._ni||new L.NachYomiIndex();const r=LRN_T._ni.lookup(new HDate(d));let k=String(r.k||r.name);
+  mishna:[['משנה יומית','Mishna Yomit'],d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_C.mi=LRN_C.mi||new L.MishnaYomiIndex();return LRN_C.mi.lookup(new HDate(d)).map(x=>hk(x.k)+' '+numX(x.v)).join(', ')}catch(e){return ''}}],
+  nach:[['נ״ך יומי','Nach Yomi'],d=>{const L=lrnLib();if(!L||!L.NachYomiIndex)return '';try{LRN_C.ni=LRN_C.ni||new L.NachYomiIndex();const r=LRN_C.ni.lookup(new HDate(d));let k=String(r.k||r.name);
     if(HE()){const h=NACH_HE2[k.replace(/^1 /,'I ').replace(/^2 /,'II ')];k=h||hk(k)}return k+' '+numH(+r.v||+r.chap||0)}catch(e){return ''}}],
   yerushalmi:[['ירושלמי יומי','Yerushalmi Yomi'],d=>{const L=lrnLib();if(!L||!L.yerushalmiYomi||!L.vilna)return '';try{const r=L.yerushalmiYomi(new HDate(d),L.vilna);return r?hk(r.name)+' '+numX(r.blatt):''}catch(e){return ''}}],
   rambam:[['רמב״ם (פרק ליום)','Rambam (1 chapter)'],d=>{const L=lrnLib();if(!L||!L.dailyRambam1)return '';try{const r=L.dailyRambam1(new HDate(d));return r?hk(r.name)+' '+numX(r.perek):''}catch(e){return ''}}],
@@ -487,7 +488,7 @@ function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);return v?{k,n:
 const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> <b>'+esc(x.v)+'</b></div>').join('');
 function lrnPicker(){const sel=new Set(lrnSel());
   dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
-    Object.entries(LRN_T).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
+    Object.entries(LRN_T).filter(([,v])=>Array.isArray(v)).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
     '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="lrOk">'+t('save')+'</button></div>');
   $('#lrOk').onclick=()=>{st.lrnSel=[...document.querySelectorAll('.dzp input:checked')].map(i=>i.value);saveSt();closeDlg();render()}}
 
