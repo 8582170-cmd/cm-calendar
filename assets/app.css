@@ -1278,4 +1278,4 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .t-round .cell.shabbat .d-top,.t-round .cell.chag .d-top{background:color-mix(in srgb,var(--acc) 24%,#fff)}
 .di-dir,.di-wrap,.modal .row{flex:none}
 .di-dir label{padding:7px 4px}
-.di-list{flex:0 1 auto;min-height:40px}
+.di-list{flex:0 1 auto;min-height:84px}
