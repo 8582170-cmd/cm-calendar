@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ '✕ בלי תמונות רקע': '✕ No background images',
+ '↺ להחזיר את תמונות הרקע': '↺ Bring back the background images',
+ 'התמונות ביום הזה': 'Photos on this day',
+ 'זו לצד זו': 'Side by side',
+ 'זו מעל זו': 'Stacked',
+ 'רשת': 'Grid',
+ '＋ הוספת תמונה ליום': '＋ Add a photo to the day',
+ 'חלוקה שווה': 'Equal split',
+ 'שמירה': 'Save',
+ 'גוררים תמונה כדי להזיז אותה בתוך השטח שלה. מושכים את הפס שבין התמונות כדי לשנות כמה מקום כל אחת תופסת. ＋ ו־− מגדילים ומקטינים.': 'Drag a photo to move it inside its area. Pull the bar between photos to change how much space each one takes. ＋ and − zoom in and out.',
  'איור לכל חודש': 'Art for each month',
  'תמונה משלכם': 'Your own photo',
  'חוזק הרקע': 'Background strength',

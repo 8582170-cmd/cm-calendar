@@ -1227,3 +1227,31 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .bgp-plus{margin:auto;font-size:22px;color:var(--acc)}
 .bg-op{margin-top:6px}.bg-op input{width:100%}
 .bg-own{margin-top:4px;font-size:13px;padding:4px 10px}
+
+/* ---------- כמה תמונות ביום ---------- */
+.cell>.c-imgs{position:absolute;inset:0;display:flex;gap:1px;z-index:0;background:#fff}
+.c-imgs.dir-row{flex-direction:row}.c-imgs.dir-col{flex-direction:column}
+.c-imgs.dir-grid{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr}
+.c-im{position:relative;overflow:hidden;min-width:0;min-height:0;flex:0 0 auto}
+.c-imgs.dir-grid .c-im{flex:none}
+.c-im img{width:100%;height:100%;object-fit:cover;display:block}
+.cell.multi-img .d-top,.cell.multi-img .e,.cell.multi-img .d-z{position:relative;z-index:1}
+.cell.has-img>.c-imgbtn,.cell>.c-imgbtn{position:absolute;bottom:2px;left:2px;z-index:3;border:0;border-radius:6px;background:rgb(255 255 255 / .9);font-size:13px;line-height:1;padding:3px 4px;cursor:pointer;opacity:0;transition:opacity .15s;box-shadow:0 1px 3px rgb(0 0 0 / .25)}
+.cell:hover>.c-imgbtn,.cell:focus-within>.c-imgbtn{opacity:1}
+@media (hover:none){.cell>.c-imgbtn{opacity:.9}}
+.di-wrap{display:flex;justify-content:center}
+.di-prev{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;touch-action:none;display:flex}
+.di-prev .c-imgs{position:absolute;inset:0;display:flex;gap:2px}
+.di-prev .c-im{cursor:grab}
+.di-prev .c-im:active{cursor:grabbing}
+.di-split{position:absolute;z-index:2;background:transparent}
+.di-split::after{content:"";position:absolute;background:var(--accent);border-radius:3px;box-shadow:0 0 0 2px #fff}
+.di-split.di-row{top:0;bottom:0;width:12px;cursor:ew-resize}.di-split.di-row::after{top:30%;bottom:30%;left:4px;width:4px}
+.di-split.di-col{left:0;right:0;height:12px;cursor:ns-resize}.di-split.di-col::after{left:30%;right:30%;top:4px;height:4px}
+.di-list{display:flex;flex-direction:column;gap:4px;max-height:28vh;overflow:auto}
+.di-it{display:flex;align-items:center;gap:6px;font-size:13.5px}
+.di-it img{width:46px;height:34px;object-fit:cover;border-radius:4px}
+.di-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.di-pct{color:var(--mute);font-size:12px;min-width:34px;text-align:center}
+.di-del{color:#b3261e}
+.bg-off{margin-inline-start:auto;padding:4px 12px;font-size:13.5px}
