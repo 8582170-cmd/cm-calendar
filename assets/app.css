@@ -1260,7 +1260,7 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .t-round{--f-head:"Rubik",sans-serif;--p-line:transparent}
 .t-round .grid{border:0;gap:calc(var(--u)*1.1)}
 .t-round .wd{border:0;border-radius:calc(var(--u)*1.6);background:var(--acc);color:#fff;padding:calc(var(--u)*.9) 0}
-.t-round .cell{border:0;border-radius:calc(var(--u)*2.4);background:rgb(255 255 255 / .8);box-shadow:0 0 0 calc(var(--u)*.22) color-mix(in srgb,var(--acc) 22%,transparent),0 calc(var(--u)*.4) calc(var(--u)*1.2) rgb(0 0 0 / .06)}
+.t-round .cell{border:0;border-radius:calc(var(--u)*2.4);background:rgb(255 255 255 / .8);box-shadow:0 0 0 calc(var(--u)*.4) color-mix(in srgb,var(--acc) 48%,transparent),0 calc(var(--u)*.5) calc(var(--u)*1.4) rgb(0 0 0 / .1)}
 .t-round .cell.shabbat{background:color-mix(in srgb,var(--acc) 16%,rgb(255 255 255 / .9))}
 .t-round .cell.pad{background:transparent;box-shadow:none}
 .t-round .cell[data-date]:hover{box-shadow:0 0 0 calc(var(--u)*.5) var(--acc)}
