@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'מיקום וזמנים': 'Location and times',
+ 'בלי מיקום (בלי זמנים)': 'No location (no times)',
+ 'שקיעה בכל יום': 'Sunset every day',
+ 'הדלקת נרות ויציאת שבת וחג': 'Candle lighting and Shabbat/Yom Tov end',
+ 'זמנים לעוד ערים': 'Times for more cities',
+ '＋ הוספת עיר…': '＋ Add a city…',
+ '📍 לפי מיקוד / כתובת': '📍 By zip code / address',
+ 'אפשר עד 4 ערים נוספות.': 'Up to 4 more cities.',
+ 'בלי מיקום הלוח בלי זמנים. בוחרים עיר, ונוספים השקיעה וזמני כניסת השבת ויציאתה.': 'Without a location the calendar has no times. Choose a city to add sunset and Shabbat times.',
+ 'למשפחה שגרה בכמה ערים: ליד כל זמן (למשל השקיעה, הדלקת נרות ויציאת שבת) יופיע גם הזמן בערים האלה.': 'For a family living in several cities: next to each time (e.g. sunset, candle lighting, Shabbat end) the time in these cities appears too.',
  '2 למעלה ו־2 למטה': '2 on top, 2 below',
  '2 למעלה ו־1 למטה': '2 on top, 1 below',
  '1 למעלה ו־2 למטה': '1 on top, 2 below',

@@ -1289,3 +1289,11 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .di-it{flex-wrap:wrap}
 .di-tg{font-size:12px;padding:2px 7px;border:1px solid var(--line);border-radius:7px;width:auto}
 .di-tg.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.xl{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.xl-r{display:flex;align-items:center;gap:6px}
+.xl-r input{width:110px;font:inherit;font-size:14px;padding:4px 7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)}
+.xl-r .hint{flex:1;min-width:0}
+.xl-add{display:flex;gap:6px;flex-wrap:wrap}.xl-add select{flex:1;min-width:140px;font:inherit;font-size:14px;padding:5px;border:1px solid var(--line);border-radius:7px}
+.zx{white-space:nowrap}
+.e.ml{white-space:pre-line;overflow:visible;text-overflow:clip}

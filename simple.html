@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610190010">
+<link rel="stylesheet" href="assets/app.css?v=202610190055">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body class="simple-app">
@@ -229,6 +229,7 @@
         <label class="fld">חיפוש עיר (כ־150 ערים בארץ ובעולם)<input id="cityFilter" type="search" placeholder="הקלידו שם עיר או מדינה"></label>
         <label class="fld">עיר<select id="city"></select></label>
         <button class="btn small geo-pick" type="button" id="geoPick">📍 המיקום שלי, או לפי מיקוד / כתובת</button>
+        <div data-xlocs></div>
         <details class="sub-box" id="customLoc">
           <summary>מיקום מדויק מגוגל מפות או לפי קווי אורך ורוחב</summary>
           <div class="inner">
@@ -428,6 +429,20 @@
           <label class="fld">גודל הבאנר: <span id="bannerSizeVal"></span><input type="range" id="bannerSize" min="6" max="40" step="1"></label>
           <label class="chk"><input type="checkbox" id="bannerPer"> באנר שונה לכל עמוד (אחרת אותו באנר בכל העמודים)</label>
         </div>
+      </div>
+    </details>
+
+    <details class="sec simple-sec" open data-step="1" id="simpleLoc">
+      <summary>מיקום וזמנים</summary>
+      <div class="sec-body">
+        <p class="hint" id="sLocHint" style="margin-top:0"></p>
+        <label class="fld">עיר<select id="sCity"></select></label>
+        <button class="btn small" type="button" data-geo>📍 המיקום שלי, או לפי מיקוד / כתובת</button>
+        <div id="sTimes" hidden>
+          <label class="chk"><input type="checkbox" id="sZsun"> שקיעה בכל יום</label>
+          <label class="chk"><input type="checkbox" id="sZshab"> הדלקת נרות ויציאת שבת וחג</label>
+        </div>
+        <div data-xlocs></div>
       </div>
     </details>
 
@@ -635,6 +650,6 @@
 <script src="assets/library/index.js?v=1" defer></script>
 <script src="assets/geo.js?v=1"></script>
 <script src="assets/hpick.js?v=1"></script>
-<script src="assets/app.js?v=202610190010"></script>
+<script src="assets/app.js?v=202610190055"></script>
 </body>
 </html>

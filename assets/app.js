@@ -222,7 +222,11 @@ if(framed)$('#frameNotice').hidden=false;else $('#printBtn').hidden=false;
 $('#printBtn').onclick=()=>doPrint();
 
 /* ---------- location ---------- */
+let XP=null;
+/* בוחרים מיקום: אם הלוח היה בלי זמנים, מוסיפים את השקיעה ואת זמני השבת */
+function locChosen(){const s=state.s;if(s.noTimes){s.noTimes=false;if(!Object.values(s.zmanim||{}).some(Boolean))s.zmanim={sunset:true}}}
 function place(){
+  if(XP)return XP;
   const s=state.s;
   if(s.city==='custom'&&s.custom)return s.custom;
   return CITIES.find(c=>c.id===s.city)||CITIES[0];
@@ -576,7 +580,9 @@ function eventsFor(start,end){
       tt=tt||ev.eventTime;
       const sk=desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'motzash':desc.startsWith('Fast begins')?'fastStart':desc.startsWith('Fast ends')?'fastEnd':'';
       const dd=zdir(sk,dir);
-      item={cls:'timed',text:lbl+' '+fmtTime(tt,dd,tz,sk),order:5,
+      if(s.noTimes||(s.noShabTimes&&(sk==='candle'||sk==='motzash')))continue;
+      const xt=xTimes(gd,sk,dd,!!(f&flags.LIGHT_CANDLES_TZEIS));
+      item={cls:'timed',text:lbl+' '+fmtTime(tt,dd,tz,sk)+xt,order:5,
         tkind:desc.startsWith('Candle')?'candle':desc.startsWith('Havdalah')?'havdalah':'',time:fmtTime(tt,dd,tz,sk)};
     }else if(f&flags.PARSHA_HASHAVUA){item={cls:'parasha',text:hebText(ev),order:1}}
     else{
@@ -616,7 +622,7 @@ function eventsFor(start,end){
   });
   /* נרות חנוכה: 8 לילות, מערב כ״ה כסלו */
   const ch=s.chanukah||'tzeit';
-  if(ch!=='none')eachDay((d,hd)=>{
+  if(ch!=='none'&&!s.noTimes)eachDay((d,hd)=>{
     const k0=new HDate(24,9,hd.getFullYear()).abs(),n=hd.abs()-k0+1;
     if(n<1||n>8)return;
     const nm='נר '+gem(n)+' דחנוכה',dow=d.getDay(),Z=zctx(d);
@@ -684,6 +690,21 @@ function zmanimFor(date,all){
   const B=s.zbold||{};for(const o of out)if(B[o.key])o.b=true;
   return out;
 }
+/* זמנים לעוד ערים (למשפחה שגרה בכמה ערים): state.s.xlocs=[{id}|{custom:{name,lat,lng,el,tz,il,candle}}, short] */
+const xlocsOn=()=>state.s.noTimes?[]:(state.s.xlocs||[]).filter(x=>xPlace(x));
+function xPlace(x){return x&&(x.custom||CITIES.find(c=>c.id===x.id))||null}
+const XABBR={'ירושלים':'י־ם','בני ברק':'ב״ב','תל אביב':'ת״א','פתח תקווה':'פ״ת','בית שמש':'ב״ש','ראשון לציון':'ראשל״צ','באר שבע':'ב״ש','קריית גת':'ק״ג','רמת גן':'ר״ג','מודיעין עילית':'מודיעין עי׳'};
+function xName(x){const p=xPlace(x),n=(p&&p.name)||'';return (x.short||XABBR[n]||n).trim()}
+function withPlace(p,fn){const o=XP;XP=p;try{return fn()}finally{XP=o}}
+function zWithX(d,zs){const X=xlocsOn();if(!X.length)return zs.map(zTxt);
+  const per=X.map(x=>withPlace(xPlace(x),()=>zmanimFor(d)));
+  return zs.map(z=>{let t=zTxt(z);per.forEach((L,i)=>{const m=L.find(o=>o.key===z.key&&o.k===z.k);if(m&&m.v)t+=(i?' · ':'<br>')+'<span class="zx">'+esc(xName(X[i]))+' '+esc(m.v)+'</span>'});return t})}
+function xTimes(gd,sk,dd,tzeis){const X=xlocsOn();if(!X.length||!(sk==='candle'||sk==='motzash'||sk==='fastStart'||sk==='fastEnd'))return '';
+  const d=new Date(gd.getFullYear(),gd.getMonth(),gd.getDate(),12);
+  return X.map(x=>{const p=xPlace(x);return withPlace(p,()=>{const Z=zctx(d);let tt=null;
+    if(sk==='candle'){const cm=x.custom?(+x.custom.candle||(p.il?30:18)):(+p.candle||30);tt=tzeis?Z.motzash:(Z.sunset?new Date(Z.sunset.getTime()-cm*60000):null)}
+    else if(sk==='motzash')tt=Z.motzash;else if(sk==='fastEnd')tt=Z.fastEnd;else tt=Z.fastStart;
+    return tt?xName(x)+' '+fmtTime(tt,dd,p.tz,sk):''})}).filter(Boolean).join(' · ').replace(/^(.)/,'\n$1')}
 const zTxt=z=>z.b?'<b class="zb">'+esc(z.k+' '+z.v)+'</b>':esc(z.k+' '+z.v);
 function monthMatches(em,hm,leap){if(em===13)return leap?hm===13:hm===12;return em===hm}
 function eventHits(e,date,hd){
@@ -906,7 +927,7 @@ function placeOfLegacy(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.y
 const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','יומי דהילולא (יארצייטן) ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['img','תמונה'],['ad','מודעה או הקדשה']];
 function zMode(){return state.s.zmanimMode||'daily'}
 function zpl(k){const s=state.s,Z=s.zplace&&s.zplace[k];if(Z)return Z;const m=zMode();return m==='shabbat'?{day:1,sh:1}:m==='col'?{col:1}:m==='daily'||m==='custom'?{day:1}:{}}
-function zOn(){const m=zMode();return m!=='none'&&m!=='table'&&Object.values(state.s.zmanim).some(Boolean)}
+function zOn(){const m=zMode();return !state.s.noTimes&&m!=='none'&&m!=='table'&&Object.values(state.s.zmanim).some(Boolean)}
 function zAnyCol(){if(!zOn())return false;const s=state.s;return ZMANIM.some(z=>s.zmanim[z[0]]&&zpl(z[0]).col)}
 function colsCfg(){
   const s=state.s,P=s.place||{};let cols;
@@ -1162,7 +1183,7 @@ const creditHideOk=()=>{const P=PLAN();return P.id==='full'&&!P.watermark&&!SAMP
 function creditOn(){return !(creditHideOk()&&state.s.credit===false)}
 function creditHost(){const h=window.location.host;return /^(localhost|127\.|$)/.test(h)||/vercel\.app$/.test(h)?'myluach.org':h.replace(/^www\./,'')}
 function addFootLine(p){
-  const s=state.s,z=s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
+  const s=state.s,z=!s.noTimes&&s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
   if(!z&&!creditOn())return;
   const f=el('div','pg-foot',z?footText():'<span></span>');
   if(creditOn())f.insertAdjacentHTML('beforeend',EN?(LITE?'<span class="credit credit-lite">Created free with MyLuach.org · personal Jewish calendars with photos and zmanim</span>':'<span class="credit">Created with MyLuach.org</span>'):LITE?'<span class="credit credit-lite">הופק בחינם ע״י MyLuach.org · עיצוב לוח שנה אישי עם תמונות וזמנים</span>':'<span class="credit">הופק ע״י MyLuach.org</span>');
@@ -1458,7 +1479,7 @@ function addMonthGrid(p,mo,evMap){
     const hDay=gem(hd.getDate());
     c.setAttribute('aria-label',hDay+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+', '+d.getDate()+(EN?' ':' ב')+GREG_MONTHS[d.getMonth()]+'. הוספת אירוע');
     c.appendChild(el('div','d-top'+(dStyle()==='both'?' both':''),dateTop(d,hd)));
-    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls);e.textContent=it.text;c.appendChild(e)}
+    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;c.appendChild(e)}
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
     if(imgEvs.length>1){c.prepend(dayImgsEl(iso(d),imgEvs));c.classList.add('has-img','multi-img')}
@@ -1472,7 +1493,7 @@ function addMonthGrid(p,mo,evMap){
         c.classList.add('top-'+pick(withImg.imgFit==='contain'?1:L.top),'bot-'+pick(withImg.imgFit==='contain'?1:L.bot));
       }
     }
-    {const zs=zDay(d);if(zs.length)c.appendChild(el('div','d-z',zs.map(zTxt).join('<br>')))}
+    {const zs=zDay(d);if(zs.length)c.appendChild(el('div','d-z',zWithX(d,zs).join('<br>')))}
     grid.appendChild(c);
   }
   for(let i=total;i<rows*7;i++)grid.appendChild(el('div','cell pad'));
@@ -1717,7 +1738,7 @@ function weekPage(days,evMap){
       const learnCol=colT.includes('learn');
       const inMain=I.items.filter(it=>!(learnCol&&(it.learn||it.cls==='moon'))).concat(colT.includes('personal')?[]:I.pers,colT.includes('yz')?[]:I.ged);
       if(inMain.length){const ev=el('div','wd-ev');for(const it of inMain){const e=el('span','e '+it.cls);e.textContent=it.text;ev.appendChild(e)}main.appendChild(ev)}
-      {const zs=zDay(d,!colT.includes('zmanim'));if(zs.length)main.appendChild(el('div','wd-z',zs.map(zTxt).join(' · ')))}
+      {const zs=zDay(d,!colT.includes('zmanim'));if(zs.length)main.appendChild(el('div','wd-z',zWithX(d,zs).join(' · ')))}
       if(I.img){const box=el('div','wd-imgbox wd-imgbox-s');const im=el('img');im.src=I.img.img;im.alt='';im.style.objectFit=I.img.imgFit==='contain'?'contain':'cover';im.style.objectPosition='50% '+(I.img.imgPos??50)+'%';box.appendChild(im);main.appendChild(box)}
       main.appendChild(el('div','lines'));
       const colEls=colT.map(t=>{const c=el('div','wd-c wd-c-'+t);
@@ -1737,7 +1758,7 @@ function weekPage(days,evMap){
       [[I.items,'חגים וזמנים'],[I.pers,'אירועים אישיים'],[I.ged,'יומי דהילולא (יארצייטן)']].forEach(([L,lab])=>{const c=el('div','wd-col');c.appendChild(el('div','wd-col-h',lab));for(const it of L){const e=el('div','e '+it.cls);e.textContent=it.text;c.appendChild(e)}cols.appendChild(c)});
       main.appendChild(cols);
     }else if(I.all.length){const ev=el('div','wd-ev');for(const it of I.all){const e=el('span','e '+it.cls);e.textContent=it.text;ev.appendChild(e)}main.appendChild(ev)}
-    {const zs=zDay(d,true);if(zs.length)main.appendChild(el('div','wd-z',zs.map(zTxt).join(' · ')))}
+    {const zs=zDay(d,true);if(zs.length)main.appendChild(el('div','wd-z',zWithX(d,zs).join(' · ')))}
     main.appendChild(el('div','lines'));
     b.appendChild(main);
     if(I.img){const box=el('div','wd-imgbox');const im=el('img');im.src=I.img.img;im.alt='';im.style.objectFit=I.img.imgFit==='contain'?'contain':'cover';im.style.objectPosition='50% '+(I.img.imgPos??50)+'%';box.appendChild(im);b.appendChild(box)}
@@ -1886,6 +1907,7 @@ function render(){
   /* בלי דף שער: כפתור גדול להוספה, במקום שבו השער היה מופיע */
   if(!s.cover&&!SAMPLE&&!LITE&&!SNAPVIEW&&view!=='countdown'&&wraps.length){const ca=el('button','cover-add no-print','<b>＋ הוספת דף שער</b><span>עמוד פתיחה עם תמונה גדולה וכותרת, למשל "לוח השנה של משפחת כהן"</span>');ca.type='button';ca.dataset.coverOn='1';(stage.querySelector('.ins')||wraps[0]).insertAdjacentElement('beforebegin',ca)}
   bgPickSync();
+  try{locSync()}catch(err){}
 
   const viewName={month:'חודשי',week:'שבועי',day:'יומי',table:'טבלה שבועית',year:'שנתי',countdown:'ספירה לאחור'}[view];
   $('#stageTitle').textContent='לוח '+viewName+' · '+(s.calType==='heb'&&(+s.hebStart||7)===7?'שנת '+hebYearStr(+s.hebYear):months[0].title+' '+months[0].year+' – '+months.at(-1).title+' '+months.at(-1).year);
@@ -2855,7 +2877,7 @@ document.addEventListener('change',e=>{
     case 'cdCity':{const c=CITIES.find(x=>x.id===t.value);if(!c)return;state.s.candleMins=c.candle;state.s.il=c.il;cdFocus('page');return set('city',c.id)}
     case 'cdQEvery':cdFocus('quote');return set(t.id,Math.max(1,Math.min(60,+t.value||10)));
     case 'cover':case 'showCaption':case 'dedication':case 'il':case 'bannerPer':return set(t.id,t.checked);
-    case 'city':{if(!t.value)return;if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);state.s.candleMins=c.candle;state.s.il=c.il}return set('city',t.value)}
+    case 'city':{if(!t.value)return;locChosen();if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);state.s.candleMins=c.candle;state.s.il=c.il}return set('city',t.value)}
     case 'candleMins':return set('candleMins',+t.value);
     case 'accentCustom':return set('accent',t.value);
     case 'size':{const z=SIZES[t.value];if(z&&z.o)state.s.orient=z.o;return set('size',t.value)}
@@ -2894,7 +2916,7 @@ $('#adList').addEventListener('click',e=>{const id=e.target.dataset&&e.target.da
 /* המיקום שלי / מיקוד / כתובת */
 if($('#geoPick'))$('#geoPick').onclick=()=>{if(!window.MyLuachGeo)return;
   MyLuachGeo.open({en:EN,near:(lat,lng)=>{const n=nearest(lat,lng);return {tz:n.city.tz,el:n.city.el,km:n.km}}}).then(p=>{if(!p)return;
-    const n=nearest(p.lat,p.lng);state.s.custom={name:p.name,lat:p.lat,lng:p.lng,el:p.el,tz:p.tz,il:p.il};state.s.il=p.il;
+    const n=nearest(p.lat,p.lng);locChosen();state.s.custom={name:p.name,lat:p.lat,lng:p.lng,el:p.el,tz:p.tz,il:p.il};state.s.il=p.il;
     state.s.candleMins=n.km<10?n.city.candle:(p.il?30:18);$('#cityFilter').value='';set('city','custom')})};
 /* custom location */
 function fillFromCoords(lat,lng,name){
@@ -4216,6 +4238,32 @@ async function shareModal(){
 }
 $('#shareBtn').onclick=shareModal;
 
+/* ---------- מיקום וזמנים בבונה הפשוט, וזמנים לעוד ערים ---------- */
+function cityOpts(cur,withNone){let h=withNone?'<option value="">בלי מיקום (בלי זמנים)</option>':'';
+  if(state.s.custom)h+='<optgroup label="מיקום שלי">'+opt('custom',state.s.custom.name||'מיקום מותאם')+'</optgroup>';
+  for(const g of Object.keys(CITY_ROWS)){const rows=CITIES.filter(c=>c.group===g);if(rows.length)h+='<optgroup label="'+g+'">'+rows.map(c=>opt(c.id,c.name)).join('')+'</optgroup>'}return h}
+function locSync(){const s=state.s,sc=$('#sCity');
+  if(sc){if(!sc.options.length||sc.dataset.cu!==String(!!s.custom)){sc.innerHTML=cityOpts(s.city,true);sc.dataset.cu=String(!!s.custom)}sc.value=s.noTimes?'':s.city;
+    $('#sLocHint').textContent=s.noTimes?'בלי מיקום הלוח בלי זמנים. בוחרים עיר, ונוספים השקיעה וזמני כניסת השבת ויציאתה.':'הזמנים לפי '+place().name+'.';
+    $('#sTimes').hidden=!!s.noTimes;const zs=$('#sZsun');if(zs)zs.checked=!!(s.zmanim||{}).sunset;const zb=$('#sZshab');if(zb)zb.checked=!s.noShabTimes}
+  document.querySelectorAll('[data-xlocs]').forEach(box=>{
+    if(s.noTimes){box.innerHTML='';return}
+    const X=s.xlocs||[];
+    box.innerHTML='<div class="xl"><b>זמנים לעוד ערים</b><p class="hint">למשפחה שגרה בכמה ערים: ליד כל זמן (למשל השקיעה, הדלקת נרות ויציאת שבת) יופיע גם הזמן בערים האלה.</p>'+
+      X.map((x,i)=>'<div class="xl-r"><input type="text" data-xn="'+i+'" value="'+esc(xName(x))+'" aria-label="השם שיופיע בלוח" maxlength="16"><span class="hint">'+esc((xPlace(x)||{}).name||'')+'</span><button type="button" class="x" data-xdel="'+i+'" aria-label="הסרה">✕</button></div>').join('')+
+      (X.length<4?'<div class="xl-add"><select data-xadd><option value="">＋ הוספת עיר…</option>'+cityOpts('',false).replace('<optgroup label="מיקום שלי">'+opt('custom',(s.custom||{}).name||'מיקום מותאם')+'</optgroup>','')+'</select><button type="button" class="btn small" data-xgeo>📍 לפי מיקוד / כתובת</button></div>':'<p class="hint">אפשר עד 4 ערים נוספות.</p>')+'</div>'})}
+document.addEventListener('change',e=>{const t=e.target,s=state.s;
+  if(t.id==='sCity'){if(!t.value){s.noTimes=true;save();syncUI();render();return}locChosen();if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);if(c){s.candleMins=c.candle;s.il=c.il}}set('city',t.value);return}
+  if(t.id==='sZsun'){s.zmanim={...(s.zmanim||{}),sunset:t.checked};save();render();return}
+  if(t.id==='sZshab'){s.noShabTimes=!t.checked;save();render();return}
+  if(t.matches&&t.matches('[data-xadd]')&&t.value){s.xlocs=(s.xlocs||[]).concat({id:t.value});save();render();return}
+  if(t.matches&&t.matches('[data-xn]')){const x=(s.xlocs||[])[+t.dataset.xn];if(x){x.short=t.value.trim();save();render()}}});
+document.addEventListener('click',e=>{const s=state.s;
+  const d=e.target.closest('[data-xdel]');if(d){s.xlocs.splice(+d.dataset.xdel,1);save();render();return}
+  if(e.target.closest('[data-xgeo]')&&window.MyLuachGeo){MyLuachGeo.open({en:EN,near:(lat,lng)=>{const n=nearest(lat,lng);return {tz:n.city.tz,el:n.city.el,km:n.km}}}).then(p=>{if(!p)return;const n=nearest(p.lat,p.lng);
+    s.xlocs=(s.xlocs||[]).concat({custom:{name:p.name,lat:p.lat,lng:p.lng,el:p.el,tz:p.tz,il:p.il,candle:n.km<10?n.city.candle:(p.il?30:18)}});save();render()});return}
+  if(e.target.closest('[data-geo]')){const g=$('#geoPick');if(g)g.click()}});
+
 /* boot */
 (async function(){
   fillStatic();bindReset();
@@ -4246,6 +4294,7 @@ $('#shareBtn').onclick=shareModal;
     if(fresh||!s.preset){const P=SIMPLE_PRESETS[0];Object.assign(s,{preset:P[0],theme:P[2],accent:P[3],headFont:P[4],bodyFont:P[5],layout:P[6]})}
     if(fresh||!s.pageBg||s.pageBg==='soft')s.pageBg='month';
     s.fast3=1;save()}
+  if(SIMPLE&&!state.s.fast4){const s=state.s;if(!saved||s.city==='jerusalem')s.noTimes=true;s.fast4=1;save()}
   loadFont(state.s.headFont);loadFont(state.s.bodyFont);Object.values(state.textStyles||{}).forEach(t=>t.ff&&loadFont(t.ff));
   /* הגעה מהלוח המקוון: #countdown&d=...&t=...&st=...&l=... */
   {const h=window.location.hash||'';if(h.startsWith('#countdown&')){const q=new URLSearchParams(h.slice(11)),s=state.s;s.view='countdown';s.cover=false;s.zmanimMode='none';
