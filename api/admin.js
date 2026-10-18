@@ -92,6 +92,9 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
       return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length });
     }
+    /* מאגר דברי הימים: שמירה אחרי ייבוא אקסל */
+    if (req.method === 'POST' && b.action === 'yzsave') { try { const out = await require('./_yzadmin').save(b); return json(res, out.error ? (out.error === 'notoken' ? 200 : 400) : 200, out); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); } }
+    if (req.method === 'POST' && b.action === 'yzready') return json(res, 200, { ok: !!env('GITHUB_TOKEN') });
     /* גיבוי לגוגל שיטס עכשיו */
     if (req.method === 'POST' && b.action === 'backup') { const B = require('./_backup'); if (!B.ready()) return json(res, 200, { notReady: true }); try { return json(res, 200, await B.run()); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 200) }); } }
     /* מד שימוש באחסון ובמסד הנתונים */

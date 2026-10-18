@@ -105,7 +105,7 @@ function render(){
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
   shabbatSection()+
   '<section><h2>מנועי חיפוש</h2><p class="sub">שולח לבינג (ול-Yandex) את כל דפי האתר מתוך מפת האתר, כדי שיסרקו אותם מהר. אפשר ללחוץ אחרי כל שינוי גדול באתר.</p><div class="row"><button class="btn" type="button" id="inNow">שליחת כל הדפים לבינג (IndexNow)</button><span id="inMsg"></span></div></section>'+
-  cmsSection()+pgSection()+libSection()+tickerSection()+voiceSection()+dbSection()+
+  yzSection()+cmsSection()+pgSection()+libSection()+tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
     (Object.keys(D.mail.today).length?Object.entries(D.mail.today).map(([k,v])=>'<span><b>'+esc(k)+':</b> '+v+'</span>').join(''):'<span>היום עוד לא נשלחו מיילים</span>')+
@@ -177,6 +177,46 @@ function usageBind(){if(!$('#usGo'))return;
       '<table class="tbl"><thead><tr><th>דלי</th><th>קבצים</th><th>נפח</th><th>הקובץ הגדול ביותר</th></tr></thead><tbody>'+Object.entries(B).map(([k,b])=>'<tr><td>'+esc(BN[k]||k)+'</td>'+(b.error?'<td colspan="3">'+esc(b.error)+'</td>':'<td>'+b.files+(b.capped?'+':'')+'</td><td>'+fmtB(b.bytes)+'</td><td'+(b.biggest>40*1024*1024?' class="st-failed"':'')+'>'+fmtB(b.biggest)+'</td>')+'</tr>').join('')+'</tbody></table>'+
       (u.db!=null?'<p style="margin-top:14px"><b>מסד הנתונים: '+fmtB(u.db)+' מתוך <span dir="ltr">500 MB</span></b></p>'+bar(u.db,500*1024*1024):'<p class="sub" style="margin-top:14px">גודל מסד הנתונים: כדי לראות אותו צריך להריץ פעם אחת ב-Supabase את הקוד שבקובץ tools/supabase_usage.sql.</p>')+
       '<p style="margin-top:8px"><b>שורות בטבלאות:</b> '+Object.entries(u.tables||{}).filter(([,v])=>v!=null).map(([k,v])=>esc(TN[k]||k)+': '+v.toLocaleString('he-IL')).join(' · ')+'</p>'}).catch(e=>{o.textContent=e.message})}}
+/* ---------- מאגר דברי הימים: אקסל ---------- */
+const YZM={7:'תשרי',8:'חשון',9:'כסלו',10:'טבת',11:'שבט',12:'אדר / אדר א׳',13:'אדר ב׳',1:'ניסן',2:'אייר',3:'סיון',4:'תמוז',5:'אב',6:'אלול'},YZO=[7,8,9,10,11,12,13,1,2,3,4,5,6];
+const YZN2M=Object.assign(Object.fromEntries(Object.entries(YZM).map(([k,v])=>[v,+k])),{'אדר':12,'אדר א':12,"אדר א'":12,'אדר ב':13,"אדר ב'":13,'חשוון':8,'מרחשון':8,'כסליו':9,'סיוון':3,'מנחם אב':5});
+const YZH=['מזהה','חודש','יום','שנה','תיאור','סוג','מקור','מופיע כברירת מחדל'];
+let YZP=null;
+function yzSection(){return '<section><h2>מאגר דברי הימים (אקסל)</h2><p class="sub">מורידים את כל המאגר לאקסל, עורכים, מוסיפים או מוחקים שורות, ומעלים בחזרה. לפני השמירה רואים סיכום של השינויים. אחרי השמירה האתר מתעדכן לבד תוך כ־2 דקות.</p>'+
+  '<div class="row"><button class="btn" type="button" id="yzX">הורדת המאגר לאקסל</button><button class="btn primary" type="button" id="yzI">ייבוא קובץ אקסל</button><input type="file" id="yzF" accept=".xlsx,.xls" hidden><span id="yzMsg"></span></div><div id="yzOut" style="margin-top:8px"></div>'+
+  '<p class="sub" style="margin-top:8px">כללים: לא משנים את עמודת "מזהה" (היא מקשרת לעריכות שמשתמשים שמרו). שורה חדשה: משאירים "מזהה" ריק. מחיקה: מוחקים את השורה. "סוג": אישיות = יום פטירה, אירוע = מאורע. "מופיע כברירת מחדל": כן = מסומן מראש בלוח חדש.</p></section>'}
+function yzLibs(){const need=[];if(!window.XLSX)need.push('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');if(!window.YZ)need.push('/assets/yz.js?t='+Date.now());
+  return Promise.all(need.map(src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('טעינה נכשלה: '+src));document.head.appendChild(s)})))}
+function yzExport(){const m=$('#yzMsg');m.textContent='מכינים…';yzLibs().then(()=>{const sel=new Set(window.YZ_DEFAULT_SEL||[]);
+  const rows=window.YZ.map((r,i)=>[i,r]).filter(x=>x[1][3]).sort((a,b)=>(YZO.indexOf(a[1][0])-YZO.indexOf(b[1][0]))||(a[1][1]-b[1][1])||(a[0]-b[0]))
+    .map(([i,r])=>[i,YZM[r[0]]||String(r[0]),r[1],r[2],r[3],r[4]?'אישיות (יום פטירה)':'אירוע',r[5]?'מאגר נוסף':'עתים לבינה',sel.has(i)?'כן':'']);
+  const ws=XLSX.utils.aoa_to_sheet([YZH].concat(rows));ws['!cols']=[8,13,6,10,90,20,13,12].map(w=>({wch:w}));ws['!autofilter']={ref:'A1:H'+(rows.length+1)};
+  const wb=XLSX.utils.book_new();wb.Workbook={Views:[{RTL:true}]};XLSX.utils.book_append_sheet(wb,ws,'דברי הימים');
+  XLSX.writeFile(wb,'דברי-הימים-'+new Date().toISOString().slice(0,10)+'.xlsx');m.textContent='✅ הקובץ ירד ('+rows.length+' רשומות)'}).catch(e=>{m.innerHTML='<span class="st-failed">'+esc(e.message)+'</span>'})}
+function yzImport(file){const m=$('#yzMsg'),o=$('#yzOut');m.textContent='קוראים את הקובץ…';o.innerHTML='';
+  yzLibs().then(()=>file.arrayBuffer()).then(buf=>{const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets['דברי הימים']||wb.Sheets[wb.SheetNames[0]];
+    const A=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});const hdr=(A[0]||[]).map(x=>String(x).trim()),ix={};YZH.forEach(k=>ix[k]=hdr.indexOf(k));
+    if(ix['תיאור']<0||ix['חודש']<0)throw new Error('לא נמצאו העמודות "חודש" ו"תיאור". השתמשו בקובץ שירד מכאן.');
+    const cur=window.YZ.map(r=>r.slice()),Y=cur.map(r=>r.slice()),seen=new Set(),sel=[],errs=[],ch=[],add=[];
+    A.slice(1).forEach((row,n)=>{const g=k=>ix[k]>=0?row[ix[k]]:'';const txt=String(g('תיאור')||'').trim();if(!txt)return;
+      const mn=String(g('חודש')||'').trim(),mm=YZN2M[mn]||YZN2M[mn.replace(/[׳']/g,"'")];if(!mm){errs.push('שורה '+(n+2)+': חודש לא מוכר "'+mn+'"');return}
+      const d=parseInt(g('יום'),10);if(!(d>=1&&d<=30)){errs.push('שורה '+(n+2)+': יום לא תקין');return}
+      const rec=[mm,d,String(g('שנה')||'').trim(),txt,String(g('סוג')||'').trim().startsWith('אישיות')?1:0].concat(String(g('מקור')||'').trim()==='מאגר נוסף'?[1]:[]);
+      const rid=String(g('מזהה')).trim();let i;
+      if(rid!==''&&/^\d+$/.test(rid)&&+rid<Y.length){i=+rid;if(JSON.stringify(Y[i].slice(0,5))!==JSON.stringify(rec.slice(0,5)))ch.push(i);Y[i]=rec}else{Y.push(rec);i=Y.length-1;add.push(i)}
+      seen.add(i);if(String(g('מופיע כברירת מחדל')||'').trim()==='כן')sel.push(i)});
+    const del=[];Y.forEach((r,i)=>{if(!seen.has(i)&&r[3]&&i<cur.length){Y[i]=[r[0],r[1],'','',0];del.push(i)}});
+    if(errs.length&&errs.length>20)throw new Error(errs.length+' שגיאות, למשל: '+errs.slice(0,3).join(' · '));
+    YZP={YZ:Y,SEL:sel};const ex=(L,lab)=>L.length?'<details><summary>'+lab+': '+L.length+'</summary><ul>'+L.slice(0,40).map(i=>'<li><b>'+i+'</b> · '+esc(YZM[Y[i][0]]||'')+' '+Y[i][1]+' · '+esc((Y[i][3]||cur[i]&&cur[i][3]||'').slice(0,140))+'</li>').join('')+(L.length>40?'<li>…</li>':'')+'</ul></details>':'';
+    m.textContent='';o.innerHTML='<div style="background:#f3f7f6;border-radius:10px;padding:10px 12px"><b>סיכום לפני שמירה</b>'+ex(ch,'רשומות שהשתנו')+ex(add,'רשומות חדשות')+ex(del.map(i=>i),'רשומות שיימחקו')+
+      (errs.length?'<p class="st-failed">שורות שדולגו: '+esc(errs.join(' · '))+'</p>':'')+(!ch.length&&!add.length&&!del.length?'<p>אין שינויים מהמאגר הנוכחי.</p>':'<div class="row" style="margin-top:8px"><button class="btn primary" type="button" id="yzSave">שמירה באתר</button><button class="btn" type="button" id="yzCancel">ביטול</button></div>')+'</div>';
+    if(del.length){YZP.del=del}
+    if($('#yzSave')){$('#yzCancel').onclick=()=>{YZP=null;o.innerHTML=''};$('#yzSave').onclick=()=>{if(del.length>50&&!confirm('יימחקו '+del.length+' רשומות. להמשיך?'))return;const b=$('#yzSave');b.disabled=true;b.textContent='שומרים…';
+      api({action:'yzsave',YZ:YZP.YZ,SEL:YZP.SEL,note:ch.length+' שינויים, '+add.length+' חדשות, '+del.length+' נמחקו'}).then(r=>{
+        if(r.error==='notoken'){o.innerHTML='<p class="st-failed">כדי לשמור מכאן צריך להגדיר פעם אחת ב-Vercel את המשתנה GITHUB_TOKEN (ההוראות נמצאות אצל Claude). בינתיים אפשר לשלוח את הקובץ ל-Claude.</p>';return}
+        o.innerHTML='<p>✅ נשמר ('+r.count+' רשומות). האתר יתעדכן תוך כ־2 דקות.</p>';window.YZ=YZP.YZ;window.YZ_DEFAULT_SEL=YZP.SEL;YZP=null}).catch(e=>{b.disabled=false;b.textContent='שמירה באתר';o.insertAdjacentHTML('beforeend','<p class="st-failed">'+esc((e.j&&e.j.error)||e.message)+'</p>')})}}
+  }).catch(e=>{m.innerHTML='<span class="st-failed">'+esc(e.message)+'</span>'})}
+function yzBind(){if(!$('#yzX'))return;$('#yzX').onclick=yzExport;$('#yzI').onclick=()=>{$('#yzF').value='';$('#yzF').click()};$('#yzF').onchange=e=>{const f=e.target.files[0];if(f)yzImport(f)}}
 function shabbatSection(){const S=C.shabbat=Object.assign({on:true,yt:true,before:0,after:0,deg:8.5},C.shabbat||{});
   return '<section><h2>אתר שומר שבת</h2><p class="sub">בשבת ובחג האתר סגור לגולשים ומציג "שבת שלום" עם שעת החזרה. הזמנים לפי המיקום של כל גולש (לפי המיקום שבחר באתר, או לפי האינטרנט שלו). גם התשלום חסום בזמן הזה. דף הניהול לא נסגר.</p>'+
   '<div class="row"><label class="chk"><input type="checkbox" id="shOn"'+(S.on?' checked':'')+'> האתר סגור בשבת</label><label class="chk"><input type="checkbox" id="shYt"'+(S.yt?' checked':'')+'> וגם ביום טוב (2 ימים בחו״ל)</label></div>'+
@@ -325,7 +365,7 @@ function bind(){
   if($('#vBox'))voiceLoad();
   if($('#libBox'))libLoad();
   if($('#pgList'))pgLoad();
-  actBind();shabbatBind();usageBind();
+  actBind();shabbatBind();usageBind();yzBind();
   if($('#torahOn'))$('#torahOn').onchange=e=>{C.torah={...(C.torah||{}),on:e.target.checked}};
   if($('#dbT')){$('#dbT').value=DBS.name;$('#dbQ').value=DBS.q;const go=()=>{DBS={name:$('#dbT').value,q:$('#dbQ').value.trim(),offset:0};dbLoad()};$('#dbGo').onclick=go;$('#dbT').onchange=go;$('#dbQ').onkeydown=e=>{if(e.key==='Enter')go()};$('#dbCsv').onclick=dbCsv;dbLoad()}
   if($('#tkMode')){$('#tkMode').value=C.ticker.mode;$('#tkMode').onchange=e=>{C.ticker.mode=e.target.value;$('#tkList').innerHTML=''};
