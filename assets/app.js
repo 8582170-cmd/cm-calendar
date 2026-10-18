@@ -1037,7 +1037,10 @@ function pageShell(label,key){
   const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
-  if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown')p.classList.add('pbg','pbg-'+s.pageBg);
+  if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown'&&!(key==='cover'&&(s.pageBg==='month'||s.pageBg==='custom'))){
+    p.classList.add('pbg','pbg-'+s.pageBg);
+    if(s.pageBg==='month'||s.pageBg==='custom'){const u=s.pageBg==='custom'?s.pageBgImg:monthArt(key);
+      if(u){p.classList.add('pbg-img');p.style.setProperty('--bgimg','url("'+u+'")');p.style.setProperty('--bgop',String(s.pageBgOp??0.32))}}}
   fxLines(p);
   for(const [k,v] of Object.entries(s.tcolors||{}))if(v)p.style.setProperty('--c-'+k,v);
   if(s.headFont)p.style.setProperty('--f-head',fontCSS(s.headFont));
@@ -1050,13 +1053,28 @@ function pageShell(label,key){
   return p;
 }
 /* רקע לעמוד: גוונים ועיטורים עדינים בצבע הלוח, שמודפסים גם הם */
-const PAGE_BGS=[['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
+/* איור לכל חודש (מהמאגר), לפי החודש העברי. בלוח לועזי: לפי החודש העברי של אמצע החודש */
+const MONTH_ART={7:'rosh-hashana',8:'forest-mist',9:'chanukah',10:'starry-night',11:'tu-bishvat',12:'purim',13:'purim',1:'pesach',2:'lag-baomer',3:'shavuot',4:'sea-sunset',5:'jerusalem-walls',6:'sunrise-mountains'};
+function monthArt(key){key=String(key||'').replace(/^(mi-|h-)/,'');let hm=null;
+  const mo=monthsCache.find(m=>m.key===key);
+  if(/^heb-\d+$/.test(key))hm=+key.slice(4);else if(mo&&mo.days&&mo.days.length)hm=new HDate(mo.days[Math.floor(mo.days.length/2)]).getMonth();
+  else{const d=/^(?:w|d|t)-(\d{4}-\d{2}-\d{2})$/.exec(key);if(d)hm=new HDate(dateFromIso(d[1])).getMonth()}
+  if(hm==null&&monthsCache[0])hm=new HDate(monthsCache[0].days[0]).getMonth();
+  return hm?new URL('assets/library/'+MONTH_ART[hm]+'.svg',document.baseURI).href:''}
+const PAGE_BGS=[['month','איור לכל חודש'],['custom','תמונה משלכם'],['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
+function bgOwn(){const f=v=>{if(!v.img)return;state.s.pageBgImg=v.img;state.s.pageBg='custom';save();render()};f.maxPx=1800;pickImage(f)}
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-bgop]')){state.s.pageBgOp=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120)}});
+let bgOpT=0;
 function bgPickSync(){const cur=state.s.pageBg||'none';document.querySelectorAll('[data-bgpick]').forEach(box=>{
-  if(!box.children.length)box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+'"><i></i><i></i><i></i></span><span class="bgp-n">'+n+'</span></button>').join('');
+  if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(k==='month'||k==='custom'?' pbg-img':'')+'"'+(k==='month'?' style="--bgimg:url('+new URL('assets/library/rosh-hashana.svg',document.baseURI).href+');--bgop:.55"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
+    box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="0.8" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button>')}
   box.style.setProperty('--acc',state.s.accent);
+  {const img=cur==='month'||cur==='custom',par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);
+   const cp=box.querySelector('[data-pbg="custom"] .bgp-prev');if(cp){if(state.s.pageBgImg){cp.style.setProperty('--bgimg','url("'+state.s.pageBgImg+'")');cp.style.setProperty('--bgop','.6');cp.innerHTML=''}}}
   box.querySelectorAll('[data-pbg]').forEach(b=>{const on=b.dataset.pbg===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})})}
 document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-pbg]');if(b){state.s.pageBg=b.dataset.pbg;save();render();return}
+  const b=e.target.closest('[data-pbg]');if(b){const k=b.dataset.pbg;if(k==='custom'&&!state.s.pageBgImg){bgOwn();return}state.s.pageBg=k;save();render();return}
+  if(e.target.closest('[data-bgown]')){bgOwn();return}
   if(e.target.closest('[data-cover-on]')){state.s.cover=true;save();render();const w=stage.querySelector('.sheet-wrap');if(w)w.scrollIntoView({behavior:'smooth',block:'start'});try{syncUI()}catch(err){}return}
   if(e.target.closest('[data-cover-off]')){state.s.cover=false;save();render();try{syncUI()}catch(err){}}
 });
@@ -2910,7 +2928,7 @@ function bindReset(){
   $('#resetRow').innerHTML='<button class="btn small danger" type="button" id="resetBtn">איפוס הכל</button>';
   $('#resetBtn').onclick=()=>{
     $('#resetRow').innerHTML='<span class="hint">למחוק את כל התמונות, האירועים וההגדרות?</span><button class="btn small danger" type="button" id="resetYes">כן, למחוק</button><button class="btn small" type="button" id="resetNo">ביטול</button>';
-    $('#resetYes').onclick=()=>{state=structuredClone(DEFAULT);state.events=[];if(SIMPLE){state.s.cover=false;state.s.pageBg='soft'}save();bindReset();syncUI();render()};
+    $('#resetYes').onclick=()=>{state=structuredClone(DEFAULT);state.events=[];if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}save();bindReset();syncUI();render()};
     $('#resetNo').onclick=bindReset;
   };
 }
@@ -3356,7 +3374,7 @@ async function accountModal(){
   body.querySelector('#acFeed').onclick=()=>{m.remove();feedModal()};
   body.querySelector('#acName').onchange=e=>{state.s.calName=e.target.value.trim();save()};
   body.querySelector('#acSaveNew').onclick=async()=>{if(state.s.cloudId&&ix[state.s.cloudId]){delete state.s.cloudId;state.s.calName=(state.s.calName||calTitle())+' (עותק)'}await cloudSave();m.remove();accountModal()};
-  body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';if(SIMPLE){state.s.cover=false;state.s.pageBg='soft'}if(CDMODE)Object.assign(state.s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',zmanimMode:'none',cover:false});monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
+  body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}if(CDMODE)Object.assign(state.s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',zmanimMode:'none',cover:false});monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
   body.addEventListener('click',async e=>{
     const o=e.target.closest('[data-open]');if(o){o.disabled=true;o.textContent='פותח…';if(cloudDirty)await cloudSave();try{await cloudOpen(o.dataset.open);m.remove()}catch(err){o.textContent='שגיאה';}return}
     const d=e.target.closest('[data-delc]');if(d){if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}d.disabled=true;await cloudDelete(d.dataset.delc);m.remove();accountModal()}
@@ -4076,9 +4094,10 @@ $('#shareBtn').onclick=shareModal;
   {const h=window.location.hash||'';if(!CDMODE&&(h.startsWith('#countdown&')||h==='#preset-countdown')){window.location.replace(PGN('countdown.html')+(h==='#preset-countdown'?'':h));return}}
   const saved=SNAPVIEW?await new Promise(res=>{window.addEventListener('message',e=>{if(e.origin===window.location.origin&&e.data&&e.data.type==='snap')res(e.data.state)});window.opener.postMessage({type:'snap-ready'},window.location.origin)}):await idbGet(SKEY);
   if(saved)state=merge(DEFAULT,saved);
-  else if(SIMPLE){state.s.cover=false;state.s.pageBg='soft'}
+  else if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}
   /* המסלול המהיר בלוח שכבר התחיל: שער ריק יורד (נשאר כפתור להוספה), ורקע עדין אם לא נבחר רקע */
-  if(SIMPLE&&saved&&!state.s.fast1){const c=state.cover||{};if(!c.img&&!c.title)state.s.cover=false;if(!state.s.pageBg)state.s.pageBg='soft';state.s.fast1=1}
+  if(SIMPLE&&saved&&!state.s.fast1){const c=state.cover||{};if(!c.img&&!c.title)state.s.cover=false;if(!state.s.pageBg)state.s.pageBg='month';state.s.fast1=1}
+  if(SIMPLE&&saved&&!state.s.fast2){if(!state.s.pageBg||state.s.pageBg==='soft')state.s.pageBg='month';state.s.fast2=1}
   if(SNAPVIEW){SNAPPLAN=(saved&&saved._snap&&saved._snap.plan)||'';state.s.uiMode='adv';document.body.classList.add('snapview');document.body.insertAdjacentHTML('afterbegin','<div class="snap-bar no-print">דוגמית של לוח שהורד · לקריאה בלבד · '+(saved&&saved._snap&&saved._snap.img?'התמונות מוקטנות':'בדוגמית הזאת לא נשמרו תמונות')+' · שינויים כאן לא נשמרים</div>')}
   if(CDMODE){const s=state.s;if(!saved||s.view!=='countdown'){Object.assign(s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',orient:'portrait',zmanimMode:'none',cover:false})}s.view='countdown';document.body.classList.add('cd-app')}
   else if(state.s.view==='countdown')state.s.view='month';

@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'איור לכל חודש': 'Art for each month',
+ 'תמונה משלכם': 'Your own photo',
+ 'חוזק הרקע': 'Background strength',
+ 'החלפת התמונה לרקע': 'Change background photo',
  'רקע לעמוד': 'Page background',
  'לבן': 'White',
  'הילה עדינה': 'Soft glow',
