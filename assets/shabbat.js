@@ -4,6 +4,8 @@
   'use strict';
   if (window.__mlShabbat) return; window.__mlShabbat = true;
   if (/cmsedit|snapview/.test(location.search + location.hash) || /\/admin/.test(location.pathname)) return;
+  /* מנועי חיפוש ובודקי אתרים: לא סוגרים בפניהם, כדי שהאתר ייסרק כרגיל גם בשבת (אצלם לפי מיקום השרת שלהם) */
+  if (/bot|crawl|spider|slurp|bingpreview|mediapartners|lighthouse|pagespeed|headlesschrome|yandex|duckduck|baidu|facebookexternalhit|whatsapp|telegram/i.test(navigator.userAgent || '')) return;
   var KEY = 'myluach-shabbat', EN = (document.documentElement.lang || '').slice(0, 2) === 'en';
   function get(k){ try { return JSON.parse(localStorage.getItem(k) || 'null') } catch (e) { return null } }
   function put(k, v){ try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} }
