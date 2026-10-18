@@ -488,7 +488,7 @@ function lrnPicker(){const sel=new Set(lrnSel());
   dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
     Object.entries(LRN_T).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
     '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="lrOk">'+t('save')+'</button></div>');
-  $('#lrOk').onclick=()=>{st.lrnSel=[...document.querySelectorAll('.dzp input:checked')].map(i=>i.value);st.opts.learn=st.lrnSel.length>0;saveSt();closeDlg();render()}}
+  $('#lrOk').onclick=()=>{st.lrnSel=[...document.querySelectorAll('.dzp input:checked')].map(i=>i.value);saveSt();closeDlg();render()}}
 
 /* ---------- תצוגה שבועית ויומית ---------- */
 function vTabs(){return '<div class="vtabs no-print" role="tablist">'+[['day',HE()?'יומי':'Day'],['week',HE()?'שבועי':'Week'],['month',HE()?'חודשי':'Month']].map(([k,l])=>'<button type="button" role="tab" data-vw="'+k+'" aria-selected="'+(view===k)+'">'+l+'</button>').join('')+'</div>'}
@@ -509,7 +509,7 @@ function dateNav(unit){
     '<button class="btn today-b" type="button" id="tdy">'+t('today')+'</button>'+
     b(step,ul,'data-wsh',R[1])+b(1,HE()?'חודש':'Month','data-msh',R[1])+b(1,HE()?'שנה':'Year','data-ysh',R[3])+'</span>'}
 function viewWeek(){
-  const a=addD(anchor,-anchor.getDay()),days=Array.from({length:7},(_,i)=>addD(a,i)),ev=events(addD(a,-1),days[6]),W=wkSel(),LON=st.opts.learn!==false&&lrnSel().length>0;
+  const a=addD(anchor,-anchor.getDay()),days=Array.from({length:7},(_,i)=>addD(a,i)),ev=events(addD(a,-1),days[6]),W=wkSel(),LON=lrnSel().length>0;
   const sat=(ev.get(iso(days[6]))||[]).find(x=>x.cls==='par'),hA=new HDate(days[0]),hB=new HDate(days[6]);
   const range=hDay(hA.getDate())+' '+hMonthName(hA.getMonth(),hA.getFullYear())+' – '+hStr(hB)+' · '+gStr(days[0],false)+' – '+gStr(days[6]);
   const head='<div class="wk-top"><div class="wk-city"><small>'+(HE()?'לוח':'Calendar')+'</small><b>'+esc(cityName(city()))+'</b></div>'+
@@ -619,6 +619,13 @@ function calCard(){const u=icsUrl();if(!u)return '';
     '<div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn" href="'+g+'" target="_blank" rel="noopener">'+(HE()?'ליומן גוגל':'Google Calendar')+'</a><a class="btn" href="'+w+'">'+(HE()?'לאייפון / אאוטלוק':'iPhone / Outlook')+'</a></div></div>'}
 function gcalLink(title,d){if(title&&typeof title==='object')title=title.name;if(!d)return '#';const d8=x=>x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0');
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+d8(d)+'/'+d8(addD(d,1))+'&details='+encodeURIComponent(hStr(new HDate(d))+' · myluach.org')}
+/* טור הלימוד היומי ליד הלוח: היום ושבוע קדימה */
+function lrnCard(){const S=lrnSel();
+  let h='<div class="card lr-card"><div class="lr-h"><b>'+(HE()?'לימוד יומי':'Daily learning')+'</b><button type="button" class="linkbtn2" data-lrpick="1">⚙ '+(HE()?'בחירה':'Choose')+'</button></div>';
+  if(!S.length)return h+'<p class="small mute">'+(HE()?'לא נבחר לימוד.':'No learning selected.')+'</p></div>';
+  for(let i=0;i<7;i++){const d=addD(TODAY,i),L=lrnFor(d);if(!L.length)continue;
+    h+='<div class="lr-day'+(i?'':' cur')+'"><div class="lr-d">'+(i?esc(t('weekdays')[d.getDay()])+' · '+esc(HE()?gem(new HDate(d).getDate()):String(d.getDate())):t('today'))+'</div>'+L.map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> <b>'+esc(x.v)+'</b></div>').join('')+'</div>'}
+  return h+'<label class="chk small" style="margin-top:6px"><input type="checkbox" data-opt="learn"'+(st.opts.learn?' checked':'')+'> '+(HE()?'להציג גם בתוך ימי הלוח':'Also show inside calendar days')+'</label></div>'}
 function renderSide(){
   const hd=new HDate(TODAY),Z=zm(TODAY),z=k=>fmtT((Z.find(x=>x.k===k)||{}).v);
   let next=null;try{const evs=HebrewCalendar.calendar({start:TODAY,end:addD(TODAY,120),il:city().il,noMinorFast:true,noModern:true,noRoshChodesh:true,noSpecialShabbat:true});next=evs.find(e=>e.getFlags()&flags.CHAG)||evs.find(e=>!(e.getFlags()&flags.PARSHA_HASHAVUA))}catch(e){}
@@ -626,6 +633,7 @@ function renderSide(){
   for(let i=0;i<8;i++){const its=evW.get(iso(addD(TODAY,i)))||[];for(const x of its){if(x.cls==='par'&&!par)par=x.txt;if(x.ev.getDesc().startsWith('Candle')&&!cand)cand=fmtT(x.ev.eventTime);if(x.ev.getDesc().startsWith('Havdalah')&&!hav&&cand)hav=fmtT(x.ev.eventTime)}}
   $('#side').innerHTML='<div class="card today-card"><div class="mute small">'+t('today')+', '+t('weekdays')[TODAY.getDay()]+'</div><div class="big">'+esc(hStr(hd))+'</div><div>'+esc(gStr(TODAY))+'</div>'+
     '<div class="kv" style="margin-top:10px"><span>'+t('sunrise')+'</span><b>'+z('netz')+'</b><span>'+t('sunset')+'</span><b>'+z('shkia')+'</b>'+(cand?'<span>'+t('candles')+'</span><b>'+cand+'</b>':'')+(hav?'<span>'+t('havdalah')+'</span><b>'+hav+'</b>':'')+'</div>'+(par?'<div style="margin-top:8px">'+t('parasha')+': <b>'+esc(par.replace(/^פרשת /,''))+'</b></div>':'')+'<button type="button" class="linkbtn" data-zset="1">⚙ '+esc((HE()?ZPRE[zcfg().pre].he:ZPRE[zcfg().pre].en))+'</button></div>'+
+    lrnCard()+
     (next?'<div class="card"><div class="mute small">'+t('nextHoliday')+'</div><div style="font-weight:700;font-size:18px">'+esc(evName(next))+'</div><div class="small">'+esc(gStr(noon(next.getDate().greg())))+' · '+esc(relDays(noon(next.getDate().greg())))+'</div></div>':'')+
     '<div class="card cta"><h3>'+t('ctaT')+'</h3><p>'+t('ctaP')+'</p><a class="btn pri big" href="'+builderLink()+'">'+t('ctaB')+'</a></div>'+
     calCard()+
@@ -689,7 +697,7 @@ document.addEventListener('click',e=>{
   const ysh=T2.closest('[data-ysh]');if(ysh){anchor=new Date(anchor.getFullYear()+(+ysh.dataset.ysh),anchor.getMonth(),Math.min(anchor.getDate(),28),12);render();return}
   const pv=T2.closest('[data-printv]');if(pv){printView(pv.dataset.printv);return}
   if(T2.id==='wkPick'){wkPicker();return}
-  if(T2.id==='lrPick'){lrnPicker();return}
+  if(T2.id==='lrPick'||T2.closest('[data-lrpick]')){lrnPicker();return}
   if(T2.id==='dzPick'){dzPicker();return}
   if(T2.id==='remNew'){remEditor(null);return}
   if(T2.id==='remYz'){yzPick();return}
