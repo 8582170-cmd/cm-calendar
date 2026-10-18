@@ -4174,14 +4174,15 @@ function thumbOf(img){return new Promise(res=>{const im=new Image();im.onload=()
 async function trayAdd(img,meta){const t={id:'t'+uid(),img,th:await thumbOf(img),used:0,...(meta||{})};TRAY.push(t);return t}
 function trayShow(){const b=$('#tray');if(!b)return;const s=state.s,mode=s.uiMode,n=+s.step||1;
   const on=!CDMODE&&!SNAPVIEW&&((mode==='wizard'&&(n===5||(SIMPLE&&n<8)))||(mode==='adv'&&(TRAY.length>0||!!s.trayOn)));
-  b.hidden=!on;document.body.classList.toggle('tray-on',on);b.classList.toggle('min',!!s.trayMin);trayH()}
+  const open=on&&(s.trayMin===false||(s.trayMin==null&&(n===5||TRAY.some(t=>!t.used)))),was=document.body.classList.contains('tray-open');b.hidden=!on;document.body.classList.toggle('tray-on',on);b.classList.toggle('min',!open);document.body.classList.toggle('tray-open',open);
+  if(was!==open)setTimeout(()=>{try{fit()}catch(e){}},280);trayH()}
 /* גובה המגש: כפתורי "הבא" ו"הקודם" והפאנל שבצד עולים מעליו */
-function trayH(){const b=$('#tray'),h=b&&!b.hidden?b.offsetHeight:0;document.body.style.setProperty('--trayh',h+'px');try{fitSide()}catch(e){}}
+function trayH(){const h=0;document.body.style.setProperty('--trayh',h+'px');try{fitSide()}catch(e){}}
 try{new ResizeObserver(()=>trayH()).observe($('#tray'))}catch(e){}
 function trayDraw(){const L=$('#trayList');if(!L)return;
   L.innerHTML=TRAY.length?TRAY.map(t=>'<div class="tray-i'+(t.used?' used':'')+(TSEL===t.id?' sel':'')+'" draggable="true" data-ti="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(TSEL===t.id)+'" title="'+(t.from?'מאת '+esc(t.from)+' · ':'')+'גררו לחודש או ליום, או לחצו ואז בחרו מקום"><img src="'+t.th+'" alt="" draggable="false">'+(t.used?'<span class="tray-ok" aria-label="בשימוש">✓</span>':'')+(t.from?'<span class="tray-from">'+esc(t.from)+'</span>':'')+'<button type="button" class="tray-x" data-tx="'+t.id+'" aria-label="הסרה מהמגש">×</button></div>').join('')
     :'<div class="tray-empty"><b>המסלול המהיר:</b> ① מעלים את כל התמונות לכאן בבת אחת ② גוררים כל תמונה לחודש או ליום, או לוחצים "מילוי אוטומטי" ③ לוחצים על יום כדי להוסיף יום הולדת או אירוע</div>';
-  const n=TRAY.filter(t=>!t.used).length;$('#trayCount').textContent=TRAY.length?(n?n+' מחכות':'כולן בלוח ✓'):'';
+  const n=TRAY.filter(t=>!t.used).length;$('#trayTabN').textContent=n||'';$('#trayCount').textContent=TRAY.length?(n?n+' מחכות':'כולן בלוח ✓'):'';
   $('#trayFill').hidden=!TRAY.some(t=>!t.used)}
 function traySelect(id){TSEL=TSEL===id?null:id;document.body.classList.toggle('tray-picking',!!TSEL);trayDraw();
   const bar=$('#trayPickBar');if(bar)bar.hidden=!TSEL}
@@ -4209,7 +4210,8 @@ $('#trayAdd').onclick=()=>{const f=$('#fileMany');f.value='';f.onchange=async()=
   trayNote('מכין '+files.length+' תמונות…');for(const x of files){await trayAdd(await compress(x));trayDraw()}traySave();
   trayNote(files.length?'נוספו '+files.length+' תמונות. גררו כל תמונה לחודש או ליום, או לחצו "מילוי אוטומטי".':'')};f.click()};
 $('#trayFill').onclick=trayFill;$('#trayHelp').onclick=trayHelp;
-$('#trayMin').onclick=()=>{state.s.trayMin=!state.s.trayMin;save();trayShow()};
+$('#trayMin').onclick=()=>{state.s.trayMin=true;save();trayShow()};
+$('#trayTab').onclick=()=>{state.s.trayMin=document.body.classList.contains('tray-open');save();trayShow()};
 $('#trayPickX').onclick=()=>traySelect(null);
 $('#trayList').addEventListener('click',e=>{const x=e.target.closest('[data-tx]');if(x){e.stopPropagation();TRAY=TRAY.filter(t=>t.id!==x.dataset.tx);if(TSEL===x.dataset.tx)traySelect(null);traySave();trayDraw();return}
   const t=e.target.closest('[data-ti]');if(t)traySelect(t.dataset.ti)});
