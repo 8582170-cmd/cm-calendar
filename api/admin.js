@@ -12,7 +12,7 @@ function okPass(given) {
   return crypto.timingSafeEqual(a, b);
 }
 
-const num = (v, lo, hi) => { v = Number(v); return isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v * 100) / 100)) : null; };
+const num = (v, lo, hi) => { if (v == null || v === '') return null; v = Number(v); return isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v * 100) / 100)) : null; };
 const date = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '';
 const planList = v => (Array.isArray(v) ? v : []).filter(x => PAID.indexOf(x) >= 0);
 
@@ -21,7 +21,9 @@ function clean(c) {
   const out = { plans: {}, sale: null, coupons: [] };
   PAID.forEach(id => {
     const o = (c.plans || {})[id] || {};
-    out.plans[id] = { ils: num(o.ils, 0, 100000), usd: num(o.usd, 0, 100000), intro: num(o.intro, 0, 100) };
+    /* מחיר 0 למסלול בתשלום אינו תקף: נשמר כריק, כלומר המחיר שבקובץ */
+    const pos = v => { v = num(v, 0, 100000); return v > 0 ? v : null; };
+    out.plans[id] = { ils: pos(o.ils), usd: pos(o.usd), intro: num(o.intro, 0, 100) };
   });
   const s = c.sale || {};
   out.sale = { on: !!s.on, percent: num(s.percent, 0, 100) || 0, plans: planList(s.plans), until: date(s.until), label: String(s.label || '').slice(0, 60) };

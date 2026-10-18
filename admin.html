@@ -97,7 +97,7 @@ function render(){
   actSection()+usageSection()+
   (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
   '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול.</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th></tr></thead><tbody>'+
-  IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td></tr>'}).join('')+
+  IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils||null)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd||null)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td></tr>'}).join('')+
   '</tbody></table></div></section>'+
   '<section><h2>מבצע כללי</h2><p class="sub">הנחה לכולם, עם תאריך סיום. מופיעה באתר ליד המחיר. כשיש כמה הנחות, נקבעת הגבוהה מביניהן (הן לא מצטברות).</p>'+
   '<div class="row"><label><input type="checkbox" id="sOn"'+(C.sale.on?' checked':'')+'> מבצע פעיל</label><label>הנחה % <input type="number" id="sPct" min="0" max="100" value="'+val(C.sale.percent)+'"></label><label>עד תאריך (כולל) <input type="date" id="sUntil" value="'+esc(C.sale.until)+'"></label></div>'+
@@ -390,7 +390,7 @@ function collect(){
 }
 function preview(){
   collect();const today=new Date().toISOString().slice(0,10);
-  IDS().forEach(id=>{const d=D.defaults[id],o=C.plans[id]||{},ils=o.ils!=null?o.ils:d.ils,intro=o.intro!=null?o.intro:d.intro;
+  IDS().forEach(id=>{const d=D.defaults[id],o=C.plans[id]||{},ils=o.ils>0?o.ils:d.ils,intro=o.intro!=null?o.intro:d.intro;
     let off=intro,why=intro?'היכרות':'';const s=C.sale;
     if(s.on&&s.percent>off&&(!s.until||today<=s.until)&&(!s.plans.length||s.plans.indexOf(id)>=0)){off=s.percent;why='מבצע'}
     const el=document.querySelector('[data-prev="'+id+'"]');if(el)el.textContent=(Math.round(ils*(100-off))/100)+' ₪'+(off?' ('+off+'% '+why+')':'')});

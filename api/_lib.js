@@ -44,8 +44,9 @@ function publicPricing(cfg) {
   LP.PLANS.forEach(p => {
     const o = (cfg.plans || {})[p.id] || {};
     plans[p.id] = {
-      ils: isNum(o.ils) ? +o.ils : p.price.ils,
-      usd: isNum(o.usd) ? +o.usd : p.price.usd,
+      /* במסלול בתשלום מחיר 0 או ריק = המחיר שבקובץ (הגנה מפני שמירה ריקה בניהול) */
+      ils: isNum(o.ils) && (o.ils > 0 || !(p.price.ils > 0)) ? +o.ils : p.price.ils,
+      usd: isNum(o.usd) && (o.usd > 0 || !(p.price.usd > 0)) ? +o.usd : p.price.usd,
       intro: isNum(o.intro) ? +o.intro : (p.intro || 0)
     };
   });

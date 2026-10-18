@@ -58,7 +58,8 @@
     applyPricing(d){
       if(!d || !d.plans) return;
       PLANS.forEach(p => { const o = d.plans[p.id]; if(!o) return;
-        if(o.ils >= 0) p.price.ils = +o.ils; if(o.usd >= 0) p.price.usd = +o.usd; p.intro = +o.intro || 0; });
+        const ok = (v, d) => typeof v === 'number' && isFinite(v) && (v > 0 || !(d > 0));
+        if(ok(o.ils, p.price.ils)) p.price.ils = o.ils; if(ok(o.usd, p.price.usd)) p.price.usd = o.usd; p.intro = +o.intro || 0; });
       this.sale = d.sale || null;
     },
     ready: null,
