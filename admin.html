@@ -383,13 +383,19 @@ function libDraw(){libCats();libCatsDraw();(LIBD.items||[]).forEach(x=>{const d=
       :'<b>'+esc(x.title)+'</b><span class="sub">'+esc(LIBC[x.cat]||'')+' · איור מובנה</span><label><input type="checkbox" data-seed="'+esc(x.id)+'"'+(hide.has(x.id)?'':' checked')+'> מוצג ללקוחות</label>')+'</div>';
   $('#libBox').innerHTML='<h3 style="margin:6px 0">התמונות שהעליתם ('+L.length+')</h3><div class="libg">'+(L.length?L.map(x=>card(x,1)).join(''):'<p class="sub">עדיין לא הועלו תמונות.</p>')+'</div>'+
     '<h3 style="margin:14px 0 6px">איורים מובנים ('+seed.length+')</h3><div class="libg">'+seed.map(x=>card(x,0)).join('')+'</div>'+
-    '<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="libSave">שמירת שינויים במאגר</button><button class="btn" type="button" id="libNum">שמות אוטומטיים לכל התמונות שהעליתם (קטגוריה + מספר)</button><span id="libSMsg"></span></div>';
+    '<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="libSave">שמירת שינויים במאגר</button><button class="btn" type="button" id="libNum">שמות אוטומטיים לתמונות בלי שם (קטגוריה + מספר)</button><span id="libSMsg"></span></div>';
   $('#libSave').onclick=()=>{const items=[...document.querySelectorAll('#libBox .libc')].filter(c=>c.querySelector('[data-f]')).map(c=>{const g=f=>c.querySelector('[data-f="'+f+'"]');return {id:c.dataset.id,title:g('title').value,cat:g('cat').value,credit:g('credit').value,on:g('on').checked}});
     const hideSeed=[...document.querySelectorAll('[data-seed]')].filter(i=>!i.checked).map(i=>i.dataset.seed);
     $('#libSMsg').textContent='שומר…';api({action:'libsave',items,hideSeed}).then(r=>{LIBD=r;libDraw();$('#libSMsg').textContent='✅ נשמר'}).catch(e=>$('#libSMsg').textContent='❌ '+e.message)};
-  $('#libNum').onclick=()=>{const L2=(LIBD.items||[]).slice().reverse(),cnt={};if(!L2.length||!confirm('לשנות את השם של כל '+L2.length+' התמונות שהעליתם לשם הקטגוריה ומספר עולה (למשל "'+(LIBC[L2[0].cat]||'')+' 1")?'))return;
-    const items=L2.map(x=>{cnt[x.cat]=(cnt[x.cat]||0)+1;return {id:x.id,title:(LIBC[x.cat]||'תמונה')+' '+cnt[x.cat],cat:x.cat,credit:x.credit||'',on:x.on!==false}});
-    $('#libSMsg').textContent='שומר…';api({action:'libsave',items}).then(r=>{LIBD=r;libDraw();$('#libSMsg').textContent='✅ השמות עודכנו'}).catch(e=>$('#libSMsg').textContent='❌ '+e.message)};
+  $('#libNum').onclick=()=>{const L2=(LIBD.items||[]).slice().reverse();
+    /* בכל קטגוריה: מה המספר האחרון שכבר קיים, ותמונות בלי שם כזה ממשיכות ממנו */
+    const re=c=>new RegExp('^'+(LIBC[c]||'תמונה').replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+' (\\d+)$'),last={};
+    L2.forEach(x=>{const m=re(x.cat).exec(String(x.title||'').trim());if(m)last[x.cat]=Math.max(last[x.cat]||0,+m[1])});
+    const todo=L2.filter(x=>!re(x.cat).test(String(x.title||'').trim()));
+    if(!todo.length){alert('לכל התמונות כבר יש שם של קטגוריה ומספר.');return}
+    if(!confirm('לתת שם אוטומטי ל־'+todo.length+' תמונות (שם הקטגוריה ומספר שממשיך מהמספר האחרון בכל קטגוריה)? תמונות שכבר יש להן שם כזה לא משתנות.'))return;
+    const items=todo.map(x=>{last[x.cat]=(last[x.cat]||0)+1;return {id:x.id,title:(LIBC[x.cat]||'תמונה')+' '+last[x.cat],cat:x.cat,credit:x.credit||'',on:x.on!==false}});
+    $('#libSMsg').textContent='שומר…';api({action:'libsave',items}).then(r=>{LIBD=r;libDraw();$('#libSMsg').textContent='✅ השמות עודכנו ('+items.length+')'}).catch(e=>$('#libSMsg').textContent='❌ '+e.message)};
   document.querySelectorAll('[data-libdel]').forEach(b=>b.onclick=()=>{if(!confirm('למחוק את התמונה מהמאגר?'))return;api({action:'libdelete',id:b.dataset.libdel}).then(libLoad).catch(e=>alert(e.message))})}
 function libResize(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,2200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.86))};im.src=r.result};r.readAsDataURL(file)})}
 document.addEventListener('change',async e=>{if(e.target.id!=='libFile')return;const fs=[...e.target.files];const m=$('#libMsg');let n=0;
