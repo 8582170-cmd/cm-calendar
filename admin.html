@@ -44,6 +44,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .bar{position:sticky;bottom:0;background:var(--paper);padding-block:10px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center}
 .tk-list{max-height:420px;overflow:auto;margin-top:10px;display:flex;flex-direction:column;gap:6px}.tk-i{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.5}
 .cms-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start}.cms-wrap iframe{flex:1;min-width:0;height:720px;border:1px solid var(--line);border-radius:10px;background:#fff}.cms-vars{flex:0 0 190px;display:flex;flex-direction:column;gap:8px;font-size:14px}.cms-vars label{display:flex;justify-content:space-between;align-items:center;gap:6px}@media (max-width:800px){.cms-wrap{flex-direction:column}.cms-wrap iframe{width:100%;height:560px}.cms-vars{flex-basis:auto;width:100%}}
+.yze-list{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto;margin:8px 0}.yze-r{border:1px solid #dde3e2;border-radius:10px;padding:8px}.yze-r.ch{border-color:#d08a1a;background:#fffaf0}.yze-r textarea{width:100%;margin-top:6px;font:inherit}.yze-r .row{gap:6px;flex-wrap:wrap;align-items:center}.yze-bar{position:sticky;bottom:0;background:#fff;padding:6px 0}
 </style>
 <script src="/assets/library/index.js?v=1"></script>
 <script src="/assets/articles-list.js?v=1"></script>
@@ -183,7 +184,7 @@ const YZN2M=Object.assign(Object.fromEntries(Object.entries(YZM).map(([k,v])=>[v
 const YZH=['מזהה','חודש','יום','שנה','תיאור','סוג','מקור','מופיע כברירת מחדל'];
 let YZP=null;
 function yzSection(){return '<section><h2>מאגר דברי הימים (אקסל)</h2><p class="sub">מורידים את כל המאגר לאקסל, עורכים, מוסיפים או מוחקים שורות, ומעלים בחזרה. לפני השמירה רואים סיכום של השינויים. אחרי השמירה האתר מתעדכן לבד תוך כ־2 דקות.</p>'+
-  '<div class="row"><button class="btn" type="button" id="yzX">הורדת המאגר לאקסל</button><button class="btn primary" type="button" id="yzI">ייבוא קובץ אקסל</button><input type="file" id="yzF" accept=".xlsx,.xls" hidden><span id="yzMsg"></span></div><div id="yzOut" style="margin-top:8px"></div>'+
+  '<div class="row"><button class="btn primary" type="button" id="yzE">✎ עריכה כאן באתר</button><button class="btn" type="button" id="yzX">הורדת המאגר לאקסל</button><button class="btn" type="button" id="yzI">ייבוא קובץ אקסל</button><input type="file" id="yzF" accept=".xlsx,.xls" hidden><span id="yzMsg"></span></div><div id="yzOut" style="margin-top:8px"></div>'+
   '<p class="sub" style="margin-top:8px">כללים: לא משנים את עמודת "מזהה" (היא מקשרת לעריכות שמשתמשים שמרו). שורה חדשה: משאירים "מזהה" ריק. מחיקה: מוחקים את השורה. "סוג": אישיות = יום פטירה, אירוע = מאורע. "מופיע כברירת מחדל": כן = מסומן מראש בלוח חדש.</p></section>'}
 function yzLibs(){const need=[];if(!window.XLSX)need.push('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');if(!window.YZ)need.push('/assets/yz.js?t='+Date.now());
   return Promise.all(need.map(src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('טעינה נכשלה: '+src));document.head.appendChild(s)})))}
@@ -216,7 +217,35 @@ function yzImport(file){const m=$('#yzMsg'),o=$('#yzOut');m.textContent='קור�
         if(r.error==='notoken'){o.innerHTML='<p class="st-failed">כדי לשמור מכאן צריך להגדיר פעם אחת ב-Vercel את המשתנה GITHUB_TOKEN (ההוראות נמצאות אצל Claude). בינתיים אפשר לשלוח את הקובץ ל-Claude.</p>';return}
         o.innerHTML='<p>✅ נשמר ('+r.count+' רשומות). האתר יתעדכן תוך כ־2 דקות.</p>';window.YZ=YZP.YZ;window.YZ_DEFAULT_SEL=YZP.SEL;YZP=null}).catch(e=>{b.disabled=false;b.textContent='שמירה באתר';o.insertAdjacentHTML('beforeend','<p class="st-failed">'+esc((e.j&&e.j.error)||e.message)+'</p>')})}}
   }).catch(e=>{m.innerHTML='<span class="st-failed">'+esc(e.message)+'</span>'})}
-function yzBind(){if(!$('#yzX'))return;$('#yzX').onclick=yzExport;$('#yzI').onclick=()=>{$('#yzF').value='';$('#yzF').click()};$('#yzF').onchange=e=>{const f=e.target.files[0];if(f)yzImport(f)}}
+/* עריכה ישירה באתר: חיפוש, עריכה, הוספה ומחיקה, ושמירה לכולם */
+function yzData(){return window.YZ?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='/assets/yz.js?t='+Date.now();s.onload=ok;s.onerror=()=>no(new Error('טעינת המאגר נכשלה'));document.head.appendChild(s)})}
+let YZE=null;
+function yzEdit(){const o=$('#yzOut');o.textContent='טוען…';yzData().then(()=>{YZE={Y:window.YZ.map(r=>r.slice()),sel:new Set(window.YZ_DEFAULT_SEL||[]),dirty:new Set(),added:[],del:new Set()};
+  o.innerHTML='<div class="yze"><div class="row"><input type="search" id="yzeQ" placeholder="חיפוש: שם, מילה או שנה" style="flex:1;min-width:200px"><select id="yzeM"><option value="">כל החודשים</option>'+YZO.map(m=>'<option value="'+m+'">'+YZM[m]+'</option>').join('')+'</select><input type="number" id="yzeD" min="1" max="30" placeholder="יום" style="width:70px"><button class="btn" type="button" id="yzeNew">+ רשומה חדשה</button></div>'+
+    '<div id="yzeList" class="yze-list"></div><div class="row yze-bar"><span id="yzeCnt" class="sub"></span><button class="btn primary" type="button" id="yzeSave" disabled>שמירת השינויים לכולם</button><button class="btn" type="button" id="yzeClose">סגירה</button></div></div>';
+  const draw=()=>{const q=$('#yzeQ').value.trim(),m=+$('#yzeM').value||0,d=+$('#yzeD').value||0,Y=YZE.Y;const W=q?q.replace(/["'״׳]/g,'').split(/\s+/):null;
+    let ids=Y.map((r,i)=>i).filter(i=>Y[i][3]&&!YZE.del.has(i)&&(!m||Y[i][0]===m)&&(!d||Y[i][1]===d)&&(!W||W.every(w=>(Y[i][3]+' '+Y[i][2]).replace(/["'״׳]/g,'').includes(w))));
+    ids=YZE.added.filter(i=>!YZE.del.has(i)).concat(ids.filter(i=>!YZE.added.includes(i)));
+    const lim=150,part=ids.slice(0,lim);
+    $('#yzeList').innerHTML=(q||m||d||YZE.added.length?'':'<p class="sub">חפשו שם או מילה, או בחרו חודש ויום.</p>')+(!(q||m||d)&&!YZE.added.length?'':part.map(i=>{const r=Y[i];return '<div class="yze-r'+(YZE.dirty.has(i)?' ch':'')+'" data-i="'+i+'"><div class="row"><b class="sub">#'+i+'</b><select data-f="0">'+YZO.map(x=>'<option value="'+x+'"'+(x===r[0]?' selected':'')+'>'+YZM[x]+'</option>').join('')+'</select><input type="number" data-f="1" min="1" max="30" value="'+r[1]+'" style="width:62px"><input data-f="2" value="'+esc(r[2])+'" placeholder="שנה" style="width:90px"><select data-f="4"><option value="1"'+(r[4]?' selected':'')+'>אישיות</option><option value="0"'+(r[4]?'':' selected')+'>אירוע</option></select><label class="chk"><input type="checkbox" data-f="sel"'+(YZE.sel.has(i)?' checked':'')+'> ברירת מחדל</label><button class="btn small" type="button" data-del="'+i+'">מחיקה</button></div><textarea data-f="3" rows="2">'+esc(r[3])+'</textarea></div>'}).join('')+(ids.length>lim?'<p class="sub">מוצגות '+lim+' מתוך '+ids.length+'. צמצמו בחיפוש.</p>':'')+(!ids.length?'<p class="sub">לא נמצאו רשומות.</p>':''));
+    const n=YZE.dirty.size+YZE.del.size;$('#yzeCnt').textContent=n?n+' שינויים שלא נשמרו':'';$('#yzeSave').disabled=!n};
+  ['#yzeQ','#yzeM','#yzeD'].forEach(x=>$(x).addEventListener('input',draw));
+  $('#yzeList').addEventListener('input',e=>{const row=e.target.closest('[data-i]'),f=e.target.dataset.f;if(!row||f==null)return;const i=+row.dataset.i,r=YZE.Y[i];
+    if(f==='sel'){e.target.checked?YZE.sel.add(i):YZE.sel.delete(i)}else if(f==='3'||f==='2')r[+f]=e.target.value;else r[+f]=+e.target.value;
+    YZE.dirty.add(i);row.classList.add('ch');const n=YZE.dirty.size+YZE.del.size;$('#yzeCnt').textContent=n+' שינויים שלא נשמרו';$('#yzeSave').disabled=false});
+  $('#yzeList').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const i=+b.dataset.del;if(!confirm('למחוק את הרשומה?'))return;YZE.del.add(i);YZE.dirty.delete(i);draw()});
+  $('#yzeNew').onclick=()=>{const m=+$('#yzeM').value||7,d=+$('#yzeD').value||1;YZE.Y.push([m,d,'','',0]);const i=YZE.Y.length-1;YZE.added.unshift(i);YZE.dirty.add(i);draw();setTimeout(()=>{const t=document.querySelector('[data-i="'+i+'"] textarea');if(t)t.focus()},50)};
+  $('#yzeClose').onclick=()=>{if((YZE.dirty.size||YZE.del.size)&&!confirm('יש שינויים שלא נשמרו. לסגור בלי לשמור?'))return;YZE=null;o.innerHTML=''};
+  $('#yzeSave').onclick=()=>{const Y=YZE.Y.map(r=>r.slice());for(const i of YZE.del)Y[i]=[Y[i][0],Y[i][1],'','',0];
+    const empty=[...YZE.dirty].filter(i=>!YZE.del.has(i)&&!String(Y[i][3]).trim());if(empty.length){alert('יש רשומות בלי תיאור ('+empty.map(i=>'#'+i).join(', ')+'). מלאו תיאור או מחקו אותן.');return}
+    for(const i of YZE.dirty){Y[i][3]=String(Y[i][3]).trim();Y[i][2]=String(Y[i][2]).trim();if(!(Y[i][1]>=1&&Y[i][1]<=30)){alert('יום לא תקין ברשומה #'+i);return}}
+    const sel=[...YZE.sel].filter(i=>!YZE.del.has(i)&&Y[i]&&Y[i][3]),b=$('#yzeSave');b.disabled=true;b.textContent='שומרים…';
+    api({action:'yzsave',YZ:Y,SEL:sel,note:'עריכה באתר: '+YZE.dirty.size+' עודכנו, '+YZE.del.size+' נמחקו'}).then(r=>{b.textContent='שמירת השינויים לכולם';
+      if(r.error==='notoken'){$('#yzeCnt').innerHTML='<span class="st-failed">כדי לשמור צריך להגדיר פעם אחת ב-Vercel את GITHUB_TOKEN.</span>';b.disabled=false;return}
+      window.YZ=Y;window.YZ_DEFAULT_SEL=sel;YZE.Y=Y.map(r=>r.slice());YZE.dirty.clear();YZE.del.clear();YZE.added=[];draw();$('#yzeCnt').textContent='✅ נשמר. האתר יתעדכן אצל כולם תוך כ־2 דקות.'})
+      .catch(e=>{b.disabled=false;b.textContent='שמירת השינויים לכולם';$('#yzeCnt').innerHTML='<span class="st-failed">'+esc((e.j&&e.j.error)||e.message)+'</span>'})};
+  draw()}).catch(e=>{o.innerHTML='<p class="st-failed">'+esc(e.message)+'</p>'})}
+function yzBind(){if(!$('#yzX'))return;$('#yzE').onclick=yzEdit;$('#yzX').onclick=yzExport;$('#yzI').onclick=()=>{$('#yzF').value='';$('#yzF').click()};$('#yzF').onchange=e=>{const f=e.target.files[0];if(f)yzImport(f)}}
 function shabbatSection(){const S=C.shabbat=Object.assign({on:true,yt:true,before:0,after:0,deg:8.5},C.shabbat||{});
   return '<section><h2>אתר שומר שבת</h2><p class="sub">בשבת ובחג האתר סגור לגולשים ומציג "שבת שלום" עם שעת החזרה. הזמנים לפי המיקום של כל גולש (לפי המיקום שבחר באתר, או לפי האינטרנט שלו). גם התשלום חסום בזמן הזה. דף הניהול לא נסגר.</p>'+
   '<div class="row"><label class="chk"><input type="checkbox" id="shOn"'+(S.on?' checked':'')+'> האתר סגור בשבת</label><label class="chk"><input type="checkbox" id="shYt"'+(S.yt?' checked':'')+'> וגם ביום טוב (2 ימים בחו״ל)</label></div>'+
