@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=David+Libre:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&display=swap">
-<link rel="stylesheet" href="assets/app.css?v=202610190120">
+<link rel="stylesheet" href="assets/app.css?v=202610190215">
 <script src="/assets/a11y.js?v=1" defer></script>
 </head>
 <body class="cd-app">
@@ -573,6 +573,8 @@
             <label class="fld">סוג קו<select id="fxLs"><option value="">רציף</option><option value="dashed">מקווקו</option><option value="dotted">מנוקד</option><option value="double">כפול</option></select></label>
             <label class="fld">צבע הקווים<span class="row" style="gap:4px;margin:0"><input type="color" id="fxLc" aria-label="צבע הקווים"><button class="btn small" type="button" data-fxs="lc0">רגיל</button></span></label>
           </div>
+          <div class="fx-add"><b>הוספה לדף</b><div class="row"><button class="btn small" type="button" data-fxadd="text">＋ כיתוב</button><button class="btn small" type="button" data-fxadd="img">＋ תמונה</button><label class="chk"><input type="checkbox" id="fxbAll"> בכל החודשים</label></div>
+            <p class="hint">הכיתוב או התמונה נוספים לעמוד שרואים עכשיו. גוררים להזזה, מושכים את הפינה לשינוי גודל, ולוחצים פעמיים כדי לכתוב או להחליף תמונה. את <b>גודל הטבלה</b> משנים בעיגולים שבצד ובתחתית הטבלה.</p></div>
           <div class="row"><button class="btn small" type="button" data-fx="undo" data-fxs="undo" disabled>↶ ביטול הפעולה האחרונה</button><button class="btn small" type="button" data-fxs="grid">איפוס הקווים והגדלים</button><button class="btn small" type="button" data-fxs="texts">איפוס הטקסטים</button><button class="btn small" type="button" data-fxs="all">איפוס כל העיצוב החופשי</button></div>
         </div>
         <div class="hint cdonly-b"><ol>
@@ -648,12 +650,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="assets/config.js?v=202610130515"></script>
 <script src="assets/yz.js?v=202610180500"></script>
-<script src="assets/plans.js?v=202610190120"></script>
+<script src="assets/plans.js?v=202610190215"></script>
 <script src="assets/stickers.js?v=202610130515"></script>
 <script src="assets/img-smart.js?v=202610130515"></script>
 <script src="assets/library/index.js?v=1" defer></script>
 <script src="assets/geo.js?v=1"></script>
 <script src="assets/hpick.js?v=1"></script>
-<script src="assets/app.js?v=202610190120"></script>
+<script src="assets/app.js?v=202610190215"></script>
 </body>
 </html>

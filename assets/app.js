@@ -1436,7 +1436,13 @@ function headRow(p,big,year,other){
 }
 const DSTYLES={hebMain:'עברי מודגש, לועזי קטן',gregMain:'לועזי מודגש, עברי קטן',both:'עברי ולועזי שווים',hebOnly:'רק עברי',gregOnly:'רק לועזי'};
 function dStyle(){const s=state.s;return DSTYLES[s.dateStyle]?s.dateStyle:(s.calType==='greg'?'gregMain':'hebMain')}
-/* שם החודש בקטן בכל יום, לפי צורת הצגת התאריכים */
+/* שם החודש בקטן ליד מספר היום (העברי, הלועזי או שניהם, לפי צורת הצגת התאריכים) */
+const GREG_SHORT=['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+function dayMonthInline(top,d,hd){const st=dStyle(),hm=hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())),gm=EN?GREG_MONTHS[d.getMonth()].slice(0,3):GREG_SHORT[d.getMonth()];
+  const add=(n,m)=>{if(n&&!n.textContent.includes(m.replace('׳','')))n.insertAdjacentHTML('beforeend',' <span class="d-mn">'+esc(m)+'</span>')};
+  const mains=top.querySelectorAll('.d-main'),sub=top.querySelector('.d-sub:not(.mk)');
+  if(st==='hebOnly')add(mains[0],hm);else if(st==='gregOnly')add(mains[0],gm);
+  else if(st==='gregMain'){add(mains[0],gm);add(sub,hm)}else if(st==='both'){add(mains[0],hm);add(mains[1],gm)}else{add(mains[0],hm);add(sub,gm)}}
 function dayMonthTxt(d,hd){const st=dStyle(),hm=hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())),gm=GREG_MONTHS[d.getMonth()];
   return st==='hebOnly'?hm:st==='gregOnly'?gm:st==='gregMain'?gm+' · '+hm:hm+' · '+gm}
 function dateTop(d,hd,long){
@@ -1482,7 +1488,7 @@ function addMonthGrid(p,mo,evMap){
     const hDay=gem(hd.getDate());
     c.setAttribute('aria-label',hDay+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+', '+d.getDate()+(EN?' ':' ב')+GREG_MONTHS[d.getMonth()]+'. הוספת אירוע');
     c.appendChild(el('div','d-top'+(dStyle()==='both'?' both':''),dateTop(d,hd)));
-    if(s.dayMonth)c.appendChild(el('div','d-mon',esc(dayMonthTxt(d,hd))));
+    if(s.dayMonth)dayMonthInline(c.lastChild,d,hd);
     for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;c.appendChild(e)}
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
@@ -1928,8 +1934,10 @@ function render(){
   renderAds();
   hlApply();
   fxApply();
+  fxBoxRender();
   fit();
   fxDecorate();
+  fxBoxDecorate();
   if(CDMODE)requestAnimationFrame(()=>cdApplyFocus());
 }
 stage.addEventListener('click',e=>{
@@ -2123,7 +2131,7 @@ tt.addEventListener('click',e=>{const a=e.target.dataset.a;if(!a||!ttEl)return;
    state.fx = {t:{key:{dx,dy,fs,t,co,b,hide}}, grid:{cols:[7], rows:{N:[...]}, head:mm}, lines:{w,st,c}} */
 function FX(){if(!state.fx||typeof state.fx!=='object')state.fx={};const f=state.fx;if(!f.t||typeof f.t!=='object')f.t={};if(!f.grid||typeof f.grid!=='object')f.grid={};if(!f.grid.rows)f.grid.rows={};if(!f.lines)f.lines={};return f}
 function fxOn(){return document.body.classList.contains('fx-on')}
-const FX_SKIP='[contenteditable=true],[contenteditable=""],.pg-img,.rsz,.no-print,button,input,select,label,.img-tools,.fx-h,.notice,.sheet-label,.drop';
+const FX_SKIP='.fxbox,[contenteditable=true],[contenteditable=""],.pg-img,.rsz,.no-print,button,input,select,label,.img-tools,.fx-h,.notice,.sheet-label,.drop';
 function fxOwnText(n){for(const c of n.childNodes)if(c.nodeType===3&&c.nodeValue.trim())return true;return false}
 function fxSig(n){return n.tagName.toLowerCase()+'.'+(n.classList[0]||'')}
 function fxSel(sig){const [t,c]=sig.split('.');return t+(c?'.'+CSS.escape(c):'')}
@@ -2163,6 +2171,7 @@ function fxApply(){
 function fxLines(p){const L=FX().lines;if(L.w!=null)p.style.setProperty('--lw',L.w+'mm');if(L.st)p.style.setProperty('--ls',L.st);if(L.c)p.style.setProperty('--p-line',L.c)}
 function fxGridStyle(grid,rows){
   const G=FX().grid;grid.dataset.rows=rows;
+  if(G.hp){grid.classList.add('gh');grid.style.setProperty('--gh',G.hp+'%')}if(G.wp){grid.classList.add('gw');grid.style.setProperty('--gw',G.wp+'%')}
   if(Array.isArray(G.cols)&&G.cols.length===7)grid.style.gridTemplateColumns=G.cols.map(v=>'minmax(0,'+(+v||1)+'fr)').join(' ');
   const R=G.rows[rows];
   grid.style.gridTemplateRows=(G.head?(+G.head).toFixed(2)+'mm':'auto')+' '+(Array.isArray(R)&&R.length===rows?R.map(v=>'minmax(0,'+(+v||1)+'fr)').join(' '):'repeat('+rows+',minmax(0,1fr))');
@@ -2239,6 +2248,88 @@ document.addEventListener('keydown',e=>{if(!fxOn()||!FXS||FXS.n.isContentEditabl
   if(M){e.preventDefault();fxSet(st=>{st.dx=+((+st.dx||0)+M[0]).toFixed(2);st.dy=+((+st.dy||0)+M[1]).toFixed(2)})}
   else if(e.key==='Escape')fxUnselect();
   else if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();fxUndo()}});
+
+/* ---------- עיצוב חופשי: גודל הטבלה, ותיבות כיתוב ותמונה בכל מקום בדף ----------
+   state.fx.grid.hp / wp: גובה ורוחב הטבלה באחוזים מהמקום שלה (ריק = כל המקום).
+   state.fx.boxes: [{id, k: מפתח העמוד או 'g:m' לכל החודשים, kind:'text'|'img', x,y,w,h (% מהעמוד), t, fs, co, b, al, img}] */
+function fxBoxes(){const f=FX();if(!Array.isArray(f.boxes))f.boxes=[];return f.boxes}
+function fxBoxRender(){
+  stage.querySelectorAll('.fxbox').forEach(n=>n.remove());
+  const B=fxBoxes();if(!B.length)return;
+  stage.querySelectorAll('.sheet-wrap[data-key]').forEach(w=>{const key=w.dataset.key,p=w.querySelector('.page');if(!p)return;
+    const mine=B.filter(b=>b.k===key||(b.k==='g:m'&&fxKind(key)==='m'));if(!mine.length)return;p.classList.add('has-fxbox');
+    mine.forEach(b=>{const d=el('div','fxbox fxb-'+b.kind);d.dataset.bid=b.id;Object.assign(d.style,{left:b.x+'%',top:b.y+'%',width:b.w+'%',height:b.h+'%'});
+      if(b.kind==='img'){if(b.img){const im=el('img');im.src=b.img;im.alt='';im.draggable=false;im.style.objectFit=b.fit==='cover'?'cover':'contain';d.appendChild(im)}else d.appendChild(el('div','fxb-empty','לחצו פעמיים לבחירת תמונה'))}
+      else{const t=el('div','fxb-t');t.textContent=b.t||'';t.dataset.ph='לחצו פעמיים לכתיבה';t.style.fontSize='calc(var(--u)*'+(+b.fs||5)+')';if(b.co)t.style.color=b.co;if(b.b)t.style.fontWeight='700';t.style.textAlign=b.al||'center';d.appendChild(t)}
+      if(b.k==='g:m')d.classList.add('fxb-all');
+      p.appendChild(d)})})
+}
+function fxBoxGet(id){return fxBoxes().find(b=>b.id===id)}
+function fxBoxSave(){save();fxBoxRender();fxBoxDecorate()}
+let FXB=null;
+const fxbb=el('div','fx-bar fxb-bar no-print');fxbb.hidden=true;document.body.appendChild(fxbb);
+function fxBoxBar(){const b=FXB&&fxBoxGet(FXB);if(!b){fxbb.hidden=true;return}
+  fxbb.innerHTML='<span class="fx-tip">✥ גררו להזזה · הפינה לשינוי גודל</span>'+(b.kind==='text'?'<button type="button" data-fb="dn" title="הקטנה">A−</button><button type="button" data-fb="up" title="הגדלה">A+</button><button type="button" data-fb="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fb="co" value="'+(b.co||'#1c242b')+'"></label><button type="button" data-fb="al" title="יישור">⇔ יישור</button><button type="button" data-fb="edit">✎ עריכה</button>':'<button type="button" data-fb="img">🖼 החלפה</button><button type="button" data-fb="fit">'+(b.fit==='cover'?'כל התמונה':'מילוי')+'</button>')+
+    '<label class="fx-all"><input type="checkbox" data-fb="all"'+(b.k==='g:m'?' checked':'')+'> בכל החודשים</label><button type="button" data-fb="del" title="מחיקה">🗑 מחיקה</button>';
+  const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"]');if(!n){fxbb.hidden=true;return}const r=n.getBoundingClientRect();fxbb.hidden=false;
+  fxbb.style.top=Math.max(4,r.top-46)+'px';fxbb.style.left=Math.max(4,Math.min(innerWidth-fxbb.offsetWidth-4,r.left))+'px'}
+fxbb.addEventListener('click',e=>{const t=e.target.closest('[data-fb]');if(!t)return;const b=fxBoxGet(FXB);if(!b)return;const a=t.dataset.fb;if(a==='co'||a==='all')return;
+  fxPush();
+  if(a==='up')b.fs=+Math.min(40,(+b.fs||5)*1.12).toFixed(2);if(a==='dn')b.fs=+Math.max(1.5,(+b.fs||5)/1.12).toFixed(2);if(a==='b')b.b=!b.b;
+  if(a==='al')b.al={center:'right',right:'left',left:'center'}[b.al||'center'];
+  if(a==='fit')b.fit=b.fit==='cover'?'contain':'cover';
+  if(a==='del'){FX().boxes=fxBoxes().filter(x=>x!==b);FXB=null}
+  if(a==='edit'){fxBoxEdit(b.id);return}
+  if(a==='img'){fxBoxImg(b);return}
+  fxBoxSave();fxBoxBar()});
+fxbb.addEventListener('input',e=>{const t=e.target;if(t.dataset.fb!=='co')return;const b=fxBoxGet(FXB);if(!b)return;b.co=t.value;const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"] .fxb-t');if(n)n.style.color=t.value;clearTimeout(fxbb.T);fxbb.T=setTimeout(save,300)});
+fxbb.addEventListener('change',e=>{const t=e.target;if(t.dataset.fb!=='all')return;const b=fxBoxGet(FXB);if(!b)return;fxPush();
+  if(t.checked){b.kPage=b.k;b.k='g:m'}else{b.k=b.kPage&&b.kPage!=='g:m'?b.kPage:(fxVisibleKey()||b.k)}fxBoxSave();fxBoxBar()});
+function fxBoxImg(b){const f=v=>{if(!v.img)return;fxPush();b.img=v.img;fxBoxSave();fxBoxBar()};f.maxPx=1600;pickImage(f)}
+function fxBoxEdit(id){const n=stage.querySelector('.fxbox[data-bid="'+id+'"] .fxb-t');if(!n)return;n.contentEditable='true';n.classList.add('editing');n.focus();
+  try{const r=document.createRange();r.selectNodeContents(n);r.collapse(false);const sl=getSelection();sl.removeAllRanges();sl.addRange(r)}catch(e){}
+  n.onblur=()=>{n.contentEditable='false';n.classList.remove('editing');const b=fxBoxGet(id);if(b&&b.t!==n.innerText.trim()){fxPush();b.t=n.innerText.trim();save()}}}
+/* העמוד שרואים עכשיו במרכז המסך */
+function fxVisibleKey(){let best=null,bd=1e9;const cy=innerHeight/2;stage.querySelectorAll('.sheet-wrap[data-key]').forEach(w=>{const r=w.getBoundingClientRect();const d=r.top<=cy&&r.bottom>=cy?0:Math.min(Math.abs(r.top-cy),Math.abs(r.bottom-cy));if(d<bd){bd=d;best=w.dataset.key}});return best}
+function fxBoxAdd(kind){const k=fxVisibleKey();if(!k)return;fxPush();const all=$('#fxbAll')&&$('#fxbAll').checked&&fxKind(k)==='m';
+  const b={id:'b'+uid(),k:all?'g:m':k,kind,x:kind==='text'?25:35,y:kind==='text'?8:10,w:kind==='text'?50:30,h:kind==='text'?7:20,t:'',fs:6};
+  fxBoxes().push(b);FXB=b.id;fxBoxSave();
+  if(kind==='img')fxBoxImg(b);else setTimeout(()=>fxBoxEdit(b.id),50);fxBoxBar()}
+/* גרירה ושינוי גודל של תיבה, וידיות לגודל הטבלה */
+function fxBoxDecorate(){
+  stage.querySelectorAll('.fxb-rs,.fx-gsz').forEach(x=>x.remove());
+  if(!fxOn()){FXB=null;fxbb.hidden=true;return}
+  stage.querySelectorAll('.fxbox').forEach(n=>{n.appendChild(el('span','fxb-rs no-print'));n.classList.toggle('sel',n.dataset.bid===FXB)});
+  stage.querySelectorAll('.page .grid[data-rows]').forEach(g=>{const hh=el('div','fx-h fx-gsz fx-gsz-h no-print');hh.title='גררו כדי לשנות את גובה הטבלה';g.appendChild(hh);
+    const hw=el('div','fx-h fx-gsz fx-gsz-w no-print');hw.title='גררו כדי לשנות את רוחב הטבלה';g.appendChild(hw)});
+  fxBoxBar();
+}
+stage.addEventListener('pointerdown',e=>{
+  if(!fxOn()||e.button!==0)return;
+  const gs=e.target.closest('.fx-gsz');
+  if(gs){e.preventDefault();e.stopPropagation();const g=gs.parentNode,par=g.parentNode,pr=par.getBoundingClientRect(),gr=g.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,H=gs.classList.contains('fx-gsz-h');
+    const G=FX().grid,rtl=getComputedStyle(g).direction==='rtl';let v=null;fxPush();
+    const mv=ev=>{if(H){v=Math.max(30,Math.min(100,(gr.height+(ev.clientY-sy))/pr.height*100));g.classList.add('gh');g.style.setProperty('--gh',v+'%')}
+      else{const dx=(ev.clientX-sx)*(rtl?-1:1);v=Math.max(40,Math.min(100,(gr.width+2*dx)/pr.width*100));g.classList.add('gw');g.style.setProperty('--gw',v+'%')}};
+    const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(v!=null){if(H)G.hp=+v.toFixed(1);else G.wp=+v.toFixed(1);if(v>=99.5){if(H)delete G.hp;else delete G.wp}save();render()}};
+    addEventListener('pointermove',mv);addEventListener('pointerup',up);return}
+  const n=e.target.closest('.fxbox');if(!n)return;
+  e.preventDefault();e.stopPropagation();const id=n.dataset.bid,b=fxBoxGet(id);if(!b)return;
+  if(FXB!==id){FXB=id;stage.querySelectorAll('.fxbox.sel').forEach(x=>x.classList.remove('sel'));n.classList.add('sel');fxUnselect();fxBoxBar()}
+  if(e.target.closest('.fxb-t.editing'))return;
+  const rs=e.target.closest('.fxb-rs'),pr=n.parentNode.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,b0={...b};let moved=false;
+  const mv=ev=>{const dx=(ev.clientX-sx)/pr.width*100,dy=(ev.clientY-sy)/pr.height*100;if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<3)return;if(!moved){moved=true;fxPush()}
+    if(rs){b.w=Math.max(4,Math.min(b0.x+b0.w+10,b0.w-dx));b.x=b0.x+b0.w-b.w;b.h=Math.max(2,b0.h+dy)}
+    else{b.x=Math.max(-10,Math.min(100-b0.w*.2,b0.x+dx));b.y=Math.max(-5,Math.min(100-b0.h*.2,b0.y+dy))}
+    Object.assign(n.style,{left:b.x+'%',top:b.y+'%',width:b.w+'%',height:b.h+'%'});fxBoxBar()};
+  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(moved){['x','y','w','h'].forEach(k=>b[k]=+(+b[k]).toFixed(2));save();if(b.k==='g:m'){fxBoxRender();fxBoxDecorate()}}};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up)},true);
+stage.addEventListener('dblclick',e=>{if(!fxOn())return;const n=e.target.closest('.fxbox');if(!n)return;const b=fxBoxGet(n.dataset.bid);if(!b)return;if(b.kind==='img')fxBoxImg(b);else fxBoxEdit(b.id)});
+document.addEventListener('pointerdown',e=>{if(FXB&&!e.target.closest('.fxbox,.fxb-bar,.modal-back')){FXB=null;fxbb.hidden=true;stage.querySelectorAll('.fxbox.sel').forEach(x=>x.classList.remove('sel'))}});
+document.addEventListener('keydown',e=>{if(!FXB||!fxOn())return;if(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+  if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();fxPush();FX().boxes=fxBoxes().filter(x=>x.id!==FXB);FXB=null;fxBoxSave()}});
+window.addEventListener('scroll',()=>{if(FXB)fxBoxBar()},{passive:true});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-fxadd]');if(b)fxBoxAdd(b.dataset.fxadd)});
 
 /* ידיות לגרירת קווי הטבלה */
 function fxDecorate(){
@@ -3061,7 +3152,7 @@ const STEPS=[
  ['עיצוב חופשי','בתצוגה המקדימה אפשר לגרור, להגדיל ולעצב כל דבר ישירות.'],
  ['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']];
 const CD_STEPS={1:['פרטי הספירה','למה סופרים, תאריך היעד, העיצוב והצורה, תמונות ומשפטים, וגודל הדף.'],2:['צבעים וגופנים','צבעי הלוח, הגופנים וגודל הטקסט.'],7:['עיצוב חופשי','בתצוגה המקדימה אפשר לגרור, להגדיל ולעצב כל דבר ישירות.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
-const SIMPLE_STEPS={1:['סוג הלוח','לוח עברי או לועזי, השנה וגודל הדף.'],2:['עיצוב','איך נראה כל עמוד, צבעים וגופנים.'],5:['תמונות ואירועים','המסלול המהיר: מעלים את כל התמונות למגש שבתחתית המסך, גוררים כל תמונה לחודש או ליום (או "מילוי אוטומטי"), ולוחצים על יום כדי להוסיף יום הולדת או אירוע.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
+const SIMPLE_STEPS={7:['עיצוב חופשי','מגדילים, מקטינים ומזיזים כל טקסט בלוח, משנים את גודל הטבלה, ומוסיפים כיתוב או תמונה בכל מקום בדף.'],1:['סוג הלוח','לוח עברי או לועזי, השנה וגודל הדף.'],2:['עיצוב','איך נראה כל עמוד, צבעים וגופנים.'],5:['תמונות ואירועים','המסלול המהיר: מעלים את כל התמונות למגש שבתחתית המסך, גוררים כל תמונה לחודש או ליום (או "מילוי אוטומטי"), ולוחצים על יום כדי להוסיף יום הולדת או אירוע.'],8:['סיום והדפסה','הכל נשמר. מכאן מדפיסים או שומרים כ־PDF.']};
 /* עיצובים מוכנים לבונה הפשוט: לחיצה אחת משנה סגנון, צבע, גופנים ופריסה */
 const SIMPLE_PRESETS=[
  ['round','מעוגל ומרווח','round','#1e5a63','Rubik','Assistant','full'],
@@ -3081,7 +3172,7 @@ function spSync(){const box=$('#spCards');if(!box)return;const cur=state.s.prese
   box.querySelectorAll('[data-sp]').forEach(b=>{const on=b.dataset.sp===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-sp]');if(!b)return;const P=SIMPLE_PRESETS.find(x=>x[0]===b.dataset.sp);if(!P)return;
   const s=state.s;Object.assign(s,{preset:P[0],theme:P[2],accent:P[3],headFont:P[4],bodyFont:P[5],layout:P[6],tcolors:{}});loadFont(P[4]);loadFont(P[5]);save();syncUI();render()});
-const STEP_LIST=()=>CDMODE?[1,2,7,8]:SIMPLE?[1,2,5,8]:[1,2,3,4,5,6,7,8];
+const STEP_LIST=()=>CDMODE?[1,2,7,8]:SIMPLE?[1,2,5,7,8]:[1,2,3,4,5,6,7,8];
 const stepInfo=n=>CDMODE?CD_STEPS[n]:SIMPLE?SIMPLE_STEPS[n]:STEPS[n-1];
 function uiMode(){return state.s.uiMode||'wizard'}
 function applyMode(){
@@ -3096,7 +3187,7 @@ function applyMode(){
   $('#stepNo').textContent='שלב '+pos+' מתוך '+SL.length;$('#stepTitle').textContent=stepInfo(n)[0];$('#stepDesc').textContent=stepInfo(n)[1];
   $('#stepCount').textContent=pos+' / '+SL.length;$('#stepPrev').disabled=pos===1;
   $('#stepNext').textContent=n===8?'סיום':'הבא';
-  {const on=(mode==='wizard'&&n===7)||(mode==='adv'&&!!s.fxOn);if(document.body.classList.contains('fx-on')!==on){document.body.classList.toggle('fx-on',on);try{fxDecorate()}catch(e){}}const c=$('#fxAdv');if(c)c.checked=!!s.fxOn}
+  {const on=(mode==='wizard'&&n===7)||(mode==='adv'&&!!s.fxOn);if(document.body.classList.contains('fx-on')!==on){document.body.classList.toggle('fx-on',on);try{fxDecorate();fxBoxDecorate()}catch(e){}}const c=$('#fxAdv');if(c)c.checked=!!s.fxOn}
   $('#modeBtn').textContent=mode==='adv'?'מצב שלב אחר שלב':mode==='home'?'עריכה':'כל ההגדרות בבת אחת';
   const yr=s.calType==='heb'?'שנת '+hebYearStr(+s.hebYear):'שנת '+s.gregYear;
   $('#homeTitle').textContent=CDMODE?'לוח הספירה שלך'+(s.cdTitle?': '+s.cdTitle:''):'הלוח שלך ל'+yr;

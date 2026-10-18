@@ -1314,3 +1314,27 @@ body.tray-on .mla-btn{bottom:190px!important}body.tray-on .tray.min~.mla-btn{bot
 .d-mon{font-size:calc(var(--u)*1.95*var(--ts));color:var(--p-mute);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:calc(var(--u)*-.1)}
 .t-round .d-mon{padding-inline:calc(var(--u)*.8)}
 .cell.has-img .d-mon{background:rgb(255 255 255 / .84);border-radius:calc(var(--u)*.6);padding:0 calc(var(--u)*.6);align-self:flex-start}
+
+/* שם החודש ליד מספר היום */
+.d-mn{font-family:var(--f-body);font-size:.5em;font-weight:500;color:var(--p-mute);letter-spacing:0}
+.d-sub .d-mn{font-size:.85em}
+/* גודל הטבלה בעיצוב החופשי */
+.grid.gh{flex:0 0 auto!important;height:var(--gh)}
+.page>.grid.gw,.grid-row>.grid.gw{width:var(--gw);flex-basis:var(--gw)!important;flex-grow:0!important;align-self:center}
+.grid-row>.grid.gh{align-self:flex-start}
+.fx-gsz{position:absolute;z-index:6;width:16px;height:16px;border-radius:50%;background:var(--accent,#1f5c63);border:2px solid #fff;box-shadow:0 1px 4px rgb(0 0 0 / .35)}
+.fx-gsz-h{left:50%;bottom:-9px;transform:translateX(-50%);cursor:ns-resize}
+.fx-gsz-w{top:50%;inset-inline-end:-9px;transform:translateY(-50%);cursor:ew-resize}
+/* תיבות כיתוב ותמונה חופשיות */
+.fxbox{position:absolute;z-index:5;pointer-events:none;display:flex;align-items:center;justify-content:center}
+body.fx-on .fxbox{pointer-events:auto;cursor:move;outline:1px dashed rgb(31 92 99 / .5)}
+body.fx-on .fxbox.sel{outline:2px solid var(--accent,#1f5c63)}
+.fxbox img{width:100%;height:100%;display:block;object-fit:contain}
+.fxb-t{width:100%;font-family:var(--f-head);color:var(--p-ink);line-height:1.25;white-space:pre-wrap;outline:none}
+body.fx-on .fxb-t:empty::before{content:attr(data-ph);color:#9aa3a8;font-size:12px}
+.fxb-t.editing{cursor:text;background:rgb(255 255 255 / .7)}
+.fxb-empty{font-size:12px;color:#7a8589;border:1px dashed #b9c2c6;width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center}
+.fxb-rs{position:absolute;left:-6px;bottom:-6px;width:12px;height:12px;border-radius:3px;background:var(--accent,#1f5c63);border:2px solid #fff;cursor:nesw-resize}
+@media print{.fxb-empty,.fxb-rs{display:none!important}.fxbox{outline:0!important}.page.has-fxbox{position:relative!important}}
+.fx-add{margin:8px 0;padding:8px;border:1px dashed var(--line);border-radius:8px}
+.d-main:has(.d-mn),.d-sub:has(.d-mn){white-space:nowrap}

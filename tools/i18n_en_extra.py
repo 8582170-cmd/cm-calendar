@@ -1,6 +1,17 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'עיצוב חופשי': 'Free design',
+ '＋ כיתוב': '＋ Text',
+ '＋ תמונה': '＋ Photo',
+ 'בכל החודשים': 'In all months',
+ 'הוספה לדף': 'Add to the page',
+ '🗑 מחיקה': '🗑 Delete',
+ '⇔ יישור': '⇔ Align',
+ '🖼 החלפה': '🖼 Replace',
+ 'כל התמונה': 'Whole photo',
+ 'מילוי': 'Fill',
+ 'מגדילים, מקטינים ומזיזים כל טקסט בלוח, משנים את גודל הטבלה, ומוסיפים כיתוב או תמונה בכל מקום בדף.': 'Resize and move any text, change the table size, and add text or a photo anywhere on the page.',
  'שם החודש בקטן בכל יום': 'Month name in small type on every day',
  'בונים ורואים את כל השנה': 'Build and see the whole year',
  'לוח פשוט לכל השנה להורדה (עד 3 זמנים, 10 תמונות ו־25 אירועים)': 'A simple whole-year calendar to download (up to 3 zmanim, 10 photos and 25 events)',
