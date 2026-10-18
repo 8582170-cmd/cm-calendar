@@ -3201,7 +3201,7 @@ function applyMode(){
   try{trayShow()}catch(e){}
 }
 /* הלוח שבצד גלול בפני עצמו: הגובה שלו הוא החלק הגלוי במסך, כך שאפשר לגלול אותו עד הסוף בלי לגלול קודם את התצוגה */
-function fitSide(){const sd=document.querySelector('.side');if(!sd)return;if(innerWidth<901){sd.style.maxHeight='';return}const t=Math.max(0,sd.getBoundingClientRect().top);sd.style.maxHeight=Math.max(240,innerHeight-t)+'px'}
+function fitSide(){const sd=document.querySelector('.side');if(!sd)return;if(innerWidth<901){sd.style.maxHeight='';return}const t=Math.max(0,sd.getBoundingClientRect().top),th=document.body.classList.contains('tray-on')?(parseFloat(getComputedStyle(document.body).getPropertyValue('--trayh'))||0):0;sd.style.maxHeight=Math.max(240,innerHeight-t-th)+'px'}
 let fitSideRaf=0;window.addEventListener('scroll',()=>{if(!fitSideRaf)fitSideRaf=requestAnimationFrame(()=>{fitSideRaf=0;fitSide()})},{passive:true});window.addEventListener('resize',fitSide);setTimeout(fitSide,300);
 function goMode(m,step){const s=state.s;s.uiMode=m;if(step)s.step=step;save();applyMode();window.scrollTo({top:0,behavior:'smooth'});setTimeout(fit,50)}
 function goStep(n){state.s.step=Math.min(8,Math.max(1,n));state.s.uiMode='wizard';save();applyMode();const sd=$('.side');if(sd)sd.scrollTop=0;window.scrollTo({top:0,behavior:'smooth'})}
@@ -4174,7 +4174,10 @@ function thumbOf(img){return new Promise(res=>{const im=new Image();im.onload=()
 async function trayAdd(img,meta){const t={id:'t'+uid(),img,th:await thumbOf(img),used:0,...(meta||{})};TRAY.push(t);return t}
 function trayShow(){const b=$('#tray');if(!b)return;const s=state.s,mode=s.uiMode,n=+s.step||1;
   const on=!CDMODE&&!SNAPVIEW&&((mode==='wizard'&&(n===5||(SIMPLE&&n<8)))||(mode==='adv'&&(TRAY.length>0||!!s.trayOn)));
-  b.hidden=!on;document.body.classList.toggle('tray-on',on);b.classList.toggle('min',!!s.trayMin)}
+  b.hidden=!on;document.body.classList.toggle('tray-on',on);b.classList.toggle('min',!!s.trayMin);trayH()}
+/* גובה המגש: כפתורי "הבא" ו"הקודם" והפאנל שבצד עולים מעליו */
+function trayH(){const b=$('#tray'),h=b&&!b.hidden?b.offsetHeight:0;document.body.style.setProperty('--trayh',h+'px');try{fitSide()}catch(e){}}
+try{new ResizeObserver(()=>trayH()).observe($('#tray'))}catch(e){}
 function trayDraw(){const L=$('#trayList');if(!L)return;
   L.innerHTML=TRAY.length?TRAY.map(t=>'<div class="tray-i'+(t.used?' used':'')+(TSEL===t.id?' sel':'')+'" draggable="true" data-ti="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(TSEL===t.id)+'" title="'+(t.from?'מאת '+esc(t.from)+' · ':'')+'גררו לחודש או ליום, או לחצו ואז בחרו מקום"><img src="'+t.th+'" alt="" draggable="false">'+(t.used?'<span class="tray-ok" aria-label="בשימוש">✓</span>':'')+(t.from?'<span class="tray-from">'+esc(t.from)+'</span>':'')+'<button type="button" class="tray-x" data-tx="'+t.id+'" aria-label="הסרה מהמגש">×</button></div>').join('')
     :'<div class="tray-empty"><b>המסלול המהיר:</b> ① מעלים את כל התמונות לכאן בבת אחת ② גוררים כל תמונה לחודש או ליום, או לוחצים "מילוי אוטומטי" ③ לוחצים על יום כדי להוסיף יום הולדת או אירוע</div>';
