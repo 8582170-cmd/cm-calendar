@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'להדפיס בחינם?': 'Print for free?',
+ 'הדפסה עם סימן מים עדין': 'Print with a light watermark',
+ 'בלי סימן מים: למסלולים': 'No watermark: see plans',
+ 'למסלולים': 'See plans',
+ 'בהדפסה החינמית מופיעים סימן מים עדין והלוגו של MyLuach. אפשר להדפיס או לשמור כ־PDF. במסלול בתשלום מדפיסים בלי סימן מים.': 'A free print has a light watermark and the MyLuach logo. You can print or save as PDF. With a paid plan you print without a watermark.',
  'מיקום וזמנים': 'Location and times',
  'בלי מיקום (בלי זמנים)': 'No location (no times)',
  'שקיעה בכל יום': 'Sunset every day',

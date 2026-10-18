@@ -1055,7 +1055,7 @@ function loadFont(fam){
 function fontOptions(def){return opt('',def)+FONTS.map(([g,l])=>'<optgroup label="'+g+'">'+l.map(f=>opt(f[0],f[1])).join('')+'</optgroup>').join('')}
 function pageShell(label,key){
   const [w,h]=pageDims(),s=state.s;
-  const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
+  const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':freePrintOK()?' wm-free':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
   if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown'&&!(key==='cover'&&IMGBG(s.pageBg))){
@@ -1186,7 +1186,7 @@ function addFootLine(p){
   const s=state.s,z=!s.noTimes&&s.zmanimMode!=='none'&&Object.values(s.zmanim).some(Boolean);
   if(!z&&!creditOn())return;
   const f=el('div','pg-foot',z?footText():'<span></span>');
-  if(creditOn())f.insertAdjacentHTML('beforeend',EN?(LITE?'<span class="credit credit-lite">Created free with MyLuach.org · personal Jewish calendars with photos and zmanim</span>':'<span class="credit">Created with MyLuach.org</span>'):LITE?'<span class="credit credit-lite">הופק בחינם ע״י MyLuach.org · עיצוב לוח שנה אישי עם תמונות וזמנים</span>':'<span class="credit">הופק ע״י MyLuach.org</span>');
+  if(creditOn())f.insertAdjacentHTML('beforeend',EN?(LITE?'<span class="credit credit-lite">Created free with MyLuach.org · personal Jewish calendars with photos and zmanim</span>':'<span class="credit">Created with MyLuach.org</span>'):(LITE||PLAN().watermark)?'<span class="credit credit-lite"><img class="credit-logo" src="assets/logo.svg?v=2" alt="">הופק בחינם ע״י MyLuach.org · עיצוב לוח שנה אישי עם תמונות וזמנים</span>':'<span class="credit">הופק ע״י MyLuach.org</span>');
   p.appendChild(f);
 }
 /* ---------- לוח שנתי בעמוד אחד ---------- */
@@ -1827,12 +1827,20 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-wks]');if(
 /* ---------- render ---------- */
 let monthsCache=[];
 /* סימן המים לא מוצג על המסך, אלא רק בהדפסה (לפי המסלול), או כשהלוח עובר את מה שמותר בהורדה החינמית (אירועים, תמונות) */
+/* הדפסה חינמית (מסלול ניסיון): למי שנכנס לחשבון ובתוך המגבלות של ההורדה החינמית, עם סימן מים עדין ולוגו.
+   הדפסה מהדפדפן (Ctrl+P) בלי חשבון או מעבר למגבלות: מוצגת הודעה במקום הלוח. */
+function freePrintOK(){try{const P=PLAN();return !!P.watermark&&P.id==='free'&&!!user&&!wmScreen()}catch(e){return false}}
+function printGate(){const P=PLAN(),b=document.body;if(!P.watermark||P.id!=='free'){b.classList.add('pg-ok');return}
+  const w=wmScreen(),ok=!!user&&!w;b.classList.toggle('pg-ok',ok);
+  b.dataset.pmsg=!user?'כדי להדפיס את הלוח בחינם, נכנסים לחשבון באתר (ההרשמה חינם).\nאחר כך מדפיסים שוב, עם סימן מים עדין.\n\nMyLuach.org':
+    (w.replace(', ולכן מופיע סימן מים.','.')+'\nבהדפסה החינמית אפשר עד '+LITE_LIM.events+' אירועים ו־'+LITE_LIM.photos+' תמונות.\nלהדפסה של הכל: מסלול בתשלום באתר.\n\nMyLuach.org')}
 function photoCount(){let n=(state.cover&&state.cover.img)?1:0;for(const k in state.slots||{})if(state.slots[k]&&state.slots[k].img)n++;for(const e of state.events)if(e.img)n++;return n}
 function wmScreen(){const p=PLAN();if(!p.watermark||SAMPLE||LITE)return '';const L=p.id==='free'||!p.id?LITE_LIM:{events:p.events,photos:Infinity};
   const ev=state.events.length,ph=photoCount();if(ev>L.events)return 'יש בלוח '+ev+' אירועים, יותר מ־'+L.events+' שאפשר בחינם, ולכן מופיע סימן מים.';
   if(ph>L.photos)return 'יש בלוח '+ph+' תמונות, יותר מ־'+L.photos+' שאפשר בחינם, ולכן מופיע סימן מים.';return ''}
 function render(){
   yzInvalidate();
+  try{printGate()}catch(err){}
   {const w=wmScreen();document.body.classList.toggle('wm-screen',!!w);const n=$('#wmNote');if(n){n.hidden=!w;n.innerHTML=w?esc(w)+' <button type="button" class="linkbtn" data-upgrade="events">למסלולים</button>':''}}
   const s=state.s;
   applyPrintPageStyle();
@@ -3523,6 +3531,10 @@ function doPrint(){
   const P=PLAN();
   if(AUTH.ready&&!AUTH.user){loginModal('כדי להוריד או להדפיס, נכנסים לחשבון. ההרשמה חינם, וכל מה שבניתם נשמר.');return}
   if(P.freeCd){const m=modal('<h3>להדפיס את לוח הספירה?</h3><p class="hint">לוח ספירה לאחור של עד '+FREE_CD+' ימים מורידים ומדפיסים בחינם. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>ביטול</button></div>');m.querySelector('#dlGo').onclick=()=>{m.remove();logDl('countdown');setTimeout(ourPrint,50)};return}
+  if(!P.downloads&&P.id==='free'&&!SAMPLE){const w=wmScreen();
+    if(w){const m=modal('<h3>להדפיס בחינם?</h3><p class="hint">'+esc(w.replace(', ולכן מופיע סימן מים.','.'))+' בהדפסה החינמית אפשר עד '+LITE_LIM.events+' אירועים ו־'+LITE_LIM.photos+' תמונות. אפשר להוריד חלק, או לבחור מסלול ולהדפיס הכל בלי סימן מים.</p><div class="row"><button class="btn primary" type="button" id="fpUp">למסלולים</button><button class="btn" type="button" data-close>חזרה</button></div>');m.querySelector('#fpUp').onclick=()=>{m.remove();openUpgrade('download')};return}
+    const m=modal('<h3>להדפיס בחינם?</h3><p class="hint">בהדפסה החינמית מופיעים סימן מים עדין והלוגו של MyLuach. אפשר להדפיס או לשמור כ־PDF. במסלול בתשלום מדפיסים בלי סימן מים.</p><div class="row"><button class="btn primary" type="button" id="fpGo">הדפסה עם סימן מים עדין</button><button class="btn" type="button" id="fpUp">בלי סימן מים: למסלולים</button></div>');
+    m.querySelector('#fpGo').onclick=()=>{m.remove();render();try{logDl('browser',{wm:1})}catch(e){}setTimeout(ourPrint,80)};m.querySelector('#fpUp').onclick=()=>{m.remove();openUpgrade('download')};return}
   if(!P.downloads){openUpgrade('download');return}
   const left=LP.downloadsLeft();
   if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
