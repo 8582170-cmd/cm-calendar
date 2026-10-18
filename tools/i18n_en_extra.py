@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ '✥ הזזת הטבלה':'✥ Move the table',
  '📷 תמונות':'📷 Photos','סגירה ⟨':'Close ⟨',
  'עיצוב חופשי': 'Free design',
  '＋ כיתוב': '＋ Text',
