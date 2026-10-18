@@ -58,7 +58,7 @@ RE = [
  (r'^יום הולדת · (.+) · כל שנה$', r'Birthday · \1 · every year'), (r'^יום שנה \(יארצייט\) · (.+) · כל שנה$', r'Yahrzeit · \1 · every year'),
  (r'^יום נישואין · (.+) · כל שנה$', r'Anniversary · \1 · every year'), (r'^(.+) · כל שנה$', r'\1 · every year'),
  (r'^בכל שנה ב־(.+)$', r'Every year on \1'), (r'^(.+)\. הוספת אירוע$', r'\1. Add an event'), (r'^הוספת אירוע ל(.+)$', r'Add an event to \1'),
- (r'^הדלקת נרות חנוכה (\S+)$', r'Chanukah candles \1'), (r'^הדלקת נרות (\S+)$', r'Candles \1'), (r'^יציאה (\S+)$', r'Havdalah \1'),
+ (r'^הדלקת נרות חנוכה (\S+)$', r'Chanukah candles \1'), (r'^הדלקת נרות (\S+)$', r'Candles \1'), (r'^יציאה (\S+)$', r'Havdalah \1'), (r'^מוצ״ש (\S+)$', r'Havdalah \1'), (r'^מוצאי חג (\S+)$', r'Havdalah \1'),
  (r'^תחילת הצום (\S+)$', r'Fast begins \1'), (r'^סוף הצום (\S+)$', r'Fast ends \1'), (r'^המולד: (.+)$', r'Molad: \1'),
  (r'^שעון חורף: ב־(\S+) מחזירים ל־(\S+)$', r'Clocks go back: \1 → \2'), (r'^שעון קיץ: ב־(\S+) מקדימים ל־(\S+)$', r'Clocks go forward: \1 → \2'),
  (r'^סוף אכילת חמץ (.+)$', r'Stop eating chametz \1'), (r'^סוף ביעור חמץ (.+)$', r'Burn chametz by \1'),
