@@ -445,7 +445,7 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
   :root{padding:0!important}
   body{background:#fff;padding:0}
   .app{display:block;max-width:none}
-  .bar,.side,.notice,.stage-head,.img-tools,.drop,.sheet-label,.no-print{display:none!important}
+  .bar,.side,.notice,.stage-head,.img-tools,.drop,.sheet-label,.no-print,.home,.welcome,.stepper,.simple-note,#howto,.dev-plan,.mla-btn,.mla-p,.tray,.tray-pick,.cover-add,.ins,.c-imgbtn,.modal-back{display:none!important}
   .stage{display:block}
   .sheet-wrap{width:auto!important;height:auto!important;position:static}
   .sheet-wrap .page{position:static;transform:none!important;box-shadow:none;break-after:page;page-break-after:always}
