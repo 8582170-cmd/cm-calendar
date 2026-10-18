@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'בונים ורואים את כל השנה': 'Build and see the whole year',
+ 'לוח פשוט לכל השנה להורדה (עד 3 זמנים, 10 תמונות ו־25 אירועים)': 'A simple whole-year calendar to download (up to 3 zmanim, 10 photos and 25 events)',
+ 'הדפסה בחינם': 'Print for free',
+ 'בהדפסה החינמית מופיע הלוגו של MyLuach. אפשר להדפיס או לשמור כ־PDF.': 'A free print includes the MyLuach logo. You can print or save as PDF.',
  'להדפיס בחינם?': 'Print for free?',
  'הדפסה עם סימן מים עדין': 'Print with a light watermark',
  'בלי סימן מים: למסלולים': 'No watermark: see plans',

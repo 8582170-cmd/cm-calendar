@@ -1832,12 +1832,12 @@ let monthsCache=[];
 function freePrintOK(){try{const P=PLAN();return !!P.watermark&&P.id==='free'&&!!user&&!wmScreen()}catch(e){return false}}
 function printGate(){const P=PLAN(),b=document.body;if(!P.watermark||P.id!=='free'){b.classList.add('pg-ok');return}
   const w=wmScreen(),ok=!!user&&!w;b.classList.toggle('pg-ok',ok);
-  b.dataset.pmsg=!user?'כדי להדפיס את הלוח בחינם, נכנסים לחשבון באתר (ההרשמה חינם).\nאחר כך מדפיסים שוב, עם סימן מים עדין.\n\nMyLuach.org':
-    (w.replace(', ולכן מופיע סימן מים.','.')+'\nבהדפסה החינמית אפשר עד '+LITE_LIM.events+' אירועים ו־'+LITE_LIM.photos+' תמונות.\nלהדפסה של הכל: מסלול בתשלום באתר.\n\nMyLuach.org')}
+  b.dataset.pmsg=!user?'כדי להדפיס את הלוח בחינם, נכנסים לחשבון באתר (ההרשמה חינם).\nאחר כך מדפיסים שוב.\n\nMyLuach.org':
+    (w+'\nבהדפסה החינמית אפשר עד '+LITE_LIM.events+' אירועים ו־'+LITE_LIM.photos+' תמונות.\nלהדפסה של הכל: מסלול בתשלום באתר.\n\nMyLuach.org')}
 function photoCount(){let n=(state.cover&&state.cover.img)?1:0;for(const k in state.slots||{})if(state.slots[k]&&state.slots[k].img)n++;for(const e of state.events)if(e.img)n++;return n}
 function wmScreen(){const p=PLAN();if(!p.watermark||SAMPLE||LITE)return '';const L=p.id==='free'||!p.id?LITE_LIM:{events:p.events,photos:Infinity};
-  const ev=state.events.length,ph=photoCount();if(ev>L.events)return 'יש בלוח '+ev+' אירועים, יותר מ־'+L.events+' שאפשר בחינם, ולכן מופיע סימן מים.';
-  if(ph>L.photos)return 'יש בלוח '+ph+' תמונות, יותר מ־'+L.photos+' שאפשר בחינם, ולכן מופיע סימן מים.';return ''}
+  const ev=state.events.length,ph=photoCount();if(ev>L.events)return 'יש בלוח '+ev+' אירועים, ובחינם אפשר עד '+L.events+'.';
+  if(ph>L.photos)return 'יש בלוח '+ph+' תמונות, ובחינם אפשר עד '+L.photos+'.';return ''}
 function render(){
   yzInvalidate();
   try{printGate()}catch(err){}
@@ -3213,7 +3213,7 @@ function openUpgrade(reason){
   const need=LP.cheapestWith(reason),what=LP.FEATURE_NAMES[reason]||'';
   const title=reason==='download'?'הורדה והדפסה של הלוח':reason==='months'?'פתיחת כל חודשי השנה':reason?what:'המסלולים של MyLuach';
   const sub=reason==='events'?'במסלול שלכם אפשר עד '+PLAN().events+' אירועים משפחתיים.':reason&&reason!=='months'&&reason!=='download'?'האפשרות הזאת כלולה במסלול '+need.name+' ומעלה.':'בוחרים מסלול, וכל מה שבניתם נשאר בדיוק כמו שהוא.';
-  const m=modal('<h3>'+esc(title)+'</h3><p class="hint">'+esc(sub)+'</p>'+(PLAN().id==='free'?'<div class="sample-offer"><div><b>רוצים לראות קודם איך זה יוצא?</b><span>חודש אחד מלא להורדה בחינם, עם סימן מים עדין.</span></div><button class="btn" type="button" data-sample>חודש לדוגמה בחינם</button></div>':'')+planCards(need.id)+'<p class="hint plan-note">כל מסלול הוא לשנה אחת, ללוח של אותה שנה. בשלב הזה התשלום עוד לא מחובר: הבחירה רק מחליפה את המסלול כדי לבדוק את האתר.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+  const m=modal('<h3>'+esc(title)+'</h3><p class="hint">'+esc(sub)+'</p>'+(PLAN().id==='free'?'<div class="sample-offer"><div><b>רוצים לראות קודם איך זה יוצא?</b><span>חודש אחד מלא להורדה בחינם.</span></div><button class="btn" type="button" data-sample>חודש לדוגמה בחינם</button></div>':'')+planCards(need.id)+'<p class="hint plan-note">כל מסלול הוא לשנה אחת, ללוח של אותה שנה. בשלב הזה התשלום עוד לא מחובר: הבחירה רק מחליפה את המסלול כדי לבדוק את האתר.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
   m.querySelector('.modal').classList.add('upgrade');
   m.addEventListener('click',e=>{if(e.target.closest('[data-sample]')){m.remove();openSample();return}const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});
 }
@@ -3532,8 +3532,8 @@ function doPrint(){
   if(AUTH.ready&&!AUTH.user){loginModal('כדי להוריד או להדפיס, נכנסים לחשבון. ההרשמה חינם, וכל מה שבניתם נשמר.');return}
   if(P.freeCd){const m=modal('<h3>להדפיס את לוח הספירה?</h3><p class="hint">לוח ספירה לאחור של עד '+FREE_CD+' ימים מורידים ומדפיסים בחינם. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>ביטול</button></div>');m.querySelector('#dlGo').onclick=()=>{m.remove();logDl('countdown');setTimeout(ourPrint,50)};return}
   if(!P.downloads&&P.id==='free'&&!SAMPLE){const w=wmScreen();
-    if(w){const m=modal('<h3>להדפיס בחינם?</h3><p class="hint">'+esc(w.replace(', ולכן מופיע סימן מים.','.'))+' בהדפסה החינמית אפשר עד '+LITE_LIM.events+' אירועים ו־'+LITE_LIM.photos+' תמונות. אפשר להוריד חלק, או לבחור מסלול ולהדפיס הכל בלי סימן מים.</p><div class="row"><button class="btn primary" type="button" id="fpUp">למסלולים</button><button class="btn" type="button" data-close>חזרה</button></div>');m.querySelector('#fpUp').onclick=()=>{m.remove();openUpgrade('download')};return}
-    const m=modal('<h3>להדפיס בחינם?</h3><p class="hint">בהדפסה החינמית מופיעים סימן מים עדין והלוגו של MyLuach. אפשר להדפיס או לשמור כ־PDF. במסלול בתשלום מדפיסים בלי סימן מים.</p><div class="row"><button class="btn primary" type="button" id="fpGo">הדפסה עם סימן מים עדין</button><button class="btn" type="button" id="fpUp">בלי סימן מים: למסלולים</button></div>');
+    if(w){const m=modal('<h3>להדפיס בחינם?</h3><p class="hint">'+esc(w)+' בהדפסה החינמית אפשר עד '+LITE_LIM.events+' אירועים ו־'+LITE_LIM.photos+' תמונות. אפשר להוריד חלק, או לבחור מסלול ולהדפיס הכל.</p><div class="row"><button class="btn primary" type="button" id="fpUp">למסלולים</button><button class="btn" type="button" data-close>חזרה</button></div>');m.querySelector('#fpUp').onclick=()=>{m.remove();openUpgrade('download')};return}
+    const m=modal('<h3>להדפיס בחינם?</h3><p class="hint">בהדפסה החינמית מופיע הלוגו של MyLuach. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="fpGo">הדפסה בחינם</button><button class="btn" type="button" id="fpUp">למסלולים</button></div>');
     m.querySelector('#fpGo').onclick=()=>{m.remove();render();try{logDl('browser',{wm:1})}catch(e){}setTimeout(ourPrint,80)};m.querySelector('#fpUp').onclick=()=>{m.remove();openUpgrade('download')};return}
   if(!P.downloads){openUpgrade('download');return}
   const left=LP.downloadsLeft();
@@ -3562,7 +3562,7 @@ async function liteApi(method){const t=sb&&(await sb.auth.getSession()).data.ses
 async function openLite(){
   if(AUTH.ready&&!AUTH.user){loginModal('הלוח החינמי לשנה זמין למשתמשים רשומים (פעם אחת לכל משתמש). ההרשמה חינם.');return}
   const c=liteCounts(),L=LITE_LIM,over=(a,b)=>a>b?' <b class="msg-bad">(יש לכם '+a+', ייכללו '+b+' הראשונים)</b>':'';
-  const m=modal('<h3>לוח חינמי לכל השנה</h3><p class="hint">לוח חודשי לשנה שלמה, <b>בלי סימן מים</b>, בגרסה פשוטה. פעם אחת לכל משתמש.</p><ul class="hint">'+
+  const m=modal('<h3>לוח חינמי לכל השנה</h3><p class="hint">לוח חודשי לשנה שלמה, בגרסה פשוטה. פעם אחת לכל משתמש.</p><ul class="hint">'+
     '<li>עד '+L.zmanim+' זמני היום'+over(c.z,L.zmanim)+'</li><li>עד '+L.photos+' תמונות'+over(c.ph,L.photos)+'</li><li>עד '+L.events+' אירועים אישיים'+over(c.ev,L.events)+'</li>'+
     '<li>חגים, פרשת השבוע וראש חודש</li><li>בלי לימוד יומי, בלי דברי הימים, בלי באנרים ועמודים נוספים</li><li>בתחתית כל עמוד: "הופק בחינם ע״י MyLuach.org"</li></ul>'+
     '<p class="hint" id="ltMsg"></p><div class="row"><button class="btn primary" type="button" id="ltGo">להורדה והדפסה</button><button class="btn" type="button" data-close>ביטול</button></div><p class="hint">רוצים את כל האפשרויות? '+'<a href="#" id="ltUp">לבחירת מסלול</a></p>');
@@ -3586,7 +3586,7 @@ function openSample(){
   if(AUTH.ready&&!AUTH.user){loginModal('כדי להוריד חודש לדוגמה, נכנסים לחשבון. ההרשמה חינם.');return}
   const used=sampleUsedBy(),ms=monthsCache.length?monthsCache:buildMonths();
   if(used){modal('<h3>כבר הורדתם חודש לדוגמה</h3><p class="hint">החודש לדוגמה כבר נוצל עם הכתובת '+esc(used)+'. כדי להוריד את כל הלוח, בוחרים מסלול.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>').querySelector('.modal').classList.add('upgrade');return}
-  const m=modal('<h3>חודש אחד בחינם, בגרסה המלאה</h3><p class="hint">בוחרים חודש ומורידים אותו עם כל האפשרויות פתוחות, עם סימן מים עדין. אפשר פעם אחת לכל כתובת מייל.</p><label class="fld">איזה חודש<select id="smMonth">'+ms.map(mo=>opt(mo.key,mo.title+' '+mo.year)).join('')+'</select></label><label class="fld">כתובת מייל<input id="smEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" dir="ltr"></label><p class="hint" id="smMsg"></p><div class="row"><button class="btn primary" type="button" id="smGo">להוריד את החודש</button><button class="btn" type="button" data-close>ביטול</button></div>');
+  const m=modal('<h3>חודש אחד בחינם, בגרסה המלאה</h3><p class="hint">בוחרים חודש ומורידים אותו עם כל האפשרויות פתוחות. אפשר פעם אחת לכל כתובת מייל.</p><label class="fld">איזה חודש<select id="smMonth">'+ms.map(mo=>opt(mo.key,mo.title+' '+mo.year)).join('')+'</select></label><label class="fld">כתובת מייל<input id="smEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" dir="ltr"></label><p class="hint" id="smMsg"></p><div class="row"><button class="btn primary" type="button" id="smGo">להוריד את החודש</button><button class="btn" type="button" data-close>ביטול</button></div>');
   m.querySelector('#smGo').onclick=()=>{
     const email=m.querySelector('#smEmail').value.trim().toLowerCase();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){m.querySelector('#smMsg').innerHTML='<span class="msg-bad">כתבו כתובת מייל תקינה, למשל name@example.com.</span>';m.querySelector('#smEmail').focus();return}

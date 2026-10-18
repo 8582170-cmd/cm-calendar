@@ -6,7 +6,7 @@
     {id:'free',  name:'ניסיון',  tagline:'בונים, רואים, מתלהבים',
      price:{ils:0, usd:0}, months:13, events:30, downloads:0, watermark:true,
      features:{...ALL},
-     bullets:['בונים ורואים את כל השנה (עם סימן מים)','כל האפשרויות פתוחות לניסיון','לוח פשוט לכל השנה להורדה, בלי סימן מים (עד 3 זמנים, 10 תמונות ו־25 אירועים)','חודש אחד מלא להורדה','לוח ספירה לאחור עד 40 יום: הורדה חינם']},
+     bullets:['בונים ורואים את כל השנה','כל האפשרויות פתוחות לניסיון','לוח פשוט לכל השנה להורדה (עד 3 זמנים, 10 תמונות ו־25 אירועים)','חודש אחד מלא להורדה','לוח ספירה לאחור עד 40 יום: הורדה חינם']},
     {id:'basic', name:'בסיסי',   tagline:'לוח חודשי פשוט ויפה',
      price:{ils:19, usd:4.9}, months:13, events:30, downloads:1, watermark:false,
      features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true, tfilot:false},
