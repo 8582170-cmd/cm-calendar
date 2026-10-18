@@ -1094,14 +1094,15 @@ function bgOffSync(){const b=$('#bgOffBtn');if(!b)return;const cur=state.s.pageB
 $('#bgOffBtn').onclick=()=>{const s=state.s,cur=s.pageBg||'none';if(IMGBG(cur)){s.pageBgPrev=cur;s.pageBg='none'}else if(s.pageBgPrev){s.pageBg=s.pageBgPrev;delete s.pageBgPrev}save();render()};
 function bgPickSync(){bgOffSync();const cur=state.s.pageBg||'none';document.querySelectorAll('[data-bgpick]').forEach(box=>{
   if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(IMGBG(k)?' pbg-img':'')+'"'+(k==='month'||k==='art'?' style="--bgimg:url('+new URL(k==='art'?'assets/library/rosh-hashana.svg':'assets/library/nat-elul.jpg',document.baseURI).href+');--bgop:.7"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
-    box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="0.8" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button>')}
+    box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="0.8" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button><button type="button" class="btn bg-own" hidden data-bgedit>✎ עריכת הרקע: עוד תמונות, טקסט ושכבות</button>')}
   box.style.setProperty('--acc',state.s.accent);
-  {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);
+  {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown],[data-bgedit]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);
    const cp=box.querySelector('[data-pbg="custom"] .bgp-prev');if(cp){if(state.s.pageBgImg){cp.style.setProperty('--bgimg','url("'+state.s.pageBgImg+'")');cp.style.setProperty('--bgop','.6');cp.innerHTML=''}}}
   box.querySelectorAll('[data-pbg]').forEach(b=>{const on=b.dataset.pbg===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})})}
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-pbg]');if(b){const k=b.dataset.pbg;if(k==='custom'&&!state.s.pageBgImg){bgOwn();return}state.s.pageBg=k;save();render();return}
   if(e.target.closest('[data-bgown]')){bgOwn();return}
+  if(e.target.closest('[data-bgedit]')){const s=state.s;openImageEditor({img:s.pageBgImg,edit:s.pageBgEdit||null},v=>{if(v.img)s.pageBgImg=v.img;if('edit' in v)s.pageBgEdit=v.edit;save();render()});return}
   if(e.target.closest('[data-cover-on]')){state.s.cover=true;save();render();const w=stage.querySelector('.sheet-wrap');if(w)w.scrollIntoView({behavior:'smooth',block:'start'});try{syncUI()}catch(err){}return}
   if(e.target.closest('[data-cover-off]')){state.s.cover=false;save();render();try{syncUI()}catch(err){}}
 });
@@ -2452,7 +2453,7 @@ function drawLayers(g,W,H,sel){
   (sel===undefined?[]:[]);
   return (layers,selIdx)=>{
     layers.forEach((L,i)=>{
-      const bx=layerBox(g,L,W,H);g.save();g.translate(L.x*W,L.y*H);g.rotate((L.rot||0)*Math.PI/180);
+      const bx=layerBox(g,L,W,H);g.save();g.globalAlpha=L.op!=null?+L.op:1;g.translate(L.x*W,L.y*H);g.rotate((L.rot||0)*Math.PI/180);
       if(L.type==='text'){
         g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
         const n=bx.lines.length;
@@ -2590,6 +2591,13 @@ async function openImageEditor(data,onSave){
       }
     }
   }
+  /* שכבות: שקיפות וסדר (מי מעל מי) לכל טקסט, תמונה או מדבקה שנבחרו */
+  const panel0=panel;panel=function(){panel0();const P=q('#iePanel'),L=ed.layers[sel];if(!P||!L)return;const n=ed.layers.length;
+    P.insertAdjacentHTML('beforeend','<div class="ie-layer"><b>השכבה שנבחרה</b> <span class="hint">('+(sel+1)+' מתוך '+n+', 1 = הכי מאחור)</span>'+slider('ieOp','שקיפות',10,100,Math.round((L.op!=null?L.op:1)*100))+
+      '<div class="row"><button class="btn small" type="button" data-lo="top"'+(sel===n-1?' disabled':'')+'>⤒ לחזית</button><button class="btn small" type="button" data-lo="up"'+(sel===n-1?' disabled':'')+'>↑ קדימה</button><button class="btn small" type="button" data-lo="down"'+(sel===0?' disabled':'')+'>↓ אחורה</button><button class="btn small" type="button" data-lo="bottom"'+(sel===0?' disabled':'')+'>⤓ לאחור</button></div></div>');
+    q('#ieOp').addEventListener('input',e=>{L.op=+e.target.value/100;q('#ieOpV').textContent=e.target.value;redraw()});
+    P.querySelectorAll('[data-lo]').forEach(b=>b.onclick=()=>{const a=b.dataset.lo,it=ed.layers.splice(sel,1)[0];
+      sel=a==='top'?n-1:a==='bottom'?0:a==='up'?Math.min(n-1,sel+1):Math.max(0,sel-1);ed.layers.splice(sel,0,it);panel();redraw()})};
   function rebuildAdj(){adjPrev=adjustCanvas(basePrev,ed.adj);redraw()}
   function fontsReady(){redraw();if(document.fonts)setTimeout(()=>document.fonts.ready.then(redraw),60)}
   function lum(hex){const n=parseInt(hex.slice(1),16);return(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255}
@@ -4375,6 +4383,9 @@ async function shareModal(){
   }catch(e){fail(e)}
 }
 $('#shareBtn').onclick=shareModal;
+/* כפתור "טקסט על הדף": עובר לעיצוב החופשי ומוסיף תיבת כיתוב לעמוד שרואים */
+$('#addTextTop').onclick=()=>{const s=state.s;if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7)}else{s.fxOn=true;save();applyMode()}
+  setTimeout(()=>{try{fxBoxAdd('text')}catch(e){}},350)};
 
 /* ---------- מיקום וזמנים בבונה הפשוט, וזמנים לעוד ערים ---------- */
 function cityOpts(cur,withNone){let h=withNone?'<option value="">בלי מיקום (בלי זמנים)</option>':'';

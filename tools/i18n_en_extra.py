@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ '🅣 טקסט על הדף': '🅣 Text on the page',
+ 'השכבה שנבחרה': 'Selected layer',
+ 'שקיפות': 'Opacity',
+ '⤒ לחזית': '⤒ To front',
+ '↑ קדימה': '↑ Forward',
+ '↓ אחורה': '↓ Backward',
+ '⤓ לאחור': '⤓ To back',
+ '✎ עריכת הרקע: עוד תמונות, טקסט ושכבות': '✎ Edit the background: more photos, text and layers',
  '✥ הזזת הטבלה':'✥ Move the table',
  '📷 תמונות':'📷 Photos','סגירה ⟨':'Close ⟨',
  'עיצוב חופשי': 'Free design',

@@ -1364,3 +1364,4 @@ body.tray-open .mla-btn{left:272px!important}
 [dir=ltr] .fx-gsz-c{left:auto;right:-9px}
 .fx-tmove{position:absolute;top:-14px;left:50%;transform:translate(-50%,-100%);z-index:7;background:var(--accent,#1f5c63);color:#fff;font:600 12px/1 Assistant,Arial,sans-serif;padding:5px 10px;border-radius:999px;cursor:move;white-space:nowrap;box-shadow:0 1px 4px rgb(0 0 0 / .3)}
 body.fx-on .cell[data-date]:hover::after{display:none}
+.ie-layer{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
