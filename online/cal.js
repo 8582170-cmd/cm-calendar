@@ -248,7 +248,7 @@ function viewMonth(){
   const jumpG='<span class="jump"><input type="date" id="jG" value="'+iso(anchor)+'"><button class="btn" type="button" id="jGoG">'+t('go')+'</button></span>';
   $('#main').innerHTML=vTabs()+'<div class="bar no-print"><span class="seg" role="group"><button type="button" data-mode="heb" aria-pressed="'+(st.mode==='heb')+'">'+t('hebMode')+'</button><button type="button" data-mode="greg" aria-pressed="'+(st.mode==='greg')+'">'+t('gregMode')+'</button></span>'+
     '<span class="nav-arrows"><button class="btn" type="button" data-sh="-12" title="'+t('prevYear')+'">«</button><button class="btn" type="button" data-sh="-1" title="'+t('prev')+'">'+(HE()?'→':'←')+'</button><button class="btn" type="button" id="tdy">'+t('today')+'</button><button class="btn" type="button" data-sh="1" title="'+t('next')+'">'+(HE()?'←':'→')+'</button><button class="btn" type="button" data-sh="12" title="'+t('nextYear')+'">»</button></span>'+
-    '<details class="jump-d"><summary class="btn">'+t('jump')+'</summary><div class="jump" style="margin-top:6px">'+jumpH+jumpG+'</div></details>'+
+    '<button class="btn" type="button" id="jPick">📅 '+(HE()?'בחירת יום':'Pick a day')+'</button><details class="jump-d"><summary class="btn">'+t('jump')+'</summary><div class="jump" style="margin-top:6px">'+jumpH+jumpG+'</div></details>'+
     '<button class="btn pri" type="button" id="prM">🖨 '+(HE()?'הדפסה':'Print')+'</button><a class="btn" href="'+builderLink()+'">'+(HE()?'✨ לוח מעוצב עם תמונות':'✨ Designed calendar')+'</a></div>'+
     '<div class="opts no-print">'+[['dz','showDz'],['learn','showLearn'],['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'<button type="button" class="linkbtn2" id="dzPick">⚙ '+(HE()?'בחירת זמנים':'Choose times')+'</button>'+(st.opts.learn?'<button type="button" class="linkbtn2" id="lrPick">⚙ '+(HE()?'בחירת לימוד':'Choose learning')+'</button>':'')+'</div>'+
     '<section class="month"><div class="mhead"><h1 class="sr">'+esc(pageH1())+'</h1><h2>'+esc(M.title)+'</h2><span class="mute">'+esc(M.other)+'</span>'+(st.opts.dz||st.opts.times?'<span class="zh">'+esc(horizon())+'</span>':'')+'</div>'+g+'</section>'+seoBlock();
@@ -721,6 +721,7 @@ document.addEventListener('click',e=>{
   const msh=T2.closest('[data-msh]');if(msh){anchor=new Date(anchor.getFullYear(),anchor.getMonth()+(+msh.dataset.msh),Math.min(anchor.getDate(),28),12);render();return}
   const ysh=T2.closest('[data-ysh]');if(ysh){anchor=new Date(anchor.getFullYear()+(+ysh.dataset.ysh),anchor.getMonth(),Math.min(anchor.getDate(),28),12);render();return}
   const pv=T2.closest('[data-printv]');if(pv){printView(pv.dataset.printv);return}
+  if(T2.id==='jPick'){const go=()=>MyLuachHPick.open(T2,{date:anchor,onPick:x=>{anchor=noon(x.date);render()}});if(window.MyLuachHPick)go();else{const s=document.createElement('script');s.src='/assets/hpick.js?v=1';s.onload=go;document.head.appendChild(s)}return}
   if(T2.id==='prM'){printMonth();return}
   if(T2.id==='wkPick'){wkPicker();return}
   if(T2.id==='lrPick'||T2.closest('[data-lrpick]')){lrnPicker();return}

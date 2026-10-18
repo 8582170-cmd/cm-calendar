@@ -817,7 +817,7 @@ function openYzEditor(id,after,preset){
   const m=modal('<h3>'+(e?'עריכת רשומה':'הוספת רשומה למאגר')+'</h3>'+
     '<label class="fld">הטקסט<textarea id="yeT" rows="3" style="direction:rtl;font:inherit;width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:var(--bg);color:var(--ink)"></textarea></label>'+
     '<div class="row"><label class="fld">יום<select id="yeD">'+Array.from({length:30},(_,i)=>opt(i+1,gem(i+1),i+1==v.d)).join('')+'</select></label>'+
-    '<label class="fld">חודש<select id="yeM">'+HEB_ORDER.map(x=>opt(x,YZ_MONTH_NAME(x),x==v.m)).join('')+'</select></label>'+
+    '<label class="fld">חודש<select id="yeM">'+HEB_ORDER.map(x=>opt(x,YZ_MONTH_NAME(x),x==v.m)).join('')+'</select></label>'+'<button class="btn small hp-btn" type="button" data-hpick="yeM,yeD" title="בחירה מלוח">📅 מלוח</button>'+
     '<label class="fld">שנה<input id="yeY" placeholder="למשל תרצג"></label></div>'+
     '<label class="fld">סוג<select id="yeP"><option value="1">פטירה (יום שנה)</option><option value="0">אירוע בדברי ימי ישראל</option></select></label>'+
     '<p class="hint">אדר / אדר א׳: בשנה מעוברת מופיע באדר א׳. אדר ב׳: בשנה מעוברת באדר ב׳. בשנה רגילה שניהם באדר.</p>'+
@@ -842,6 +842,7 @@ function openYzManager(){
   const m=modal('<h3>כל המאגר: אירועים בדברי ימי ישראל<small>בוחרים חודש ורואים את כל הרשומות שלו לפי ימים. ✓ = יופיע בלוח. אפשר לסמן יום שלם או את כל החודש בלחיצה, ולערוך טקסט או תאריך.</small></h3>'+
     '<p class="hint" id="ymMode"></p>'+
     '<div class="row" id="ymListRow"><label class="fld">מסמנים ברשימה<select id="ymLs"></select></label><button class="btn small" type="button" id="ymLists">הרשימות שלי</button></div>'+
+    '<div class="row" style="margin:0"><button class="btn small" type="button" id="ymPick">📅 בחירת יום מלוח</button></div>'+
     '<div class="ym-tabs" role="tablist" aria-label="חודש">'+[['all','כל החודשים']].concat(HEB_ORDER.map(x=>[String(x),YZ_MONTH_NAME(x)])).map(([k,n])=>'<button type="button" role="tab" data-ymtab="'+k+'">'+esc(n)+'</button>').join('')+'</div>'+
     '<div class="row"><label class="fld" style="flex:1">חיפוש (לא חובה)<input id="ymQ" type="search" placeholder="שם, כינוי, ספר או שנה"></label>'+
     '<select id="ymM" hidden>'+opt('all','כל החודשים')+HEB_ORDER.map(x=>opt(x,YZ_MONTH_NAME(x))).join('')+'</select></div>'+
@@ -882,6 +883,8 @@ function openYzManager(){
   }
   const changed=()=>{if((state.s.yzMode||'selected')==='none'){state.s.yzMode='selected';syncUI()}save();rerender();renderYz()};
   ['#ymQ','#ymM','#ymF','#ymP','#ymO','#ymE'].forEach(x=>q(x).addEventListener('input',()=>{ymLim=600;list()}));
+  q('#ymPick').onclick=e=>{if(!window.MyLuachHPick)return;MyLuachHPick.open(e.currentTarget,{onPick:x=>{q('#ymM').value=String(x.hm);ymLim=600;list();
+    const h=q('[data-ymday="'+x.hm+'-'+x.hd+'"]');if(h){const r=h.closest('.ym-day');r.scrollIntoView({block:'start'});r.classList.add('ym-hl');setTimeout(()=>r.classList.remove('ym-hl'),1600)}}})};
   m.addEventListener('click',ev=>{const b=ev.target.closest('[data-ymtab]');if(b){q('#ymM').value=b.dataset.ymtab;ymLim=600;list();return}if(ev.target.id==='ymMore'){ymLim+=600;list()}});
   q('#ymLs').addEventListener('change',e=>{state.s.yzListId=e.target.value;save();syncUI();rerender();list()});
   q('#ymLists').onclick=()=>openYzLists(list);
@@ -2591,7 +2594,7 @@ function openEventEditor({date,id,img,kind}){
   m.querySelectorAll('input[name=mRec]').forEach(r=>r.checked=r.value===ev.rec);
   function drawDates(){
     const r=ev.rec,box=q('#mDates');
-    if(r==='heb')box.innerHTML='<div class="conv fld"><span>יודעים רק את התאריך הלועזי? בוחרים אותו והתאריך העברי יחושב לבד.</span><div class="row"><input type="date" id="mConv"><label class="chk"><input type="checkbox" id="mConvNight"> אחרי השקיעה</label></div></div><label class="fld">יום<select id="mD">'+Array.from({length:30},(_,i)=>opt(i+1,gem(i+1),i+1==ev.hday)).join('')+'</select></label><label class="fld">חודש<select id="mM">'+HEB_ORDER.map(x=>opt(x,hebMonthOpt(x),x==ev.hmonth)).join('')+'</select></label><label class="fld">שנה (לחישוב גיל)<input id="mY" placeholder="תשע״ח" value="'+esc(ev.yearText?hebYearStr(ev.yearText):'')+'"></label>';
+    if(r==='heb')box.innerHTML='<div class="conv fld"><span>יודעים רק את התאריך הלועזי? בוחרים אותו והתאריך העברי יחושב לבד.</span><div class="row"><input type="date" id="mConv"><label class="chk"><input type="checkbox" id="mConvNight"> אחרי השקיעה</label></div></div><label class="fld">יום<select id="mD">'+Array.from({length:30},(_,i)=>opt(i+1,gem(i+1),i+1==ev.hday)).join('')+'</select></label><label class="fld">חודש<select id="mM">'+HEB_ORDER.map(x=>opt(x,hebMonthOpt(x),x==ev.hmonth)).join('')+'</select></label><button class="btn small hp-btn" type="button" data-hpick="mM,mD" title="בחירה מלוח">📅 מלוח</button><label class="fld">שנה (לחישוב גיל)<input id="mY" placeholder="תשע״ח" value="'+esc(ev.yearText?hebYearStr(ev.yearText):'')+'"></label>';
     else if(r==='greg')box.innerHTML='<label class="fld">יום<select id="mD">'+Array.from({length:31},(_,i)=>opt(i+1,i+1,i+1==ev.gday)).join('')+'</select></label><label class="fld">חודש<select id="mM">'+GREG_MONTHS.map((x,i)=>opt(i+1,x,i+1==ev.gmonth)).join('')+'</select></label><label class="fld">שנה (לחישוב גיל)<input id="mY" inputmode="numeric" placeholder="1998" value="'+esc(ev.rec==='greg'&&editing&&editing.rec==='greg'?ev.year||'':'')+'"></label>';
     else box.innerHTML='<label class="fld">תאריך<input type="date" id="mDate" value="'+ev.date+'"></label>';
     box.querySelectorAll('select,input:not(#mConv):not(#mConvNight)').forEach(x=>x.addEventListener('input',readDates));
