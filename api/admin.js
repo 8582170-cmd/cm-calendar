@@ -99,6 +99,8 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'yzready') return json(res, 200, { ok: !!env('GITHUB_TOKEN') });
     /* גיבוי לגוגל שיטס עכשיו */
     if (req.method === 'POST' && b.action === 'backup') { const B = require('./_backup'); if (!B.ready()) return json(res, 200, { notReady: true }); try { return json(res, 200, await B.run()); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 200) }); } }
+    /* מחיקה ידנית של דוגמיות או של לוחות ישנים של משתמשים (עם בדיקה לפני) */
+    if (req.method === 'POST' && b.action === 'purge') { try { return json(res, 200, await require('./_usage').purge(String(b.bucket || ''), b.days, !!b.dry)); } catch (e) { return json(res, 400, { error: String(e.message || e).slice(0, 200) }); } }
     /* מד שימוש באחסון ובמסד הנתונים */
     if (req.method === 'POST' && b.action === 'usage') { try { return json(res, 200, await require('./_usage').usage()); } catch (e) { return json(res, 500, { error: String(e.message || e).slice(0, 200) }); } }
     /* דוגמית של לוח שהורד: התוכן המלא (בלי תמונות), לפתיחה בבונה לקריאה בלבד */

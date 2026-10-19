@@ -16,7 +16,7 @@ async function walk(bucket, prefix, out, max) {
       if (out.length >= max) return out;
       const p = (prefix ? prefix + '/' : '') + x.name;
       if (x.id == null && !x.metadata) await walk(bucket, p, out, max);
-      else out.push({ path: p, size: +((x.metadata || {}).size || 0), at: x.created_at || x.updated_at || '' });
+      else out.push({ path: p, size: +((x.metadata || {}).size || 0), at: x.created_at || x.updated_at || '', up: x.updated_at || x.last_accessed_at || x.created_at || '' });
     }
     if (L.length < 1000) return out;
   }
@@ -51,4 +51,47 @@ async function cleanSamples(keepDays) {
   }
   return n;
 }
-module.exports = { usage, cleanSamples };
+/* מחיקה ידנית מדף הניהול.
+   samples: דוגמיות הורדה ישנות מ-days ימים (0 = כולן).
+   calendars: לוחות שמורים של משתמשים שלא עודכנו days ימים (לפחות 30). לא נוגעים בקובצי האינדקס ובקישורי היומן (feed-*.ics),
+   ומעדכנים את האינדקס של כל משתמש כדי שהלוח שנמחק לא יופיע אצלו ברשימה.
+   dry = רק לספור, בלי למחוק. */
+async function purge(bucket, days, dry) {
+  days = Math.max(0, parseInt(days, 10) || 0);
+  if (bucket === 'calendars' && days < 30) throw new Error('בלוחות של משתמשים אפשר למחוק רק מה שלא עודכן לפחות 30 יום');
+  if (!['samples', 'calendars'].includes(bucket)) throw new Error('bucket');
+  const cut = days ? Date.now() - days * 864e5 : Infinity;
+  const F = (await walk(bucket, '', [], 50000)).filter(f => {
+    const t = Date.parse(bucket === 'calendars' ? f.up : f.at); if (!(t < cut) && days) return false;
+    if (bucket === 'calendars') return /^[^/]+\/[^/]+\.json$/.test(f.path) && !/\/index\.json$/.test(f.path);
+    return true;
+  });
+  const out = { files: F.length, bytes: F.reduce((a, f) => a + f.size, 0), deleted: 0 };
+  if (dry || !F.length) return out;
+  for (let i = 0; i < F.length; i += 500) {
+    const part = F.slice(i, i + 500).map(f => f.path);
+    const r = await fetch(base() + '/storage/v1/object/' + bucket, { method: 'DELETE', headers: H(), body: JSON.stringify({ prefixes: part }) });
+    if (!r.ok) throw new Error('delete ' + r.status);
+    out.deleted += part.length;
+    if (bucket === 'samples') {
+      for (let j = 0; j < part.length; j += 100) {
+        const q = part.slice(j, j + 100).map(x => '"' + x + '"').join(',');
+        try { await db('downloads?snap=in.(' + encodeURIComponent(q) + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ snap: null }) }); } catch (e) {}
+      }
+    }
+  }
+  if (bucket === 'calendars') {
+    const byUser = {};
+    F.forEach(f => { const [u, n] = f.path.split('/'); (byUser[u] = byUser[u] || []).push(n.replace(/\.json$/, '')); });
+    for (const [u, ids] of Object.entries(byUser)) {
+      try {
+        const r = await fetch(base() + '/storage/v1/object/calendars/' + u + '/index.json', { headers: H() });
+        if (!r.ok) continue; const ix = JSON.parse(await r.text()) || {}; let ch = false;
+        ids.forEach(id => { if (ix[id]) { delete ix[id]; ch = true; } });
+        if (ch) await fetch(base() + '/storage/v1/object/calendars/' + u + '/index.json', { method: 'POST', headers: { ...H(), 'x-upsert': 'true' }, body: JSON.stringify(ix) });
+      } catch (e) {}
+    }
+  }
+  return out;
+}
+module.exports = { usage, cleanSamples, purge };
