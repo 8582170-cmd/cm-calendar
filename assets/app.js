@@ -875,7 +875,7 @@ function openYzManager(){
     '<div class="row"><button class="btn small" type="button" id="ymAll">✓ סימון כל מה שמוצג</button><button class="btn small" type="button" id="ymNone">הסרת הסימון ממה שמוצג</button><button class="btn small" type="button" id="ymAdd">+ הוספת רשומה</button><span class="hint" id="ymCount"></span></div>'+
     '<div class="ym-list" id="ymRows"></div>'+
     '<div class="row"><button class="btn primary" type="button" data-close>סיום</button></div>');
-  m.querySelector('.modal').classList.add('wide');
+  m.querySelector('.modal').classList.add('wide','ym-modal');
   const q=x=>m.querySelector(x);
   const startM=monthsCache[0]&&monthsCache[0].key.startsWith('heb-')?String(new HDate(new Date()).getMonth()):'7';
   q('#ymM').value=startM;

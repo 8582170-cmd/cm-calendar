@@ -1385,3 +1385,8 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .sheet-add button:hover{background:var(--accent);color:var(--accent-ink,#fff)}
 .fx-bar select.fx-ff{max-width:150px;min-height:28px;border-radius:7px;border:1px solid #ffffff33;background:#2b3843;color:#fff;font:inherit;font-size:12.5px;padding:2px 4px}
 .fx-bar select.fx-ff optgroup,.fx-bar select.fx-ff option{background:#fff;color:#1c242b}
+/* חלון "כל המאגר" של דברי הימים: הרשימה מקבלת את כל הגובה שנשאר */
+.modal.ym-modal{height:92vh;max-width:1000px}
+.ym-modal>*{flex-shrink:0}
+.ym-modal .ym-list{flex:1 1 auto;min-height:340px;max-height:none}
+@media (max-height:700px){.ym-modal .ym-list{min-height:260px}}
