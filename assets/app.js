@@ -2158,7 +2158,8 @@ function fxGet(K){const T=FX().t;return {...(K.ct&&T[K.ct]||{}),...(K.pt&&T[K.pt
 function fxDefScope(n){return n.closest('.e.personal,.e.reminder')||n.matches('.e.personal,.e.reminder')?'one':'all'}
 function fxStyle(n,st){
   if(n.dataset.fxo==null)n.dataset.fxo=n.textContent;
-  n.style.fontSize='';n.style.translate='';n.style.color='';n.style.fontWeight='';n.classList.remove('fx-hidden');
+  n.style.fontSize='';n.style.translate='';n.style.color='';n.style.fontWeight='';n.style.fontFamily='';n.classList.remove('fx-hidden');
+  if(st.ff){loadFont(st.ff);n.style.fontFamily=fontCSS(st.ff)}
   if(n.dataset.fxd==null)n.dataset.fxd=getComputedStyle(n).display;
   if(st.t!=null){n.textContent=st.t;n.dataset.fxt=1}else if(n.dataset.fxt){n.textContent=n.dataset.fxo;delete n.dataset.fxt}
   if(st.fs&&st.fs!==1)n.style.fontSize=(parseFloat(getComputedStyle(n).fontSize)*st.fs).toFixed(2)+'px';
@@ -2193,8 +2194,8 @@ function fxUndoBtn(){document.querySelectorAll('[data-fx="undo"]').forEach(b=>b.
 
 /* סרגל הכלים של טקסט נבחר */
 const fxb=el('div','fx-bar no-print');fxb.hidden=true;
-fxb.innerHTML='<span class="fx-grip" title="גררו כדי להזיז את סרגל העריכה">⠿</span><span class="fx-tip">✥ גררו להזזה</span><button type="button" data-fx="dn" title="הקטנה">A−</button><button type="button" data-fx="up" title="הגדלה">A+</button><button type="button" data-fx="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fx="co" aria-label="צבע"></label><button type="button" data-fx="edit" title="עריכת הטקסט">✎ עריכה</button><button type="button" data-fx="hide" title="הסתרה / הצגה">הסתרה</button><span class="fx-scope" role="group" aria-label="על מה השינוי חל"><button type="button" data-fx="scope" data-fxsc="one" title="השינוי רק בטקסט הזה">🔓 רק זה</button><button type="button" data-fx="scope" data-fxsc="page" title="כל הטקסטים מהסוג הזה בעמוד הזה">📄 בעמוד</button><button type="button" data-fx="scope" data-fxsc="all" title="כל הטקסטים מהסוג הזה בכל הלוח">🔒 בכל הלוח</button></span><button type="button" data-fx="reset" title="חזרה למקור">↺ איפוס</button><button type="button" data-fx="undo" title="ביטול הפעולה האחרונה">↶</button><button type="button" data-fx="x" title="סגירה">✕</button>';
-document.body.appendChild(fxb);
+fxb.innerHTML='<span class="fx-grip" title="גררו כדי להזיז את סרגל העריכה">⠿</span><span class="fx-tip">✥ גררו להזזה</span><button type="button" data-fx="dn" title="הקטנה">A−</button><button type="button" data-fx="up" title="הגדלה">A+</button><button type="button" data-fx="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fx="co" aria-label="צבע"></label><select class="fx-ff" data-fx="ff" title="סוג הגופן" aria-label="סוג הגופן"></select><button type="button" data-fx="edit" title="עריכת הטקסט">✎ עריכה</button><button type="button" data-fx="hide" title="הסתרה / הצגה">הסתרה</button><span class="fx-scope" role="group" aria-label="על מה השינוי חל"><button type="button" data-fx="scope" data-fxsc="one" title="השינוי רק בטקסט הזה">🔓 רק זה</button><button type="button" data-fx="scope" data-fxsc="page" title="כל הטקסטים מהסוג הזה בעמוד הזה">📄 בעמוד</button><button type="button" data-fx="scope" data-fxsc="all" title="כל הטקסטים מהסוג הזה בכל הלוח">🔒 בכל הלוח</button></span><button type="button" data-fx="reset" title="חזרה למקור">↺ איפוס</button><button type="button" data-fx="undo" title="ביטול הפעולה האחרונה">↶</button><button type="button" data-fx="x" title="סגירה">✕</button>';
+document.body.appendChild(fxb);fxb.querySelector('[data-fx="ff"]').innerHTML=fontOptions('גופן רגיל');
 let FXS=null; /* {n,K} */
 function fxScopeKey(){if(!FXS)return null;const sc=FXS.scope||'one';return sc==='all'?FXS.K.ct:sc==='page'?FXS.K.pt:FXS.K.k}
 function fxScopeUI(){fxb.querySelectorAll('[data-fxsc]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.fxsc===(FXS&&FXS.scope))))}
@@ -2212,7 +2213,7 @@ function fxSelect(n){
   fxUnselect();const K=fxKeys(n);if(!K)return;FXS={n,K};n.classList.add('fx-sel');
   const T=FX().t,own=T[K.k]&&Object.keys(T[K.k]).some(x=>x!=='t');FXS.scope=own?'one':T[K.pt]?'page':(T[K.ct]?'all':fxDefScope(n));fxScopeUI();
   const st=fxGet(K);fxb.querySelector('[data-fx="co"]').value=st.co||rgbHex(getComputedStyle(n).color);
-  fxb.querySelector('[data-fx="hide"]').textContent=st.hide?'הצגה':'הסתרה';
+  fxb.querySelector('[data-fx="hide"]').textContent=st.hide?'הצגה':'הסתרה';fxb.querySelector('[data-fx="ff"]').value=st.ff||'';
   fxb.hidden=false;fxUndoBtn();fxPlace();
 }
 function fxUnselect(){if(FXS&&FXS.n){FXS.n.classList.remove('fx-sel');if(FXS.n.isContentEditable){FXS.n.blur()}}FXS=null;fxb.hidden=true}
@@ -2223,7 +2224,7 @@ function fxSet(fn){if(!FXS)return;fxPush();const T=FX().t,k=fxScopeKey(),st={...
   if(k!==FXS.K.k){const sc=FXS.scope,kk=FXS.K.k;render();const again=fxFind(kk);if(again){fxSelect(again);FXS.scope=sc;fxScopeUI()}else fxUnselect()}else{fxStyle(FXS.n,fxGet(FXS.K));fxPlace()}
 }
 function fxFind(k){for(const n of stage.querySelectorAll('.page *')){if(!fxOk(n))continue;const K=fxKeys(n);if(K&&K.k===k)return n}return null}
-fxb.addEventListener('mousedown',e=>{if(e.target.tagName!=='INPUT')e.preventDefault()});
+fxb.addEventListener('mousedown',e=>{if(e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'&&e.target.tagName!=='OPTION')e.preventDefault()});
 fxb.addEventListener('click',e=>{const b=e.target.closest('[data-fx]');if(!b||!FXS)return;const a=b.dataset.fx;
   if(a==='x')return fxUnselect();
   if(a==='undo')return fxUndo();
@@ -2242,6 +2243,7 @@ fxb.addEventListener('click',e=>{const b=e.target.closest('[data-fx]');if(!b||!F
     n.addEventListener('blur',done);n.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter'){ev.preventDefault();n.blur()}if(ev.key==='Escape'){n.textContent=fxGet(FXS.K).t??n.dataset.fxo;n.blur()}})}
 });
 fxb.querySelector('[data-fx="co"]').addEventListener('change',e=>fxSet(st=>st.co=e.target.value));
+fxb.querySelector('[data-fx="ff"]').addEventListener('change',e=>{const v=e.target.value;loadFont(v);fxSet(st=>st.ff=v||null)});
 window.addEventListener('scroll',fxPlace,true);window.addEventListener('resize',()=>setTimeout(fxPlace,150));
 function fxPick(t){if(!t||!t.closest||t.closest(FX_SKIP))return null;let n=t;while(n&&!n.classList.contains('page')){if(fxOk(n))return n;n=n.parentElement}return null}
 let fxDragged=false;
@@ -2285,7 +2287,7 @@ function fxBoxRender(){
     const mine=B.filter(b=>b.k===key||(b.k==='g:m'&&fxKind(key)==='m'));if(!mine.length)return;p.classList.add('has-fxbox');
     mine.forEach(b=>{const d=el('div','fxbox fxb-'+b.kind);d.dataset.bid=b.id;Object.assign(d.style,{left:b.x+'%',top:b.y+'%',width:b.w+'%',height:b.h+'%'});
       if(b.kind==='img'){if(b.img){const im=el('img');im.src=b.img;im.alt='';im.draggable=false;im.style.objectFit=b.fit==='cover'?'cover':'contain';d.appendChild(im)}else d.appendChild(el('div','fxb-empty','לחצו פעמיים לבחירת תמונה'))}
-      else{const t=el('div','fxb-t');t.textContent=b.t||'';t.dataset.ph='לחצו פעמיים לכתיבה';t.style.fontSize='calc(var(--u)*'+(+b.fs||5)+')';if(b.co)t.style.color=b.co;if(b.b)t.style.fontWeight='700';t.style.textAlign=b.al||'center';d.appendChild(t)}
+      else{const t=el('div','fxb-t');t.textContent=b.t||'';t.dataset.ph='לחצו פעמיים לכתיבה';t.style.fontSize='calc(var(--u)*'+(+b.fs||5)+')';if(b.co)t.style.color=b.co;if(b.ff){loadFont(b.ff);t.style.fontFamily=fontCSS(b.ff)}if(b.b)t.style.fontWeight='700';t.style.textAlign=b.al||'center';d.appendChild(t)}
       if(b.k==='g:m')d.classList.add('fxb-all');
       p.appendChild(d)})})
 }
@@ -2294,8 +2296,11 @@ function fxBoxSave(){save();fxBoxRender();fxBoxDecorate()}
 let FXB=null;
 const fxbb=el('div','fx-bar fxb-bar no-print');fxbb.hidden=true;document.body.appendChild(fxbb);
 function fxBoxBar(){const b=FXB&&fxBoxGet(FXB);if(!b){fxbb.hidden=true;return}
-  fxbb.innerHTML='<span class="fx-tip">✥ גררו להזזה · הפינה לשינוי גודל</span>'+(b.kind==='text'?'<button type="button" data-fb="dn" title="הקטנה">A−</button><button type="button" data-fb="up" title="הגדלה">A+</button><button type="button" data-fb="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fb="co" value="'+(b.co||'#1c242b')+'"></label><button type="button" data-fb="al" title="יישור">⇔ יישור</button><button type="button" data-fb="edit">✎ עריכה</button>':'<button type="button" data-fb="img">🖼 החלפה</button><button type="button" data-fb="fit">'+(b.fit==='cover'?'כל התמונה':'מילוי')+'</button>')+
+  const H='<span class="fx-tip">✥ גררו להזזה · הפינה לשינוי גודל</span>'+(b.kind==='text'?'<button type="button" data-fb="dn" title="הקטנה">A−</button><button type="button" data-fb="up" title="הגדלה">A+</button><button type="button" data-fb="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fb="co" value="'+(b.co||'#1c242b')+'"></label><select class="fx-ff" data-fb="ff" title="סוג הגופן" aria-label="סוג הגופן">'+fontOptions('גופן הכותרות')+'</select><button type="button" data-fb="al" title="יישור">⇔ יישור</button><button type="button" data-fb="edit">✎ עריכה</button>':'<button type="button" data-fb="img">🖼 החלפה</button><button type="button" data-fb="fit">'+(b.fit==='cover'?'כל התמונה':'מילוי')+'</button>')+
     '<label class="fx-all"><input type="checkbox" data-fb="all"'+(b.k==='g:m'?' checked':'')+'> בכל החודשים</label><button type="button" data-fb="del" title="מחיקה">🗑 מחיקה</button>';
+  /* בונים מחדש רק כשמשהו השתנה, כדי שרשימת הגופנים לא תיסגר בגלילה */
+  if(fxbb._h!==H||fxbb._b!==b.id){fxbb.innerHTML=H;fxbb._h=H;fxbb._b=b.id}
+  {const ff=fxbb.querySelector('[data-fb="ff"]');if(ff&&document.activeElement!==ff)ff.value=b.ff||''}
   const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"]');if(!n){fxbb.hidden=true;return}const r=n.getBoundingClientRect();fxbb.hidden=false;
   fxbb.style.top=Math.max(4,r.top-46)+'px';fxbb.style.left=Math.max(4,Math.min(innerWidth-fxbb.offsetWidth-4,r.left))+'px'}
 fxbb.addEventListener('click',e=>{const t=e.target.closest('[data-fb]');if(!t)return;const b=fxBoxGet(FXB);if(!b)return;const a=t.dataset.fb;if(a==='co'||a==='all')return;
@@ -2308,6 +2313,8 @@ fxbb.addEventListener('click',e=>{const t=e.target.closest('[data-fb]');if(!t)re
   if(a==='img'){fxBoxImg(b);return}
   fxBoxSave();fxBoxBar()});
 fxbb.addEventListener('input',e=>{const t=e.target;if(t.dataset.fb!=='co')return;const b=fxBoxGet(FXB);if(!b)return;b.co=t.value;const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"] .fxb-t');if(n)n.style.color=t.value;clearTimeout(fxbb.T);fxbb.T=setTimeout(save,300)});
+fxbb.addEventListener('change',e=>{const t=e.target;if(t.dataset.fb!=='ff')return;const b=fxBoxGet(FXB);if(!b)return;fxPush();b.ff=t.value||undefined;if(!b.ff)delete b.ff;loadFont(b.ff);
+  const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"] .fxb-t');if(n)n.style.fontFamily=b.ff?fontCSS(b.ff):'';save()});
 fxbb.addEventListener('change',e=>{const t=e.target;if(t.dataset.fb!=='all')return;const b=fxBoxGet(FXB);if(!b)return;fxPush();
   if(t.checked){b.kPage=b.k;b.k='g:m'}else{b.k=b.kPage&&b.kPage!=='g:m'?b.kPage:(fxVisibleKey()||b.k)}fxBoxSave();fxBoxBar()});
 function fxBoxImg(b){const f=v=>{if(!v.img)return;fxPush();b.img=v.img;fxBoxSave();fxBoxBar()};f.maxPx=1600;pickImage(f)}

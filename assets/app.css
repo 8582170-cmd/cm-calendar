@@ -1383,3 +1383,5 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .sheet-add{position:absolute;top:-27px;left:0;display:flex;gap:4px}
 .sheet-add button{font:inherit;font-size:12px;font-weight:600;line-height:1;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--card,#fff);color:var(--accent);cursor:pointer}
 .sheet-add button:hover{background:var(--accent);color:var(--accent-ink,#fff)}
+.fx-bar select.fx-ff{max-width:150px;min-height:28px;border-radius:7px;border:1px solid #ffffff33;background:#2b3843;color:#fff;font:inherit;font-size:12.5px;padding:2px 4px}
+.fx-bar select.fx-ff optgroup,.fx-bar select.fx-ff option{background:#fff;color:#1c242b}

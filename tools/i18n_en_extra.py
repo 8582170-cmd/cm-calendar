@@ -2,6 +2,9 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+    'סוג הגופן': 'Font',
+    'גופן רגיל': 'Default font',
+    'גופן הכותרות': 'Heading font',
     '✥ הזזת הכותרת': '✥ Move title',
     'גררו כדי להזיז את הכותרת': 'Drag to move the title',
     '＋ טקסט': '＋ Text',
