@@ -3473,7 +3473,8 @@ async function writeIndex(ix){await sb.storage.from('calendars').upload(INDEX(),
 let R2ON=null;const R2HAVE=new Set(),R2HASH=new Map();
 async function r2Api(op,body){const h=await authHeaders();const r=await fetch('/api/user?fn=r2',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({op,...(body||{})})});
   const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j&&j.error)||('r2 '+r.status));return j}
-async function r2On(){if(R2ON!=null)return R2ON;try{R2ON=!!(await r2Api('status')).on}catch(e){R2ON=false}return R2ON}
+/* "פעיל" נשמר לכל הביקור; "לא פעיל" נבדק שוב אחרי 2 דקות (למשל אחרי שהוגדרו המפתחות בשרת) */
+let R2AT=0;async function r2On(){if(R2ON===true||(R2ON===false&&Date.now()-R2AT<120000))return R2ON;R2AT=Date.now();try{R2ON=!!(await r2Api('status')).on}catch(e){R2ON=false}return R2ON}
 async function imgHash(s){let h=R2HASH.get(s);if(h)return h;const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));h=[...new Uint8Array(b)].slice(0,16).map(x=>x.toString(16).padStart(2,'0')).join('');R2HASH.set(s,h);return h}
 /* עותק של הלוח שבו כל תמונה מוחלפת ב-"r2img:<hash>", ורשימת התמונות */
 async function r2Pack(st){const imgs={};
@@ -3514,7 +3515,7 @@ async function cloudSave(){
     /* הלוח עבר ל-R2: מוחקים את העותק הישן ב-Supabase */
     if(store==='r2'&&was!=='r2')sb.storage.from('calendars').remove([cloudPath(id)]).catch(()=>{});
     if(ix.__feed&&ix.__feed.cal===id)feedSync(false).catch(()=>{});
-    const el=$('#saveState');if(el)el.textContent='נשמר בחשבון ובדפדפן הזה';
+    const el=$('#saveState');if(el){el.textContent='נשמר בחשבון ובדפדפן הזה';el.title=store==='r2'?'R2':'S'}
   }catch(e){console.warn('cloud save',e);const el=$('#saveState');if(el)el.textContent='נשמר בדפדפן הזה (השמירה בחשבון נכשלה, ננסה שוב)';cloudDirty=true}
   cloudBusy=false;if(cloudDirty){clearTimeout(cloudT);cloudT=setTimeout(cloudSave,15000)}
 }
