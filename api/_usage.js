@@ -31,6 +31,8 @@ async function usage() {
     try { const r = await fetch(base() + '/rest/v1/' + t + '?select=*&limit=1', { method: 'HEAD', headers: { ...H(), Prefer: 'count=exact' } });
       const m = /\/(\d+)/.exec(r.headers.get('content-range') || ''); out.tables[t] = r.ok && m ? +m[1] : null; } catch (e) { out.tables[t] = null; }
   }
+  const R2 = require('./_r2');
+  if (R2.on()) { try { const C = await R2.list('cal/'), I = await R2.list('img/'); out.r2 = { cal: { files: C.length, bytes: C.reduce((a, f) => a + f.size, 0) }, img: { files: I.length, bytes: I.reduce((a, f) => a + f.size, 0) } }; } catch (e) { out.r2 = { error: String(e.message || e).slice(0, 120) }; } }
   try { const r = await fetch(base() + '/rest/v1/rpc/myluach_db_size', { method: 'POST', headers: H(), body: '{}' }); if (r.ok) out.db = +(await r.json()); } catch (e) {}
   return out;
 }
@@ -80,8 +82,13 @@ async function purge(bucket, days, dry) {
       }
     }
   }
-  if (bucket === 'calendars') {
-    const byUser = {};
+  if (bucket === 'calendars') await fixIndex(F.map(f => f.path));
+  return out;
+}
+/* מוחקים מהאינדקס של כל משתמש את הלוחות שנמחקו (paths: <user>/<id>.json) */
+async function fixIndex(paths) {
+  {
+    const byUser = {}, F = paths.map(path => ({ path }));
     F.forEach(f => { const [u, n] = f.path.split('/'); (byUser[u] = byUser[u] || []).push(n.replace(/\.json$/, '')); });
     for (const [u, ids] of Object.entries(byUser)) {
       try {
@@ -92,6 +99,18 @@ async function purge(bucket, days, dry) {
       } catch (e) {}
     }
   }
+}
+/* R2: לוחות שלא עודכנו days ימים. משתמש שלא נשאר לו אף לוח: גם התמונות שלו נמחקות */
+async function purgeR2(days, dry) {
+  const R2 = require('./_r2'); if (!R2.on()) return { files: 0, bytes: 0, deleted: 0 };
+  const cut = Date.now() - days * 864e5, C = await R2.list('cal/');
+  const F = C.filter(f => Date.parse(f.at) < cut);
+  const out = { files: F.length, bytes: F.reduce((a, f) => a + f.size, 0), deleted: 0 };
+  if (dry || !F.length) return out;
+  await R2.pool(F, 16, async f => { if (await R2.del(f.key)) out.deleted++; });
+  await fixIndex(F.map(f => f.key.replace(/^cal\//, '')));
+  const gone = new Set(F.map(f => f.key.split('/')[1])), left = new Set(C.filter(f => !F.includes(f)).map(f => f.key.split('/')[1]));
+  for (const u of gone) if (!left.has(u)) { const I = await R2.list('img/' + u + '/'); out.bytes += I.reduce((a, f) => a + f.size, 0); await R2.pool(I, 16, x => R2.del(x.key)); }
   return out;
 }
-module.exports = { usage, cleanSamples, purge };
+module.exports = { usage, cleanSamples, purge, purgeR2 };

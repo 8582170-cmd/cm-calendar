@@ -968,6 +968,14 @@ function gedolimFor(hd,big,noLimit){
 function personalFor(date,hd,big){return personalOnly(date,hd).concat(gedolimFor(hd,big))}
 
 /* ---------- page geometry ---------- */
+/* איכות התמונות לפי גודל הנייר: כמה פיקסלים לשמור לכל סוג מקום (בערך 300 נקודות לאינץ' בהדפסה).
+   A4 = בסיס, A3 = פי 1.4, A2 = פי 2. לא מגדילים תמונה קטנה מהמקור, רק לא מקטינים יותר מדי. */
+const JQ=0.92;
+function QPX(kind){let F=1;try{const [w,h]=pageDims();F=Math.max(1,Math.min(2.6,Math.max(w,h)/297))}catch(e){}
+  const base={day:1200,event:1200,box:2400,page:3600}[kind]||3600;return Math.min(7200,Math.round(base*F))}
+function imgCount(){let n=0;const w=v=>{if(typeof v==='string'){if(/^data:image\//.test(v))n++}else if(Array.isArray(v))v.forEach(w);else if(v&&typeof v==='object')for(const k in v)w(v[k])};try{w(state)}catch(e){}return n}
+function bigPaperNote(){const n=imgCount();if(!n)return;
+  const m=modal('<h3>נייר גדול יותר, תמונות חדות יותר</h3><p>מעכשיו תמונות שתעלו יישמרו באיכות שמתאימה לגודל הזה.</p><p>ב'+(n===1?'תמונה אחת':n+' התמונות')+' שכבר בלוח נשמרו לפי הגודל הקודם. אם אחת מהן גדולה בדף (רקע, שער, עמוד שלם), כדאי להחליף אותה בקובץ המקורי כדי שתצא חדה בהדפסה.</p><div class="row"><button class="btn primary" type="button" data-close>הבנתי</button></div>')}
 function pageDims(){
   const s=state.s;let w,h;
   if(s.view==='countdown'&&s.cdLayout==='scroll')return [110,cdScrollH()];
@@ -1087,7 +1095,7 @@ function monthArt(key,kind){key=String(key||'').replace(/^(mi-|h-)/,'');let hm=n
   if(hm==null&&monthsCache[0])hm=new HDate(monthsCache[0].days[0]).getMonth();
   return hm?new URL('assets/library/'+(kind==='art'?MONTH_ART[hm]+'.svg':'nat-'+MONTH_NAT[hm]+'.jpg'),document.baseURI).href:''}
 const PAGE_BGS=[['month','נוף לכל חודש'],['art','איורי חגים'],['custom','תמונה משלכם'],['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
-function bgOwn(){const f=v=>{if(!v.img)return;state.s.pageBgImg=v.img;state.s.pageBg='custom';save();render()};f.maxPx=1800;pickImage(f)}
+function bgOwn(){const f=v=>{if(!v.img)return;state.s.pageBgImg=v.img;state.s.pageBg='custom';save();render()};f.maxPx=QPX('page');pickImage(f)}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-bgop]')){state.s.pageBgOp=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120)}});
 let bgOpT=0;
 function bgOffSync(){const b=$('#bgOffBtn');if(!b)return;const cur=state.s.pageBg||'none',img=IMGBG(cur);
@@ -2317,7 +2325,7 @@ fxbb.addEventListener('change',e=>{const t=e.target;if(t.dataset.fb!=='ff')retur
   const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"] .fxb-t');if(n)n.style.fontFamily=b.ff?fontCSS(b.ff):'';save()});
 fxbb.addEventListener('change',e=>{const t=e.target;if(t.dataset.fb!=='all')return;const b=fxBoxGet(FXB);if(!b)return;fxPush();
   if(t.checked){b.kPage=b.k;b.k='g:m'}else{b.k=b.kPage&&b.kPage!=='g:m'?b.kPage:(fxVisibleKey()||b.k)}fxBoxSave();fxBoxBar()});
-function fxBoxImg(b){const f=v=>{if(!v.img)return;fxPush();b.img=v.img;fxBoxSave();fxBoxBar()};f.maxPx=1600;pickImage(f)}
+function fxBoxImg(b){const f=v=>{if(!v.img)return;fxPush();b.img=v.img;fxBoxSave();fxBoxBar()};f.maxPx=QPX('box');pickImage(f)}
 function fxBoxEdit(id){const n=stage.querySelector('.fxbox[data-bid="'+id+'"] .fxb-t');if(!n)return;n.contentEditable='true';n.classList.add('editing');n.focus();
   try{const r=document.createRange();r.selectNodeContents(n);r.collapse(false);const sl=getSelection();sl.removeAllRanges();sl.addRange(r)}catch(e){}
   n.onblur=()=>{n.contentEditable='false';n.classList.remove('editing');const b=fxBoxGet(id);if(b&&b.t!==n.innerText.trim()){fxPush();b.t=n.innerText.trim();save()}}}
@@ -2676,9 +2684,9 @@ async function openImageEditor(data,onSave){
     const b=q('#ieSave');b.textContent='שומר…';b.disabled=true;
     if(document.fonts)await document.fonts.ready;
     await new Promise(r=>setTimeout(r,30));
-    const full=makeBase(src,ed.rot,ed.flip,2000),out=adjustCanvas(full,ed.adj),og=out.getContext('2d');
+    const full=makeBase(src,ed.rot,ed.flip,QPX('page')),out=adjustCanvas(full,ed.adj),og=out.getContext('2d');
     drawLayers(og,out.width,out.height,false)(ed.layers,-1);
-    let url;try{url=out.toDataURL('image/jpeg',0.9)}catch(err){url=null}
+    let url;try{url=out.toDataURL('image/jpeg',JQ)}catch(err){url=null}
     m.remove();if(url)onSave({img:url,edit:ed});
   };
   rebuild();panel();fontsReady();
@@ -2700,7 +2708,7 @@ async function libLoad(){if(LIB)return LIB;let srv={items:[],hideSeed:[]};
   const hide=new Set(srv.hideSeed||[]);LIB=[...(srv.items||[]),...(window.MYLUACH_LIB_SEED||[]).filter(x=>!hide.has(x.id))];return LIB}
 function urlToData(url,max){return new Promise((res,rej)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{try{
   const w=im.naturalWidth||1600,h=im.naturalHeight||1000,k=Math.min(1,max/Math.max(w,h))||1,c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
-  c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.88))}catch(e){rej(e)}};im.onerror=rej;im.src=url})}
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',JQ))}catch(e){rej(e)}};im.onerror=rej;im.src=url})}
 async function libPick(setter){
   const m=modal('<h2>מאגר התמונות</h2><p class="hint">תמונות ואיורים צנועים לשימוש חופשי בלוח: לעמוד השער, לחודשים ולימים. לחצו על תמונה כדי לבחור אותה.</p><div class="lib-tabs" role="tablist"></div><div class="lib-grid" aria-live="polite"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
   m.querySelector('.modal').classList.add('modal-wide');
@@ -2712,14 +2720,14 @@ async function libPick(setter){
   draw();
   tabs.onclick=e=>{const b=e.target.closest('[data-lc]');if(b){cur=b.dataset.lc;draw()}};
   grid.onclick=async e=>{const b=e.target.closest('[data-li]');if(!b)return;const x=L[+b.dataset.li];b.classList.add('busy');
-    try{const img=await urlToData(x.url,setter.maxPx||2000);m.remove();setter({img,edit:null,credit:x.credit||''})}
+    try{const img=await urlToData(x.url,setter.maxPx||QPX('page'));m.remove();setter({img,edit:null,credit:x.credit||''})}
     catch(err){b.classList.remove('busy');alert('לא הצלחנו לטעון את התמונה. נסו שוב או בחרו תמונה אחרת.')}}}
 $('#fileOne').addEventListener('change',async e=>{const f=e.target.files[0];if(!f||!pendingSlot)return;const fn=pendingSlot;pendingSlot=null;fn({img:await compress(f,fn.maxPx),edit:null})});
-function compress(file,max){max=max||2000;return new Promise(res=>{
+function compress(file,max){max=max||QPX('page');return new Promise(res=>{
   const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
     const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
     c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-    try{res(c.toDataURL('image/jpeg',0.86))}catch(err){res(r.result)}};im.onerror=()=>res(r.result);im.src=r.result};r.readAsDataURL(file)})}
+    try{res(c.toDataURL('image/jpeg',JQ))}catch(err){res(r.result)}};im.onerror=()=>res(r.result);im.src=r.result};r.readAsDataURL(file)})}
 function imageLum(src){return new Promise(res=>{
   const im=new Image();im.onload=()=>{try{
     const c=document.createElement('canvas'),w=40,h=Math.max(6,Math.round(40*im.height/im.width));c.width=w;c.height=h;
@@ -2808,7 +2816,7 @@ stage.addEventListener('drop',async e=>{
   const c=e.target.closest('[data-date]');if(!c)return;e.preventDefault();c.classList.remove('over');document.body.classList.remove('tray-dragging');
   const tid=trayDropId(e);if(tid){trayToDay(c.dataset.date,tid);return}
   const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(!f||!f.type.startsWith('image/'))return;
-  openEventEditor({date:c.dataset.date,img:await compress(f,1000),kind:'other'});
+  openEventEditor({date:c.dataset.date,img:await compress(f,QPX('day')),kind:'other'});
 });
 
 /* ---------- event editor ---------- */
@@ -2892,7 +2900,7 @@ function openEventEditor({date,id,img,kind}){
   q('#mFit').addEventListener('change',()=>ev.imgFit=q('#mFit').value);
   q('#mPos').addEventListener('change',()=>ev.imgPos=+q('#mPos').value);
   q('#mTone').addEventListener('change',()=>ev.textTone=q('#mTone').value);
-  const imgSet=async v=>{ev.img=v.img;if('edit' in v)ev.edit=v.edit;ev.imgLum=null;drawImg();prev();if(ev.img)ev.imgLum=await imageLum(ev.img)};imgSet.maxPx=1000;
+  const imgSet=async v=>{ev.img=v.img;if('edit' in v)ev.edit=v.edit;ev.imgLum=null;drawImg();prev();if(ev.img)ev.imgLum=await imageLum(ev.img)};imgSet.maxPx=QPX('event');
   if(ev.img&&!ev.imgLum)imageLum(ev.img).then(l=>ev.imgLum=l);
   q('#mImgBtn').onclick=()=>pickImage(imgSet);
   q('#mImgDel').onclick=()=>{ev.img=null;ev.edit=null;drawImg();prev()};
@@ -3065,7 +3073,7 @@ document.addEventListener('change',e=>{
     case 'city':{if(!t.value)return;locChosen();if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);state.s.candleMins=c.candle;state.s.il=c.il}return set('city',t.value)}
     case 'candleMins':return set('candleMins',+t.value);
     case 'accentCustom':return set('accent',t.value);
-    case 'size':{const z=SIZES[t.value];if(z&&z.o)state.s.orient=z.o;return set('size',t.value)}
+    case 'size':{const z=SIZES[t.value];if(z&&z.o)state.s.orient=z.o;const q0=QPX('page');const r=set('size',t.value);if(QPX('page')>q0*1.15)setTimeout(bigPaperNote,300);return r}
     case 'customW':case 'customH':if(+t.value>=50&&+t.value<=1200)set(t.id,+t.value);return;
     case 'm_shma':case 'ytsg':case 'chanukah':case 'nital':case 'nitalFrom':case 'yzPrefix':case 'persPrefix':yzInvalidate&&yzInvalidate();return set(t.id,t.value);
     case 'secs':return set('secs',t.checked);
@@ -3461,15 +3469,50 @@ function calTitle(){const s=state.s;if(!s.calName&&s.view==='countdown')return '
 function gemYear(y){try{return new HDate(1,7,y).renderGematriya().split(' ').pop()}catch(e){return String(y)}}
 async function readIndex(){try{const {data}=await sb.storage.from('calendars').download(INDEX());return data?JSON.parse(await data.text()):{}}catch(e){return {}}}
 async function writeIndex(ix){await sb.storage.from('calendars').upload(INDEX(),new Blob([JSON.stringify(ix)],{type:'application/json'}),{upsert:true,contentType:'application/json'})}
+/* ---------- שמירה ב-R2 (כשהוגדר בשרת): הלוח כקובץ קטן, וכל תמונה כקובץ נפרד שנשמר פעם אחת ---------- */
+let R2ON=null;const R2HAVE=new Set(),R2HASH=new Map();
+async function r2Api(op,body){const h=await authHeaders();const r=await fetch('/api/user?fn=r2',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({op,...(body||{})})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j&&j.error)||('r2 '+r.status));return j}
+async function r2On(){if(R2ON!=null)return R2ON;try{R2ON=!!(await r2Api('status')).on}catch(e){R2ON=false}return R2ON}
+async function imgHash(s){let h=R2HASH.get(s);if(h)return h;const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));h=[...new Uint8Array(b)].slice(0,16).map(x=>x.toString(16).padStart(2,'0')).join('');R2HASH.set(s,h);return h}
+/* עותק של הלוח שבו כל תמונה מוחלפת ב-"r2img:<hash>", ורשימת התמונות */
+async function r2Pack(st){const imgs={};
+  const walk=async v=>{if(typeof v==='string'){if(/^data:image\//.test(v)){const h=await imgHash(v);imgs[h]=v;return 'r2img:'+h}return v}
+    if(Array.isArray(v)){const a=[];for(const x of v)a.push(await walk(x));return a}
+    if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=await walk(v[k]);return o}return v};
+  const packed=await walk(JSON.parse(JSON.stringify(st)));return {body:JSON.stringify(packed),imgs}}
+async function poolRun(items,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length){const j=i++;await fn(items[j],j)}}))}
+const blobToData=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)});
+async function r2Save(id){
+  const {body,imgs}=await r2Pack(state);const all=Object.keys(imgs),ask=all.filter(h=>!R2HAVE.has(h));
+  let sv=null;const put={};
+  for(let i=0;i===0||i<ask.length;i+=300){const ch=ask.slice(i,i+300);sv=await r2Api('save',{id,imgs:ch});if(!sv.on)return null;Object.assign(put,sv.put||{});ch.filter(h=>!(sv.put||{})[h]).forEach(h=>R2HAVE.add(h))}
+  await poolRun(Object.keys(put),4,async h=>{const blob=await (await fetch(imgs[h])).blob();const r=await fetch(put[h],{method:'PUT',headers:{'Content-Type':blob.type||'image/jpeg'},body:blob});if(!r.ok)throw new Error('img '+r.status);R2HAVE.add(h)});
+  const r=await fetch(sv.cal,{method:'PUT',headers:{'Content-Type':'application/json'},body});if(!r.ok)throw new Error('cal '+r.status);
+  const bytes=body.length+all.reduce((a,h)=>a+Math.round(imgs[h].length*.75),0);return {bytes,n:all.length}}
+async function r2Load(id){
+  const o=await r2Api('open',{id});const r=await fetch(o.cal);if(!r.ok)throw new Error('cal '+r.status);const raw=JSON.parse(await r.text());
+  const need=new Set();const scan=v=>{if(typeof v==='string'){if(v.startsWith('r2img:'))need.add(v.slice(6))}else if(Array.isArray(v))v.forEach(scan);else if(v&&typeof v==='object')for(const k in v)scan(v[k])};scan(raw);
+  const H=[...need],data={};
+  for(let i=0;i<H.length;i+=300){const g=(await r2Api('imgs',{imgs:H.slice(i,i+300)})).get||{};
+    await poolRun(Object.keys(g),6,async h=>{try{const x=await fetch(g[h]);if(x.ok){data[h]=await blobToData(await x.blob());R2HAVE.add(h)}}catch(e){}})}
+  const fill=v=>{if(typeof v==='string')return v.startsWith('r2img:')?(data[v.slice(6)]||null):v;if(Array.isArray(v))return v.map(fill);if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=fill(v[k]);return o}return v};
+  Object.entries(data).forEach(([h,d])=>R2HASH.set(d,h));
+  return fill(raw)}
 function cloudQueue(){if(!user||SNAPVIEW)return;cloudDirty=true;clearTimeout(cloudT);cloudT=setTimeout(cloudSave,6000)}
 async function cloudSave(){
   if(!user||cloudBusy)return;cloudBusy=true;cloudDirty=false;
   try{
     if(!state.s.cloudId){state.s.cloudId=(crypto.randomUUID?crypto.randomUUID():'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8));await idbSet(SKEY,state)}
-    const id=state.s.cloudId,body=JSON.stringify(state);
-    const {error}=await sb.storage.from('calendars').upload(cloudPath(id),new Blob([body],{type:'application/json'}),{upsert:true,contentType:'application/json'});
-    if(error)throw error;
-    const ix=await readIndex();ix[id]={name:calTitle(),updated:new Date().toISOString(),size:body.length};await writeIndex(ix);
+    const id=state.s.cloudId;let size,store=null;
+    const r2=(await r2On())?await r2Save(id):null;
+    if(r2){size=r2.bytes;store='r2'}
+    else{const body=JSON.stringify(state);
+      const {error}=await sb.storage.from('calendars').upload(cloudPath(id),new Blob([body],{type:'application/json'}),{upsert:true,contentType:'application/json'});
+      if(error)throw error;size=body.length}
+    const ix=await readIndex();const was=ix[id]&&ix[id].store;ix[id]={name:calTitle(),updated:new Date().toISOString(),size,...(store?{store}:{})};await writeIndex(ix);
+    /* הלוח עבר ל-R2: מוחקים את העותק הישן ב-Supabase */
+    if(store==='r2'&&was!=='r2')sb.storage.from('calendars').remove([cloudPath(id)]).catch(()=>{});
     if(ix.__feed&&ix.__feed.cal===id)feedSync(false).catch(()=>{});
     const el=$('#saveState');if(el)el.textContent='נשמר בחשבון ובדפדפן הזה';
   }catch(e){console.warn('cloud save',e);const el=$('#saveState');if(el)el.textContent='נשמר בדפדפן הזה (השמירה בחשבון נכשלה, ננסה שוב)';cloudDirty=true}
@@ -3510,13 +3553,15 @@ async function feedModal(){
   }catch(err){m.querySelector('#fdBody').innerHTML='<p class="msg-bad">לא הצלחנו להכין את היומן. נסו שוב בעוד רגע.</p>'}
 }
 async function cloudOpen(id){
-  const {data,error}=await sb.storage.from('calendars').download(cloudPath(id));if(error||!data)throw error||new Error('no data');
-  const loaded=merge(DEFAULT,JSON.parse(await data.text()));loaded.s.cloudId=id;
+  const ix=await readIndex();let raw;
+  if(ix[id]&&ix[id].store==='r2')raw=await r2Load(id);
+  else{const {data,error}=await sb.storage.from('calendars').download(cloudPath(id));if(error||!data)throw error||new Error('no data');raw=JSON.parse(await data.text())}
+  const loaded=merge(DEFAULT,raw);loaded.s.cloudId=id;
   const isCd=loaded.s.view==='countdown';
   if(isCd!==CDMODE){await idbSet(isCd?'state-cd':'state',loaded);window.location.href=isCd?PGN('countdown.html'):'app.html';return}
   state=loaded;monthsCache=buildMonths();await idbSet(SKEY,state);syncUI();applyMode();render();
 }
-async function cloudDelete(id){await sb.storage.from('calendars').remove([cloudPath(id)]);const ix=await readIndex();delete ix[id];await writeIndex(ix);if(state.s.cloudId===id){delete state.s.cloudId;save()}}
+async function cloudDelete(id){const ix0=await readIndex();if(ix0[id]&&ix0[id].store==='r2')await r2Api('del',{id}).catch(()=>{});await sb.storage.from('calendars').remove([cloudPath(id)]);const ix=await readIndex();delete ix[id];await writeIndex(ix);if(state.s.cloudId===id){delete state.s.cloudId;save()}}
 async function refreshAccount(){
   let claim=[];try{const o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null');if(o&&o.id)claim=[o.id]}catch(e){}
   try{const h=await authHeaders();const r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({claim})});if(!r.ok)return;acctInfo=await r.json();
@@ -3918,7 +3963,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-cdimg],[da
   const f=v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};
     /* תמונת פתיחה או סיום: מוסיפים אוטומטית את הדף המתאים, אם לא בחרו אחרת */
     if(k==='first'&&state.s.cdIntro===undefined)state.s.cdIntro=true;if(k==='goal'&&state.s.cdOutro===undefined)state.s.cdOutro=true;
-    save();syncUI();cdFocus(CD_FOC[k]);render()};f.maxPx=k==='bg'?2400:1400;pickImage(f)});
+    save();syncUI();cdFocus(CD_FOC[k]);render()};f.maxPx=k==='bg'?QPX('page'):QPX('box');pickImage(f)});
 /* מה יופיע בכל יום: תאריך, פרשה, חגים, ר"ח וזמנים */
 function cdSyncDay(){const s=state.s;if(!$('#cdDStyle'))return;$('#cdDStyle').value=dStyle();
   document.querySelectorAll('[data-cdshow]').forEach(c=>c.checked=cdShow(c.dataset.cdshow));
@@ -4234,7 +4279,7 @@ function openDayImages(date){
   q('#diAdd').onclick=()=>{const f=async v=>{if(!v.img)return;
       const o={id:uid(),kind:'other',name:'',rec:'once',date,img:v.img,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null};if(state.events.length+pending.length>=PLAN().events){openUpgrade('events');return}pending.push(o);
       evs=evs.concat(o);L.order.push(o.id);L.sizes=L.order.map(()=>100/L.order.length);
-      const ok=diDirsFor(L.order.length);if(!ok.includes(L.dir))L.dir=L.order.length===4?'grid':L.order.length===3&&diGrid(L.dir)?'g21':'row';draw()};f.maxPx=1200;pickImage(f)};
+      const ok=diDirsFor(L.order.length);if(!ok.includes(L.dir))L.dir=L.order.length===4?'grid':L.order.length===3&&diGrid(L.dir)?'g21':'row';draw()};f.maxPx=QPX('day');pickImage(f)};
   q('#diSave').onclick=()=>{
     pending.filter(o=>L.order.includes(o.id)).forEach(o=>state.events.push(o));
     removed.forEach(id=>{const e=state.events.find(x=>x.id===id);if(!e)return;if(!e.name)state.events=state.events.filter(x=>x!==e);else{e.img=null;e.imgLum=null;e.edit=null}});
@@ -4305,7 +4350,7 @@ $('#trayList').addEventListener('dragend',()=>document.body.classList.remove('tr
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&TSEL)traySelect(null)});
 /* תמונה מהמגש שנגררה או נבחרה: למקום של תמונה (setv של התיבה) או ליום */
 function trayDropId(e){try{return e.dataTransfer&&e.dataTransfer.getData('text/x-mltray')||''}catch(err){return ''}}
-async function trayToDay(date,id){const t=trayItem(id);if(!t)return;const img=await compress(await (await fetch(t.img)).blob(),1000);quickEvent({date,img,trayId:id})}
+async function trayToDay(date,id){const t=trayItem(id);if(!t)return;const img=await compress(await (await fetch(t.img)).blob(),QPX('day'));quickEvent({date,img,trayId:id})}
 stage.addEventListener('click',e=>{if(!TSEL)return;
   const box=e.target.closest('.pg-img');
   if(box&&box._setv){e.preventDefault();e.stopPropagation();const t=trayItem(TSEL);if(t){box._setv({img:t.img,edit:null,zoom:1,px:50,pos:50});trayPlaced(t.id)}return}
@@ -4333,7 +4378,7 @@ function quickEvent({date,img,trayId}){
     m.querySelectorAll('input[name=qR]').forEach(r=>r.checked=r.value===rec);
     q('#qImg').hidden=q('#qPicX').hidden=!pic;if(pic)q('#qImg').src=pic;q('#qPic').textContent=pic?'החלפת תמונה':'📷 תמונה ליום (לא חובה)'};
   m.addEventListener('change',e=>{if(e.target.name==='qK'){kind=e.target.value;if(!q('#qName').value)rec=KINDS[kind].rec;draw()}if(e.target.name==='qR')rec=e.target.value});
-  q('#qPic').onclick=()=>{const s=async v=>{pic=v.img;draw()};s.maxPx=1000;pickImage(s)};
+  q('#qPic').onclick=()=>{const s=async v=>{pic=v.img;draw()};s.maxPx=QPX('day');pickImage(s)};
   q('#qPicX').onclick=()=>{pic=null;draw()};
   const build=()=>{const o={id:uid(),kind,name:q('#qName').value.trim(),rec,img:pic,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null};
     if(rec==='heb'){o.day=hd.getDate();o.month=hd.getMonth();o.year=''}else if(rec==='greg'){o.day=base.getDate();o.month=base.getMonth()+1;o.year=''}else o.date=date;return o};
@@ -4367,10 +4412,10 @@ async function shareAccept(items){
         if(state.events.length>=PLAN().events){full=true;break}
         const d=it.data||{},o={id:uid(),kind:KINDS[d.kind]?d.kind:'event',name:String(d.name||''),rec:d.rec,img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null,from:it.who||''};
         if(d.rec==='once')o.date=d.date;else{o.day=d.day;o.month=d.month;o.year=d.year||''}
-        if(it.url){o.img=await urlToData(it.url,1000);o.imgLum=await imageLum(o.img)}
+        if(it.url){o.img=await urlToData(it.url,QPX('day'));o.imgLum=await imageLum(o.img)}
         state.events.push(o);ev++;
       }else if(it.url){
-        const img=await urlToData(it.url,2400),k=it.data&&it.data.month;const t=await trayAdd(img,{from:it.who||''});
+        const img=await urlToData(it.url,QPX('page')),k=it.data&&it.data.month;const t=await trayAdd(img,{from:it.who||''});
         if(k&&photoKeys().includes(k)&&!slotHas(k)){slotPut(k,img);t.used=1}ph++;
       }
       ok.push(it.id);

@@ -95,6 +95,19 @@ module.exports = async (req, res) => {
     /* ניקוי דוגמיות הורדה ישנות */
     let cleaned = 0; try { const cfg = await require('./_lib').loadConfig(); cleaned = await require('./_usage').cleanSamples(cfg.sampleKeepDays == null ? 365 : +cfg.sampleKeepDays); } catch (e) { console.error('clean samples', e.message); }
     try { await require('./_share').clean(); } catch (e) { console.error('clean shares', e.message); }
+    /* התראה במייל כש-R2 מגיע ל-80% מה-10GB החינמיים (פעם בחודש לכל היותר). הכתובת: ALERT_EMAIL ב-Vercel */
+    try {
+      const R2 = require('./_r2'), to = require('./_lib').env('ALERT_EMAIL');
+      if (R2.on() && to) {
+        const C = await R2.list('cal/'), I = await R2.list('img/'), used = [...C, ...I].reduce((a, f) => a + f.size, 0), LIM = 10 * 1024 ** 3;
+        const { loadSetting, saveSetting } = require('./_lib'), mon = tIso.slice(0, 7), last = await loadSetting('r2alert').catch(() => null);
+        if (used > LIM * 0.8 && !(last && last.month === mon)) {
+          const gb = (used / 1024 ** 3).toFixed(2);
+          await sendMail({ to, subject: 'MyLuach: האחסון ב-R2 הגיע ל-' + Math.round(used / LIM * 100) + '%', html: frame({ title: 'האחסון ב-R2 מתמלא', body: 'הלוחות השמורים ב-Cloudflare R2 תופסים ' + gb + 'GB מתוך 10GB החינמיים.<br>אפשר לפנות מקום בדף הניהול (שימוש באחסון ← פינוי מקום עכשיו), או להמשיך: כל GB נוסף עולה בערך 1.5 סנט לחודש.' }), text: 'R2: ' + gb + 'GB / 10GB' }, 'alert');
+          await saveSetting('r2alert', { month: mon, used });
+        }
+      }
+    } catch (e) { console.error('r2 alert', e.message); }
     json(res, 200, { date: tIso, days: days.length, cleaned, backup, checked, sent, failed, vsent, vfailed, asent });
   } catch (e) {
     console.error('cron', e);
