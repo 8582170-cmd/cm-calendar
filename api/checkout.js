@@ -94,7 +94,7 @@ module.exports = async (req, res) => {
     if (prov === 'paypal') {
       const charge = isDon ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);
       await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
-      const ppid = await require('./_paypal').create(charge, id, desc + ' · ' + id.slice(0, 8));
+      const ppid = await require('./_paypal').create(charge, id, desc + ' · ' + id.slice(0, 8), email);
       await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ txn: ppid }) });
       return json(res, 200, { id, amount: charge, provider: 'paypal', ppid, ...extra });
     }

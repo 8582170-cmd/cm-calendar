@@ -23,10 +23,12 @@ async function call(path, body) {
   return j;
 }
 /* הזמנה בפייפל לסכום בשקלים. ref = מספר ההזמנה שלנו */
-async function create(amount, ref, desc) {
+/* email: מייל הלקוח (אם ידוע) למילוי מראש בטופס של פייפל, כדי שלא יצטרך להקליד */
+async function create(amount, ref, desc, email) {
   const j = await call('/v2/checkout/orders', {
     intent: 'CAPTURE',
     purchase_units: [{ reference_id: ref, custom_id: ref, description: String(desc || 'MyLuach').slice(0, 120), amount: { currency_code: 'ILS', value: (Math.round(amount * 100) / 100).toFixed(2) } }],
+    ...(email ? { payer: { email_address: email, address: { country_code: 'IL' } } } : {}),
     application_context: { brand_name: 'MyLuach', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW', locale: 'he-IL' }
   });
   return j.id;
