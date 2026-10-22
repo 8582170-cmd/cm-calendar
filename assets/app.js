@@ -4380,7 +4380,7 @@ function openDayImages(date){
   q('#diEq').onclick=()=>{L.sizes=L.order.map(()=>100/L.order.length);L.gr=50;L.gc=50;draw()};
   q('#diList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const id=b.closest('[data-id]').dataset.id,i=L.order.indexOf(id);
     const t=L.im[id]={...(L.im[id]||{})};
-    if(b.dataset.z){const z0=t.z??1,st=z0<1||(z0===1&&+b.dataset.z<0)?0.1:0.25;t.z=Math.max(0.3,Math.min(4,+(z0+(+b.dataset.z)*st).toFixed(2)))}
+    if(b.dataset.z){const z0=t.z??1,st=z0<1||(z0===1&&+b.dataset.z<0)?0.1:0.25;t.z=Math.max(0.1,Math.min(4,+(z0+(+b.dataset.z)*st).toFixed(2)))}
     if(b.dataset.flip)t.f=t.f?0:1;
     if(b.dataset.fit){t.c=t.c?0:1;if(t.c)t.z=1}
     if(b.dataset.mv){const j=i+ +b.dataset.mv;if(j>=0&&j<L.order.length){[L.order[i],L.order[j]]=[L.order[j],L.order[i]];[L.sizes[i],L.sizes[j]]=[L.sizes[j],L.sizes[i]]}}
@@ -4413,7 +4413,7 @@ function openDayImages(date){
     const up=()=>{w.removeEventListener('pointermove',mv);w.removeEventListener('pointerup',up);t.x=Math.round(t.x??x0);t.y=Math.round(t.y??y0)};
     w.addEventListener('pointermove',mv);w.addEventListener('pointerup',up)});
   prev.addEventListener('wheel',e=>{const w=e.target.closest('.c-im');if(!w)return;e.preventDefault();const id=w.dataset.id,t=L.im[id]={...(L.im[id]||{})};
-    t.z=Math.max(0.3,Math.min(4,+((t.z??1)*(e.deltaY<0?1.08:1/1.08)).toFixed(3)));if(Math.abs(t.z-1)<0.03)t.z=1;imgXform(w.querySelector('img'),t,evs.find(x=>x.id===id))},{passive:false});
+    t.z=Math.max(0.1,Math.min(4,+((t.z??1)*(e.deltaY<0?1.08:1/1.08)).toFixed(3)));if(Math.abs(t.z-1)<0.03)t.z=1;imgXform(w.querySelector('img'),t,evs.find(x=>x.id===id))},{passive:false});
   /* תמונה נוספת ליום: אירוע "תמונה בלבד" */
   q('#diAdd').onclick=()=>{const f=async v=>{if(!v.img)return;
       const o={id:uid(),kind:'other',name:'',rec:'once',date,img:v.img,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null};if(state.events.length+pending.length>=PLAN().events){openUpgrade('events');return}pending.push(o);
