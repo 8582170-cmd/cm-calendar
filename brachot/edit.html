@@ -8,34 +8,61 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&display=swap">
-<link rel="stylesheet" id="gfonts">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=1">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=2">
 <style>
-.tools{display:flex;flex-direction:column;gap:12px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:var(--paper)}
-.tools[hidden]{display:none}
-.trow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
-.trow > label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
-.trow select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--sheet);color:var(--ink);max-width:100%}
-.trow input[type=range]{width:130px;accent-color:var(--teal)}
-.trow input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{font:inherit;font-size:14px;font-weight:700;padding:5px 11px;border:0;background:var(--sheet);color:var(--ink);cursor:pointer}
-.seg button+button{border-inline-start:1px solid var(--line)}
-.seg button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink)}
-.dots{display:inline-flex;gap:6px;flex-wrap:wrap}
-.dot{width:26px;height:26px;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18);cursor:pointer;padding:0}
+.blocks{display:flex;flex-direction:column;gap:10px}
+.blk{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;align-items:stretch}
+.gapc{display:flex;flex-direction:column;align-items:center;justify-content:space-between;border:1.5px solid var(--line);border-radius:26px;padding:4px 0;background:var(--sheet);min-height:92px}
+.gapc button{font:inherit;width:36px;height:30px;border:0;background:none;color:var(--ink);cursor:pointer;border-radius:8px;font-size:15px}
+.gapc button:hover{background:var(--teal-soft)}
+.gapc span{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px}
+.card2{background:var(--sheet);border:1.5px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.blk.sel .card2{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal)}
+.blk.off .card2{opacity:.55}
+.card2 textarea{font:inherit;font-size:16px;line-height:1.5;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);width:100%;min-width:0;resize:vertical;text-align:center}
+.tx2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.tbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tb{font:inherit;font-size:14px;font-weight:700;min-height:34px;padding:4px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tb:hover{border-color:var(--teal)}
+.tb[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.tb.font{max-width:190px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:16px;font-weight:400}
+.tb .sw0{width:18px;height:18px;border-radius:50%;border:1px solid rgb(0 0 0 / .25)}
+.tb.danger{color:#b3261e}
+.num{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--paper)}
+.num button{font:inherit;font-weight:800;width:30px;height:32px;border:0;background:none;color:var(--ink);cursor:pointer}
+.num button:hover{background:var(--teal-soft)}
+.num span{min-width:34px;text-align:center;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.more{display:flex;flex-direction:column;gap:10px;padding:10px;border:1px dashed var(--line);border-radius:10px;background:var(--paper)}
+.more label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.more input[type=range]{width:140px;accent-color:var(--teal)}
+.dots{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dot{width:28px;height:28px;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18);cursor:pointer;padding:0}
 .dot[aria-pressed="true"]{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--teal)}
-.fhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.fhead button{font:inherit;font-size:14px;font-weight:700;color:var(--teal);background:none;border:0;cursor:pointer;padding:4px 6px;border-radius:6px}
-.fhead button:hover{background:var(--teal-soft)}
-.field.sel > .fhead label{color:var(--teal)}
-.field.sel input,.field.sel textarea{border-color:var(--teal)}
-.small{font-size:14px}
+.dots input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0;background:none;cursor:pointer}
+.adds{display:flex;flex-wrap:wrap;gap:10px}
+.gtools{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.gtools label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
+.gtools input[type=range]{width:140px;accent-color:var(--teal)}
+.gtools input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0;background:none;cursor:pointer}
 #preset{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);width:100%}
 .ed-preview canvas{cursor:pointer}
+/* בוחר הגופנים */
+dialog.fp{width:min(560px,calc(100vw - 24px));max-height:min(80vh,720px);border:1px solid var(--line);border-radius:16px;padding:0;background:var(--sheet);color:var(--ink);box-shadow:var(--shadow)}
+dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
+.fp-in{display:flex;flex-direction:column;max-height:min(80vh,720px)}
+.fp-hd{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.fp-hd .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.fp-hd input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);width:100%}
+.fp-list{overflow:auto;padding:8px 10px 14px;display:flex;flex-direction:column;gap:4px}
+.fp-g{font-size:13px;font-weight:800;color:var(--mute);padding:10px 6px 2px}
+.fp-i{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:start;font:inherit;border:1px solid transparent;border-radius:10px;padding:8px 10px;background:none;color:var(--ink);cursor:pointer}
+.fp-i:hover{background:var(--teal-soft)}
+.fp-i[aria-current="true"]{border-color:var(--teal)}
+.fp-i .s{font-size:24px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=1"></script>
+<script src="/assets/greetings/greetings.js?v=2"></script>
 </head>
 <body>
 <div class="wrap">
@@ -50,7 +77,7 @@
   <main class="ed" id="ed">
     <div class="ed-preview">
       <div class="sheet"><canvas id="cv" aria-label="תצוגה מקדימה של הברכה" role="img"></canvas></div>
-      <p class="cap">לחיצה על שורה בתצוגה פותחת את העריכה שלה</p>
+      <p class="cap">לחיצה על פסקה בתצוגה פותחת אותה לעריכה</p>
     </div>
 
     <div class="ed-form">
@@ -61,8 +88,8 @@
 
       <section class="panel" id="pPreset" hidden>
         <h2>נוסח מוכן</h2>
-        <p class="note">בוחרים נוסח, והוא ממלא את השדות. אחר כך אפשר לשנות בו כל מילה.</p>
-        <select id="preset"></select>
+        <p class="note">בוחרים נוסח, והוא ממלא את הפסקאות. אחר כך אפשר לשנות בו כל מילה.</p>
+        <select id="preset" aria-label="נוסח מוכן"></select>
         <div class="dl"><div class="row"><button class="btn" type="button" id="presetUndo" hidden>החזרת הטקסט הקודם</button></div></div>
       </section>
 
@@ -73,13 +100,17 @@
 
       <section class="panel">
         <h2>הטקסט</h2>
-        <p class="note">לכל שורה יש כפתור "עיצוב": גופן, גודל, צבע, הדגשה, יישור, מרווח שורות והזזה.</p>
-        <div class="trow">
-          <label for="allFont">גופן לכל הטקסט<select id="allFont"><option value="">ללא שינוי</option></select></label>
-          <label>צבע לכל הטקסט<input type="color" id="allColor" value="#14213d"></label>
-          <button class="btn small" type="button" id="allColorGo" style="padding:5px 12px">החלה</button>
+        <div class="gtools">
+          <label>גופן לכל הטקסט <button class="tb font" type="button" id="allFont">בחירה…</button></label>
+          <label>צבע לכל הטקסט <input type="color" id="allColor" value="#14213d"></label>
+          <label for="scale">גודל כללי <input type="range" id="scale" min="60" max="140" step="5"></label>
         </div>
-        <div id="fields" class="ed-form" style="gap:16px"></div>
+        <p class="note">כל פסקה היא תיבה נפרדת. החצים בצד קובעים את הרווח מעל הפסקה. אפשר להוסיף, למחוק ולהזיז פסקאות וקישוטים.</p>
+        <div class="blocks" id="blocks"></div>
+        <div class="adds">
+          <button class="btn" type="button" id="addText">+ פסקה חדשה</button>
+          <button class="btn" type="button" id="addDiv">+ קישוט מפריד</button>
+        </div>
       </section>
 
       <section class="panel">
@@ -92,28 +123,41 @@
           </div>
           <p class="note">הקובץ להדפסה ברזולוציה של 300dpi. השינויים נשמרים בדפדפן, כך שאפשר לחזור ולהמשיך.</p>
           <p class="msg" id="msg" role="status"></p>
-          <div class="row"><button class="btn small" type="button" id="resetAll" style="padding:5px 12px">התחלה מחדש</button><span class="note" id="resetQ" hidden>ללחוץ שוב כדי למחוק את כל השינויים</span></div>
+          <div class="row"><button class="btn" type="button" id="resetAll">התחלה מחדש</button><span class="note" id="resetQ" hidden>ללחוץ שוב כדי למחוק את כל השינויים</span></div>
         </div>
       </section>
     </div>
   </main>
 </div>
 
+<dialog class="fp" id="fp" aria-labelledby="fpT">
+  <div class="fp-in">
+    <div class="fp-hd">
+      <div class="row"><h2 id="fpT" style="font-size:20px">בחירת גופן</h2><button class="tb" type="button" id="fpClose">סגירה</button></div>
+      <input type="search" id="fpQ" placeholder="חיפוש לפי שם" aria-label="חיפוש גופן">
+      <div class="tbar" role="group" aria-label="סינון">
+        <button class="tb" type="button" data-fl="">הכל</button><button class="tb" type="button" data-fl="he">עברית</button><button class="tb" type="button" data-fl="en">English</button>
+        <button class="tb" type="button" data-fl="HANDWRITING">כתב יד</button><button class="tb" type="button" data-fl="DISPLAY">מיוחדים</button>
+      </div>
+    </div>
+    <div class="fp-list" id="fpList"></div>
+  </div>
+</dialog>
+
 <script>
 (function(){
 'use strict';
 var G = window.Greetings, $ = function(id){ return document.getElementById(id) };
-document.getElementById('gfonts').href = G.FONTS_CSS;
 var params = new URLSearchParams(location.search), tpl = G.get(params.get('t') || '');
 if (!tpl) { $('ed').innerHTML = '<div class="panel"><h2>העיצוב לא נמצא</h2><p><a href="/brachot/">לכל העיצובים</a></p></div>'; return; }
 document.title = tpl.title + ' · עריכת ' + G.KINDS[tpl.kind] + ' | MyLuach';
 $('ttl').textContent = tpl.title;
 $('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat) + '. כותבים, משנים צבעים וגופנים, ומורידים.';
+var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-var KEY = 'myluach-greet-' + tpl.id, S = G.defaults(tpl), sel = null;
-try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) { Object.assign(S.colors, saved.colors || {}); Object.assign(S.texts, saved.texts || {}); S.style = saved.style || {}; } } catch (e) {}
+var KEY = 'myluach-greet2-' + tpl.id, S = G.defaults(tpl), sel = null;
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; } } catch (e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} }
-function st(k){ return S.style[k] || (S.style[k] = {}) }
 
 /* תצוגה */
 var cv = $('cv'), pending = false;
@@ -128,16 +172,15 @@ function draw(){
 function changed(){ save(); draw(); }
 window.addEventListener('resize', draw);
 cv.addEventListener('click', function(e){
-  var r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * G.W, y = (e.clientY - r.top) / r.height * G.H;
-  var k = G.hit(tpl, S, x, y); if (!k) return;
-  select(k, true);
-  var f = document.querySelector('[data-k="' + k + '"]');
-  if (f) { f.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); var inp = f.querySelector('input,textarea'); if (inp) inp.focus({ preventScroll: true }); }
+  var r = cv.getBoundingClientRect(), i = G.hit(cv, (e.clientX - r.left) / r.width * G.W, (e.clientY - r.top) / r.height * G.H);
+  if (i == null) return;
+  select(i);
+  var el = document.querySelector('.blk[data-i="' + i + '"]');
+  if (el) { el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' }); var t = el.querySelector('textarea'); if (t) t.focus({ preventScroll: true }); }
 });
-function select(k, openTools){
-  sel = k;
-  document.querySelectorAll('.field[data-k]').forEach(function(f){ f.classList.toggle('sel', f.dataset.k === k); });
-  if (openTools) { var t = document.querySelector('[data-k="' + k + '"] .tools'); if (t && t.hidden) toggleTools(k); }
+function select(i){
+  sel = i;
+  document.querySelectorAll('.blk').forEach(function(b){ b.classList.toggle('sel', +b.dataset.i === i) });
   draw();
 }
 
@@ -163,76 +206,185 @@ function select(k, openTools){
 });
 if (!(tpl.colors || []).length) $('pColors').hidden = true;
 
-/* שדות הטקסט וכלי העיצוב של כל שורה */
-var TEXT_COLORS = [['#14213d','כחול כהה'],['#1a1a1a','שחור'],['#8a6a22','זהב כהה'],['#c9a24a','זהב'],['#6e1f2c','בורדו'],['#2f4a3a','ירוק'],['#ffffff','לבן']];
-G.FONTS.forEach(function(f){ var o = document.createElement('option'); o.value = f[0]; o.textContent = f[1]; $('allFont').appendChild(o); });
-function fontOptions(){ return G.FONTS.map(function(f){ return '<option value="' + f[0] + '">' + f[1] + '</option>' }).join(''); }
-
-tpl.zones.forEach(function(z){
-  var f = document.createElement('div'); f.className = 'field'; f.dataset.k = z.k;
-  var id = 'f-' + z.k;
-  f.innerHTML = '<div class="fhead"><label for="' + id + '"></label><button type="button" class="tbtn" aria-expanded="false">עיצוב</button></div>' +
-    (z.multi ? '<textarea id="' + id + '" rows="3"></textarea>' : '<input id="' + id + '" type="text">') +
-    '<div class="tools" hidden>' +
-      '<div class="trow"><label>גופן<select data-t="font">' + fontOptions() + '</select></label>' +
-        '<label>גודל<input type="range" data-t="size" min="50" max="170" step="5"></label>' +
-        '<span class="seg"><button type="button" data-t="bold">מודגש</button></span></div>' +
-      '<div class="trow"><span class="small" style="font-weight:600">צבע</span><span class="dots"></span><input type="color" data-t="color" aria-label="צבע אחר לשורה"></div>' +
-      '<div class="trow"><span class="small" style="font-weight:600">יישור</span><span class="seg" data-g="align"><button type="button" data-a="right">ימין</button><button type="button" data-a="center">מרכז</button><button type="button" data-a="left">שמאל</button></span>' +
-        '<label>מרווח שורות<input type="range" data-t="lh" min="80" max="160" step="5"></label></div>' +
-      '<div class="trow"><span class="small" style="font-weight:600">הזזה</span><span class="seg"><button type="button" data-m="0,-4" aria-label="למעלה">▲</button><button type="button" data-m="0,4" aria-label="למטה">▼</button><button type="button" data-m="4,0" aria-label="ימינה">▶</button><button type="button" data-m="-4,0" aria-label="שמאלה">◀</button></span>' +
-        '<label><input type="checkbox" data-t="hidden"> הסתרת השורה</label>' +
-        '<button type="button" class="btn small" data-t="reset" style="padding:4px 12px">איפוס עיצוב השורה</button></div>' +
-    '</div>';
-  f.querySelector('label').textContent = z.label;
-  var inp = f.querySelector('#' + id), tools = f.querySelector('.tools');
-  inp.value = S.texts[z.k] != null ? S.texts[z.k] : z.text;
-  inp.addEventListener('input', function(){ S.texts[z.k] = inp.value; changed(); });
-  inp.addEventListener('focus', function(){ if (sel !== z.k) select(z.k); });
-  f.querySelector('.tbtn').onclick = function(){ toggleTools(z.k); select(z.k); };
-
-  var dots = f.querySelector('.dots');
-  TEXT_COLORS.concat([[z.color, 'הצבע המקורי']]).forEach(function(c){
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'dot'; b.dataset.c = c[0]; b.title = c[1]; b.setAttribute('aria-label', c[1]); b.style.background = c[0];
-    b.onclick = function(){ st(z.k).color = c[0]; sync(); changed(); };
-    dots.appendChild(b);
-  });
-  function sync(){
-    var s = S.style[z.k] || {}, e = G.eff(z, s);
-    tools.querySelector('[data-t=font]').value = e.font;
-    tools.querySelector('[data-t=size]').value = Math.round((s.size || 1) * 100);
-    tools.querySelector('[data-t=lh]').value = Math.round((s.lh || 1) * 100);
-    tools.querySelector('[data-t=bold]').setAttribute('aria-pressed', String(e.weight >= 600));
-    tools.querySelector('[data-t=color]').value = /^#[0-9a-f]{6}$/i.test(e.color) ? e.color : '#000000';
-    tools.querySelector('[data-t=hidden]').checked = !!s.hidden;
-    tools.querySelectorAll('[data-a]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.a === e.align)) });
-    dots.querySelectorAll('.dot').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.c.toLowerCase() === e.color.toLowerCase())) });
-  }
-  f._sync = sync;
-  tools.querySelector('[data-t=font]').onchange = function(e){ st(z.k).font = e.target.value; changed(); };
-  tools.querySelector('[data-t=size]').oninput = function(e){ st(z.k).size = +e.target.value / 100; changed(); };
-  tools.querySelector('[data-t=lh]').oninput = function(e){ st(z.k).lh = +e.target.value / 100; changed(); };
-  tools.querySelector('[data-t=bold]').onclick = function(){ var e = G.eff(z, S.style[z.k]); st(z.k).bold = !(e.weight >= 600); sync(); changed(); };
-  tools.querySelector('[data-t=color]').oninput = function(e){ st(z.k).color = e.target.value; sync(); changed(); };
-  tools.querySelector('[data-t=hidden]').onchange = function(e){ st(z.k).hidden = e.target.checked; changed(); };
-  tools.querySelectorAll('[data-a]').forEach(function(b){ b.onclick = function(){ st(z.k).align = b.dataset.a; sync(); changed(); }; });
-  tools.querySelectorAll('[data-m]').forEach(function(b){ b.onclick = function(){ var m = b.dataset.m.split(','), s = st(z.k); s.dx = Math.max(-200, Math.min(200, (s.dx || 0) + +m[0])); s.dy = Math.max(-200, Math.min(200, (s.dy || 0) + +m[1])); changed(); }; });
-  tools.querySelector('[data-t=reset]').onclick = function(){ delete S.style[z.k]; sync(); changed(); };
-  $('fields').appendChild(f); sync();
-});
-function toggleTools(k){
-  var f = document.querySelector('.field[data-k="' + k + '"]'), t = f.querySelector('.tools'), b = f.querySelector('.tbtn');
-  t.hidden = !t.hidden; b.setAttribute('aria-expanded', String(!t.hidden)); b.textContent = t.hidden ? 'עיצוב' : 'סגירת העיצוב';
+/* בוחר הגופנים */
+var fpCb = null, fpCur = '', fpFilter = '', io = null;
+function openFonts(current, cb){
+  fpCur = current; fpCb = cb; $('fpQ').value = ''; fpFilter = ''; fpRender();
+  if ($('fp').showModal) $('fp').showModal(); else $('fp').setAttribute('open', '');
+  setTimeout(function(){ var c = document.querySelector('.fp-i[aria-current="true"]'); if (c) c.scrollIntoView({ block: 'center' }); }, 30);
 }
-function syncAll(){ document.querySelectorAll('.field[data-k]').forEach(function(f){ if (f._sync) f._sync(); var i = f.querySelector('input:not([type]),input[type=text],textarea'); var z = tpl.zones.find(function(z){ return z.k === f.dataset.k }); if (i && z) i.value = S.texts[z.k] != null ? S.texts[z.k] : z.text; }); }
+function fpRender(){
+  var q = $('fpQ').value.trim().toLowerCase(), list = $('fpList'); list.innerHTML = '';
+  document.querySelectorAll('[data-fl]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.fl === fpFilter)) });
+  if (io) io.disconnect();
+  io = 'IntersectionObserver' in window ? new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) { G.fontCss(e.target.dataset.f); io.unobserve(e.target); } }) }, { root: list, rootMargin: '200px' }) : null;
+  var last = '', ORD = { SERIF: 0, SANS_SERIF: 1, DISPLAY: 2, HANDWRITING: 3 };
+  G.FONTS.slice().sort(function(a, b){ return (a[1] === b[1] ? 0 : a[1] === 'he' ? -1 : 1) || (ORD[a[2]] - ORD[b[2]]) || a[0].localeCompare(b[0]); }).forEach(function(f){
+    if (q && f[0].toLowerCase().indexOf(q) < 0) return;
+    if (fpFilter === 'he' || fpFilter === 'en') { if (f[1] !== fpFilter) return; }
+    else if (fpFilter && f[2] !== fpFilter) return;
+    var g = G.FONT_GROUPS[f[1]][f[2]];
+    if (g !== last) { var h = document.createElement('div'); h.className = 'fp-g'; h.textContent = g; list.appendChild(h); last = g; }
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'fp-i'; b.dataset.f = f[0];
+    b.setAttribute('aria-current', String(f[0] === fpCur));
+    b.innerHTML = '<span class="s"></span><span class="n"></span>';
+    var s = b.querySelector('.s'); s.textContent = f[1] === 'he' ? 'מזל טוב · שנה טובה' : 'Mazal Tov · Celebrate'; s.style.fontFamily = '"' + f[0] + '", serif';
+    if (f[1] === 'en') s.dir = 'ltr';
+    b.querySelector('.n').textContent = f[0];
+    b.setAttribute('aria-label', f[0]);
+    b.onclick = function(){ closeFonts(); if (fpCb) fpCb(f[0]); };
+    list.appendChild(b);
+    if (io) io.observe(b); else G.fontCss(f[0]);
+  });
+}
+function closeFonts(){ if ($('fp').close) $('fp').close(); else $('fp').removeAttribute('open'); }
+$('fpClose').onclick = closeFonts;
+$('fpQ').oninput = fpRender;
+document.querySelectorAll('[data-fl]').forEach(function(b){ b.onclick = function(){ fpFilter = b.dataset.fl; fpRender(); }; });
+$('fp').addEventListener('click', function(e){ if (e.target === $('fp')) closeFonts(); });
 
-$('allFont').onchange = function(e){ if (!e.target.value) return; tpl.zones.forEach(function(z){ st(z.k).font = e.target.value; }); syncAll(); changed(); };
-$('allColorGo').onclick = function(){ var c = $('allColor').value; tpl.zones.forEach(function(z){ st(z.k).color = c; }); syncAll(); changed(); };
+/* כלים כלליים */
+$('allFont').onclick = function(){ openFonts('', function(f){ S.blocks.forEach(function(b){ if (b.type === 'text') b.font = f; }); renderBlocks(); changed(); }); };
+$('allColor').oninput = function(e){ S.blocks.forEach(function(b){ if (b.type === 'text') b.color = e.target.value; }); renderBlocks(); changed(); };
+$('scale').value = Math.round((S.scale || 1) * 100);
+$('scale').oninput = function(e){ S.scale = +e.target.value / 100; changed(); };
+
+/* הפסקאות */
+var TEXT_COLORS = ['#14213d','#1a1a1a','#8a6a22','#c9a24a','#6e1f2c','#2f4a3a','#1d3557','#ffffff'];
+function colorRow(cur, onPick){
+  var row = document.createElement('div'); row.className = 'dots';
+  var opts = TEXT_COLORS.slice(); (tpl.colors || []).forEach(function(c){ opts.unshift('@' + c.k); });
+  opts.forEach(function(c){
+    var v = G.colorOf(c, tpl, S.colors), b = document.createElement('button'); b.type = 'button'; b.className = 'dot'; b.style.background = v;
+    var lbl = c.charAt(0) === '@' ? ((tpl.colors.find(function(x){ return '@' + x.k === c }) || {}).label || 'צבע העיצוב') : v;
+    b.title = lbl; b.setAttribute('aria-label', lbl); b.setAttribute('aria-pressed', String(c === cur));
+    b.onclick = function(){ onPick(c); }; row.appendChild(b);
+  });
+  var inp = document.createElement('input'); inp.type = 'color'; inp.setAttribute('aria-label', 'צבע אחר');
+  inp.value = /^#[0-9a-f]{6}$/i.test(cur) ? cur : '#000000'; inp.oninput = function(){ onPick(inp.value, true); };
+  row.appendChild(inp);
+  return row;
+}
+function fontLabel(f){ return f; }
+var openMore = {};
+function renderBlocks(){
+  var box = $('blocks'); box.innerHTML = '';
+  S.blocks.forEach(function(b, i){
+    var el = document.createElement('div'); el.className = 'blk' + (sel === i ? ' sel' : '') + (b.hidden ? ' off' : ''); el.dataset.i = i;
+    /* רווח מעל */
+    var gc = document.createElement('div'); gc.className = 'gapc';
+    gc.innerHTML = '<button type="button" aria-label="יותר רווח מעל">▲</button><span></span><button type="button" aria-label="פחות רווח מעל">▼</button>';
+    gc.querySelector('span').textContent = Math.round(b.gap || 0);
+    gc.title = 'רווח מעל הפסקה';
+    var gb = gc.querySelectorAll('button');
+    gb[0].onclick = function(){ b.gap = Math.min(200, (b.gap || 0) + 2); gc.querySelector('span').textContent = b.gap; select(i); changed(); };
+    gb[1].onclick = function(){ b.gap = Math.max(0, (b.gap || 0) - 2); gc.querySelector('span').textContent = b.gap; select(i); changed(); };
+    el.appendChild(gc);
+    var card = document.createElement('div'); card.className = 'card2'; el.appendChild(card);
+    card.addEventListener('focusin', function(){ if (sel !== i) select(i); });
+
+    if (b.type === 'divider') {
+      var bar = document.createElement('div'); bar.className = 'tbar';
+      var stl = document.createElement('select'); stl.className = 'tb'; stl.setAttribute('aria-label', 'צורת הקישוט');
+      G.DIVIDERS.forEach(function(d){ var o = document.createElement('option'); o.value = d[0]; o.textContent = 'קישוט: ' + d[1]; stl.appendChild(o); });
+      stl.value = b.style; stl.onchange = function(){ b.style = stl.value; changed(); };
+      bar.appendChild(stl);
+      bar.appendChild(numCtl('רוחב', Math.round((b.width || .5) * 100) + '%', function(d){ b.width = Math.max(.15, Math.min(1, (b.width || .5) + d * .05)); return Math.round(b.width * 100) + '%'; }));
+      var cb = document.createElement('button'); cb.type = 'button'; cb.className = 'tb'; cb.innerHTML = '<i class="sw0"></i>צבע';
+      cb.querySelector('.sw0').style.background = G.colorOf(b.color, tpl, S.colors);
+      cb.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
+      bar.appendChild(cb);
+      actions(bar, b, i);
+      card.appendChild(bar);
+      if (openMore[i]) { var m = document.createElement('div'); m.className = 'more'; m.appendChild(colorRow(b.color, function(c, live){ b.color = c; changed(); if (!live) renderBlocks(); })); card.appendChild(m); }
+      box.appendChild(el); return;
+    }
+
+    /* טקסט */
+    var tx = document.createElement('div'); if (b.cols) tx.className = 'tx2';
+    function area(key, label){
+      var t = document.createElement('textarea'); t.value = b[key] || ''; t.rows = Math.min(8, Math.max(1, String(b[key] || '').split('\n').length + (String(b[key] || '').length > 60 ? 1 : 0)));
+      t.setAttribute('aria-label', label); t.style.fontFamily = '"' + b.font + '", "Frank Ruhl Libre", serif'; t.style.fontWeight = b.bold ? 700 : 400;
+      t.style.textAlign = b.align; G.fontCss(b.font);
+      t.oninput = function(){ b[key] = t.value; changed(); };
+      tx.appendChild(t);
+    }
+    area('text', b.cols ? 'טור ימני' : 'טקסט הפסקה');
+    if (b.cols) area('text2', 'טור שמאלי');
+    card.appendChild(tx);
+
+    var bar2 = document.createElement('div'); bar2.className = 'tbar';
+    var fb = document.createElement('button'); fb.type = 'button'; fb.className = 'tb font'; fb.textContent = fontLabel(b.font); fb.style.fontFamily = '"' + b.font + '", serif';
+    fb.title = 'גופן'; fb.onclick = function(){ openFonts(b.font, function(f){ b.font = f; renderBlocks(); changed(); }); };
+    bar2.appendChild(fb);
+    bar2.appendChild(numCtl('גודל', Math.round(b.size), function(d){ b.size = Math.max(8, Math.min(120, Math.round(b.size + d))); return Math.round(b.size); }));
+    var bb = document.createElement('button'); bb.type = 'button'; bb.className = 'tb'; bb.textContent = 'B'; bb.style.fontWeight = 900; bb.setAttribute('aria-label', 'מודגש'); bb.setAttribute('aria-pressed', String(!!b.bold));
+    bb.onclick = function(){ b.bold = !b.bold; renderBlocks(); changed(); };
+    bar2.appendChild(bb);
+    var cb2 = document.createElement('button'); cb2.type = 'button'; cb2.className = 'tb'; cb2.innerHTML = '<i class="sw0"></i>צבע'; cb2.querySelector('.sw0').style.background = G.colorOf(b.color, tpl, S.colors);
+    cb2.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
+    bar2.appendChild(cb2);
+    [['right','ימין','⇥'],['center','מרכז','≡'],['left','שמאל','⇤']].forEach(function(a){
+      var ab = document.createElement('button'); ab.type = 'button'; ab.className = 'tb'; ab.textContent = a[2]; ab.title = 'יישור ל' + a[1]; ab.setAttribute('aria-label', 'יישור ל' + a[1]);
+      ab.setAttribute('aria-pressed', String(b.align === a[0])); ab.onclick = function(){ b.align = a[0]; renderBlocks(); changed(); };
+      bar2.appendChild(ab);
+    });
+    var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'tb'; mb.textContent = openMore[i] ? 'פחות ▴' : 'עוד ▾'; mb.setAttribute('aria-expanded', String(!!openMore[i]));
+    mb.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
+    bar2.appendChild(mb);
+    card.appendChild(bar2);
+
+    if (openMore[i]) {
+      var m2 = document.createElement('div'); m2.className = 'more';
+      m2.appendChild(colorRow(b.color, function(c, live){ b.color = c; changed(); if (!live) renderBlocks(); }));
+      var r1 = document.createElement('div'); r1.className = 'tbar';
+      var lhL = document.createElement('label'); lhL.textContent = 'מרווח שורות';
+      var lh = document.createElement('input'); lh.type = 'range'; lh.min = 100; lh.max = 250; lh.step = 5; lh.value = Math.round(b.lh * 100); lh.oninput = function(){ b.lh = +lh.value / 100; changed(); };
+      lhL.appendChild(lh); r1.appendChild(lhL);
+      var colL = document.createElement('label'); var col = document.createElement('input'); col.type = 'checkbox'; col.checked = !!b.cols;
+      col.onchange = function(){ b.cols = col.checked; renderBlocks(); changed(); }; colL.appendChild(col); colL.appendChild(document.createTextNode('שני טורים (למשל שתי חתימות)'));
+      r1.appendChild(colL);
+      var hidL = document.createElement('label'); var hid = document.createElement('input'); hid.type = 'checkbox'; hid.checked = !!b.hidden;
+      hid.onchange = function(){ b.hidden = hid.checked; renderBlocks(); changed(); }; hidL.appendChild(hid); hidL.appendChild(document.createTextNode('הסתרה זמנית'));
+      r1.appendChild(hidL);
+      m2.appendChild(r1);
+      var r2 = document.createElement('div'); r2.className = 'tbar'; actions(r2, b, i, true); m2.appendChild(r2);
+      card.appendChild(m2);
+    }
+    box.appendChild(el);
+  });
+}
+function numCtl(label, val, step){
+  var w = document.createElement('span'); w.className = 'num'; w.title = label;
+  w.innerHTML = '<button type="button">−</button><span></span><button type="button">+</button>';
+  var s = w.querySelector('span'); s.textContent = val;
+  var bs = w.querySelectorAll('button');
+  bs[0].setAttribute('aria-label', label + ': הקטנה'); bs[1].setAttribute('aria-label', label + ': הגדלה');
+  bs[0].onclick = function(){ s.textContent = step(-1); changed(); };
+  bs[1].onclick = function(){ s.textContent = step(1); changed(); };
+  return w;
+}
+function actions(bar, b, i, full){
+  function btn(t, l, fn, cls){ var x = document.createElement('button'); x.type = 'button'; x.className = 'tb' + (cls ? ' ' + cls : ''); x.textContent = t; x.title = l; x.setAttribute('aria-label', l); x.onclick = fn; bar.appendChild(x); return x; }
+  btn('↑', 'הזזה למעלה', function(){ if (i > 0) { S.blocks.splice(i - 1, 0, S.blocks.splice(i, 1)[0]); sel = i - 1; openMore = {}; renderBlocks(); changed(); } });
+  btn('↓', 'הזזה למטה', function(){ if (i < S.blocks.length - 1) { S.blocks.splice(i + 1, 0, S.blocks.splice(i, 1)[0]); sel = i + 1; openMore = {}; renderBlocks(); changed(); } });
+  if (full || b.type === 'divider') {
+    btn('שכפול', 'שכפול', function(){ S.blocks.splice(i + 1, 0, JSON.parse(JSON.stringify(b))); sel = i + 1; openMore = {}; renderBlocks(); changed(); });
+    btn('+ פסקה מתחת', 'הוספת פסקה מתחת', function(){ S.blocks.splice(i + 1, 0, G.newText(tpl, b)); sel = i + 1; openMore = {}; renderBlocks(); changed(); focusBlock(i + 1); });
+  }
+  var d = btn('מחיקה', 'מחיקה', function(){
+    if (!d.dataset.sure) { d.dataset.sure = 1; d.textContent = 'בטוח?'; setTimeout(function(){ if (d.isConnected) { delete d.dataset.sure; d.textContent = 'מחיקה'; } }, 3000); return; }
+    S.blocks.splice(i, 1); sel = null; openMore = {}; renderBlocks(); changed();
+  }, 'danger');
+}
+function focusBlock(i){ var el = document.querySelector('.blk[data-i="' + i + '"]'); if (el) { el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' }); var t = el.querySelector('textarea'); if (t) t.focus({ preventScroll: true }); } }
+$('addText').onclick = function(){ var last = S.blocks[S.blocks.length - 1]; S.blocks.push(G.newText(tpl, last)); sel = S.blocks.length - 1; renderBlocks(); changed(); focusBlock(sel); };
+$('addDiv').onclick = function(){ S.blocks.push(G.newDivider()); sel = S.blocks.length - 1; renderBlocks(); changed(); focusBlock(sel); };
 
 /* נוסחים מוכנים מהניהול */
 var presets = [], undo = null;
 fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).then(function(d){
-  var keys = tpl.zones.map(function(z){ return z.k });
+  var keys = S.blocks.map(function(b){ return b.k }).filter(Boolean);
   presets = (d.presets || []).filter(function(p){
     return (p.cat === 'all' || p.cat === tpl.cat) && (p.kind === 'all' || p.kind === tpl.kind) && Object.keys(p.fields || {}).some(function(k){ return keys.indexOf(k) >= 0 });
   });
@@ -243,11 +395,11 @@ fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).then(fun
 }).catch(function(){});
 $('preset').onchange = function(e){
   var p = presets[+e.target.value]; if (!p) return;
-  undo = JSON.parse(JSON.stringify(S.texts));
-  tpl.zones.forEach(function(z){ if (p.fields[z.k] != null) S.texts[z.k] = p.fields[z.k]; });
-  syncAll(); changed(); $('presetUndo').hidden = false;
+  undo = JSON.parse(JSON.stringify(S.blocks));
+  S.blocks.forEach(function(b){ if (b.k && p.fields[b.k] != null) b.text = p.fields[b.k]; });
+  renderBlocks(); changed(); $('presetUndo').hidden = false;
 };
-$('presetUndo').onclick = function(){ if (!undo) return; S.texts = undo; undo = null; $('presetUndo').hidden = true; $('preset').value = ''; syncAll(); changed(); };
+$('presetUndo').onclick = function(){ if (!undo) return; S.blocks = undo; undo = null; $('presetUndo').hidden = true; $('preset').value = ''; renderBlocks(); changed(); };
 
 /* הורדה */
 function fileBase(){ return 'MyLuach-' + tpl.id; }
@@ -275,11 +427,10 @@ $('dlPdf').onclick = function(){
 $('resetAll').onclick = function(){
   if ($('resetQ').hidden) { $('resetQ').hidden = false; setTimeout(function(){ $('resetQ').hidden = true }, 4000); return; }
   try { localStorage.removeItem(KEY) } catch (e) {}
-  S = G.defaults(tpl); $('resetQ').hidden = true; location.reload();
+  location.reload();
 };
 
-draw();
-G.fontsReady(G.FONTS.map(function(f){ return f[0] })).then(draw);
+renderBlocks(); draw();
 })();
 </script>
 </body>

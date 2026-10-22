@@ -1,6 +1,8 @@
 /* ברכות והזמנות: הקטגוריות, העיצובים המובנים, וציור עיצוב על canvas.
    אותו ציור משמש לתצוגה בגלריה, לתצוגה החיה בעורך ולקובץ ההורדה, כך שמה שרואים הוא מה שמודפס.
-   יחידות העיצוב: דף A4 ב-96dpi (794×1123). בהורדה מגדילים ל-300dpi (2480×3508). */
+   יחידות העיצוב: דף A4 ב-96dpi (794×1123). בהורדה מגדילים ל-300dpi (2480×3508).
+   הטקסט בנוי מפסקאות (בלוקים) שזורמות אחת אחרי השנייה בתוך אזור הטקסט של העיצוב.
+   הלקוח מוסיף, מוחק ומזיז פסקאות, ומשנה לכל אחת גופן, גודל, צבע, יישור ורווח מעליה. */
 (function(){
 'use strict';
 var W = 794, H = 1123;
@@ -14,100 +16,211 @@ var CATS = [
 ];
 var KINDS = { greeting: 'ברכה', invite: 'הזמנה' };
 
-/* אזור טקסט: k מזהה, label לטופס, x y w h מיקום, font size weight color, align, lh גובה שורה, multi שדה רב-שורות, text ברירת מחדל */
-function Z(k, label, y, h, size, o){
+/* פסקת טקסט. k: תפקיד קבוע (לנוסחים מוכנים מהניהול). gap: רווח מעל הפסקה. צבע שמתחיל ב-@ לוקח את צבע העיצוב באותו שם */
+function T(k, text, size, o){
   o = o || {};
-  return { k: k, label: label, x: o.x == null ? 207 : o.x, y: y, w: o.w == null ? 380 : o.w, h: h,
-    font: o.font || 'Frank Ruhl Libre', size: size, weight: o.weight || 400, color: o.color || '#14213d',
-    align: o.align || 'center', lh: o.lh || 1.45, multi: !!o.multi, text: o.text || '' };
+  return { type: 'text', k: k || '', text: text, text2: o.text2 || '', cols: !!o.cols, font: o.font || 'Frank Ruhl Libre', size: size,
+    bold: !!o.bold, color: o.color || '#14213d', align: o.align || 'center', lh: o.lh || 1.45, gap: o.gap == null ? 8 : o.gap };
 }
+/* קישוט מפריד */
+function D(o){ o = o || {}; return { type: 'divider', style: o.style || 'flourish', color: o.color || '@GOLD', width: o.width || 0.5, gap: o.gap == null ? 10 : o.gap }; }
 
 var TEMPLATES = [
   { id: 'gate-wedding', title: 'שער מפואר', cat: 'wedding', kind: 'greeting', price: 0,
     bg: { svg: '/assets/greetings/bg/gate.svg?v=1' },
+    area: { x: 200, y: 268, w: 394, h: 742 },
     colors: [
       { k: 'BG', label: 'צבע הרקע', def: '#14213d', options: [['#14213d','כחול לילה'],['#4a1420','בורדו'],['#123d33','ירוק אמרלד'],['#1c1c1c','שחור']] },
       { k: 'GOLD', label: 'צבע העיטורים', def: '#c9a24a', options: [['#c9a24a','זהב'],['#b9bcc4','כסף'],['#c98a5a','נחושת']] }
     ],
-    zones: [
-      Z('bsd','בס״ד',282,22,13,{x:520,w:70,align:'right',color:'#6b5420',text:'בס״ד'}),
-      Z('quote','פסוק פתיחה',318,34,24,{x:237,w:320,font:'Bellefair',color:'#8a6a22',text:'״קול ששון וקול שמחה״'}),
-      Z('title','כותרת',354,70,56,{x:217,w:360,font:'Suez One',text:'מזל טוב'}),
-      Z('intro','פתיחה',432,58,17,{multi:true,text:'ברגשי גיל ושמחה נשגר ברכתנו\nלכבוד ידידנו היקר והנעלה'}),
-      Z('name','שם המבורך',494,44,30,{font:'Suez One',color:'#8a6a22',text:'הרב ישראל ישראלי שליט״א'}),
-      Z('occasion','לרגל',544,56,17,{multi:true,text:'לרגל השמחה השרויה במעונו\nבנישואי בנו החתן היקר'}),
-      Z('name2','שם החתן',602,38,26,{font:'Suez One',text:'משה נ״י'}),
-      Z('body','גוף הברכה',652,200,16,{x:222,w:350,lh:1.75,multi:true,text:'יהי רצון שיעלה הזיווג יפה, שתזכו לבנות יחד בית נאמן בישראל, ולראות דורות ישרים ומבורכים, מתוך שמחה, בריאות ונחת דקדושה.'}),
-      Z('signLabel','לפני החתימה',872,24,15,{color:'#6b5420',text:'המברכים בשמחה ובהערכה'}),
-      Z('sign','חתימה',900,64,20,{weight:700,multi:true,text:'הנהלת בית הכנסת והמתפללים'})
+    blocks: [
+      T('', 'בס״ד', 13, { align: 'right', color: '#6b5420', gap: 0 }),
+      T('quote', '״קול ששון וקול שמחה״', 24, { font: 'Bellefair', color: '#8a6a22', gap: 8 }),
+      T('title', 'מזל טוב', 56, { font: 'Suez One', gap: 0 }),
+      T('intro', 'ברגשי גיל ושמחה נשגר ברכתנו\nלכבוד ידידנו היקר והנעלה', 17, { gap: 10 }),
+      T('name', 'הרב ישראל ישראלי שליט״א', 30, { font: 'Suez One', color: '#8a6a22', gap: 6 }),
+      D({ gap: 12 }),
+      T('occasion', 'לרגל השמחה השרויה במעונו\nבנישואי בנו החתן היקר', 17, { gap: 10 }),
+      T('name2', 'משה נ״י', 26, { font: 'Suez One', gap: 4 }),
+      D({ style: 'dots', gap: 12 }),
+      T('body', 'יהי רצון שיעלה הזיווג יפה, שתזכו לבנות יחד בית נאמן בישראל, ולראות דורות ישרים ומבורכים, מתוך שמחה, בריאות ונחת דקדושה.', 16, { lh: 1.75, gap: 12 }),
+      T('signLabel', 'המברכים בשמחה ובהערכה', 15, { color: '#6b5420', gap: 26 }),
+      T('sign', 'הנהלת בית הכנסת והמתפללים', 20, { bold: true, gap: 4 })
     ] },
 
   { id: 'vine-wedding', title: 'מסגרת גפן', cat: 'wedding', kind: 'invite', price: 0,
     bg: { svg: '/assets/greetings/bg/vine.svg?v=1' },
+    area: { x: 130, y: 118, w: 534, h: 800 },
     colors: [
       { k: 'LEAF', label: 'צבע העלים', def: '#4f6b3a', options: [['#4f6b3a','ירוק זית'],['#2f5b63','ירוק-כחול'],['#7a5a3a','חום עתיק']] },
       { k: 'GOLD', label: 'צבע הקווים', def: '#b08d3c', options: [['#b08d3c','זהב'],['#9da3ab','כסף']] }
     ],
-    zones: [
-      Z('bsd','בס״ד',120,22,13,{x:600,w:70,align:'right',color:'#5c6b4e',text:'בס״ד'}),
-      Z('opener','פתיחה',180,34,22,{x:140,w:514,font:'Bellefair',color:'#8a6d2a',text:'בשבח והודיה לבורא עולם'}),
-      Z('invite','הזמנה',220,64,18,{x:160,w:474,multi:true,color:'#2f3a26',text:'אנו שמחים להזמינכם להשתתף\nבשמחת נישואי ילדינו היקרים'}),
-      Z('groom','שם החתן',300,64,44,{x:140,w:514,font:'Suez One',color:'#3d5530',text:'משה נ״י'}),
-      Z('conj','בין השמות',368,30,22,{x:140,w:514,font:'Bellefair',color:'#8a6d2a',text:'עב״ג'}),
-      Z('bride','שם הכלה',402,64,44,{x:140,w:514,font:'Suez One',color:'#3d5530',text:'שרה תחי׳'}),
-      Z('details','מועד ומקום',500,100,18,{x:140,w:514,lh:1.75,multi:true,color:'#2f3a26',text:'שתתקיים אי״ה בשעה טובה ומוצלחת\nביום שלישי י״ב בכסלו תשפ״ז\nבאולם ״היכל הנגינה״, ירושלים'}),
-      Z('times','שעות',606,30,17,{x:140,w:514,color:'#5c6b4e',text:'קבלת פנים 19:00 · חופה 19:30'}),
-      Z('p1Label','כותרת הורי החתן',800,24,14,{x:400,w:254,color:'#5c6b4e',text:'הורי החתן'}),
-      Z('p1','הורי החתן',826,64,19,{x:400,w:254,weight:700,multi:true,color:'#2f3a26',text:'יעקב ורחל כהן'}),
-      Z('p2Label','כותרת הורי הכלה',800,24,14,{x:140,w:254,color:'#5c6b4e',text:'הורי הכלה'}),
-      Z('p2','הורי הכלה',826,64,19,{x:140,w:254,weight:700,multi:true,color:'#2f3a26',text:'אברהם ולאה לוי'})
+    blocks: [
+      T('', 'בס״ד', 13, { align: 'right', color: '#5c6b4e', gap: 0 }),
+      T('opener', 'בשבח והודיה לבורא עולם', 22, { font: 'Bellefair', color: '#8a6d2a', gap: 26 }),
+      T('invite', 'אנו שמחים להזמינכם להשתתף\nבשמחת נישואי ילדינו היקרים', 18, { color: '#2f3a26', gap: 8 }),
+      T('groom', 'משה נ״י', 44, { font: 'Suez One', color: '@LEAF', gap: 16 }),
+      T('', 'עב״ג', 22, { font: 'Bellefair', color: '#8a6d2a', gap: 0 }),
+      T('bride', 'שרה תחי׳', 44, { font: 'Suez One', color: '@LEAF', gap: 0 }),
+      D({ gap: 18 }),
+      T('details', 'שתתקיים אי״ה בשעה טובה ומוצלחת\nביום שלישי י״ב בכסלו תשפ״ז\nבאולם ״היכל הנגינה״, ירושלים', 18, { lh: 1.7, color: '#2f3a26', gap: 14 }),
+      T('times', 'קבלת פנים 19:00 · חופה 19:30', 17, { color: '#5c6b4e', gap: 8 }),
+      T('', 'הורי החתן', 14, { cols: true, text2: 'הורי הכלה', color: '#5c6b4e', gap: 46 }),
+      T('', 'יעקב ורחל כהן', 19, { cols: true, text2: 'אברהם ולאה לוי', bold: true, color: '#2f3a26', gap: 2 })
     ] },
 
   { id: 'harps-barmitzvah', title: 'כינורות', cat: 'barmitzvah', kind: 'greeting', price: 0,
     bg: { svg: '/assets/greetings/bg/harps.svg?v=1' },
+    area: { x: 140, y: 96, w: 514, h: 866, valign: 'top' },
     colors: [
       { k: 'MAIN', label: 'צבע המסגרת', def: '#6e1f2c', options: [['#6e1f2c','בורדו'],['#1d3557','כחול'],['#2f4a3a','ירוק']] },
       { k: 'GOLD', label: 'צבע העיטורים', def: '#b8933f', options: [['#b8933f','זהב'],['#9da3ab','כסף']] }
     ],
-    zones: [
-      Z('bsd','בס״ד',96,22,13,{x:610,w:70,align:'right',color:'#7a4a52',text:'בס״ד'}),
-      Z('quote','פסוק פתיחה',176,34,22,{x:257,w:280,font:'Bellefair',color:'#8a6d2a',text:'״טוב להודות לה׳״'}),
-      Z('title','כותרת',212,74,58,{x:247,w:300,font:'Suez One',color:'#6e1f2c',text:'מזל טוב'}),
-      Z('intro','פתיחה',318,62,18,{x:142,w:510,multi:true,color:'#3a1d22',text:'ברגשי שמחה והוקרה נשגרת ברכתנו\nלכבוד ידידנו היקר והחשוב'}),
-      Z('name','שם המבורך',386,46,32,{x:142,w:510,font:'Suez One',color:'#6e1f2c',text:'ר׳ אהרן גולדברג הי״ו'}),
-      Z('family','משפחה',436,26,17,{x:142,w:510,color:'#7a4a52',text:'ולכל בני המשפחה'}),
-      Z('occasion','לרגל',472,60,18,{x:142,w:510,multi:true,color:'#3a1d22',text:'לרגל הכנס בנו היקר\nלעול תורה ומצוות'}),
-      Z('name2','שם בן המצווה',538,44,30,{x:142,w:510,font:'Suez One',color:'#3a1d22',text:'יוסף נ״י'}),
-      Z('body','גוף הברכה',596,170,17,{x:162,w:470,lh:1.8,multi:true,color:'#3a1d22',text:'יהי רצון שיגדל לתורה, לחופה ולמעשים טובים, ותרוו ממנו ומכל יוצאי חלציכם רוב נחת ושמחה, מתוך בריאות ושפע ברכה.'}),
-      Z('signLabel','לפני החתימה',862,24,15,{x:142,w:510,color:'#7a4a52',text:'המברכים בלב שמח'}),
-      Z('sign','חתימה',890,56,21,{x:142,w:510,weight:700,multi:true,color:'#3a1d22',text:'חברי הכולל'})
+    blocks: [
+      T('', 'בס״ד', 13, { align: 'right', color: '#7a4a52', gap: 0 }),
+      T('quote', '״טוב להודות לה׳״', 22, { font: 'Bellefair', color: '#8a6d2a', gap: 50 }),
+      T('title', 'מזל טוב', 58, { font: 'Suez One', color: '@MAIN', gap: 0 }),
+      T('intro', 'ברגשי שמחה והוקרה נשגרת ברכתנו\nלכבוד ידידנו היקר והחשוב', 18, { color: '#3a1d22', gap: 34 }),
+      T('name', 'ר׳ אהרן גולדברג הי״ו', 32, { font: 'Suez One', color: '@MAIN', gap: 6 }),
+      T('', 'ולכל בני המשפחה', 17, { color: '#7a4a52', gap: 2 }),
+      D({ gap: 12 }),
+      T('occasion', 'לרגל הכנס בנו היקר\nלעול תורה ומצוות', 18, { color: '#3a1d22', gap: 10 }),
+      T('name2', 'יוסף נ״י', 30, { font: 'Suez One', color: '#3a1d22', gap: 4 }),
+      T('body', 'יהי רצון שיגדל לתורה, לחופה ולמעשים טובים, ותרוו ממנו ומכל יוצאי חלציכם רוב נחת ושמחה, מתוך בריאות ושפע ברכה.', 17, { lh: 1.8, color: '#3a1d22', gap: 24 }),
+      T('signLabel', 'המברכים בלב שמח', 15, { color: '#7a4a52', gap: 120 }),
+      T('sign', 'חברי הכולל', 21, { bold: true, color: '#3a1d22', gap: 4 })
     ] }
 ];
 
-/* הגופנים שהלקוח יכול לבחור לכל שורה */
+/* הגופנים שהלקוח יכול לבחור (Google Fonts, רישיון חופשי לשימוש מסחרי): [שם, שפה he/en, סוג, יש מודגש] */
 var FONTS = [
-  ['Frank Ruhl Libre','פרנק רוהל (קלאסי)'],['Suez One','סואץ (כותרות)'],['Bellefair','בלפייר (עדין)'],['David Libre','דוד'],
-  ['Noto Serif Hebrew','נוטו סריף'],['Secular One','סקולר (מודגש)'],['Assistant','אסיסטנט (נקי)'],['Heebo','היבו (מודרני)'],
-  ['Noto Rashi Hebrew','כתב רש״י'],['Amatic SC','אמטיק (כתב יד)']
+  ["Alef", "he", "SANS_SERIF", 1],
+  ["Amatic SC", "he", "HANDWRITING", 1],
+  ["Assistant", "he", "SANS_SERIF", 1],
+  ["Bellefair", "he", "SERIF", 0],
+  ["Bona Nova", "he", "SERIF", 1],
+  ["Bona Nova SC", "he", "SERIF", 1],
+  ["David Libre", "he", "SERIF", 1],
+  ["Frank Ruhl Libre", "he", "SERIF", 1],
+  ["Fredoka", "he", "SANS_SERIF", 1],
+  ["Gveret Levin", "he", "HANDWRITING", 0],
+  ["Heebo", "he", "SANS_SERIF", 1],
+  ["IBM Plex Sans Hebrew", "he", "SANS_SERIF", 1],
+  ["Karantina", "he", "DISPLAY", 1],
+  ["Miriam Libre", "he", "SANS_SERIF", 1],
+  ["Noto Rashi Hebrew", "he", "SERIF", 1],
+  ["Noto Sans Hebrew", "he", "SANS_SERIF", 1],
+  ["Noto Serif Hebrew", "he", "SERIF", 1],
+  ["Playpen Sans Hebrew", "he", "HANDWRITING", 1],
+  ["Rubik", "he", "SANS_SERIF", 1],
+  ["Rubik 80s Fade", "he", "DISPLAY", 0],
+  ["Rubik Beastly", "he", "DISPLAY", 0],
+  ["Rubik Broken Fax", "he", "DISPLAY", 0],
+  ["Rubik Bubbles", "he", "DISPLAY", 0],
+  ["Rubik Burned", "he", "DISPLAY", 0],
+  ["Rubik Dirt", "he", "DISPLAY", 0],
+  ["Rubik Distressed", "he", "DISPLAY", 0],
+  ["Rubik Doodle Shadow", "he", "DISPLAY", 0],
+  ["Rubik Doodle Triangles", "he", "DISPLAY", 0],
+  ["Rubik Gemstones", "he", "DISPLAY", 0],
+  ["Rubik Glitch", "he", "DISPLAY", 0],
+  ["Rubik Glitch Pop", "he", "DISPLAY", 0],
+  ["Rubik Iso", "he", "DISPLAY", 0],
+  ["Rubik Lines", "he", "DISPLAY", 0],
+  ["Rubik Maps", "he", "DISPLAY", 0],
+  ["Rubik Marker Hatch", "he", "DISPLAY", 0],
+  ["Rubik Maze", "he", "DISPLAY", 0],
+  ["Rubik Microbe", "he", "DISPLAY", 0],
+  ["Rubik Moonrocks", "he", "DISPLAY", 0],
+  ["Rubik Pixels", "he", "DISPLAY", 0],
+  ["Rubik Puddles", "he", "DISPLAY", 0],
+  ["Rubik Scribble", "he", "DISPLAY", 0],
+  ["Rubik Spray Paint", "he", "DISPLAY", 0],
+  ["Rubik Storm", "he", "DISPLAY", 0],
+  ["Rubik Vinyl", "he", "DISPLAY", 0],
+  ["Rubik Wet Paint", "he", "DISPLAY", 0],
+  ["Secular One", "he", "SANS_SERIF", 0],
+  ["Solitreo", "he", "HANDWRITING", 0],
+  ["Suez One", "he", "SERIF", 0],
+  ["Varela Round", "he", "SANS_SERIF", 0],
+  ["Great Vibes", "en", "HANDWRITING", 0],
+  ["Parisienne", "en", "HANDWRITING", 0],
+  ["Pinyon Script", "en", "HANDWRITING", 0],
+  ["Alex Brush", "en", "HANDWRITING", 0],
+  ["Allura", "en", "HANDWRITING", 0],
+  ["Dancing Script", "en", "HANDWRITING", 1],
+  ["Tangerine", "en", "HANDWRITING", 1],
+  ["Italianno", "en", "HANDWRITING", 0],
+  ["Cinzel", "en", "SERIF", 1],
+  ["Cinzel Decorative", "en", "DISPLAY", 1],
+  ["Playfair Display", "en", "SERIF", 1],
+  ["Cormorant Garamond", "en", "SERIF", 1],
+  ["EB Garamond", "en", "SERIF", 1],
+  ["Libre Baskerville", "en", "SERIF", 1],
+  ["Lora", "en", "SERIF", 1],
+  ["Abril Fatface", "en", "DISPLAY", 0],
+  ["Lobster", "en", "DISPLAY", 0],
+  ["Pacifico", "en", "HANDWRITING", 0],
+  ["Satisfy", "en", "HANDWRITING", 0],
+  ["Sacramento", "en", "HANDWRITING", 0],
+  ["Kaushan Script", "en", "HANDWRITING", 0],
+  ["Monsieur La Doulaise", "en", "HANDWRITING", 0],
+  ["Rouge Script", "en", "HANDWRITING", 0],
+  ["Mrs Saint Delafield", "en", "HANDWRITING", 0],
+  ["Herr Von Muellerhoff", "en", "HANDWRITING", 0],
+  ["Lavishly Yours", "en", "HANDWRITING", 0],
+  ["Ballet", "en", "HANDWRITING", 0],
+  ["Birthstone", "en", "HANDWRITING", 0],
+  ["Corinthia", "en", "HANDWRITING", 1],
+  ["Water Brush", "en", "HANDWRITING", 0],
+  ["Fleur De Leah", "en", "HANDWRITING", 0],
+  ["Imperial Script", "en", "HANDWRITING", 0],
+  ["Luxurious Script", "en", "HANDWRITING", 0],
+  ["Marck Script", "en", "HANDWRITING", 0],
+  ["Bodoni Moda", "en", "SERIF", 1],
+  ["Josefin Sans", "en", "SANS_SERIF", 1],
+  ["Montserrat", "en", "SANS_SERIF", 1],
+  ["Raleway", "en", "SANS_SERIF", 1],
+  ["Oswald", "en", "SANS_SERIF", 1],
+  ["Bebas Neue", "en", "DISPLAY", 0],
+  ["UnifrakturMaguntia", "en", "DISPLAY", 0],
+  ["IM Fell English SC", "en", "SERIF", 0],
+  ["Uncial Antiqua", "en", "DISPLAY", 0],
+  ["Yeseva One", "en", "DISPLAY", 0],
+  ["Petit Formal Script", "en", "HANDWRITING", 0],
+  ["Cormorant SC", "en", "SERIF", 1],
+  ["Forum", "en", "DISPLAY", 0],
+  ["Marcellus SC", "en", "SERIF", 0]
 ];
-var FONTS_CSS = 'https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700&family=Suez+One&family=Bellefair&family=David+Libre:wght@400;700&family=Noto+Serif+Hebrew:wght@400;700&family=Secular+One&family=Assistant:wght@400;700&family=Heebo:wght@400;700&family=Noto+Rashi+Hebrew:wght@400;700&family=Amatic+SC:wght@400;700&display=swap';
+var FONT_INFO = {}; FONTS.forEach(function(f){ FONT_INFO[f[0]] = f; });
+var FONT_GROUPS = { he: { SERIF: 'עברית · קלאסי', SANS_SERIF: 'עברית · מודרני', HANDWRITING: 'עברית · כתב יד', DISPLAY: 'עברית · מיוחד' },
+  en: { SERIF: 'English · Classic', SANS_SERIF: 'English · Modern', HANDWRITING: 'English · Script', DISPLAY: 'English · Display' } };
+var DIVIDERS = [['flourish','סלסול'],['dots','נקודות'],['diamond','יהלום'],['line','קו'],['double','קו כפול']];
 
-/* שדות קבועים שמשותפים לעיצובים, כדי שנוסח מוכן מהניהול ימלא את השדות המתאימים בכל עיצוב */
+/* תפקידים קבועים של פסקאות, כדי שנוסח מוכן מהניהול ימלא את הפסקאות המתאימות בכל עיצוב */
 var FIELDS = [
   ['quote','פסוק / שורת פתיחה'],['title','כותרת'],['intro','פתיחה'],['name','שם המבורך'],['occasion','לרגל'],
   ['name2','שם נוסף (חתן / בן מצווה)'],['body','גוף הברכה'],['signLabel','לפני החתימה'],['sign','חתימה'],
-  ['opener','פתיחת ההזמנה'],['invite','נוסח ההזמנה'],['details','מועד ומקום'],['times','שעות']
+  ['opener','פתיחת ההזמנה'],['invite','נוסח ההזמנה'],['groom','שם החתן'],['bride','שם הכלה'],['details','מועד ומקום'],['times','שעות']
 ];
 
-var fontLoads = {};
+var fontLoads = {}, cssLoads = {};
+function fontCss(f){
+  if (!cssLoads[f]) cssLoads[f] = new Promise(function(ok){
+    var info = FONT_INFO[f], l = document.createElement('link'); l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + (info && info[3] ? ':wght@400;700' : '') + '&display=swap';
+    l.onload = l.onerror = function(){ ok() }; document.head.appendChild(l);
+  });
+  return cssLoads[f];
+}
 function loadFont(f, w){
   var key = f + w;
-  if (!fontLoads[key]) fontLoads[key] = document.fonts.load(w + ' 20px "' + f + '"', 'אבג abc 123').catch(function(){});
+  if (!fontLoads[key]) fontLoads[key] = fontCss(f).then(function(){ return document.fonts.load(w + ' 20px "' + f + '"', 'אבג abc 123') }).catch(function(){});
   return fontLoads[key];
 }
 function fontsReady(list){
   var ps = [];
-  (list || ['Frank Ruhl Libre','Suez One','Bellefair']).forEach(function(f){ ps.push(loadFont(f, 400), loadFont(f, 700)); });
+  (list || ['Frank Ruhl Libre','Suez One','Bellefair']).forEach(function(f){ ps.push(loadFont(f, 400)); if (FONT_INFO[f] && FONT_INFO[f][3]) ps.push(loadFont(f, 700)); });
   return Promise.all(ps);
 }
 
@@ -131,47 +244,89 @@ function bgImage(tpl, colors){
   });
 }
 
-/* האזור אחרי השינויים של הלקוח: גופן, גודל, צבע, הדגשה, יישור, הזזה, מרווח שורות */
-function eff(z, st){
-  st = st || {};
-  var hh = z.h * Math.max(1, st.size || 1);
-  return { k: z.k, x: z.x + (st.dx || 0), y: z.y + (st.dy || 0) - (hh - z.h) / 2, w: z.w, h: hh,
-    font: st.font || z.font, size: z.size * (st.size || 1), weight: st.bold == null ? z.weight : (st.bold ? 700 : 400),
-    color: st.color || z.color, align: st.align || z.align, lh: z.lh * (st.lh || 1), hidden: !!st.hidden };
+function colorOf(c, tpl, colors){
+  if (c && c.charAt(0) === '@') { var k = c.slice(1), d = (tpl.colors || []).find(function(x){ return x.k === k }); return colors[k] || (d && d.def) || '#000'; }
+  return c || '#000';
 }
-function fontStr(z, size){ return (z.weight >= 600 ? 700 : 400) + ' ' + size + 'px "' + z.font + '", "Frank Ruhl Libre", serif'; }
+function fontStr(b, size){ return (b.bold ? 700 : 400) + ' ' + size + 'px "' + b.font + '", "Frank Ruhl Libre", serif'; }
 
-/* שבירת שורות לפי רוחב האזור; אם לא נכנס, מקטינים את הגופן עד שהכל נכנס לגובה */
-function layout(ctx, z, text){
-  var paras = String(text || '').split('\n'), size, lines;
-  for (size = z.size; size >= Math.max(6, z.size * 0.4); size -= 0.5) {
-    ctx.font = fontStr(z, size);
-    lines = []; var wide = false;
-    paras.forEach(function(p){
-      var words = p.split(/\s+/).filter(Boolean), line = '';
-      if (!words.length) { lines.push(''); return; }
-      words.forEach(function(w){
-        var t = line ? line + ' ' + w : w;
-        if (ctx.measureText(t).width <= z.w || !line) line = t; else { lines.push(line); line = w; }
-        if (ctx.measureText(line).width > z.w) wide = true;
-      });
-      lines.push(line);
+/* שבירת שורות לפי רוחב; wide = מילה אחת רחבה מהשורה */
+function wrap(ctx, b, text, width, size){
+  ctx.font = fontStr(b, size);
+  var lines = [], wide = false;
+  String(text || '').split('\n').forEach(function(p){
+    var words = p.split(/\s+/).filter(Boolean), line = '';
+    if (!words.length) { lines.push(''); return; }
+    words.forEach(function(w){
+      var t = line ? line + ' ' + w : w;
+      if (ctx.measureText(t).width <= width || !line) line = t; else { lines.push(line); line = w; }
+      if (ctx.measureText(line).width > width) wide = true;
     });
-    var lh = size * z.lh, total = lines.length * lh - (lh - size);
-    if (!wide && total <= z.h + 0.5) return { size: size, lines: lines, lh: lh, total: total };
-  }
-  return { size: size, lines: lines, lh: size * z.lh, total: lines.length * size * z.lh };
+    lines.push(line);
+  });
+  return { lines: lines, wide: wide };
 }
 
-/* state: { colors:{K:#hex}, texts:{k:text}, style:{k:{font,size,color,bold,align,dx,dy,lh,hidden}} }
-   opt: { scale, watermark, selected: k } */
+/* פריסת כל הפסקאות באזור הטקסט. אם לא נכנס, מקטינים הכל באותו יחס */
+function layout(ctx, tpl, state){
+  var A = tpl.area, blocks = state.blocks || [], user = state.scale || 1, items, total, f;
+  for (f = user; f >= user * 0.45; f -= 0.02) {
+    items = []; total = 0; var bad = false;
+    blocks.forEach(function(b, i){
+      if (b.hidden) return;
+      var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap };
+      if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); }
+      else {
+        var size = b.size * f, colGap = 24, width = b.cols ? (A.w - colGap) / 2 : A.w;
+        var a = wrap(ctx, b, b.text, width, size), c = b.cols ? wrap(ctx, b, b.text2, width, size) : { lines: [], wide: false };
+        if (a.wide || c.wide) bad = true;
+        var n = Math.max(a.lines.length, c.lines.length, 1);
+        it.size = size; it.lines = a.lines; it.lines2 = c.lines; it.width = width; it.colGap = colGap;
+        it.h = (n - 1) * size * b.lh + size * 1.2;
+      }
+      total = it.top + it.h; items.push(it);
+    });
+    if (!bad && total <= A.h) break;
+  }
+  var off = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
+  items.forEach(function(it){ it.y = A.y + off + it.top; it.x = A.x; it.w = A.w; });
+  return items;
+}
+
+function drawDivider(ctx, it, col){
+  var b = it.b, cx = it.x + it.w / 2, cy = it.y + it.h / 2, half = it.w * (b.width || 0.5) / 2;
+  ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+  function line(x1, x2, y){ ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke(); }
+  if (b.style === 'line') line(cx - half, cx + half, cy);
+  else if (b.style === 'double') { line(cx - half, cx + half, cy - 2.5); line(cx - half, cx + half, cy + 2.5); }
+  else if (b.style === 'dots') {
+    line(cx - half, cx - 18, cy); line(cx + 18, cx + half, cy);
+    [[0, 3.2], [-10, 2], [10, 2]].forEach(function(d){ ctx.beginPath(); ctx.arc(cx + d[0], cy, d[1], 0, Math.PI * 2); ctx.fill(); });
+  } else if (b.style === 'diamond') {
+    line(cx - half, cx - 14, cy); line(cx + 14, cx + half, cy);
+    ctx.beginPath(); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx + 9, cy); ctx.lineTo(cx, cy + 8); ctx.lineTo(cx - 9, cy); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx - half, cy, 2, 0, Math.PI * 2); ctx.arc(cx + half, cy, 2, 0, Math.PI * 2); ctx.fill();
+  } else { /* סלסול */
+    line(cx - half, cx - 34, cy); line(cx + 34, cx + half, cy);
+    [-1, 1].forEach(function(s){
+      ctx.beginPath(); ctx.moveTo(cx + s * 34, cy);
+      ctx.bezierCurveTo(cx + s * 26, cy - 10, cx + s * 12, cy - 9, cx + s * 10, cy - 2);
+      ctx.bezierCurveTo(cx + s * 9, cy + 4, cx + s * 16, cy + 6, cx + s * 19, cy + 1);
+      ctx.stroke();
+    });
+    ctx.beginPath(); ctx.moveTo(cx, cy - 7); ctx.lineTo(cx + 6, cy); ctx.lineTo(cx, cy + 7); ctx.lineTo(cx - 6, cy); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* state: { colors:{K:#hex}, blocks:[...], scale } · opt: { scale, watermark, selected: index }
+   מחזיר את ה-canvas; ב-canvas._items נשמרים מיקומי הפסקאות (לזיהוי לחיצה) */
 function render(canvas, tpl, state, opt){
   opt = opt || {};
   var scale = opt.scale || 1;
   state = state || {};
-  var colors = state.colors || {}, texts = state.texts || {}, style = state.style || {};
-  var used = {};
-  tpl.zones.forEach(function(z){ used[(style[z.k] && style[z.k].font) || z.font] = 1; });
+  var colors = state.colors || {}, used = {};
+  (state.blocks || []).forEach(function(b){ if (b.font) used[b.font] = 1; });
   return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors)]).then(function(r){
     var img = r[1];
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
@@ -181,51 +336,59 @@ function render(canvas, tpl, state, opt){
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic';
-    tpl.zones.forEach(function(z0){
-      var z = eff(z0, style[z0.k]);
-      var t = texts[z.k] != null ? texts[z.k] : z0.text;
-      if (opt.selected === z.k) {
-        ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5 / scale * 2; ctx.strokeStyle = '#1f8a96';
-        ctx.strokeRect(z.x - 4, z.y - 3, z.w + 8, z.h + 6); ctx.restore();
+    var items = layout(ctx, tpl, state);
+    items.forEach(function(it){
+      var b = it.b, col = colorOf(b.color, tpl, colors);
+      if (opt.selected === it.i) {
+        ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5; ctx.strokeStyle = '#1f8a96';
+        ctx.strokeRect(it.x - 6, it.y - 4, it.w + 12, it.h + 8); ctx.restore();
       }
-      if (z.hidden || !String(t).trim()) return;
-      var L = layout(ctx, z, t);
-      ctx.fillStyle = z.color;
-      ctx.textAlign = z.align;
-      var x = z.align === 'right' ? z.x + z.w : z.align === 'left' ? z.x : z.x + z.w / 2;
-      var y = z.y + (z.h - L.total) / 2 + L.size * 0.9;
-      L.lines.forEach(function(line, i){ ctx.fillText(line, x, y + i * L.lh); });
+      if (b.type === 'divider') { drawDivider(ctx, it, col); return; }
+      ctx.font = fontStr(b, it.size); ctx.fillStyle = col;
+      function col1(lines, x0, w){
+        ctx.textAlign = b.align;
+        var x = b.align === 'right' ? x0 + w : b.align === 'left' ? x0 : x0 + w / 2;
+        lines.forEach(function(line, i){ ctx.fillText(line, x, it.y + it.size * 0.95 + i * it.size * b.lh); });
+      }
+      if (b.cols) { col1(it.lines, it.x + it.w - it.width, it.width); col1(it.lines2, it.x, it.width); }
+      else col1(it.lines, it.x, it.w);
     });
     if (opt.watermark) {
       ctx.save(); ctx.globalAlpha = 0.16; ctx.fillStyle = '#000'; ctx.font = '700 46px "Frank Ruhl Libre", serif'; ctx.textAlign = 'center';
       for (var yy = 160; yy < H; yy += 220) { ctx.save(); ctx.translate(W / 2, yy); ctx.rotate(-0.42); ctx.fillText('MyLuach · תצוגה מקדימה', 0, 0); ctx.restore(); }
       ctx.restore();
     }
+    canvas._items = items;
     return canvas;
   });
 }
 
-/* לחיצה על התצוגה: איזה אזור טקסט נמצא בנקודה (ביחידות העיצוב) */
-function hit(tpl, state, x, y){
-  var style = (state && state.style) || {}, best = null;
-  tpl.zones.forEach(function(z0){
-    var z = eff(z0, style[z0.k]);
-    if (x >= z.x - 6 && x <= z.x + z.w + 6 && y >= z.y - 6 && y <= z.y + z.h + 6) {
-      var a = z.w * z.h; if (!best || a < best.a) best = { k: z.k, a: a };
+/* לחיצה על התצוגה: איזו פסקה נמצאת בנקודה (ביחידות העיצוב) */
+function hit(canvas, x, y){
+  var best = null;
+  (canvas._items || []).forEach(function(it){
+    if (x >= it.x - 8 && x <= it.x + it.w + 8 && y >= it.y - 6 && y <= it.y + it.h + 6) {
+      var d = Math.abs(y - (it.y + it.h / 2)); if (!best || d < best.d) best = { i: it.i, d: d };
     }
   });
-  return best && best.k;
+  return best ? best.i : null;
 }
 
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
 function defaults(tpl){
-  var s = { colors: {}, texts: {}, style: {} };
+  var s = { colors: {}, blocks: clone(tpl.blocks), scale: 1 };
   (tpl.colors || []).forEach(function(c){ s.colors[c.k] = c.def; });
-  tpl.zones.forEach(function(z){ s.texts[z.k] = z.text; });
   return s;
 }
+function newText(tpl, after){
+  var b = T('', '', 17, { gap: 10 });
+  if (after && after.type === 'text') { b.font = after.font; b.color = after.color; b.size = Math.min(after.size, 22); }
+  return b;
+}
+function newDivider(){ return D({ gap: 10 }); }
 
-window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONTS_CSS: FONTS_CSS, FIELDS: FIELDS, hit: hit, eff: eff,
+window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, defaults: defaults, fontsReady: fontsReady };
+  render: render, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, colorOf: colorOf, fontsReady: fontsReady };
 })();
