@@ -4623,6 +4623,7 @@ document.addEventListener('click',e=>{const s=state.s;
     if(q.get('d'))s.cdDate=q.get('d');if(q.get('f'))s.cdFrom=q.get('f');if(q.get('t'))s.cdTitle=q.get('t');if(q.get('st'))s.cdStyle=q.get('st');if(q.get('l'))s.cdLayout=q.get('l');if(q.get('u'))s.cdUnit=q.get('u');
     save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   /* הגעה מהלוח המקוון: #city-ID&hy-שנה */
+  if(window.location.hash==='#share'&&!CDMODE){try{history.replaceState(null,'',window.location.pathname+window.location.search)}catch(e){}setTimeout(()=>{try{shareModal()}catch(e){}},1500)}
   {const m=/^#city-([a-z]+)(?:&hy-(\d{4}))?$/.exec(window.location.hash||'');if(m){const c=CITIES.find(x=>x.id===m[1]);const s=state.s;if(c){s.city=c.id;s.il=c.il;s.candleMins=c.candle}if(m[2]){s.calType='heb';s.hebYear=+m[2];s.hebStart=7}save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   {const m=/^#preset-([a-z]+)$/.exec(window.location.hash||'');const P={
     scholar:{layout:'full',theme:'ink',accent:'#7a1f3d',size:'wall',orient:'landscape',view:'month',yzHist:true,yzMode:'all',place:{yz:'page',learn:'col'},learn:{daf:true,nach:true,box:true},zmanimMode:'custom',
