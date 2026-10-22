@@ -231,7 +231,7 @@ $('allColorGo').onclick = function(){ var c = $('allColor').value; tpl.zones.for
 
 /* נוסחים מוכנים מהניהול */
 var presets = [], undo = null;
-fetch('/api/greetings').then(function(r){ return r.json() }).then(function(d){
+fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).then(function(d){
   var keys = tpl.zones.map(function(z){ return z.k });
   presets = (d.presets || []).filter(function(p){
     return (p.cat === 'all' || p.cat === tpl.cat) && (p.kind === 'all' || p.kind === tpl.kind) && Object.keys(p.fields || {}).some(function(k){ return keys.indexOf(k) >= 0 });

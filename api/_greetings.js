@@ -2,6 +2,7 @@
    הלקוח בוחר נוסח בעורך, והוא ממלא את השדות המתאימים בעיצוב. */
 'use strict';
 const { loadSetting, json } = require('./_lib');
+/* נקרא דרך /api/pricing?c=_greetings (כדי לא להוסיף פונקציית שרת נוספת) */
 module.exports = async (req, res) => {
   try {
     const g = await loadSetting('greetings');

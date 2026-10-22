@@ -13,6 +13,8 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');
     return json(res, 200, lib);
   }
+  /* ברכות והזמנות: נוסחים מוכנים */
+  if (cp === '_greetings') return require('./_greetings')(req, res);
   /* חיפוש מיקום (מיקוד / כתובת / נקודה) */
   if (cp === '_geo') return require('./_geo')(req, res, json);
   /* אתר שומר שבת: האם עכשיו שבת או חג במיקום של הגולש */
