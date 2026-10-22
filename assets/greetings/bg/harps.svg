@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123" viewBox="0 0 794 1123">
+<defs>
+<g id="hHarp">
+<path d="M12 112 L12 12 C 28 -6 52 12 66 22 L 32 112 Z" fill="none" stroke="%GOLD%" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="12" cy="8" r="6" fill="%GOLD%"/>
+<rect x="6" y="112" width="34" height="6" fill="%GOLD%"/>
+<g stroke="%GOLD%" stroke-width="1">
+<line x1="22" y1="6" x2="22" y2="112"/><line x1="30" y1="5" x2="30" y2="108"/><line x1="38" y1="7" x2="38" y2="88"/>
+<line x1="46" y1="10" x2="46" y2="67"/><line x1="54" y1="14" x2="54" y2="46"/><line x1="61" y1="18" x2="61" y2="30"/>
+</g>
+</g>
+<g id="hCorner"><path d="M0 0 L22 0 L22 22 L0 22 Z" fill="%MAIN%"/><path d="M11 3 L19 11 L11 19 L3 11 Z" fill="%GOLD%"/></g>
+</defs>
+<rect x="0" y="0" width="794" height="1123" fill="#fbf7ee"/>
+<rect x="30" y="30" width="734" height="1063" fill="%MAIN%"/>
+<rect x="44" y="44" width="706" height="1035" fill="#fbf7ee"/>
+<rect x="58" y="58" width="678" height="1007" fill="none" stroke="%GOLD%" stroke-width="2"/>
+<rect x="66" y="66" width="662" height="991" fill="none" stroke="%GOLD%" stroke-width="0.7"/>
+<use href="#hCorner" transform="translate(47 47)"/><use href="#hCorner" transform="translate(725 47)"/>
+<use href="#hCorner" transform="translate(47 1054)"/><use href="#hCorner" transform="translate(725 1054)"/>
+<g fill="none" stroke="%GOLD%" stroke-width="1.2">
+<path d="M66 140 C 110 140 140 110 140 66"/><path d="M66 150 C 120 150 150 120 150 66"/>
+<path d="M728 140 C 684 140 654 110 654 66"/><path d="M728 150 C 674 150 644 120 644 66"/>
+<path d="M66 983 C 110 983 140 1013 140 1057"/><path d="M66 973 C 120 973 150 1003 150 1057"/>
+<path d="M728 983 C 684 983 654 1013 654 1057"/><path d="M728 973 C 674 973 644 1003 644 1057"/>
+</g>
+<use href="#hHarp" transform="translate(170 170)"/>
+<use href="#hHarp" transform="translate(624 170) scale(-1 1)"/>
+<g stroke="%GOLD%" stroke-width="1"><line x1="230" y1="960" x2="372" y2="960"/><line x1="422" y1="960" x2="564" y2="960"/></g>
+<path d="M397 948 L409 960 L397 972 L385 960 Z" fill="%MAIN%"/>
+<circle cx="397" cy="960" r="3" fill="%GOLD%"/>
+</svg>

@@ -88,6 +88,24 @@ module.exports = async (req, res) => {
       try { const out = await require('./_pages').adminAction(b); return json(res, out.error ? 400 : 200, out); }
       catch (e) { console.error('pages', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
     }
+    /* ברכות והזמנות: נוסחים מוכנים */
+    if (req.method === 'POST' && (b.action === 'greetget' || b.action === 'greetsave')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      const g = await loadSetting('greetings');
+      if (b.action === 'greetsave') {
+        const str = (v, n) => String(v == null ? '' : v).replace(/<[^>]*>/g, '').slice(0, n);
+        const key = /^[a-z][a-zA-Z0-9]{0,20}$/;
+        g.presets = (Array.isArray(b.presets) ? b.presets : []).slice(0, 1000).map(p => {
+          const fields = {};
+          Object.entries(p.fields || {}).slice(0, 30).forEach(([k, v]) => { if (key.test(k) && String(v || '').trim()) fields[k] = str(v, 3000); });
+          return { id: str(p.id, 40).replace(/[^\w-]/g, '') || Math.random().toString(36).slice(2, 10), title: str(p.title, 120), cat: str(p.cat, 30).replace(/[^\w]/g, '') || 'all',
+            kind: ['greeting', 'invite', 'all'].includes(p.kind) ? p.kind : 'all', on: p.on !== false, fields };
+        });
+        g.updated = new Date().toISOString();
+        await saveSetting('greetings', g);
+      }
+      return json(res, 200, { presets: g.presets || [] });
+    }
     /* מאגר התמונות ללקוחות */
     if (req.method === 'POST' && /^lib(get|upload|import|save|delete|media|cat)$/.test(b.action || '')) {
       try { const out = await require('./_lib_img').adminAction(b); return json(res, out.error ? 400 : 200, out); }

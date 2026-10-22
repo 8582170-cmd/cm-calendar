@@ -53,12 +53,28 @@ ol.steps b{display:inline}
 .rules li{border-top:1px solid var(--line);padding-top:8px;font-size:15px}
 .rules b{display:block}
 code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
+.pr-list{display:flex;flex-direction:column;gap:12px}
+.pr{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.pr.off{opacity:.6}
+.pr .fields{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:820px){.pr .fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pr textarea{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--sheet);color:var(--ink);width:100%;min-height:60px;resize:vertical}
+.pr .tx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.pr .tx{grid-template-columns:minmax(0,1fr)}}
+.pr .tx label{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px;min-width:0}
+.pr .tx .full{grid-column:1/-1}
+.pr details summary{cursor:pointer;font-weight:700;color:var(--teal);font-size:14px}
+.pr .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pr .hd b{font-size:17px}
+.savebar{position:sticky;bottom:0;background:var(--sheet);padding-block:10px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ok{color:#1f7a3a;font-weight:700}
 .login{max-width:360px;margin:60px auto;display:flex;flex-direction:column;gap:10px}
 .msg{font-weight:700;color:var(--bad)}
 .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:8px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
+<script src="/assets/greetings/greetings.js?v=1"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -77,7 +93,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <h1>סטודיו רקעים</h1>
       <p class="sub">ייצור רקעים לברכות ולהזמנות. בוחרים שילוב, מעתיקים את הפרומפט לכלי ה־AI, ומורידים את התוצאה.</p>
     </div>
-    <nav><a class="btn sm" href="/admin">חזרה לניהול</a><button class="btn sm" type="button" id="out">יציאה</button></nav>
+    <nav><a class="btn sm" href="/brachot/" target="_blank" rel="noopener">הגלריה ללקוחות</a><a class="btn sm" href="/admin">חזרה לניהול</a><button class="btn sm" type="button" id="out">יציאה</button></nav>
   </div>
 
   <section aria-labelledby="b-h">
@@ -109,6 +125,15 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <button class="btn primary" id="copy" type="button">העתקת הפרומפט</button>
       <button class="btn" id="rand" type="button">שילוב אקראי</button>
     </div>
+  </section>
+
+  <section aria-labelledby="pr-h">
+    <h2 id="pr-h">נוסחים מוכנים לברכות</h2>
+    <p class="sub">נוסחים שהלקוחות יכולים לבחור בעורך, ואחר כך לערוך. כל נוסח שייך לאירוע ולסוג (ברכה או הזמנה), או לכולם. שדה שנשאר ריק לא משנה את מה שכבר כתוב בעיצוב.</p>
+    <div class="actions"><label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px">הצגה<select id="prFilter" style="width:auto"><option value="">כל האירועים</option></select></label>
+      <button class="btn primary" type="button" id="prAdd">נוסח חדש</button></div>
+    <div class="pr-list" id="prList"><p class="sub">טוען…</p></div>
+    <div class="savebar"><button class="btn primary" type="button" id="prSave">שמירת הנוסחים</button><span id="prMsg" role="status"></span></div>
   </section>
 
   <section aria-labelledby="r-h">
@@ -236,6 +261,47 @@ function copy(text,el){
   try{navigator.clipboard.writeText(text).then(()=>toast('הועתק'),()=>{selectEl(el);toast('סומן, העתיקו עם Ctrl+C')})}
   catch(e){selectEl(el);toast('סומן, העתיקו עם Ctrl+C')}
 }
+
+/* נוסחים מוכנים */
+var PR=[], GR=window.Greetings;
+var MAIN=['quote','title','intro','occasion','body','signLabel','sign'];
+function api(body){return fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':PW},body:JSON.stringify(body)}).then(r=>r.json().then(j=>{if(!r.ok)throw new Error(j.error||'error');return j}))}
+function prInit(){
+  GR.CATS.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1];$('prFilter').appendChild(o)});
+  $('prFilter').onchange=prRender;
+  $('prAdd').onclick=()=>{const f=$('prFilter').value;PR.unshift({id:Math.random().toString(36).slice(2,10),title:'',cat:f||'all',kind:'greeting',on:true,fields:{}});prRender();const t=document.querySelector('#prList [data-f="title"]');if(t)t.focus()};
+  $('prSave').onclick=()=>{$('prMsg').className='';$('prMsg').textContent='שומר…';
+    api({action:'greetsave',presets:PR}).then(d=>{PR=d.presets||[];prRender();$('prMsg').className='ok';$('prMsg').textContent='נשמר. הלקוחות יראו את הנוסחים תוך כמה דקות.'})
+      .catch(e=>{$('prMsg').className='msg';$('prMsg').textContent='השמירה נכשלה: '+e.message})};
+  api({action:'greetget'}).then(d=>{PR=d.presets||[];prRender()}).catch(e=>{$('prList').innerHTML='<p class="msg">לא הצלחתי לטעון את הנוסחים: '+e.message+'</p>'});
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function prRender(){
+  const f=$('prFilter').value,box=$('prList');box.innerHTML='';
+  const list=PR.filter(p=>!f||p.cat===f||p.cat==='all');
+  if(!list.length){box.innerHTML='<p class="sub">אין עדיין נוסחים'+(f?' לאירוע הזה':'')+'. לוחצים "נוסח חדש".</p>';return}
+  const catOpts='<option value="all">כל האירועים</option>'+GR.CATS.map(c=>'<option value="'+c[0]+'">'+esc(c[1])+'</option>').join('');
+  const lab=k=>(GR.FIELDS.find(x=>x[0]===k)||[k,k])[1];
+  list.forEach(p=>{
+    const el=document.createElement('div');el.className='pr'+(p.on===false?' off':'');
+    const ta=k=>'<label class="'+(k==='body'||k==='invite'?'full':'')+'">'+esc(lab(k))+'<textarea data-k="'+k+'" rows="'+(k==='body'||k==='invite'?4:2)+'">'+esc((p.fields||{})[k]||'')+'</textarea></label>';
+    const more=GR.FIELDS.map(x=>x[0]).filter(k=>MAIN.indexOf(k)<0);
+    el.innerHTML='<div class="hd"><b>'+esc(p.title||'נוסח בלי שם')+'</b><div class="actions"><label style="display:flex;gap:6px;align-items:center;font-size:14px;font-weight:700"><input type="checkbox" data-f="on" style="width:18px;height:18px"'+(p.on!==false?' checked':'')+'> מוצג ללקוחות</label><button class="btn sm" type="button" data-del>מחיקה</button></div></div>'+
+      '<div class="fields"><label class="wide">שם הנוסח (הלקוח רואה אותו ברשימה)<input data-f="title" value="'+esc(p.title)+'"></label>'+
+      '<label>אירוע<select data-f="cat">'+catOpts+'</select></label>'+
+      '<label>סוג<select data-f="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option><option value="all">ברכה והזמנה</option></select></label></div>'+
+      '<div class="tx">'+MAIN.map(ta).join('')+'</div>'+
+      '<details'+(more.some(k=>(p.fields||{})[k])?' open':'')+'><summary>שדות נוספים (הזמנות, שמות)</summary><div class="tx" style="margin-top:10px">'+more.map(ta).join('')+'</div></details>';
+    el.querySelector('[data-f=cat]').value=p.cat||'all';el.querySelector('[data-f=kind]').value=p.kind||'greeting';
+    el.querySelector('[data-f=title]').oninput=e=>{p.title=e.target.value;el.querySelector('.hd b').textContent=p.title||'נוסח בלי שם'};
+    el.querySelector('[data-f=cat]').onchange=e=>{p.cat=e.target.value};
+    el.querySelector('[data-f=kind]').onchange=e=>{p.kind=e.target.value};
+    el.querySelector('[data-f=on]').onchange=e=>{p.on=e.target.checked;el.classList.toggle('off',!p.on)};
+    el.querySelectorAll('textarea[data-k]').forEach(t=>t.oninput=()=>{p.fields=p.fields||{};p.fields[t.dataset.k]=t.value});
+    const del=el.querySelector('[data-del]');del.onclick=()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='בטוח? לחצו שוב';return}PR.splice(PR.indexOf(p),1);prRender()};
+    box.appendChild(el);
+  });
+}
 function start(){
   app.innerHTML='';app.appendChild($('studio').content.cloneNode(true));
   $('out').onclick=()=>{try{sessionStorage.removeItem('myluach-admin')}catch(e){}location.reload()};
@@ -275,6 +341,7 @@ function start(){
       b2.onclick=()=>{$('occ').value=o[0];syncKinds();$('kind').value=kind;$('style').value=s;$('pal').value=p;$('ar').value='5:7';$('center').value='cream';$('extra').value='';render();$('b-h').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})};
       box.appendChild(c)}))}
   $('occ').value='wedding';$('style').value='gate';$('pal').value='navygold';syncKinds();render();chips();cards();
+  prInit();
 }
 })();
 </script>

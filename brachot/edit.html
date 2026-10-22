@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>עריכת ברכה | MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&display=swap">
+<link rel="stylesheet" id="gfonts">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=1">
+<style>
+.tools{display:flex;flex-direction:column;gap:12px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:var(--paper)}
+.tools[hidden]{display:none}
+.trow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.trow > label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.trow select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--sheet);color:var(--ink);max-width:100%}
+.trow input[type=range]{width:130px;accent-color:var(--teal)}
+.trow input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:14px;font-weight:700;padding:5px 11px;border:0;background:var(--sheet);color:var(--ink);cursor:pointer}
+.seg button+button{border-inline-start:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink)}
+.dots{display:inline-flex;gap:6px;flex-wrap:wrap}
+.dot{width:26px;height:26px;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18);cursor:pointer;padding:0}
+.dot[aria-pressed="true"]{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--teal)}
+.fhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fhead button{font:inherit;font-size:14px;font-weight:700;color:var(--teal);background:none;border:0;cursor:pointer;padding:4px 6px;border-radius:6px}
+.fhead button:hover{background:var(--teal-soft)}
+.field.sel > .fhead label{color:var(--teal)}
+.field.sel input,.field.sel textarea{border-color:var(--teal)}
+.small{font-size:14px}
+#preset{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);width:100%}
+.ed-preview canvas{cursor:pointer}
+</style>
+<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/greetings/greetings.js?v=1"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <a class="logo" href="/"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
+    <nav class="nav-links" aria-label="ניווט ראשי">
+      <a href="/brachot/">כל העיצובים</a>
+      <a class="btn btn-primary" href="/app.html">לבנות לוח</a>
+    </nav>
+  </header>
+
+  <main class="ed" id="ed">
+    <div class="ed-preview">
+      <div class="sheet"><canvas id="cv" aria-label="תצוגה מקדימה של הברכה" role="img"></canvas></div>
+      <p class="cap">לחיצה על שורה בתצוגה פותחת את העריכה שלה</p>
+    </div>
+
+    <div class="ed-form">
+      <div>
+        <h1 id="ttl">עריכת ברכה</h1>
+        <p class="lead" id="sub"></p>
+      </div>
+
+      <section class="panel" id="pPreset" hidden>
+        <h2>נוסח מוכן</h2>
+        <p class="note">בוחרים נוסח, והוא ממלא את השדות. אחר כך אפשר לשנות בו כל מילה.</p>
+        <select id="preset"></select>
+        <div class="dl"><div class="row"><button class="btn" type="button" id="presetUndo" hidden>החזרת הטקסט הקודם</button></div></div>
+      </section>
+
+      <section class="panel" id="pColors">
+        <h2>צבעי העיצוב</h2>
+        <div id="colors" class="ed-form" style="gap:14px"></div>
+      </section>
+
+      <section class="panel">
+        <h2>הטקסט</h2>
+        <p class="note">לכל שורה יש כפתור "עיצוב": גופן, גודל, צבע, הדגשה, יישור, מרווח שורות והזזה.</p>
+        <div class="trow">
+          <label for="allFont">גופן לכל הטקסט<select id="allFont"><option value="">ללא שינוי</option></select></label>
+          <label>צבע לכל הטקסט<input type="color" id="allColor" value="#14213d"></label>
+          <button class="btn small" type="button" id="allColorGo" style="padding:5px 12px">החלה</button>
+        </div>
+        <div id="fields" class="ed-form" style="gap:16px"></div>
+      </section>
+
+      <section class="panel">
+        <h2>הורדה</h2>
+        <div class="dl">
+          <div class="row">
+            <button class="btn btn-primary" type="button" id="dlPdf">PDF להדפסה (A4)</button>
+            <button class="btn" type="button" id="dlPng">תמונה להדפסה</button>
+            <button class="btn" type="button" id="dlJpg">תמונה לוואטסאפ</button>
+          </div>
+          <p class="note">הקובץ להדפסה ברזולוציה של 300dpi. השינויים נשמרים בדפדפן, כך שאפשר לחזור ולהמשיך.</p>
+          <p class="msg" id="msg" role="status"></p>
+          <div class="row"><button class="btn small" type="button" id="resetAll" style="padding:5px 12px">התחלה מחדש</button><span class="note" id="resetQ" hidden>ללחוץ שוב כדי למחוק את כל השינויים</span></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var G = window.Greetings, $ = function(id){ return document.getElementById(id) };
+document.getElementById('gfonts').href = G.FONTS_CSS;
+var params = new URLSearchParams(location.search), tpl = G.get(params.get('t') || '');
+if (!tpl) { $('ed').innerHTML = '<div class="panel"><h2>העיצוב לא נמצא</h2><p><a href="/brachot/">לכל העיצובים</a></p></div>'; return; }
+document.title = tpl.title + ' · עריכת ' + G.KINDS[tpl.kind] + ' | MyLuach';
+$('ttl').textContent = tpl.title;
+$('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat) + '. כותבים, משנים צבעים וגופנים, ומורידים.';
+
+var KEY = 'myluach-greet-' + tpl.id, S = G.defaults(tpl), sel = null;
+try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) { Object.assign(S.colors, saved.colors || {}); Object.assign(S.texts, saved.texts || {}); S.style = saved.style || {}; } } catch (e) {}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} }
+function st(k){ return S.style[k] || (S.style[k] = {}) }
+
+/* תצוגה */
+var cv = $('cv'), pending = false;
+function draw(){
+  if (pending) return; pending = true;
+  requestAnimationFrame(function(){
+    pending = false;
+    var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.W), selected: sel }).catch(function(){});
+  });
+}
+function changed(){ save(); draw(); }
+window.addEventListener('resize', draw);
+cv.addEventListener('click', function(e){
+  var r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * G.W, y = (e.clientY - r.top) / r.height * G.H;
+  var k = G.hit(tpl, S, x, y); if (!k) return;
+  select(k, true);
+  var f = document.querySelector('[data-k="' + k + '"]');
+  if (f) { f.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); var inp = f.querySelector('input,textarea'); if (inp) inp.focus({ preventScroll: true }); }
+});
+function select(k, openTools){
+  sel = k;
+  document.querySelectorAll('.field[data-k]').forEach(function(f){ f.classList.toggle('sel', f.dataset.k === k); });
+  if (openTools) { var t = document.querySelector('[data-k="' + k + '"] .tools'); if (t && t.hidden) toggleTools(k); }
+  draw();
+}
+
+/* צבעי העיצוב */
+(tpl.colors || []).forEach(function(c){
+  var box = document.createElement('div'); box.className = 'field';
+  box.innerHTML = '<label></label><div class="swatches"></div>';
+  box.querySelector('label').textContent = c.label;
+  var sw = box.querySelector('.swatches');
+  function mark(){ sw.querySelectorAll('[data-v]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.v.toLowerCase() === String(S.colors[c.k]).toLowerCase())) }); custom.value = S.colors[c.k]; }
+  c.options.forEach(function(o){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.dataset.v = o[0];
+    b.innerHTML = '<i></i>'; b.querySelector('i').style.background = o[0]; b.appendChild(document.createTextNode(o[1]));
+    b.onclick = function(){ S.colors[c.k] = o[0]; mark(); changed(); };
+    sw.appendChild(b);
+  });
+  var lab = document.createElement('label'); lab.className = 'sw'; lab.textContent = 'צבע אחר';
+  var custom = document.createElement('input'); custom.type = 'color'; custom.setAttribute('aria-label', c.label + ': צבע אחר');
+  custom.style.cssText = 'width:24px;height:22px;border:0;padding:0;background:none;cursor:pointer';
+  custom.oninput = function(){ S.colors[c.k] = custom.value; mark(); changed(); };
+  lab.prepend(custom); sw.appendChild(lab);
+  $('colors').appendChild(box); mark();
+});
+if (!(tpl.colors || []).length) $('pColors').hidden = true;
+
+/* שדות הטקסט וכלי העיצוב של כל שורה */
+var TEXT_COLORS = [['#14213d','כחול כהה'],['#1a1a1a','שחור'],['#8a6a22','זהב כהה'],['#c9a24a','זהב'],['#6e1f2c','בורדו'],['#2f4a3a','ירוק'],['#ffffff','לבן']];
+G.FONTS.forEach(function(f){ var o = document.createElement('option'); o.value = f[0]; o.textContent = f[1]; $('allFont').appendChild(o); });
+function fontOptions(){ return G.FONTS.map(function(f){ return '<option value="' + f[0] + '">' + f[1] + '</option>' }).join(''); }
+
+tpl.zones.forEach(function(z){
+  var f = document.createElement('div'); f.className = 'field'; f.dataset.k = z.k;
+  var id = 'f-' + z.k;
+  f.innerHTML = '<div class="fhead"><label for="' + id + '"></label><button type="button" class="tbtn" aria-expanded="false">עיצוב</button></div>' +
+    (z.multi ? '<textarea id="' + id + '" rows="3"></textarea>' : '<input id="' + id + '" type="text">') +
+    '<div class="tools" hidden>' +
+      '<div class="trow"><label>גופן<select data-t="font">' + fontOptions() + '</select></label>' +
+        '<label>גודל<input type="range" data-t="size" min="50" max="170" step="5"></label>' +
+        '<span class="seg"><button type="button" data-t="bold">מודגש</button></span></div>' +
+      '<div class="trow"><span class="small" style="font-weight:600">צבע</span><span class="dots"></span><input type="color" data-t="color" aria-label="צבע אחר לשורה"></div>' +
+      '<div class="trow"><span class="small" style="font-weight:600">יישור</span><span class="seg" data-g="align"><button type="button" data-a="right">ימין</button><button type="button" data-a="center">מרכז</button><button type="button" data-a="left">שמאל</button></span>' +
+        '<label>מרווח שורות<input type="range" data-t="lh" min="80" max="160" step="5"></label></div>' +
+      '<div class="trow"><span class="small" style="font-weight:600">הזזה</span><span class="seg"><button type="button" data-m="0,-4" aria-label="למעלה">▲</button><button type="button" data-m="0,4" aria-label="למטה">▼</button><button type="button" data-m="4,0" aria-label="ימינה">▶</button><button type="button" data-m="-4,0" aria-label="שמאלה">◀</button></span>' +
+        '<label><input type="checkbox" data-t="hidden"> הסתרת השורה</label>' +
+        '<button type="button" class="btn small" data-t="reset" style="padding:4px 12px">איפוס עיצוב השורה</button></div>' +
+    '</div>';
+  f.querySelector('label').textContent = z.label;
+  var inp = f.querySelector('#' + id), tools = f.querySelector('.tools');
+  inp.value = S.texts[z.k] != null ? S.texts[z.k] : z.text;
+  inp.addEventListener('input', function(){ S.texts[z.k] = inp.value; changed(); });
+  inp.addEventListener('focus', function(){ if (sel !== z.k) select(z.k); });
+  f.querySelector('.tbtn').onclick = function(){ toggleTools(z.k); select(z.k); };
+
+  var dots = f.querySelector('.dots');
+  TEXT_COLORS.concat([[z.color, 'הצבע המקורי']]).forEach(function(c){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'dot'; b.dataset.c = c[0]; b.title = c[1]; b.setAttribute('aria-label', c[1]); b.style.background = c[0];
+    b.onclick = function(){ st(z.k).color = c[0]; sync(); changed(); };
+    dots.appendChild(b);
+  });
+  function sync(){
+    var s = S.style[z.k] || {}, e = G.eff(z, s);
+    tools.querySelector('[data-t=font]').value = e.font;
+    tools.querySelector('[data-t=size]').value = Math.round((s.size || 1) * 100);
+    tools.querySelector('[data-t=lh]').value = Math.round((s.lh || 1) * 100);
+    tools.querySelector('[data-t=bold]').setAttribute('aria-pressed', String(e.weight >= 600));
+    tools.querySelector('[data-t=color]').value = /^#[0-9a-f]{6}$/i.test(e.color) ? e.color : '#000000';
+    tools.querySelector('[data-t=hidden]').checked = !!s.hidden;
+    tools.querySelectorAll('[data-a]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.a === e.align)) });
+    dots.querySelectorAll('.dot').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.c.toLowerCase() === e.color.toLowerCase())) });
+  }
+  f._sync = sync;
+  tools.querySelector('[data-t=font]').onchange = function(e){ st(z.k).font = e.target.value; changed(); };
+  tools.querySelector('[data-t=size]').oninput = function(e){ st(z.k).size = +e.target.value / 100; changed(); };
+  tools.querySelector('[data-t=lh]').oninput = function(e){ st(z.k).lh = +e.target.value / 100; changed(); };
+  tools.querySelector('[data-t=bold]').onclick = function(){ var e = G.eff(z, S.style[z.k]); st(z.k).bold = !(e.weight >= 600); sync(); changed(); };
+  tools.querySelector('[data-t=color]').oninput = function(e){ st(z.k).color = e.target.value; sync(); changed(); };
+  tools.querySelector('[data-t=hidden]').onchange = function(e){ st(z.k).hidden = e.target.checked; changed(); };
+  tools.querySelectorAll('[data-a]').forEach(function(b){ b.onclick = function(){ st(z.k).align = b.dataset.a; sync(); changed(); }; });
+  tools.querySelectorAll('[data-m]').forEach(function(b){ b.onclick = function(){ var m = b.dataset.m.split(','), s = st(z.k); s.dx = Math.max(-200, Math.min(200, (s.dx || 0) + +m[0])); s.dy = Math.max(-200, Math.min(200, (s.dy || 0) + +m[1])); changed(); }; });
+  tools.querySelector('[data-t=reset]').onclick = function(){ delete S.style[z.k]; sync(); changed(); };
+  $('fields').appendChild(f); sync();
+});
+function toggleTools(k){
+  var f = document.querySelector('.field[data-k="' + k + '"]'), t = f.querySelector('.tools'), b = f.querySelector('.tbtn');
+  t.hidden = !t.hidden; b.setAttribute('aria-expanded', String(!t.hidden)); b.textContent = t.hidden ? 'עיצוב' : 'סגירת העיצוב';
+}
+function syncAll(){ document.querySelectorAll('.field[data-k]').forEach(function(f){ if (f._sync) f._sync(); var i = f.querySelector('input:not([type]),input[type=text],textarea'); var z = tpl.zones.find(function(z){ return z.k === f.dataset.k }); if (i && z) i.value = S.texts[z.k] != null ? S.texts[z.k] : z.text; }); }
+
+$('allFont').onchange = function(e){ if (!e.target.value) return; tpl.zones.forEach(function(z){ st(z.k).font = e.target.value; }); syncAll(); changed(); };
+$('allColorGo').onclick = function(){ var c = $('allColor').value; tpl.zones.forEach(function(z){ st(z.k).color = c; }); syncAll(); changed(); };
+
+/* נוסחים מוכנים מהניהול */
+var presets = [], undo = null;
+fetch('/api/greetings').then(function(r){ return r.json() }).then(function(d){
+  var keys = tpl.zones.map(function(z){ return z.k });
+  presets = (d.presets || []).filter(function(p){
+    return (p.cat === 'all' || p.cat === tpl.cat) && (p.kind === 'all' || p.kind === tpl.kind) && Object.keys(p.fields || {}).some(function(k){ return keys.indexOf(k) >= 0 });
+  });
+  if (!presets.length) return;
+  $('preset').innerHTML = '<option value="">בחירת נוסח…</option>' + presets.map(function(p, i){ return '<option value="' + i + '"></option>' }).join('');
+  presets.forEach(function(p, i){ $('preset').options[i + 1].textContent = p.title || ('נוסח ' + (i + 1)); });
+  $('pPreset').hidden = false;
+}).catch(function(){});
+$('preset').onchange = function(e){
+  var p = presets[+e.target.value]; if (!p) return;
+  undo = JSON.parse(JSON.stringify(S.texts));
+  tpl.zones.forEach(function(z){ if (p.fields[z.k] != null) S.texts[z.k] = p.fields[z.k]; });
+  syncAll(); changed(); $('presetUndo').hidden = false;
+};
+$('presetUndo').onclick = function(){ if (!undo) return; S.texts = undo; undo = null; $('presetUndo').hidden = true; $('preset').value = ''; syncAll(); changed(); };
+
+/* הורדה */
+function fileBase(){ return 'MyLuach-' + tpl.id; }
+function saveBlob(blob, name){
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+function big(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale }); }
+function busy(on, text){ ['dlPdf','dlPng','dlJpg'].forEach(function(id){ $(id).disabled = on }); $('msg').textContent = text || ''; }
+var PRINT = 2480 / G.W;
+$('dlPng').onclick = function(){ busy(true, 'מכין את הקובץ…'); big(PRINT).then(function(c){ c.toBlob(function(b){ saveBlob(b, fileBase() + '.png'); busy(false, 'הקובץ ירד.'); }, 'image/png'); }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); }); };
+$('dlJpg').onclick = function(){ busy(true, 'מכין את התמונה…'); big(1080 / G.W).then(function(c){ c.toBlob(function(b){ saveBlob(b, fileBase() + '.jpg'); busy(false, 'התמונה ירדה. אפשר לשלוח אותה בוואטסאפ.'); }, 'image/jpeg', 0.9); }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); }); };
+function jspdf(){
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise(function(ok, bad){ var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = function(){ ok(window.jspdf) }; s.onerror = bad; document.head.appendChild(s); });
+}
+$('dlPdf').onclick = function(){
+  busy(true, 'מכין PDF…');
+  Promise.all([jspdf(), big(PRINT)]).then(function(r){
+    var doc = new r[0].jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    doc.addImage(r[1].toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
+    doc.save(fileBase() + '.pdf'); busy(false, 'ה־PDF ירד. מדפיסים בגודל A4, בלי שוליים.');
+  }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); });
+};
+$('resetAll').onclick = function(){
+  if ($('resetQ').hidden) { $('resetQ').hidden = false; setTimeout(function(){ $('resetQ').hidden = true }, 4000); return; }
+  try { localStorage.removeItem(KEY) } catch (e) {}
+  S = G.defaults(tpl); $('resetQ').hidden = true; location.reload();
+};
+
+draw();
+G.fontsReady(G.FONTS.map(function(f){ return f[0] })).then(draw);
+})();
+</script>
+</body>
+</html>
