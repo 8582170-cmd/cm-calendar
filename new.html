@@ -174,14 +174,14 @@ footer a{color:var(--mute)}
   <section><div class="final"><div><h2>מתחילים לבנות, בלי הרשמה</h2><p>רואים את כל השנה כבר עכשיו. משלמים רק כשמדפיסים.</p></div><a class="btn" href="simple.html">לבונה הפשוט</a></div></section>
 </main>
 <footer class="w"><span>© 2026 MyLuach</span><a href="gallery.html">גלריה</a><a href="online/">לוח מקוון</a><a href="articles/">מאמרים</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="terms.html#contact">יצירת קשר</a><span class="foot-lp"><a href="calendar/hebrew-calendar-personal-design.html">לוח שנה עברי בעיצוב אישי</a><a href="calendar/hebrew-calendar-with-photos.html">לוח שנה עברי עם תמונות</a><a href="calendar/hebrew-gregorian-calendar.html">לוח עברי־לועזי להדפסה</a><a href="calendar/family-calendar-birthdays.html">לוח משפחתי</a><a href="calendar/synagogue-calendar.html">לוח לבית הכנסת</a><a href="countdown-calendar/personal-countdown-calendar.html">לוח ספירה לאחור אישי</a><a href="countdown-calendar/wedding-countdown.html">ספירה לאחור לחתונה</a><a href="countdown-calendar/bar-mitzvah-countdown.html">ספירה לאחור לבר מצווה</a><a href="countdown-calendar/kids-countdown.html">ספירה לאחור לילדים</a></span></footer>
-<script src="assets/plans.js?v=202610191930"></script>
+<script src="assets/plans.js?v=202610221200"></script>
 <script>
 (function(){
   try{localStorage.setItem('myluach-view','new')}catch(e){}
   var h=location.hash||'';if(/^#city-[a-z]+(&hy-\d{4})?$/.test(h)){document.querySelectorAll('a[href="app.html"],a[href="simple.html"]').forEach(function(a){a.setAttribute('href',a.getAttribute('href')+h)});try{history.replaceState(null,'',location.pathname)}catch(e){}}
   document.getElementById('toClassic').onclick=function(){try{localStorage.setItem('myluach-view','classic')}catch(e){}};
   var P=window.MyLuachPlans,g=document.getElementById('planGrid');
-  function draw(){g.innerHTML=P.PLANS.map(function(p){return '<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+'<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,'ils')+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div><ul>'+p.bullets.map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><a class="btn'+(p.best?' pri':'')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a></div>'}).join('')}
+  function draw(){g.innerHTML=P.PLANS.filter(function(p){return !p.hidden}).map(function(p){return '<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+'<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,'ils')+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div><ul>'+p.bullets.map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><a class="btn'+(p.best?' pri':'')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a></div>'}).join('')}
   draw();if(P.ready)P.ready.then(function(d){if(d)draw();if(d&&d.torah)document.querySelectorAll('.nav-torah').forEach(function(a){a.style.display=''})});
 })();
 </script>

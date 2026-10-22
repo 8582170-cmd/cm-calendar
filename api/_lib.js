@@ -17,10 +17,18 @@ const PLAN_NAMES = Object.fromEntries(LP.PLANS.filter(p => p.price.ils > 0).map(
 const PAID = Object.keys(PLAN_NAMES);
 
 /* הגדרות מדף הניהול (טבלת settings, מפתח 'pricing'). אם אין או שיש תקלה: המחירים שבקובץ. */
+/* מסלולים נוספים מהניהול: מוסיפים לרשימת המסלולים בשרת (כדי שהתשלום וההרשאות יכירו אותם) */
+function extendPlans(cfg) {
+  const list = (cfg && cfg.extra) || []; if (!list.length) return;
+  LP.addPlans(list);
+  list.forEach(x => { const p = LP.PLANS.find(q => q.id === x.id); if (!p || !(p.price.ils > 0)) return; PLAN_NAMES[p.id] = p.name; if (PAID.indexOf(p.id) < 0) PAID.push(p.id); });
+}
 async function loadConfig() {
   try {
     const rows = await db('settings?key=eq.pricing&select=value');
-    return (rows && rows[0] && rows[0].value) || {};
+    const cfg = (rows && rows[0] && rows[0].value) || {};
+    extendPlans(cfg);
+    return cfg;
   } catch (e) { console.error('config', e.message); return {}; }
 }
 
@@ -52,7 +60,7 @@ function publicPricing(cfg) {
   });
   const s = cfg.sale;
   const sale = s && s.on && +s.percent > 0 && live(s) ? { percent: +s.percent, plans: s.plans && s.plans.length ? s.plans : PAID, until: s.until || '', label: s.label || '' } : null;
-  return { plans, sale, pay: cfg.pay === 'paypal' ? 'paypal' : 'nedarim', ppc: env('PAYPAL_CLIENT_ID') || '', renew: cfg.renew && cfg.renew.on && +cfg.renew.percent > 0 ? +cfg.renew.percent : 0, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
+  return { plans, sale, extra: (cfg.extra || []).map(x => ({ id: x.id, name: x.name, base: x.base, ils: x.ils, usd: x.usd, downloads: x.downloads, events: x.events, tagline: x.tagline, bullets: x.bullets, cd: !!x.cd, on: !!x.on })), pay: cfg.pay === 'paypal' ? 'paypal' : 'nedarim', ppc: env('PAYPAL_CLIENT_ID') || '', renew: cfg.renew && cfg.renew.on && +cfg.renew.percent > 0 ? +cfg.renew.percent : 0, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
 }
 
 /* קופון בתוקף? מחזיר את הקופון או הודעת שגיאה */
@@ -126,6 +134,7 @@ async function getUser(req) {
 
 /* המסלול הגבוה ביותר ששולם ב-400 הימים האחרונים (לפי חשבון או מייל) */
 async function bestPlan(user) {
+  await loadConfig();
   const since = new Date(Date.now() - 400 * 864e5).toISOString();
   const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
   const rows = await db('orders?select=plan&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or);
@@ -134,12 +143,14 @@ async function bestPlan(user) {
   return plan;
 }
 /* המסלול ששולם, ממתי, וכמה הורדות בתשלום נוצלו מאז (טבלת downloads; אם עוד לא נוצרה: used=null) */
-async function planInfo(user) {
+async function planInfo(user, cd) {
+  await loadConfig();
   const since = new Date(Date.now() - 400 * 864e5).toISOString();
   const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
   const rows = await db('orders?select=plan,paid_at&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or + '&order=paid_at.asc');
   const rank = id => LP.PLANS.findIndex(p => p.id === id);
-  let best = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (!best || rank(o.plan) >= rank(best.plan))) best = o; });
+  const cdOnly = id => !!(LP.PLANS.find(p => p.id === id) || {}).cd;
+  let best = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (cd || !cdOnly(o.plan)) && (!best || rank(o.plan) >= rank(best.plan))) best = o; });
   if (!best) return { plan: null, limit: 0, used: 0, left: 0 };
   const limit = (LP.PLANS.find(p => p.id === best.plan) || {}).downloads || 0;
   let used = null;

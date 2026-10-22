@@ -36,6 +36,16 @@ function clean(c) {
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
   out.pay = c.pay === 'paypal' ? 'paypal' : 'nedarim';
+  /* מסלולים נוספים מהניהול */
+  out.extra = (Array.isArray(c.extra) ? c.extra : []).slice(0, 20).map(x => ({
+    id: /^x[a-z0-9]{1,12}$/.test(String(x.id || '')) ? String(x.id) : 'x' + Math.random().toString(36).slice(2, 8),
+    name: String(x.name || '').trim().slice(0, 30) || 'מסלול חדש', base: ['basic', 'family', 'full'].includes(x.base) ? x.base : 'full',
+    ils: num(x.ils, 0, 100000) || 0, usd: num(x.usd, 0, 100000) || 0,
+    downloads: x.downloads === '' || x.downloads == null ? null : Math.max(0, Math.min(100, parseInt(x.downloads, 10) || 0)),
+    events: x.events === '' || x.events == null ? null : Math.max(0, Math.min(100000, parseInt(x.events, 10) || 0)),
+    tagline: String(x.tagline || '').slice(0, 80), bullets: (Array.isArray(x.bullets) ? x.bullets : String(x.bullets || '').split('\n')).map(t => String(t).trim().slice(0, 90)).filter(Boolean).slice(0, 8),
+    cd: !!x.cd, on: !!x.on
+  }));
   { const r = c.renew || {}; out.renew = { on: !!r.on, percent: num(r.percent, 0, 100) || 0 }; }
   out.sampleImgRate = Math.max(0, Math.min(100, parseInt(c.sampleImgRate == null ? 20 : c.sampleImgRate, 10) || 0));
   { const sh = c.shabbat || {}; out.shabbat = { on: sh.on !== false, yt: sh.yt !== false, before: Math.max(0, Math.min(120, parseInt(sh.before, 10) || 0)), after: Math.max(0, Math.min(120, parseInt(sh.after, 10) || 0)), deg: Math.max(3, Math.min(20, parseFloat(sh.deg) || 8.5)) }; }

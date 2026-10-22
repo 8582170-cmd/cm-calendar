@@ -171,7 +171,7 @@ footer a{color:var(--mute)}
   <section><div class="final"><div><h2>Start building, no sign-up needed</h2><p>See the whole year right away. Pay only when you print.</p></div><a class="btn" href="simple-en.html">Start the simple builder</a></div></section>
 </main>
 <footer class="w"><span>© 2026 MyLuach</span><a href="online/en/">Online Jewish calendar</a><a href="countdown-en.html">Countdown calendar</a><a href="index.html" hreflang="he" lang="he">עברית</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="accessibility.html">Accessibility</a></footer>
-<script src="assets/plans.js?v=202610191930"></script>
+<script src="assets/plans.js?v=202610221200"></script>
 <script>
 (function(){
   var NAMES={free:'Trial',basic:'Basic',family:'Family',full:'Full'},TAG={free:'Build it, see it, love it',basic:'A simple, beautiful monthly calendar',family:'For the whole extended family',full:'Everything open, no limits'};
@@ -182,7 +182,7 @@ footer a{color:var(--mute)}
   var h=location.hash||'';if(/^#city-[a-z]+(&hy-\d{4})?$/.test(h)){document.querySelectorAll('a[href="simple-en.html"]').forEach(function(a){a.setAttribute('href','simple-en.html'+h)});try{history.replaceState(null,'',location.pathname)}catch(e){}}
   var P=window.MyLuachPlans,g=document.getElementById('planGrid');
   function usd(p){var v=p.price.usd;if(!v)return '';var ip=P.introPrice(p,'usd');return ' <small>(about '+(ip||('$'+v))+')</small>'}
-  function draw(){g.innerHTML=P.PLANS.map(function(p){return '<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">Best value</span>':'')+'<h3>'+NAMES[p.id]+'</h3><p class="sub">'+TAG[p.id]+'</p><div class="price">'+P.priceHTML(p,'ils',true).replace(/(\d+(?:\.\d+)?) ₪/g,'₪$1')+(p.price.ils?usd(p):'')+'</div><ul>'+B[p.id].map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><a class="btn'+(p.best?' pri':'')+'" href="simple-en.html">'+(p.id==='free'?'Start free':'Build and choose '+NAMES[p.id])+'</a></div>'}).join('')}
+  function draw(){g.innerHTML=P.PLANS.filter(function(p){return !p.hidden}).map(function(p){return '<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">Best value</span>':'')+'<h3>'+NAMES[p.id]+'</h3><p class="sub">'+TAG[p.id]+'</p><div class="price">'+P.priceHTML(p,'ils',true).replace(/(\d+(?:\.\d+)?) ₪/g,'₪$1')+(p.price.ils?usd(p):'')+'</div><ul>'+B[p.id].map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><a class="btn'+(p.best?' pri':'')+'" href="simple-en.html">'+(p.id==='free'?'Start free':'Build and choose '+NAMES[p.id])+'</a></div>'}).join('')}
   draw();if(P.ready)P.ready.then(function(d){if(d)draw()});
   var q=[].map.call(document.querySelectorAll('#faq details'),function(d){return {'@type':'Question',name:d.querySelector('summary').textContent,acceptedAnswer:{'@type':'Answer',text:d.querySelector('p').textContent}}});
   document.getElementById('faqld').textContent=JSON.stringify({'@context':'https://schema.org','@type':'FAQPage',mainEntity:q});

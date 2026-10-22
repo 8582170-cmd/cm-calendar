@@ -3406,7 +3406,7 @@ function lockedPage(months){
 }
 function planCards(highlight){
   const cur=PLAN();
-  return '<div class="plan-cards">'+LP.PLANS.filter(p=>p.id!=='free').map(p=>'<div class="plan-card'+(p.id===highlight?' hl':'')+(p.id===cur.id?' cur':'')+'"><div class="pc-name">'+esc(p.name)+'</div><div class="pc-price">'+(LP.off(p)?'<s>'+LP.price(p,'ils')+'</s> '+LP.introPrice(p,'ils')+'<small> · '+LP.introPrice(p,'usd')+'</small><div class="intro-tag">'+esc(LP.off(p).label)+'</div>':LP.price(p,'ils')+'<small> · '+LP.price(p,'usd')+'</small>')+'</div><ul>'+p.bullets.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+(p.id===cur.id?'<div class="pc-cur">המסלול שלכם</div>':'<button class="btn'+(p.id===highlight?' primary':'')+'" type="button" data-pick="'+p.id+'">בחירה</button>')+'</div>').join('')+'</div>';
+  return '<div class="plan-cards">'+LP.PLANS.filter(p=>p.id!=='free'&&!p.hidden&&(CDMODE||!p.cd)).map(p=>'<div class="plan-card'+(p.id===highlight?' hl':'')+(p.id===cur.id?' cur':'')+'"><div class="pc-name">'+esc(p.name)+'</div><div class="pc-price">'+(LP.off(p)?'<s>'+LP.price(p,'ils')+'</s> '+LP.introPrice(p,'ils')+'<small> · '+LP.introPrice(p,'usd')+'</small><div class="intro-tag">'+esc(LP.off(p).label)+'</div>':LP.price(p,'ils')+'<small> · '+LP.price(p,'usd')+'</small>')+'</div><ul>'+p.bullets.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+(p.id===cur.id?'<div class="pc-cur">המסלול שלכם</div>':'<button class="btn'+(p.id===highlight?' primary':'')+'" type="button" data-pick="'+p.id+'">בחירה</button>')+'</div>').join('')+'</div>';
 }
 function openUpgrade(reason){
   if(!LP)return;
@@ -3595,9 +3595,9 @@ async function cloudOpen(id){
 async function cloudDelete(id){const ix0=await readIndex();if(ix0[id]&&ix0[id].store==='r2')await r2Api('del',{id}).catch(()=>{});await sb.storage.from('calendars').remove([cloudPath(id)]);const ix=await readIndex();delete ix[id];await writeIndex(ix);if(state.s.cloudId===id){delete state.s.cloudId;save()}}
 async function refreshAccount(){
   let claim=[];try{const o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null');if(o&&o.id)claim=[o.id]}catch(e){}
-  try{const h=await authHeaders();const r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({claim})});if(!r.ok)return;acctInfo=await r.json();
+  try{const h=await authHeaders();const r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({claim,cd:CDMODE})});if(!r.ok)return;acctInfo=await r.json();
     const rank=id=>LP.PLANS.findIndex(p=>p.id===id);
-    const sp=acctInfo.plan||'free',was=LP.current().id;
+    const sp=(CDMODE?(acctInfo.cdPlan||acctInfo.plan):acctInfo.plan)||'free',was=LP.current().id;
     if(sp!==was)LP.setCurrent(sp);
     if(acctInfo.dl&&acctInfo.dl.used!=null){try{localStorage.setItem('luchenu-downloads',String(acctInfo.dl.used))}catch(e){}}
     if(sp!==was||acctInfo.dl){syncPlanUI();render()}
@@ -3794,7 +3794,7 @@ function doPrint(){
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=async()=>{const b=m.querySelector('#dlGo');b.disabled=true;b.textContent='בודקים…';
     let r={status:0},j={};
-    try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',yr:calYearKey(),snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
+    try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',yr:calYearKey(),snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:CDMODE?'countdown':/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
     if(r.status===401){m.remove();loginModal('צריך להתחבר מחדש כדי להדפיס.');return}
     if(r.status===403){m.remove();await refreshAccount();modal('<h3>לא נמצא תשלום בחשבון</h3><p class="hint">לא מצאנו מסלול ששולם בחשבון '+esc((user&&user.email)||'')+'. אם שילמתם עם כתובת מייל אחרת, התחברו איתה. אם שילמתם עכשיו, נסו שוב בעוד דקה.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
     if(r.status===409&&j.error==='year'){m.remove();const Y=j.year||'',yt=Y[0]==='h'?'שנת '+gemYear(+Y.slice(1)):'שנת '+Y.slice(1);

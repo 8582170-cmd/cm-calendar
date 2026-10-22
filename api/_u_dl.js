@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
   /* הורדה בתשלום: השרת מאשר לפי התשלומים בפועל ולפי ההורדות שכבר נוצלו */
   if (kind === 'paid') {
     if (!user) return json(res, 401, { error: 'login' });
-    try { info = await planInfo(user); } catch (e) { return json(res, 503, { error: 'unavailable' }); }
+    try { info = await planInfo(user, String(b.page || '') === 'countdown'); } catch (e) { return json(res, 503, { error: 'unavailable' }); }
     if (!info.plan) return json(res, 403, { error: 'plan' });
     if (info.used != null) {
       let recent = false;

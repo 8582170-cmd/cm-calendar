@@ -54,9 +54,25 @@
     introPrice(p, cur){ const o = this.off(p); return o && p.price[cur] ? this.fmt(p.price[cur] * (100 - o.pct) / 100, cur) : null },
     priceHTML(p, cur, en){ const ip = this.introPrice(p, cur); if(!ip) return this.price(p, cur).replace('חינם', en ? 'Free' : 'חינם');
       const o = this.off(p); return '<s class="was">' + this.price(p, cur) + '</s> ' + ip + '<span class="intro-tag">' + (en ? o.labelEn : o.label) + '</span>' },
+    /* מסלולים נוספים שנוצרו בדף הניהול: כל אחד מבוסס על מסלול קיים (היכולות שלו), עם שם, מחיר ומגבלות משלו.
+       cd = רק ללוח ספירה לאחור. hidden = כבר לא נמכר (אבל מי שקנה אותו ממשיך ליהנות ממנו). */
+    addPlans(list){
+      (Array.isArray(list) ? list : []).forEach(x => {
+        if(!x || !/^x[a-z0-9]{1,12}$/.test(x.id || '')) return;
+        const base = PLANS.find(p => p.id === x.base && !p.custom) || PLANS[3], old = PLANS.findIndex(p => p.id === x.id);
+        const p = { ...base, id:x.id, name:String(x.name || 'מסלול'), tagline:String(x.tagline || ''), price:{ ils:+x.ils || 0, usd:+x.usd || 0 }, intro:0, best:false,
+          downloads: x.downloads == null || x.downloads === '' ? base.downloads : +x.downloads,
+          events: x.events == null || x.events === '' ? base.events : (+x.events > 0 ? +x.events : Infinity),
+          features:{ ...base.features }, bullets: Array.isArray(x.bullets) && x.bullets.length ? x.bullets.map(String) : base.bullets.slice(),
+          cd: !!x.cd, hidden: !x.on, custom:true, base: base.id };
+        if(old >= 0) PLANS.splice(old, 1);
+        PLANS.splice(PLANS.indexOf(base) + 1, 0, p);
+      });
+    },
     /* המחירים והמבצעים שנקבעו בדף הניהול (מהשרת). עד שהם מגיעים מוצגים המחירים שבקובץ הזה. */
     applyPricing(d){
       if(!d || !d.plans) return;
+      if(d.extra) this.addPlans(d.extra);
       PLANS.forEach(p => { const o = d.plans[p.id]; if(!o) return;
         const ok = (v, d) => typeof v === 'number' && isFinite(v) && (v > 0 || !(d > 0));
         if(ok(o.ils, p.price.ils)) p.price.ils = o.ils; if(ok(o.usd, p.price.usd)) p.price.usd = o.usd; p.intro = +o.intro || 0; });
