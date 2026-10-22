@@ -23,7 +23,8 @@ window.addEventListener('beforeprint',()=>document.body.classList.toggle('free-c
 let OURPRINT=false,BRPRINT_T=0;
 function ourPrint(){OURPRINT=true;try{window.print()}finally{setTimeout(()=>{OURPRINT=false},1500)}}
 window.addEventListener('beforeprint',()=>{if(OURPRINT||Date.now()-BRPRINT_T<5000)return;BRPRINT_T=Date.now();try{logDl('browser',{wm:PLAN().watermark?1:0})}catch(e){}});
-const canF=f=>SAMPLE?true:(!LP||LP.can(f));
+/* לוח ספירה בלי מסלול: היכולות של "ספירה בסיסית" (ספירה עד 40 יום בחינם לכולם) */
+const canF=f=>SAMPLE?true:!LP?true:(CDMODE&&LP.current().id==='free'&&LP.byId('cdbasic').id==='cdbasic')?!!LP.byId('cdbasic').features[f]:LP.can(f);
 function monthCut(months){const n=PLAN().months;return n<months.length&&months[n]?months[n].days[0]:null}
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
 const stage=$('#stage');
@@ -461,8 +462,13 @@ const LEARN_TYPES=[['daf','דף יומי: ','דף'],['mishna','משנה: ','מש
 /* לימוד יומי משלכם (מסלול מלא): s.learnOwn=[{id,name,short,on, map:{תאריך:טקסט}} או {seq:[...], start, skip}] */
 function learnOwnOn(){return canF('learnOwn')?(state.s.learnOwn||[]).filter(o=>o&&o.on!==false):[]}
 const LO_CACHE=new WeakMap();
+/* יום טוב שאסור בו במלאכה (בחו"ל גם יום טוב שני) */
+function isYomTov(d){const h=new HDate(d),m=h.getMonth(),x=h.getDate(),il=!!state.s.il;
+  if(m===7)return [1,2,10,15,22].includes(x)||(!il&&(x===16||x===23));
+  if(m===1)return x===15||x===21||(!il&&(x===16||x===22));
+  if(m===3)return x===6||(!il&&x===7);return false}
 function learnOwnAt(o,d){const t=iso(d);if(o.map)return o.map[t]||'';if(!Array.isArray(o.seq)||!o.start)return '';
-  let m=LO_CACHE.get(o);if(!m){m={};const d0=dateFromIso(o.start);let i=0;for(let k=0;i<o.seq.length&&k<5000;k++){const x=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+k,12);if(o.skip&&x.getDay()===6)continue;m[iso(x)]=o.seq[i++]}LO_CACHE.set(o,m)}
+  const ck=o.skipYT?(state.s.il?'il':'dx'):'';let m=LO_CACHE.get(o);if(!m||m.__ck!==ck){m={__ck:ck};const d0=dateFromIso(o.start);let i=0;for(let k=0;i<o.seq.length&&k<5000;k++){const x=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+k,12);if(o.skip&&x.getDay()===6||o.skipYT&&isYomTov(x))continue;m[iso(x)]=o.seq[i++]}LO_CACHE.set(o,m)}
   return m[t]||''}
 function learnTypesOn(){const L=state.s.learn||{};return LEARN_TYPES.filter(c=>L[c[0]]).concat(learnOwnOn().map(o=>['own:'+o.id,o.name+': ',o.short||o.name]))}
 function heT(k){try{return stripNikud(window.hebcal.Locale.gettext(k,'he'))}catch(e){return k}}
@@ -4500,7 +4506,7 @@ const XLSX_URL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 function renderLearnOwn(){const box=$('#learnOwn');if(!box)return;const L=state.s.learnOwn||[],ok=canF('learnOwn');
   box.innerHTML='<div class="lo-h"><b>לימוד משלכם</b>'+(ok?'':' <span class="ie-plan">במסלול המלא</span>')+'</div>'+
     '<p class="hint">כל נושא שתרצו: מעלים קובץ אקסל עם החלוקה, והלימוד מופיע בכל יום בלוח (גם בטור הלימוד, עם ריבוע הסימון).</p>'+
-    L.map(o=>'<div class="lo-row" data-lo="'+esc(o.id)+'"><label class="chk"><input type="checkbox" data-lof="on"'+(o.on!==false?' checked':'')+'> <b>'+esc(o.name)+'</b></label><small>'+(o.map?Object.keys(o.map).length+' ימים לפי תאריך':(o.seq||[]).length+' ימים מ־'+(o.start?dateFromIso(o.start).toLocaleDateString('he-IL'):'')+(o.skip?', בלי שבתות':''))+'</small><button type="button" class="btn small" data-loa="ed">עריכה</button><button type="button" class="btn small danger" data-loa="del">מחיקה</button></div>').join('')+
+    L.map(o=>'<div class="lo-row" data-lo="'+esc(o.id)+'"><label class="chk"><input type="checkbox" data-lof="on"'+(o.on!==false?' checked':'')+'> <b>'+esc(o.name)+'</b></label><small>'+(o.map?Object.keys(o.map).length+' ימים לפי תאריך':(o.seq||[]).length+' ימים מ־'+(o.start?dateFromIso(o.start).toLocaleDateString('he-IL'):'')+(o.skip?', בלי שבתות':'')+(o.skipYT?', בלי ימים טובים':''))+'</small><button type="button" class="btn small" data-loa="ed">עריכה</button><button type="button" class="btn small danger" data-loa="del">מחיקה</button></div>').join('')+
     '<div class="row"><button type="button" class="btn small" id="loAdd">＋ העלאת קובץ לימוד</button><a href="#" id="loTpl" class="hint">קובץ לדוגמה</a></div>'}
 document.addEventListener('click',e=>{
   const t=e.target;if(!t.closest||!t.closest('#learnOwn'))return;
@@ -4541,11 +4547,11 @@ function learnOwnModal(o0,isNew){const o={...o0};
     '<label class="fld">שם הלימוד (יופיע בלוח)<input id="loName" maxlength="30" value="'+esc(o.name||'')+'"></label>'+
     '<label class="fld">שם קצר לטור הלימוד (לא חובה)<input id="loShort" maxlength="12" value="'+esc(o.short||'')+'" placeholder="למשל: גמרא"></label>'+
     (o.map?'<p class="hint">נמצאו '+Object.keys(o.map).length+' ימים לפי תאריך.</p>':
-      '<p class="hint">בקובץ אין תאריכים, אז כל שורה היא יום אחד לפי הסדר ('+o.seq.length+' ימים).</p><div class="row"><label class="fld">מתחילים בתאריך<input type="date" id="loStart" value="'+esc(o.start||'')+'"></label><label class="chk"><input type="checkbox" id="loSkip"'+(o.skip?' checked':'')+'> בלי לימוד בשבת (ממשיכים ביום ראשון)</label></div>')+
+      '<p class="hint">בקובץ אין תאריכים, אז כל שורה היא יום אחד לפי הסדר ('+o.seq.length+' ימים).</p><div class="row"><label class="fld">מתחילים בתאריך<input type="date" id="loStart" value="'+esc(o.start||'')+'"></label><label class="chk"><input type="checkbox" id="loSkip"'+(o.skip?' checked':'')+'> בלי לימוד בשבת</label><label class="chk"><input type="checkbox" id="loSkipYT"'+(o.skipYT?' checked':'')+'> בלי לימוד ביום טוב'+(state.s.il?'':' (כולל יום טוב שני)')+'</label></div><p class="hint">ביום שמדלגים עליו אין לימוד, והלימוד ממשיך ביום שאחריו.</p>')+
     '<div class="fld">איך זה ייראה<div class="lo-prev" id="loPrev"></div></div>'+
     '<div class="row"><button class="btn primary" type="button" id="loSave">שמירה</button><button class="btn" type="button" data-close>ביטול</button></div>');
   const q=x=>m.querySelector(x);
-  const read=()=>{o.name=q('#loName').value.trim()||'לימוד';o.short=q('#loShort').value.trim();if(!o.map){o.start=q('#loStart').value||iso(new Date());o.skip=q('#loSkip').checked}};
+  const read=()=>{o.name=q('#loName').value.trim()||'לימוד';o.short=q('#loShort').value.trim();if(!o.map){o.start=q('#loStart').value||iso(new Date());o.skip=q('#loSkip').checked;o.skipYT=q('#loSkipYT').checked}};
   const draw=()=>{read();const t={...o},L=[];if(t.map)Object.keys(t.map).sort().slice(0,5).forEach(k=>L.push([k,t.map[k]]));else{const d0=dateFromIso(t.start);for(let k=0;L.length<5&&k<20;k++){const d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+k,12);const x=learnOwnAt(t,d);if(x)L.push([iso(d),x])}}
     q('#loPrev').innerHTML=L.map(([k,x])=>'<div><small>'+esc(dateFromIso(k).toLocaleDateString('he-IL'))+'</small> '+esc(t.name+': '+x)+'</div>').join('')||'<span class="hint">אין ימים להצגה.</span>'};
   m.addEventListener('input',draw);m.addEventListener('change',draw);draw();
