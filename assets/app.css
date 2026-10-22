@@ -1402,3 +1402,10 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .sm-row{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
 .pay-choose{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.pay-choose button{flex:1 1 140px;font:inherit;font-weight:700;font-size:14px;padding:9px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg,#fff);cursor:pointer}
 .pay-choose button[aria-checked=true]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink,#fff)}
+.di-op{display:inline-flex;align-items:center;gap:3px;font-size:13px}.di-op input{width:72px}.di-op span{min-width:32px;font-size:11px;opacity:.75}
+.fx-op{display:inline-flex;align-items:center;gap:3px}.fx-op input{width:70px}
+.page.has-fxbox{isolation:isolate}.fxbox.fxb-bk{z-index:-1}body.fx-on .fxbox.fxb-bk.sel{z-index:6}
+.fxb-grip{display:none}body.fx-on .fxb-grip{display:block;position:absolute;z-index:7;transform:translate(-30%,-60%);border:0;border-radius:6px;background:var(--accent,#1f5c63);color:#fff;font-size:12px;line-height:1;padding:3px 5px;cursor:pointer;box-shadow:0 1px 3px rgb(0 0 0 / .3)}
+@media print{.fxb-grip{display:none!important}}
+body:has(.modal-back) .fx-bar{display:none!important}
+.fx-op{font-size:15px}

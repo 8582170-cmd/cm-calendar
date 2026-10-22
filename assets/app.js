@@ -1518,14 +1518,14 @@ function addMonthGrid(p,mo,evMap){
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
     if(imgEvs.length>1){c.prepend(dayImgsEl(iso(d),imgEvs));c.classList.add('has-img','multi-img')}
-    if(withImg){const im=el('img','c-img'+(withImg.imgFit==='contain'?' contain':''));im.src=withImg.img;im.alt='';{const t=((state.dayImgs||{})[iso(d)]||{}).im||{};imgXform(im,t[withImg.id],withImg)}c.prepend(im);c.classList.add('has-img');
+    if(withImg){const im=el('img','c-img'+(withImg.imgFit==='contain'?' contain':''));im.src=withImg.img;im.alt='';const T1=(((state.dayImgs||{})[iso(d)]||{}).im||{})[withImg.id];imgXform(im,T1,withImg);c.prepend(im);c.classList.add('has-img');
       const tone=withImg.textTone||'auto';
       if(tone==='band'||(tone==='auto'&&s.imgText==='band')){}
       else{
         c.classList.add('img-auto');
         const L=withImg.imgLum||{top:.5,bot:.5};
         const pick=v=>tone==='light'?'light':tone==='dark'?'dark':(v<0.58?'light':'dark');
-        c.classList.add('top-'+pick(withImg.imgFit==='contain'?1:L.top),'bot-'+pick(withImg.imgFit==='contain'?1:L.bot));
+        const cn=withImg.imgFit==='contain'||(T1&&T1.c);c.classList.add('top-'+pick(cn?1:imgLumEff(L.top,T1)),'bot-'+pick(cn?1:imgLumEff(L.bot,T1)));
       }
     }
     {const zs=zDay(d);if(zs.length)c.appendChild(el('div','d-z',zWithX(d,zs).join('<br>')))}
@@ -2304,12 +2304,13 @@ document.addEventListener('keydown',e=>{if(!fxOn()||!FXS||FXS.n.isContentEditabl
    state.fx.boxes: [{id, k: מפתח העמוד או 'g:m' לכל החודשים, kind:'text'|'img', x,y,w,h (% מהעמוד), t, fs, co, b, al, img}] */
 function fxBoxes(){const f=FX();if(!Array.isArray(f.boxes))f.boxes=[];return f.boxes}
 function fxBoxRender(){
-  stage.querySelectorAll('.fxbox').forEach(n=>n.remove());
+  stage.querySelectorAll('.fxbox,.fxb-grip').forEach(n=>n.remove());
   const B=fxBoxes();if(!B.length)return;
   stage.querySelectorAll('.sheet-wrap[data-key]').forEach(w=>{const key=w.dataset.key,p=w.querySelector('.page');if(!p)return;
     const mine=B.filter(b=>b.k===key||(b.k==='g:m'&&fxKind(key)==='m'));if(!mine.length)return;p.classList.add('has-fxbox');
     mine.forEach(b=>{const d=el('div','fxbox fxb-'+b.kind);d.dataset.bid=b.id;Object.assign(d.style,{left:b.x+'%',top:b.y+'%',width:b.w+'%',height:b.h+'%'});
-      if(b.kind==='img'){if(b.img){const im=el('img');im.src=b.img;im.alt='';im.draggable=false;im.style.objectFit=b.fit==='cover'?'cover':'contain';d.appendChild(im)}else d.appendChild(el('div','fxb-empty','לחצו פעמיים לבחירת תמונה'))}
+      if(b.kind==='img'){if(b.img){const im=el('img');im.src=b.img;im.alt='';im.draggable=false;im.style.objectFit=b.fit==='cover'?'cover':'contain';if(b.op!=null&&b.op<1)im.style.opacity=String(b.op);d.appendChild(im)}else d.appendChild(el('div','fxb-empty','לחצו פעמיים לבחירת תמונה'));if(b.bk){d.classList.add('fxb-bk');/* תמונה מאחורי הלוח: תווית קטנה מעליה כדי שאפשר לבחור אותה בעיצוב החופשי */
+        const g=el('button','fxb-grip no-print','🖼');g.type='button';g.dataset.bid=b.id;g.title='בחירת התמונה שמאחורי הלוח';Object.assign(g.style,{left:b.x+'%',top:b.y+'%'});p.appendChild(g)}}
       else{const t=el('div','fxb-t');t.textContent=b.t||'';t.dataset.ph='לחצו פעמיים לכתיבה';t.style.fontSize='calc(var(--u)*'+(+b.fs||5)+')';if(b.co)t.style.color=b.co;if(b.ff){loadFont(b.ff);t.style.fontFamily=fontCSS(b.ff)}if(b.b)t.style.fontWeight='700';t.style.textAlign=b.al||'center';d.appendChild(t)}
       if(b.k==='g:m')d.classList.add('fxb-all');
       p.appendChild(d)})})
@@ -2319,22 +2320,28 @@ function fxBoxSave(){save();fxBoxRender();fxBoxDecorate()}
 let FXB=null;
 const fxbb=el('div','fx-bar fxb-bar no-print');fxbb.hidden=true;document.body.appendChild(fxbb);
 function fxBoxBar(){const b=FXB&&fxBoxGet(FXB);if(!b){fxbb.hidden=true;return}
-  const H='<span class="fx-tip">✥ גררו להזזה · הפינה לשינוי גודל</span>'+(b.kind==='text'?'<button type="button" data-fb="dn" title="הקטנה">A−</button><button type="button" data-fb="up" title="הגדלה">A+</button><button type="button" data-fb="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fb="co" value="'+(b.co||'#1c242b')+'"></label><select class="fx-ff" data-fb="ff" title="סוג הגופן" aria-label="סוג הגופן">'+fontOptions('גופן הכותרות')+'</select><button type="button" data-fb="al" title="יישור">⇔ יישור</button><button type="button" data-fb="edit">✎ עריכה</button>':'<button type="button" data-fb="img">🖼 החלפה</button><button type="button" data-fb="fit">'+(b.fit==='cover'?'כל התמונה':'מילוי')+'</button>')+
+  const H='<span class="fx-tip">✥ גררו להזזה · הפינה לשינוי גודל</span>'+(b.kind==='text'?'<button type="button" data-fb="dn" title="הקטנה">A−</button><button type="button" data-fb="up" title="הגדלה">A+</button><button type="button" data-fb="b" title="מודגש"><b>B</b></button><label class="tt-col" title="צבע"><input type="color" data-fb="co" value="'+(b.co||'#1c242b')+'"></label><select class="fx-ff" data-fb="ff" title="סוג הגופן" aria-label="סוג הגופן">'+fontOptions('גופן הכותרות')+'</select><button type="button" data-fb="al" title="יישור">⇔ יישור</button><button type="button" data-fb="edit">✎ עריכה</button>':'<button type="button" data-fb="img">🖼 החלפה</button><button type="button" data-fb="fit">'+(b.fit==='cover'?'כל התמונה':'מילוי')+'</button>'+
+      '<label class="fx-op" title="שקיפות">◐<input type="range" min="10" max="100" step="5" data-fb="op" value="'+Math.round((b.op??1)*100)+'" aria-label="שקיפות התמונה"></label>'+
+      '<button type="button" data-fb="bk" aria-pressed="'+!!b.bk+'" title="התמונה מאחורי הטבלה והכיתוב, כמו רקע">'+(b.bk?'⬆ לפני הלוח':'⬇ מאחורי הלוח')+'</button>')+
     '<label class="fx-all"><input type="checkbox" data-fb="all"'+(b.k==='g:m'?' checked':'')+'> בכל החודשים</label><button type="button" data-fb="del" title="מחיקה">🗑 מחיקה</button>';
   /* בונים מחדש רק כשמשהו השתנה, כדי שרשימת הגופנים לא תיסגר בגלילה */
   if(fxbb._h!==H||fxbb._b!==b.id){fxbb.innerHTML=H;fxbb._h=H;fxbb._b=b.id}
   {const ff=fxbb.querySelector('[data-fb="ff"]');if(ff&&document.activeElement!==ff)ff.value=b.ff||''}
   const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"]');if(!n){fxbb.hidden=true;return}const r=n.getBoundingClientRect();fxbb.hidden=false;
   fxbb.style.top=Math.max(4,r.top-46)+'px';fxbb.style.left=Math.max(4,Math.min(innerWidth-fxbb.offsetWidth-4,r.left))+'px'}
-fxbb.addEventListener('click',e=>{const t=e.target.closest('[data-fb]');if(!t)return;const b=fxBoxGet(FXB);if(!b)return;const a=t.dataset.fb;if(a==='co'||a==='all')return;
+fxbb.addEventListener('click',e=>{const t=e.target.closest('[data-fb]');if(!t)return;const b=fxBoxGet(FXB);if(!b)return;const a=t.dataset.fb;if(a==='co'||a==='all'||a==='op')return;
   fxPush();
   if(a==='up')b.fs=+Math.min(40,(+b.fs||5)*1.12).toFixed(2);if(a==='dn')b.fs=+Math.max(1.5,(+b.fs||5)/1.12).toFixed(2);if(a==='b')b.b=!b.b;
   if(a==='al')b.al={center:'right',right:'left',left:'center'}[b.al||'center'];
   if(a==='fit')b.fit=b.fit==='cover'?'contain':'cover';
+  if(a==='bk'){b.bk=!b.bk;if(!b.bk)delete b.bk}
   if(a==='del'){FX().boxes=fxBoxes().filter(x=>x!==b);FXB=null}
   if(a==='edit'){fxBoxEdit(b.id);return}
   if(a==='img'){fxBoxImg(b);return}
   fxBoxSave();fxBoxBar()});
+fxbb.addEventListener('input',e=>{const t=e.target;if(t.dataset.fb!=='op')return;const b=fxBoxGet(FXB);if(!b)return;if(!fxbb._op){fxPush();fxbb._op=1}
+  b.op=+t.value>=100?undefined:+(+t.value/100).toFixed(2);if(b.op==null)delete b.op;const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"] img');if(n)n.style.opacity=b.op!=null?String(b.op):'';
+  clearTimeout(fxbb.T);fxbb.T=setTimeout(()=>{fxbb._op=0;save()},300)});
 fxbb.addEventListener('input',e=>{const t=e.target;if(t.dataset.fb!=='co')return;const b=fxBoxGet(FXB);if(!b)return;b.co=t.value;const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"] .fxb-t');if(n)n.style.color=t.value;clearTimeout(fxbb.T);fxbb.T=setTimeout(save,300)});
 fxbb.addEventListener('change',e=>{const t=e.target;if(t.dataset.fb!=='ff')return;const b=fxBoxGet(FXB);if(!b)return;fxPush();b.ff=t.value||undefined;if(!b.ff)delete b.ff;loadFont(b.ff);
   const n=stage.querySelector('.fxbox[data-bid="'+b.id+'"] .fxb-t');if(n)n.style.fontFamily=b.ff?fontCSS(b.ff):'';save()});
@@ -2409,7 +2416,7 @@ stage.addEventListener('pointerdown',e=>{
       else{G.hp=+vh.toFixed(2);G.wp=+vw.toFixed(2);if(vw>=99.5&&vw<=100.5)delete G.wp}
       G.tx=+tx.toFixed(1);G.ty=+ty.toFixed(1);if(!G.tx&&!G.ty){delete G.tx;delete G.ty}save();render()};
     addEventListener('pointermove',mv);addEventListener('pointerup',up);return}
-  const n=e.target.closest('.fxbox');if(!n)return;
+  let n=e.target.closest('.fxbox,.fxb-grip');if(!n)return;if(n.classList.contains('fxb-grip'))n=n.parentNode.querySelector('.fxbox[data-bid="'+n.dataset.bid+'"]');if(!n)return;
   e.preventDefault();e.stopPropagation();const id=n.dataset.bid,b=fxBoxGet(id);if(!b)return;
   if(FXB!==id){FXB=id;stage.querySelectorAll('.fxbox.sel').forEach(x=>x.classList.remove('sel'));n.classList.add('sel');fxUnselect();fxBoxBar()}
   if(e.target.closest('.fxb-t.editing'))return;
@@ -2418,10 +2425,10 @@ stage.addEventListener('pointerdown',e=>{
     if(rs){b.w=Math.max(4,Math.min(b0.x+b0.w+10,b0.w-dx));b.x=b0.x+b0.w-b.w;b.h=Math.max(2,b0.h+dy)}
     else{b.x=Math.max(-10,Math.min(100-b0.w*.2,b0.x+dx));b.y=Math.max(-5,Math.min(100-b0.h*.2,b0.y+dy))}
     Object.assign(n.style,{left:b.x+'%',top:b.y+'%',width:b.w+'%',height:b.h+'%'});fxBoxBar()};
-  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(moved){['x','y','w','h'].forEach(k=>b[k]=+(+b[k]).toFixed(2));save();if(b.k==='g:m'){fxBoxRender();fxBoxDecorate()}}};
+  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(moved){['x','y','w','h'].forEach(k=>b[k]=+(+b[k]).toFixed(2));save();if(b.k==='g:m'||b.bk){fxBoxRender();fxBoxDecorate();const s2=stage.querySelector('.fxbox[data-bid="'+id+'"]');if(s2)s2.classList.add('sel')}}};
   addEventListener('pointermove',mv);addEventListener('pointerup',up)},true);
 stage.addEventListener('dblclick',e=>{if(!fxOn())return;const n=e.target.closest('.fxbox');if(!n)return;const b=fxBoxGet(n.dataset.bid);if(!b)return;if(b.kind==='img')fxBoxImg(b);else fxBoxEdit(b.id)});
-document.addEventListener('pointerdown',e=>{if(FXB&&!e.target.closest('.fxbox,.fxb-bar,.modal-back')){FXB=null;fxbb.hidden=true;stage.querySelectorAll('.fxbox.sel').forEach(x=>x.classList.remove('sel'))}});
+document.addEventListener('pointerdown',e=>{if(FXB&&!e.target.closest('.fxbox,.fxb-grip,.fxb-bar,.modal-back')){FXB=null;fxbb.hidden=true;stage.querySelectorAll('.fxbox.sel').forEach(x=>x.classList.remove('sel'))}});
 document.addEventListener('keydown',e=>{if(!FXB||!fxOn())return;if(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable="true"]'))return;
   if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();fxPush();FX().boxes=fxBoxes().filter(x=>x.id!==FXB);FXB=null;fxBoxSave()}});
 window.addEventListener('scroll',()=>{if(FXB)fxBoxBar()},{passive:true});
@@ -4294,7 +4301,10 @@ function dayLayout(key,evs){
 }
 function imgXform(im,t,e){t=t||{};const x=t.x??50,y=t.y??(e&&e.imgPos!=null?e.imgPos:50),z=t.z??1;
   im.style.objectFit=t.c!=null?(t.c?'contain':'cover'):(e&&e.imgFit==='contain'?'contain':'cover');
-  im.style.objectPosition=x+'% '+y+'%';im.style.transformOrigin=x+'% '+y+'%';im.style.transform=((z!==1?'scale('+z+') ':'')+(t.f?'scaleX(-1)':'')).trim()}
+  im.style.objectPosition=x+'% '+y+'%';im.style.transformOrigin=x+'% '+y+'%';im.style.transform=((z!==1?'scale('+z+') ':'')+(t.f?'scaleX(-1)':'')).trim();
+  im.style.opacity=t.o!=null&&t.o<1?String(t.o):''}
+/* כמה התמונה כהה בפועל אחרי שקיפות והקטנה (לבחירת צבע הכיתוב): 1 = בהיר לגמרי */
+function imgLumEff(v,t){t=t||{};const o=t.o!=null?t.o:1,z=t.z??1;return 1-(1-v)*o*(z<1?z*z:1)}
 function dayImgsEl(key,evs,L){L=L||dayLayout(key,evs);const g=diGrid(L.dir),box=el('div','c-imgs dir-'+L.dir);
   if(g){const rows=Math.ceil(L.order.length/2);box.style.gridTemplateColumns=L.gc+'fr '+(100-L.gc)+'fr';box.style.gridTemplateRows=rows===2?L.gr+'fr '+(100-L.gr)+'fr':'repeat('+rows+',1fr)'}
   L.order.forEach((id,i)=>{const e=evs.find(x=>x.id===id);if(!e)return;const w=el('div','c-im');w.dataset.id=id;if(!g)w.style.flexBasis='calc('+L.sizes[i]+'% - 1px)';
@@ -4312,7 +4322,7 @@ function openDayImages(date){
   const d0=dateFromIso(date),hd=new HDate(d0);
   const m=modal('<h3>התמונות ביום הזה<small>'+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+' · '+d0.getDate()+(EN?' ':' ב')+GREG_MONTHS[d0.getMonth()])+'</small></h3>'+
     '<div class="di-dirs" id="diDirs" role="radiogroup" aria-label="חלוקה"></div>'+
-    '<p class="hint">גוררים תמונה כדי להזיז אותה בתוך השטח שלה. מושכים את הפסים כדי לשנות כמה מקום כל תמונה תופסת. ליד כל תמונה: הגדלה והקטנה, היפוך, ו"כל התמונה" כדי לראות אותה בלי חיתוך.</p>'+
+    '<p class="hint">גוררים תמונה כדי להזיז אותה בתוך השטח שלה. מושכים את הפסים כדי לשנות כמה מקום כל תמונה תופסת. ליד כל תמונה: הגדלה והקטנה (אפשר להקטין עד שלא תמלא את התא, ואז לגרור אותה לכל מקום), שקיפות (לתמונה ברקע), היפוך, ו"כל התמונה" כדי לראות אותה בלי חיתוך.</p>'+
     '<div class="di-wrap"><div class="di-prev" id="diPrev"></div></div>'+
     '<div class="di-list" id="diList"></div>'+
     '<div class="row"><button class="btn" type="button" id="diAdd">＋ הוספת תמונה ליום</button><button class="btn" type="button" id="diEq">חלוקה שווה</button></div>'+
@@ -4341,6 +4351,7 @@ function openDayImages(date){
     }
     q('#diList').innerHTML=L.order.map((id,i)=>{const e=evs.find(x=>x.id===id),t=L.im[id]||{};return '<div class="di-it" data-id="'+id+'"><img src="'+e.img+'" alt=""><span class="di-n">'+(i+1)+'. '+esc(e.name||'תמונה')+'</span>'+
       '<button type="button" class="x" data-z="1" aria-label="הגדלה">＋</button><button type="button" class="x" data-z="-1" aria-label="הקטנה">−</button>'+
+      '<label class="di-op" title="שקיפות: פחות = התמונה חלשה יותר, כמו רקע">◐<input type="range" min="10" max="100" step="5" data-op="1" value="'+Math.round((t.o??1)*100)+'" aria-label="שקיפות התמונה"><span>'+Math.round((t.o??1)*100)+'%</span></label>'+
       '<button type="button" class="x di-tg'+(t.f?' on':'')+'" data-flip="1" aria-pressed="'+!!t.f+'" title="היפוך התמונה (מראה)">⇋ היפוך</button>'+
       '<button type="button" class="x di-tg'+(t.c?' on':'')+'" data-fit="1" aria-pressed="'+!!t.c+'" title="לראות את כל התמונה, בלי חיתוך">▣ כל התמונה</button>'+
       (!diGrid(L.dir)?'<span class="di-pct">'+Math.round(L.sizes[i])+'%</span>':'')+
@@ -4351,13 +4362,16 @@ function openDayImages(date){
   q('#diEq').onclick=()=>{L.sizes=L.order.map(()=>100/L.order.length);L.gr=50;L.gc=50;draw()};
   q('#diList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const id=b.closest('[data-id]').dataset.id,i=L.order.indexOf(id);
     const t=L.im[id]={...(L.im[id]||{})};
-    if(b.dataset.z)t.z=Math.max(1,Math.min(4,+((t.z??1)+(+b.dataset.z)*0.25).toFixed(2)));
+    if(b.dataset.z){const z0=t.z??1,st=z0<1||(z0===1&&+b.dataset.z<0)?0.1:0.25;t.z=Math.max(0.3,Math.min(4,+(z0+(+b.dataset.z)*st).toFixed(2)))}
     if(b.dataset.flip)t.f=t.f?0:1;
     if(b.dataset.fit){t.c=t.c?0:1;if(t.c)t.z=1}
     if(b.dataset.mv){const j=i+ +b.dataset.mv;if(j>=0&&j<L.order.length){[L.order[i],L.order[j]]=[L.order[j],L.order[i]];[L.sizes[i],L.sizes[j]]=[L.sizes[j],L.sizes[i]]}}
     if(b.dataset.del){L.order.splice(i,1);const sz=L.sizes.splice(i,1)[0]||0;if(L.sizes.length){const k=Math.max(0,i-1);L.sizes[k]+=sz}removed.push(id);
       const ok=diDirsFor(L.order.length);if(L.order.length>1&&!ok.includes(L.dir))L.dir=L.order.length===3?'g21':'row'}
     draw()});
+  q('#diList').addEventListener('input',e=>{const r=e.target.closest('[data-op]');if(!r)return;const id=r.closest('[data-id]').dataset.id,t=L.im[id]={...(L.im[id]||{})};
+    t.o=+r.value>=100?undefined:+(+r.value/100).toFixed(2);if(t.o==null)delete t.o;r.nextElementSibling.textContent=r.value+'%';
+    const w=prev.querySelector('.c-im[data-id="'+id+'"] img');if(w)imgXform(w,t,evs.find(x=>x.id===id))});
   /* הזזת תמונה בתוך השטח שלה, ומשיכת הפסים */
   prev.addEventListener('pointerdown',e=>{
     const sp=e.target.closest('.di-split');
@@ -4375,11 +4389,13 @@ function openDayImages(date){
     const w=e.target.closest('.c-im');if(!w)return;e.preventDefault();w.setPointerCapture(e.pointerId);
     const id=w.dataset.id,ev0=evs.find(x=>x.id===id),t=L.im[id]={...(L.im[id]||{})},im=w.querySelector('img'),rect=w.getBoundingClientRect(),sx=e.clientX,sy=e.clientY;
     const x0=t.x??50,y0=t.y??(ev0.imgPos??50),z=t.z??1,fx=t.f?-1:1;
-    const mv=ev=>{t.x=Math.max(0,Math.min(100,x0-fx*(ev.clientX-sx)/rect.width*100*1.4/z));t.y=Math.max(0,Math.min(100,y0-(ev.clientY-sy)/rect.height*100*1.4/z));imgXform(im,t,ev0)};
+    /* תמונה מוקטנת (קטנה מהשטח): גוררים את התמונה עצמה למקום. אחרת: מזיזים את התוכן בתוך המסגרת */
+    const mv=z<1?ev=>{const k=100/(1-z);t.x=Math.max(0,Math.min(100,x0+(ev.clientX-sx)/rect.width*k));t.y=Math.max(0,Math.min(100,y0+(ev.clientY-sy)/rect.height*k));imgXform(im,t,ev0)}
+      :ev=>{t.x=Math.max(0,Math.min(100,x0-fx*(ev.clientX-sx)/rect.width*100*1.4/z));t.y=Math.max(0,Math.min(100,y0-(ev.clientY-sy)/rect.height*100*1.4/z));imgXform(im,t,ev0)};
     const up=()=>{w.removeEventListener('pointermove',mv);w.removeEventListener('pointerup',up);t.x=Math.round(t.x??x0);t.y=Math.round(t.y??y0)};
     w.addEventListener('pointermove',mv);w.addEventListener('pointerup',up)});
   prev.addEventListener('wheel',e=>{const w=e.target.closest('.c-im');if(!w)return;e.preventDefault();const id=w.dataset.id,t=L.im[id]={...(L.im[id]||{})};
-    t.z=Math.max(1,Math.min(4,+((t.z??1)*(e.deltaY<0?1.08:1/1.08)).toFixed(3)));imgXform(w.querySelector('img'),t,evs.find(x=>x.id===id))},{passive:false});
+    t.z=Math.max(0.3,Math.min(4,+((t.z??1)*(e.deltaY<0?1.08:1/1.08)).toFixed(3)));if(Math.abs(t.z-1)<0.03)t.z=1;imgXform(w.querySelector('img'),t,evs.find(x=>x.id===id))},{passive:false});
   /* תמונה נוספת ליום: אירוע "תמונה בלבד" */
   q('#diAdd').onclick=()=>{const f=async v=>{if(!v.img)return;
       const o={id:uid(),kind:'other',name:'',rec:'once',date,img:v.img,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null};if(state.events.length+pending.length>=PLAN().events){openUpgrade('events');return}pending.push(o);
