@@ -22,6 +22,7 @@ header nav{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-
 .logo{font-family:var(--f-h);display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:800;font-size:23px}
 .links{display:flex;flex-wrap:wrap;gap:4px 16px;flex:1 1 auto;font-size:15px;font-weight:500}
 .links a{text-decoration:none;color:var(--mute)}.links a:hover{color:var(--acc)}
+.links a.nav-online{background:#fff3df;color:#9a4f00;border:1px solid #f0c98a;border-radius:999px;padding:2px 10px;font-weight:700}.links a.nav-online:hover{background:#ffe7c2;color:#9a4f00}
 .pill{text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:10px 18px;border:1px solid var(--line);color:var(--ink);background:var(--card)}
 .pill.pri{background:var(--acc);border-color:var(--acc);color:#fff}
 .view-sw{font-size:13px;color:var(--mute);text-decoration:none;border:1px dashed var(--line);border-radius:999px;padding:6px 12px}
@@ -99,7 +100,7 @@ footer a{color:var(--mute)}
 <body>
 <header><nav class="w" aria-label="ניווט ראשי">
   <a class="logo" href="new.html"><img src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a><a class="lang-sw" href="en.html" hreflang="en" lang="en" title="English version"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>EN</a>
-  <div class="links"><a href="#features">מה בלוח</a><a href="gallery.html">דוגמאות</a><a href="countdown.html">ספירה לאחור</a><a href="online/">לוח מקוון</a><a href="articles/">מאמרים</a><a href="/torah/" class="nav-torah" style="display:none">דברי תורה</a><a href="pricing.html">מחירים</a><a href="#faq">שאלות</a></div>
+  <div class="links"><a href="#features">מה בלוח</a><a href="gallery.html">דוגמאות</a><a href="countdown.html">ספירה לאחור</a><a class="nav-online" href="online/">📅 לוח מקוון</a><a href="articles/">מאמרים</a><a href="/torah/" class="nav-torah" style="display:none">דברי תורה</a><a href="pricing.html">מחירים</a><a href="#faq">שאלות</a></div>
   <a class="view-sw" href="index.html?view=classic" id="toClassic">לתצוגה הקלאסית</a>
   <a class="pill" href="app.html#login">כניסה</a><a class="pill pri" href="app.html">לבנות לוח</a>
 </nav></header>

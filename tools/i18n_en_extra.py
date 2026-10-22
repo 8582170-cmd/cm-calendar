@@ -2,6 +2,11 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+    '"משיב הרוח" (שמיני עצרת) והפסקתו (פסח)': '"Mashiv haruach" (Shemini Atzeret) and when it stops (Pesach)',
+    'בה״ב (שני־חמישי־שני בחשוון ובאייר)': 'BeHaB fasts (Mon-Thu-Mon in Cheshvan and Iyar)',
+    'עירוב תבשילין': 'Eruv tavshilin',
+    'ברכת האילנות (א׳ בניסן)': 'Birkat Ha-Ilanot (1 Nisan)',
+    'יום כיפור קטן': 'Yom Kippur Katan',
     'סוג הגופן': 'Font',
     'גופן רגיל': 'Default font',
     'גופן הכותרות': 'Heading font',

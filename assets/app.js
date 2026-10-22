@@ -531,18 +531,33 @@ function addHebrewExtras(map,start,end){
       }
     }
   }
-  if(M.tekufa||M.tal){
+  const TAL=M.tal!==false;
+  if(M.tekufa||TAL){
     const anchor=Date.UTC(2009,3,7,18)-JMT_MS,step=91.3125*86400000,names=['ניסן','תמוז','תשרי','טבת'];
     const k0=Math.floor((start-anchor)/step)-1,k1=Math.ceil((end-anchor)/step)+1;
     for(let k=k0;k<=k1;k++){
       const t=anchor+k*step,d=local(t),nm=names[((k%4)+4)%4];
       if(M.tekufa&&inRange(d))put(d,{cls:'moon',text:'תקופת '+nm+' '+tm(t),order:6});
-      if(M.tal&&!s.il&&nm==='תשרי'){const jh=new Date(t+JMT_MS).getUTCHours(),jd=new Date(t+JMT_MS);const dd=new Date(jd.getUTCFullYear(),jd.getUTCMonth(),jd.getUTCDate()+58+(jh>=18?1:0),12);if(inRange(dd))put(dd,{cls:'moon',text:'בערבית מתחילים ״ותן טל ומטר״',order:4})}
+      if(TAL&&nm==='תשרי'){const jh=new Date(t+JMT_MS).getUTCHours(),jd=new Date(t+JMT_MS);const dd=new Date(jd.getUTCFullYear(),jd.getUTCMonth(),jd.getUTCDate()+58+(jh>=18?1:0),12);if(inRange(dd))put(dd,{cls:'moon',text:(s.il?'בחו״ל: ':'')+'בערבית מתחילים ״ותן טל ומטר״',order:4})}
     }
   }
-  if(M.tal&&s.il){
+  if(TAL&&s.il){
     const y0=new HDate(start).getFullYear(),y1=new HDate(end).getFullYear();
-    for(let y=y0;y<=y1;y++){let d=new HDate(6,8,y).greg();d=new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);if(inRange(d))put(d,{cls:'moon',text:'בערבית מתחילים ״ותן טל ומטר״',order:4})}
+    for(let y=y0;y<=y1;y++){let d=new HDate(7,8,y).greg();d=new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);if(inRange(d))put(d,{cls:'moon',text:'מתחילים ״ותן טל ומטר״ (מערבית אמש)',order:4})}
+  }
+  /* תזכורות שקל לשכוח. מופיעות כברירת מחדל (חוץ מיום כיפור קטן), ואפשר לכבות כל אחת */
+  {const on=k=>M[k]!==false,y0=new HDate(start).getFullYear()-1,y1=new HDate(end).getFullYear()+1;
+    const at=hd=>{const d=hd.greg();return new Date(d.getFullYear(),d.getMonth(),d.getDate(),12)},add=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n,12);
+    const P=(d,text,order)=>{if(inRange(d))put(d,{cls:'moon',text,order:order||4})};
+    for(let y=y0;y<=y1;y++){
+      if(on('geshem')){P(at(new HDate(22,7,y)),'במוסף מתחילים ״משיב הרוח ומוריד הגשם״');P(at(new HDate(15,1,y)),'במוסף מפסיקים ״משיב הרוח״'+(s.il?', ומערבית ״ותן ברכה״':''))}
+      if(on('behab'))for(const m of [8,2]){const d1=at(new HDate(1,m,y)),sh=add(d1,(6-d1.getDay()+7)%7);P(sh,'מברכים את הצמים בה״ב',6);P(add(sh,2),'תענית בה״ב (שני)',3);P(add(sh,5),'תענית בה״ב (חמישי)',3);P(add(sh,9),'תענית בה״ב (שני בתרא)',3)}
+      if(on('eruv'))for(const [m,dd,two] of [[7,1,1],[7,15,0],[7,22,0],[1,15,0],[1,21,0],[3,6,0]]){const st=at(new HDate(dd,m,y)),len=two||!s.il?2:1;let fri=false;for(let i=0;i<len;i++)if(add(st,i).getDay()===5)fri=true;if(fri)P(add(st,-1),'עירוב תבשילין',3)}
+      if(on('ilanot'))P(at(new HDate(1,1,y)),'מתחילים ברכת האילנות (כל ניסן)',6);
+      /* ערב ראש חודש; לא לפני תשרי, חשוון, טבת ואייר. שישי או שבת: מקדימים לחמישי */
+      if(M.ykk)for(const m of [9,11,12,13,1,3,4,5,6]){if(m===13&&!isLeap(y))continue;let d=add(at(new HDate(1,m,y)),-1);
+        if(d.getDay()===5||d.getDay()===6)d=add(d,d.getDay()===5?-1:-2);P(d,'יום כיפור קטן',6)}
+    }
   }
   const Ln=s.learn||{};
   if(LEARN_TYPES.some(x=>Ln[x[0]])){
@@ -2966,7 +2981,7 @@ function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?
   {const c=document.querySelector('[data-opt=credit]');if(c){c.checked=creditOn();c.disabled=!creditHideOk();$('#creditHint').textContent=creditHideOk()?'':'(אפשר להסתיר רק במסלול המלא)'}}
   document.querySelectorAll('[data-z]').forEach(c=>c.checked=!!s.zmanim[c.dataset.z]);
   ['m_shma','size'].forEach(k=>$('#'+k).value=s[k]);
-  {const M=s.moon||{};document.querySelectorAll('[data-moon]').forEach(c=>c.checked=c.dataset.moon==='molad'?M.molad!==false:!!M[c.dataset.moon]);document.querySelectorAll('[data-moonsel]').forEach(c=>c.value=M[c.dataset.moonsel]||'none');const L=s.learn||{};document.querySelectorAll('[data-learn]').forEach(c=>c.checked=!!L[c.dataset.learn])}
+  {const M=s.moon||{};document.querySelectorAll('[data-moon]').forEach(c=>c.checked=['molad','tal','geshem','behab','eruv','ilanot'].includes(c.dataset.moon)?M[c.dataset.moon]!==false:!!M[c.dataset.moon]);document.querySelectorAll('[data-moonsel]').forEach(c=>c.value=M[c.dataset.moonsel]||'none');const L=s.learn||{};document.querySelectorAll('[data-learn]').forEach(c=>c.checked=!!L[c.dataset.learn])}
   {const pr=s.zmPreset||'ashkenaz',simple=['ashkenaz','sefardi','tanya','chul','chazon','tzikoni'];document.querySelectorAll('input[name=zmSimple]').forEach(r=>r.checked=r.value===pr);const n=$('#zmAdvNote');n.hidden=simple.includes(pr);if(!n.hidden)n.textContent='נבחרה שיטה מההגדרות המתקדמות: '+({tuk:'הגרי״מ טוקצ׳ינסקי',itim:'אשכנזים, נץ מישורי ושקיעה לפי הגובה',gra:'גר״א פשוט',custom:'מותאם אישית'}[pr]||pr)+'. לחזרה לשיטה רגילה, בחרו אחת מהאפשרויות למעלה.'}
   $('#zmPreset').value=s.zmPreset||'ashkenaz';$('#zmPresetHint').textContent=ZM_PRESET_HINT[s.zmPreset||'ashkenaz'];$('#secs').checked=!!s.secs;
   $('#headFont').value=s.headFont||'';$('#bodyFont').value=s.bodyFont||'';
