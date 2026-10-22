@@ -167,6 +167,21 @@ function events(a,b){
     const Z=zm(d),g=k=>(Z.find(x=>x.k===k)||{}).v,fromT=zcfg().nitalFrom==='tzeit';
     const txt=HE()?'ניטל: מ'+(fromT?'צאה״כ ':'השקיעה ')+fmtT(g(fromT?'tzeit':'shkia'))+' עד חצות הלילה '+fmtT(g('chatzotN')):'Nittel: '+fmtT(g(fromT?'tzeit':'shkia'))+' – '+fmtT(g('chatzotN'));
     const k=iso(d);if(!map.has(k))map.set(k,[]);map.get(k).push({txt,cls:'nital',chag:false,f:0,ev:{getDesc:()=>'Nittel',eventTime:null}})}
+  /* תזכורות שקל לשכוח: ותן טל ומטר, משיב הרוח, בה״ב, עירוב תבשילין, ברכת האילנות */
+  {const IL=city().il,y0=new HDate(a).getFullYear()-1,y1=new HDate(b).getFullYear()+1,A0=noon(a),B0=noon(b);
+    const at=hd=>noon(hd.greg()),P=(d,he,en)=>{if(d<A0||d>B0)return;const k=iso(d);if(!map.has(k))map.set(k,[]);map.get(k).push({txt:HE()?he:en,cls:'minor',chag:false,f:0,ev:{getDesc:()=>'Extra',eventTime:null}})};
+    const JMT=(35.2354/15)*3600000,anchor=Date.UTC(2009,3,7,18)-JMT,step=91.3125*864e5;
+    for(let y=y0;y<=y1;y++){
+      if(IL)P(at(new HDate(7,8,y)),'מתחילים ״ותן טל ומטר״ (מערבית אמש)','Begin "V\'ten tal umatar" (Israel)');
+      /* חו״ל: ערבית של היום ה־60 לתקופת תשרי */
+      const tk=new HDate(1,7,y).greg();const k=Math.round((tk.getTime()-anchor)/step);for(const kk of [k-1,k,k+1]){if(((kk%4)+4)%4!==2)continue;const t0=anchor+kk*step,jd=new Date(t0+JMT);if(Math.abs(t0-tk.getTime())>40*864e5)continue;
+        const dd=new Date(jd.getUTCFullYear(),jd.getUTCMonth(),jd.getUTCDate()+58+(jd.getUTCHours()>=18?1:0),12);P(dd,(IL?'בחו״ל: ':'')+'בערבית מתחילים ״ותן טל ומטר״','Diaspora: begin "V\'ten tal umatar" at Maariv')}
+      P(at(new HDate(22,7,y)),'במוסף מתחילים ״משיב הרוח ומוריד הגשם״','Begin "Mashiv haruach" at Musaf');
+      P(at(new HDate(15,1,y)),'במוסף מפסיקים ״משיב הרוח״','Stop "Mashiv haruach" at Musaf');
+      for(const m of [8,2]){const d1=at(new HDate(1,m,y)),sh=addD(d1,(6-d1.getDay()+7)%7);P(sh,'מברכים את הצמים בה״ב','BeHaB blessing');P(addD(sh,2),'תענית בה״ב (שני)','BeHaB fast (Mon)');P(addD(sh,5),'תענית בה״ב (חמישי)','BeHaB fast (Thu)');P(addD(sh,9),'תענית בה״ב (שני בתרא)','BeHaB fast (Mon)')}
+      for(const [m,dd,two] of [[7,1,1],[7,15,0],[7,22,0],[1,15,0],[1,21,0],[3,6,0]]){const st0=at(new HDate(dd,m,y)),len=two||!IL?2:1;let fri=false;for(let i=0;i<len;i++)if(addD(st0,i).getDay()===5)fri=true;if(fri)P(addD(st0,-1),'עירוב תבשילין','Eruv tavshilin')}
+      P(at(new HDate(1,1,y)),'מתחילים ברכת האילנות (כל ניסן)','Birkat Ha-Ilanot season begins');
+    }}
   evCache.set(key,map);if(evCache.size>40)evCache.delete(evCache.keys().next().value);return map;
 }
 
