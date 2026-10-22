@@ -38,6 +38,7 @@ function clean(c) {
   out.pay = ['paypal', 'sumit'].includes(c.pay) ? c.pay : 'nedarim';
   out.payAlso = (Array.isArray(c.payAlso) ? c.payAlso : []).filter((x, i, l) => ['nedarim', 'paypal', 'sumit'].includes(x) && x !== out.pay && l.indexOf(x) === i);
   out.sumitCap = Math.max(0, Math.min(100000, parseInt(c.sumitCap, 10) || 0));
+  out.sumitOps = Math.max(1, Math.min(20, parseInt(c.sumitOps, 10) || 2));
   out.sumitPeriod = c.sumitPeriod === 'rolling' ? 'rolling' : 'month';
   out.payAfter = c.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
   out.ppAcct = !!c.ppAcct;

@@ -31,7 +31,8 @@ async function providers(cfg, isDon, avoid) {
   if (avoid && ok[avoid] != null) ok[avoid] = false;
   const ALL = ['nedarim', 'paypal', 'sumit'], first = ALL.includes(cfg.pay) ? cfg.pay : 'nedarim';
   const list = [first, ...(Array.isArray(cfg.payAlso) ? cfg.payAlso : [])].filter((x, i, a) => ALL.includes(x) && a.indexOf(x) === i);
-  if (ok.sumit && list.includes('sumit')) { const cap = +(cfg.sumitCap || 0); if (cap > 0 && await sumitCount(cfg) >= cap) ok.sumit = false; }
+  if (ok.sumit && list.includes('sumit')) { /* המכסה בפעולות: כל סליקה = sumitOps פעולות (סליקה + קבלה = 2). עוברים לדרך השנייה כשהסליקה הבאה כבר לא נכנסת */
+    const cap = +(cfg.sumitCap || 0), per = Math.max(1, +cfg.sumitOps || 2); if (cap > 0 && (await sumitCount(cfg) + 1) * per > cap) ok.sumit = false; }
   let av = list.filter(x => ok[x]);
   const after = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
   if (list.includes('sumit') && !ok.sumit && ok[after] && av.indexOf(after) < 0) av.unshift(after);
