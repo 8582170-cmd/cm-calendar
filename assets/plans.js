@@ -73,6 +73,7 @@
     applyPricing(d){
       if(!d || !d.plans) return;
       if(d.extra) this.addPlans(d.extra);
+      PLANS.forEach(p => { if(!p.custom && p.id !== 'free') p.hidden = (d.off || []).indexOf(p.id) >= 0 });
       PLANS.forEach(p => { const o = d.plans[p.id]; if(!o) return;
         const ok = (v, d) => typeof v === 'number' && isFinite(v) && (v > 0 || !(d > 0));
         if(ok(o.ils, p.price.ils)) p.price.ils = o.ils; if(ok(o.usd, p.price.usd)) p.price.usd = o.usd; p.intro = +o.intro || 0; });
@@ -80,7 +81,7 @@
     },
     ready: null,
     /* מי שמסלול ממנו חסרה יכולת: המסלול הזול ביותר שכולל אותה */
-    cheapestWith(feature){ return PLANS.find(p => p.id !== 'free' && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' ? true : p.features[feature])) || PLANS[3] }
+    cheapestWith(feature){ return PLANS.find(p => p.id !== 'free' && !p.hidden && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' ? true : p.features[feature])) || PLANS[3] }
   };
   const LPo = window.MyLuachPlans;
   LPo.ready = (typeof fetch === 'function' && typeof location !== 'undefined' && /^https?:/.test(location.protocol))

@@ -5,7 +5,7 @@ const { getUser, LP, PAID, db, readBody, json, upsertProfile, planInfo, loadConf
 
 async function welcome(to) {
   const { sendMail } = require('./_mail');
-  await sendMail({ to, ...require('./_paid').welcome() }, 'welcome');
+  await sendMail({ to, ...(await require('./_paid').welcome()) }, 'welcome');
 }
 
 module.exports = async (req, res) => {

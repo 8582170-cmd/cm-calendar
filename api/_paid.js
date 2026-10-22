@@ -1,9 +1,41 @@
 /* סימון הזמנה כשולמה (מכל דרך תשלום: נדרים פלוס, פייפל, קופון 100%), ושליחת המיילים:
-   ללקוח: אישור רכישה. לבעל האתר: הודעה על כל רכישה (OWNER_EMAIL, ואם אין: ALERT_EMAIL). */
+   ללקוח: אישור רכישה. לבעל האתר: הודעה על כל רכישה (OWNER_EMAIL, ואם אין: ALERT_EMAIL).
+   נוסח המיילים ניתן לעריכה בדף הניהול (settings → pricing → mailTpl). שדה ריק = הנוסח הרגיל שכאן. */
 'use strict';
-const { db, env, PLAN_NAMES } = require('./_lib');
+const { db, env, PLAN_NAMES, loadConfig } = require('./_lib');
 
 const site = () => (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+
+/* הנוסח הרגיל. {סוגריים} = נתון שמתמלא לבד */
+const DEFAULTS = {
+  welcome: { subject: 'ברוכים הבאים ל־MyLuach', title: 'ברוכים הבאים ל־MyLuach!',
+    body: 'החשבון נפתח. מעכשיו הלוחות שלכם נשמרים בחשבון, ואפשר לחזור אליהם מכל מחשב או טלפון.\n\nכמה דברים שאפשר לעשות: לוח שנה עברי עם תמונות משפחתיות, ימי הולדת וימי שנה (יארצייט) שחוזרים כל שנה, זמני היום לעיר שלכם, ותזכורות במייל.',
+    button: 'לבונה הלוח', foot: 'קיבלתם את המייל כי נרשמתם ל־MyLuach עם הכתובת הזאת.' },
+  purchase: { subject: 'הרכישה הושלמה: {מסלול} ב־MyLuach', title: 'תודה! {מסלול} פעיל',
+    body: 'הרכישה הושלמה בהצלחה ({סכום}{קופון}).\nכדי להשתמש במסלול, התחברו בבונה הלוח עם כתובת המייל הזאת. אפשר להוריד ולהדפיס את הלוח לפי מספר ההורדות שבמסלול.',
+    button: 'לבונה הלוח', foot: 'מספר הזמנה: {הזמנה}. שאלות? פשוט עונים למייל הזה.' },
+  donation: { subject: 'תודה על התרומה ל־MyLuach', title: 'תודה רבה על התרומה!',
+    body: 'קיבלנו את תרומתך על סך {סכום}. תודה שאתם עוזרים לנו להמשיך.', button: '', foot: 'מספר הזמנה: {הזמנה}.' },
+  owner: { subject: '💰 {סוג} חדשה: {מסלול} · {סכום}', title: '{סוג} חדשה',
+    body: '{מסלול}\nסכום: {סכום}{קופון}\nלקוח: {מייל}\nאמצעי תשלום: {אמצעי}\nמספר הזמנה: {הזמנה}', button: 'לדף הניהול', foot: '' }
+};
+const KINDS = { welcome: 'ללקוח אחרי הרשמה', purchase: 'ללקוח אחרי רכישה', donation: 'לתורם אחרי תרומה', owner: 'אליך על כל רכישה ותרומה' };
+
+/* בונה מייל לפי הנוסח (מהניהול או הרגיל) והנתונים */
+function render(kind, vars, tpl) {
+  const { frame, escH } = require('./_mail');
+  const T = { ...DEFAULTS[kind] }; const own = (tpl || {})[kind] || {};
+  for (const k of ['subject', 'title', 'body', 'button', 'foot']) if (own[k] != null && String(own[k]).trim() !== '') T[k] = String(own[k]);
+  const fill = (s, html) => String(s || '').replace(/\{([^{}]{1,12})\}/g, (m, k) => vars[k] != null ? (html ? escH(vars[k]) : String(vars[k])) : m);
+  const h = s => fill(escH(s).replace(/\n/g, '<br>'), true);
+  const url = kind === 'owner' ? site() + '/admin' : site() + '/app.html';
+  return { subject: fill(T.subject, false), html: frame({ title: h(T.title), body: h(T.body), button: T.button ? h(T.button) : null, url, foot: T.foot ? h(T.foot) : '' }), text: fill(T.title, false) + '\n\n' + fill(T.body, false) };
+}
+function vars(o) {
+  const isDon = o.plan === 'donation';
+  return { 'מסלול': isDon ? 'תרומה' : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan), 'סכום': +o.amount ? (+o.amount).toLocaleString('he-IL') + ' ₪' : 'בחינם',
+    'קופון': o.coupon ? ', קופון ' + o.coupon : '', 'הזמנה': String(o.id || '').slice(0, 8), 'מייל': o.email || 'לא ידוע', 'אמצעי': o.via || 'נדרים פלוס', 'סוג': isDon ? 'תרומה' : 'רכישה' };
+}
 
 async function markPaid(o, extra, via) {
   if (!o || !o.id) return false;
@@ -13,40 +45,17 @@ async function markPaid(o, extra, via) {
   if (first) await notify({ ...o, ...upd, via: via || 'נדרים פלוס' }).catch(e => console.error('paid mail', e.message));
   return first;
 }
-
-/* תוכן המיילים (גם לתצוגה מקדימה בניהול) */
-function build(o) {
-  const { frame, escH } = require('./_mail');
-  const isDon = o.plan === 'donation', name = isDon ? 'תרומה' : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan);
-  const amt = (+o.amount || 0).toLocaleString('he-IL') + ' ₪', short = String(o.id).slice(0, 8);
-  const customer = {
-    subject: isDon ? 'תודה על התרומה ל־MyLuach' : 'הרכישה הושלמה: ' + name + ' ב־MyLuach',
-    html: frame({
-      title: isDon ? 'תודה רבה על התרומה!' : 'תודה! ' + escH(name) + ' פעיל',
-      body: isDon ? 'קיבלנו את תרומתך על סך ' + amt + '. תודה שאתם עוזרים לנו להמשיך.' :
-        'הרכישה הושלמה בהצלחה (' + (+o.amount ? amt : 'בחינם') + (o.coupon ? ', קופון ' + escH(o.coupon) : '') + ').<br>כדי להשתמש במסלול, התחברו בבונה הלוח עם כתובת המייל הזאת. אפשר להוריד ולהדפיס את הלוח לפי מספר ההורדות שבמסלול.',
-      button: isDon ? null : 'לבונה הלוח', url: site() + '/app.html',
-      foot: 'מספר הזמנה: ' + short + '. שאלות? פשוט עונים למייל הזה.'
-    }),
-    text: (isDon ? 'תודה על התרומה: ' : 'הרכישה הושלמה: ') + name + ' · ' + amt + ' · הזמנה ' + short
-  };
-  const owner = {
-    subject: '💰 ' + (isDon ? 'תרומה' : 'רכישה') + ' חדשה: ' + name + ' · ' + amt,
-    html: frame({ title: (isDon ? 'תרומה' : 'רכישה') + ' חדשה', body: escH(name) + '<br>סכום: ' + amt + (o.coupon ? '<br>קופון: ' + escH(o.coupon) : '') + '<br>לקוח: <span dir="ltr">' + escH(o.email || 'לא ידוע') + '</span><br>אמצעי תשלום: ' + escH(o.via || 'נדרים פלוס') + '<br>מספר הזמנה: ' + short, button: 'לדף הניהול', url: site() + '/admin' }),
-    text: name + ' · ' + amt + ' · ' + (o.email || '') + ' · ' + short
-  };
-  return { customer, owner };
-}
-function welcome() {
-  const { frame } = require('./_mail');
-  return { subject: 'ברוכים הבאים ל־MyLuach',
-    html: frame({ title: 'ברוכים הבאים ל־MyLuach!', body: 'החשבון נפתח. מעכשיו הלוחות שלכם נשמרים בחשבון, ואפשר לחזור אליהם מכל מחשב או טלפון.<br><br>כמה דברים שאפשר לעשות: לוח שנה עברי עם תמונות משפחתיות, ימי הולדת וימי שנה (יארצייט) שחוזרים כל שנה, זמני היום לעיר שלכם, ותזכורות במייל.', button: 'לבונה הלוח', url: site() + '/app.html', foot: 'קיבלתם את המייל כי נרשמתם ל־MyLuach עם הכתובת הזאת.' }),
-    text: 'ברוכים הבאים ל־MyLuach! ' + site() + '/app.html' };
-}
 async function notify(o) {
-  const { sendMail } = require('./_mail'), B = build(o);
-  if (o.email) { try { await sendMail({ to: o.email, ...B.customer }, 'purchase'); } catch (e) { console.error('customer mail', e.message); } }
+  const { sendMail } = require('./_mail'), tpl = (await loadConfig()).mailTpl, V = vars(o), isDon = o.plan === 'donation';
+  if (o.email) { try { await sendMail({ to: o.email, ...render(isDon ? 'donation' : 'purchase', V, tpl) }, 'purchase'); } catch (e) { console.error('customer mail', e.message); } }
   const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');
-  if (to) { try { await sendMail({ to, ...B.owner }, 'owner'); } catch (e) { console.error('owner mail', e.message); } }
+  if (to) { try { await sendMail({ to, ...render('owner', V, tpl) }, 'owner'); } catch (e) { console.error('owner mail', e.message); } }
 }
-module.exports = { markPaid, notify, build, welcome };
+async function welcome() { return render('welcome', {}, (await loadConfig()).mailTpl); }
+/* לתצוגה מקדימה בניהול: כל המיילים עם נתוני דוגמה, לפי נוסח נתון (גם לפני שמירה) */
+function previews(tpl) {
+  const V = vars({ id: 'a1b2c3d4e5f6', plan: 'family', amount: 89, email: 'customer@example.com', coupon: '', via: 'PayPal' });
+  const VD = vars({ id: 'a1b2c3d4e5f6', plan: 'donation', amount: 50, email: 'donor@example.com', via: 'נדרים פלוס' });
+  return Object.keys(DEFAULTS).map(k => ({ k, who: KINDS[k], ...render(k, k === 'donation' ? VD : V, tpl) }));
+}
+module.exports = { markPaid, notify, welcome, previews, DEFAULTS, KINDS };

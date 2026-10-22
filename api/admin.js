@@ -36,6 +36,11 @@ function clean(c) {
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
   out.pay = c.pay === 'paypal' ? 'paypal' : 'nedarim';
+  /* מסלולים קבועים שהוסתרו מהמכירה */
+  out.off = (Array.isArray(c.off) ? c.off : []).filter(x => ['basic', 'family', 'full'].includes(x));
+  /* נוסח המיילים */
+  { const T = c.mailTpl || {}; out.mailTpl = {};
+    for (const k of ['welcome', 'purchase', 'donation', 'owner']) { const t = T[k] || {}, o = {}; for (const f of ['subject', 'title', 'body', 'button', 'foot']) if (t[f] != null && String(t[f]).trim() !== '') o[f] = String(t[f]).slice(0, f === 'body' ? 3000 : 200); if (Object.keys(o).length) out.mailTpl[k] = o; } }
   /* מסלולים נוספים מהניהול */
   out.extra = (Array.isArray(c.extra) ? c.extra : []).slice(0, 20).map(x => ({
     id: /^x[a-z0-9]{1,12}$/.test(String(x.id || '')) ? String(x.id) : 'x' + Math.random().toString(36).slice(2, 8),
@@ -115,9 +120,8 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'purge') { try { const U = require('./_usage'), bk = String(b.bucket || ''), r = await U.purge(bk, b.days, !!b.dry); if (bk === 'calendars') { const x = await U.purgeR2(Math.max(30, parseInt(b.days, 10) || 0), !!b.dry); r.files += x.files; r.bytes += x.bytes; r.deleted += x.deleted; } return json(res, 200, r); } catch (e) { return json(res, 400, { error: String(e.message || e).slice(0, 200) }); } }
     /* תצוגה מקדימה של המיילים ללקוח ולבעל האתר */
     if (req.method === 'POST' && b.action === 'mailpreview') {
-      const P = require('./_paid'), o = { id: 'a1b2c3d4e5f6a7b8c9d0e1f2', plan: 'family', amount: 89, email: 'customer@example.com', coupon: '', via: 'PayPal' };
-      const B = P.build(o), W = P.welcome();
-      return json(res, 200, { mails: [{ k: 'welcome', who: 'ללקוח אחרי הרשמה', ...W }, { k: 'purchase', who: 'ללקוח אחרי רכישה', ...B.customer }, { k: 'owner', who: 'אליך על כל רכישה', ...B.owner }], owner: env('OWNER_EMAIL') || env('ALERT_EMAIL') || '' });
+      const P = require('./_paid'), cfg = await loadConfig();
+      return json(res, 200, { mails: P.previews(b.tpl || cfg.mailTpl), tpl: cfg.mailTpl || {}, defaults: P.DEFAULTS, kinds: P.KINDS, owner: env('OWNER_EMAIL') || env('ALERT_EMAIL') || '' });
     }
     /* מד שימוש באחסון ובמסד הנתונים */
     if (req.method === 'POST' && b.action === 'usage') { try { return json(res, 200, await require('./_usage').usage()); } catch (e) { return json(res, 500, { error: String(e.message || e).slice(0, 200) }); } }

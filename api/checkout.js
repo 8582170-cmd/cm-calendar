@@ -67,6 +67,7 @@ module.exports = async (req, res) => {
           if (prev && prev.length) renew = { percent: Math.min(100, +R.percent), why: 'renew' };
         } catch (e) {}
       }
+      if ((cfg.off || []).indexOf(plan) >= 0) return json(res, 400, { error: 'off', message: 'המסלול הזה לא נמכר כרגע' });
       info = finalPrice(publicPricing(cfg), plan, coupon, renew);
       if (!info) return json(res, 400, { error: 'unknown plan', message: 'המסלול לא נמצא' });
       amount = info.amount;
