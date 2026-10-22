@@ -60,7 +60,7 @@ function publicPricing(cfg) {
   });
   const s = cfg.sale;
   const sale = s && s.on && +s.percent > 0 && live(s) ? { percent: +s.percent, plans: s.plans && s.plans.length ? s.plans : PAID, until: s.until || '', label: s.label || '' } : null;
-  return { plans, sale, off: (cfg.off || []).slice(), extra: (cfg.extra || []).map(x => ({ id: x.id, name: x.name, base: x.base, ils: x.ils, usd: x.usd, downloads: x.downloads, events: x.events, tagline: x.tagline, bullets: x.bullets, cd: !!x.cd, on: !!x.on })), pay: cfg.pay === 'paypal' ? 'paypal' : 'nedarim', ppAcct: !!cfg.ppAcct, ppGpay: !!cfg.ppGpay, ppMode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppc: env('PAYPAL_CLIENT_ID') || '', renew: cfg.renew && cfg.renew.on && +cfg.renew.percent > 0 ? +cfg.renew.percent : 0, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
+  return { plans, sale, off: (cfg.off || []).slice(), extra: (cfg.extra || []).map(x => ({ id: x.id, name: x.name, base: x.base, ils: x.ils, usd: x.usd, downloads: x.downloads, events: x.events, tagline: x.tagline, bullets: x.bullets, cd: !!x.cd, on: !!x.on })), pay: ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim', ppAcct: !!cfg.ppAcct, ppGpay: !!cfg.ppGpay, ppMode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppc: env('PAYPAL_CLIENT_ID') || '', renew: cfg.renew && cfg.renew.on && +cfg.renew.percent > 0 ? +cfg.renew.percent : 0, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
 }
 
 /* קופון בתוקף? מחזיר את הקופון או הודעת שגיאה */

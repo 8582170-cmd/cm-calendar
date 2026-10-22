@@ -1398,3 +1398,5 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .pp-cf [id^=pp]{min-height:44px}
 .pp-acct{margin-bottom:10px}
 .pp-gpay{margin-bottom:10px;height:44px}
+.sm-form label{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:600;margin-bottom:8px}.sm-form input,.sm-form select{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg,#fff)}
+.sm-row{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}

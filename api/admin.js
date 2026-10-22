@@ -35,7 +35,7 @@ function clean(c) {
   });
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
-  out.pay = c.pay === 'paypal' ? 'paypal' : 'nedarim';
+  out.pay = ['paypal', 'sumit'].includes(c.pay) ? c.pay : 'nedarim';
   out.ppAcct = !!c.ppAcct;
   out.ppGpay = !!c.ppGpay;
   /* מסלולים קבועים שהוסתרו מהמכירה */
@@ -275,7 +275,7 @@ module.exports = async (req, res) => {
         mail.users = { total: (pr || []).length, phones: (pr || []).filter(x => x.phone_verified_at).length, voice: (vr || []).length };
       } catch (e) { mail.users = null; }
     } catch (e) { mail = null; }
-    const payStatus = { nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
+    const payStatus = { sumit: require('./_sumit').ready(), smTest: env('SUMIT_TEST_AMOUNT') || '', nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
     json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, dl, payStatus, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
     console.error('admin', e);

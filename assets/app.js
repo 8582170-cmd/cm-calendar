@@ -3451,7 +3451,7 @@ function buyPlan(planId){
   const freeDone=j=>{close();activatePlan(j.plan,j.id);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:j.plan,at:Date.now()}))}catch(e){}
     modal('<h3>המסלול '+esc(LP.byId(j.plan).name)+' פעיל</h3><p class="hint">הקוד הופעל והמסלול נפתח בחינם. אפשר להוריד ולהדפיס את הלוח. מספר הזמנה: '+esc(j.id.slice(0,8))+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>')};
   const mkOrder=coupon=>authHeaders().then(h=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({plan:p.id,coupon:coupon||''})}))
-    .then(r=>r.json().catch(()=>({})).then(j=>{if(j.error==='coupon')throw Object.assign(new Error('coupon'),{msg:j.message});if(!r.ok||!(j.tx||j.ppid||j.free))throw Object.assign(new Error(j.error||r.status),{msg:j.message});return j}))
+    .then(r=>r.json().catch(()=>({})).then(j=>{if(j.error==='coupon')throw Object.assign(new Error('coupon'),{msg:j.message});if(!r.ok||!(j.tx||j.ppid||j.sumit||j.free))throw Object.assign(new Error(j.error||r.status),{msg:j.message});return j}))
     .then(j=>{if(j.free){freeDone(j);return j}order=j;if(!PROV)setupProv(j.provider);setAmt(j.amount,j);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j});
   let orderP=mkOrder();
   $m('#payCouponGo').onclick=()=>{const code=$m('#payCoupon').value.trim(),cm=$m('#payCouponMsg');if(!code){cm.textContent='';return}
@@ -3463,6 +3463,28 @@ function buyPlan(planId){
   /* אמצעי התשלום נקבע בשרת: נדרים פלוס (טופס מוטמע) או פייפל (כפתורים של פייפל) */
   function setupProv(pv){PROV=pv||'nedarim';
     if(PROV==='nedarim'){frame.hidden=false;frame.src=frame.dataset.src;m.querySelectorAll('.pay-who>label').forEach(x=>x.hidden=false);return}
+    /* SUMIT: טופס כרטיס באתר. פרטי הכרטיס הופכים לאסימון ישירות מול SUMIT (הם לא עוברים דרכנו), והקבלה נשלחת ללקוח מ-SUMIT */
+    if(PROV==='sumit'){provName='SUMIT';ready=true;m.querySelectorAll('.pay-who>label').forEach(x=>x.hidden=!x.matches('.pay-coupon')&&!x.querySelector('#payName,#payMail'));
+      const box=$m('#ppBox');box.hidden=false;
+      box.innerHTML='<form id="smForm" class="sm-form" onsubmit="return false" dir="rtl"><label>מספר כרטיס<input type="text" data-og="cardnumber" inputmode="numeric" autocomplete="cc-number" dir="ltr" maxlength="19"></label>'+
+        '<div class="sm-row"><label>חודש<select data-og="expirationmonth">'+Array.from({length:12},(_,i)=>'<option>'+String(i+1).padStart(2,'0')+'</option>').join('')+'</select></label><label>שנה<select data-og="expirationyear">'+Array.from({length:12},(_,i)=>{const y=new Date().getFullYear()+i;return '<option value="'+y+'">'+y+'</option>'}).join('')+'</select></label><label>3 ספרות בגב הכרטיס<input type="text" data-og="cvv" inputmode="numeric" autocomplete="cc-csc" dir="ltr" maxlength="4"></label></div>'+
+        '<label>תעודת זהות של בעל הכרטיס<input type="text" data-og="citizenid" inputmode="numeric" dir="ltr" maxlength="9"></label></form>';
+      msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום. הקבלה תישלח למייל.');
+      const ld=(src)=>new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=src;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
+      const libs=(window.jQuery?Promise.resolve():ld('https://code.jquery.com/jquery-3.7.1.min.js')).then(()=>window.OfficeGuy?null:ld('https://app.sumit.co.il/scripts/payments.js'));
+      libs.catch(()=>msg('לא הצלחנו לטעון את טופס התשלום. נסו לרענן את הדף.',1));
+      go.onclick=()=>{const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim();
+        if(name.split(/\s+/).length<2){msg('נא למלא שם פרטי ושם משפחה.',1);$m('#payName').focus();return}
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){msg('נא למלא כתובת מייל תקינה (לשם תישלח הקבלה).',1);$m('#payMail').focus();return}
+        try{localStorage.setItem('myluach-buyer',JSON.stringify({name,mail}))}catch(e){}
+        go.disabled=true;go.textContent='מעבד תשלום…';msg('מעבד תשלום…');
+        const fail=t=>{go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);msg(esc(t),1)};
+        Promise.all([orderP,libs]).then(([o])=>new Promise((res,rej)=>{const S=o.sumit||{};window.OfficeGuy.Payments.CreateToken({CompanyID:S.cid,APIPublicKey:S.pk,FormSelector:'#smForm',
+            ResponseCallback:r=>r&&r.Status===0&&r.Data&&r.Data.SingleUseToken?res({o,t:r.Data.SingleUseToken}):rej(new Error((r&&r.UserErrorMessage)||'פרטי הכרטיס לא תקינים'))})}))
+          .then(({o,t})=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'sumitcharge',id:o.id,token:t,name,email:mail})}).then(r=>r.json()))
+          .then(x=>{if(x.status==='paid'){close();activatePlan(x.plan,order.id);modal('<h3>תודה! המסלול '+esc(LP.byId(x.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. הקבלה נשלחה למייל. מספר הזמנה: '+order.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}fail(x.message||'התשלום לא אושר.')})
+          .catch(e=>fail(e.message||'התשלום נכשל. נסו שוב.'))};
+      go.hidden=false;go.disabled=false;return}
     provName='PayPal';ready=true;go.hidden=true;m.querySelectorAll('.pay-who>label:not(.pay-coupon)').forEach(x=>x.hidden=true);const box=$m('#ppBox');box.hidden=false;msg('טוען טופס תשלום מאובטח…');
     /* תשלום בכרטיס אשראי בלבד (בלי כניסה לחשבון פייפל).
        אם החשבון מאושר ל"כרטיסי אשראי מתקדם" (Card Fields): טופס קצר שלנו, רק מספר כרטיס, תוקף ו־CVV.

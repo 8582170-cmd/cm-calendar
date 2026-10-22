@@ -16,10 +16,12 @@ function provider(cfg, isDon) {
   const ned = !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), pp = require('./_paypal').ready();
   /* דף התרומות בנוי על הטופס של נדרים פלוס */
   if (isDon) return ned ? 'nedarim' : null;
-  const want = cfg.pay === 'paypal' ? 'paypal' : 'nedarim';
+  const sm = require('./_sumit').ready();
+  const want = ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim';
   if (want === 'paypal' && pp) return 'paypal';
+  if (want === 'sumit' && sm) return 'sumit';
   if (want === 'nedarim' && ned) return 'nedarim';
-  return pp ? 'paypal' : ned ? 'nedarim' : null;
+  return sm ? 'sumit' : pp ? 'paypal' : ned ? 'nedarim' : null;
 }
 
 module.exports = async (req, res) => {
@@ -27,6 +29,20 @@ module.exports = async (req, res) => {
   try {
     const b = readBody(req);
     const cfg = await loadConfig();
+    /* SUMIT: חיוב לפי האסימון שהדפדפן קיבל מ-SUMIT */
+    if (b.action === 'sumitcharge') {
+      const id = String(b.id || ''), token = String(b.token || ''); if (!/^[0-9a-f]{24}$/.test(id) || !token || token.length > 400) return json(res, 400, { error: 'bad request' });
+      const rows = await db('orders?id=eq.' + id + '&select=*'); const o = rows && rows[0];
+      if (!o) return json(res, 404, { error: 'order' });
+      if (o.status === 'paid') return json(res, 200, { status: 'paid', plan: o.plan });
+      if (o.status !== 'pending') return json(res, 400, { error: 'state', message: 'ההזמנה כבר לא פתוחה לתשלום. סגרו את החלון ונסו שוב.' });
+      const name = String(b.name || '').trim().slice(0, 80), email = (o.email || String(b.email || '').trim().toLowerCase()).slice(0, 200);
+      if (!o.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { o.email = email; await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ email }) }); }
+      const c = await require('./_sumit').charge({ token, amount: +o.amount, name, email: o.email, ref: id, desc: o.plan === 'donation' ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[o.plan] });
+      if (!c.ok) { await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ callback: { sumit: c.raw } }) }); return json(res, 402, { error: 'payment', message: c.message ? 'התשלום לא אושר: ' + c.message : 'התשלום לא אושר. בדקו את פרטי הכרטיס ונסו שוב.' }); }
+      await require('./_paid').markPaid(o, { txn: String(c.paymentId || ''), callback: { sumit: c.raw } }, 'SUMIT');
+      return json(res, 200, { status: 'paid', plan: o.plan, receipt: !!c.documentId });
+    }
     /* פייפל: גבייה אחרי שהלקוח אישר בחלון של פייפל */
     if (b.action === 'ppcapture') {
       const id = String(b.id || ''); if (!/^[0-9a-f]{24}$/.test(id)) return json(res, 400, { error: 'id' });
@@ -91,6 +107,11 @@ module.exports = async (req, res) => {
     const desc = isDon ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
     const extra = { base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', min: !!(info && info.min), coupon: coupon ? coupon.code : null };
 
+    if (prov === 'sumit') {
+      const charge = isDon ? amount : (Number(env('SUMIT_TEST_AMOUNT')) || amount);
+      await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
+      return json(res, 200, { id, amount: charge, provider: 'sumit', sumit: require('./_sumit').pub(), email: email || '', ...extra });
+    }
     if (prov === 'paypal') {
       const charge = isDon ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);
       await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
