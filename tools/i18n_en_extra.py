@@ -2,6 +2,8 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ 'משחזר את הגזירה…': 'Restoring the cutout…',
+ 'לא הצלחנו לשחזר את הגזירה (צריך חיבור לאינטרנט). אפשר לגזור שוב.': 'Could not restore the cutout (an internet connection is needed). You can cut it out again.',
  '✂ גזירת דמות': '✂ Cut out people',
  'במסלול המלא': 'Full plan',
  'משאיר רק את האנשים שבתמונה, בלי הרקע. מתאים במיוחד לתמונות של אנשים.': 'Keeps only the people in the photo and removes the background. Works best with photos of people.',

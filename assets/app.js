@@ -2566,6 +2566,8 @@ async function openImageEditor(data,onSave){
   if(!canF('imageEditor')){openUpgrade('imageEditor');return}
   const ed=data.edit?JSON.parse(JSON.stringify(data.edit)):{orig:data.img,adj:{},rot:0,flip:false,layers:[]};
   let src=await loadImg(ed.cut&&ed.cut.src||ed.orig);if(!src)return;
+  /* הגזירה לא נשמרת בלוח (כדי שישקול פחות): בפתיחה מחדש גוזרים שוב מהמקור, ברקע */
+  const reCut=!!(ed.cut&&!ed.cut.src);
   ed.layers.forEach(L=>{if(L.type==='text')loadFont(L.font);if(L.src)ovImg(L.src)});
   const m=modal('<h3>עריכת תמונה<small>שיפור צבעים, טקסט על התמונה ותמונה על תמונה. גררו טקסט או תמונה כדי להזיז אותם.</small></h3>'+
     '<div class="ie"><div class="ie-stage"><canvas id="ieC"></canvas></div><div class="ie-side">'+
@@ -2727,9 +2729,15 @@ async function openImageEditor(data,onSave){
     drawLayers(og,out.width,out.height,false)(ed.layers,-1);
     /* דמות גזורה בלי רקע: נשמרת עם שקיפות */
     let url;try{url=ed.cut&&ed.cut.bg==='none'&&window.MyLuachSmart?MyLuachSmart.encAlpha(out,JQ):out.toDataURL('image/jpeg',JQ)}catch(err){url=null}
+    /* בהיסטוריית העריכה נשמרים רק המקור וההגדרות. התמונה הגזורה עצמה כבר בתוך התמונה הסופית */
+    if(ed.cut)ed.cut={bg:ed.cut.bg};
     m.remove();if(url)onSave({img:url,edit:ed});
   };
   rebuild();panel();fontsReady();
+  if(reCut){const M=()=>q('#ieCutM'),sv=q('#ieSave');sv.disabled=true;if(M())M().textContent='משחזר את הגזירה…';
+    try{const r=await MyLuachSmart.cutFigure(ed.orig);ed.cut.src=MyLuachSmart.encAlpha(r.canvas);src=await loadImg(ed.cut.src);rebuild();panel();if(M())M().textContent='שקוף = בלוח יראו רק את הדמות, ומאחוריה את התא או הדף.'}
+    catch(e){delete ed.cut;panel();if(M())M().textContent='לא הצלחנו לשחזר את הגזירה (צריך חיבור לאינטרנט). אפשר לגזור שוב.'}
+    sv.disabled=false}
 }
 
 /* ---------- images ---------- */
