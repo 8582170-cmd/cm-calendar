@@ -4,6 +4,8 @@
   'use strict';
   const FA='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/';
   const SS='https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/';
+  /* גזירת דמות באיכות גבוהה: MODNet (רישיון Apache 2.0) דרך transformers.js. המודל (כ־25MB) נטען מ-Hugging Face בפעם הראשונה ונשמר בדפדפן */
+  const TF='https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
   let faP=null,ssP=null;
 
   /* --- זיהוי פנים --- */
@@ -108,5 +110,42 @@
     return o.toDataURL('image/jpeg',.92);
   }
 
-  window.MyLuachSmart={detectFaces,placeOnFace,removeUniformBg,cutPerson,faceCrop,toCanvas};
+  /* --- גזירת דמות מהתמונה הראשית: מחזיר קנבס בגודל המקורי, הרקע שקוף --- */
+  let mnP=null;
+  function loadModnet(){
+    if(mnP)return mnP;
+    mnP=(async()=>{const T=await import(TF);T.env.allowLocalModels=false;
+      let model;const gpu='gpu' in navigator;
+      try{model=await T.AutoModel.from_pretrained('Xenova/modnet',{dtype:'fp32',device:gpu?'webgpu':'wasm'})}
+      catch(e){if(!gpu)throw e;model=await T.AutoModel.from_pretrained('Xenova/modnet',{dtype:'fp32',device:'wasm'})}
+      const proc=await T.AutoProcessor.from_pretrained('Xenova/modnet');return {T,model,proc}})();
+    mnP.catch(()=>{mnP=null});
+    return mnP;
+  }
+  async function maskModnet(c){
+    const {T,model,proc}=await loadModnet();
+    const img=await T.RawImage.fromURL(c.toDataURL('image/png'));
+    const {pixel_values}=await proc(img);const {output}=await model({input:pixel_values});
+    const m=await T.RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(c.width,c.height);
+    const a=new Uint8ClampedArray(c.width*c.height),ch=m.channels||1;for(let i=0;i<a.length;i++)a[i]=m.data[i*ch];return a;
+  }
+  async function maskMediapipe(c){
+    const ss=await loadSS();const mask=await new Promise((res,rej)=>{ss.onResults(r=>res(r.segmentationMask));ss.send({image:c}).catch(rej)});
+    const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const g=o.getContext('2d');g.drawImage(mask,0,0,o.width,o.height);
+    const d=g.getImageData(0,0,o.width,o.height).data,a=new Uint8ClampedArray(o.width*o.height);let op=true;for(let i=3;i<d.length;i+=4)if(d[i]<250){op=false;break}
+    /* המסכה בערוץ השקיפות; אם היא אטומה כולה, הביטחון נמצא בערוץ האדום */
+    for(let i=0;i<a.length;i++)a[i]=op?d[i*4]:d[i*4+3];return a;
+  }
+  async function cutFigure(src){
+    const c=await toCanvas(src);let a,engine='modnet';
+    try{a=await maskModnet(c)}catch(e){console.warn('modnet',e);engine='mediapipe';a=await maskMediapipe(c)}
+    const g=c.getContext('2d'),im=g.getImageData(0,0,c.width,c.height),d=im.data;let kept=0;
+    for(let i=0;i<a.length;i++){const v=a[i]<12?0:a[i]>243?255:a[i];d[i*4+3]=Math.min(d[i*4+3],v);if(v>128)kept++}
+    g.putImageData(im,0,0);
+    return {canvas:c,engine,kept:kept/a.length};
+  }
+  /* שמירה עם שקיפות: WebP (קטן) ואם הדפדפן לא תומך, PNG */
+  function encAlpha(c,q){let u='';try{u=c.toDataURL('image/webp',q||.92)}catch(e){}return /^data:image\/webp/.test(u)?u:c.toDataURL('image/png')}
+
+  window.MyLuachSmart={detectFaces,placeOnFace,removeUniformBg,cutPerson,faceCrop,toCanvas,cutFigure,encAlpha};
 })();

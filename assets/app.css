@@ -1409,3 +1409,6 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 @media print{.fxb-grip{display:none!important}}
 body:has(.modal-back) .fx-bar{display:none!important}
 .fx-op{font-size:15px}
+.ie-cut{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}.ie-cut .hint{display:block;margin:2px 0 4px}
+.ie-plan{font-size:11px;font-weight:700;background:var(--accent);color:var(--accent-ink,#fff);border-radius:20px;padding:1px 8px}
+.ie-cbg{align-items:center;gap:8px;font-size:13px}.ie-cbg input[type=color]{width:28px;height:22px;padding:0;border:0;vertical-align:middle}

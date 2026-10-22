@@ -1,11 +1,11 @@
 /* MyLuach: הגדרת המסלולים. מקור אחד לדף הבית, לדף המסלולים ולמגבלות בבונה הלוח. */
 (function(){
   'use strict';
-  const ALL = {views:true, banners:true, extraPages:true, advZmanim:true, customSize:true, imageEditor:true, fonts:true, tfilot:true};
+  const ALL = {views:true, banners:true, extraPages:true, advZmanim:true, customSize:true, imageEditor:true, fonts:true, tfilot:true, cutout:true};
   const PLANS = [
     {id:'free',  name:'ניסיון',  tagline:'בונים, רואים, מתלהבים',
      price:{ils:0, usd:0}, months:13, events:30, downloads:0, watermark:true,
-     features:{...ALL},
+     features:{...ALL, cutout:false},
      bullets:['בונים ורואים את כל השנה','כל האפשרויות פתוחות לניסיון','לוח פשוט לכל השנה להורדה (עד 3 זמנים, 10 תמונות ו־25 אירועים)','חודש אחד מלא להורדה','לוח ספירה לאחור עד 40 יום: הורדה חינם']},
     {id:'basic', name:'בסיסי',   tagline:'לוח חודשי פשוט ויפה',
      price:{ils:19, usd:4.9}, months:13, events:30, downloads:1, watermark:false,
@@ -18,11 +18,11 @@
     {id:'full',  name:'מלא',     tagline:'הכל פתוח, בלי חשבונות',
      price:{ils:99, usd:30}, months:13, events:Infinity, downloads:5, watermark:false, best:true,
      features:{...ALL},
-     bullets:['אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','זמני תפילות לבית הכנסת, מחושבים לכל יום','5 הורדות של לוח מוכן','אפשר להסתיר את השורה "הופק ע״י MyLuach.org"']}
+     bullets:['גזירה אוטומטית של דמויות מהרקע','אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','זמני תפילות לבית הכנסת, מחושבים לכל יום','5 הורדות של לוח מוכן','אפשר להסתיר את השורה "הופק ע״י MyLuach.org"']}
   ];
   const FEATURE_NAMES = {
     views:'תצוגה שבועית, יומית וטבלה', banners:'באנרים בצדי הדף', extraPages:'עמודים נוספים (ברכות, פרסומות, הערות)',
-    advZmanim:'הגדרות זמנים מתקדמות', tfilot:'זמני תפילות בבית הכנסת', customSize:'גודל דף לפי מידה', imageEditor:'עורך התמונות', events:'אירועים משפחתיים נוספים',
+    advZmanim:'הגדרות זמנים מתקדמות', tfilot:'זמני תפילות בבית הכנסת', customSize:'גודל דף לפי מידה', imageEditor:'עורך התמונות', cutout:'גזירת דמות מהרקע', events:'אירועים משפחתיים נוספים',
     months:'כל חודשי השנה', download:'הורדה והדפסה של הלוח'
   };
   const KEY = 'luchenu-plan', DL = 'luchenu-downloads';

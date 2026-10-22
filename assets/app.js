@@ -2565,7 +2565,7 @@ function drawLayers(g,W,H,sel){
 async function openImageEditor(data,onSave){
   if(!canF('imageEditor')){openUpgrade('imageEditor');return}
   const ed=data.edit?JSON.parse(JSON.stringify(data.edit)):{orig:data.img,adj:{},rot:0,flip:false,layers:[]};
-  const src=await loadImg(ed.orig);if(!src)return;
+  let src=await loadImg(ed.cut&&ed.cut.src||ed.orig);if(!src)return;
   ed.layers.forEach(L=>{if(L.type==='text')loadFont(L.font);if(L.src)ovImg(L.src)});
   const m=modal('<h3>עריכת תמונה<small>שיפור צבעים, טקסט על התמונה ותמונה על תמונה. גררו טקסט או תמונה כדי להזיז אותם.</small></h3>'+
     '<div class="ie"><div class="ie-stage"><canvas id="ieC"></canvas></div><div class="ie-side">'+
@@ -2585,9 +2585,12 @@ async function openImageEditor(data,onSave){
       Object.assign(L,MyLuachSmart.placeOnFace(f,st,cv.width,cv.height,im.naturalWidth?im.naturalHeight/im.naturalWidth:1));redraw();
       if(msgEl)msgEl.textContent=fs.length>1?'נמצאו '+fs.length+' פנים. "לפנים הבאות" מעביר את המדבקה.':'✓ הותאם לפנים. אפשר לגרור ולשנות גודל.';return true}
     catch(e){if(msgEl)msgEl.textContent='הזיהוי האוטומטי לא זמין כרגע (צריך חיבור לאינטרנט). אפשר לגרור את המדבקה למקום ביד.';return false}}
-  function rebuild(){faces=null;faceI=0;basePrev=makeBase(src,ed.rot,ed.flip,900);adjPrev=adjustCanvas(basePrev,ed.adj);cv.width=basePrev.width;cv.height=basePrev.height;redraw()}
+  /* אחרי גזירת דמות: הרקע שנבחר (צבע) מאחורי הדמות. 'none' = שקוף */
+  function withBg(c){const bg=ed.cut&&ed.cut.bg;if(!bg||bg==='none')return c;const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const og=o.getContext('2d');og.fillStyle=bg;og.fillRect(0,0,o.width,o.height);og.drawImage(c,0,0);return o}
+  const mkAdj=()=>withBg(adjustCanvas(basePrev,ed.adj));
+  function rebuild(){faces=null;faceI=0;basePrev=makeBase(src,ed.rot,ed.flip,900);adjPrev=mkAdj();cv.width=basePrev.width;cv.height=basePrev.height;redraw()}
   function redraw(){g.clearRect(0,0,cv.width,cv.height);g.drawImage(adjPrev,0,0);drawLayers(g,cv.width,cv.height,true)(ed.layers,sel)}
-  let adjT;function readjust(){clearTimeout(adjT);adjT=setTimeout(()=>{adjPrev=adjustCanvas(basePrev,ed.adj);redraw()},40)}
+  let adjT;function readjust(){clearTimeout(adjT);adjT=setTimeout(()=>{adjPrev=mkAdj();redraw()},40)}
   const slider=(id,label,min,max,val)=>'<label class="fld">'+label+' <span id="'+id+'V">'+val+'</span><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" value="'+val+'"></label>';
   function panel(){
     const P=q('#iePanel'),L=ed.layers[sel];
@@ -2596,13 +2599,27 @@ async function openImageEditor(data,onSave){
       P.innerHTML='<div class="row"><button class="btn small" type="button" id="ieAuto">'+(A.auto?'ביטול שיפור אוטומטי':'שיפור אוטומטי')+'</button><button class="btn small" type="button" id="ieRot">סיבוב 90°</button><button class="btn small" type="button" id="ieFlip">היפוך</button></div>'+
         '<div class="fld">מראה מוכן<div class="chips">'+IE_PRESETS.map((p,i)=>'<button type="button" class="chip" data-pr="'+i+'">'+p[0]+'</button>').join('')+'</div></div>'+
         slider('ieB','בהירות',-50,50,A.b||0)+slider('ieC2','ניגודיות',-50,50,A.c||0)+slider('ieS','צבעוניות',-100,100,A.s||0)+slider('ieW','חום / קור',-50,50,A.w||0)+slider('ieV','הכהיית שוליים',0,80,A.v||0)+
-        '<button class="btn small" type="button" id="ieReset">איפוס השיפורים</button>';
+        '<button class="btn small" type="button" id="ieReset">איפוס השיפורים</button>'+
+        '<div class="fld ie-cut"><b>✂ גזירת דמות</b>'+(canF('cutout')?'':' <span class="ie-plan">במסלול המלא</span>')+'<span class="hint">משאיר רק את האנשים שבתמונה, בלי הרקע. מתאים במיוחד לתמונות של אנשים.</span>'+
+          '<div class="row"><button class="btn small" type="button" id="ieCut">'+(ed.cut?'✂ גזירה מחדש':'✂ גזירת הדמות מהרקע')+'</button>'+(ed.cut?'<button class="btn small" type="button" id="ieCutUndo">ביטול הגזירה</button>':'')+'</div>'+
+          (ed.cut?'<div class="row ie-cbg" role="radiogroup" aria-label="מה יהיה מאחורי הדמות">מאחורי הדמות: <label class="chk"><input type="radio" name="ieCbg" value="none"'+(ed.cut.bg==='none'?' checked':'')+'> שקוף</label><label class="chk"><input type="radio" name="ieCbg" value="#ffffff"'+(ed.cut.bg==='#ffffff'?' checked':'')+'> לבן</label><label class="chk"><input type="radio" name="ieCbg" value="c"'+(ed.cut.bg!=='none'&&ed.cut.bg!=='#ffffff'?' checked':'')+'> צבע <input type="color" id="ieCbgC" value="'+(ed.cut.bg!=='none'&&ed.cut.bg!=='#ffffff'?ed.cut.bg:'#dfeee9')+'"></label></div>':'')+
+          '<span class="hint" id="ieCutM" aria-live="polite">'+(ed.cut?'שקוף = בלוח יראו רק את הדמות, ומאחוריה את התא או הדף.':'')+'</span></div>';
       [['ieB','b'],['ieC2','c'],['ieS','s'],['ieW','w'],['ieV','v']].forEach(([id,k])=>q('#'+id).addEventListener('input',e=>{ed.adj[k]=+e.target.value;q('#'+id+'V').textContent=e.target.value;readjust()}));
       q('#ieAuto').onclick=()=>{ed.adj.auto=ed.adj.auto?null:autoLevels(basePrev);if(!ed.adj.auto&&!A.auto){}rebuildAdj();panel()};
       q('#ieRot').onclick=()=>{ed.rot=(ed.rot+90)%360;rebuild()};
       q('#ieFlip').onclick=()=>{ed.flip=!ed.flip;rebuild()};
       q('#ieReset').onclick=()=>{ed.adj={};rebuildAdj();panel()};
       P.querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>{ed.adj={...IE_PRESETS[+b.dataset.pr][1],auto:ed.adj.auto||null};rebuildAdj();panel()});
+      q('#ieCut').onclick=async()=>{if(!canF('cutout')){openUpgrade('cutout');return}
+        const M=q('#ieCutM');M.textContent='גוזר את הדמות… בפעם הראשונה נטען כלי הגזירה (כ־25MB), זה יכול לקחת עד דקה.';P.querySelectorAll('button,input').forEach(b=>b.disabled=true);q('#ieSave').disabled=true;
+        try{if(!window.MyLuachSmart)throw new Error('no-smart');const r=await MyLuachSmart.cutFigure(ed.orig);
+          if(r.kept<0.01)throw new Error('empty');
+          ed.cut={src:MyLuachSmart.encAlpha(r.canvas),bg:ed.cut?ed.cut.bg:'none'};src=await loadImg(ed.cut.src);q('#ieSave').disabled=false;rebuild();panel();
+          q('#ieCutM').textContent='✓ הדמות נגזרה. בוחרים מה יהיה מאחוריה.'+(r.engine!=='modnet'?' (נגזר בכלי הגיבוי, האיכות פחות טובה)':'')}
+        catch(e){q('#ieSave').disabled=false;panel();q('#ieCutM').textContent=e.message==='empty'?'לא מצאנו דמות בתמונה הזו.':'הגזירה לא הצליחה (צריך חיבור לאינטרנט). נסו שוב בעוד רגע.'}};
+      if(q('#ieCutUndo'))q('#ieCutUndo').onclick=async()=>{delete ed.cut;src=await loadImg(ed.orig);rebuild();panel()};
+      P.querySelectorAll('input[name=ieCbg]').forEach(r=>r.onchange=()=>{ed.cut.bg=r.value==='c'?q('#ieCbgC').value:r.value;rebuildAdj()});
+      if(q('#ieCbgC'))q('#ieCbgC').addEventListener('input',e=>{ed.cut.bg=e.target.value;P.querySelector('input[name=ieCbg][value=c]').checked=true;rebuildAdj()});
     }else if(tab==='text'){
       let h='<button class="btn small" type="button" id="ieAddT">+ הוספת טקסט</button>';
       if(L&&L.type==='text'){
@@ -2681,7 +2698,7 @@ async function openImageEditor(data,onSave){
     q('#ieOp').addEventListener('input',e=>{L.op=+e.target.value/100;q('#ieOpV').textContent=e.target.value;redraw()});
     P.querySelectorAll('[data-lo]').forEach(b=>b.onclick=()=>{const a=b.dataset.lo,it=ed.layers.splice(sel,1)[0];
       sel=a==='top'?n-1:a==='bottom'?0:a==='up'?Math.min(n-1,sel+1):Math.max(0,sel-1);ed.layers.splice(sel,0,it);panel();redraw()})};
-  function rebuildAdj(){adjPrev=adjustCanvas(basePrev,ed.adj);redraw()}
+  function rebuildAdj(){adjPrev=mkAdj();redraw()}
   function fontsReady(){redraw();if(document.fonts)setTimeout(()=>document.fonts.ready.then(redraw),60)}
   function lum(hex){const n=parseInt(hex.slice(1),16);return(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255}
   m.addEventListener('change',e=>{if(e.target.name==='ieTab'){tab=e.target.value;panel()}});
@@ -2706,9 +2723,10 @@ async function openImageEditor(data,onSave){
     const b=q('#ieSave');b.textContent='שומר…';b.disabled=true;
     if(document.fonts)await document.fonts.ready;
     await new Promise(r=>setTimeout(r,30));
-    const full=makeBase(src,ed.rot,ed.flip,QPX('page')),out=adjustCanvas(full,ed.adj),og=out.getContext('2d');
+    const full=makeBase(src,ed.rot,ed.flip,QPX('page')),out=withBg(adjustCanvas(full,ed.adj)),og=out.getContext('2d');
     drawLayers(og,out.width,out.height,false)(ed.layers,-1);
-    let url;try{url=out.toDataURL('image/jpeg',JQ)}catch(err){url=null}
+    /* דמות גזורה בלי רקע: נשמרת עם שקיפות */
+    let url;try{url=ed.cut&&ed.cut.bg==='none'&&window.MyLuachSmart?MyLuachSmart.encAlpha(out,JQ):out.toDataURL('image/jpeg',JQ)}catch(err){url=null}
     m.remove();if(url)onSave({img:url,edit:ed});
   };
   rebuild();panel();fontsReady();
@@ -2753,7 +2771,7 @@ function compress(file,max){max=max||QPX('page');return new Promise(res=>{
 function imageLum(src){return new Promise(res=>{
   const im=new Image();im.onload=()=>{try{
     const c=document.createElement('canvas'),w=40,h=Math.max(6,Math.round(40*im.height/im.width));c.width=w;c.height=h;
-    const g=c.getContext('2d');g.drawImage(im,0,0,w,h);const px=g.getImageData(0,0,w,h).data;
+    const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,w,h);g.drawImage(im,0,0,w,h);const px=g.getImageData(0,0,w,h).data;
     const band=(y0,y1)=>{let s=0,n=0;for(let y=y0;y<y1;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;s+=(0.2126*px[i]+0.7152*px[i+1]+0.0722*px[i+2])/255;n++}return n?s/n:.5};
     res({top:band(0,Math.ceil(h*0.4)),bot:band(Math.floor(h*0.6),h)})}catch(e){res({top:.5,bot:.5})}};
   im.onerror=()=>res({top:.5,bot:.5});im.src=src})}
