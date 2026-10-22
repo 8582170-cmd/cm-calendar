@@ -1,7 +1,7 @@
 /* החשבון של המשתמש המחובר: המסלול ששילם עליו (רכישות של 400 הימים האחרונים, לפי חשבון או מייל).
    אפשר לשלוח claim: מספרי הזמנות שבוצעו בדפדפן לפני ההתחברות, כדי לצרף אותן לחשבון. */
 'use strict';
-const { getUser, LP, PAID, db, readBody, json, upsertProfile, planInfo, loadConfig } = require('./_lib');
+const { cdUsable, getUser, LP, PAID, db, readBody, json, upsertProfile, planInfo, loadConfig } = require('./_lib');
 
 async function welcome(to) {
   const { sendMail } = require('./_mail');
@@ -26,10 +26,10 @@ module.exports = async (req, res) => {
     const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
     const rows = await db('orders?select=id,plan,amount,paid_at,user_id&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or + '&order=paid_at.desc');
     const rank = id => LP.rank(id);
-    /* plan = הטוב ביותר ללוח השנה; cdPlan = כולל מסלולים שהם רק ללוח ספירה לאחור */
+    /* plan = הטוב ביותר ללוח השנה; cdPlan = ללוח הספירה: מסלולי ספירה או המסלול המלא */
     const cdOnly = id => !!(LP.PLANS.find(p => p.id === id) || {}).cd;
     let plan = null, cdPlan = null;
-    (rows || []).forEach(o => { if (PAID.indexOf(o.plan) < 0) return; if (!cdOnly(o.plan) && (!plan || rank(o.plan) > rank(plan))) plan = o.plan; if (!cdPlan || rank(o.plan) > rank(cdPlan)) cdPlan = o.plan; });
+    (rows || []).forEach(o => { if (PAID.indexOf(o.plan) < 0) return; if (!cdOnly(o.plan) && (!plan || rank(o.plan) > rank(plan))) plan = o.plan; if (cdUsable(o) && (!cdPlan || rank(o.plan) > rank(cdPlan))) cdPlan = o.plan; });
     /* הזמנות לפי מייל שעוד לא שויכו לחשבון: משייכים */
     for (const o of rows || []) if (!o.user_id) await db('orders?id=eq.' + o.id, { method: 'PATCH', body: JSON.stringify({ user_id: user.id }) });
     let dl = null; try { const pi = await planInfo(user, !!b.cd); dl = { limit: pi.limit, used: pi.used, left: pi.left }; } catch (e) {}

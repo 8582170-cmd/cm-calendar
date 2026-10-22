@@ -133,6 +133,9 @@ async function getUser(req) {
 }
 
 /* המסלול הגבוה ביותר ששולם ב-400 הימים האחרונים (לפי חשבון או מייל) */
+/* אילו רכישות פותחות את לוח הספירה: מסלולי ספירה, המסלול המלא (או מסלול שמבוסס עליו), והזמנות מלפני שנוספו מסלולי הספירה */
+const CD_SPLIT = '2026-10-22T13:45:00Z';
+function cdUsable(o) { const p = LP.PLANS.find(x => x.id === o.plan) || {}; return !!p.cd || LP.rank(o.plan) >= 3 || (!!o.paid_at && o.paid_at < CD_SPLIT); }
 async function bestPlan(user) {
   await loadConfig();
   const since = new Date(Date.now() - 400 * 864e5).toISOString();
@@ -150,7 +153,7 @@ async function planInfo(user, cd) {
   const rows = await db('orders?select=plan,paid_at&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or + '&order=paid_at.asc');
   const rank = id => LP.rank(id);
   const cdOnly = id => !!(LP.PLANS.find(p => p.id === id) || {}).cd;
-  let best = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (cd || !cdOnly(o.plan)) && (!best || rank(o.plan) >= rank(best.plan))) best = o; });
+  let best = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (cd ? cdUsable(o) : !cdOnly(o.plan)) && (!best || rank(o.plan) >= rank(best.plan))) best = o; });
   if (!best) return { plan: null, limit: 0, used: 0, left: 0 };
   const limit = (LP.PLANS.find(p => p.id === best.plan) || {}).downloads || 0;
   let used = null;
@@ -169,4 +172,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { loadSetting, saveSetting, bestPlan, planInfo, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
+module.exports = { cdUsable, loadSetting, saveSetting, bestPlan, planInfo, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };

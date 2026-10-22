@@ -9,7 +9,7 @@ async function token() {
   if (TOK && TOK.exp > Date.now() + 60000) return TOK.v;
   const r = await fetch(base() + '/v1/oauth2/token', {
     method: 'POST', body: 'grant_type=client_credentials',
-    headers: { Authorization: 'Basic ' + Buffer.from(env('PAYPAL_CLIENT_ID') + ':' + env('PAYPAL_SECRET')).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' }
+    headers: { Authorization: 'Basic ' + btoa(env('PAYPAL_CLIENT_ID') + ':' + env('PAYPAL_SECRET')), 'Content-Type': 'application/x-www-form-urlencoded' }
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.access_token) throw new Error('paypal auth ' + r.status + ' ' + (j.error_description || j.error || ''));

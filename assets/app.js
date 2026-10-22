@@ -132,7 +132,9 @@ const KINDS={
  yahrzeit:{label:'יום שנה (יארצייט)',ask:'שם הנפטר',ph:'למשל: סבא משה',rec:'heb'},
  event:{label:'אירוע',ask:'מה האירוע?',ph:'למשל: חתונה של יוסי',rec:'once'},
  reminder:{label:'תזכורת',ask:'על מה להזכיר?',ph:'למשל: תשלום ארנונה',rec:'once'},
- other:{label:'טקסט חופשי',ask:'הטקסט שיופיע ביום',ph:'למשל: טיול שנתי',rec:'once'}};
+ other:{label:'טקסט חופשי',ask:'הטקסט שיופיע ביום',ph:'למשל: טיול שנתי',rec:'once'},
+ task:{label:'משימה',ask:'מה המשימה?',ph:'למשל: לשלם ארנונה',rec:'once'}};
+const WD_FULL=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 
 const SIZES={
  wall:{label:'לוח קיר (A3)',w:297,h:420,o:'portrait'},
@@ -456,6 +458,13 @@ function nachYomi(d){
     let k=r.k||r.name;const hk=NACH_HE[String(k).replace(/^1 /,'I ').replace(/^2 /,'II ')];if(hk)k=hk;else{try{k=stripNikud(window.hebcal.Locale.gettext(k,'he'))}catch(e){}}return k+' '+gem(+r.v||+r.chap||0).replace(/[׳״]/g,'')}catch(e){return ''}
 }
 const LEARN_TYPES=[['daf','דף יומי: ','דף'],['mishna','משנה: ','משנה'],['nach','נ״ך: ','נ״ך'],['chumash','חומש: ','חומש'],['tehillim','תהלים: ','תהלים'],['tehillimW','תהלים (שבועי): ','תהלים'],['yerushalmi','ירושלמי: ','ירושלמי'],['rambam','רמב״ם: ','רמב״ם'],['cc','חפץ חיים: ','ח״ח'],['shl','שמירת הלשון: ','שה״ל'],['avot','פרקי אבות: ','אבות'],['dafw','דף שבועי: ','דף שבועי'],['rambam3','רמב״ם (3 פרקים): ','רמב״ם ג׳'],['smitzvot','ספר המצוות: ','סהמ״צ'],['kitzur','קיצור שו״ע: ','קיצור'],['ahs','ערוך השולחן: ','ערוה״ש'],['amud','עמוד יומי: ','עמוד']];
+/* לימוד יומי משלכם (מסלול מלא): s.learnOwn=[{id,name,short,on, map:{תאריך:טקסט}} או {seq:[...], start, skip}] */
+function learnOwnOn(){return canF('learnOwn')?(state.s.learnOwn||[]).filter(o=>o&&o.on!==false):[]}
+const LO_CACHE=new WeakMap();
+function learnOwnAt(o,d){const t=iso(d);if(o.map)return o.map[t]||'';if(!Array.isArray(o.seq)||!o.start)return '';
+  let m=LO_CACHE.get(o);if(!m){m={};const d0=dateFromIso(o.start);let i=0;for(let k=0;i<o.seq.length&&k<5000;k++){const x=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+k,12);if(o.skip&&x.getDay()===6)continue;m[iso(x)]=o.seq[i++]}LO_CACHE.set(o,m)}
+  return m[t]||''}
+function learnTypesOn(){const L=state.s.learn||{};return LEARN_TYPES.filter(c=>L[c[0]]).concat(learnOwnOn().map(o=>['own:'+o.id,o.name+': ',o.short||o.name]))}
 function heT(k){try{return stripNikud(window.hebcal.Locale.gettext(k,'he'))}catch(e){return k}}
 function gemNum(x){x=String(x);return x.split(':').map(v=>/^\d+$/.test(v)?gem(+v).replace(/[׳״]/g,''):v).join(':')}
 function evHe(ev){try{return stripNikud(ev.render(EN?'en':'he'))}catch(e){return ''}}
@@ -560,13 +569,14 @@ function addHebrewExtras(map,start,end){
     }
   }
   const Ln=s.learn||{};
-  if(LEARN_TYPES.some(x=>Ln[x[0]])){
+  if(LEARN_TYPES.some(x=>Ln[x[0]])||learnOwnOn().length){
     for(let d=new Date(start.getFullYear(),start.getMonth(),start.getDate(),12);d<=end;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
       const parts=[];
       if(Ln.daf){const x=dafYomi(d);if(x)parts.push('דף יומי: '+x)}
       if(Ln.mishna){const x=mishnaYomi(d);if(x)parts.push('משנה: '+x)}
       if(Ln.nach){const x=nachYomi(d);if(x)parts.push('נ״ך: '+x)}
       for(const [k,pre] of LEARN_TYPES.slice(3))if(Ln[k]){const x=LEARN_EXTRA[k](d);if(x)parts.push(pre+x)}
+      for(const o of learnOwnOn()){const x=learnOwnAt(o,d);if(x)parts.push(o.name+': '+x)}
       for(const t of parts)put(d,{cls:'learn',text:t,order:7,learn:true});
     }
   }
@@ -724,6 +734,8 @@ const zTxt=z=>z.b?'<b class="zb">'+esc(z.k+' '+z.v)+'</b>':esc(z.k+' '+z.v);
 function monthMatches(em,hm,leap){if(em===13)return leap?hm===13:hm===12;return em===hm}
 function eventHits(e,date,hd){
   if(e.rec==='once')return e.date===iso(date);
+  /* משימות: כל יום או כל שבוע, בטווח תאריכים אם נבחר */
+  if(e.rec==='daily'||e.rec==='weekly'){const t=iso(date);if(e.from&&t<e.from||e.until&&t>e.until)return false;return e.rec==='daily'||date.getDay()===+e.wd}
   if(e.rec==='greg')return date.getDate()===+e.day&&date.getMonth()+1===+e.month;
   const len=HDate.daysInMonth(hd.getMonth(),hd.getFullYear()),day=(+e.day===30&&len===29)?29:+e.day;
   return monthMatches(+e.month,hd.getMonth(),isLeap(hd.getFullYear()))&&hd.getDate()===day;
@@ -939,7 +951,7 @@ function placeOfLegacy(t){const s=state.s,P=s.place||{};if(t==='yz'){const v=P.y
 /* ---------- טורים ליד הלוח ----------
    s.cols: [{id, side:'right'|'left', w:אחוזים, types:['zmanim','personal','yz','learn']}]
    סוג מידע שנבחר להצגה ולא נמצא באף טור מופיע בתוך הימים. */
-const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','יומי דהילולא (יארצייטן) ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['img','תמונה'],['ad','מודעה או הקדשה']];
+const COL_TYPES=[['zmanim','זמני היום'],['personal','אירועים אישיים'],['yz','יומי דהילולא (יארצייטן) ודברי הימים'],['learn','לימוד יומי, מולד ותקופות'],['tasks','משימות'],['img','תמונה'],['ad','מודעה או הקדשה']];
 function zMode(){return state.s.zmanimMode||'daily'}
 function zpl(k){const s=state.s,Z=s.zplace&&s.zplace[k];if(Z)return Z;const m=zMode();return m==='shabbat'?{day:1,sh:1}:m==='col'?{col:1}:m==='daily'||m==='custom'?{day:1}:{}}
 function zOn(){const m=zMode();return !state.s.noTimes&&m!=='none'&&m!=='table'&&Object.values(state.s.zmanim).some(Boolean)}
@@ -970,9 +982,11 @@ function zCol(d,all){if(!zOn())return [];return zmanimFor(d,all).filter(z=>zpl(z
 function yzPanelOn(){return placeOf('yz')==='col'}
 function personalOnly(date,hd){
   const out=[];
-  for(const e of eventsOn(date,hd))if(e.name||!e.img)out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd)});
+  for(const e of eventsOn(date,hd))if(e.kind!=='task'&&(e.name||!e.img))out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd)});
   return out;
 }
+/* משימות (מסלול מלא): בתוך הימים או בטור נפרד, עם תיבת סימון */
+function tasksOnly(date,hd){if(!canF('tasks'))return [];return eventsOn(date,hd).filter(e=>e.kind==='task'&&e.name).map(e=>({cls:'task',text:e.name}))}
 function gedolimFor(hd,big,noLimit){
   const out=[],leap=isLeap(hd.getFullYear());
   for(const g of GEDOLIM.concat(state.customGedolim)){
@@ -1078,7 +1092,7 @@ function loadFont(fam){
 function fontOptions(def){return opt('',def)+FONTS.map(([g,l])=>'<optgroup label="'+g+'">'+l.map(f=>opt(f[0],f[1])).join('')+'</optgroup>').join('')}
 function pageShell(label,key){
   const [w,h]=pageDims(),s=state.s;
-  const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':freePrintOK()?' wm-free':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
+  const p=el('div','page'+(PLAN().watermark?' wm'+(PLAN().watermark==='light'?' wm-light':freePrintOK()?' wm-free':''):'')+' t-'+s.theme+((s.learn||{}).box?' lb-on':'')+(s.taskBox!==false?' tb-on':'')+(s.yzLines?' yz-lines':''));p.style.width=w+'mm';p.style.height=h+'mm';
   p.style.setProperty('--u',unitK().toFixed(4)+'mm');p.style.setProperty('--ts',(s.textScale/100).toFixed(2));
   p.style.setProperty('--acc',s.accent);
   if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown'&&!(key==='cover'&&IMGBG(s.pageBg))){
@@ -1459,7 +1473,7 @@ const gregShort=d=>EN?GREG_MONTHS[d.getMonth()]+' '+d.getDate():d.getDate()+(EN?
 function dayItems(d,evMap,dropTimed){
   const hd=new HDate(d),dow=d.getDay();
   const items=(evMap.get(ymd(d))||[]).filter(it=>!(dropTimed&&it.tkind&&(dow===5||dow===6))&&!((it.learn||it.cls==='moon')&&placeOf('learn')==='none')).sort((a,b)=>a.order-b.order);
-  const pers=placeOf('personal')==='none'?[]:personalOnly(d,hd),ged=placeOf('yz')==='none'?[]:gedolimFor(hd,true);
+  const pers=(placeOf('personal')==='none'?[]:personalOnly(d,hd)).concat(placeOf('tasks')==='none'?[]:tasksOnly(d,hd)),ged=placeOf('yz')==='none'?[]:gedolimFor(hd,true);
   return {hd,dow,items,pers,ged,all:items.concat(pers,ged),img:eventsOn(d,hd).find(e=>e.img),chag:items.some(i=>i.chag)};
 }
 function headRow(p,big,year,other){
@@ -1522,7 +1536,7 @@ function addMonthGrid(p,mo,evMap){
     c.setAttribute('aria-label',hDay+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+', '+d.getDate()+(EN?' ':' ב')+GREG_MONTHS[d.getMonth()]+'. הוספת אירוע');
     c.appendChild(el('div','d-top'+(dStyle()==='both'?' both':''),dateTop(d,hd)));
     if(s.dayMonth)dayMonthInline(c.lastChild,d,hd);
-    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;c.appendChild(e)}
+    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('tasks')==='cell'?tasksOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;c.appendChild(e)}
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
     if(imgEvs.length>1){c.prepend(dayImgsEl(iso(d),imgEvs));c.classList.add('has-img','multi-img')}
@@ -1572,9 +1586,10 @@ function addMonthGrid(p,mo,evMap){
           sec.insertAdjacentHTML('beforeend',h+'</tbody></table>'+zExplainHTML(zCol(mo.days[0],true)));body.appendChild(sec);
         }
         else if(t==='personal'&&placeOf('personal')==='col')section('אירועים אישיים',d=>personalOnly(d,new HDate(d)),'אין אירועים אישיים בחודש זה.');
+        else if(t==='tasks'&&placeOf('tasks')==='col')section('משימות',d=>tasksOnly(d,new HDate(d)),'אין משימות בחודש זה.');
         else if(t==='yz'&&placeOf('yz')==='col')section(s.yzHist?'יומי דהילולא (יארצייטן) ודברי הימים':'יומי דהילולא (יארצייטן)',d=>gedolimFor(new HDate(d),true,true),'אין יומי דהילולא (יארצייטן) מסומנים לחודש זה.');
         else if(t==='learn'&&placeOf('learn')==='col'){
-          const L=s.learn||{},lc=LEARN_TYPES.filter(c=>L[c[0]]);
+          const lc=learnTypesOn();
           const sec=el('div','yzp-sec');sec.appendChild(el('div','yz-panel-h','לימוד יומי'));
           if(lc.length>3){
             for(const d of mo.days){const its=(evMap.get(ymd(d))||[]).filter(it=>it.learn);if(!its.length)continue;const hd=new HDate(d);const day=el('div','yzp-day lday'+(d.getDay()===6?' shabbat':''));day.appendChild(el('span','yzp-d',dStyle().startsWith('greg')?String(d.getDate()):gem(hd.getDate())));
@@ -2927,7 +2942,8 @@ function openEventEditor({date,id,img,kind}){
     '<label class="fld"><span id="mAsk"></span><input id="mName"></label>'+
     '<label class="fld" id="mBmRow">בר / בת מצווה<select id="mBm"><option value="">לא לסמן</option><option value="bar">בר מצווה בגיל 13</option><option value="bat">בת מצווה בגיל 12</option></select></label>'+
     '<div class="fld">מתי זה חוזר<div class="seg" role="radiogroup" aria-label="חזרה">'+
-      '<label><input type="radio" name="mRec" value="heb"> כל שנה, עברי</label><label><input type="radio" name="mRec" value="greg"> כל שנה, לועזי</label><label><input type="radio" name="mRec" value="once"> רק פעם אחת</label></div></div>'+
+      '<label data-rt="yr"><input type="radio" name="mRec" value="heb"> כל שנה, עברי</label><label data-rt="yr"><input type="radio" name="mRec" value="greg"> כל שנה, לועזי</label><label><input type="radio" name="mRec" value="once"> רק פעם אחת</label><label data-rt="task"><input type="radio" name="mRec" value="daily"> כל יום</label><label data-rt="task"><input type="radio" name="mRec" value="weekly"> כל שבוע</label></div></div>'+
+    '<label class="chk" id="mTbRow"><input type="checkbox" id="mTb"'+(state.s.taskBox!==false?' checked':'')+'> תיבת סימון קטנה ליד כל משימה (בכל הלוח)</label>'+
     '<div class="row" id="mDates"></div>'+
     '<div class="fld">תמונה ביום (לא חובה)<div class="img-pick"><img id="mImg" alt="" hidden><button type="button" class="btn small" id="mImgBtn"></button><button type="button" class="btn small" id="mImgEdit" hidden>עריכת התמונה</button><button type="button" class="btn small danger" id="mImgDel" hidden>הסרת התמונה</button></div></div>'+
     '<div class="row" id="mImgOpts" hidden><label class="fld">תצוגת התמונה<select id="mFit"><option value="cover">ממלאת את כל התא</option><option value="contain">כל התמונה, בלי חיתוך</option></select></label><label class="fld">איזה חלק לראות<select id="mPos"><option value="50">מרכז</option><option value="15">חלק עליון</option><option value="85">חלק תחתון</option></select></label><label class="fld">צבע הטקסט ביום<select id="mTone"><option value="auto">לפי ההגדרה הכללית</option><option value="light">לבן</option><option value="dark">שחור</option><option value="band">על רקע לבן</option></select></label></div>'+
@@ -2943,6 +2959,8 @@ function openEventEditor({date,id,img,kind}){
     const r=ev.rec,box=q('#mDates');
     if(r==='heb')box.innerHTML='<div class="conv fld"><span>יודעים רק את התאריך הלועזי? בוחרים אותו והתאריך העברי יחושב לבד.</span><div class="row"><input type="date" id="mConv"><label class="chk"><input type="checkbox" id="mConvNight"> אחרי השקיעה</label></div></div><label class="fld">יום<select id="mD">'+Array.from({length:30},(_,i)=>opt(i+1,gem(i+1),i+1==ev.hday)).join('')+'</select></label><label class="fld">חודש<select id="mM">'+HEB_ORDER.map(x=>opt(x,hebMonthOpt(x),x==ev.hmonth)).join('')+'</select></label><button class="btn small hp-btn" type="button" data-hpick="mM,mD" title="בחירה מלוח">📅 מלוח</button><label class="fld">שנה (לחישוב גיל)<input id="mY" placeholder="תשע״ח" value="'+esc(ev.yearText?hebYearStr(ev.yearText):'')+'"></label>';
     else if(r==='greg')box.innerHTML='<label class="fld">יום<select id="mD">'+Array.from({length:31},(_,i)=>opt(i+1,i+1,i+1==ev.gday)).join('')+'</select></label><label class="fld">חודש<select id="mM">'+GREG_MONTHS.map((x,i)=>opt(i+1,x,i+1==ev.gmonth)).join('')+'</select></label><label class="fld">שנה (לחישוב גיל)<input id="mY" inputmode="numeric" placeholder="1998" value="'+esc(ev.rec==='greg'&&editing&&editing.rec==='greg'?ev.year||'':'')+'"></label>';
+    else if(r==='daily'||r==='weekly')box.innerHTML=(r==='weekly'?'<label class="fld">באיזה יום<select id="mWd">'+WD_FULL.map((x,i)=>opt(i,'יום '+x,i===+(ev.wd??base.getDay()))).join('')+'</select></label>':'')+
+      '<label class="fld">מתאריך (לא חובה)<input type="date" id="mFrom" value="'+(ev.from||'')+'"></label><label class="fld">עד תאריך (לא חובה)<input type="date" id="mUntil" value="'+(ev.until||'')+'"></label>';
     else box.innerHTML='<label class="fld">תאריך<input type="date" id="mDate" value="'+ev.date+'"></label>';
     box.querySelectorAll('select,input:not(#mConv):not(#mConvNight)').forEach(x=>x.addEventListener('input',readDates));
     const cv=box.querySelector('#mConv');
@@ -2954,14 +2972,17 @@ function openEventEditor({date,id,img,kind}){
   function readDates(){
     if(ev.rec==='heb'){ev.hday=+q('#mD').value;ev.hmonth=+q('#mM').value;ev.yearHeb=parseHebYear(q('#mY').value)}
     else if(ev.rec==='greg'){ev.gday=+q('#mD').value;ev.gmonth=+q('#mM').value;ev.yearGreg=+q('#mY').value||''}
+    else if(ev.rec==='daily'||ev.rec==='weekly'){if(q('#mWd'))ev.wd=+q('#mWd').value;ev.from=q('#mFrom').value;ev.until=q('#mUntil').value}
     else ev.date=q('#mDate').value;
     prev();
   }
-  function drawKind(){const k=KINDS[ev.kind];q('#mAsk').textContent=k.ask;q('#mName').placeholder=k.ph;q('#mBmRow').hidden=ev.kind!=='birthday'}
+  function drawKind(){const k=KINDS[ev.kind],tk=ev.kind==='task';q('#mAsk').textContent=k.ask;q('#mName').placeholder=k.ph;q('#mBmRow').hidden=ev.kind!=='birthday';q('#mTbRow').hidden=!tk;
+    m.querySelectorAll('[data-rt]').forEach(l=>l.hidden=l.dataset.rt==='task'?!tk:tk);
+    const okR=tk?['once','daily','weekly']:['heb','greg','once'];if(!okR.includes(ev.rec)){ev.rec='once';m.querySelectorAll('input[name=mRec]').forEach(r=>r.checked=r.value==='once');drawDates()}}
   function drawImg(){q('#mImgOpts').hidden=!ev.img;q('#mFit').value=ev.imgFit||'cover';q('#mTone').value=ev.textTone||'auto';q('#mPos').value=String(ev.imgPos??50);q('#mImg').hidden=!ev.img;if(ev.img)q('#mImg').src=ev.img;q('#mImgDel').hidden=!ev.img;q('#mImgEdit').hidden=!ev.img;q('#mImgBtn').textContent=ev.img?'החלפת תמונה':'הוספת תמונה'}
   function prev(){
     const tmp=build();let txt=eventLabel(tmp,base,hd)||'(תמונה בלבד)';
-    const when=tmp.rec==='heb'?'בכל שנה ב־'+gem(tmp.day)+' '+hebMonthOpt(tmp.month):tmp.rec==='greg'?'בכל שנה ב־'+tmp.day+(EN?' ':' ב')+GREG_MONTHS[tmp.month-1]:(tmp.date?'רק ב־'+dateFromIso(tmp.date).toLocaleDateString('he-IL'):'');
+    const when=tmp.rec==='daily'?'כל יום'+(tmp.from?' מ־'+dateFromIso(tmp.from).toLocaleDateString('he-IL'):'')+(tmp.until?' עד '+dateFromIso(tmp.until).toLocaleDateString('he-IL'):''):tmp.rec==='weekly'?'כל יום '+WD_FULL[+tmp.wd||0]+(tmp.from?' מ־'+dateFromIso(tmp.from).toLocaleDateString('he-IL'):'')+(tmp.until?' עד '+dateFromIso(tmp.until).toLocaleDateString('he-IL'):''):tmp.rec==='heb'?'בכל שנה ב־'+gem(tmp.day)+' '+hebMonthOpt(tmp.month):tmp.rec==='greg'?'בכל שנה ב־'+tmp.day+(EN?' ':' ב')+GREG_MONTHS[tmp.month-1]:(tmp.date?'רק ב־'+dateFromIso(tmp.date).toLocaleDateString('he-IL'):'');
     q('#mPrev').innerHTML='יופיע ביום כך: <b>'+esc(txt)+'</b><br><span class="hint">'+esc(when)+'</span>';
   }
   function build(){
@@ -2969,10 +2990,13 @@ function openEventEditor({date,id,img,kind}){
     if(ev.kind==='birthday'&&q('#mBm').value)o.bm=q('#mBm').value;
     if(ev.rec==='heb'){o.day=ev.hday;o.month=ev.hmonth;o.year=ev.yearHeb!==undefined?ev.yearHeb:(editing&&editing.rec==='heb'?editing.year:'')}
     else if(ev.rec==='greg'){o.day=ev.gday;o.month=ev.gmonth;o.year=ev.yearGreg!==undefined?ev.yearGreg:(editing&&editing.rec==='greg'?editing.year:'')}
+    else if(ev.rec==='daily'||ev.rec==='weekly'){if(ev.rec==='weekly')o.wd=+(ev.wd??base.getDay());if(ev.from)o.from=ev.from;if(ev.until)o.until=ev.until}
     else o.date=ev.date;
     return o;
   }
   m.addEventListener('change',e=>{
+    if(e.target.name==='mKind'&&e.target.value==='task'&&!canF('tasks')){m.querySelectorAll('input[name=mKind]').forEach(r=>r.checked=r.value===ev.kind);openUpgrade('tasks');return}
+    if(e.target.id==='mTb'){state.s.taskBox=e.target.checked;save();render();return}
     if(e.target.name==='mKind'){const old=KINDS[ev.kind].rec;ev.kind=e.target.value;drawKind();if(!editing&&!q('#mName').value&&old!==KINDS[ev.kind].rec){ev.rec=KINDS[ev.kind].rec;m.querySelectorAll('input[name=mRec]').forEach(r=>r.checked=r.value===ev.rec);drawDates()}prev()}
     if(e.target.name==='mRec'){ev.rec=e.target.value;drawDates();prev()}
   });
@@ -3028,7 +3052,7 @@ function fillStatic(){
   $('#cTz').innerHTML=tzs.map(t=>opt(t,t)).join('');
   if(!framed&&navigator.geolocation)$('#geoBtn').hidden=false;
 }
-function syncUI(){if(typeof renderTColors==='function'&&!document.activeElement?.dataset?.tcolC)renderTColors();if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
+function syncUI(){if(typeof renderLearnOwn==='function')renderLearnOwn();if(typeof renderTColors==='function'&&!document.activeElement?.dataset?.tcolC)renderTColors();if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
   yzInvalidate();
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
@@ -3093,7 +3117,7 @@ function renderYz(){
 function renderEvents(){
   const list=state.events.slice().sort((a,b)=>(a.rec==='once')-(b.rec==='once'));
   $('#evList').innerHTML=list.length?list.map(e=>{
-    const when=e.rec==='heb'?gem(+e.day)+' '+hebMonthOpt(+e.month)+' · כל שנה':e.rec==='greg'?e.day+(EN?' ':' ב')+GREG_MONTHS[e.month-1]+' · כל שנה':(e.date?dateFromIso(e.date).toLocaleDateString('he-IL'):'');
+    const when=e.rec==='daily'?'כל יום':e.rec==='weekly'?'כל יום '+WD_FULL[+e.wd||0]:e.rec==='heb'?gem(+e.day)+' '+hebMonthOpt(+e.month)+' · כל שנה':e.rec==='greg'?e.day+(EN?' ':' ב')+GREG_MONTHS[e.month-1]+' · כל שנה':(e.date?dateFromIso(e.date).toLocaleDateString('he-IL'):'');
     return '<div class="ev-item">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<button type="button" class="t" data-edit="'+e.id+'">'+esc(e.name||'(תמונה)')+'<small>'+KINDS[e.kind].label+' · '+esc(when)+'</small></button><button class="x" type="button" data-edel="'+e.id+'" aria-label="מחיקה">×</button></div>'}).join('')
     :'<p class="hint">עדיין אין אירועים. לחצו על יום בלוח כדי להוסיף את הראשון.</p>';
   $('#evCount').textContent=state.events.length||'';
@@ -3733,7 +3757,7 @@ async function cloudDelete(id){const ix0=await readIndex();if(ix0[id]&&ix0[id].s
 async function refreshAccount(){
   let claim=[];try{const o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null');if(o&&o.id)claim=[o.id]}catch(e){}
   try{const h=await authHeaders();const r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({claim,cd:CDMODE})});if(!r.ok)return;acctInfo=await r.json();
-    const sp=(CDMODE?(acctInfo.cdPlan||acctInfo.plan):acctInfo.plan)||'free',was=LP.current().id;
+    const sp=(CDMODE?acctInfo.cdPlan:acctInfo.plan)||'free',was=LP.current().id;
     if(sp!==was)LP.setCurrent(sp);
     if(acctInfo.dl&&acctInfo.dl.used!=null){try{localStorage.setItem('luchenu-downloads',String(acctInfo.dl.used))}catch(e){}}
     if(sp!==was||acctInfo.dl){syncPlanUI();render()}
@@ -4245,7 +4269,7 @@ function renderPlaceUI(){
   const typeSel=t=>{const cur=t==='yz'&&(P.yz||'none')==='page'?'page':(t==='yz'?(P.yz||'none'):P[t])==='none'?'none':(colOf(t)?'col:'+colOf(t).id:'cell');
     return '<select data-ptype="'+t+'">'+opt('cell','בתוך הימים',cur==='cell')+cs.map(c=>opt('col:'+c.id,'ב'+colName(cs,c.id),cur==='col:'+c.id)).join('')+opt('newcol','בטור חדש',false)+(t==='yz'?opt('page','בעמוד נפרד מעל הלוח',cur==='page'):'')+opt('none','לא להציג',cur==='none')+'</select>'};
   let h='<div class="pl-rows">';
-  for(const [t,n] of COL_TYPES.slice(1,4))h+='<label class="fld">'+n+typeSel(t)+'</label>';
+  for(const [t,n] of COL_TYPES.slice(1,5))h+='<label class="fld">'+n+typeSel(t)+'</label>';
   h+='</div><h4 class="pl-sub">הטורים ליד הלוח</h4>';
   if(!cs.length)h+='<p class="hint">אין טורים. כל המידע מופיע בתוך הימים.</p>';
   cs.forEach((c,i)=>{h+='<div class="col-card" data-colid="'+c.id+'"><div class="col-card-h"><b>טור '+(i+1)+'</b><button type="button" class="btn small danger" data-coldel="1">מחיקת הטור</button></div>'+
@@ -4265,15 +4289,15 @@ function colAddType(cs,c,ty){const s=state.s;
   if(ty!=='img'&&ty!=='ad')cs.forEach(x=>x.types=x.types.filter(y=>y!==ty));
   if(!c.types.includes(ty))c.types.push(ty);
   if(ty==='zmanim'){s.zmanimMode=s.zmanimMode==='none'||s.zmanimMode==='table'?'daily':s.zmanimMode;if(!s.zplace&&zMode()!=='custom')s.zmanimMode='col';else{const o=zplAll();for(const k in o)if(s.zmanim[k])o[k]={...o[k],col:1,day:0};s.zplace=o;s.zmanimMode='custom'}}
-  else if(ty==='personal'||ty==='learn'||ty==='yz')s.place={...s.place,[ty]:'cell'}}
-const ADD_ITEMS=[['zmanim','זמני היום','טבלה עם שורה לכל יום','🕐'],['personal','אירועים אישיים','ימי הולדת, נישואין, תזכורות','🎂'],['yz','יומי דהילולא (יארצייטן) ודברי הימים','אירועים מתולדות עם ישראל','📜'],['learn','לימוד יומי ומולד','דף יומי, משניות, מולד ותקופות','📖'],['img','תמונה','תמונה לאורך הלוח','🖼'],['ad','מודעה או הקדשה','כותרת, תמונה וטקסט, לפרסום או לעילוי נשמה','📣']];
+  else if(ty==='personal'||ty==='learn'||ty==='yz'||ty==='tasks')s.place={...s.place,[ty]:'cell'}}
+const ADD_ITEMS=[['zmanim','זמני היום','טבלה עם שורה לכל יום','🕐'],['personal','אירועים אישיים','ימי הולדת, נישואין, תזכורות','🎂'],['yz','יומי דהילולא (יארצייטן) ודברי הימים','אירועים מתולדות עם ישראל','📜'],['learn','לימוד יומי ומולד','דף יומי, משניות, מולד ותקופות','📖'],['tasks','משימות','משימות לכל יום, עם תיבת סימון','☑'],['img','תמונה','תמונה לאורך הלוח','🖼'],['ad','מודעה או הקדשה','כותרת, תמונה וטקסט, לפרסום או לעילוי נשמה','📣']];
 function openAddMenu(){
   const m=modal('<h3>מה להוסיף ליד הלוח?</h3><div class="add-grid">'+ADD_ITEMS.map(([t,n,d,i])=>'<button type="button" class="add-card'+((t==='img'||t==='ad')&&!canF('banners')?' gated':'')+'" data-addt="'+t+'"><span class="add-ic">'+i+'</span><b>'+n+'</b><small>'+d+'</small></button>').join('')+'</div>'+
     '<div id="addWhere" hidden><h4>איפה?</h4><div class="add-where"></div></div><div class="row"><button class="btn" type="button" data-close>ביטול</button></div>');
   const q=x=>m.querySelector(x);let ty=null;
   m.addEventListener('click',e=>{
     const a=e.target.closest('[data-addt]');
-    if(a){ty=a.dataset.addt;if((ty==='img'||ty==='ad')&&!canF('banners')){m.remove();openUpgrade('banners');return}
+    if(a){ty=a.dataset.addt;if((ty==='img'||ty==='ad')&&!canF('banners')){m.remove();openUpgrade('banners');return}if(ty==='tasks'&&!canF('tasks')){m.remove();openUpgrade('tasks');return}
       m.querySelectorAll('.add-card').forEach(x=>x.classList.toggle('on',x===a));
       const cs=colsCfg(),wh=[['right','בטור חדש מימין ללוח'],['left','בטור חדש משמאל ללוח']].concat(cs.map(c=>['col:'+c.id,'בתוך '+colName(cs,c.id)+', מתחת למה שכבר בו'])).concat(ty==='img'||ty==='ad'?[['top','ברצועה מעל הלוח'],['bottom','ברצועה מתחת ללוח']]:[]);
       q('#addWhere').hidden=false;q('.add-where').innerHTML=wh.map(([v,l])=>'<button type="button" class="btn" data-addw="'+v+'">'+l+'</button>').join('');return}
@@ -4470,6 +4494,62 @@ function openDayImages(date){
 }
 /* כפתור קטן בתא שיש בו תמונה: פותח את סידור התמונות */
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-dayimgs]');if(!b)return;e.preventDefault();e.stopPropagation();openDayImages(b.dataset.dayimgs)},true);
+
+/* ---------- לימוד יומי משלכם: מעלים קובץ אקסל או CSV עם החלוקה ---------- */
+const XLSX_URL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+function renderLearnOwn(){const box=$('#learnOwn');if(!box)return;const L=state.s.learnOwn||[],ok=canF('learnOwn');
+  box.innerHTML='<div class="lo-h"><b>לימוד משלכם</b>'+(ok?'':' <span class="ie-plan">במסלול המלא</span>')+'</div>'+
+    '<p class="hint">כל נושא שתרצו: מעלים קובץ אקסל עם החלוקה, והלימוד מופיע בכל יום בלוח (גם בטור הלימוד, עם ריבוע הסימון).</p>'+
+    L.map(o=>'<div class="lo-row" data-lo="'+esc(o.id)+'"><label class="chk"><input type="checkbox" data-lof="on"'+(o.on!==false?' checked':'')+'> <b>'+esc(o.name)+'</b></label><small>'+(o.map?Object.keys(o.map).length+' ימים לפי תאריך':(o.seq||[]).length+' ימים מ־'+(o.start?dateFromIso(o.start).toLocaleDateString('he-IL'):'')+(o.skip?', בלי שבתות':''))+'</small><button type="button" class="btn small" data-loa="ed">עריכה</button><button type="button" class="btn small danger" data-loa="del">מחיקה</button></div>').join('')+
+    '<div class="row"><button type="button" class="btn small" id="loAdd">＋ העלאת קובץ לימוד</button><a href="#" id="loTpl" class="hint">קובץ לדוגמה</a></div>'}
+document.addEventListener('click',e=>{
+  const t=e.target;if(!t.closest||!t.closest('#learnOwn'))return;
+  if(t.id==='loTpl'){e.preventDefault();const rows=[['תאריך','לימוד'],['01/11/2026','פרק א'],['02/11/2026','פרק ב'],['03/11/2026','פרק ג']];
+    const b=new Blob(['\ufeff'+rows.map(r=>r.join(',')).join('\r\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='לימוד-לדוגמה.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);return}
+  if(t.id==='loAdd'){if(!canF('learnOwn')){openUpgrade('learnOwn');return}const f=document.createElement('input');f.type='file';f.accept='.xlsx,.xls,.csv,.txt,.ods';f.onchange=()=>{if(f.files[0])learnOwnImport(f.files[0])};f.click();return}
+  const b=t.closest('[data-loa]');if(!b)return;const id=b.closest('[data-lo]').dataset.lo,L=state.s.learnOwn||[],o=L.find(x=>x.id===id);if(!o)return;
+  if(b.dataset.loa==='del'){if(!b.dataset.sure){b.dataset.sure=1;b.textContent='למחוק?';return}state.s.learnOwn=L.filter(x=>x!==o);save();syncUI();render();return}
+  if(b.dataset.loa==='ed')learnOwnModal(o,null)});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.lof!=='on'||!t.closest('#learnOwn'))return;const id=t.closest('[data-lo]').dataset.lo;
+  state.s.learnOwn=(state.s.learnOwn||[]).map(o=>o.id===id?{...o,on:t.checked}:o);save();render()});
+/* קריאת הקובץ: שורות של [תאריך, לימוד] או רק רשימת לימוד לפי הסדר */
+async function learnOwnRows(file){
+  if(/\.(csv|txt)$/i.test(file.name)){const tx=await file.text();const sep=/\t/.test(tx)?'\t':(tx.split(';').length>tx.split(',').length?';':',');
+    return tx.replace(/^\ufeff/,'').split(/\r?\n/).map(l=>{const out=[];let cur='',q=false;for(let i=0;i<l.length;i++){const c=l[i];if(c==='"'){if(q&&l[i+1]==='"'){cur+='"';i++}else q=!q}else if(c===sep&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out.map(x=>x.trim())}).filter(r=>r.some(Boolean))}
+  if(!window.XLSX)await new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=XLSX_URL;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}).filter(r=>r.some(x=>String(x).trim()))}
+function loDate(v){
+  if(v instanceof Date&&!isNaN(v))return iso(new Date(v.getFullYear(),v.getMonth(),v.getDate(),12));
+  if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return iso(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),12))}
+  const t=String(v||'').trim();let m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return iso(new Date(+m[1],+m[2]-1,+m[3],12));
+  m=t.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);if(m){let y=+m[3];if(y<100)y+=2000;const d=new Date(y,+m[2]-1,+m[1],12);if(d.getMonth()===+m[2]-1)return iso(d)}
+  return null}
+async function learnOwnImport(file){
+  let rows;try{rows=await learnOwnRows(file)}catch(e){modal('<h3>לא הצלחנו לקרוא את הקובץ</h3><p class="hint">נסו לשמור אותו כ־CSV (באקסל: שמירה בשם ← CSV) ולהעלות שוב.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
+  const dated=rows.filter(r=>loDate(r[0])&&String(r[1]||'').trim());
+  const name=file.name.replace(/\.[^.]+$/,'').slice(0,30);
+  let o;
+  if(dated.length>=Math.max(1,rows.length*0.5)){const map={};dated.forEach(r=>{map[loDate(r[0])]=String(r[1]).trim().slice(0,120)});o={id:uid(),name,short:'',on:true,map}}
+  else{/* בלי תאריכים: כל שורה = יום אחד לפי הסדר. אם יש כמה טורים, הטור האחרון שאינו מספר */
+    let seq=rows.map(r=>{const c=r.map(x=>String(x).trim()).filter(Boolean);const tx=c.filter(x=>!/^\d+$/.test(x));return (tx.length?tx[tx.length-1]:c[c.length-1]||'').slice(0,120)}).filter(Boolean);
+    if(seq.length>1&&/^(לימוד|נושא|חלוקה|שיעור|פרק|תוכן)$/.test(seq[0]))seq=seq.slice(1);
+    o={id:uid(),name,short:'',on:true,seq,start:iso(new Date()),skip:false}}
+  learnOwnModal(o,true)}
+function learnOwnModal(o0,isNew){const o={...o0};
+  const m=modal('<h3>'+(isNew?'לימוד חדש מהקובץ':'עריכת הלימוד')+'</h3>'+
+    '<label class="fld">שם הלימוד (יופיע בלוח)<input id="loName" maxlength="30" value="'+esc(o.name||'')+'"></label>'+
+    '<label class="fld">שם קצר לטור הלימוד (לא חובה)<input id="loShort" maxlength="12" value="'+esc(o.short||'')+'" placeholder="למשל: גמרא"></label>'+
+    (o.map?'<p class="hint">נמצאו '+Object.keys(o.map).length+' ימים לפי תאריך.</p>':
+      '<p class="hint">בקובץ אין תאריכים, אז כל שורה היא יום אחד לפי הסדר ('+o.seq.length+' ימים).</p><div class="row"><label class="fld">מתחילים בתאריך<input type="date" id="loStart" value="'+esc(o.start||'')+'"></label><label class="chk"><input type="checkbox" id="loSkip"'+(o.skip?' checked':'')+'> בלי לימוד בשבת (ממשיכים ביום ראשון)</label></div>')+
+    '<div class="fld">איך זה ייראה<div class="lo-prev" id="loPrev"></div></div>'+
+    '<div class="row"><button class="btn primary" type="button" id="loSave">שמירה</button><button class="btn" type="button" data-close>ביטול</button></div>');
+  const q=x=>m.querySelector(x);
+  const read=()=>{o.name=q('#loName').value.trim()||'לימוד';o.short=q('#loShort').value.trim();if(!o.map){o.start=q('#loStart').value||iso(new Date());o.skip=q('#loSkip').checked}};
+  const draw=()=>{read();const t={...o},L=[];if(t.map)Object.keys(t.map).sort().slice(0,5).forEach(k=>L.push([k,t.map[k]]));else{const d0=dateFromIso(t.start);for(let k=0;L.length<5&&k<20;k++){const d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+k,12);const x=learnOwnAt(t,d);if(x)L.push([iso(d),x])}}
+    q('#loPrev').innerHTML=L.map(([k,x])=>'<div><small>'+esc(dateFromIso(k).toLocaleDateString('he-IL'))+'</small> '+esc(t.name+': '+x)+'</div>').join('')||'<span class="hint">אין ימים להצגה.</span>'};
+  m.addEventListener('input',draw);m.addEventListener('change',draw);draw();
+  q('#loSave').onclick=()=>{read();const L=(state.s.learnOwn||[]).filter(x=>x.id!==o.id);L.push(o);state.s.learnOwn=L;save();m.remove();syncUI();render()}}
 
 /* ---------- המסלול המהיר: מגש תמונות, הוספה מהירה ליום, ושיתוף עם המשפחה ---------- */
 /* מגש התמונות: מעלים הרבה תמונות בבת אחת, ומשם גוררים כל תמונה לחודש או ליום.

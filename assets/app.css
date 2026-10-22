@@ -1419,3 +1419,7 @@ body:has(.modal-back) .fx-bar{display:none!important}
 .cds-r,.cdc-s{cursor:pointer}
 @media print{.cd-card.pro::after{display:none}}
 .cdd-f textarea{font:inherit;min-height:0;height:auto;resize:vertical;direction:rtl}
+.tb-on .e.task::before,.tb-on .yzp-e.task::before{content:"";display:inline-block;width:.75em;height:.75em;border:.2mm solid currentColor;border-radius:.1em;vertical-align:-.06em;margin-inline-end:.3em;opacity:.85}
+.lo-box{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.lo-h{display:flex;gap:6px;align-items:center}
+.lo-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.lo-row small{opacity:.7;flex:1 1 auto}
+.lo-prev{background:var(--soft);border-radius:8px;padding:8px 10px;font-size:14px;line-height:1.6}.lo-prev small{opacity:.65;margin-inline-end:6px}
