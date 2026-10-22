@@ -248,7 +248,8 @@ module.exports = async (req, res) => {
         mail.users = { total: (pr || []).length, phones: (pr || []).filter(x => x.phone_verified_at).length, voice: (vr || []).length };
       } catch (e) { mail.users = null; }
     } catch (e) { mail = null; }
-    json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, dl, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
+    const payStatus = { nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
+    json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, dl, payStatus, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
     console.error('admin', e);
     json(res, 500, { error: 'server error', message: String(e.message || e).slice(0, 200) });
