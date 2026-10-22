@@ -2,6 +2,9 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ ' תמונות נוספו': ' photos added',
+ 'התמונה נוספה': 'Photo added',
+ ' ליום': ' to the day',
  'בלי לימוד בשבת': 'No study on Shabbat',
  'בלי לימוד ביום טוב': 'No study on Yom Tov',
  ' (כולל יום טוב שני)': ' (including the second day of Yom Tov)',

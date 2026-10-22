@@ -2893,10 +2893,22 @@ stage.addEventListener('dragleave',e=>{const c=e.target.closest('[data-date]');i
 stage.addEventListener('drop',async e=>{
   const c=e.target.closest('[data-date]');if(!c)return;e.preventDefault();c.classList.remove('over');document.body.classList.remove('tray-dragging');
   const tid=trayDropId(e);if(tid){trayToDay(c.dataset.date,tid);return}
-  const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(!f||!f.type.startsWith('image/'))return;
-  if(CDMODE){cdDayModal(c.dataset.date,await compress(f,QPX('day')));return}
-  openEventEditor({date:c.dataset.date,img:await compress(f,QPX('day')),kind:'other'});
+  const files=[...(e.dataTransfer.files||[])].filter(f=>f.type.startsWith('image/'));if(!files.length)return;
+  if(CDMODE){cdDayModal(c.dataset.date,await compress(files[0],QPX('day')));return}
+  /* גוררים קובץ תמונה (או כמה) ישר לתא: התמונה נכנסת ליום מיד, בלי חלון */
+  const date=c.dataset.date,added=[];c.classList.add('dropping');
+  try{for(const f of files.slice(0,4)){if(state.events.length>=PLAN().events){openUpgrade('events');break}
+    const img=await compress(f,QPX('day'));if(!img)continue;
+    const o={id:uid(),kind:'other',name:'',rec:'once',date,img,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:await imageLum(img),edit:null};state.events.push(o);added.push(o.id)}}
+  finally{c.classList.remove('dropping')}
+  if(!added.length)return;save();renderEvents();render();
+  dropToast((added.length>1?added.length+' תמונות נוספו':'התמונה נוספה')+' ליום',[['עריכה',()=>openDayImages(date)],['ביטול',()=>{state.events=state.events.filter(x=>!added.includes(x.id));save();renderEvents();render()}]]);
 });
+/* הודעה קטנה למטה, עם כפתורים */
+function dropToast(text,acts){let t=$('#dropToast');if(t)t.remove();t=el('div','drop-toast no-print');t.id='dropToast';t.setAttribute('role','status');
+  t.innerHTML='<span>✓ '+esc(text)+'</span>'+(acts||[]).map((a,i)=>'<button type="button" data-ti="'+i+'">'+esc(a[0])+'</button>').join('');
+  t.addEventListener('click',e=>{const b=e.target.closest('[data-ti]');if(!b)return;t.remove();acts[+b.dataset.ti][1]()});
+  document.body.appendChild(t);clearTimeout(dropToast.T);dropToast.T=setTimeout(()=>t.remove(),7000)}
 
 /* ---------- יום בלוח הספירה: משפט ותמונה משלו ---------- */
 function cdDayModal(date,dropImg){
