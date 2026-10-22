@@ -36,6 +36,9 @@ function clean(c) {
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
   out.pay = ['paypal', 'sumit'].includes(c.pay) ? c.pay : 'nedarim';
+  out.sumitCap = Math.max(0, Math.min(100000, parseInt(c.sumitCap, 10) || 0));
+  out.sumitPeriod = c.sumitPeriod === 'rolling' ? 'rolling' : 'month';
+  out.payAfter = c.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
   out.ppAcct = !!c.ppAcct;
   out.ppGpay = !!c.ppGpay;
   /* מסלולים קבועים שהוסתרו מהמכירה */
@@ -275,7 +278,9 @@ module.exports = async (req, res) => {
         mail.users = { total: (pr || []).length, phones: (pr || []).filter(x => x.phone_verified_at).length, voice: (vr || []).length };
       } catch (e) { mail.users = null; }
     } catch (e) { mail = null; }
-    const payStatus = { sumit: require('./_sumit').ready(), smTest: env('SUMIT_TEST_AMOUNT') || '', nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
+    let smUsed = null; try { const mStart = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }).slice(0, 7) + '-01T00:00:00+02:00'), since = cfg.sumitPeriod === 'rolling' ? new Date(Date.now() - 30 * 864e5) : mStart;
+      smUsed = ((await db('orders?select=id&status=in.(paid,refunded)&paid_at=gte.' + encodeURIComponent(since.toISOString()) + '&callback->sumit=not.is.null&limit=1000')) || []).length; } catch (e) {}
+    const payStatus = { smUsed, sumit: require('./_sumit').ready(), smTest: env('SUMIT_TEST_AMOUNT') || '', nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
     json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, dl, payStatus, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
     console.error('admin', e);

@@ -12,14 +12,30 @@ const MSG = {
   server: 'תקלה זמנית. נסו שוב בעוד רגע.'
 };
 /* באיזה אמצעי תשלום משתמשים: ההגדרה בניהול, ואם הוא לא מוגדר בשרת, האחר */
-function provider(cfg, isDon) {
+/* כמה עסקאות עברו ב-SUMIT בתקופה הנוכחית: מתחילת החודש (לפי שעון ישראל) או ב-30 הימים האחרונים */
+async function sumitCount(cfg) {
+  let since;
+  if (cfg.sumitPeriod === 'rolling') since = new Date(Date.now() - 30 * 864e5);
+  else { const d = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }).slice(0, 7); since = new Date(d + '-01T00:00:00+02:00'); }
+  try { const r = await db('orders?select=id&status=in.(paid,refunded)&paid_at=gte.' + encodeURIComponent(since.toISOString()) + '&callback->sumit=not.is.null&limit=1000'); return (r || []).length; }
+  catch (e) { return 0; }
+}
+async function provider(cfg, isDon) {
   const ned = !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), pp = require('./_paypal').ready();
   /* דף התרומות בנוי על הטופס של נדרים פלוס */
   if (isDon) return ned ? 'nedarim' : null;
   const sm = require('./_sumit').ready();
-  const want = ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim';
+  let want = ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim';
   if (want === 'paypal' && pp) return 'paypal';
-  if (want === 'sumit' && sm) return 'sumit';
+  if (want === 'sumit' && sm) {
+    /* מכסה חודשית ל-SUMIT (למשל 10 במסלול החינמי). אחריה עוברים לאמצעי הגיבוי שנבחר בניהול */
+    const cap = +(cfg.sumitCap || 0);
+    if (!(cap > 0) || await sumitCount(cfg) < cap) return 'sumit';
+    want = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
+    if (want === 'paypal' && pp) return 'paypal';
+    if (want === 'nedarim' && ned) return 'nedarim';
+    return pp ? 'paypal' : ned ? 'nedarim' : null;
+  }
   if (want === 'nedarim' && ned) return 'nedarim';
   return sm ? 'sumit' : pp ? 'paypal' : ned ? 'nedarim' : null;
 }
@@ -101,7 +117,7 @@ module.exports = async (req, res) => {
     }
     /* אתר שומר שבת: לא פותחים תשלום בשבת ובחג (לפי מיקום הגולש) */
     if (await require('./_shabbat').closedNow(req, cfg)) return json(res, 423, { error: 'shabbat', message: MSG.shabbat });
-    const prov = provider(cfg, isDon);
+    const prov = await provider(cfg, isDon);
     if (!prov) return json(res, 503, { error: 'payments not configured', message: MSG.config });
     const id = crypto.randomBytes(12).toString('hex');
     const desc = isDon ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
