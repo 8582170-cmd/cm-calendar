@@ -8,10 +8,11 @@ const ready = () => !!(env('SUMIT_COMPANY_ID') && env('SUMIT_API_KEY') && env('S
 const pub = () => ready() ? { cid: +env('SUMIT_COMPANY_ID'), pk: env('SUMIT_PUBLIC_KEY') } : null;
 
 async function call(path, body) {
-  const r = await fetch('https://api.sumit.co.il' + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ Credentials: { CompanyID: +env('SUMIT_COMPANY_ID'), APIKey: env('SUMIT_API_KEY') }, ...body }) });
-  const j = await r.json().catch(() => ({}));
-  return j;
+  try {
+    const r = await fetch('https://api.sumit.co.il' + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ Credentials: { CompanyID: +env('SUMIT_COMPANY_ID'), APIKey: env('SUMIT_API_KEY') }, ...body }), signal: AbortSignal.timeout(25000) });
+    return await r.json().catch(() => ({}));
+  } catch (e) { console.error('sumit', e.message); return {}; }
 }
 /* חיוב חד־פעמי. מחזיר {ok, message, paymentId, documentId, raw} */
 async function charge({ token, amount, name, email, ref, desc }) {
@@ -22,7 +23,10 @@ async function charge({ token, amount, name, email, ref, desc }) {
     VATIncluded: true, OnlyDocument: false, DocumentLanguage: 0, SendDocumentByEmail: !!email
   });
   const D = j && j.Data || {}, P = D.Payment || j.Payment || {};
-  const ok = j.Status === 0 || j.Status === 'Success' ? (P.ValidPayment === true && String(P.Status) === '000') : false;
-  return { ok, message: (P.StatusDescription || j.UserErrorMessage || '').toString().slice(0, 200), paymentId: P.ID || null, documentId: D.DocumentID || null, amount: +(P.Amount || amount), raw: { Status: j.Status, Payment: { ID: P.ID, Status: P.Status, ValidPayment: P.ValidPayment, StatusDescription: P.StatusDescription }, DocumentID: D.DocumentID, CustomerID: D.CustomerID } };
+  const fw = j.Status === 0 || j.Status === 'Success';
+  const ok = fw ? (P.ValidPayment === true && String(P.Status) === '000') : false;
+  /* תקלה של המערכת (הרשאה, הגדרות, מכסה) ולא סירוב של הכרטיס: אין תוצאת תשלום בכלל */
+  const system = !ok && (!fw || !P || P.ID == null && P.Status == null);
+  return { ok, system, message: (P.StatusDescription || j.UserErrorMessage || '').toString().slice(0, 200), paymentId: P.ID || null, documentId: D.DocumentID || null, amount: +(P.Amount || amount), raw: { Status: j.Status, Payment: { ID: P.ID, Status: P.Status, ValidPayment: P.ValidPayment, StatusDescription: P.StatusDescription }, DocumentID: D.DocumentID, CustomerID: D.CustomerID } };
 }
 module.exports = { ready, pub, charge };

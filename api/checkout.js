@@ -20,24 +20,24 @@ async function sumitCount(cfg) {
   try { const r = await db('orders?select=id&status=in.(paid,refunded)&paid_at=gte.' + encodeURIComponent(since.toISOString()) + '&callback->sumit=not.is.null&limit=1000'); return (r || []).length; }
   catch (e) { return 0; }
 }
-async function provider(cfg, isDon) {
+/* avoid: אמצעי שנכשל אצל הלקוח הזה (למשל SUMIT לא נטען) ולכן מדלגים עליו */
+async function provider(cfg, isDon, avoid) {
   const ned = !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), pp = require('./_paypal').ready();
   /* דף התרומות בנוי על הטופס של נדרים פלוס */
   if (isDon) return ned ? 'nedarim' : null;
-  const sm = require('./_sumit').ready();
-  let want = ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim';
-  if (want === 'paypal' && pp) return 'paypal';
-  if (want === 'sumit' && sm) {
-    /* מכסה חודשית ל-SUMIT (למשל 10 במסלול החינמי). אחריה עוברים לאמצעי הגיבוי שנבחר בניהול */
+  const sm = require('./_sumit').ready() && avoid !== 'sumit';
+  const ok = { paypal: pp && avoid !== 'paypal', nedarim: ned && avoid !== 'nedarim', sumit: sm };
+  const want = ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim';
+  if (want === 'sumit') {
+    /* SUMIT עם מכסה חודשית (למשל 10 במסלול החינמי). אם הוא לא מוגדר, נכשל או שהמכסה נגמרה: האמצעי שנבחר "אחר כך" */
     const cap = +(cfg.sumitCap || 0);
-    if (!(cap > 0) || await sumitCount(cfg) < cap) return 'sumit';
-    want = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
-    if (want === 'paypal' && pp) return 'paypal';
-    if (want === 'nedarim' && ned) return 'nedarim';
-    return pp ? 'paypal' : ned ? 'nedarim' : null;
+    if (ok.sumit && (!(cap > 0) || await sumitCount(cfg) < cap)) return 'sumit';
+    const after = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
+    if (ok[after]) return after;
+    return ok.paypal ? 'paypal' : ok.nedarim ? 'nedarim' : null;
   }
-  if (want === 'nedarim' && ned) return 'nedarim';
-  return sm ? 'sumit' : pp ? 'paypal' : ned ? 'nedarim' : null;
+  if (ok[want]) return want;
+  return ok.sumit ? 'sumit' : ok.paypal ? 'paypal' : ok.nedarim ? 'nedarim' : null;
 }
 
 module.exports = async (req, res) => {
@@ -55,6 +55,7 @@ module.exports = async (req, res) => {
       const name = String(b.name || '').trim().slice(0, 80), email = (o.email || String(b.email || '').trim().toLowerCase()).slice(0, 200);
       if (!o.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { o.email = email; await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ email }) }); }
       const c = await require('./_sumit').charge({ token, amount: +o.amount, name, email: o.email, ref: id, desc: o.plan === 'donation' ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[o.plan] });
+      if (!c.ok && c.system) { console.error('sumit system error', JSON.stringify(c.raw)); return json(res, 503, { error: 'provider', fallback: true, message: 'מערכת התשלום לא זמינה כרגע. עוברים לדרך תשלום אחרת…' }); }
       if (!c.ok) { await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ callback: { sumit: c.raw } }) }); return json(res, 402, { error: 'payment', message: c.message ? 'התשלום לא אושר: ' + c.message : 'התשלום לא אושר. בדקו את פרטי הכרטיס ונסו שוב.' }); }
       await require('./_paid').markPaid(o, { txn: String(c.paymentId || ''), callback: { sumit: c.raw } }, 'SUMIT');
       return json(res, 200, { status: 'paid', plan: o.plan, receipt: !!c.documentId });
@@ -117,7 +118,7 @@ module.exports = async (req, res) => {
     }
     /* אתר שומר שבת: לא פותחים תשלום בשבת ובחג (לפי מיקום הגולש) */
     if (await require('./_shabbat').closedNow(req, cfg)) return json(res, 423, { error: 'shabbat', message: MSG.shabbat });
-    const prov = await provider(cfg, isDon);
+    const prov = await provider(cfg, isDon, String(b.avoid || ''));
     if (!prov) return json(res, 503, { error: 'payments not configured', message: MSG.config });
     const id = crypto.randomBytes(12).toString('hex');
     const desc = isDon ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
