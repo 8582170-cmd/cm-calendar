@@ -1391,3 +1391,5 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .ym-modal .ym-list{flex:1 1 auto;min-height:340px;max-height:none}
 @media (max-height:700px){.ym-modal .ym-list{min-height:260px}}
 .pp-box{min-height:150px;margin:6px 0}
+.cd-head.hset{align-items:center}.page>.cd-head.fxt{box-sizing:border-box}.cd-head>.fx-gsz{z-index:11;background:#c9731d}.cd-head>.fx-tmove{z-index:12;background:#c9731d}
+.cd-head>.fx-tmove{top:-12px!important;bottom:auto!important;transform:translateY(-100%)!important}.cd-head>.fx-gsz-t,.cd-head>.fx-gsz-tl,.cd-head>.fx-gsz-tr{top:-9px}

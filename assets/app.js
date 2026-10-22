@@ -1091,7 +1091,7 @@ function pageShell(label,key){
   if(s.bodyFont)p.style.setProperty('--f-body',fontCSS(s.bodyFont));
   const wrap=el('div','sheet-wrap');wrap.appendChild(p);
   if(label)wrap.appendChild(el('div','sheet-label',esc(label)));
-  if(key&&!CDMODE){const qa=el('div','sheet-add no-print');qa.innerHTML='<button type="button" data-fxquick="text" title="שדה טקסט שאפשר להזיז ולהגדיל, מעל הלוח, מתחתיו או בצדדים">＋ טקסט</button><button type="button" data-fxquick="img" title="שדה תמונה שאפשר להזיז ולהגדיל בכל מקום בדף">＋ תמונה</button>';wrap.appendChild(qa)}
+  if(key){const qa=el('div','sheet-add no-print');qa.innerHTML='<button type="button" data-fxquick="text" title="שדה טקסט שאפשר להזיז ולהגדיל, מעל הלוח, מתחתיו או בצדדים">＋ טקסט</button><button type="button" data-fxquick="img" title="שדה תמונה שאפשר להזיז ולהגדיל בכל מקום בדף">＋ תמונה</button>';wrap.appendChild(qa)}
   if(key){wrap.dataset.key=key;RS.labels[key]=label;RS.emitted.add(key)}
   RS.curKey=key||label||'';RS.tc={};
   stage.appendChild(wrap);RS.count++;
@@ -2352,11 +2352,11 @@ function fxBoxAdd(kind,key){const k=key||fxVisibleKey();if(!k)return;fxPush();co
   if(kind==='img')fxBoxImg(b);else setTimeout(()=>fxBoxEdit(b.id),50);fxBoxBar()}
 /* גרירה ושינוי גודל של תיבה, וידיות לגודל הטבלה */
 /* הטבלה הראשית של העמוד (חודש, שבוע, יום, טבלה): גודל ומיקום. בחודש נשמר ב-FX().grid, באחרים ב-FX().tbl[סוג] */
-const FXT_SEL='.page .grid[data-rows],.page .week,.page .day-body,.page .wt-wrap,.page>.pg-head';
-function fxtKind(n){return n.matches('.pg-head')?'head':n.matches('.grid')?'month':n.matches('.week')?'week':n.matches('.day-body')?'day':'table'}
+const FXT_SEL='.page .grid[data-rows],.page .week,.page .day-body,.page .wt-wrap,.page>.pg-head,.page .cd-grid,.page .cdp-grid,.page .cdb-grid,.page>.cd-head';
+function fxtKind(n){return n.matches('.pg-head')?'head':n.matches('.cd-head')?'cdhead':n.matches('.cd-grid')?'cdgrid':n.matches('.cdp-grid')?'cdpgrid':n.matches('.cdb-grid')?'cdbgrid':n.matches('.grid')?'month':n.matches('.week')?'week':n.matches('.day-body')?'day':'table'}
 function fxtCfg(kind){const f=FX();if(kind==='month')return f.grid;if(!f.tbl||typeof f.tbl!=='object')f.tbl={};if(!f.tbl[kind])f.tbl[kind]={};return f.tbl[kind]}
 function fxtApply(){stage.querySelectorAll(FXT_SEL).forEach(n=>{const C=fxtCfg(fxtKind(n));n.classList.add('fxt');
-  if(n.matches('.pg-head')){/* כותרת החודש: קנה מידה (גם לטקסט), גובה ורוחב במ"מ */
+  if(n.matches('.pg-head,.cd-head')){/* כותרת החודש: קנה מידה (גם לטקסט), גובה ורוחב במ"מ */
     if(C.sc)n.style.setProperty('--u',(unitK()*C.sc).toFixed(4)+'mm');else n.style.removeProperty('--u');n.style.height=C.hmm?C.hmm+'mm':'';n.style.width=C.wmm?C.wmm+'mm':'';n.classList.toggle('hset',!!C.hmm);
     n.style.translate=(C.tx||C.ty)?(+C.tx||0)+'mm '+(+C.ty||0)+'mm':'';return}
   n.classList.toggle('gh',!!C.hp);n.classList.toggle('gw',!!C.wp);if(C.hp)n.style.setProperty('--gh',C.hp+'%');if(C.wp)n.style.setProperty('--gw',C.wp+'%');
@@ -2366,11 +2366,11 @@ function fxBoxDecorate(){
   if(!fxOn()){FXB=null;fxbb.hidden=true;return}
   stage.querySelectorAll('.fxbox').forEach(n=>{n.appendChild(el('span','fxb-rs no-print'));n.classList.toggle('sel',n.dataset.bid===FXB)});
   stage.querySelectorAll('.fx-tmove').forEach(x=>x.remove());
-  stage.querySelectorAll(FXT_SEL).forEach(g=>{const add=(c,t)=>{const h=el('div','fx-h fx-gsz '+c+' no-print');h.title=t;g.appendChild(h);return h};
+  stage.querySelectorAll(FXT_SEL).forEach(g=>{if(g.closest('.fxt')!==g&&g.parentElement.closest('.fxt'))return;const add=(c,t)=>{const h=el('div','fx-h fx-gsz '+c+' no-print');h.title=t;g.appendChild(h);return h};
     [['t','גררו כדי לשנות את הגובה (מלמעלה)'],['b','גררו כדי לשנות את הגובה (מלמטה)'],['l','גררו כדי לשנות את הרוחב (משמאל)'],['r','גררו כדי לשנות את הרוחב (מימין)'],
      ['tl','גררו כדי להגדיל או להקטין את כל הטבלה'],['tr','גררו כדי להגדיל או להקטין את כל הטבלה'],['bl','גררו כדי להגדיל או להקטין את כל הטבלה'],['br','גררו כדי להגדיל או להקטין את כל הטבלה']]
       .forEach(([c,t])=>{const h=add('fx-gsz-'+c+(c.length>1?' fx-gsz-cn':''),t);h.dataset.ed=c});
-    const hd=g.matches('.pg-head'),mv=el('div','fx-h fx-tmove no-print',hd?'✥ הזזת הכותרת':'✥ הזזת הטבלה');mv.title=hd?'גררו כדי להזיז את הכותרת':'גררו כדי להזיז את כל הטבלה';g.appendChild(mv)});
+    const hd=g.matches('.pg-head,.cd-head'),mv=el('div','fx-h fx-tmove no-print',hd?'✥ הזזת הכותרת':'✥ הזזת הטבלה');mv.title=hd?'גררו כדי להזיז את הכותרת':'גררו כדי להזיז את כל הטבלה';g.appendChild(mv)});
   fxBoxBar();
 }
 stage.addEventListener('pointerdown',e=>{
@@ -2385,7 +2385,7 @@ stage.addEventListener('pointerdown',e=>{
     const G=fxtCfg(fxtKind(g)),f=screenMM(g),T=ed.includes('t'),B=ed.includes('b'),Lf=ed.includes('l'),R=ed.includes('r'),corner=ed.length>1;
     let pw0=G.wp||Math.min(100,gr.width/pr.width*100),ph0=G.hp||Math.min(100,gr.height/pr.height*100);
     /* הצד שנשאר במקום: הצד שמול הידית */
-    const HD=g.matches('.pg-head'),sc0=+G.sc||1,hm0=gr.height*f,wm0=gr.width*f;let sc=sc0,hm=null,wm=null;
+    const HD=g.matches('.pg-head,.cd-head'),sc0=+G.sc||1,hm0=gr.height*f,wm0=gr.width*f;let sc=sc0,hm=null,wm=null;
     const ax=Lf?'right':R?'left':null,ay=T?'bottom':B?'top':null;let tx=+G.tx||0,ty=+G.ty||0,vh=null,vw=null,moved=false;
     /* כיול: קובעים את הגודל הנוכחי באחוזים כך שבדיוק יתאים למה שרואים, וכך המימד השני לא זז */
     const calib=()=>{g.classList.add('gh','gw');g.style.setProperty('--gh',ph0+'%');g.style.setProperty('--gw',pw0+'%');let r=g.getBoundingClientRect();
