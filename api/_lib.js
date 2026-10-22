@@ -52,7 +52,7 @@ function publicPricing(cfg) {
   });
   const s = cfg.sale;
   const sale = s && s.on && +s.percent > 0 && live(s) ? { percent: +s.percent, plans: s.plans && s.plans.length ? s.plans : PAID, until: s.until || '', label: s.label || '' } : null;
-  return { plans, sale, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
+  return { plans, sale, pay: cfg.pay === 'paypal' ? 'paypal' : 'nedarim', ppc: env('PAYPAL_CLIENT_ID') || '', renew: cfg.renew && cfg.renew.on && +cfg.renew.percent > 0 ? +cfg.renew.percent : 0, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
 }
 
 /* קופון בתוקף? מחזיר את הקופון או הודעת שגיאה */
@@ -71,12 +71,13 @@ async function checkCoupon(cfg, code, plan) {
 }
 
 /* המחיר הסופי: ההנחה הגבוהה מבין היכרות, מבצע וקופון (לא מצטברות) */
-function finalPrice(pub, plan, coupon) {
+function finalPrice(pub, plan, coupon, renew) {
   const p = pub.plans[plan];
   if (!p || !(p.ils > 0) || PAID.indexOf(plan) < 0) return null;
   let off = p.intro || 0, why = off ? 'intro' : '';
   if (pub.sale && pub.sale.plans.indexOf(plan) >= 0 && pub.sale.percent > off) { off = pub.sale.percent; why = 'sale'; }
   if (coupon && coupon.percent > off) { off = coupon.percent; why = 'coupon'; }
+  if (renew && renew.percent > off) { off = renew.percent; why = 'renew'; }
   off = Math.min(100, Math.max(0, off));
   return { amount: Math.round(p.ils * (100 - off)) / 100, base: p.ils, off, why };
 }

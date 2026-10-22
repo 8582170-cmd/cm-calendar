@@ -3,11 +3,19 @@
 'use strict';
 const { getUser, LP, PAID, db, readBody, json, upsertProfile, planInfo } = require('./_lib');
 
+async function welcome(to) {
+  const { sendMail } = require('./_mail');
+  await sendMail({ to, ...require('./_paid').welcome() }, 'welcome');
+}
+
 module.exports = async (req, res) => {
   try {
     const user = await getUser(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
-    upsertProfile(user);
+    /* משתמש חדש (אין לו עדיין רשומה): מייל ברוכים הבאים, פעם אחת */
+    let isNew = false; try { const pr = await db('profiles?user_id=eq.' + user.id + '&select=user_id'); isNew = !(pr && pr.length); } catch (e) {}
+    await upsertProfile(user);
+    if (isNew && user.email) welcome(user.email).catch(e => console.error('welcome', e.message));
     const b = readBody(req);
     const claim = (Array.isArray(b.claim) ? b.claim : String(b.claim || '').split(',')).filter(x => /^[0-9a-f]{24}$/.test(x)).slice(0, 20);
     for (const id of claim) {

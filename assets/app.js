@@ -3425,12 +3425,12 @@ function buyPlan(planId){
   let saved={};try{saved=JSON.parse(localStorage.getItem('myluach-buyer')||'{}')}catch(e){}
   const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח ומתבצע דרך נדרים פלוס.</p>'+
     '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label><label class="pay-coupon">קוד קופון<span><input type="text" id="payCoupon" dir="ltr" autocomplete="off" spellcheck="false"><button class="btn" type="button" id="payCouponGo">החלה</button></span><small id="payCouponMsg"></small></label></div>'+
-    '<p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>'+
+    '<p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" data-src="https://www.matara.pro/nedarimplus/iframe?language=he" hidden></iframe><div id="ppBox" class="pp-box" hidden></div>'+
     '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>');
   m.querySelector('.modal').classList.add('pay-modal');
   const $m=q=>m.querySelector(q),frame=$m('#payFrame'),go=$m('#payGo');
   const msg=(h,bad)=>{const x=$m('#payMsg');if(x){x.innerHTML=h;x.classList.toggle('msg-bad',!!bad)}};
-  let order=null,stop=false,ready=false;
+  let order=null,stop=false,ready=false,PROV='',provName='נדרים פלוס';
   const post=d=>frame.contentWindow&&frame.contentWindow.postMessage(d,'*');
   const onMsg=e=>{if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
     if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
@@ -3444,18 +3444,33 @@ function buyPlan(planId){
   /* ההזמנה נוצרת מיד, כדי להציג את הסכום שהשרת באמת יחייב (במצב בדיקה: הסכום של הבדיקה) */
   const setAmt=(a,j)=>{j=j||{};const t=a+' ₪';go.textContent='לתשלום '+t;const h=m.querySelector('.hint');if(!h)return;
     const exp=j.base!=null?Math.round(j.base*(100-(j.off||0)))/100:parseFloat(price),test=Math.abs(Number(a)-exp)>0.001;
-    h.innerHTML='<b>סכום החיוב: '+esc(t)+'</b>'+(j.off&&!test?' <span class="msg-ok">(במקום '+esc(j.base+' ₪')+', '+j.off+'% הנחה)</span>':'')+(test?' <span class="msg-bad">(מצב בדיקה: המחיר הרגיל הוא '+esc(exp+' ₪')+')</span>':' ללוח שנתי')+'. התשלום מאובטח ומתבצע דרך נדרים פלוס.'};
+    h.innerHTML='<b>סכום החיוב: '+esc(t)+'</b>'+(j.off&&!test?' <span class="msg-ok">(במקום '+esc(j.base+' ₪')+', '+j.off+'% הנחה)</span>':'')+(test?' <span class="msg-bad">(מצב בדיקה: המחיר הרגיל הוא '+esc(exp+' ₪')+')</span>':' ללוח שנתי')+(j.why==='renew'?' <span class="msg-ok">הנחת לקוח חוזר</span>':'')+'. התשלום מאובטח ומתבצע דרך '+provName+'.'};
+  /* קופון או הנחה של 100%: המסלול נפתח בלי תשלום */
+  const freeDone=j=>{close();activatePlan(j.plan,j.id);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:j.plan,at:Date.now()}))}catch(e){}
+    modal('<h3>המסלול '+esc(LP.byId(j.plan).name)+' פעיל</h3><p class="hint">הקוד הופעל והמסלול נפתח בחינם. אפשר להוריד ולהדפיס את הלוח. מספר הזמנה: '+esc(j.id.slice(0,8))+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>')};
   const mkOrder=coupon=>authHeaders().then(h=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({plan:p.id,coupon:coupon||''})}))
-    .then(r=>r.json().then(j=>{if(j.error==='coupon')throw Object.assign(new Error('coupon'),{msg:j.message});if(!r.ok||!j.tx)throw new Error(j.error||r.status);return j}))
-    .then(j=>{order=j;setAmt(j.amount,j);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j});
+    .then(r=>r.json().catch(()=>({})).then(j=>{if(j.error==='coupon')throw Object.assign(new Error('coupon'),{msg:j.message});if(!r.ok||!(j.tx||j.ppid||j.free))throw Object.assign(new Error(j.error||r.status),{msg:j.message});return j}))
+    .then(j=>{if(j.free){freeDone(j);return j}order=j;if(!PROV)setupProv(j.provider);setAmt(j.amount,j);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j});
   let orderP=mkOrder();
   $m('#payCouponGo').onclick=()=>{const code=$m('#payCoupon').value.trim(),cm=$m('#payCouponMsg');if(!code){cm.textContent='';return}
     cm.textContent='בודקים…';cm.className='';
     const np=mkOrder(code);np.then(j=>{orderP=np;cm.textContent=j.why==='coupon'?'הקוד הופעל: '+j.off+'% הנחה':'הקוד תקין, אבל ההנחה הקיימת גדולה ממנו';cm.className='msg-ok'})
       .catch(e=>{cm.textContent=e.msg||'לא הצלחנו לבדוק את הקוד, נסו שוב';cm.className='msg-bad'})};
   $m('#payCoupon').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$m('#payCouponGo').click()}};
-  orderP.then(()=>{if(ready)go.disabled=false}).catch(()=>{go.disabled=true;msg('התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
-  setTimeout(()=>{if(!ready&&!stop)msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
+  orderP.then(()=>{if(ready)go.disabled=false}).catch(e=>{go.disabled=true;msg(e.msg?esc(e.msg):'התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
+  /* אמצעי התשלום נקבע בשרת: נדרים פלוס (טופס מוטמע) או פייפל (כפתורים של פייפל) */
+  function setupProv(pv){PROV=pv||'nedarim';
+    if(PROV==='nedarim'){frame.hidden=false;frame.src=frame.dataset.src;return}
+    provName='PayPal';ready=true;go.hidden=true;m.querySelectorAll('.pay-who').forEach(x=>x.hidden=true);const box=$m('#ppBox');box.hidden=false;msg('בוחרים איך לשלם: חשבון פייפל או כרטיס אשראי.');
+    const run=cid=>{const done=()=>{if(stop)return;window.paypal.Buttons({style:{layout:'vertical',label:'pay',shape:'rect'},
+        createOrder:()=>orderP.then(o=>o.ppid),
+        onApprove:()=>{msg('מאשרים את התשלום…');return orderP.then(o=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'ppcapture',id:o.id})}).then(r=>r.json().then(x=>({r,x})))).then(({r,x})=>{
+          if(x.status==='paid'){close();activatePlan(x.plan,order.id);modal('<h3>תודה! המסלול '+esc(LP.byId(x.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. אישור נשלח גם למייל. מספר הזמנה: '+order.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}
+          msg(esc(x.message||'התשלום לא הושלם. אפשר לנסות שוב.'),1)}).catch(()=>msg('לא הצלחנו לאשר את התשלום. אם חויבתם, פנו אלינו עם מספר ההזמנה '+(order?order.id.slice(0,8):''),1))},
+        onError:()=>msg('תקלה בחלון של פייפל. נסו שוב.',1)}).render(box)};
+      if(window.paypal)return done();const sc=document.createElement('script');sc.src='https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(cid)+'&currency=ILS&intent=capture&locale=he_IL&components=buttons';sc.onload=done;sc.onerror=()=>msg('לא הצלחנו לטעון את פייפל. נסו לרענן את הדף.',1);document.head.appendChild(sc)};
+    Promise.resolve(LP&&LP.ready).then(d=>{if(d&&d.ppc)run(d.ppc);else msg('התשלום בפייפל עדיין לא מוגדר.',1)})}
+  setTimeout(()=>{if(!ready&&!stop&&PROV==='nedarim')msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
   go.onclick=()=>{
     const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim(),zeout=$m('#payZeout').value.replace(/\D/g,'');
     if(name.split(/\s+/).length<2){msg('נא למלא שם פרטי ושם משפחה.',1);$m('#payName').focus();return}
@@ -3779,9 +3794,11 @@ function doPrint(){
   const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=async()=>{const b=m.querySelector('#dlGo');b.disabled=true;b.textContent='בודקים…';
     let r={status:0},j={};
-    try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
+    try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',yr:calYearKey(),snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
     if(r.status===401){m.remove();loginModal('צריך להתחבר מחדש כדי להדפיס.');return}
     if(r.status===403){m.remove();await refreshAccount();modal('<h3>לא נמצא תשלום בחשבון</h3><p class="hint">לא מצאנו מסלול ששולם בחשבון '+esc((user&&user.email)||'')+'. אם שילמתם עם כתובת מייל אחרת, התחברו איתה. אם שילמתם עכשיו, נסו שוב בעוד דקה.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
+    if(r.status===409&&j.error==='year'){m.remove();const Y=j.year||'',yt=Y[0]==='h'?'שנת '+gemYear(+Y.slice(1)):'שנת '+Y.slice(1);
+      modal('<h3>ההדפסות במסלול הן ללוח של '+esc(yt)+'</h3><p class="hint">המסלול כולל כמה הדפסות של אותו לוח, למשל אחרי תיקונים, אבל רק לשנה שכבר הודפסה ('+esc(yt)+'). כדי להדפיס לוח לשנה אחרת צריך לרכוש מסלול חדש.</p><div class="row"><button class="btn primary" type="button" id="yrBuy">לרכישת מסלול לשנה הזאת</button><button class="btn" type="button" data-close>סגירה</button></div>').querySelector('#yrBuy').onclick=e=>{e.target.closest('.modal-back').remove();openUpgrade('download')};return}
     if(r.status===409){m.remove();try{localStorage.setItem('luchenu-downloads',String(j.limit||P.downloads))}catch(e){}syncPlanUI();doPrint();return}
     if(r.ok&&j.left!=null){try{localStorage.setItem('luchenu-downloads',String(Math.max(0,(j.limit||P.downloads)-j.left)))}catch(e){}}else if(!j.reprint)LP.useDownload();
     m.remove();syncPlanUI();setTimeout(ourPrint,50)};
@@ -3855,6 +3872,8 @@ function snapOf(){let raw;try{raw=JSON.parse(JSON.stringify(state))}catch(e){ret
 async function logDl(kind,extra){const snP=snapOf();try{const sn=await snP;const h=await Promise.race([authHeaders().catch(()=>({})),new Promise(r=>setTimeout(()=>r({}),2000))]);const s=state.s;
   const cal=($('#stageTitle')||{}).textContent||'';const sz=s.size==='custom'?'custom':s.size;
   fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind,snap:sn,plan:(LP&&LP.current().id)||'',cal:cal.slice(0,120),view:s.view||'month',size:sz,pages:RS.count,page:CDMODE?'countdown':document.body.classList.contains('simple')||/simple/.test(window.location.pathname)?'simple':'app',...(extra||{})})}).catch(()=>{})}catch(e){console.warn('logDl',e)}}
+/* מזהה השנה של הלוח (להגבלת ההדפסות במסלול לאותה שנה) */
+function calYearKey(){const s=state.s;if(CDMODE||s.view==='countdown')return '';return s.calType==='greg'?'g'+(+s.gregYear||''):'h'+(+s.hebYear||'')}
 function syncPlanUI(){
   if(!LP)return;const P=PLAN();
   LP.PLANS.forEach(p=>document.body.classList.toggle('plan-'+p.id,p.id===P.id));

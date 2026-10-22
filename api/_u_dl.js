@@ -31,6 +31,15 @@ module.exports = async (req, res) => {
       try { const r = await db('downloads?select=created_at&kind=eq.paid&user_id=eq.' + user.id + '&order=created_at.desc&limit=1'); recent = r && r[0] && Date.now() - new Date(r[0].created_at) < REPRINT; } catch (e) {}
       if (recent) kind = 'reprint';
       else if (info.left <= 0) return json(res, 409, { error: 'used', limit: info.limit, plan: info.plan });
+      /* הדפסות של מסלול אחד: רק לאותה שנה (לפי הלוח הראשון שהודפס מאז הרכישה) */
+      const yr = /^[hg]\d{4}$/.test(String(b.yr || '')) ? String(b.yr) : '';
+      if (yr) {
+        try {
+          const prev = await db('downloads?select=cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&created_at=gte.' + encodeURIComponent(info.since) + '&order=created_at.asc&limit=50');
+          const first = (prev || []).map(r => (/^([hg]\d{4}) · /.exec(r.cal || '') || [])[1]).find(Boolean);
+          if (first && first !== yr) return json(res, 409, { error: 'year', year: first, plan: info.plan });
+        } catch (e) {}
+      }
     }
   }
   let email = user ? user.email : s(b.email, 160);
@@ -39,7 +48,7 @@ module.exports = async (req, res) => {
   try {
     await db('downloads', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
       user_id: user ? user.id : null, email: email ? email.toLowerCase() : null, kind,
-      plan: info ? info.plan : s(b.plan, 20), cal: s(b.cal, 120), view: s(b.view, 20), size: s(b.size, 30),
+      plan: info ? info.plan : s(b.plan, 20), cal: (info && /^[hg]\d{4}$/.test(String(b.yr || '')) ? b.yr + ' · ' : '') + (s(b.cal, 110) || ''), view: s(b.view, 20), size: s(b.size, 30),
       pages: Math.max(0, Math.min(999, parseInt(b.pages, 10) || 0)) || null, snap, page: (s(b.page, 20) || 'app') + (b.kind === 'browser' ? (b.wm ? ' · עם סימן מים' : ' · בלי סימן מים') : '') }) });
     json(res, 200, { ok: true, reprint: kind === 'reprint', left: info && info.left != null ? Math.max(0, info.left - (kind === 'paid' ? 1 : 0)) : null, limit: info ? info.limit : null });
   } catch (e) { console.error('dl-log', e.message); json(res, 200, { ok: false }); }

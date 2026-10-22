@@ -18,13 +18,9 @@ module.exports = async (req, res) => {
     const ok = /^(ok|1|true|success)$/i.test(status);
     const paid = Number(p.Amount || p.amount || 0);
     const enough = !paid || paid + 0.001 >= Number(o.amount);
-    const upd = {
-      callback: p,
-      txn: String(p.TransactionId || p.TransactionID || p.Id || p.id || ''),
-      status: o.status === 'paid' ? 'paid' : ok && enough ? 'paid' : ok ? 'underpaid' : 'failed',
-      paid_at: ok && enough && o.status !== 'paid' ? new Date().toISOString() : o.paid_at
-    };
-    await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify(upd) });
+    const base = { callback: p, txn: String(p.TransactionId || p.TransactionID || p.Id || p.id || '') };
+    if (o.status === 'paid' || (ok && enough)) await require('./_paid').markPaid(o, base, 'נדרים פלוס');
+    else await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ ...base, status: ok ? 'underpaid' : 'failed' }) });
     json(res, 200, { ok: true });
   } catch (e) {
     console.error('callback', e);

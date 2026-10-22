@@ -35,6 +35,8 @@ function clean(c) {
   });
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
+  out.pay = c.pay === 'paypal' ? 'paypal' : 'nedarim';
+  { const r = c.renew || {}; out.renew = { on: !!r.on, percent: num(r.percent, 0, 100) || 0 }; }
   out.sampleImgRate = Math.max(0, Math.min(100, parseInt(c.sampleImgRate == null ? 20 : c.sampleImgRate, 10) || 0));
   { const sh = c.shabbat || {}; out.shabbat = { on: sh.on !== false, yt: sh.yt !== false, before: Math.max(0, Math.min(120, parseInt(sh.before, 10) || 0)), after: Math.max(0, Math.min(120, parseInt(sh.after, 10) || 0)), deg: Math.max(3, Math.min(20, parseFloat(sh.deg) || 8.5)) }; }
   out.sampleKeepDays = Math.max(0, Math.min(3650, parseInt(c.sampleKeepDays == null ? 365 : c.sampleKeepDays, 10) || 0));
@@ -101,6 +103,12 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'backup') { const B = require('./_backup'); if (!B.ready()) return json(res, 200, { notReady: true }); try { return json(res, 200, await B.run()); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 200) }); } }
     /* מחיקה ידנית של דוגמיות או של לוחות ישנים של משתמשים (עם בדיקה לפני) */
     if (req.method === 'POST' && b.action === 'purge') { try { const U = require('./_usage'), bk = String(b.bucket || ''), r = await U.purge(bk, b.days, !!b.dry); if (bk === 'calendars') { const x = await U.purgeR2(Math.max(30, parseInt(b.days, 10) || 0), !!b.dry); r.files += x.files; r.bytes += x.bytes; r.deleted += x.deleted; } return json(res, 200, r); } catch (e) { return json(res, 400, { error: String(e.message || e).slice(0, 200) }); } }
+    /* תצוגה מקדימה של המיילים ללקוח ולבעל האתר */
+    if (req.method === 'POST' && b.action === 'mailpreview') {
+      const P = require('./_paid'), o = { id: 'a1b2c3d4e5f6a7b8c9d0e1f2', plan: 'family', amount: 89, email: 'customer@example.com', coupon: '', via: 'PayPal' };
+      const B = P.build(o), W = P.welcome();
+      return json(res, 200, { mails: [{ k: 'welcome', who: 'ללקוח אחרי הרשמה', ...W }, { k: 'purchase', who: 'ללקוח אחרי רכישה', ...B.customer }, { k: 'owner', who: 'אליך על כל רכישה', ...B.owner }], owner: env('OWNER_EMAIL') || env('ALERT_EMAIL') || '' });
+    }
     /* מד שימוש באחסון ובמסד הנתונים */
     if (req.method === 'POST' && b.action === 'usage') { try { return json(res, 200, await require('./_usage').usage()); } catch (e) { return json(res, 500, { error: String(e.message || e).slice(0, 200) }); } }
     /* דוגמית של לוח שהורד: התוכן המלא (בלי תמונות), לפתיחה בבונה לקריאה בלבד */
@@ -115,20 +123,28 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'table') {
       const T = {
         profiles: { cols: 'email,phone,phone_verified_at,created_at,updated_at', order: 'created_at.desc', search: ['email', 'phone'] },
-        reminders: { cols: 'email,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['email', 'name'] },
-        appointments: { cols: 'email,date,start_t,title,place,notify,created_at', order: 'created_at.desc', search: ['email', 'title'] },
-        voice_reminders: { cols: 'phone,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['phone', 'name'] },
-        orders: { cols: 'created_at,plan,amount,status,email,coupon,paid_at,id', order: 'created_at.desc', search: ['email', 'plan', 'coupon'] },
-        free_lite: { cols: 'email,used_at', order: 'used_at.desc', search: ['email'] },
-        downloads: { cols: 'created_at,email,kind,plan,cal,view,size,pages,page,snap', order: 'created_at.desc', search: ['email', 'kind', 'cal'] },
-        email_log: { cols: 'created_at,kind,to_email,subject,provider,ok,error', order: 'created_at.desc', search: ['to_email', 'subject', 'kind'] }
+        reminders: { cols: 'email,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['email', 'name'], pk: 'id' },
+        appointments: { cols: 'email,date,start_t,title,place,notify,created_at', order: 'created_at.desc', search: ['email', 'title'], pk: 'id' },
+        voice_reminders: { cols: 'phone,name,rule,notice,status,last_sent,created_at', order: 'created_at.desc', search: ['phone', 'name'], pk: 'id' },
+        orders: { cols: 'created_at,plan,amount,status,email,coupon,paid_at,id', order: 'created_at.desc', search: ['email', 'plan', 'coupon'], pk: 'id' },
+        free_lite: { cols: 'email,used_at', order: 'used_at.desc', search: ['email'], pk: 'user_id' },
+        downloads: { cols: 'created_at,email,kind,plan,cal,view,size,pages,page,snap', order: 'created_at.desc', search: ['email', 'kind', 'cal'], pk: 'id' },
+        email_log: { cols: 'created_at,kind,to_email,subject,provider,ok,error', order: 'created_at.desc', search: ['to_email', 'subject', 'kind'], pk: 'id' }
       };
       const t = T[b.name]; if (!t) return json(res, 400, { error: 'table' });
+      /* מחיקת שורות לפי המפתח (לא בטבלת המשתמשים) */
+      if (b.del) {
+        if (!t.pk) return json(res, 400, { error: 'אי אפשר למחוק בטבלה הזאת' });
+        const ids = (Array.isArray(b.del) ? b.del : []).map(String).filter(x => /^[A-Za-z0-9-]{1,64}$/.test(x)).slice(0, 1000);
+        if (!ids.length) return json(res, 400, { error: 'ids' });
+        try { await db(b.name + '?' + t.pk + '=in.(' + ids.map(x => encodeURIComponent('"' + x + '"')).join(',') + ')', { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return json(res, 200, { deleted: ids.length }); }
+        catch (e) { return json(res, 500, { error: String(e.message).slice(0, 200) }); }
+      }
       const lim = b.all ? 5000 : 50, off = Math.max(0, parseInt(b.offset, 10) || 0);
       const q = String(b.q || '').trim().replace(/[(),*]/g, ' ').slice(0, 80);
-      let path = b.name + '?select=' + t.cols + '&order=' + t.order + '&limit=' + (lim + 1) + '&offset=' + off;
+      let path = b.name + '?select=' + t.cols + (t.pk && t.cols.split(',').indexOf(t.pk) < 0 ? ',' + t.pk : '') + '&order=' + t.order + '&limit=' + (lim + 1) + '&offset=' + off;
       if (q) path += '&or=(' + t.search.map(c => c + '.ilike.*' + encodeURIComponent(q) + '*').join(',') + ')';
-      try { const rows = await db(path); return json(res, 200, { rows: (rows || []).slice(0, lim), more: (rows || []).length > lim, cols: t.cols.split(',') }); }
+      try { const rows = await db(path); return json(res, 200, { rows: (rows || []).slice(0, lim), more: (rows || []).length > lim, cols: t.cols.split(','), pk: t.pk || null }); }
       catch (e) { return json(res, 200, { rows: [], cols: t.cols.split(','), error: /does not exist|42P01|PGRST205/.test(e.message) ? 'הטבלה עוד לא נוצרה ב-Supabase' : String(e.message).slice(0, 200) }); }
     }
     /* הגדרות תזכורות קוליות (ימות המשיח). הטוקן לא חוזר לדפדפן במלואו */
@@ -202,7 +218,7 @@ module.exports = async (req, res) => {
       (rem || []).forEach(r => { mail.reminders[r.status] = (mail.reminders[r.status] || 0) + 1; });
       /* דוח: 30 ימים אחרונים לפי יום ושרת, ו-200 המיילים האחרונים */
       const since = new Date(Date.now() - 30 * 864e5).toISOString();
-      const all = await db('email_log?select=created_at,provider,ok&created_at=gte.' + encodeURIComponent(since) + '&order=created_at.desc&limit=20000');
+      const all = await db('email_log?select=created_at,provider,ok,kind&created_at=gte.' + encodeURIComponent(since) + '&order=created_at.desc&limit=20000');
       const byDay = {};
       (all || []).forEach(l => {
         const d = new Date(l.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
@@ -210,6 +226,7 @@ module.exports = async (req, res) => {
         if (l.ok) o[l.provider] = (o[l.provider] || 0) + 1; else o.failed++;
       });
       mail.byDay = byDay;
+      const byKind = {}; (all || []).forEach(l => { const k = l.kind || 'other'; const o = byKind[k] = byKind[k] || { ok: 0, failed: 0 }; if (l.ok) o.ok++; else o.failed++; }); mail.byKind = byKind;
       mail.recent = await db('email_log?select=*&order=created_at.desc&limit=200');
       try {
         const pr = await db('profiles?select=phone_verified_at&limit=100000');
