@@ -3471,6 +3471,10 @@ function buyPlan(planId){
     const onApprove=()=>{msg('מאשרים את התשלום…');return orderP.then(o=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'ppcapture',id:o.id})}).then(r=>r.json().then(x=>({r,x})))).then(({x})=>{
       if(x.status==='paid'){close();activatePlan(x.plan,order.id);modal('<h3>תודה! המסלול '+esc(LP.byId(x.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. אישור נשלח גם למייל. מספר הזמנה: '+order.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}
       msg(esc(x.message||'התשלום לא הושלם. אפשר לנסות שוב.'),1)}).catch(()=>msg('לא הצלחנו לאשר את התשלום. אם חויבתם, פנו אלינו עם מספר ההזמנה '+(order?order.id.slice(0,8):''),1))};
+    let ppAcct=false;
+    /* כפתור "PayPal" (תשלום מחשבון פייפל), אם הופעל בניהול */
+    const acctBtn=P=>{if(!ppAcct)return;try{const a=P.Buttons({fundingSource:P.FUNDING.PAYPAL,style:{layout:'vertical',shape:'rect',label:'pay'},createOrder,onApprove,onError:()=>msg('תקלה בחלון של פייפל. נסו שוב.',1)});
+      if(a.isEligible&&!a.isEligible())return;const d=document.createElement('div');d.className='pp-acct';box.prepend(d);a.render(d)}catch(e){}};
     const run=cid=>{const done=()=>{if(stop)return;const P=window.paypal;let cf=null;
         try{cf=P.CardFields&&P.CardFields({createOrder,onApprove,onError:()=>msg('התשלום נכשל. בדקו את פרטי הכרטיס ונסו שוב.',1),
           style:{input:{'font-size':'16px','font-family':'Arial,sans-serif',direction:'ltr'}}})}catch(e){cf=null}
@@ -3478,13 +3482,14 @@ function buyPlan(planId){
           box.innerHTML='<div class="pp-cf"><label>מספר כרטיס<div id="ppNum"></div></label><div class="pp-cf2"><label>תוקף<div id="ppExp"></div></label><label>3 ספרות בגב הכרטיס<div id="ppCvv"></div></label></div></div>';
           cf.NumberField({placeholder:'0000 0000 0000 0000'}).render('#ppNum');cf.ExpiryField({placeholder:'MM/YY'}).render('#ppExp');cf.CVVField({placeholder:'123'}).render('#ppCvv');
           go.hidden=false;go.disabled=false;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.');
+          acctBtn(P);
           go.onclick=()=>{go.disabled=true;go.textContent='מעבד תשלום…';msg('מעבד תשלום…');cf.submit().catch(()=>{go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);msg('פרטי הכרטיס חסרים או לא תקינים.',1)})};
           return}
         const b=P.Buttons({fundingSource:P.FUNDING.CARD,style:{layout:'vertical',shape:'rect'},createOrder,onApprove,onError:()=>msg('תקלה בטופס התשלום. נסו שוב.',1)});
         if(b.isEligible&&!b.isEligible()){msg('התשלום בכרטיס אשראי לא זמין כרגע.',1);return}
-        b.render(box);msg('לוחצים על "כרטיס אשראי" וממלאים את הפרטים.')};
+        b.render(box);acctBtn(P);msg(ppAcct?'בוחרים: תשלום בחשבון פייפל, או בכרטיס אשראי.':'לוחצים על "כרטיס אשראי" וממלאים את הפרטים.')};
       if(window.paypal)return done();const sc=document.createElement('script');sc.src='https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(cid)+'&currency=ILS&intent=capture&locale=he_IL&components=buttons,card-fields&disable-funding=paylater,venmo';sc.onload=done;sc.onerror=()=>msg('לא הצלחנו לטעון את טופס התשלום. נסו לרענן את הדף.',1);document.head.appendChild(sc)};
-    Promise.resolve(LP&&LP.ready).then(d=>{if(d&&d.ppc)run(d.ppc);else msg('התשלום בפייפל עדיין לא מוגדר.',1)})}
+    Promise.resolve(LP&&LP.ready).then(d=>{ppAcct=!!(d&&d.ppAcct);if(d&&d.ppc)run(d.ppc);else msg('התשלום בפייפל עדיין לא מוגדר.',1)})}
   setTimeout(()=>{if(!ready&&!stop&&PROV==='nedarim')msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
   go.onclick=()=>{
     const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim(),zeout=$m('#payZeout').value.replace(/\D/g,'');
