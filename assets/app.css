@@ -1397,3 +1397,4 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .pp-cf label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}.pp-cf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pp-cf [id^=pp]{min-height:44px}
 .pp-acct{margin-bottom:10px}
+.pp-gpay{margin-bottom:10px;height:44px}

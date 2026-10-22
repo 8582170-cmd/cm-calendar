@@ -37,6 +37,7 @@ function clean(c) {
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
   out.pay = c.pay === 'paypal' ? 'paypal' : 'nedarim';
   out.ppAcct = !!c.ppAcct;
+  out.ppGpay = !!c.ppGpay;
   /* מסלולים קבועים שהוסתרו מהמכירה */
   out.off = (Array.isArray(c.off) ? c.off : []).filter(x => ['basic', 'family', 'full'].includes(x));
   /* נוסח המיילים */

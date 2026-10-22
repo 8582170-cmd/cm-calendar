@@ -3471,7 +3471,20 @@ function buyPlan(planId){
     const onApprove=()=>{msg('מאשרים את התשלום…');return orderP.then(o=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'ppcapture',id:o.id})}).then(r=>r.json().then(x=>({r,x})))).then(({x})=>{
       if(x.status==='paid'){close();activatePlan(x.plan,order.id);modal('<h3>תודה! המסלול '+esc(LP.byId(x.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. אישור נשלח גם למייל. מספר הזמנה: '+order.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}
       msg(esc(x.message||'התשלום לא הושלם. אפשר לנסות שוב.'),1)}).catch(()=>msg('לא הצלחנו לאשר את התשלום. אם חויבתם, פנו אלינו עם מספר ההזמנה '+(order?order.id.slice(0,8):''),1))};
-    let ppAcct=false;
+    let ppAcct=false,ppGpay=false,ppLive=true;
+    /* Google Pay דרך פייפל: מוצג רק אם הופעל בניהול וגם פייפל אישרו אותו בחשבון (אחרת פשוט לא מופיע) */
+    const gpayBtn=async P=>{if(!ppGpay||!P.Googlepay)return;
+      try{if(!window.google||!google.payments)await new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://pay.google.com/gp/p/js/pay.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
+        const gp=P.Googlepay(),C=await gp.config();
+        const client=new google.payments.api.PaymentsClient({environment:ppLive?'PRODUCTION':'TEST',paymentDataCallbacks:{onPaymentAuthorized:async pd=>{
+          try{const id=await createOrder();const r=await gp.confirmOrder({orderId:id,paymentMethodData:pd.paymentMethodData});
+            if(r&&r.status==='APPROVED'){onApprove();return {transactionState:'SUCCESS'}}
+            return {transactionState:'ERROR',error:{intent:'PAYMENT_AUTHORIZATION',message:'התשלום לא אושר',reason:'PAYMENT_DATA_INVALID'}}}
+          catch(e){return {transactionState:'ERROR',error:{intent:'PAYMENT_AUTHORIZATION',message:'התשלום נכשל',reason:'OTHER_ERROR'}}}}}});
+        const ok=await client.isReadyToPay({apiVersion:C.apiVersion,apiVersionMinor:C.apiVersionMinor,allowedPaymentMethods:C.allowedPaymentMethods});if(!ok||!ok.result||stop)return;
+        const btn=client.createButton({buttonType:'pay',buttonSizeMode:'fill',buttonLocale:'he',onClick:()=>orderP.then(o=>client.loadPaymentData({apiVersion:C.apiVersion,apiVersionMinor:C.apiVersionMinor,allowedPaymentMethods:C.allowedPaymentMethods,merchantInfo:C.merchantInfo,
+          transactionInfo:{countryCode:C.countryCode,currencyCode:'ILS',totalPriceStatus:'FINAL',totalPrice:(+o.amount).toFixed(2),totalPriceLabel:'סה״כ'},callbackIntents:['PAYMENT_AUTHORIZATION']})).catch(()=>{})});
+        const d=document.createElement('div');d.className='pp-gpay';d.appendChild(btn);box.prepend(d)}catch(e){console.warn('google pay',e)}};
     /* כפתור "PayPal" (תשלום מחשבון פייפל), אם הופעל בניהול */
     const acctBtn=P=>{if(!ppAcct)return;try{const a=P.Buttons({fundingSource:P.FUNDING.PAYPAL,style:{layout:'vertical',shape:'rect',label:'pay'},createOrder,onApprove,onError:()=>msg('תקלה בחלון של פייפל. נסו שוב.',1)});
       if(a.isEligible&&!a.isEligible())return;const d=document.createElement('div');d.className='pp-acct';box.prepend(d);a.render(d)}catch(e){}};
@@ -3482,14 +3495,14 @@ function buyPlan(planId){
           box.innerHTML='<div class="pp-cf"><label>מספר כרטיס<div id="ppNum"></div></label><div class="pp-cf2"><label>תוקף<div id="ppExp"></div></label><label>3 ספרות בגב הכרטיס<div id="ppCvv"></div></label></div></div>';
           cf.NumberField({placeholder:'0000 0000 0000 0000'}).render('#ppNum');cf.ExpiryField({placeholder:'MM/YY'}).render('#ppExp');cf.CVVField({placeholder:'123'}).render('#ppCvv');
           go.hidden=false;go.disabled=false;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.');
-          acctBtn(P);
+          acctBtn(P);gpayBtn(P);
           go.onclick=()=>{go.disabled=true;go.textContent='מעבד תשלום…';msg('מעבד תשלום…');cf.submit().catch(()=>{go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);msg('פרטי הכרטיס חסרים או לא תקינים.',1)})};
           return}
         const b=P.Buttons({fundingSource:P.FUNDING.CARD,style:{layout:'vertical',shape:'rect'},createOrder,onApprove,onError:()=>msg('תקלה בטופס התשלום. נסו שוב.',1)});
         if(b.isEligible&&!b.isEligible()){msg('התשלום בכרטיס אשראי לא זמין כרגע.',1);return}
-        b.render(box);acctBtn(P);msg(ppAcct?'בוחרים: תשלום בחשבון פייפל, או בכרטיס אשראי.':'לוחצים על "כרטיס אשראי" וממלאים את הפרטים.')};
-      if(window.paypal)return done();const sc=document.createElement('script');sc.src='https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(cid)+'&currency=ILS&intent=capture&locale=he_IL&components=buttons,card-fields&disable-funding=paylater,venmo';sc.onload=done;sc.onerror=()=>msg('לא הצלחנו לטעון את טופס התשלום. נסו לרענן את הדף.',1);document.head.appendChild(sc)};
-    Promise.resolve(LP&&LP.ready).then(d=>{ppAcct=!!(d&&d.ppAcct);if(d&&d.ppc)run(d.ppc);else msg('התשלום בפייפל עדיין לא מוגדר.',1)})}
+        b.render(box);acctBtn(P);gpayBtn(P);msg(ppAcct?'בוחרים: תשלום בחשבון פייפל, או בכרטיס אשראי.':'לוחצים על "כרטיס אשראי" וממלאים את הפרטים.')};
+      if(window.paypal)return done();const sc=document.createElement('script');sc.src='https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(cid)+'&currency=ILS&intent=capture&locale=he_IL&components=buttons,card-fields'+(ppGpay?',googlepay':'')+'&disable-funding=paylater,venmo';sc.onload=done;sc.onerror=()=>{sc.remove();if(ppGpay){ppGpay=false;run(cid);return}msg('לא הצלחנו לטעון את טופס התשלום. נסו לרענן את הדף.',1)};document.head.appendChild(sc)};
+    Promise.resolve(LP&&LP.ready).then(d=>{ppAcct=!!(d&&d.ppAcct);ppGpay=!!(d&&d.ppGpay);ppLive=!(d&&d.ppMode==='sandbox');if(d&&d.ppc)run(d.ppc);else msg('התשלום בפייפל עדיין לא מוגדר.',1)})}
   setTimeout(()=>{if(!ready&&!stop&&PROV==='nedarim')msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
   go.onclick=()=>{
     const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim(),zeout=$m('#payZeout').value.replace(/\D/g,'');
