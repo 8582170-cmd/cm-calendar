@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
     const since = new Date(Date.now() - 400 * 864e5).toISOString();
     const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
     const rows = await db('orders?select=id,plan,amount,paid_at,user_id&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or + '&order=paid_at.desc');
-    const rank = id => LP.PLANS.findIndex(p => p.id === id);
+    const rank = id => LP.rank(id);
     /* plan = הטוב ביותר ללוח השנה; cdPlan = כולל מסלולים שהם רק ללוח ספירה לאחור */
     const cdOnly = id => !!(LP.PLANS.find(p => p.id === id) || {}).cd;
     let plan = null, cdPlan = null;

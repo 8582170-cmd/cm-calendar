@@ -138,8 +138,8 @@ async function bestPlan(user) {
   const since = new Date(Date.now() - 400 * 864e5).toISOString();
   const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
   const rows = await db('orders?select=plan&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or);
-  const rank = id => LP.PLANS.findIndex(p => p.id === id);
-  let plan = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (!plan || rank(o.plan) > rank(plan))) plan = o.plan; });
+  const rank = id => LP.rank(id), cdOnly = id => !!(LP.PLANS.find(p => p.id === id) || {}).cd;
+  let plan = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && !cdOnly(o.plan) && (!plan || rank(o.plan) > rank(plan))) plan = o.plan; });
   return plan;
 }
 /* המסלול ששולם, ממתי, וכמה הורדות בתשלום נוצלו מאז (טבלת downloads; אם עוד לא נוצרה: used=null) */
@@ -148,7 +148,7 @@ async function planInfo(user, cd) {
   const since = new Date(Date.now() - 400 * 864e5).toISOString();
   const or = 'or=(user_id.eq.' + user.id + (user.email ? ',email.eq.' + encodeURIComponent(user.email) : '') + ')';
   const rows = await db('orders?select=plan,paid_at&status=eq.paid&paid_at=gte.' + encodeURIComponent(since) + '&' + or + '&order=paid_at.asc');
-  const rank = id => LP.PLANS.findIndex(p => p.id === id);
+  const rank = id => LP.rank(id);
   const cdOnly = id => !!(LP.PLANS.find(p => p.id === id) || {}).cd;
   let best = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (cd || !cdOnly(o.plan)) && (!best || rank(o.plan) >= rank(best.plan))) best = o; });
   if (!best) return { plan: null, limit: 0, used: 0, left: 0 };

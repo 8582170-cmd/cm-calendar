@@ -1412,3 +1412,10 @@ body:has(.modal-back) .fx-bar{display:none!important}
 .ie-cut{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}.ie-cut .hint{display:block;margin:2px 0 4px}
 .ie-plan{font-size:11px;font-weight:700;background:var(--accent);color:var(--accent-ink,#fff);border-radius:20px;padding:1px 8px}
 .ie-cbg{align-items:center;gap:8px;font-size:13px}.ie-cbg input[type=color]{width:28px;height:22px;padding:0;border:0;vertical-align:middle}
+.cd-card.pro{position:relative}.cd-card.pro::after{content:'מלא';position:absolute;top:4px;inset-inline-start:4px;font-size:10px;font-weight:700;background:var(--accent);color:var(--accent-ink,#fff);border-radius:20px;padding:1px 6px}
+.cdd-lock{background:var(--soft);border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-size:14px;line-height:1.5}.cdd-lock .btn{margin-inline-start:6px}
+.cdd-f{border:0;padding:0;margin:0;min-width:0}.cdd-f[disabled]{opacity:.5}
+.cdd-img img{display:block;max-width:100%;max-height:220px;border-radius:8px;margin-bottom:6px}
+.cds-r,.cdc-s{cursor:pointer}
+@media print{.cd-card.pro::after{display:none}}
+.cdd-f textarea{font:inherit;min-height:0;height:auto;resize:vertical;direction:rtl}

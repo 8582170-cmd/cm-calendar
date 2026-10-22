@@ -1,28 +1,37 @@
 /* MyLuach: הגדרת המסלולים. מקור אחד לדף הבית, לדף המסלולים ולמגבלות בבונה הלוח. */
 (function(){
   'use strict';
-  const ALL = {views:true, banners:true, extraPages:true, advZmanim:true, customSize:true, imageEditor:true, fonts:true, tfilot:true, cutout:true};
+  const ALL = {views:true, banners:true, extraPages:true, advZmanim:true, customSize:true, imageEditor:true, fonts:true, tfilot:true, cutout:true, cdDaily:true, cdLays:true};
   const PLANS = [
     {id:'free',  name:'ניסיון',  tagline:'בונים, רואים, מתלהבים',
      price:{ils:0, usd:0}, months:13, events:30, downloads:0, watermark:true,
-     features:{...ALL, cutout:false},
+     features:{...ALL, cutout:false, cdDaily:false, cdLays:false},
      bullets:['בונים ורואים את כל השנה','כל האפשרויות פתוחות לניסיון','לוח פשוט לכל השנה להורדה (עד 3 זמנים, 10 תמונות ו־25 אירועים)','חודש אחד מלא להורדה','לוח ספירה לאחור עד 40 יום: הורדה חינם']},
     {id:'basic', name:'בסיסי',   tagline:'לוח חודשי פשוט ויפה',
      price:{ils:19, usd:4.9}, months:13, events:30, downloads:1, watermark:false,
-     features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true, tfilot:false},
+     features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true, tfilot:false, cdDaily:false, cdLays:false},
      bullets:['שנה שלמה, לוח חודשי','עד 30 אירועים משפחתיים','זמני היום ב־4 שיטות עיקריות','הורדה אחת של לוח מוכן']},
     {id:'family',name:'משפחתי',  tagline:'לכל המשפחה המורחבת',
      price:{ils:49, usd:14}, intro:50, months:13, events:120, downloads:2, watermark:false,
-     features:{views:true, banners:true, extraPages:true, advZmanim:false, customSize:false, imageEditor:true, fonts:true, tfilot:false},
+     features:{views:true, banners:true, extraPages:true, advZmanim:false, customSize:false, imageEditor:true, fonts:true, tfilot:false, cdDaily:true, cdLays:true},
      bullets:['כל התצוגות: חודשי, שבועי, יומי וטבלה','עד 120 אירועים משפחתיים','באנרים, עמודי ברכות ופרסומות','עורך תמונות','2 הורדות של לוח מוכן']},
     {id:'full',  name:'מלא',     tagline:'הכל פתוח, בלי חשבונות',
      price:{ils:99, usd:30}, months:13, events:Infinity, downloads:5, watermark:false, best:true,
      features:{...ALL},
-     bullets:['גזירה אוטומטית של דמויות מהרקע','אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','זמני תפילות לבית הכנסת, מחושבים לכל יום','5 הורדות של לוח מוכן','אפשר להסתיר את השורה "הופק ע״י MyLuach.org"']}
+     bullets:['גזירה אוטומטית של דמויות מהרקע','אירועים משפחתיים בלי הגבלה','כל שיטות הזמנים, כולל מעלות ודקות לפי בחירה','כל גודל דף, כולל מידות אישיות','זמני תפילות לבית הכנסת, מחושבים לכל יום','5 הורדות של לוח מוכן','אפשר להסתיר את השורה "הופק ע״י MyLuach.org"']},
+    /* מסלולים ללוח ספירה לאחור בלבד (cd). ללוח השנתי הם לא נותנים כלום */
+    {id:'cdbasic', name:'ספירה בסיסית', tagline:'לוח ספירה פשוט ויפה', cd:true,
+     price:{ils:19, usd:5.5}, months:13, events:30, downloads:1, watermark:false,
+     features:{views:false, banners:false, extraPages:false, advZmanim:false, customSize:false, imageEditor:false, fonts:true, tfilot:false, cutout:false, cdDaily:false, cdLays:false},
+     bullets:['כל 9 העיצובים (כלה, בר ובת מצווה, ילדים ועוד)','עמוד לכל חודש או פוסטר','תמונת פתיחה, תמונת רקע ותמונת סיום','משפטים מוכנים כל כמה ימים','הורדה אחת של לוח מוכן']},
+    {id:'cdfull', name:'ספירה מלאה', tagline:'כל יום עם תמונה ומשפט משלו', cd:true, best:true,
+     price:{ils:36, usd:10}, months:13, events:Infinity, downloads:3, watermark:false,
+     features:{...ALL, views:false, tfilot:false},
+     bullets:['תמונה ומשפט אישי לכל יום','כל צורות הלוח: גם לוח מספרים, שרשרת נייר ודף ארוך לטלפון','עורך תמונות, מדבקות וגזירת דמות','גודל דף לפי מידה','3 הורדות של לוח מוכן','אפשר להסתיר את השורה "הופק ע״י MyLuach.org"']}
   ];
   const FEATURE_NAMES = {
     views:'תצוגה שבועית, יומית וטבלה', banners:'באנרים בצדי הדף', extraPages:'עמודים נוספים (ברכות, פרסומות, הערות)',
-    advZmanim:'הגדרות זמנים מתקדמות', tfilot:'זמני תפילות בבית הכנסת', customSize:'גודל דף לפי מידה', imageEditor:'עורך התמונות', cutout:'גזירת דמות מהרקע', events:'אירועים משפחתיים נוספים',
+    advZmanim:'הגדרות זמנים מתקדמות', tfilot:'זמני תפילות בבית הכנסת', customSize:'גודל דף לפי מידה', imageEditor:'עורך התמונות', cutout:'גזירת דמות מהרקע', cdDaily:'תמונה ומשפט לכל יום', cdLays:'כל צורות לוח הספירה', events:'אירועים משפחתיים נוספים',
     months:'כל חודשי השנה', download:'הורדה והדפסה של הלוח'
   };
   const KEY = 'luchenu-plan', DL = 'luchenu-downloads';
@@ -35,6 +44,8 @@
     /* שלב 1: המסלול נשמר בדפדפן לבדיקה. בשלב 2 הוא יגיע מהחשבון בשרת. */
     setCurrent(id){ put(KEY, id); put(DL, '0') },
     can(feature){ return !!this.current().features[feature] },
+    /* כמה "חזק" מסלול, לבחירת המסלול הטוב ביותר מכמה רכישות. מסלול נוסף מהניהול: כמו המסלול שעליו הוא מבוסס */
+    rank(id){ const R = {free:0, basic:1, cdbasic:1.5, family:2, cdfull:2.5, full:3}; if(R[id] != null) return R[id]; const p = PLANS.find(x => x.id === id); return p && p.base && R[p.base] != null ? R[p.base] + 0.1 : -1 },
     downloadsUsed(){ return +(get(DL) || 0) },
     useDownload(){ put(DL, String(this.downloadsUsed() + 1)) },
     downloadsLeft(){ return Math.max(0, this.current().downloads - this.downloadsUsed()) },
@@ -81,7 +92,10 @@
     },
     ready: null,
     /* מי שמסלול ממנו חסרה יכולת: המסלול הזול ביותר שכולל אותה */
-    cheapestWith(feature){ return PLANS.find(p => p.id !== 'free' && !p.hidden && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' ? true : p.features[feature])) || PLANS[3] }
+    cheapestWith(feature){ const cd = typeof window !== 'undefined' && window.MYLUACH_MODE === 'countdown';
+      const ok = p => p.id !== 'free' && !p.hidden && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' ? true : p.features[feature]);
+      /* בלוח ספירה: קודם מסלולי הספירה */
+      return (cd && PLANS.find(p => p.cd && ok(p))) || PLANS.find(p => !p.cd && ok(p)) || PLANS[3] }
   };
   const LPo = window.MyLuachPlans;
   LPo.ready = (typeof fetch === 'function' && typeof location !== 'undefined' && /^https?:/.test(location.protocol))

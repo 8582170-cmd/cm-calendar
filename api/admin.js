@@ -44,14 +44,14 @@ function clean(c) {
   out.ppAcct = !!c.ppAcct;
   out.ppGpay = !!c.ppGpay;
   /* מסלולים קבועים שהוסתרו מהמכירה */
-  out.off = (Array.isArray(c.off) ? c.off : []).filter(x => ['basic', 'family', 'full'].includes(x));
+  out.off = (Array.isArray(c.off) ? c.off : []).filter(x => ['basic', 'family', 'full', 'cdbasic', 'cdfull'].includes(x));
   /* נוסח המיילים */
   { const T = c.mailTpl || {}; out.mailTpl = {};
     for (const k of ['welcome', 'purchase', 'donation', 'owner']) { const t = T[k] || {}, o = {}; for (const f of ['subject', 'title', 'body', 'button', 'foot']) if (t[f] != null && String(t[f]).trim() !== '') o[f] = String(t[f]).slice(0, f === 'body' ? 3000 : 200); if (Object.keys(o).length) out.mailTpl[k] = o; } }
   /* מסלולים נוספים מהניהול */
   out.extra = (Array.isArray(c.extra) ? c.extra : []).slice(0, 20).map(x => ({
     id: /^x[a-z0-9]{1,12}$/.test(String(x.id || '')) ? String(x.id) : 'x' + Math.random().toString(36).slice(2, 8),
-    name: String(x.name || '').trim().slice(0, 30) || 'מסלול חדש', base: ['basic', 'family', 'full'].includes(x.base) ? x.base : 'full',
+    name: String(x.name || '').trim().slice(0, 30) || 'מסלול חדש', base: ['basic', 'family', 'full', 'cdbasic', 'cdfull'].includes(x.base) ? x.base : 'full',
     ils: num(x.ils, 0, 100000) || 0, usd: num(x.usd, 0, 100000) || 0,
     downloads: x.downloads === '' || x.downloads == null ? null : Math.max(0, Math.min(100, parseInt(x.downloads, 10) || 0)),
     events: x.events === '' || x.events == null ? null : Math.max(0, Math.min(100000, parseInt(x.events, 10) || 0)),

@@ -474,7 +474,7 @@ function preview(){
 function xpDraw(){const B=$('#xpBox');if(!B)return;const L=C.extra||[];
   B.innerHTML=L.length?L.map((x,i)=>'<div class="xp" data-i="'+i+'" style="border:1px solid var(--line,#ddd);border-radius:10px;padding:10px;margin-top:8px"><div class="row" style="flex-wrap:wrap;gap:8px">'+
     '<label><input type="checkbox" data-x="on"'+(x.on?' checked':'')+'> פעיל</label><label>שם <input type="text" data-x="name" value="'+esc(x.name||'')+'" maxlength="30" style="width:130px"></label>'+
-    '<label>מבוסס על <select data-x="base">'+[['basic','בסיסי'],['family','משפחתי'],['full','מלא']].map(([k,v])=>'<option value="'+k+'"'+(x.base===k?' selected':'')+'>'+v+'</option>').join('')+'</select></label>'+
+    '<label>מבוסס על <select data-x="base">'+[['basic','בסיסי'],['family','משפחתי'],['full','מלא'],['cdbasic','ספירה בסיסית'],['cdfull','ספירה מלאה']].map(([k,v])=>'<option value="'+k+'"'+(x.base===k?' selected':'')+'>'+v+'</option>').join('')+'</select></label>'+
     '<label>מחיר ₪ <input type="number" data-x="ils" min="0" value="'+val(x.ils)+'" style="width:80px"></label><label>$ <input type="number" data-x="usd" min="0" value="'+val(x.usd)+'" style="width:70px"></label>'+
     '<label>הורדות <input type="number" data-x="downloads" min="0" value="'+(x.downloads==null?'':x.downloads)+'" style="width:60px"></label><label>אירועים <input type="number" data-x="events" min="0" value="'+(x.events==null?'':x.events)+'" style="width:70px"></label>'+
     '<label><input type="checkbox" data-x="cd"'+(x.cd?' checked':'')+'> רק ספירה לאחור</label><button class="btn danger small" type="button" data-xdel="'+i+'">מחיקה</button></div>'+
