@@ -44,4 +44,14 @@ async function get(ppid) {
   const r = await fetch(base() + '/v2/checkout/orders/' + encodeURIComponent(ppid), { headers: { Authorization: 'Bearer ' + await token() } });
   return r.json();
 }
-module.exports = { ready, create, capture };
+/* החזר כספי (מלא או חלקי) לפי מזהה הגבייה. key = מפתח למניעת החזר כפול */
+async function refund(captureId, amount, key, note) {
+  const r = await fetch(base() + '/v2/payments/captures/' + encodeURIComponent(captureId) + '/refund', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json', 'PayPal-Request-Id': key, Prefer: 'return=representation' },
+    body: JSON.stringify({ ...(amount ? { amount: { value: (Math.round(amount * 100) / 100).toFixed(2), currency_code: 'ILS' } } : {}), note_to_payer: String(note || 'החזר מ־MyLuach').slice(0, 255) })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const iss = (j.details && j.details[0] && j.details[0].issue) || j.name || ''; throw Object.assign(new Error(iss || ('paypal ' + r.status)), { issue: iss }); }
+  return { id: j.id, status: j.status, amount: j.amount ? +j.amount.value : amount };
+}
+module.exports = { ready, create, capture, refund };

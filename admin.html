@@ -76,7 +76,7 @@ const $=s=>document.querySelector(s),app=$('#app');
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let PW='',D=null,C=null;
 try{PW=sessionStorage.getItem('myluach-admin')||''}catch(e){}
-const MAIL_KIND={confirm:'אישור תזכורת',reminder:'תזכורת',test:'בדיקה',appt:'תזכורת לפגישה',purchase:'אישור רכישה ללקוח',owner:'הודעה לך על רכישה',welcome:'ברוכים הבאים (הרשמה)',alert:'התראת אחסון',other:'אחר'};
+const MAIL_KIND={refund:'החזר תשלום ללקוח',confirm:'אישור תזכורת',reminder:'תזכורת',test:'בדיקה',appt:'תזכורת לפגישה',purchase:'אישור רכישה ללקוח',owner:'הודעה לך על רכישה',welcome:'ברוכים הבאים (הרשמה)',alert:'התראת אחסון',other:'אחר'};
 function mailReport(M){
   const P=['resend','brevo','mailjet'],days=Object.keys(M.byDay||{}).sort().reverse();
   const tot={failed:0};days.forEach(d=>{const o=M.byDay[d];P.forEach(k=>tot[k]=(tot[k]||0)+(o[k]||0));tot.failed+=o.failed||0});
@@ -135,8 +135,8 @@ function render(){
     (D.mail.users?'<span>· משתמשים: <b>'+D.mail.users.total+'</b> · טלפונים מאומתים: <b>'+D.mail.users.phones+'</b> · תזכורות קוליות: <b>'+D.mail.users.voice+'</b></span>':'')+'<span>· תזכורות פעילות: <b>'+(D.mail.reminders.active||0)+'</b></span><span>ממתינות לאישור: '+(D.mail.reminders.pending||0)+'</span></div>'+
     '<p class="sub" style="margin-top:12px">שרתי מייל מחוברים (לפי סדר העדיפות): '+(['resend','brevo','mailjet'].filter(k=>(D.mail.providers||{})[k]).map(k=>esc(k)+' ✅').join(' ← ')||'אין')+'</p>'+
     '<div class="row"><input type="email" id="mtTo" dir="ltr" placeholder="מייל לבדיקה"><select id="mtP">'+['resend','brevo','mailjet'].filter(k=>(D.mail.providers||{})[k]).map(k=>'<option>'+k+'</option>').join('')+'</select><button type="button" id="mtGo">שליחת מייל בדיקה</button><span id="mtMsg"></span></div></section>'+mailReport(D.mail):'')+
-  '<section><h2>הזמנות אחרונות</h2><p class="sub">100 האחרונות. "ממתין" = נפתח חלון תשלום ולא שולם.</p><div class="row"><button class="btn danger small" type="button" id="ordDel">🗑 מחיקת המסומנות</button><span class="sub" id="ordMsg"></span></div><div class="scroll"><table class="tbl" id="ordT"><thead><tr><th></th><th>תאריך</th><th>מסלול</th><th>סכום</th><th>מצב</th><th>קופון</th><th>מייל</th><th>מספר</th></tr></thead><tbody>'+
-  (D.orders||[]).map(o=>'<tr><td><input type="checkbox" class="ord-sel" value="'+esc(o.id)+'"></td><td>'+new Date(o.created_at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</td><td>'+esc(o.plan==='donation'?'תרומה':(D.defaults[o.plan]||{}).name||o.plan)+'</td><td>'+esc(o.amount)+' ₪</td><td class="st-'+esc(o.status)+'">'+({paid:'שולם',pending:'ממתין',failed:'נכשל',underpaid:'שולם חלקית'}[o.status]||esc(o.status))+'</td><td dir="ltr">'+esc(o.coupon||'')+'</td><td dir="ltr">'+esc(o.email||'')+'</td><td dir="ltr">'+esc(o.id.slice(0,8))+'</td></tr>').join('')+
+  '<section><h2>הזמנות אחרונות</h2><p class="sub">100 האחרונות. "ממתין" = נפתח חלון תשלום ולא שולם.</p><div class="row"><button class="btn danger small" type="button" id="ordDel">🗑 מחיקת המסומנות</button><span class="sub" id="ordMsg"></span></div><div class="scroll"><table class="tbl" id="ordT"><thead><tr><th></th><th>תאריך</th><th>מסלול</th><th>סכום</th><th>מצב</th><th>קופון</th><th>מייל</th><th>מספר</th><th>החזר</th></tr></thead><tbody>'+
+  (D.orders||[]).map(o=>'<tr><td><input type="checkbox" class="ord-sel" value="'+esc(o.id)+'"></td><td>'+new Date(o.created_at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</td><td>'+esc(o.plan==='donation'?'תרומה':(D.defaults[o.plan]||{}).name||o.plan)+'</td><td>'+esc(o.amount)+' ₪</td><td class="st-'+esc(o.status)+'">'+({paid:'שולם',pending:'ממתין',failed:'נכשל',underpaid:'שולם חלקית',refunded:'הוחזר'}[o.status]||esc(o.status))+(o.refunded&&o.status==='paid'?' <small>(הוחזרו '+esc(o.refunded)+' ₪)</small>':'')+(o.via==='paypal'?' <small>PayPal</small>':'')+'</td><td dir="ltr">'+esc(o.coupon||'')+'</td><td dir="ltr">'+esc(o.email||'')+'</td><td dir="ltr">'+esc(o.id.slice(0,8))+'</td><td>'+(o.status==='paid'&&+o.amount>0?'<button class="btn small" type="button" data-refund="'+esc(o.id)+'">החזר</button>':'')+'</td></tr>').join('')+
   '</tbody></table></div></section>';
   bind();preview();
 }
@@ -483,6 +483,13 @@ function xpDraw(){const B=$('#xpBox');if(!B)return;const L=C.extra||[];
   B.querySelectorAll('[data-xdel]').forEach(b=>b.onclick=()=>{xpRead();const i=+b.dataset.xdel;if(!confirm('למחוק את המסלול "'+(C.extra[i].name||'')+'"? מי שכבר קנה אותו יאבד את המסלול. כדי רק להפסיק למכור, עדיף לכבות "פעיל".'))return;C.extra.splice(i,1);xpDraw()})}
 function xpRead(){const B=$('#xpBox');if(!B)return;C.extra=[...B.querySelectorAll('.xp')].map(d=>{const o={...(C.extra[+d.dataset.i]||{})};d.querySelectorAll('[data-x]').forEach(i=>{const k=i.dataset.x;o[k]=i.type==='checkbox'?i.checked:k==='bullets'?i.value.split('\n').map(t=>t.trim()).filter(Boolean):i.value});return o})}
 function bind(){
+  document.querySelectorAll('[data-refund]').forEach(b=>b.onclick=()=>{const o=(D.orders||[]).find(x=>x.id===b.dataset.refund);if(!o)return;
+    const left=Math.round((+o.amount-(+o.refunded||0))*100)/100,pp=o.via==='paypal';
+    const v=prompt('החזר להזמנה '+o.id.slice(0,8)+' ('+(o.email||'')+')\nכמה להחזיר? (עד '+left+' ₪. החזר מלא מבטל ללקוח את המסלול)',String(left));if(v==null)return;const amt=Math.round(Number(v)*100)/100;
+    if(!(amt>0&&amt<=left+0.001)){alert('סכום לא תקין');return}
+    if(!confirm(pp?'להחזיר '+amt+' ₪ ללקוח דרך PayPal? אי אפשר לבטל.':'ההזמנה הזאת לא שולמה בפייפל, ולכן ההחזר עצמו נעשה בנדרים פלוס (או ידנית).\nכאן רק מסמנים שהוחזרו '+amt+' ₪ ושולחים ללקוח מייל. להמשיך?'))return;
+    b.disabled=true;b.textContent='מחזיר…';
+    api({action:'refund',id:o.id,amount:amt,manual:!pp}).then(r=>{o.refunded=(+o.refunded||0)+r.amount;if(r.full)o.status='refunded';b.closest('tr').querySelector('td:nth-child(5)').innerHTML=r.full?'הוחזר':'שולם <small>(הוחזרו '+o.refunded+' ₪)</small>';b.textContent=r.via==='paypal'?'✅ הוחזר בפייפל':'✅ סומן';if(!r.full)b.disabled=false}).catch(e=>{b.disabled=false;b.textContent='החזר';alert(e.message)})});
   {const flt=()=>{const k=$('#mlKind').value,q=$('#mlQ').value.trim().toLowerCase();let n=0;document.querySelectorAll('#mlT tbody tr').forEach(tr=>{const ok=(!k||tr.dataset.k===k)&&(!q||tr.dataset.s.includes(q));tr.hidden=!ok;if(ok)n++});$('#mlN').textContent=n+' מיילים'};
    if($('#mlKind')){$('#mlKind').onchange=flt;$('#mlQ').oninput=flt;flt()}}
   xpDraw();if($('#xpAdd'))$('#xpAdd').onclick=()=>{xpRead();C.extra=C.extra||[];C.extra.push({id:'x'+Math.random().toString(36).slice(2,8),name:'',base:'full',ils:'',usd:'',downloads:'',events:'',tagline:'',bullets:[],cd:false,on:false});xpDraw()};

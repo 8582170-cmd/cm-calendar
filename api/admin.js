@@ -120,6 +120,27 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'backup') { const B = require('./_backup'); if (!B.ready()) return json(res, 200, { notReady: true }); try { return json(res, 200, await B.run()); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 200) }); } }
     /* מחיקה ידנית של דוגמיות או של לוחות ישנים של משתמשים (עם בדיקה לפני) */
     if (req.method === 'POST' && b.action === 'purge') { try { const U = require('./_usage'), bk = String(b.bucket || ''), r = await U.purge(bk, b.days, !!b.dry); if (bk === 'calendars') { const x = await U.purgeR2(Math.max(30, parseInt(b.days, 10) || 0), !!b.dry); r.files += x.files; r.bytes += x.bytes; r.deleted += x.deleted; } return json(res, 200, r); } catch (e) { return json(res, 400, { error: String(e.message || e).slice(0, 200) }); } }
+    /* החזר תשלום. פייפל: החזר אמיתי דרך פייפל (מלא או חלקי). נדרים פלוס / חינם: רק סימון שההזמנה הוחזרה (ההחזר עצמו נעשה בנדרים פלוס).
+       החזר מלא מבטל ללקוח את המסלול (ההזמנה כבר לא "שולם"). */
+    if (req.method === 'POST' && b.action === 'refund') {
+      const id = String(b.id || ''); if (!/^[0-9a-f]{24}$/.test(id)) return json(res, 400, { error: 'id' });
+      const rows = await db('orders?id=eq.' + id + '&select=*'); const o = rows && rows[0];
+      if (!o) return json(res, 404, { error: 'ההזמנה לא נמצאה' });
+      if (o.status !== 'paid') return json(res, 400, { error: 'אפשר להחזיר רק הזמנה ששולמה' });
+      const cb = o.callback && typeof o.callback === 'object' ? o.callback : {}, pp = cb.paypal || null;
+      const done = (cb.refunds || []).reduce((a, r) => a + (+r.amount || 0), 0), left = Math.round(((+o.amount || 0) - done) * 100) / 100;
+      let amt = b.amount === '' || b.amount == null ? left : Math.round(Number(b.amount) * 100) / 100;
+      if (!(amt > 0) || amt > left + 0.001) return json(res, 400, { error: 'סכום ההחזר לא תקין (נשאר להחזרה: ' + left + ' ₪)' });
+      let rec = { at: new Date().toISOString(), amount: amt, via: 'manual', note: String(b.note || '').slice(0, 200) };
+      if (pp && pp.txn && b.manual !== true) {
+        try { const r = await require('./_paypal').refund(pp.txn, amt, id + '-' + (cb.refunds || []).length, b.note); rec = { ...rec, via: 'paypal', id: r.id, status: r.status }; }
+        catch (e) { const M = { CAPTURE_FULLY_REFUNDED: 'התשלום כבר הוחזר במלואו בפייפל', REFUND_AMOUNT_EXCEEDED: 'הסכום גבוה מהסכום שנגבה', REFUND_TIME_LIMIT_EXCEEDED: 'עברו יותר מ־180 יום מהתשלום; החזר רק דרך התמיכה של פייפל', PERMISSION_DENIED: 'לאפליקציה בפייפל אין הרשאה להחזרים' }; return json(res, 502, { error: M[e.issue] || ('פייפל: ' + e.message) }); }
+      }
+      const full = amt >= left - 0.001;
+      await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ callback: { ...cb, refunds: [...(cb.refunds || []), rec] }, ...(full ? { status: 'refunded' } : {}) }) });
+      if (b.mail !== false) await require('./_paid').refundMail(o, amt);
+      return json(res, 200, { ok: true, via: rec.via, full, amount: amt });
+    }
     /* תצוגה מקדימה של המיילים ללקוח ולבעל האתר */
     if (req.method === 'POST' && b.action === 'mailpreview') {
       const P = require('./_paid'), cfg = await loadConfig();
@@ -218,7 +239,11 @@ module.exports = async (req, res) => {
         if (t.toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }) === day) dl.today[r.kind] = (dl.today[r.kind] || 0) + 1; if (r.email) us.add(r.email); });
       dl.users = us.size;
     } catch (e) { dl = { missing: /does not exist|42P01|PGRST205/.test(e.message) }; }
-    const orders = await db('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at&order=created_at.desc&limit=100');
+    const orders = (await db('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at,callback&order=created_at.desc&limit=100') || []).map(o => {
+      const cb = o.callback && typeof o.callback === 'object' ? o.callback : {};
+      const via = cb.paypal ? 'paypal' : !(+o.amount) ? 'free' : Object.keys(cb).some(k => /^[A-Z]/.test(k)) ? 'nedarim' : '';
+      const refunded = (cb.refunds || []).reduce((a, r) => a + (+r.amount || 0), 0); delete o.callback; return { ...o, via, refunded };
+    });
     const uses = {};
     (orders || []).forEach(o => { if (o.coupon && o.status === 'paid') uses[o.coupon] = (uses[o.coupon] || 0) + 1; });
     const defaults = {};

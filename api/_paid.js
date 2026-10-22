@@ -16,10 +16,12 @@ const DEFAULTS = {
     button: 'לבונה הלוח', foot: 'מספר הזמנה: {הזמנה}. שאלות? פשוט עונים למייל הזה.' },
   donation: { subject: 'תודה על התרומה ל־MyLuach', title: 'תודה רבה על התרומה!',
     body: 'קיבלנו את תרומתך על סך {סכום}. תודה שאתם עוזרים לנו להמשיך.', button: '', foot: 'מספר הזמנה: {הזמנה}.' },
+  refund: { subject: 'החזר תשלום מ־MyLuach', title: 'בוצע החזר תשלום',
+    body: 'ביצענו החזר של {החזר} עבור {מסלול} (הזמנה {הזמנה}).\nההחזר יופיע באמצעי התשלום שבו שילמתם, בדרך כלל תוך כמה ימי עסקים.', button: '', foot: 'שאלות? פשוט עונים למייל הזה.' },
   owner: { subject: '💰 {סוג} חדשה: {מסלול} · {סכום}', title: '{סוג} חדשה',
     body: '{מסלול}\nסכום: {סכום}{קופון}\nלקוח: {מייל}\nאמצעי תשלום: {אמצעי}\nמספר הזמנה: {הזמנה}', button: 'לדף הניהול', foot: '' }
 };
-const KINDS = { welcome: 'ללקוח אחרי הרשמה', purchase: 'ללקוח אחרי רכישה', donation: 'לתורם אחרי תרומה', owner: 'אליך על כל רכישה ותרומה' };
+const KINDS = { welcome: 'ללקוח אחרי הרשמה', purchase: 'ללקוח אחרי רכישה', donation: 'לתורם אחרי תרומה', refund: 'ללקוח אחרי החזר תשלום', owner: 'אליך על כל רכישה ותרומה' };
 
 /* בונה מייל לפי הנוסח (מהניהול או הרגיל) והנתונים */
 function render(kind, vars, tpl) {
@@ -56,6 +58,12 @@ async function welcome() { return render('welcome', {}, (await loadConfig()).mai
 function previews(tpl) {
   const V = vars({ id: 'a1b2c3d4e5f6', plan: 'family', amount: 89, email: 'customer@example.com', coupon: '', via: 'PayPal' });
   const VD = vars({ id: 'a1b2c3d4e5f6', plan: 'donation', amount: 50, email: 'donor@example.com', via: 'נדרים פלוס' });
-  return Object.keys(DEFAULTS).map(k => ({ k, who: KINDS[k], ...render(k, k === 'donation' ? VD : V, tpl) }));
+  return Object.keys(DEFAULTS).map(k => ({ k, who: KINDS[k], ...render(k, k === 'donation' ? VD : k === 'refund' ? { ...V, 'החזר': '89 ₪' } : V, tpl) }));
 }
-module.exports = { markPaid, notify, welcome, previews, DEFAULTS, KINDS };
+/* מייל ללקוח על החזר */
+async function refundMail(o, amt) {
+  if (!o.email) return;
+  const { sendMail } = require('./_mail'), tpl = (await loadConfig()).mailTpl;
+  try { await sendMail({ to: o.email, ...render('refund', { ...vars(o), 'החזר': (+amt).toLocaleString('he-IL') + ' ₪' }, tpl) }, 'refund'); } catch (e) { console.error('refund mail', e.message); }
+}
+module.exports = { markPaid, notify, welcome, previews, refundMail, DEFAULTS, KINDS };
