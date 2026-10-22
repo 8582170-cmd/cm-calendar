@@ -36,6 +36,7 @@ function clean(c) {
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
   out.pay = ['paypal', 'sumit'].includes(c.pay) ? c.pay : 'nedarim';
+  out.payAlso = (Array.isArray(c.payAlso) ? c.payAlso : []).filter((x, i, l) => ['nedarim', 'paypal', 'sumit'].includes(x) && x !== out.pay && l.indexOf(x) === i);
   out.sumitCap = Math.max(0, Math.min(100000, parseInt(c.sumitCap, 10) || 0));
   out.sumitPeriod = c.sumitPeriod === 'rolling' ? 'rolling' : 'month';
   out.payAfter = c.payAfter === 'nedarim' ? 'nedarim' : 'paypal';

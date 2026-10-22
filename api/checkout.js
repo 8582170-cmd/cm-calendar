@@ -20,24 +20,23 @@ async function sumitCount(cfg) {
   try { const r = await db('orders?select=id&status=in.(paid,refunded)&paid_at=gte.' + encodeURIComponent(since.toISOString()) + '&callback->sumit=not.is.null&limit=1000'); return (r || []).length; }
   catch (e) { return 0; }
 }
-/* avoid: אמצעי שנכשל אצל הלקוח הזה (למשל SUMIT לא נטען) ולכן מדלגים עליו */
-async function provider(cfg, isDon, avoid) {
+/* אמצעי התשלום הזמינים ללקוח הזה, לפי הסדר: ברירת המחדל מהניהול ואחריה "להציע גם".
+   avoid: אמצעי שנכשל אצל הלקוח (למשל SUMIT לא נטען) ולכן מדלגים עליו.
+   SUMIT שלא מוגדר / שהמכסה שלו נגמרה: במקומו האמצעי שנבחר "אחר כך". */
+async function providers(cfg, isDon, avoid) {
   const ned = !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), pp = require('./_paypal').ready();
   /* דף התרומות בנוי על הטופס של נדרים פלוס */
-  if (isDon) return ned ? 'nedarim' : null;
-  const sm = require('./_sumit').ready() && avoid !== 'sumit';
-  const ok = { paypal: pp && avoid !== 'paypal', nedarim: ned && avoid !== 'nedarim', sumit: sm };
-  const want = ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim';
-  if (want === 'sumit') {
-    /* SUMIT עם מכסה חודשית (למשל 10 במסלול החינמי). אם הוא לא מוגדר, נכשל או שהמכסה נגמרה: האמצעי שנבחר "אחר כך" */
-    const cap = +(cfg.sumitCap || 0);
-    if (ok.sumit && (!(cap > 0) || await sumitCount(cfg) < cap)) return 'sumit';
-    const after = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
-    if (ok[after]) return after;
-    return ok.paypal ? 'paypal' : ok.nedarim ? 'nedarim' : null;
-  }
-  if (ok[want]) return want;
-  return ok.sumit ? 'sumit' : ok.paypal ? 'paypal' : ok.nedarim ? 'nedarim' : null;
+  if (isDon) return ned ? ['nedarim'] : [];
+  const ok = { nedarim: ned, paypal: pp, sumit: require('./_sumit').ready() };
+  if (avoid && ok[avoid] != null) ok[avoid] = false;
+  const ALL = ['nedarim', 'paypal', 'sumit'], first = ALL.includes(cfg.pay) ? cfg.pay : 'nedarim';
+  const list = [first, ...(Array.isArray(cfg.payAlso) ? cfg.payAlso : [])].filter((x, i, a) => ALL.includes(x) && a.indexOf(x) === i);
+  if (ok.sumit && list.includes('sumit')) { const cap = +(cfg.sumitCap || 0); if (cap > 0 && await sumitCount(cfg) >= cap) ok.sumit = false; }
+  let av = list.filter(x => ok[x]);
+  const after = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
+  if (list.includes('sumit') && !ok.sumit && ok[after] && av.indexOf(after) < 0) av.unshift(after);
+  if (!av.length) av = ['paypal', 'nedarim', 'sumit'].filter(x => ok[x]).slice(0, 1);
+  return av;
 }
 
 module.exports = async (req, res) => {
@@ -118,7 +117,7 @@ module.exports = async (req, res) => {
     }
     /* אתר שומר שבת: לא פותחים תשלום בשבת ובחג (לפי מיקום הגולש) */
     if (await require('./_shabbat').closedNow(req, cfg)) return json(res, 423, { error: 'shabbat', message: MSG.shabbat });
-    const prov = await provider(cfg, isDon, String(b.avoid || ''));
+    let provs = await providers(cfg, isDon, String(b.avoid || '')), prov = provs.indexOf(String(b.prov || '')) >= 0 || (b.prov === 'paypal' && !isDon && require('./_paypal').ready()) ? String(b.prov) : (provs[0] || null);
     if (!prov) return json(res, 503, { error: 'payments not configured', message: MSG.config });
     const id = crypto.randomBytes(12).toString('hex');
     const desc = isDon ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
@@ -127,14 +126,14 @@ module.exports = async (req, res) => {
     if (prov === 'sumit') {
       const charge = isDon ? amount : (Number(env('SUMIT_TEST_AMOUNT')) || amount);
       await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
-      return json(res, 200, { id, amount: charge, provider: 'sumit', sumit: require('./_sumit').pub(), email: email || '', ...extra });
+      return json(res, 200, { id, amount: charge, provider: 'sumit', provs, sumit: require('./_sumit').pub(), email: email || '', ...extra });
     }
     if (prov === 'paypal') {
       const charge = isDon ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);
       await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
       const ppid = await require('./_paypal').create(charge, id, desc + ' · ' + id.slice(0, 8), email);
       await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ txn: ppid }) });
-      return json(res, 200, { id, amount: charge, provider: 'paypal', ppid, ...extra });
+      return json(res, 200, { id, amount: charge, provider: 'paypal', provs, ppid, ...extra });
     }
 
     const mosad = env('NEDARIM_MOSAD'), apiValid = env('NEDARIM_API_VALID');
@@ -150,7 +149,7 @@ module.exports = async (req, res) => {
       Param1: id, Param2: plan,
       CallBack: site + '/api/nedarim-callback', CallBackMailError: env('NEDARIM_CALLBACK_MAIL_ERROR')
     };
-    json(res, 200, { id, amount: charge, provider: 'nedarim', tx, ...extra });
+    json(res, 200, { id, amount: charge, provider: 'nedarim', provs, tx, ...extra });
   } catch (e) {
     console.error('checkout', e);
     json(res, 500, { error: 'server error', message: MSG.server });

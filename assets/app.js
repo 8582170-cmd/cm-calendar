@@ -3425,7 +3425,7 @@ function buyPlan(planId){
   let saved={};try{saved=JSON.parse(localStorage.getItem('myluach-buyer')||'{}')}catch(e){}
   const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח.</p>'+
     '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label><label class="pay-coupon">קוד קופון<span><input type="text" id="payCoupon" dir="ltr" autocomplete="off" spellcheck="false"><button class="btn" type="button" id="payCouponGo">החלה</button></span><small id="payCouponMsg"></small></label></div>'+
-    '<p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" data-src="https://www.matara.pro/nedarimplus/iframe?language=he" hidden></iframe><div id="ppBox" class="pp-box" hidden></div>'+
+    '<div id="payChoose" class="pay-choose" role="radiogroup" aria-label="דרך תשלום" hidden></div><p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" data-src="https://www.matara.pro/nedarimplus/iframe?language=he" hidden></iframe><div id="ppBox" class="pp-box" hidden></div>'+
     '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>');
   m.querySelector('.modal').classList.add('pay-modal');
   /* פרטי בעל הכרטיס מוצגים רק בנדרים פלוס (בפייפל ממלאים אצלם). הקופון תמיד */
@@ -3437,6 +3437,7 @@ function buyPlan(planId){
   const onMsg=e=>{if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;const d=e.data;if(!d||!d.Name)return;
     if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
     else if(d.Name==='TransactionResponse'){const v=d.Value||{};
+      if(v.Status==='Error'&&UNSUP.test(String(v.Message||''))&&canPP()){switchTo('paypal','הכרטיס הזה לא נתמך כאן (למשל כרטיס מחו״ל). עוברים לתשלום ב־PayPal…');return}
       if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);const em=String(v.Message||'');msg(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות של בעל הכרטיס. מי שאין לו תעודת זהות ישראלית יכול לפנות אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.':esc(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1);if(/zeout/i.test(em))$m('#payZeout').focus()}
       else{go.remove();frame.style.display='none';msg('התשלום התקבל. מאשרים מול השרת…');waitPaid()}}};
   window.addEventListener('message',onMsg);
@@ -3450,10 +3451,10 @@ function buyPlan(planId){
   /* קופון או הנחה של 100%: המסלול נפתח בלי תשלום */
   const freeDone=j=>{close();activatePlan(j.plan,j.id);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:j.plan,at:Date.now()}))}catch(e){}
     modal('<h3>המסלול '+esc(LP.byId(j.plan).name)+' פעיל</h3><p class="hint">הקוד הופעל והמסלול נפתח בחינם. אפשר להוריד ולהדפיס את הלוח. מספר הזמנה: '+esc(j.id.slice(0,8))+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>')};
-  let AVOID='',CUR_COUPON='';
-  const mkOrder=coupon=>{CUR_COUPON=coupon||'';return authHeaders().then(h=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({plan:p.id,coupon:coupon||'',avoid:AVOID})}))
+  let AVOID='',CUR_COUPON='',WANT='',PROVS=[],NED_GO=null,PPC='';Promise.resolve(LP&&LP.ready).then(d=>{PPC=(d&&d.ppc)||''});
+  const mkOrder=coupon=>{CUR_COUPON=coupon||'';return authHeaders().then(h=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({plan:p.id,coupon:coupon||'',avoid:AVOID,prov:WANT})}))
     .then(r=>r.json().catch(()=>({})).then(j=>{if(j.error==='coupon')throw Object.assign(new Error('coupon'),{msg:j.message});if(!r.ok||!(j.tx||j.ppid||j.sumit||j.free))throw Object.assign(new Error(j.error||r.status),{msg:j.message});return j}))
-    .then(j=>{if(j.free){freeDone(j);return j}order=j;if(!PROV)setupProv(j.provider);setAmt(j.amount,j);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j})};
+    .then(j=>{if(j.free){freeDone(j);return j}order=j;PROVS=j.provs||[j.provider];if(!PROV)setupProv(j.provider);setAmt(j.amount,j);try{localStorage.setItem(ORDER_KEY,JSON.stringify({id:j.id,plan:p.id,at:Date.now()}))}catch(e){}return j})};
   let orderP=mkOrder();
   $m('#payCouponGo').onclick=()=>{const code=$m('#payCoupon').value.trim(),cm=$m('#payCouponMsg');if(!code){cm.textContent='';return}
     cm.textContent='בודקים…';cm.className='';
@@ -3462,14 +3463,23 @@ function buyPlan(planId){
   $m('#payCoupon').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$m('#payCouponGo').click()}};
   orderP.then(()=>{if(ready)go.disabled=false}).catch(e=>{go.disabled=true;msg(e.msg?esc(e.msg):'התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
   /* אמצעי התשלום נקבע בשרת: נדרים פלוס (טופס מוטמע) או פייפל (כפתורים של פייפל) */
-  function setupProv(pv){PROV=pv||'nedarim';
+  /* מעבר בין דרכי תשלום באותו חלון: בחירה של הלקוח, תקלה, או כרטיס שלא נתמך */
+  const PNAME={nedarim:'💳 כרטיס אשראי',sumit:'💳 כרטיס אשראי',paypal:'PayPal / כרטיס מחו״ל'};
+  const UNSUP=/לא נתמך|אינו נתמך|not supported|unsupported|foreign|חו["״]?ל|כרטיס זר|אמריקן|american express|amex|diners|דיינרס|zeout/i;
+  const canPP=()=>PROVS.includes('paypal')||!!PPC;
+  function resetPay(){const box=$m('#ppBox');box.innerHTML='';box.hidden=true;frame.hidden=true;if(NED_GO)go.onclick=NED_GO;go.hidden=false;go.disabled=true;go.textContent='לתשלום '+(order?order.amount+' ₪':price);
+    m.querySelectorAll('.pay-who>label:not(.pay-coupon)').forEach(x=>x.hidden=true);PROV='';ready=false}
+  function switchTo(pv,why,avoid){if(stop)return;if(avoid)AVOID=avoid;WANT=pv||'';resetPay();msg(why||'טוען…');orderP=mkOrder(CUR_COUPON);orderP.catch(e=>msg(e.msg?esc(e.msg):'התשלום באתר לא זמין כרגע. נסו שוב בעוד כמה דקות.',1))}
+  function drawChoose(){const c=$m('#payChoose');if(!c)return;const L=PROVS.slice();if(L.length<2){c.hidden=true;return}
+    const nm=k=>L.filter(x=>x!=='paypal').length>1&&k!=='paypal'?(k==='sumit'?'💳 כרטיס (SUMIT)':'💳 כרטיס (נדרים פלוס)'):PNAME[k];
+    c.hidden=false;c.innerHTML=L.map(k=>'<button type="button" role="radio" aria-checked="'+(k===PROV)+'" data-pv="'+k+'">'+nm(k)+'</button>').join('');
+    c.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{if(b.dataset.pv!==PROV)switchTo(b.dataset.pv)})}
+  function setupProv(pv){PROV=pv||'nedarim';if(!NED_GO)NED_GO=go.onclick;drawChoose();
     if(PROV==='nedarim'){frame.hidden=false;frame.src=frame.dataset.src;m.querySelectorAll('.pay-who>label').forEach(x=>x.hidden=false);return}
     /* SUMIT: טופס כרטיס באתר. פרטי הכרטיס הופכים לאסימון ישירות מול SUMIT (הם לא עוברים דרכנו), והקבלה נשלחת ללקוח מ-SUMIT */
     if(PROV==='sumit'){provName='SUMIT';
       /* SUMIT לא נטען או לא עובד: עוברים לדרך התשלום השנייה שהוגדרה, באותו חלון */
-      const nedGo=go.onclick;
-      const fallback=why=>{if(stop)return;AVOID='sumit';msg(why||'עוברים לדרך תשלום אחרת…');box.innerHTML='';box.hidden=true;go.onclick=nedGo;go.hidden=false;go.disabled=true;go.textContent='לתשלום '+(order?order.amount+' ₪':price);
-        PROV='';ready=false;provName='נדרים פלוס';orderP=mkOrder(CUR_COUPON);orderP.catch(e=>msg(e.msg?esc(e.msg):'התשלום באתר לא זמין כרגע. נסו שוב בעוד כמה דקות.',1))};ready=true;m.querySelectorAll('.pay-who>label').forEach(x=>x.hidden=!x.matches('.pay-coupon')&&!x.querySelector('#payName,#payMail'));
+      const fallback=why=>{if(PROV==='sumit')switchTo('',why||'עוברים לדרך תשלום אחרת…','sumit')};ready=true;m.querySelectorAll('.pay-who>label').forEach(x=>x.hidden=!x.matches('.pay-coupon')&&!x.querySelector('#payName,#payMail'));
       const box=$m('#ppBox');box.hidden=false;
       box.innerHTML='<form id="smForm" class="sm-form" onsubmit="return false" dir="rtl"><label>מספר כרטיס<input type="text" data-og="cardnumber" inputmode="numeric" autocomplete="cc-number" dir="ltr" maxlength="19"></label>'+
         '<div class="sm-row"><label>חודש<select data-og="expirationmonth">'+Array.from({length:12},(_,i)=>'<option>'+String(i+1).padStart(2,'0')+'</option>').join('')+'</select></label><label>שנה<select data-og="expirationyear">'+Array.from({length:12},(_,i)=>{const y=new Date().getFullYear()+i;return '<option value="'+y+'">'+y+'</option>'}).join('')+'</select></label><label>3 ספרות בגב הכרטיס<input type="text" data-og="cvv" inputmode="numeric" autocomplete="cc-csc" dir="ltr" maxlength="4"></label></div>'+
@@ -3487,7 +3497,7 @@ function buyPlan(planId){
         Promise.all([orderP,libs]).then(([o])=>new Promise((res,rej)=>{const S=o.sumit||{};window.OfficeGuy.Payments.CreateToken({CompanyID:S.cid,APIPublicKey:S.pk,FormSelector:'#smForm',
             ResponseCallback:r=>r&&r.Status===0&&r.Data&&r.Data.SingleUseToken?res({o,t:r.Data.SingleUseToken}):rej(Object.assign(new Error((r&&r.UserErrorMessage)||'פרטי הכרטיס לא תקינים'),{sys:!r||r.Status!==1&&!r.UserErrorMessage}))})}))
           .then(({o,t})=>fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'sumitcharge',id:o.id,token:t,name,email:mail})}).then(r=>r.json()))
-          .then(x=>{if(x.fallback){fallback(x.message);return}if(x.status==='paid'){close();activatePlan(x.plan,order.id);modal('<h3>תודה! המסלול '+esc(LP.byId(x.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. הקבלה נשלחה למייל. מספר הזמנה: '+order.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}fail(x.message||'התשלום לא אושר.')})
+          .then(x=>{if(x.fallback){fallback(x.message);return}if(x.status!=='paid'&&UNSUP.test(x.message||'')&&canPP()){switchTo('paypal','הכרטיס הזה לא נתמך כאן. עוברים לתשלום ב־PayPal (מתאים גם לכרטיסים מחו״ל)…');return}if(x.status==='paid'){close();activatePlan(x.plan,order.id);modal('<h3>תודה! המסלול '+esc(LP.byId(x.plan).name)+' פעיל</h3><p class="hint">אפשר להוריד ולהדפיס את הלוח. הקבלה נשלחה למייל. מספר הזמנה: '+order.id.slice(0,8)+'</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>');return}fail(x.message||'התשלום לא אושר.')})
           .catch(e=>{if(e&&e.sys){fallback();return}fail(e.message||'התשלום נכשל. נסו שוב.')})};
       go.hidden=false;go.disabled=false;return}
     provName='PayPal';ready=true;go.hidden=true;m.querySelectorAll('.pay-who>label:not(.pay-coupon)').forEach(x=>x.hidden=true);const box=$m('#ppBox');box.hidden=false;msg('טוען טופס תשלום מאובטח…');

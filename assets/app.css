@@ -1400,3 +1400,5 @@ body.fx-on .cell[data-date]:hover::after{display:none}
 .pp-gpay{margin-bottom:10px;height:44px}
 .sm-form label{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:600;margin-bottom:8px}.sm-form input,.sm-form select{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg,#fff)}
 .sm-row{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
+.pay-choose{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.pay-choose button{flex:1 1 140px;font:inherit;font-weight:700;font-size:14px;padding:9px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg,#fff);cursor:pointer}
+.pay-choose button[aria-checked=true]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink,#fff)}
