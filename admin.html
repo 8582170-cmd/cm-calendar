@@ -107,7 +107,7 @@ const val=v=>v==null?'':v;
 function render(){
   C.plans=C.plans||{};C.sale=C.sale||{on:false,percent:20,plans:[],until:'',label:''};C.coupons=C.coupons||[];
   const eff=D.effective||{plans:{}};
-  app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><button class="btn" type="button" id="out">יציאה</button></div>'+
+  app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><div class="row"><a class="btn" href="/admin-studio">סטודיו רקעים לברכות</a><button class="btn" type="button" id="out">יציאה</button></div></div>'+
   actSection()+usageSection()+
   (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
   '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול. "מוצג למכירה" כבוי = המסלול לא מופיע באתר ולא נמכר (מי שכבר קנה ממשיך להשתמש בו).</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th><th>מוצג למכירה</th></tr></thead><tbody>'+

@@ -24,6 +24,10 @@
    "destination": "/admin.html"
   },
   {
+   "source": "/admin-studio",
+   "destination": "/admin-studio.html"
+  },
+  {
    "source": "/donate",
    "destination": "/donate.html"
   },
