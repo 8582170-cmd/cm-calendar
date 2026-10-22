@@ -24,6 +24,14 @@
    "destination": "/admin.html"
   },
   {
+   "source": "/brachot",
+   "destination": "/brachot/index.html"
+  },
+  {
+   "source": "/brachot/edit",
+   "destination": "/brachot/edit.html"
+  },
+  {
    "source": "/admin-studio",
    "destination": "/admin-studio.html"
   },
