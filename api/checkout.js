@@ -79,6 +79,8 @@ module.exports = async (req, res) => {
         await require('./_paid').markPaid(o, {}, info.why === 'coupon' ? 'קופון ' + (coupon && coupon.code) : 'הנחה של 100%');
         return json(res, 200, { id, amount: 0, free: true, plan, base: info.base, off: 100, why: info.why, coupon: coupon ? coupon.code : null });
       }
+      /* הנחה גבוהה מאוד (למשל 99%): החיוב המינימלי הוא 1 ₪ (מתחת לזה חברות התשלום לא גובות) */
+      if (amount > 0 && amount < 1) { amount = 1; info.amount = 1; info.min = true; }
       if (!(amount >= 1)) return json(res, 400, { error: 'low', message: MSG.low });
     }
     /* אתר שומר שבת: לא פותחים תשלום בשבת ובחג (לפי מיקום הגולש) */
@@ -87,7 +89,7 @@ module.exports = async (req, res) => {
     if (!prov) return json(res, 503, { error: 'payments not configured', message: MSG.config });
     const id = crypto.randomBytes(12).toString('hex');
     const desc = isDon ? 'MyLuach · תרומה' : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
-    const extra = { base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', coupon: coupon ? coupon.code : null };
+    const extra = { base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', min: !!(info && info.min), coupon: coupon ? coupon.code : null };
 
     if (prov === 'paypal') {
       const charge = isDon ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);
