@@ -209,8 +209,8 @@ var FIELDS = [
    בדף הניהול (סטודיו רקעים ← גופנים) קובעים לכל גופן אם הוא מוצג ללקוחות, את השם ואת הסוג. */
 var catalogP = null, OVR = {};
 function catalog(){
-  if (!catalogP) catalogP = fetch('/assets/greetings/fonts/catalog.json?v=1').then(function(r){ return r.json() }).then(function(list){
-    list.forEach(function(c){ var f = [c[0], 'my', c[3], 0, c[2], '/assets/greetings/fonts/' + c[1], !!c[4]]; FONTS.push(f); FONT_INFO[c[0]] = f; });
+  if (!catalogP) catalogP = fetch('/assets/greetings/fonts/catalog.json?v=2').then(function(r){ return r.json() }).then(function(list){
+    list.forEach(function(c){ var f = [c[0], 'my', c[3], c[5] ? 1 : 0, c[2], '/assets/greetings/fonts/' + c[1], !!c[4], c[5] ? '/assets/greetings/fonts/' + c[5] : null]; FONTS.push(f); FONT_INFO[c[0]] = f; });
     return FONTS;
   }).catch(function(){ return FONTS; });
   return catalogP;
@@ -228,7 +228,7 @@ function fontCss(f){
   var info0 = FONT_INFO[f];
   if (!cssLoads[f] && info0 && info0[5]) {
     var st = document.createElement('style');
-    st.textContent = '@font-face{font-family:"' + f + '";src:url(' + info0[5] + ') format("woff");font-display:swap}';
+    st.textContent = '@font-face{font-family:"' + f + '";src:url(' + info0[5] + ') format("woff");font-weight:400;font-display:swap}' + (info0[7] ? '@font-face{font-family:"' + f + '";src:url(' + info0[7] + ') format("woff");font-weight:700;font-display:swap}' : '');
     document.head.appendChild(st); cssLoads[f] = Promise.resolve();
   }
   if (!cssLoads[f]) cssLoads[f] = new Promise(function(ok){
