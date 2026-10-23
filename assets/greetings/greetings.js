@@ -358,7 +358,10 @@ function render(canvas, tpl, state, opt){
     var ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    if (tpl.bg.img) { /* תמונה שהועלתה: ממלאים את הדף בלי לעוות (חיתוך עדין בשוליים אם היחס שונה) */
+      var k = Math.max(canvas.width / img.width, canvas.height / img.height), iw = img.width * k, ih = img.height * k;
+      ctx.drawImage(img, (canvas.width - iw) / 2, (canvas.height - ih) / 2, iw, ih);
+    } else ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic';
     var items = layout(ctx, tpl, state);
@@ -412,8 +415,34 @@ function newText(tpl, after){
 }
 function newDivider(){ return D({ gap: 10 }); }
 
+/* עיצובים וקטגוריות שנוספו בניהול, והגדרות הגופנים: נטענים פעם אחת מהשרת */
+var remoteP = null, HIDDEN_CATS = {};
+function load(){
+  if (!remoteP) remoteP = fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).catch(function(){ return {} }).then(function(d){
+    d = d || {};
+    applySettings(d.fonts || {});
+    (d.cats || []).forEach(function(c){ var e = CATS.find(function(x){ return x[0] === c.id }); if (e) e[1] = c.name; else CATS.push([c.id, c.name]); });
+    (d.hideCats || []).forEach(function(id){ HIDDEN_CATS[id] = 1; });
+    (d.templates || []).slice().sort(function(a, b){ return (a.order || 0) - (b.order || 0) }).forEach(function(t){
+      if (TEMPLATES.some(function(x){ return x.id === t.id })) return;
+      t.colors = []; t.remote = true; TEMPLATES.push(t);
+    });
+    return d;
+  });
+  return remoteP;
+}
+/* פסקאות התחלה לעיצוב חדש מהניהול: נלקחות מהעיצובים המובנים, בצבע שנבחר */
+function starter(kind, main, accent){
+  var src = kind === 'invite' ? TEMPLATES[1] : TEMPLATES[0];
+  return clone(src.blocks).map(function(b){
+    if (b.type === 'divider') { b.color = accent; return b; }
+    b.color = (b.color && (b.color.charAt(0) === '@' || /^#(8a6|6b5|8a6d|5c6|7a4)/i.test(b.color))) ? accent : main;
+    return b;
+  });
+}
+
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, colorOf: colorOf, fontsReady: fontsReady };
 })();

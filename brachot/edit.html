@@ -62,7 +62,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=6"></script>
+<script src="/assets/greetings/greetings.js?v=7"></script>
 </head>
 <body>
 <div class="wrap">
@@ -145,7 +145,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 </dialog>
 
 <script>
-(function(){
+window.Greetings.load().then(function(){
 'use strict';
 var G = window.Greetings, $ = function(id){ return document.getElementById(id) };
 var params = new URLSearchParams(location.search), tpl = G.get(params.get('t') || '');
@@ -384,7 +384,7 @@ $('addDiv').onclick = function(){ S.blocks.push(G.newDivider()); sel = S.blocks.
 
 /* נוסחים מוכנים מהניהול */
 var presets = [], undo = null;
-fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).then(function(d){
+G.load().then(function(d){
   G.applySettings(d.fonts || {});
   var keys = S.blocks.map(function(b){ return b.k }).filter(Boolean);
   presets = (d.presets || []).filter(function(p){
@@ -433,7 +433,7 @@ $('resetAll').onclick = function(){
 };
 
 G.catalog().then(function(){ renderBlocks(); draw(); });
-})();
+});
 </script>
 </body>
 </html>

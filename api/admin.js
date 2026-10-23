@@ -88,6 +88,30 @@ module.exports = async (req, res) => {
       try { const out = await require('./_pages').adminAction(b); return json(res, out.error ? 400 : 200, out); }
       catch (e) { console.error('pages', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
     }
+    /* ברכות והזמנות: עיצובים (רקע שהועלה + אזור הטקסט + פסקאות התחלה) וקטגוריות אירועים */
+    if (req.method === 'POST' && (b.action === 'greettplget' || b.action === 'greettplsave')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      const g = await loadSetting('greettpl');
+      if (b.action === 'greettplsave') {
+        const str = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, n);
+        const num = (v, a, z) => Math.max(a, Math.min(z, Number(v) || 0));
+        const col = v => /^(#[0-9a-f]{3,8}|@[A-Z]{1,8})$/i.test(String(v || '')) ? String(v) : '#14213d';
+        g.cats = (Array.isArray(b.cats) ? b.cats : []).slice(0, 80).map(c => ({ id: str(c.id, 30).replace(/[^\w-]/g, ''), name: str(c.name, 40) })).filter(c => c.id && c.name);
+        g.hideCats = (Array.isArray(b.hideCats) ? b.hideCats : []).slice(0, 80).map(x => str(x, 30));
+        g.templates = (Array.isArray(b.templates) ? b.templates : []).slice(0, 600).map(x => ({
+          id: str(x.id, 40).replace(/[^\w-]/g, '') || ('u' + Date.now().toString(36)), title: str(x.title, 80), cat: str(x.cat, 30).replace(/[^\w-]/g, ''),
+          kind: x.kind === 'invite' ? 'invite' : 'greeting', price: num(x.price, 0, 10000), on: x.on !== false, order: num(x.order, 0, 100000),
+          bg: { img: /^https:\/\/[^\s"'<>]+$/.test(String((x.bg || {}).img || '')) ? String(x.bg.img) : '' },
+          area: { x: num((x.area || {}).x, 0, 794), y: num((x.area || {}).y, 0, 1123), w: num((x.area || {}).w, 40, 794), h: num((x.area || {}).h, 40, 1123), valign: (x.area || {}).valign === 'top' ? 'top' : 'center' },
+          blocks: (Array.isArray(x.blocks) ? x.blocks : []).slice(0, 40).map(k => k.type === 'divider'
+            ? { type: 'divider', style: str(k.style, 12), color: col(k.color), width: num(k.width, 0.1, 1), gap: num(k.gap, 0, 300) }
+            : { type: 'text', k: str(k.k, 20), text: str(k.text, 3000), text2: str(k.text2, 1000), cols: !!k.cols, font: str(k.font, 60), size: num(k.size, 6, 140), bold: !!k.bold, color: col(k.color), align: ['right', 'center', 'left'].includes(k.align) ? k.align : 'center', lh: num(k.lh, 0.8, 3), gap: num(k.gap, 0, 300) })
+        })).filter(x => x.bg.img);
+        g.updated = new Date().toISOString();
+        await saveSetting('greettpl', g);
+      }
+      return json(res, 200, { cats: g.cats || [], hideCats: g.hideCats || [], templates: g.templates || [] });
+    }
     /* ברכות והזמנות: אילו גופנים מוצגים ללקוחות, השם והסוג של כל גופן */
     if (req.method === 'POST' && (b.action === 'greetfontsget' || b.action === 'greetfontssave')) {
       const { loadSetting, saveSetting } = require('./_lib');
