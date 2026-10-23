@@ -347,6 +347,13 @@ function renderBlocks(){
     });
     var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'tb'; mb.textContent = openMore[i] ? 'פחות ▴' : 'עוד ▾'; mb.setAttribute('aria-expanded', String(!!openMore[i]));
     mb.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
+    var lhw = document.createElement('span'); lhw.style.display = 'contents';
+    [['▲', 'מרווח שורות גדול יותר', 0.05], ['▼', 'מרווח שורות קטן יותר', -0.05]].forEach(function(x){
+      var lb = document.createElement('button'); lb.type = 'button'; lb.className = 'tb'; lb.textContent = x[0]; lb.title = x[1]; lb.setAttribute('aria-label', x[1]);
+      lb.onclick = function(){ b.lh = Math.max(0.9, Math.min(3, Math.round((b.lh + x[2]) * 100) / 100)); changed(); };
+      lhw.appendChild(lb);
+    });
+    bar2.appendChild(cap(lhw, 'מרווח שורות'));
     bar2.appendChild(cap(mb, 'אפשרויות'));
     card.appendChild(bar2);
 
