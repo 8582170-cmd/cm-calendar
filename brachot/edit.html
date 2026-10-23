@@ -53,7 +53,7 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 .hnd{position:absolute;top:-17px;left:50%;transform:translateX(-50%);pointer-events:auto;touch-action:none;cursor:ns-resize;font:inherit;font-size:14px;font-weight:800;border:0;border-radius:999px;background:#1f8a96;color:#fff;padding:3px 12px;white-space:nowrap}
 .inl{position:absolute;border:0;outline:2px dashed #1f8a96;background:rgb(255 255 255 / .82);color:#000;resize:none;overflow:hidden;padding:0;margin:0;direction:rtl;z-index:3}
 /* סרגל הכלים הצף */
-#tb{position:absolute;z-index:5;display:flex;flex-wrap:nowrap;white-space:nowrap;gap:4px;align-items:center;background:#16262b;color:#fff;border-radius:16px;padding:6px;box-shadow:0 12px 30px -8px rgb(0 0 0 / .45);}
+#tb{position:absolute;z-index:5;display:flex;flex-wrap:wrap;justify-content:center;white-space:nowrap;width:max-content;max-width:min(900px,calc(100vw - 40px));gap:4px;align-items:center;background:#16262b;color:#fff;border-radius:16px;padding:6px;box-shadow:0 12px 30px -8px rgb(0 0 0 / .45);}
 #tb button,#tb select{font:inherit;font-size:16px;font-weight:700;min-height:44px;min-width:44px;padding:4px 12px;border:0;border-radius:11px;background:transparent;color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 #tb select{background:#22363c;padding-inline:10px}
 #tb button:hover{background:#2c454c}
@@ -63,6 +63,13 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 #tb .n{display:inline-flex;align-items:center;background:#22363c;border-radius:11px}
 #tb .n button{min-width:40px;padding:0;font-size:20px}
 #tb .n span{min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+#tb .grp{display:inline-flex;align-items:center;gap:2px;background:#22363c;border-radius:11px;padding-inline-start:10px}
+#tb .grp small{font-size:13px;font-weight:700;color:#b9c9cc;margin-inline-end:4px}
+#tb .grp button{min-width:38px;padding:0;font-size:17px}
+#tb .pop button{min-height:46px;min-width:0;padding:4px 10px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-size:16px}
+#tb .pop button:hover{background:var(--teal-soft);border-color:var(--teal)}
+#tb .pop .dot{width:34px;height:34px;min-height:34px;min-width:34px;padding:0;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18)}
+#tb .pop .danger{color:#b3261e}
 #tb .dotc{width:24px;height:24px;border-radius:50%;border:2px solid #fff}
 .pop{position:absolute;top:calc(100% + 8px);inset-inline-start:0;background:var(--sheet);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;min-width:280px;max-width:min(400px,calc(100vw - 24px))}
 .pop label{display:flex;flex-direction:column;gap:6px;font-size:16px;font-weight:700}
@@ -154,7 +161,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=9"></script>
+<script src="/assets/greetings/greetings.js?v=10"></script>
 </head>
 <body>
 <div class="wrap">
@@ -338,7 +345,7 @@ function place(){
   if (!narrow.matches) {
     var sw = $('stage').clientWidth, tw = tb.offsetWidth, th = tb.offsetHeight;
     var top = r.y * s - th - 26; if (top < -th - 10 || top < -40) top = (r.y + r.h) * s + 16;
-    tb.style.top = top + 'px'; tb.style.left = Math.max(-40, Math.min(sw - tw + 40, (r.x + r.w / 2) * s - tw / 2)) + 'px';
+    tb.style.top = top + 'px'; tb.style.left = (tw > sw - 20 ? (sw - tw) / 2 : Math.max(-40, Math.min(sw - tw + 40, (r.x + r.w / 2) * s - tw / 2))) + 'px';
   }
   if (editing && it.b.type === 'text') placeInl(it, s);
 }
@@ -458,8 +465,23 @@ function renderTb(){
     num(tb, 'זום', '🔍', function(d){ b.zoom = Math.max(1, Math.min(4, (b.zoom || 1) + d * .15)); return '🔍'; });
   }
   sep(tb);
+  var mvg = el('span', 'grp'); mvg.appendChild(el('small', '', 'הזזה')); tb.appendChild(mvg);
+  var A = tpl.area, lim = A.w / 2;
+  [['▲', 'למעלה', 0, -4], ['▼', 'למטה', 0, 4], ['▶', 'ימינה', 4, 0], ['◀', 'שמאלה', -4, 0]].forEach(function(m){
+    tbBtn(mvg, m[0], 'הזזה ' + m[1], function(){
+      if (m[3]) b.gap = Math.max(0, (b.gap || 0) + m[3]);
+      if (m[2]) b.dx = Math.max(-lim, Math.min(lim, (b.dx || 0) + m[2]));
+      changed();
+    });
+  });
+  if (b.dx) tbBtn(mvg, '⊙', 'חזרה למרכז', function(){ b.dx = 0; changed(); renderTb(); });
+  if (b.type === 'text') {
+    var lhg = el('span', 'grp'); lhg.appendChild(el('small', '', 'מרווח שורות')); tb.appendChild(lhg);
+    tbBtn(lhg, '▲', 'מרווח שורות גדול יותר', function(){ b.lh = Math.min(3, Math.round((b.lh + 0.05) * 100) / 100); changed(); });
+    tbBtn(lhg, '▼', 'מרווח שורות קטן יותר', function(){ b.lh = Math.max(0.9, Math.round((b.lh - 0.05) * 100) / 100); changed(); });
+  }
   var cb = tbBtn(tb, '', 'צבע', togglePop('color'), pop === 'color'); var dc = el('i', 'dotc'); dc.style.background = G.colorOf(b.color, tpl, S.colors); cb.appendChild(dc);
-  tbBtn(tb, '↕', 'רווחים', togglePop('space'), pop === 'space');
+  if (b.type !== 'text') tbBtn(tb, '↕', 'רווחים', togglePop('space'), pop === 'space');
   if (b.type === 'text') tbBtn(tb, '✎', 'עריכת הטקסט', function(){ startEdit(); }, editing);
   tbBtn(tb, '⋯', 'עוד', togglePop('more'), pop === 'more');
   if (narrow.matches) tbBtn(tb, '✕', 'סגירה', function(){ select(null); });
@@ -573,6 +595,7 @@ $('addDiv').onclick = function(){ var at = sel != null ? sel + 1 : S.blocks.leng
 
 /* רשימת השורות (למי שמעדיף) */
 var UIK = 'myluach-greet-ui', ui = {}; try { ui = JSON.parse(localStorage.getItem(UIK) || '{}') || {} } catch (e) {}
+if (ui.list == null) ui.list = true;
 function setList(on){ ui.list = on; try { localStorage.setItem(UIK, JSON.stringify(ui)) } catch (e) {} $('s2').classList.toggle('withList', on); $('listT').setAttribute('aria-pressed', String(on)); renderLayers(); draw(); }
 $('listT').onclick = function(){ setList(!ui.list); };
 function renderLayers(){
@@ -758,7 +781,7 @@ $('resetAll').onclick = function(){
 function refreshAll(){ renderFields(); renderLayers(); renderTb(); allColor(); $('scale').value = Math.round((S.scale || 1) * 100); if (step === 3) outPreview(); draw(); }
 
 G.catalog().then(function(){
-  allColor(); setList(!!ui.list);
+  allColor(); setList(ui.list !== false);
   var h = location.hash.slice(1), start = h === 'design' ? 2 : h === 'download' ? 3 : h === 'details' ? 1 : (fresh ? 1 : 2);
   go(start);
 });

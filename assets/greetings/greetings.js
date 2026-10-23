@@ -315,7 +315,7 @@ function layout(ctx, tpl, state){
     if (!bad && total <= A.h) break;
   }
   var off = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
-  items.forEach(function(it){ it.y = A.y + off + it.top; it.x = A.x; it.w = A.w; });
+  items.forEach(function(it){ it.y = A.y + off + it.top; it.x = A.x + (it.b.dx || 0); it.w = A.w; });
   return items;
 }
 
