@@ -68,13 +68,23 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .pr .hd b{font-size:17px}
 .savebar{position:sticky;bottom:0;background:var(--sheet);padding-block:10px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .ok{color:#1f7a3a;font-weight:700}
+.fl-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fl-bar select,.fl-bar input{width:auto}
+.fl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.fl-c{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--paper);min-width:0}
+.fl-c.off{opacity:.55}
+.fl-c .smp{font-size:30px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;min-height:42px}
+.fl-c .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+.fl-c .nm{font-size:12px;color:var(--mute);direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fl-c label.tg{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
+.fl-c label.tg input{width:18px;height:18px;accent-color:var(--teal)}
 .login{max-width:360px;margin:60px auto;display:flex;flex-direction:column;gap:10px}
 .msg{font-weight:700;color:var(--bad)}
 .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:8px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=3"></script>
+<script src="/assets/greetings/greetings.js?v=4"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -134,6 +144,23 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <button class="btn primary" type="button" id="prAdd">נוסח חדש</button></div>
     <div class="pr-list" id="prList"><p class="sub">טוען…</p></div>
     <div class="savebar"><button class="btn primary" type="button" id="prSave">שמירת הנוסחים</button><span id="prMsg" role="status"></span></div>
+  </section>
+
+  <section aria-labelledby="fl-h">
+    <h2 id="fl-h">גופנים לברכות</h2>
+    <p class="sub">כל הגופנים שבאתר, כולל האוספים שהעלית. מסמנים אילו מוצגים ללקוחות בבוחר הגופנים, ונותנים לכל אחד שם בעברית וסוג (הקבוצה שבה הוא יופיע).</p>
+    <div class="fl-bar">
+      <input type="search" id="flQ" placeholder="חיפוש לפי שם" aria-label="חיפוש גופן">
+      <select id="flS" aria-label="סינון לפי מצב"><option value="">הכל</option><option value="on">מוצגים ללקוחות</option><option value="off">מוסתרים</option></select>
+      <select id="flC" aria-label="סינון לפי סוג"><option value="">כל הסוגים</option></select>
+      <select id="flL" aria-label="סינון לפי מקור"><option value="">כל המקורות</option><option value="my">האוספים שלך</option><option value="he">Google עברית</option><option value="en">Google אנגלית</option></select>
+      <input id="flT" placeholder="טקסט לדוגמה" value="מזל טוב · שנה טובה" aria-label="טקסט לדוגמה">
+      <span class="sub" id="flN"></span>
+    </div>
+    <div class="fl-bar"><button class="btn sm" type="button" id="flAllOn">הצגת כל המסוננים</button><button class="btn sm" type="button" id="flAllOff">הסתרת כל המסוננים</button></div>
+    <div class="fl-grid" id="flGrid"><p class="sub">טוען…</p></div>
+    <div class="actions"><button class="btn" type="button" id="flMore" hidden>עוד גופנים</button></div>
+    <div class="savebar"><button class="btn primary" type="button" id="flSave">שמירת הגופנים</button><span id="flMsg" role="status"></span></div>
   </section>
 
   <section aria-labelledby="r-h">
@@ -302,6 +329,47 @@ function prRender(){
     box.appendChild(el);
   });
 }
+
+/* גופנים לברכות */
+var FL={}, flShown=60, flIO=null;
+var FCATS=[['STAM','סת״ם, רש״י וקודש'],['CLASSIC','קלאסי'],['HAND','כתב יד'],['OUTLINE','חלול ומעוטר'],['DISPLAY','כותרות'],['FUN','שמח וצבעוני'],['NEW','נוספים (לא ממוין)'],['SERIF','קלאסי (Google)'],['SANS_SERIF','מודרני (Google)'],['HANDWRITING','כתב יד (Google)']];
+function flInit(){
+  FCATS.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1];$('flC').appendChild(o)});
+  ['flQ','flS','flC','flL'].forEach(id=>$(id).addEventListener(id==='flQ'?'input':'change',()=>{flShown=60;flRender()}));
+  $('flT').addEventListener('input',()=>document.querySelectorAll('.fl-c .smp').forEach(e=>e.textContent=$('flT').value));
+  $('flMore').onclick=()=>{flShown+=60;flRender()};
+  $('flAllOn').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:true}));flRender()};
+  $('flAllOff').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:false}));flRender()};
+  $('flSave').onclick=()=>{$('flMsg').className='';$('flMsg').textContent='שומר…';
+    api({action:'greetfontssave',fonts:FL}).then(d=>{FL=d.fonts||{};GR.applySettings(FL);$('flMsg').className='ok';$('flMsg').textContent='נשמר. הלקוחות יראו את השינוי תוך כמה דקות.'})
+      .catch(e=>{$('flMsg').className='msg';$('flMsg').textContent='השמירה נכשלה: '+e.message})};
+  Promise.all([GR.catalog(),api({action:'greetfontsget'})]).then(([_,d])=>{FL=d.fonts||{};GR.applySettings(FL);flRender()})
+    .catch(e=>{$('flGrid').innerHTML='<p class="msg">לא הצלחתי לטעון את הגופנים: '+esc(e.message)+'</p>'});
+}
+function flSet(id,o){FL[id]=Object.assign({},FL[id]||{},o);GR.applySettings(FL)}
+function flList(){
+  const q=$('flQ').value.trim().toLowerCase(),st=$('flS').value,c=$('flC').value,l=$('flL').value;
+  return GR.pickList(true).filter(m=>(!q||(m.id+' '+m.label).toLowerCase().includes(q))&&(!st||(st==='on')===m.on)&&(!c||m.cat===c)&&(!l||m.lang===l));
+}
+function flRender(){
+  const all=flList(),box=$('flGrid');box.innerHTML='';
+  $('flN').textContent=all.length+' גופנים · '+GR.pickList().length+' מוצגים ללקוחות';
+  if(flIO)flIO.disconnect();
+  flIO='IntersectionObserver' in window?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){GR.fontCss(e.target.dataset.f);flIO.unobserve(e.target)}}),{rootMargin:'300px'}):null;
+  const catOpts=FCATS.map(c=>'<option value="'+c[0]+'">'+esc(c[1])+'</option>').join('');
+  all.slice(0,flShown).forEach(m=>{
+    const el=document.createElement('div');el.className='fl-c'+(m.on?'':' off');el.dataset.f=m.id;
+    el.innerHTML='<div class="smp"></div><div class="nm"></div><div class="row2"><input aria-label="שם בעברית"><select aria-label="סוג">'+catOpts+'</select></div><label class="tg"><input type="checkbox"> מוצג ללקוחות</label>';
+    const smp=el.querySelector('.smp');smp.textContent=$('flT').value;smp.style.fontFamily='"'+m.id+'", serif';if(m.lang==='en')smp.dir='ltr';
+    el.querySelector('.nm').textContent=m.id;
+    const inp=el.querySelector('input:not([type])');inp.value=m.label;inp.oninput=()=>flSet(m.id,{label:inp.value});
+    const sel=el.querySelector('select');sel.value=m.cat;sel.onchange=()=>flSet(m.id,{cat:sel.value});
+    const cb=el.querySelector('input[type=checkbox]');cb.checked=m.on;cb.onchange=()=>{flSet(m.id,{on:cb.checked});el.classList.toggle('off',!cb.checked);$('flN').textContent=all.length+' גופנים · '+GR.pickList().length+' מוצגים ללקוחות'};
+    box.appendChild(el);if(flIO)flIO.observe(el);else GR.fontCss(m.id);
+  });
+  $('flMore').hidden=all.length<=flShown;
+  if(!all.length)box.innerHTML='<p class="sub">לא נמצאו גופנים.</p>';
+}
 function start(){
   app.innerHTML='';app.appendChild($('studio').content.cloneNode(true));
   $('out').onclick=()=>{try{sessionStorage.removeItem('myluach-admin')}catch(e){}location.reload()};
@@ -342,6 +410,7 @@ function start(){
       box.appendChild(c)}))}
   $('occ').value='wedding';$('style').value='gate';$('pal').value='navygold';syncKinds();render();chips();cards();
   prInit();
+  flInit();
 }
 })();
 </script>

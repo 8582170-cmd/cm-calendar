@@ -5,9 +5,9 @@ const { loadSetting, json } = require('./_lib');
 /* נקרא דרך /api/pricing?c=_greetings (כדי לא להוסיף פונקציית שרת נוספת) */
 module.exports = async (req, res) => {
   try {
-    const g = await loadSetting('greetings');
+    const g = await loadSetting('greetings'), gf = await loadSetting('greetfonts');
     const presets = (g.presets || []).filter(p => p.on !== false).map(p => ({ id: p.id, title: p.title, cat: p.cat, kind: p.kind, fields: p.fields }));
     res.setHeader('Cache-Control', 'public, max-age=120');
-    json(res, 200, { presets });
+    json(res, 200, { presets, fonts: gf.fonts || {} });
   } catch (e) { console.error('greetings', e); json(res, 200, { presets: [] }); }
 };

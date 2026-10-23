@@ -62,7 +62,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=3"></script>
+<script src="/assets/greetings/greetings.js?v=4"></script>
 </head>
 <body>
 <div class="wrap">
@@ -218,25 +218,24 @@ function fpRender(){
   document.querySelectorAll('[data-fl]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.fl === fpFilter)) });
   if (io) io.disconnect();
   io = 'IntersectionObserver' in window ? new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) { G.fontCss(e.target.dataset.f); io.unobserve(e.target); } }) }, { root: list, rootMargin: '200px' }) : null;
-  var last = '', ORD = { STAM: 0, CLASSIC: 1, HAND: 2, OUTLINE: 3, DISPLAY: 4, FUN: 5, SERIF: 0, SANS_SERIF: 1, HANDWRITING: 3 }, LANG = { my: 0, he: 1, en: 2 };
-  G.FONTS.slice().sort(function(a, b){ return (LANG[a[1]] - LANG[b[1]]) || (ORD[a[2]] - ORD[b[2]]) || String(a[4] || a[0]).localeCompare(String(b[4] || b[0]), 'he'); }).forEach(function(f){
-    if (q && (f[0] + ' ' + (f[4] || '')).toLowerCase().indexOf(q) < 0) return;
-    if (fpFilter === 'he' || fpFilter === 'en' || fpFilter === 'my') { if (f[1] !== fpFilter) return; }
-    else if (fpFilter === 'HANDWRITING') { if (f[2] !== 'HANDWRITING' && f[2] !== 'HAND') return; }
-    else if (fpFilter === 'STAM') { if (f[2] !== 'STAM') return; }
-    else if (fpFilter && f[2] !== fpFilter) return;
-    var g = G.FONT_GROUPS[f[1]][f[2]];
+  var last = '', ORD = { STAM: 0, CLASSIC: 1, HAND: 2, OUTLINE: 3, DISPLAY: 4, FUN: 5, NEW: 6, SERIF: 0, SANS_SERIF: 1, HANDWRITING: 3 }, LANG = { my: 0, he: 1, en: 2 };
+  G.pickList().sort(function(a, b){ return (LANG[a.lang] - LANG[b.lang]) || ((ORD[a.cat] || 0) - (ORD[b.cat] || 0)) || String(a.label).localeCompare(String(b.label), 'he'); }).forEach(function(m){
+    if (q && (m.id + ' ' + m.label).toLowerCase().indexOf(q) < 0) return;
+    if (fpFilter === 'he' || fpFilter === 'en' || fpFilter === 'my') { if (m.lang !== fpFilter) return; }
+    else if (fpFilter === 'HANDWRITING') { if (m.cat !== 'HANDWRITING' && m.cat !== 'HAND') return; }
+    else if (fpFilter && m.cat !== fpFilter) return;
+    var g = (G.FONT_GROUPS[m.lang] || {})[m.cat] || '';
     if (g !== last) { var h = document.createElement('div'); h.className = 'fp-g'; h.textContent = g; list.appendChild(h); last = g; }
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'fp-i'; b.dataset.f = f[0];
-    b.setAttribute('aria-current', String(f[0] === fpCur));
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'fp-i'; b.dataset.f = m.id;
+    b.setAttribute('aria-current', String(m.id === fpCur));
     b.innerHTML = '<span class="s"></span><span class="n"></span>';
-    var s = b.querySelector('.s'); s.textContent = f[1] === 'en' ? 'Mazal Tov · Celebrate' : 'מזל טוב · שנה טובה'; s.style.fontFamily = '"' + f[0] + '", serif';
-    if (f[1] === 'en') s.dir = 'ltr';
-    b.querySelector('.n').textContent = f[4] || f[0];
-    b.setAttribute('aria-label', f[4] || f[0]);
-    b.onclick = function(){ closeFonts(); if (fpCb) fpCb(f[0]); };
+    var s = b.querySelector('.s'); s.textContent = m.lang === 'en' ? 'Mazal Tov · Celebrate' : 'מזל טוב · שנה טובה'; s.style.fontFamily = '"' + m.id + '", serif';
+    if (m.lang === 'en') s.dir = 'ltr';
+    b.querySelector('.n').textContent = m.label;
+    b.setAttribute('aria-label', m.label);
+    b.onclick = function(){ closeFonts(); if (fpCb) fpCb(m.id); };
     list.appendChild(b);
-    if (io) io.observe(b); else G.fontCss(f[0]);
+    if (io) io.observe(b); else G.fontCss(m.id);
   });
 }
 function closeFonts(){ if ($('fp').close) $('fp').close(); else $('fp').removeAttribute('open'); }
@@ -386,6 +385,7 @@ $('addDiv').onclick = function(){ S.blocks.push(G.newDivider()); sel = S.blocks.
 /* נוסחים מוכנים מהניהול */
 var presets = [], undo = null;
 fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).then(function(d){
+  G.applySettings(d.fonts || {});
   var keys = S.blocks.map(function(b){ return b.k }).filter(Boolean);
   presets = (d.presets || []).filter(function(p){
     return (p.cat === 'all' || p.cat === tpl.cat) && (p.kind === 'all' || p.kind === tpl.kind) && Object.keys(p.fields || {}).some(function(k){ return keys.indexOf(k) >= 0 });
@@ -432,7 +432,7 @@ $('resetAll').onclick = function(){
   location.reload();
 };
 
-renderBlocks(); draw();
+G.catalog().then(function(){ renderBlocks(); draw(); });
 })();
 </script>
 </body>

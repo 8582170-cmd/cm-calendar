@@ -88,6 +88,25 @@ module.exports = async (req, res) => {
       try { const out = await require('./_pages').adminAction(b); return json(res, out.error ? 400 : 200, out); }
       catch (e) { console.error('pages', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
     }
+    /* ברכות והזמנות: אילו גופנים מוצגים ללקוחות, השם והסוג של כל גופן */
+    if (req.method === 'POST' && (b.action === 'greetfontsget' || b.action === 'greetfontssave')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      const g = await loadSetting('greetfonts');
+      if (b.action === 'greetfontssave') {
+        const CATS = ['STAM', 'CLASSIC', 'HAND', 'OUTLINE', 'DISPLAY', 'FUN', 'NEW', 'SERIF', 'SANS_SERIF', 'HANDWRITING'], out = {};
+        Object.entries(b.fonts || {}).slice(0, 3000).forEach(([id, v]) => {
+          if (!/^[\w .+-]{1,80}$/.test(id) || !v) return;
+          const o = {};
+          if (typeof v.on === 'boolean') o.on = v.on;
+          if (v.label) o.label = String(v.label).replace(/[<>]/g, '').slice(0, 60);
+          if (CATS.includes(v.cat)) o.cat = v.cat;
+          if (Object.keys(o).length) out[id] = o;
+        });
+        g.fonts = out; g.updated = new Date().toISOString();
+        await saveSetting('greetfonts', g);
+      }
+      return json(res, 200, { fonts: g.fonts || {} });
+    }
     /* ברכות והזמנות: נוסחים מוכנים */
     if (req.method === 'POST' && (b.action === 'greetget' || b.action === 'greetsave')) {
       const { loadSetting, saveSetting } = require('./_lib');
