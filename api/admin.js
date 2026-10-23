@@ -100,7 +100,7 @@ module.exports = async (req, res) => {
         g.hideCats = (Array.isArray(b.hideCats) ? b.hideCats : []).slice(0, 80).map(x => str(x, 30));
         g.templates = (Array.isArray(b.templates) ? b.templates : []).slice(0, 600).map(x => ({
           id: str(x.id, 40).replace(/[^\w-]/g, '') || ('u' + Date.now().toString(36)), title: str(x.title, 80), cat: str(x.cat, 30).replace(/[^\w-]/g, ''),
-          kind: x.kind === 'invite' ? 'invite' : 'greeting', price: num(x.price, 0, 10000), on: x.on !== false, order: num(x.order, 0, 100000),
+          kind: x.kind === 'invite' ? 'invite' : 'greeting', price: num(x.price, 0, 10000), on: x.on !== false, draft: !!x.draft, order: num(x.order, 0, 100000),
           bg: { img: /^https:\/\/[^\s"'<>]+$/.test(String((x.bg || {}).img || '')) ? String(x.bg.img) : '', thumb: /^https:\/\/[^\s"'<>]+$/.test(String((x.bg || {}).thumb || '')) ? String(x.bg.thumb) : '' },
           variants: (Array.isArray(x.variants) ? x.variants : []).slice(0, 40).map(v => ({ cat: str(v.cat, 30).replace(/[^\w-]/g, ''), kind: v.kind === 'invite' ? 'invite' : 'greeting', preset: str(v.preset, 40).replace(/[^\w-]/g, '') })).filter(v => v.cat),
           area: { x: num((x.area || {}).x, 0, 794), y: num((x.area || {}).y, 0, 1123), w: num((x.area || {}).w, 40, 794), h: num((x.area || {}).h, 40, 1123), valign: (x.area || {}).valign === 'top' ? 'top' : 'center' },
