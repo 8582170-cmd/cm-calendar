@@ -63,6 +63,8 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 #tb .n{display:inline-flex;align-items:center;background:#22363c;border-radius:11px}
 #tb .n button{min-width:40px;padding:0;font-size:20px}
 #tb .n span{min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+#tb .grip{cursor:grab;touch-action:none;font-size:20px;color:#9fb3b7;min-width:34px;padding:0}
+#tb .grip:active{cursor:grabbing}
 #tb .grp{display:inline-flex;align-items:center;gap:2px;background:#22363c;border-radius:11px;padding-inline-start:10px}
 #tb .grp small{font-size:13px;font-weight:700;color:#b9c9cc;margin-inline-end:4px}
 #tb .grp button{min-width:38px;padding:0;font-size:17px}
@@ -81,6 +83,8 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 @media (max-width:700px){
   #tb{position:fixed;left:8px!important;right:8px;top:auto!important;bottom:max(8px,env(safe-area-inset-bottom));flex-wrap:wrap;justify-content:center;border-radius:18px}
   body.editing-tb .mla-btn{display:none!important}
+  #tb.at-top{top:max(8px,env(safe-area-inset-top))!important;bottom:auto}
+  #tb.at-top .pop{top:calc(130px + env(safe-area-inset-top,0px));bottom:auto}
   .pop{position:fixed;left:8px;right:8px;bottom:calc(130px + env(safe-area-inset-bottom,0px));top:auto;max-width:none;max-height:60vh;overflow:auto}
   body.editing-tb{padding-bottom:140px}
 }
@@ -342,7 +346,9 @@ function place(){
   sb.hidden = false; sb.classList.toggle('photo', it.b.type === 'photo');
   sb.style.left = (r.x * s - 7) + 'px'; sb.style.top = (r.y * s - 6) + 'px'; sb.style.width = (r.w * s + 14) + 'px'; sb.style.height = (r.h * s + 12) + 'px';
   tb.hidden = false; document.body.classList.add('editing-tb');
-  if (!narrow.matches) {
+  tb.classList.toggle('at-top', narrow.matches && !!ui.tbTop);
+  if (!narrow.matches && ui.tbPos) { tb.style.left = ui.tbPos[0] + 'px'; tb.style.top = ui.tbPos[1] + 'px'; }
+  else if (!narrow.matches) {
     var sw = $('stage').clientWidth, tw = tb.offsetWidth, th = tb.offsetHeight;
     var top = r.y * s - th - 26; if (top < -th - 10 || top < -40) top = (r.y + r.h) * s + 16;
     tb.style.top = top + 'px'; tb.style.left = (tw > sw - 20 ? (sw - tw) / 2 : Math.max(-40, Math.min(sw - tw + 40, (r.x + r.w / 2) * s - tw / 2))) + 'px';
@@ -444,6 +450,19 @@ function renderTb(){
   var b = sel == null ? null : S.blocks[sel];
   if (!b || step !== 2) { tb.hidden = true; return; }
   function togglePop(n){ return function(){ pop = pop === n ? null : n; renderTb(); place(); }; }
+  var grip = tbBtn(tb, '⠿', narrow.matches ? 'העברת הסרגל למעלה או למטה' : 'גוררים כדי להזיז את הסרגל. לחיצה כפולה מחזירה אותו למקום', function(){
+    if (narrow.matches) { ui.tbTop = !ui.tbTop; saveUi(); place(); }
+  });
+  grip.className = 'grip';
+  grip.ondblclick = function(){ ui.tbPos = null; saveUi(); place(); };
+  grip.addEventListener('pointerdown', function(e){
+    if (narrow.matches) return;
+    e.preventDefault(); grip.setPointerCapture(e.pointerId);
+    var x0 = e.clientX, y0 = e.clientY, l0 = tb.offsetLeft, t0 = tb.offsetTop;
+    var st = $('stage'); function mv(ev){ ui.tbPos = [Math.round(Math.max(60 - tb.offsetWidth, Math.min(st.clientWidth - 60, l0 + ev.clientX - x0))), Math.round(Math.max(-150, Math.min(st.clientHeight - 30, t0 + ev.clientY - y0)))]; tb.style.left = ui.tbPos[0] + 'px'; tb.style.top = ui.tbPos[1] + 'px'; }
+    function up(){ grip.removeEventListener('pointermove', mv); grip.removeEventListener('pointerup', up); saveUi(); }
+    grip.addEventListener('pointermove', mv); grip.addEventListener('pointerup', up);
+  });
   if (b.type === 'text') {
     var fb = tbBtn(tb, G.fontLabel(b.font), 'גופן', function(){ openFonts(b.font, function(f){ b.font = f; changed(); renderTb(); renderLayers(); }); });
     fb.className = 'fnt'; fb.style.fontFamily = '"' + b.font + '", serif'; G.fontCss(b.font);
@@ -596,7 +615,8 @@ $('addDiv').onclick = function(){ var at = sel != null ? sel + 1 : S.blocks.leng
 /* רשימת השורות (למי שמעדיף) */
 var UIK = 'myluach-greet-ui', ui = {}; try { ui = JSON.parse(localStorage.getItem(UIK) || '{}') || {} } catch (e) {}
 if (ui.list == null) ui.list = true;
-function setList(on){ ui.list = on; try { localStorage.setItem(UIK, JSON.stringify(ui)) } catch (e) {} $('s2').classList.toggle('withList', on); $('listT').setAttribute('aria-pressed', String(on)); renderLayers(); draw(); }
+function saveUi(){ try { localStorage.setItem(UIK, JSON.stringify(ui)) } catch (e) {} }
+function setList(on){ ui.list = on; saveUi(); $('s2').classList.toggle('withList', on); $('listT').setAttribute('aria-pressed', String(on)); renderLayers(); draw(); }
 $('listT').onclick = function(){ setList(!ui.list); };
 function renderLayers(){
   if (!ui.list || step !== 2) return;
