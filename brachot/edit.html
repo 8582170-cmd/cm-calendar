@@ -179,10 +179,13 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 
   <div class="top">
     <div><h1 id="ttl">עריכה</h1><p class="sub" id="sub"></p></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="pill" type="button" id="toClassic" title="המבנה הקודם: הדף בצד, והפסקאות ככרטיסים">⇄ עורך קלאסי</button>
     <div class="steps" role="tablist" aria-label="שלבים">
       <button type="button" role="tab" data-go="1"><b>1</b>פרטים</button>
       <button type="button" role="tab" data-go="2"><b>2</b>עיצוב</button>
       <button type="button" role="tab" data-go="3"><b>3</b>הורדה</button>
+    </div>
     </div>
   </div>
 
@@ -209,7 +212,6 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
           <button class="pill" type="button" id="undo" disabled title="ביטול (Ctrl+Z)">↶ ביטול</button>
           <button class="pill" type="button" id="redo" disabled title="חזרה (Ctrl+Y)">↷ חזרה</button>
           <button class="pill" type="button" id="listT" aria-pressed="false">☰ רשימת השורות</button>
-          <button class="pill" type="button" id="toClassic" title="המבנה הקודם: הדף בצד, והפסקאות ככרטיסים">⇄ עורך קלאסי</button>
         </div>
         <div class="slot" id="slot2"></div>
         <p class="hint" style="text-align:center">לוחצים על שורה כדי לשנות אותה. לחיצה נוספת: עריכת הטקסט.</p>
