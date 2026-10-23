@@ -209,6 +209,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
           <button class="pill" type="button" id="undo" disabled title="ביטול (Ctrl+Z)">↶ ביטול</button>
           <button class="pill" type="button" id="redo" disabled title="חזרה (Ctrl+Y)">↷ חזרה</button>
           <button class="pill" type="button" id="listT" aria-pressed="false">☰ רשימת השורות</button>
+          <button class="pill" type="button" id="toClassic" title="המבנה הקודם: הדף בצד, והפסקאות ככרטיסים">⇄ עורך קלאסי</button>
         </div>
         <div class="slot" id="slot2"></div>
         <p class="hint" style="text-align:center">לוחצים על שורה כדי לשנות אותה. לחיצה נוספת: עריכת הטקסט.</p>
@@ -267,6 +268,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 </dialog>
 
 <script>
+(function(){ try { var u = JSON.parse(localStorage.getItem('myluach-greet-ui') || '{}') || {}; if (u.classic) location.replace('/brachot/edit-classic.html' + location.search); } catch (e) {} })();
 window.Greetings.load().then(function(){
 'use strict';
 var G = window.Greetings, $ = function(id){ return document.getElementById(id) };
@@ -618,6 +620,7 @@ if (ui.list == null) ui.list = true;
 function saveUi(){ try { localStorage.setItem(UIK, JSON.stringify(ui)) } catch (e) {} }
 function setList(on){ ui.list = on; saveUi(); $('s2').classList.toggle('withList', on); $('listT').setAttribute('aria-pressed', String(on)); renderLayers(); draw(); }
 $('listT').onclick = function(){ setList(!ui.list); };
+$('toClassic').onclick = function(){ ui.classic = true; saveUi(); location.href = '/brachot/edit-classic.html' + location.search; };
 function renderLayers(){
   if (!ui.list || step !== 2) return;
   var box = $('lyList'); box.innerHTML = '';
