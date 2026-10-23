@@ -101,7 +101,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=7"></script>
+<script src="/assets/greetings/greetings.js?v=8"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -421,7 +421,7 @@ function tpSaveAll(){tpMsg('שומר…');api({action:'greettplsave',...TP}).the
 function tpCats(){
   const box=$('catList');box.innerHTML='';const hid=new Set(TP.hideCats||[]);
   TPCATS().forEach(([id,name])=>{
-    const custom=(TP.cats||[]).some(c=>c.id===id&&!GR.CATS.some(x=>x[0]===id)),used=(TP.templates||[]).filter(t=>t.cat===id).length;
+    const custom=(TP.cats||[]).some(c=>c.id===id&&!GR.CATS.some(x=>x[0]===id)),used=(TP.templates||[]).filter(t=>t.cat===id||(t.variants||[]).some(v=>v.cat===id)).length;
     const el=document.createElement('span');el.className='cat-i'+(hid.has(id)?' off':'');
     el.innerHTML='<span></span><button type="button" data-a="ren">שינוי שם</button><button type="button" data-a="hide"></button>'+(custom?'<button type="button" data-a="del">מחיקה</button>':'');
     el.querySelector('span').textContent=name+(used?' ('+used+')':'');
@@ -433,27 +433,27 @@ function tpCats(){
   });
   const f=$('tpFilter'),cur=f.value;f.innerHTML='<option value="">כל האירועים</option>'+TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');f.value=cur;
 }
-function tpObj(t){return {id:t.id,bg:{img:t.bg.img},area:t.area,blocks:t.blocks,colors:[]}}
+function tpObj(t){return {id:t.id,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
 function tpRender(){
   const box=$('tpList'),f=$('tpFilter').value;box.innerHTML='';
-  const list=(TP.templates||[]).filter(t=>!f||t.cat===f).sort((a,b)=>(a.order||0)-(b.order||0));
+  const list=(TP.templates||[]).filter(t=>!f||t.cat===f||(t.variants||[]).some(v=>v.cat===f)).sort((a,b)=>(a.order||0)-(b.order||0));
   if(!list.length){box.innerHTML='<p class="sub">עדיין אין עיצובים שהעלית'+(f?' לאירוע הזה':'')+'. לוחצים "+ עיצוב חדש".</p>';return}
   list.forEach(t=>{
     const el=document.createElement('div');el.className='tp-c'+(t.on===false?' off':'');
     el.innerHTML='<canvas></canvas><b></b><span class="m"></span><div class="actions"><button class="btn sm" type="button" data-a="ed">עריכה</button><button class="btn sm" type="button" data-a="on"></button><button class="btn sm" type="button" data-a="del">מחיקה</button></div>';
     el.querySelector('b').textContent=t.title||'בלי שם';
-    el.querySelector('.m').textContent=(GR.KINDS[t.kind]||'')+' · '+tpCatName(t.cat)+(t.price?' · ₪'+t.price:' · חינם');
+    el.querySelector('.m').textContent=(GR.KINDS[t.kind]||'')+' · '+tpCatName(t.cat)+((t.variants||[]).length?' + עוד '+t.variants.length+' אירועים':'')+(t.price?' · ₪'+t.price:' · חינם');
     el.querySelector('[data-a=on]').textContent=t.on===false?'הצגה':'הסתרה';
     el.querySelector('[data-a=ed]').onclick=()=>tpOpen(t);
     el.querySelector('[data-a=on]').onclick=()=>{t.on=t.on===false;tpRender();tpMsg('ללחוץ "שמירה" בתחתית.')};
     const d=el.querySelector('[data-a=del]');d.onclick=()=>{if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}TP.templates=TP.templates.filter(x=>x!==t);tpRender();tpCats();tpMsg('נמחק. ללחוץ "שמירה" בתחתית.')};
     box.appendChild(el);
-    GR.render(el.querySelector('canvas'),tpObj(t),{colors:{},blocks:t.blocks,scale:1},{scale:.35}).catch(()=>{});
+    GR.render(el.querySelector('canvas'),tpObj(t),{colors:{},blocks:t.blocks,scale:1},{scale:.35,thumb:true}).catch(()=>{});
   });
 }
 function tpOpen(t){
   const isNew=!t;
-  const w=t?JSON.parse(JSON.stringify(t)):{id:'u'+Date.now().toString(36),title:'',cat:$('tpFilter').value||'wedding',kind:'greeting',price:0,on:true,order:(TP.templates||[]).length,bg:{img:''},area:{x:150,y:230,w:494,h:700,valign:'center'},blocks:GR.starter('greeting','#14213d','#8a6a22')};
+  const w=t?JSON.parse(JSON.stringify(t)):{variants:[],id:'u'+Date.now().toString(36),title:'',cat:$('tpFilter').value||'wedding',kind:'greeting',price:0,on:true,order:(TP.templates||[]).length,bg:{img:''},area:{x:150,y:230,w:494,h:700,valign:'center'},blocks:GR.starter('greeting','#14213d','#8a6a22')};
   const box=$('tpEd');box.innerHTML='';
   const ed=document.createElement('div');ed.className='tp-ed';
   ed.innerHTML='<div class="tp-pv" id="tpPv"><canvas id="tpCv"></canvas><div class="ar" id="tpAr"></div></div>'+
@@ -468,6 +468,8 @@ function tpOpen(t){
    '<label>מבנה התחלתי<select id="tpS"><option value="greeting">ברכה (כותרת, שם, לרגל, ברכה, חתימה)</option><option value="invite">הזמנה (חתן וכלה, מועד, הורים)</option></select></label></div>'+
    '<div class="actions"><button class="btn" type="button" id="tpApply">החלת הצבעים והגופנים על הטקסט</button></div>'+
    '<p class="sub">ללקוח יהיה אפשר לשנות הכל בעורך: טקסט, גופנים, צבעים, להוסיף ולמחוק פסקאות.</p>'+
+   '<h4 style="margin:6px 0 0">אותו רקע באירועים נוספים</h4><p class="sub">העיצוב יופיע בגלריה גם באירועים האלה. לכל אירוע בוחרים נוסח מוכן (מהחלק "נוסחים מוכנים לברכות"), והוא ממלא את הטקסט.</p>'+
+   '<div id="tpVars" style="display:flex;flex-direction:column;gap:8px"></div><div class="actions"><button class="btn sm" type="button" id="tpVarAdd">+ הוספת אירוע לעיצוב</button></div>'+
    '<div class="actions"><button class="btn primary" type="button" id="tpOk">'+(isNew?'הוספה לרשימה':'עדכון')+'</button><button class="btn" type="button" id="tpCancel">ביטול</button></div></div>';
   box.appendChild(ed);ed.scrollIntoView({block:'start',behavior:'smooth'});
   $('tpC').innerHTML=TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');
@@ -494,7 +496,22 @@ function tpOpen(t){
   $('tpUp').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/jpeg,image/png,image/webp';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;$('tpUpMsg').textContent='מעלה…';
     try{const s=await api({action:'libmedia',name:f.name,type:f.type,size:f.size});if(s.error)throw new Error(s.error);
       const up=await fetch(s.upload,{method:'PUT',headers:{'Content-Type':f.type,'x-upsert':'true'},body:f});if(!up.ok)throw new Error('ההעלאה נכשלה ('+up.status+')');
-      w.bg.img=s.url;if(!$('tpT').value)$('tpT').value=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');$('tpUpMsg').textContent='הרקע הועלה. עכשיו גוררים מלבן לאזור הטקסט.';draw()}catch(err){$('tpUpMsg').textContent=err.message}};fi.click()};
+      w.bg.img=s.url;
+      try{const th=await new Promise((ok,bad)=>{const im=new Image();im.onload=()=>{const k=420/im.width,c=document.createElement('canvas');c.width=420;c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?ok(b):bad(),'image/jpeg',.82);URL.revokeObjectURL(im.src)};im.onerror=bad;im.src=URL.createObjectURL(f)});
+        const s2=await api({action:'libmedia',name:'thumb.jpg',type:'image/jpeg',size:th.size});if(!s2.error){const u2=await fetch(s2.upload,{method:'PUT',headers:{'Content-Type':'image/jpeg','x-upsert':'true'},body:th});if(u2.ok)w.bg.thumb=s2.url}}catch(e){}
+      if(!$('tpT').value)$('tpT').value=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');$('tpUpMsg').textContent='הרקע הועלה. עכשיו גוררים מלבן לאזור הטקסט.';draw()}catch(err){$('tpUpMsg').textContent=err.message}};fi.click()};
+  w.variants=w.variants||[];
+  const presetOpts=(cat,kind)=>'<option value="">בלי נוסח מיוחד (הטקסט של העיצוב)</option>'+PR.filter(p=>p.on!==false&&(p.cat==='all'||p.cat===cat)&&(p.kind==='all'||p.kind===kind)).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.title||'נוסח בלי שם')+'</option>').join('');
+  const vars=()=>{const vb=$('tpVars');vb.innerHTML='';
+    w.variants.forEach((v,i)=>{const r=document.createElement('div');r.className='fields';r.style.gridTemplateColumns='repeat(3,minmax(0,1fr)) auto';
+      r.innerHTML='<label>אירוע<select data-f="cat">'+TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('')+'</select></label><label>סוג<select data-f="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>נוסח<select data-f="preset"></select></label><button class="btn sm" type="button" style="align-self:end">הסרה</button>';
+      const c=r.querySelector('[data-f=cat]'),k=r.querySelector('[data-f=kind]'),p=r.querySelector('[data-f=preset]');
+      c.value=v.cat;k.value=v.kind;p.innerHTML=presetOpts(v.cat,v.kind);p.value=v.preset||'';
+      c.onchange=()=>{v.cat=c.value;p.innerHTML=presetOpts(v.cat,v.kind);v.preset='';};k.onchange=()=>{v.kind=k.value;p.innerHTML=presetOpts(v.cat,v.kind);v.preset='';};p.onchange=()=>{v.preset=p.value};
+      r.querySelector('button').onclick=()=>{w.variants.splice(i,1);vars()};vb.appendChild(r)});
+    if(!w.variants.length)vb.innerHTML='<p class="sub">רק באירוע הראשי.</p>'};
+  $('tpVarAdd').onclick=()=>{w.variants.push({cat:$('tpC').value,kind:$('tpK').value,preset:''});vars()};
+  vars();
   $('tpCancel').onclick=()=>{box.innerHTML=''};
   $('tpOk').onclick=()=>{if(!w.bg.img){$('tpUpMsg').textContent='קודם מעלים רקע.';return}
     w.title=$('tpT').value.trim();w.cat=$('tpC').value;w.kind=$('tpK').value;w.price=+$('tpP').value||0;

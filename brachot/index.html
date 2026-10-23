@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&family=Bellefair&display=swap">
 <link rel="stylesheet" href="/assets/greetings/greetings.css?v=2">
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=7"></script>
+<script src="/assets/greetings/greetings.js?v=8"></script>
 </head>
 <body>
 <div class="wrap">
@@ -42,7 +42,8 @@
 window.Greetings.load().then(function(){
 'use strict';
 var G = window.Greetings, gal = document.getElementById('gal'), fl = document.getElementById('filters');
-var cats = G.CATS.filter(function(c){ return !G.hiddenCat(c[0]) && G.TEMPLATES.some(function(t){ return t.cat === c[0] }) });
+var ALL = G.cards();
+var cats = G.CATS.filter(function(c){ return !G.hiddenCat(c[0]) && ALL.some(function(x){ return x.cat === c[0] }) });
 var cur = (location.hash || '').slice(1);
 if (!cats.some(function(c){ return c[0] === cur })) cur = 'all';
 function chips(){
@@ -55,10 +56,11 @@ function chips(){
 }
 function list(){
   gal.innerHTML = '';
-  var items = G.TEMPLATES.filter(function(t){ return !G.hiddenCat(t.cat) && (cur === 'all' || t.cat === cur) });
+  var items = ALL.filter(function(x){ return !G.hiddenCat(x.cat) && (cur === 'all' || x.cat === cur) });
   document.getElementById('soon').hidden = items.length > 0;
-  items.forEach(function(t){
-    var a = document.createElement('a'); a.className = 'card'; a.href = '/brachot/edit.html?t=' + encodeURIComponent(t.id);
+  items.forEach(function(x){
+    var t = x.v >= 0 ? G.variant(x.t, x.v) : x.t;
+    var a = document.createElement('a'); a.className = 'card'; a.href = '/brachot/edit.html?t=' + encodeURIComponent(x.t.id) + (x.v >= 0 ? '&v=' + x.v : '');
     a.innerHTML = '<div class="sheet"><canvas aria-hidden="true"></canvas>' + (t.price ? '' : '<span class="badge">חינם</span>') + '</div><h3></h3><span class="meta"></span>';
     a.querySelector('h3').textContent = t.title;
     a.querySelector('.meta').textContent = G.KINDS[t.kind] + ' · ' + G.catName(t.cat);
@@ -66,7 +68,7 @@ function list(){
     gal.appendChild(a);
     var cv = a.querySelector('canvas');
     var w = Math.max(250, a.getBoundingClientRect().width || 280) * (window.devicePixelRatio || 1);
-    G.render(cv, t, G.defaults(t), { scale: Math.min(1.5, w / G.W) }).catch(function(){});
+    G.render(cv, t, G.defaults(t), { scale: Math.min(1.5, w / G.W), thumb: true }).catch(function(){});
   });
 }
 chips(); list();

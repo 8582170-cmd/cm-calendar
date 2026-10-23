@@ -250,9 +250,9 @@ function fontsReady(list){
 }
 
 var svgCache = {}, imgCache = {};
-function bgImage(tpl, colors){
+function bgImage(tpl, colors, thumb){
   if (tpl.bg.img) {
-    var u = tpl.bg.img;
+    var u = (thumb && tpl.bg.thumb) || tpl.bg.img;
     if (!imgCache[u]) imgCache[u] = new Promise(function(ok, bad){ var i = new Image(); i.crossOrigin = 'anonymous'; i.onload = function(){ ok(i) }; i.onerror = bad; i.src = u; });
     return imgCache[u];
   }
@@ -352,7 +352,7 @@ function render(canvas, tpl, state, opt){
   state = state || {};
   var colors = state.colors || {}, used = {};
   (state.blocks || []).forEach(function(b){ if (b.font) used[b.font] = 1; });
-  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors)]) }).then(function(r){
+  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb)]) }).then(function(r){
     var img = r[1];
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
     var ctx = canvas.getContext('2d');
@@ -421,6 +421,7 @@ function load(){
   if (!remoteP) remoteP = fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).catch(function(){ return {} }).then(function(d){
     d = d || {};
     applySettings(d.fonts || {});
+    PRESETS = d.presets || [];
     (d.cats || []).forEach(function(c){ var e = CATS.find(function(x){ return x[0] === c.id }); if (e) e[1] = c.name; else CATS.push([c.id, c.name]); });
     (d.hideCats || []).forEach(function(id){ HIDDEN_CATS[id] = 1; });
     (d.templates || []).slice().sort(function(a, b){ return (a.order || 0) - (b.order || 0) }).forEach(function(t){
@@ -431,6 +432,22 @@ function load(){
   });
   return remoteP;
 }
+/* אותו רקע באירוע נוסף: מחזיר עותק של העיצוב עם האירוע, הסוג והנוסח של הווריאציה */
+var PRESETS = [];
+function variant(tpl, i){
+  var v = (tpl.variants || [])[i]; if (!v) return tpl;
+  var t = Object.assign({}, tpl, { cat: v.cat, kind: v.kind, blocks: clone(tpl.blocks), variantOf: tpl.id, variant: i });
+  var p = PRESETS.find(function(x){ return x.id === v.preset });
+  if (p) t.blocks.forEach(function(b){ if (b.k && p.fields[b.k] != null) b.text = p.fields[b.k]; });
+  return t;
+}
+/* כל הכרטיסים לגלריה: כל עיצוב באירוע הראשי ובכל אירוע נוסף */
+function cards(){
+  var out = [];
+  TEMPLATES.forEach(function(t){ out.push({ t: t, v: -1, cat: t.cat, kind: t.kind }); (t.variants || []).forEach(function(v, i){ out.push({ t: t, v: i, cat: v.cat, kind: v.kind }); }); });
+  return out;
+}
+
 /* פסקאות התחלה לעיצוב חדש מהניהול: נלקחות מהעיצובים המובנים, בצבע שנבחר */
 function starter(kind, main, accent){
   var src = kind === 'invite' ? TEMPLATES[1] : TEMPLATES[0];
@@ -444,5 +461,5 @@ function starter(kind, main, accent){
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, colorOf: colorOf, fontsReady: fontsReady };
 })();
