@@ -70,7 +70,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
     <a class="logo" href="/"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
     <nav class="nav-links" aria-label="ניווט ראשי">
       <a href="/brachot/">כל העיצובים</a>
-      <a href="#" id="toNew">✦ לעורך החדש</a>
+      <a href="#" id="toNew">✦ עורך שלבים</a>
       <a class="btn btn-primary" href="/app.html">לבנות לוח</a>
     </nav>
   </header>
@@ -290,7 +290,7 @@ function renderBlocks(){
     if (b.type === 'photo') {
       var pb = document.createElement('div'); pb.className = 'tbar';
       var lbl = document.createElement('strong'); lbl.textContent = 'תמונה'; pb.appendChild(lbl);
-      var hint = document.createElement('span'); hint.className = 'note'; hint.textContent = 'את התמונה משנים בעורך החדש'; pb.appendChild(hint);
+      var hint = document.createElement('span'); hint.className = 'note'; hint.textContent = 'את התמונה משנים בעורך השלבים'; pb.appendChild(hint);
       actions(pb, b, i);
       card.appendChild(pb); box.appendChild(el); return;
     }
