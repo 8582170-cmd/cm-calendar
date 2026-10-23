@@ -209,8 +209,8 @@ var FIELDS = [
    בדף הניהול (סטודיו רקעים ← גופנים) קובעים לכל גופן אם הוא מוצג ללקוחות, את השם ואת הסוג. */
 var catalogP = null, OVR = {};
 function catalog(){
-  if (!catalogP) catalogP = fetch('/assets/greetings/fonts/catalog.json?v=2').then(function(r){ return r.json() }).then(function(list){
-    list.forEach(function(c){ var f = [c[0], 'my', c[3], c[5] ? 1 : 0, c[2], '/assets/greetings/fonts/' + c[1], !!c[4], c[5] ? '/assets/greetings/fonts/' + c[5] : null]; FONTS.push(f); FONT_INFO[c[0]] = f; });
+  if (!catalogP) catalogP = fetch('/assets/greetings/fonts/catalog.json?v=3').then(function(r){ return r.json() }).then(function(list){
+    list.forEach(function(c){ var f = [c[0], 'my', c[3], c[5] ? 1 : 0, c[2], '/assets/greetings/fonts/' + c[1], !!c[4], c[5] ? '/assets/greetings/fonts/' + c[5] : null, c[6] || '']; FONTS.push(f); FONT_INFO[c[0]] = f; });
     return FONTS;
   }).catch(function(){ return FONTS; });
   return catalogP;
@@ -219,7 +219,7 @@ function applySettings(map){ OVR = map || {}; }
 function meta(id){
   var f = FONT_INFO[id]; if (!f) return null;
   var o = OVR[id] || {};
-  return { id: id, lang: f[1], cat: o.cat || f[2], label: o.label || f[4] || id, on: o.on != null ? !!o.on : (f[1] === 'my' ? !!f[6] : true), local: f[1] === 'my' };
+  return { id: id, lang: f[1], cat: o.cat || f[2], label: o.label || f[4] || id, on: o.on != null ? !!o.on : (f[1] === 'my' ? !!f[6] : true), local: f[1] === 'my', maker: f[1] === 'my' ? (f[8] || '') : 'Google Fonts (חינמי)' };
 }
 function pickList(all){ return FONTS.map(function(f){ return meta(f[0]) }).filter(function(m){ return m && (all || m.on) }); }
 

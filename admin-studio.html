@@ -84,7 +84,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=5"></script>
+<script src="/assets/greetings/greetings.js?v=6"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -150,7 +150,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
     <h2 id="fl-h">גופנים לברכות</h2>
     <p class="sub">כל הגופנים שבאתר, כולל האוספים שהעלית. מסמנים אילו מוצגים ללקוחות בבוחר הגופנים, ונותנים לכל אחד שם בעברית וסוג (הקבוצה שבה הוא יופיע).</p>
     <div class="fl-bar">
-      <input type="search" id="flQ" placeholder="חיפוש לפי שם" aria-label="חיפוש גופן">
+      <input type="search" id="flQ" placeholder="חיפוש לפי שם או יצרן" aria-label="חיפוש גופן">
       <select id="flS" aria-label="סינון לפי מצב"><option value="">הכל</option><option value="on">מוצגים ללקוחות</option><option value="off">מוסתרים</option></select>
       <select id="flC" aria-label="סינון לפי סוג"><option value="">כל הסוגים</option></select>
       <select id="flL" aria-label="סינון לפי מקור"><option value="">כל המקורות</option><option value="my">האוספים שלך</option><option value="he">Google עברית</option><option value="en">Google אנגלית</option></select>
@@ -349,7 +349,7 @@ function flInit(){
 function flSet(id,o){FL[id]=Object.assign({},FL[id]||{},o);GR.applySettings(FL)}
 function flList(){
   const q=$('flQ').value.trim().toLowerCase(),st=$('flS').value,c=$('flC').value,l=$('flL').value;
-  return GR.pickList(true).filter(m=>(!q||(m.id+' '+m.label).toLowerCase().includes(q))&&(!st||(st==='on')===m.on)&&(!c||m.cat===c)&&(!l||m.lang===l));
+  return GR.pickList(true).filter(m=>(!q||(m.id+' '+m.label+' '+m.maker).toLowerCase().includes(q))&&(!st||(st==='on')===m.on)&&(!c||m.cat===c)&&(!l||m.lang===l));
 }
 function flRender(){
   const all=flList(),box=$('flGrid');box.innerHTML='';
@@ -361,7 +361,7 @@ function flRender(){
     const el=document.createElement('div');el.className='fl-c'+(m.on?'':' off');el.dataset.f=m.id;
     el.innerHTML='<div class="smp"></div><div class="nm"></div><div class="row2"><input aria-label="שם בעברית"><select aria-label="סוג">'+catOpts+'</select></div><label class="tg"><input type="checkbox"> מוצג ללקוחות</label>';
     const smp=el.querySelector('.smp');smp.textContent=$('flT').value;smp.style.fontFamily='"'+m.id+'", serif';if(m.lang==='en')smp.dir='ltr';
-    el.querySelector('.nm').textContent=m.id;
+    el.querySelector('.nm').textContent=m.id+(m.maker?' · '+m.maker:'');
     const inp=el.querySelector('input:not([type])');inp.value=m.label;inp.oninput=()=>flSet(m.id,{label:inp.value});
     const sel=el.querySelector('select');sel.value=m.cat;sel.onchange=()=>flSet(m.id,{cat:sel.value});
     const cb=el.querySelector('input[type=checkbox]');cb.checked=m.on;cb.onchange=()=>{flSet(m.id,{on:cb.checked});el.classList.toggle('off',!cb.checked);$('flN').textContent=all.length+' גופנים · '+GR.pickList().length+' מוצגים ללקוחות'};
