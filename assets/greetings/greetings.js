@@ -462,6 +462,20 @@ function newText(tpl, after){
   return b;
 }
 function newDivider(){ return D({ gap: 10 }); }
+/* משטח מיקום קטן: קו אנכי ואופקי עם נקודה באמצע. נקודה כתומה מראה כמה השורה זזה מהמקום המקורי.
+   לחיצה עליו מחזירה את השורה למקום המקורי */
+function movePad(b, onReset){
+  if (b.g0 == null) b.g0 = b.gap || 0;
+  var K = 13 / 70, px = Math.max(-13, Math.min(13, (b.dx || 0) * K)), py = Math.max(-13, Math.min(13, ((b.gap || 0) - b.g0) * K)), moved = px || py;
+  var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'mpad';
+  bt.title = moved ? 'לחיצה מחזירה למקום המקורי' : 'במקום המקורי'; bt.setAttribute('aria-label', bt.title);
+  bt.innerHTML = '<svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><path d="M18 3v30M3 18h30" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>' +
+    (moved ? '<path d="M18 18L' + (18 + px) + ' ' + (18 + py) + '" stroke="#e07a2f" stroke-width="1.5" stroke-dasharray="2 2"/>' : '') +
+    '<circle cx="18" cy="18" r="4" fill="#fff" stroke="currentColor" stroke-width="1.5"/>' +
+    (moved ? '<circle cx="' + (18 + px) + '" cy="' + (18 + py) + '" r="4.2" fill="#e07a2f"/>' : '') + '</svg>';
+  bt.onclick = function(){ b.gap = b.g0; b.dx = 0; if (onReset) onReset(); };
+  return bt;
+}
 function newPhoto(src){ return { type: 'photo', src: src || '', shape: 'circle', size: 0.38, zoom: 1, ox: 0, oy: 0, border: 3, color: '#b08d3c', align: 'center', gap: 12 }; }
 
 /* פרטים אישיים שהלקוח ממלא פעם אחת, ומופיעים בכל העיצובים (נשמרים בדפדפן) */
@@ -521,5 +535,5 @@ function starter(kind, main, accent){
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, newPhoto: newPhoto, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, newPhoto: newPhoto, movePad: movePad, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

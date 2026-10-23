@@ -11,11 +11,15 @@
 <link rel="stylesheet" href="/assets/greetings/greetings.css?v=2">
 <style>
 .blocks{display:flex;flex-direction:column;gap:10px}
-.blk{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;align-items:stretch}
-.gapc{display:flex;flex-direction:column;align-items:center;justify-content:space-between;border:1.5px solid var(--line);border-radius:26px;padding:4px 0;background:var(--sheet);min-height:92px}
-.gapc button{font:inherit;width:36px;height:30px;border:0;background:none;color:var(--ink);cursor:pointer;border-radius:8px;font-size:15px}
+.blk{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:stretch}
+.gapc{display:grid;grid-template-columns:30px 36px 30px;grid-template-rows:30px 36px 30px;place-items:center;align-content:center;justify-content:center;direction:ltr;border:1.5px solid var(--line);border-radius:18px;padding:4px;background:var(--sheet);min-height:92px;position:relative}
+.gapc small{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:11px;color:var(--mute);font-weight:700;direction:rtl}
+.mpad{border:0;background:none;padding:0;cursor:pointer;color:var(--teal);width:36px;height:36px;display:grid;place-items:center}
+.gapc>button:not(.mpad){font:inherit;width:30px;height:30px;border:0;background:none;color:var(--ink);cursor:pointer;border-radius:8px;font-size:15px}
 .gapc button:hover{background:var(--teal-soft)}
-.gapc span{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px}
+.tl{display:inline-flex;flex-direction:column;align-items:center;gap:2px}
+.tl>small{font-size:12px;color:var(--mute);font-weight:700;line-height:1.1}
+.tl>.tc{display:inline-flex;gap:4px;align-items:center}
 .card2{background:var(--sheet);border:1.5px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .blk.sel .card2{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal)}
 .blk.off .card2{opacity:.55}
@@ -62,7 +66,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=11"></script>
+<script src="/assets/greetings/greetings.js?v=12"></script>
 </head>
 <body>
 <div class="wrap">
@@ -276,13 +280,13 @@ function renderBlocks(){
   S.blocks.forEach(function(b, i){
     var el = document.createElement('div'); el.className = 'blk' + (sel === i ? ' sel' : '') + (b.hidden ? ' off' : ''); el.dataset.i = i;
     /* רווח מעל */
-    var gc = document.createElement('div'); gc.className = 'gapc';
-    gc.innerHTML = '<button type="button" aria-label="יותר רווח מעל">▲</button><span></span><button type="button" aria-label="פחות רווח מעל">▼</button>';
-    gc.querySelector('span').textContent = Math.round(b.gap || 0);
-    gc.title = 'רווח מעל הפסקה';
-    var gb = gc.querySelectorAll('button');
-    gb[0].onclick = function(){ b.gap = Math.min(200, (b.gap || 0) + 2); gc.querySelector('span').textContent = b.gap; select(i); changed(); };
-    gb[1].onclick = function(){ b.gap = Math.max(0, (b.gap || 0) - 2); gc.querySelector('span').textContent = b.gap; select(i); changed(); };
+    var gc = document.createElement('div'); gc.className = 'gapc'; gc.title = 'הזזת הפסקה';
+    var LIM = tpl.area.w / 2;
+    function nb(t, l, dx, dy, col, row){ var x = document.createElement('button'); x.type = 'button'; x.textContent = t; x.title = l; x.setAttribute('aria-label', l); x.style.gridColumn = col; x.style.gridRow = row;
+      x.onclick = function(){ if (b.g0 == null) b.g0 = b.gap || 0; if (dy) b.gap = Math.max(0, (b.gap || 0) + dy); if (dx) b.dx = Math.max(-LIM, Math.min(LIM, (b.dx || 0) + dx)); sel = i; renderBlocks(); changed(); };
+      gc.appendChild(x); }
+    nb('▲', 'הזזה למעלה', 0, -2, 2, 1); nb('◀', 'הזזה שמאלה', -4, 0, 1, 2); nb('▶', 'הזזה ימינה', 4, 0, 3, 2); nb('▼', 'הזזה למטה', 0, 2, 2, 3);
+    var pad = G.movePad(b, function(){ sel = i; renderBlocks(); changed(); }); pad.style.gridColumn = 2; pad.style.gridRow = 2; gc.appendChild(pad);
     el.appendChild(gc);
     var card = document.createElement('div'); card.className = 'card2'; el.appendChild(card);
     card.addEventListener('focusin', function(){ if (sel !== i) select(i); });
@@ -299,12 +303,12 @@ function renderBlocks(){
       var stl = document.createElement('select'); stl.className = 'tb'; stl.setAttribute('aria-label', 'צורת הקישוט');
       G.DIVIDERS.forEach(function(d){ var o = document.createElement('option'); o.value = d[0]; o.textContent = 'קישוט: ' + d[1]; stl.appendChild(o); });
       stl.value = b.style; stl.onchange = function(){ b.style = stl.value; changed(); };
-      bar.appendChild(stl);
-      bar.appendChild(numCtl('רוחב', Math.round((b.width || .5) * 100) + '%', function(d){ b.width = Math.max(.15, Math.min(1, (b.width || .5) + d * .05)); return Math.round(b.width * 100) + '%'; }));
+      bar.appendChild(cap(stl, 'צורה'));
+      bar.appendChild(cap(numCtl('רוחב', Math.round((b.width || .5) * 100) + '%', function(d){ b.width = Math.max(.15, Math.min(1, (b.width || .5) + d * .05)); return Math.round(b.width * 100) + '%'; }), 'רוחב'));
       var cb = document.createElement('button'); cb.type = 'button'; cb.className = 'tb'; cb.innerHTML = '<i class="sw0"></i>צבע';
       cb.querySelector('.sw0').style.background = G.colorOf(b.color, tpl, S.colors);
       cb.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
-      bar.appendChild(cb);
+      bar.appendChild(cap(cb, 'צבע'));
       actions(bar, b, i);
       card.appendChild(bar);
       if (openMore[i]) { var m = document.createElement('div'); m.className = 'more'; m.appendChild(colorRow(b.color, function(c, live){ b.color = c; changed(); if (!live) renderBlocks(); })); card.appendChild(m); }
@@ -327,22 +331,23 @@ function renderBlocks(){
     var bar2 = document.createElement('div'); bar2.className = 'tbar';
     var fb = document.createElement('button'); fb.type = 'button'; fb.className = 'tb font'; fb.textContent = fontLabel(b.font); fb.style.fontFamily = '"' + b.font + '", serif';
     fb.title = 'גופן'; fb.onclick = function(){ openFonts(b.font, function(f){ b.font = f; renderBlocks(); changed(); }); };
-    bar2.appendChild(fb);
-    bar2.appendChild(numCtl('גודל', Math.round(b.size), function(d){ b.size = Math.max(8, Math.min(120, Math.round(b.size + d))); return Math.round(b.size); }));
+    bar2.appendChild(cap(fb, 'גופן'));
+    bar2.appendChild(cap(numCtl('גודל', Math.round(b.size), function(d){ b.size = Math.max(8, Math.min(120, Math.round(b.size + d))); return Math.round(b.size); }), 'גודל'));
     var bb = document.createElement('button'); bb.type = 'button'; bb.className = 'tb'; bb.textContent = 'B'; bb.style.fontWeight = 900; bb.setAttribute('aria-label', 'מודגש'); bb.setAttribute('aria-pressed', String(!!b.bold));
     bb.onclick = function(){ b.bold = !b.bold; renderBlocks(); changed(); };
-    bar2.appendChild(bb);
+    bar2.appendChild(cap(bb, 'מודגש'));
     var cb2 = document.createElement('button'); cb2.type = 'button'; cb2.className = 'tb'; cb2.innerHTML = '<i class="sw0"></i>צבע'; cb2.querySelector('.sw0').style.background = G.colorOf(b.color, tpl, S.colors);
     cb2.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
-    bar2.appendChild(cb2);
+    bar2.appendChild(cap(cb2, 'צבע'));
+    var alw = document.createElement('span'); alw.style.display = 'contents'; var alg = cap(alw, 'יישור'); bar2.appendChild(alg);
     [['right','ימין','⇥'],['center','מרכז','≡'],['left','שמאל','⇤']].forEach(function(a){
       var ab = document.createElement('button'); ab.type = 'button'; ab.className = 'tb'; ab.textContent = a[2]; ab.title = 'יישור ל' + a[1]; ab.setAttribute('aria-label', 'יישור ל' + a[1]);
       ab.setAttribute('aria-pressed', String(b.align === a[0])); ab.onclick = function(){ b.align = a[0]; renderBlocks(); changed(); };
-      bar2.appendChild(ab);
+      alw.appendChild(ab);
     });
     var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'tb'; mb.textContent = openMore[i] ? 'פחות ▴' : 'עוד ▾'; mb.setAttribute('aria-expanded', String(!!openMore[i]));
     mb.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
-    bar2.appendChild(mb);
+    bar2.appendChild(cap(mb, 'אפשרויות'));
     card.appendChild(bar2);
 
     if (openMore[i]) {
@@ -365,6 +370,7 @@ function renderBlocks(){
     box.appendChild(el);
   });
 }
+function cap(node, label){ var w = document.createElement('span'); w.className = 'tl'; var c = document.createElement('span'); c.className = 'tc'; c.appendChild(node); var sm = document.createElement('small'); sm.textContent = label; w.append(c, sm); return w; }
 function numCtl(label, val, step){
   var w = document.createElement('span'); w.className = 'num'; w.title = label;
   w.innerHTML = '<button type="button">−</button><span></span><button type="button">+</button>';

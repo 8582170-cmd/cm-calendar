@@ -65,9 +65,13 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 #tb .n span{min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
 #tb .grip{cursor:grab;touch-action:none;font-size:20px;color:#9fb3b7;min-width:34px;padding:0}
 #tb .grip:active{cursor:grabbing}
-#tb .grp{display:inline-flex;align-items:center;gap:2px;background:#22363c;border-radius:11px;padding-inline-start:10px}
-#tb .grp small{font-size:13px;font-weight:700;color:#b9c9cc;margin-inline-end:4px}
-#tb .grp button{min-width:38px;padding:0;font-size:17px}
+#tb .tl{display:inline-flex;flex-direction:column;align-items:center;gap:2px}
+#tb .tl>small{font-size:12px;font-weight:600;color:#b9c9cc;line-height:1.1}
+#tb .tc{display:inline-flex;align-items:center;gap:2px}
+#tb .grp{background:#22363c;border-radius:11px}
+#tb .grp button{min-width:34px;padding:0;font-size:15px}
+#tb .mpad{min-width:40px;padding:0;color:#e6ecea}
+#tb button,#tb select{min-height:40px}
 #tb .pop button{min-height:46px;min-width:0;padding:4px 10px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-size:16px}
 #tb .pop button:hover{background:var(--teal-soft);border-color:var(--teal)}
 #tb .pop .dot{width:34px;height:34px;min-height:34px;min-width:34px;padding:0;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18)}
@@ -165,7 +169,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=11"></script>
+<script src="/assets/greetings/greetings.js?v=12"></script>
 </head>
 <body>
 <div class="wrap">
@@ -467,47 +471,48 @@ function renderTb(){
     function up(){ grip.removeEventListener('pointermove', mv); grip.removeEventListener('pointerup', up); saveUi(); }
     grip.addEventListener('pointermove', mv); grip.addEventListener('pointerup', up);
   });
+  function slot(label){ var w = el('span', 'tl'), c = el('span', 'tc'); w.append(c, el('small', '', label)); tb.appendChild(w); return c; }
   if (b.type === 'text') {
-    var fb = tbBtn(tb, G.fontLabel(b.font), 'גופן', function(){ openFonts(b.font, function(f){ b.font = f; changed(); renderTb(); renderLayers(); }); });
+    var fb = tbBtn(slot('גופן'), G.fontLabel(b.font), 'גופן', function(){ openFonts(b.font, function(f){ b.font = f; changed(); renderTb(); renderLayers(); }); });
     fb.className = 'fnt'; fb.style.fontFamily = '"' + b.font + '", serif'; G.fontCss(b.font);
-    num(tb, 'גודל', Math.round(b.size), function(d){ b.size = Math.max(8, Math.min(160, Math.round(b.size + d * (b.size > 40 ? 2 : 1)))); return Math.round(b.size); });
-    tbBtn(tb, 'B', 'מודגש', function(){ b.bold = !b.bold; changed(); renderTb(); }, b.bold).style.fontWeight = 900;
+    num(slot('גודל'), 'גודל', Math.round(b.size), function(d){ b.size = Math.max(8, Math.min(160, Math.round(b.size + d * (b.size > 40 ? 2 : 1)))); return Math.round(b.size); });
+    tbBtn(slot('מודגש'), 'B', 'מודגש', function(){ b.bold = !b.bold; changed(); renderTb(); }, b.bold).style.fontWeight = 900;
     var ALN = { right: ['⇥', 'center', 'יישור לימין'], center: ['≡', 'left', 'יישור למרכז'], left: ['⇤', 'right', 'יישור לשמאל'] }, a = ALN[b.align] || ALN.center;
-    tbBtn(tb, a[0], a[2] + ' (לחיצה מחליפה)', function(){ b.align = a[1]; changed(); renderTb(); });
+    tbBtn(slot('יישור'), a[0], a[2] + ' (לחיצה מחליפה)', function(){ b.align = a[1]; changed(); renderTb(); });
   } else if (b.type === 'divider') {
     var st = document.createElement('select'); st.setAttribute('aria-label', 'צורת הקישוט');
     G.DIVIDERS.forEach(function(d){ var o = el('option', '', d[1]); o.value = d[0]; st.appendChild(o); }); st.value = b.style;
-    st.onchange = function(){ b.style = st.value; changed(); }; tb.appendChild(st);
-    num(tb, 'רוחב', Math.round((b.width || .5) * 100) + '%', function(d){ b.width = Math.max(.15, Math.min(1, (b.width || .5) + d * .05)); return Math.round(b.width * 100) + '%'; });
+    st.onchange = function(){ b.style = st.value; changed(); }; slot('צורה').appendChild(st);
+    num(slot('רוחב'), 'רוחב', Math.round((b.width || .5) * 100) + '%', function(d){ b.width = Math.max(.15, Math.min(1, (b.width || .5) + d * .05)); return Math.round(b.width * 100) + '%'; });
   } else if (b.type === 'photo') {
-    tbBtn(tb, '🖼 החלפה', 'החלפת התמונה', function(){ pickPhoto(function(src){ b.src = src; b.ox = b.oy = 0; changed(); }); });
+    tbBtn(slot('תמונה'), '🖼 החלפה', 'החלפת התמונה', function(){ pickPhoto(function(src){ b.src = src; b.ox = b.oy = 0; changed(); }); });
     var sh = document.createElement('select'); sh.setAttribute('aria-label', 'צורת המסגרת');
     G.SHAPES.forEach(function(d){ var o = el('option', '', d[1]); o.value = d[0]; sh.appendChild(o); }); sh.value = b.shape;
-    sh.onchange = function(){ b.shape = sh.value; changed(); }; tb.appendChild(sh);
-    num(tb, 'גודל', Math.round(b.size * 100) + '%', function(d){ b.size = Math.max(.12, Math.min(1, b.size + d * .04)); return Math.round(b.size * 100) + '%'; });
-    num(tb, 'זום', '🔍', function(d){ b.zoom = Math.max(1, Math.min(4, (b.zoom || 1) + d * .15)); return '🔍'; });
+    sh.onchange = function(){ b.shape = sh.value; changed(); }; slot('צורה').appendChild(sh);
+    num(slot('גודל'), 'גודל', Math.round(b.size * 100) + '%', function(d){ b.size = Math.max(.12, Math.min(1, b.size + d * .04)); return Math.round(b.size * 100) + '%'; });
+    num(slot('זום'), 'זום', '🔍', function(d){ b.zoom = Math.max(1, Math.min(4, (b.zoom || 1) + d * .15)); return '🔍'; });
   }
   sep(tb);
-  var mvg = el('span', 'grp'); mvg.appendChild(el('small', '', 'הזזה')); tb.appendChild(mvg);
+  var mvg = slot('הזזה'); mvg.classList.add('grp');
   var A = tpl.area, lim = A.w / 2;
-  [['▲', 'למעלה', 0, -4], ['▼', 'למטה', 0, 4], ['▶', 'ימינה', 4, 0], ['◀', 'שמאלה', -4, 0]].forEach(function(m){
-    tbBtn(mvg, m[0], 'הזזה ' + m[1], function(){
-      if (m[3]) b.gap = Math.max(0, (b.gap || 0) + m[3]);
-      if (m[2]) b.dx = Math.max(-lim, Math.min(lim, (b.dx || 0) + m[2]));
-      changed();
-    });
-  });
-  if (b.dx) tbBtn(mvg, '⊙', 'חזרה למרכז', function(){ b.dx = 0; changed(); renderTb(); });
+  if (b.g0 == null) b.g0 = b.gap || 0;
+  function nudge(dx, dy){ return function(){ if (dy) b.gap = Math.max(0, (b.gap || 0) + dy); if (dx) b.dx = Math.max(-lim, Math.min(lim, (b.dx || 0) + dx)); changed(); renderTb(); }; }
+  tbBtn(mvg, '▶', 'הזזה ימינה', nudge(4, 0));
+  tbBtn(mvg, '▲', 'הזזה למעלה', nudge(0, -4));
+  mvg.appendChild(G.movePad(b, function(){ changed(); renderTb(); }));
+  tbBtn(mvg, '▼', 'הזזה למטה', nudge(0, 4));
+  tbBtn(mvg, '◀', 'הזזה שמאלה', nudge(-4, 0));
   if (b.type === 'text') {
-    var lhg = el('span', 'grp'); lhg.appendChild(el('small', '', 'מרווח שורות')); tb.appendChild(lhg);
+    var lhg = slot('מרווח שורות'); lhg.classList.add('grp');
     tbBtn(lhg, '▲', 'מרווח שורות גדול יותר', function(){ b.lh = Math.min(3, Math.round((b.lh + 0.05) * 100) / 100); changed(); });
     tbBtn(lhg, '▼', 'מרווח שורות קטן יותר', function(){ b.lh = Math.max(0.9, Math.round((b.lh - 0.05) * 100) / 100); changed(); });
   }
-  var cb = tbBtn(tb, '', 'צבע', togglePop('color'), pop === 'color'); var dc = el('i', 'dotc'); dc.style.background = G.colorOf(b.color, tpl, S.colors); cb.appendChild(dc);
-  if (b.type !== 'text') tbBtn(tb, '↕', 'רווחים', togglePop('space'), pop === 'space');
-  if (b.type === 'text') tbBtn(tb, '✎', 'עריכת הטקסט', function(){ startEdit(); }, editing);
-  tbBtn(tb, '⋯', 'עוד', togglePop('more'), pop === 'more');
-  if (narrow.matches) tbBtn(tb, '✕', 'סגירה', function(){ select(null); });
+  sep(tb);
+  var cb = tbBtn(slot(b.type === 'photo' ? 'מסגרת' : 'צבע'), '', 'צבע', togglePop('color'), pop === 'color'); var dc = el('i', 'dotc'); dc.style.background = G.colorOf(b.color, tpl, S.colors); cb.appendChild(dc);
+  if (b.type !== 'text') tbBtn(slot('רווחים'), '↕', 'רווחים', togglePop('space'), pop === 'space');
+  if (b.type === 'text') tbBtn(slot('עריכה'), '✎', 'עריכת הטקסט', function(){ startEdit(); }, editing);
+  tbBtn(slot('עוד'), '⋯', 'עוד', togglePop('more'), pop === 'more');
+  tbBtn(slot('סגירה'), '✕', 'סגירת הסרגל', function(){ select(null); });
   if (!pop) return;
   var p = el('div', 'pop'); tb.appendChild(p);
   if (pop === 'color') {
