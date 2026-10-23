@@ -15,6 +15,8 @@ module.exports = async (req, res) => {
   }
   /* ברכות והזמנות: נוסחים מוכנים */
   if (cp === '_greetings') return require('./_greetings')(req, res);
+  /* ברכות בתשלום: הקישור האישי, שמירה בזמן העריכה ושליחת הקישור למייל */
+  if (cp === '_greetpay') { res.setHeader('Cache-Control', 'private, no-store'); return require('./_greetpay')(req, res); }
   /* חיפוש מיקום (מיקוד / כתובת / נקודה) */
   if (cp === '_geo') return require('./_geo')(req, res, json);
   /* אתר שומר שבת: האם עכשיו שבת או חג במיקום של הגולש */

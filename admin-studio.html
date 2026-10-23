@@ -101,7 +101,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=12"></script>
+<script src="/assets/greetings/greetings.js?v=13"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -179,6 +179,10 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
     <p class="sub">אפשר להוסיף אירוע חדש, לשנות שם, או להסתיר אירוע מהגלריה. אירוע מוסתר לא מוצג ללקוחות גם אם יש בו עיצובים.</p>
     <div class="cat-l" id="catList"></div>
     <div class="actions"><input id="catNew" placeholder="שם אירוע חדש, למשל אפשערניש" style="width:auto;min-width:220px"><button class="btn sm" type="button" id="catAdd">הוספת אירוע</button></div>
+    <div class="tp-f" style="border:1px solid var(--line);border-radius:12px;padding:12px">
+      <p class="sub"><b>אחרי תשלום</b> הלקוח מקבל במייל קישור אישי לעיצוב: אפשר לשנות בו עוד כמה שעות, ואחר כך רק להוריד עוד כמה ימים. המחיר נקבע לכל עיצוב (0 = חינם).</p>
+      <div class="fields"><label>שעות לשינויים אחרי התשלום<input id="payH" type="number" min="1" max="720" value="48"></label><label>ימים נוספים להורדה בלבד<input id="payD" type="number" min="0" max="365" value="30"></label></div>
+    </div>
     <div class="savebar"><button class="btn primary" type="button" id="tpSave">שמירת העיצובים והאירועים</button><span id="tpMsg" role="status"></span></div>
   </section>
 
@@ -420,8 +424,10 @@ function tpInit(){
   $('tpFilter').onchange=tpRender;
   $('catAdd').onclick=()=>{const n=$('catNew').value.trim();if(!n)return;TP.cats.push({id:'c'+Date.now().toString(36),name:n});$('catNew').value='';tpCats();tpMsg('נוסף. ללחוץ "שמירה" בתחתית.')};
   $('tpSave').onclick=tpSaveAll;
+  $('payH').oninput=()=>{TP.pay=TP.pay||{};TP.pay.editHours=+$('payH').value;tpMsg('ללחוץ "שמירה" בתחתית.')};
+  $('payD').oninput=()=>{TP.pay=TP.pay||{};TP.pay.dlDays=+$('payD').value;tpMsg('ללחוץ "שמירה" בתחתית.')};
   tpBatchInit();
-  Promise.all([GR.catalog(),api({action:'greettplget'})]).then(([_,d])=>{TP=d;tpCats();tpRender()}).catch(e=>{$('tpList').innerHTML='<p class="msg">לא הצלחתי לטעון: '+esc(e.message)+'</p>'});
+  Promise.all([GR.catalog(),api({action:'greettplget'})]).then(([_,d])=>{TP=d;TP.pay=TP.pay||{editHours:48,dlDays:30};$('payH').value=TP.pay.editHours;$('payD').value=TP.pay.dlDays;tpCats();tpRender()}).catch(e=>{$('tpList').innerHTML='<p class="msg">לא הצלחתי לטעון: '+esc(e.message)+'</p>'});
 }
 function tpMsg(t,ok){$('tpMsg').className=ok?'ok':'';$('tpMsg').textContent=t}
 function tpSaveAll(){tpMsg('שומר…');api({action:'greettplsave',...TP}).then(d=>{TP=d;tpCats();tpRender();tpMsg('נשמר. הלקוחות יראו את השינוי תוך כמה דקות.',true)}).catch(e=>{$('tpMsg').className='msg';$('tpMsg').textContent='השמירה נכשלה: '+e.message})}

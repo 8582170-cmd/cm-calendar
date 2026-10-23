@@ -108,10 +108,12 @@ module.exports = async (req, res) => {
             ? { type: 'divider', style: str(k.style, 12), color: col(k.color), width: num(k.width, 0.1, 1), gap: num(k.gap, 0, 300) }
             : { type: 'text', k: str(k.k, 20), text: str(k.text, 3000), text2: str(k.text2, 1000), cols: !!k.cols, font: str(k.font, 60), size: num(k.size, 6, 140), bold: !!k.bold, color: col(k.color), align: ['right', 'center', 'left'].includes(k.align) ? k.align : 'center', lh: num(k.lh, 0.8, 3), gap: num(k.gap, 0, 300) })
         })).filter(x => x.bg.img);
+        const P = b.pay || {}, ph = Number(P.editHours), pd = Number(P.dlDays);
+        g.pay = { editHours: isFinite(ph) && ph >= 1 ? Math.min(720, Math.round(ph)) : 48, dlDays: isFinite(pd) && pd >= 0 ? Math.min(365, Math.round(pd)) : 30 };
         g.updated = new Date().toISOString();
         await saveSetting('greettpl', g);
       }
-      return json(res, 200, { cats: g.cats || [], hideCats: g.hideCats || [], templates: g.templates || [] });
+      return json(res, 200, { cats: g.cats || [], hideCats: g.hideCats || [], templates: g.templates || [], pay: g.pay || { editHours: 48, dlDays: 30 } });
     }
     /* ברכות והזמנות: אילו גופנים מוצגים ללקוחות, השם והסוג של כל גופן */
     if (req.method === 'POST' && (b.action === 'greetfontsget' || b.action === 'greetfontssave')) {

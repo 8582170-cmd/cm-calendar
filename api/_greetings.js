@@ -8,6 +8,6 @@ module.exports = async (req, res) => {
     const g = await loadSetting('greetings'), gf = await loadSetting('greetfonts'), gt = await loadSetting('greettpl');
     const presets = (g.presets || []).filter(p => p.on !== false).map(p => ({ id: p.id, title: p.title, cat: p.cat, kind: p.kind, fields: p.fields }));
     res.setHeader('Cache-Control', 'public, max-age=120');
-    json(res, 200, { presets, fonts: gf.fonts || {}, cats: gt.cats || [], hideCats: gt.hideCats || [], templates: (gt.templates || []).filter(x => x.on !== false) });
+    json(res, 200, { presets, fonts: gf.fonts || {}, cats: gt.cats || [], hideCats: gt.hideCats || [], templates: (gt.templates || []).filter(x => x.on !== false), pay: { editHours: +((gt.pay || {}).editHours) || 48, dlDays: (gt.pay || {}).dlDays != null ? +gt.pay.dlDays : 30 } });
   } catch (e) { console.error('greetings', e); json(res, 200, { presets: [] }); }
 };

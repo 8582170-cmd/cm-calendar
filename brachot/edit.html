@@ -145,6 +145,15 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 .sz span{font-size:14px;color:var(--mute)}
 .sz[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft)}
 .fmts{display:flex;gap:8px;flex-wrap:wrap}
+.paybox{border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 8%,var(--sheet));border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.paybox.ok{border-color:#2f8a55;background:color-mix(in srgb,#2f8a55 8%,var(--sheet))}
+.paybox .pr{font-size:30px;font-weight:900;line-height:1}
+.paybox p{margin:0;font-size:17px}
+.paybox .row2 .big-btn{min-height:50px;font-size:17px}
+.cloud{font-size:15px;color:var(--mute);font-weight:700}
+@keyframes ml-pulse{0%,100%{box-shadow:0 0 0 0 rgb(31 92 99 / .5)}50%{box-shadow:0 0 0 10px rgb(31 92 99 / 0)}}
+.pulse{animation:ml-pulse 1.2s ease 3}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 .outpv{display:flex;justify-content:center;align-items:center;background:repeating-conic-gradient(var(--paper) 0 25%,var(--sheet) 0 50%) 0 0/22px 22px;border:1px solid var(--line);border-radius:20px;padding:22px;min-height:320px}
 .outpv canvas{max-width:100%;max-height:520px;box-shadow:var(--shadow);border-radius:3px}
 .msg{font-weight:800;min-height:1.4em;font-size:17px}
@@ -169,7 +178,8 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=12"></script>
+<script src="/assets/greetings/greetings.js?v=13"></script>
+<script src="/assets/pay.js?v=1" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -184,6 +194,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
   <div class="top">
     <div><h1 id="ttl">עריכה</h1><p class="sub" id="sub"></p></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span class="cloud" id="cloud" role="status"></span>
     <button class="pill" type="button" id="toClassic" title="המבנה הקודם: הדף בצד, והפסקאות ככרטיסים">⇄ עורך קלאסי</button>
     <div class="steps" role="tablist" aria-label="שלבים">
       <button type="button" role="tab" data-go="1"><b>1</b>פרטים</button>
@@ -201,7 +212,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
         <div class="f" id="presetF" hidden><label for="preset">נוסח מוכן</label><select id="preset"></select><button class="pill" type="button" id="presetUndo" hidden style="align-self:start">↶ החזרת הטקסט הקודם</button></div>
         <div id="fields" style="display:flex;flex-direction:column;gap:18px"></div>
         <label class="chk"><input type="checkbox" id="remember" checked> לזכור את השמות לעיצובים אחרים</label>
-        <div class="nextrow"><button class="big-btn ghost" type="button" id="addPhoto1">+ תמונה</button><button class="big-btn" type="button" data-go="2">לעיצוב ←</button></div>
+        <div class="nextrow"><button class="big-btn ghost" type="button" id="addPhoto1">+ העלאת לוגו / תמונה</button><button class="big-btn" type="button" data-go="2">לעיצוב ←</button></div>
       </div>
       <div class="slot" id="slot1"></div>
     </section>
@@ -227,7 +238,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
           <div class="f"><span class="lb">גופן לכל הטקסט</span><button class="fontbtn" type="button" id="allFont">בחירת גופן…</button></div>
           <div class="f"><span class="lb">צבע לכל הטקסט</span><div id="allColor"></div></div>
           <div class="f"><label for="scale">גודל הטקסט</label><input type="range" id="scale" min="60" max="140" step="5"></div>
-          <div class="f"><span class="lb">הוספה</span><div class="adds"><button type="button" id="addText">+ שורת טקסט</button><button type="button" id="addDiv">+ קישוט</button><button type="button" id="addPhoto">+ תמונה</button></div></div>
+          <div class="f"><span class="lb">הוספה</span><div class="adds"><button type="button" id="addText">+ שורת טקסט</button><button type="button" id="addDiv">+ קישוט</button><button type="button" id="addPhoto">+ העלאת לוגו / תמונה</button></div></div>
         </div>
         <button class="big-btn" type="button" data-go="3">להורדה ←</button>
       </aside>
@@ -236,6 +247,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
     <!-- 3. הורדה -->
     <section class="step" id="s3" aria-label="הורדה">
       <div class="card3">
+        <div class="paybox" id="payBox" hidden></div>
         <div><h2>לאן זה הולך?</h2></div>
         <div class="f"><span class="lb">להדפסה</span><div class="sizes" id="szPrint"></div></div>
         <div class="f" id="cmF" hidden><label for="cmW">רוחב בס״מ</label><input type="text" inputmode="decimal" id="cmW" value="50"><p class="info" id="cmInfo"></p></div>
@@ -274,13 +286,22 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 </dialog>
 
 <script>
-(function(){ try { var u = JSON.parse(localStorage.getItem('myluach-greet-ui') || '{}') || {}; if (u.classic) location.replace('/brachot/edit-classic.html' + location.search); } catch (e) {} })();
-window.Greetings.load().then(function(){
+(function(){ try { var u = JSON.parse(localStorage.getItem('myluach-greet-ui') || '{}') || {}; if (u.classic && !/[?&](o|steps)=/.test(location.search)) location.replace('/brachot/edit-classic.html' + location.search); } catch (e) {} })();
+var Q0 = new URLSearchParams(location.search), OKEY = 'myluach-greet-ord-' + (Q0.get('t') || '') + '-' + (Q0.get('v') || '');
+var CRED = Q0.get('o') && Q0.get('k') ? { o: Q0.get('o'), k: Q0.get('k') } : null;
+if (!CRED) { try { CRED = JSON.parse(localStorage.getItem(OKEY) || 'null') } catch (e) {} }
+function gp(body){ return fetch('/api/pricing?c=_greetpay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok) throw Object.assign(new Error(j.error || r.status), { msg: j.message, code: r.status }); return j; }); }); }
+var REC0 = CRED ? gp(Object.assign({ action: 'get' }, CRED)).catch(function(e){ return { error: e }; }) : Promise.resolve(null);
+Promise.all([window.Greetings.load(), REC0]).then(function(R0){
 'use strict';
+var GD = R0[0] || {}, REC = R0[1];
+if (REC && REC.error) { if (!(Q0.get('o'))) { try { localStorage.removeItem(OKEY) } catch (e) {} REC = null; CRED = null; } }
 var G = window.Greetings, $ = function(id){ return document.getElementById(id) };
-var params = new URLSearchParams(location.search), tpl = G.get(params.get('t') || '');
-if (tpl && params.get('v') != null) tpl = G.variant(tpl, +params.get('v'));
-if (!tpl) { $('ed').innerHTML = '<div class="card3"><h2>העיצוב לא נמצא</h2><p><a href="/brachot/">לכל העיצובים</a></p></div>'; return; }
+var params = new URLSearchParams(location.search), tpl = G.get((REC && REC.tpl) || params.get('t') || '');
+var vparam = REC && !REC.error ? (REC.v >= 0 ? REC.v : null) : params.get('v');
+if (tpl && vparam != null) tpl = G.variant(tpl, +vparam);
+if (REC && REC.error) { $('stage').remove(); $('ed').innerHTML = '<div class="card3"><h2>' + (REC.error.msg || 'הקישור לא תקין') + '</h2><p><a href="/brachot/">לכל העיצובים</a></p></div>'; return; }
+if (!tpl) { $('stage').remove(); $('ed').innerHTML = '<div class="card3"><h2>העיצוב לא נמצא</h2><p><a href="/brachot/">לכל העיצובים</a></p></div>'; return; }
 document.title = tpl.title + ' · עריכה | MyLuach';
 $('ttl').textContent = tpl.title;
 $('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat);
@@ -289,7 +310,21 @@ var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, narrow = ma
 /* מצב העיצוב + שמירה בדפדפן */
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null, fresh = true;
 try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; fresh = false; } } catch (e) {}
+if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; fresh = false; }
 if (fresh) G.applyProfile(S.blocks);
+/* תשלום: מצב ההזמנה. free = עיצוב חינמי · unpaid · edit = שולם ובזמן השינויים · dl = רק הורדה · expired */
+var PAID = (tpl.price || 0) > 0, ORD = REC && !REC.error ? REC : null, SKEW = ORD ? Date.parse(ORD.now) - Date.now() : 0, PAYCFG = GD.pay || { editHours: 48, dlDays: 30 };
+function mode(){ if (!ORD) return PAID ? 'unpaid' : 'free'; var n = Date.now() + SKEW; return n < Date.parse(ORD.editUntil) ? 'edit' : n < Date.parse(ORD.dlUntil) ? 'dl' : 'expired'; }
+function clean(){ var m = mode(); return m === 'edit' || m === 'dl' || m === 'free'; }
+var cloudT = null;
+function cloud(t){ $('cloud').textContent = t || ''; }
+function pushCloud(now){
+  if (mode() !== 'edit' || !CRED) return Promise.resolve();
+  clearTimeout(cloudT);
+  var run = function(){ cloud('שומר…'); return gp({ action: 'save', o: CRED.o, k: CRED.k, state: S }).then(function(){ cloud('✓ נשמר'); }).catch(function(e){ cloud(e.msg || 'לא נשמר'); }); };
+  if (now) return run();
+  cloudT = setTimeout(run, 2500); return Promise.resolve();
+}
 var msgT;
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) { flash('אין מספיק מקום בדפדפן לשמירה. כדאי להוריד את הקובץ.'); } }
 function flash(t){ $('msg').textContent = t; }
@@ -299,7 +334,7 @@ var hist = [], redoS = [], last = JSON.stringify(S), lastT = 0;
 function changed(){
   var cur = JSON.stringify(S), now = Date.now();
   if (cur !== last) { if (now - lastT > 700) { hist.push(last); if (hist.length > 100) hist.shift(); redoS = []; } lastT = now; last = cur; }
-  save(); draw(); updUndo();
+  save(); draw(); updUndo(); pushCloud();
 }
 function updUndo(){ $('undo').disabled = !hist.length; $('redo').disabled = !redoS.length; }
 function restore(json){ S = JSON.parse(json); last = json; lastT = 0; sel = null; editing = false; save(); refreshAll(); updUndo(); }
@@ -316,6 +351,7 @@ document.addEventListener('keydown', function(e){
 /* שלבים */
 var step = 1;
 function go(n){
+  if (mode() === 'dl' || mode() === 'expired') n = 3;
   step = n; $('ed').dataset.step = n;
   document.querySelectorAll('.steps [data-go]').forEach(function(b){ b.setAttribute('aria-selected', String(+b.dataset.go === n)) });
   if (n === 1 || n === 2) $('slot' + n).appendChild($('stage'));
@@ -336,7 +372,7 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.W), selected: sel, noFrame: true, skip: editing ? sel : null, watermark: 'edit' }).then(place).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.W), selected: sel, noFrame: true, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(place).catch(function(){});
   });
 }
 window.addEventListener('resize', draw);
@@ -418,8 +454,9 @@ function dragOn(el, onStart, onMove){
   });
 }
 dragOn($('hnd'), function(){ return S.blocks[sel].gap || 0 }, function(g0, dx, dy){ S.blocks[sel].gap = Math.max(0, Math.min(400, Math.round(g0 + dy / k()))); changed(); });
-dragOn($('selbox'), function(){ var b = S.blocks[sel]; return { ox: b.ox || 0, oy: b.oy || 0, w: boxOf(item(sel)).w * k() } }, function(s0, dx, dy){
+dragOn($('selbox'), function(){ var b = S.blocks[sel]; if (b.g0 == null) b.g0 = b.gap || 0; return { ox: b.ox || 0, oy: b.oy || 0, w: boxOf(item(sel)).w * k(), dx: b.dx || 0, gap: b.gap || 0 } }, function(s0, dx, dy){
   var b = S.blocks[sel]; if (b.type !== 'photo') return;
+  if (b.shape === 'orig') { var lim = tpl.area.w / 2; b.dx = Math.max(-lim, Math.min(lim, Math.round(s0.dx + dx / k()))); b.gap = Math.max(0, Math.round(s0.gap + dy / k())); changed(); return; }
   b.ox = Math.max(-1, Math.min(1, s0.ox - 2 * dx / s0.w)); b.oy = Math.max(-1, Math.min(1, s0.oy - 2 * dy / s0.w)); changed();
 });
 
@@ -485,12 +522,14 @@ function renderTb(){
     st.onchange = function(){ b.style = st.value; changed(); }; slot('צורה').appendChild(st);
     num(slot('רוחב'), 'רוחב', Math.round((b.width || .5) * 100) + '%', function(d){ b.width = Math.max(.15, Math.min(1, (b.width || .5) + d * .05)); return Math.round(b.width * 100) + '%'; });
   } else if (b.type === 'photo') {
-    tbBtn(slot('תמונה'), '🖼 החלפה', 'החלפת התמונה', function(){ pickPhoto(function(src){ b.src = src; b.ox = b.oy = 0; changed(); }); });
+    tbBtn(slot('לוגו / תמונה'), '🖼 החלפה', 'החלפת הלוגו או התמונה', function(){ pickPhoto(function(src, ratio){ b.src = src; b.ratio = ratio; b.ox = b.oy = 0; changed(); }); });
     var sh = document.createElement('select'); sh.setAttribute('aria-label', 'צורת המסגרת');
     G.SHAPES.forEach(function(d){ var o = el('option', '', d[1]); o.value = d[0]; sh.appendChild(o); }); sh.value = b.shape;
-    sh.onchange = function(){ b.shape = sh.value; changed(); }; slot('צורה').appendChild(sh);
+    sh.onchange = function(){ b.shape = sh.value; changed(); renderTb(); }; slot('צורה').appendChild(sh);
     num(slot('גודל'), 'גודל', Math.round(b.size * 100) + '%', function(d){ b.size = Math.max(.12, Math.min(1, b.size + d * .04)); return Math.round(b.size * 100) + '%'; });
-    num(slot('זום'), 'זום', '🔍', function(d){ b.zoom = Math.max(1, Math.min(4, (b.zoom || 1) + d * .15)); return '🔍'; });
+    if (b.shape !== 'orig') num(slot('זום'), 'זום', '🔍', function(d){ b.zoom = Math.max(1, Math.min(4, (b.zoom || 1) + d * .15)); return '🔍'; });
+    num(slot('שקיפות'), 'שקיפות', Math.round((b.op == null ? 1 : b.op) * 100) + '%', function(d){ b.op = Math.max(0.1, Math.min(1, Math.round(((b.op == null ? 1 : b.op) + d * 0.1) * 10) / 10)); return Math.round(b.op * 100) + '%'; });
+    num(slot('סיבוב'), 'סיבוב', (b.rot || 0) + '°', function(d){ b.rot = Math.max(-180, Math.min(180, (b.rot || 0) + d * 5)); return b.rot + '°'; });
   }
   sep(tb);
   var mvg = slot('הזזה'); mvg.classList.add('grp');
@@ -549,9 +588,9 @@ function renderFields(){
   var box = $('fields'); box.innerHTML = ''; var n = 0;
   S.blocks.forEach(function(b, i){
     if (b.type === 'photo') {
-      var pf = el('div', 'f'); pf.dataset.i = i; pf.appendChild(el('span', 'lb', 'תמונה'));
+      var pf = el('div', 'f'); pf.dataset.i = i; pf.appendChild(el('span', 'lb', 'לוגו / תמונה'));
       var r = el('div', 'row2'); pf.appendChild(r);
-      var ch = el('button', 'pill', b.src ? 'החלפת התמונה' : 'בחירת תמונה'); ch.type = 'button'; ch.onclick = function(){ pickPhoto(function(src){ b.src = src; changed(); renderFields(); }); };
+      var ch = el('button', 'pill', b.src ? 'החלפת הלוגו / התמונה' : 'העלאת לוגו / תמונה'); ch.type = 'button'; ch.onclick = function(){ pickPhoto(function(src, ratio){ b.src = src; b.ratio = ratio; changed(); renderFields(); }); };
       var rm = el('button', 'pill', 'הסרה'); rm.type = 'button'; rm.onclick = function(){ S.blocks.splice(i, 1); changed(); renderFields(); };
       r.append(ch, rm); box.appendChild(pf); return;
     }
@@ -582,18 +621,19 @@ $('photoIn').onchange = function(){
   var f = $('photoIn').files[0]; if (!f) return;
   var url = URL.createObjectURL(f), im = new Image();
   im.onload = function(){
-    var m = 1400, s = Math.min(1, m / Math.max(im.width, im.height)), c = document.createElement('canvas');
-    c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-    URL.revokeObjectURL(url); if (photoCb) photoCb(c.toDataURL('image/jpeg', 0.86));
+    var png = /png|webp|gif|svg/.test(f.type), m = png ? 1100 : 1400, s = Math.min(1, m / Math.max(im.width || 800, im.height || 800)), c = document.createElement('canvas');
+    c.width = Math.round((im.width || 800) * s); c.height = Math.round((im.height || 800) * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url); if (photoCb) photoCb(png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.86), c.height / c.width, png);
   };
   im.onerror = function(){ flash('לא הצלחתי לפתוח את התמונה.'); };
   im.src = url;
 };
 function addPhoto(){
-  pickPhoto(function(src){
+  pickPhoto(function(src, ratio, logo){
     var at = S.blocks.findIndex(function(b){ return ['name', 'groom', 'name2', 'title'].indexOf(b.k) >= 0 });
     at = at < 0 ? 1 : at + 1;
-    S.blocks.splice(at, 0, G.newPhoto(src)); changed();
+    var nb = G.newPhoto(src); nb.ratio = ratio; if (logo) { nb.shape = 'orig'; nb.border = 0; nb.size = 0.3; }
+    S.blocks.splice(at, 0, nb); changed();
     if (step === 1) renderFields(); else { sel = at; renderTb(); renderLayers(); }
   });
 }
@@ -627,14 +667,14 @@ if (ui.list == null) ui.list = true;
 function saveUi(){ try { localStorage.setItem(UIK, JSON.stringify(ui)) } catch (e) {} }
 function setList(on){ ui.list = on; saveUi(); $('s2').classList.toggle('withList', on); $('listT').setAttribute('aria-pressed', String(on)); renderLayers(); draw(); }
 $('listT').onclick = function(){ setList(!ui.list); };
-$('toClassic').onclick = function(){ ui.classic = true; saveUi(); location.href = '/brachot/edit-classic.html' + location.search; };
+$('toClassic').onclick = function(){ ui.classic = true; saveUi(); location.href = '/brachot/edit-classic.html' + (ORD ? '?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') : location.search); };
 function renderLayers(){
   if (!ui.list || step !== 2) return;
   var box = $('lyList'); box.innerHTML = '';
   S.blocks.forEach(function(b, i){
     var r = el('div', 'ly' + (sel === i ? ' sel' : '') + (b.hidden ? ' off' : '')), h = el('div', 'ly-h');
     var ic = el('span', 'ic', b.type === 'text' ? 'א' : b.type === 'photo' ? '◯' : '✦');
-    var tx = el('span', 'tx', b.type === 'text' ? (b.text || '').split('\n')[0] || '(ריק)' : b.type === 'photo' ? 'תמונה' : 'קישוט');
+    var tx = el('span', 'tx', b.type === 'text' ? (b.text || '').split('\n')[0] || '(ריק)' : b.type === 'photo' ? 'לוגו / תמונה' : 'קישוט');
     if (b.type === 'text') { tx.style.fontFamily = '"' + b.font + '", serif'; G.fontCss(b.font); }
     var eye = el('button', '', b.hidden ? '◌' : '👁'); eye.type = 'button'; eye.title = b.hidden ? 'הצגה' : 'הסתרה'; eye.setAttribute('aria-label', eye.title);
     eye.onclick = function(e){ e.stopPropagation(); b.hidden = !b.hidden; changed(); renderLayers(); };
@@ -740,8 +780,45 @@ function renderSizes(){
   $('share').hidden = !(navigator.canShare && cur.screen);
 }
 $('cmW').oninput = function(){ renderSizes(); };
-var PAID = (tpl.price || 0) > 0; /* עד שיהיה תשלום: עיצוב בתשלום יורד עם סימן מים */
-function pageCanvas(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale, watermark: PAID ? 'edit' : null }); }
+/* עיצוב בתשלום יורד עם סימן מים עד שמשלמים */
+function pageCanvas(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale, watermark: clean() ? null : 'edit' }); }
+var fmtT = function(t){ return new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+function renderPay(){
+  var box = $('payBox'), m = mode(); box.hidden = m === 'free'; box.className = 'paybox' + (m === 'edit' || m === 'dl' ? ' ok' : '');
+  $('dl').textContent = m === 'unpaid' || m === 'expired' ? '⬇ הורדה לדוגמה (עם סימן מים)' : '⬇ הורדה';
+  $('dl').className = 'big-btn' + (m === 'unpaid' ? ' ghost' : '');
+  document.querySelectorAll('.steps [data-go="1"],.steps [data-go="2"]').forEach(function(b){ b.disabled = m === 'dl' || m === 'expired'; });
+  if (m === 'free') return;
+  if (m === 'unpaid') {
+    box.innerHTML = '<div class="pr">' + tpl.price + ' ₪</div><p>אחרי התשלום: הורדה <b>בלי סימן מים</b> בכל הגדלים, ועוד <b>' + PAYCFG.editHours + ' שעות</b> לשינויים אחרונים. קישור אישי לעיצוב יישלח למייל.</p>' +
+      '<div class="row2"><button class="big-btn" type="button" id="payBtn">תשלום והורדה</button></div>';
+    $('payBtn').onclick = startPay; return;
+  }
+  if (m === 'expired') { box.innerHTML = '<p><b>תוקף הקישור הסתיים</b> (' + fmtT(ORD.dlUntil) + ').</p>'; return; }
+  box.innerHTML = '<p><b>✓ שולם.</b> ' + (m === 'edit' ? 'אפשר לשנות עד <b>' + fmtT(ORD.editUntil) + '</b>, ולהוריד עד ' + fmtT(ORD.dlUntil) + '.' : 'זמן השינויים הסתיים. אפשר להוריד את הקובץ עד <b>' + fmtT(ORD.dlUntil) + '</b>.') + '</p>' +
+    '<div class="row2"><button class="big-btn ghost" type="button" id="mailBtn">✉ שליחת הקישור למייל</button></div><p class="info" id="mailMsg"></p>';
+  $('mailBtn').onclick = function(){
+    var b = $('mailBtn'); b.disabled = true; $('mailMsg').textContent = 'שולח…';
+    pushCloud(true).then(function(){ return gp({ action: 'mail', o: CRED.o, k: CRED.k }); })
+      .then(function(j){ $('mailMsg').textContent = '✓ הקישור נשלח אל ' + (j.to || ORD.email); })
+      .catch(function(e){ $('mailMsg').textContent = e.msg || 'לא הצלחנו לשלוח. נסו שוב.'; b.disabled = false; });
+  };
+}
+function startPay(){
+  if (!window.MLPay) { flash('טוען…'); setTimeout(startPay, 500); return; }
+  window.MLPay.open({ title: 'תשלום · ' + tpl.title, sub: tpl.price + ' ₪. אחרי התשלום: הורדה בלי סימן מים, ו־' + PAYCFG.editHours + ' שעות לשינויים.',
+    body: { plan: 'greet', tpl: tpl.id, v: tpl.variantOf ? tpl.variant : -1, state: S },
+    onPaid: function(id){
+      flash('התשלום התקבל. פותחים את העיצוב…');
+      var tries = 0;
+      (function claim(){ gp({ action: 'claim', o: id }).then(function(j){
+        CRED = { o: id, k: j.k }; ORD = j; SKEW = Date.parse(j.now) - Date.now();
+        try { localStorage.setItem(OKEY, JSON.stringify(CRED)) } catch (e) {}
+        try { history.replaceState(null, '', '/brachot/edit.html?o=' + id + '&k=' + j.k + '#download') } catch (e) {}
+        renderPay(); outPreview(); draw(); flash('✓ שולם! עכשיו מורידים בלי סימן מים. הקישור נשלח גם למייל.');
+      }).catch(function(){ if (++tries < 8) setTimeout(claim, 2500); else flash('התשלום התקבל. הקישור לעיצוב נשלח למייל שלכם.'); }); })();
+    } });
+}
 function compose(sz, f){
   var pw = Math.round(sz.px[0] * f), ph = Math.round(sz.px[1] * f);
   if (sz.id === 'phone') return pageCanvas(pw / G.W);
@@ -792,7 +869,9 @@ function build(){
 }
 $('dl').onclick = function(){
   busy(true, cur.mm && cur.mm[0] > 420 ? 'מכין קובץ גדול, זה לוקח כמה שניות…' : 'מכין את הקובץ…');
-  build().then(function(r){ saveBlob(r.blob, r.name); busy(false, '✓ הקובץ ירד' + (fmt === 'pdf' ? '. מדפיסים בגודל מלא, בלי שוליים.' : '.')); })
+  build().then(function(r){ saveBlob(r.blob, r.name); var m = mode();
+      busy(false, '✓ הקובץ ירד' + (fmt === 'pdf' ? '. מדפיסים בגודל מלא, בלי שוליים.' : '.') + (m === 'edit' || m === 'dl' ? ' רוצים את הקישור לעיצוב במייל?' : m === 'unpaid' ? ' זה קובץ לדוגמה עם סימן מים.' : ''));
+      if (m === 'edit' || m === 'dl') { pushCloud(true); var mb = $('mailBtn'); if (mb) { mb.classList.remove('pulse'); void mb.offsetWidth; mb.classList.add('pulse'); } } })
     .catch(function(){ busy(false, 'משהו השתבש. אפשר לנסות שוב, או גודל קטן יותר.'); });
 };
 $('share').onclick = function(){
@@ -813,7 +892,8 @@ $('resetAll').onclick = function(){
 function refreshAll(){ renderFields(); renderLayers(); renderTb(); allColor(); $('scale').value = Math.round((S.scale || 1) * 100); if (step === 3) outPreview(); draw(); }
 
 G.catalog().then(function(){
-  allColor(); setList(ui.list !== false);
+  allColor(); setList(ui.list !== false); renderPay();
+  if (mode() === 'edit') cloud('השינויים נשמרים אוטומטית');
   var h = location.hash.slice(1), start = h === 'design' ? 2 : h === 'download' ? 3 : h === 'details' ? 1 : (fresh ? 1 : 2);
   go(start);
 });

@@ -35,7 +35,7 @@ function render(kind, vars, tpl) {
 }
 function vars(o) {
   const isDon = o.plan === 'donation';
-  return { 'מסלול': isDon ? 'תרומה' : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan), 'סכום': +o.amount ? (+o.amount).toLocaleString('he-IL') + ' ₪' : 'בחינם',
+  return { 'מסלול': isDon ? 'תרומה' : o.plan === 'greet' ? 'ברכה / הזמנה מעוצבת' : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan), 'סכום': +o.amount ? (+o.amount).toLocaleString('he-IL') + ' ₪' : 'בחינם',
     'קופון': o.coupon ? ', קופון ' + o.coupon : '', 'הזמנה': String(o.id || '').slice(0, 8), 'מייל': o.email || 'לא ידוע', 'אמצעי': o.via || 'נדרים פלוס', 'סוג': isDon ? 'תרומה' : 'רכישה' };
 }
 
@@ -49,7 +49,9 @@ async function markPaid(o, extra, via) {
 }
 async function notify(o) {
   const { sendMail } = require('./_mail'), tpl = (await loadConfig()).mailTpl, V = vars(o), isDon = o.plan === 'donation';
-  if (o.email) { try { await sendMail({ to: o.email, ...render(isDon ? 'donation' : 'purchase', V, tpl) }, 'purchase'); } catch (e) { console.error('customer mail', e.message); } }
+  /* ברכה מעוצבת: הלקוח מקבל מייל עם הקישור האישי לעיצוב (במקום אישור רכישה של מסלול) */
+  if (o.plan === 'greet') { try { await require('./_greetpay').paid(o); } catch (e) { console.error('greet paid', e.message); } }
+  else if (o.email) { try { await sendMail({ to: o.email, ...render(isDon ? 'donation' : 'purchase', V, tpl) }, 'purchase'); } catch (e) { console.error('customer mail', e.message); } }
   const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');
   if (to) { try { await sendMail({ to, ...render('owner', V, tpl) }, 'owner'); } catch (e) { console.error('owner mail', e.message); } }
 }

@@ -320,8 +320,8 @@ function layout(ctx, tpl, state){
 }
 
 /* תמונה שהלקוח העלה: צורה, גודל, זום והזזה בתוך המסגרת */
-var SHAPES = [['circle','עיגול'],['arch','קשת'],['rounded','מלבן מעוגל'],['rect','מלבן'],['oval','אליפסה']];
-function photoRatio(b){ return b.shape === 'circle' ? 1 : b.shape === 'arch' ? 1.3 : b.shape === 'oval' ? 1.25 : (b.ratio || 1.25); }
+var SHAPES = [['orig','מקורי (ללוגו)'],['circle','עיגול'],['square','ריבוע'],['oval','אליפסה'],['arch','קשת'],['rounded','מלבן מעוגל'],['rect','מלבן']];
+function photoRatio(b){ return b.shape === 'circle' || b.shape === 'square' ? 1 : b.shape === 'arch' ? 1.3 : b.shape === 'oval' ? 1.25 : (b.ratio || 1.25); }
 function shapePath(ctx, b, x, y, w, h){
   ctx.beginPath();
   if (b.shape === 'circle' || b.shape === 'oval') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
@@ -337,7 +337,15 @@ function photoImg(src){
 function photoX(it){ var b = it.b; return b.align === 'right' ? it.x + it.w - it.pw : b.align === 'left' ? it.x : it.x + (it.w - it.pw) / 2; }
 function drawPhoto(ctx, it, img, col){
   var b = it.b, w = it.pw, h = it.h, x = photoX(it), y = it.y;
-  ctx.save(); shapePath(ctx, b, x, y, w, h);
+  ctx.save();
+  ctx.globalAlpha = b.op == null ? 1 : Math.max(0.05, Math.min(1, b.op));
+  if (b.rot) { ctx.translate(x + w / 2, y + h / 2); ctx.rotate(b.rot * Math.PI / 180); ctx.translate(-(x + w / 2), -(y + h / 2)); }
+  if (b.shape === 'orig' && img) { /* לוגו: כל התמונה, בלי חיתוך ובלי רקע */
+    ctx.drawImage(img, x, y, w, h);
+    if (b.border) { ctx.lineWidth = b.border; ctx.strokeStyle = col; ctx.strokeRect(x, y, w, h); }
+    ctx.restore(); return;
+  }
+  shapePath(ctx, b, x, y, w, h);
   if (img) {
     ctx.save(); ctx.clip();
     var z = b.zoom || 1, k = Math.max(w / img.width, h / img.height) * z, iw = img.width * k, ih = img.height * k;

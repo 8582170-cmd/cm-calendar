@@ -66,7 +66,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=12"></script>
+<script src="/assets/greetings/greetings.js?v=13"></script>
 </head>
 <body>
 <div class="wrap">
@@ -449,6 +449,12 @@ $('dlPdf').onclick = function(){
     doc.save(fileBase() + '.pdf'); busy(false, 'ה־PDF ירד. מדפיסים בגודל A4, בלי שוליים.');
   }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); });
 };
+/* עיצוב בתשלום: התשלום וההורדה בלי סימן מים נעשים בעורך השלבים */
+if ((tpl.price || 0) > 0) {
+  var toPay = function(){ location.href = '/brachot/edit.html?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') + '&steps=1#download'; };
+  ['dlPdf', 'dlPng', 'dlJpg'].forEach(function(id){ $(id).onclick = toPay; });
+  $('dlPdf').textContent = 'תשלום והורדה (' + tpl.price + ' ₪)'; $('dlPng').hidden = true; $('dlJpg').hidden = true;
+}
 $('resetAll').onclick = function(){
   if ($('resetQ').hidden) { $('resetQ').hidden = false; setTimeout(function(){ $('resetQ').hidden = true }, 4000); return; }
   try { localStorage.removeItem(KEY) } catch (e) {}
