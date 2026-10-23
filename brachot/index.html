@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&family=Bellefair&display=swap">
 <link rel="stylesheet" href="/assets/greetings/greetings.css?v=3">
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=10"></script>
+<script src="/assets/greetings/greetings.js?v=11"></script>
 </head>
 <body>
 <div class="wrap">
@@ -85,7 +85,7 @@ function list(){
     var cv = a.querySelector('canvas');
     var w = Math.max(250, a.getBoundingClientRect().width || 280) * (window.devicePixelRatio || 1);
     var st = G.defaults(t); G.applyProfile(st.blocks, prof);
-    G.render(cv, t, st, { scale: Math.min(1.5, w / G.W), thumb: true }).catch(function(){});
+    G.render(cv, t, st, { scale: Math.min(1.5, w / G.W), thumb: true, watermark: 'faint' }).catch(function(){});
   });
 }
 chips(); list();

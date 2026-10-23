@@ -165,7 +165,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=10"></script>
+<script src="/assets/greetings/greetings.js?v=11"></script>
 </head>
 <body>
 <div class="wrap">
@@ -328,7 +328,7 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.W), selected: sel, noFrame: true, skip: editing ? sel : null }).then(place).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.W), selected: sel, noFrame: true, skip: editing ? sel : null, watermark: 'edit' }).then(place).catch(function(){});
   });
 }
 window.addEventListener('resize', draw);
@@ -730,7 +730,8 @@ function renderSizes(){
   $('share').hidden = !(navigator.canShare && cur.screen);
 }
 $('cmW').oninput = function(){ renderSizes(); };
-function pageCanvas(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale }); }
+var PAID = (tpl.price || 0) > 0; /* עד שיהיה תשלום: עיצוב בתשלום יורד עם סימן מים */
+function pageCanvas(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale, watermark: PAID ? 'edit' : null }); }
 function compose(sz, f){
   var pw = Math.round(sz.px[0] * f), ph = Math.round(sz.px[1] * f);
   if (sz.id === 'phone') return pageCanvas(pw / G.W);
@@ -748,6 +749,7 @@ function compose(sz, f){
   });
 }
 function output(small){
+  if (small) { var o = cur.screen ? compose(cur, 360 / cur.px[0]) : pageCanvas(360 / G.W); return o; }
   if (cur.screen) return compose(cur, small ? 360 / cur.px[0] : 1);
   var mm = mmOf(cur);
   return pageCanvas(small ? 360 / G.W : (mm[0] / 25.4 * dpiOf(mm)) / G.W);

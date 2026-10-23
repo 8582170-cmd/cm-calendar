@@ -348,6 +348,25 @@ function drawPhoto(ctx, it, img, col){
   ctx.restore();
 }
 
+/* סימן מים: MyLuach עם הסמל, בשורות אלכסוניות. כהה עם קו לבן, כך שנראה גם על רקע כהה */
+var logoP = null;
+function logoImg(){ if (!logoP) logoP = photoImg('/assets/logo.svg?v=2'); return logoP; }
+function drawMark(ctx, logo, alpha){
+  ctx.save(); ctx.globalAlpha = alpha; ctx.direction = 'ltr'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = '800 40px Assistant, Arial, sans-serif';
+  var tw = ctx.measureText('MyLuach').width, unit = 46 + 10 + tw, gapX = 90, gapY = 170;
+  ctx.translate(W / 2, H / 2); ctx.rotate(-Math.PI / 6);
+  for (var row = -6, n = 0; row <= 6; row++, n++) {
+    var y = row * gapY, shift = (n % 2) * (unit + gapX) / 2;
+    for (var x = -W * 1.2 + shift; x < W * 1.2; x += unit + gapX) {
+      if (logo) ctx.drawImage(logo, x, y - 23, 46, 46);
+      ctx.lineWidth = 4; ctx.strokeStyle = '#ffffff'; ctx.strokeText('MyLuach', x + 56, y + 2);
+      ctx.fillStyle = '#16262b'; ctx.fillText('MyLuach', x + 56, y + 2);
+    }
+  }
+  ctx.restore();
+}
+
 function drawDivider(ctx, it, col){
   var b = it.b, cx = it.x + it.w / 2, cy = it.y + it.h / 2, half = it.w * (b.width || 0.5) / 2;
   ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
@@ -383,7 +402,7 @@ function render(canvas, tpl, state, opt){
   var colors = state.colors || {}, used = {};
   (state.blocks || []).forEach(function(b){ if (b.font) used[b.font] = 1; });
   var photos = {};
-  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null }))]) }).then(function(r){
+  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null })), opt.watermark ? logoImg() : null]) }).then(function(r){
     var img = r[1];
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
     var ctx = canvas.getContext('2d');
@@ -414,11 +433,7 @@ function render(canvas, tpl, state, opt){
       if (b.cols) { col1(it.lines, it.x + it.w - it.width, it.width); col1(it.lines2, it.x, it.width); }
       else col1(it.lines, it.x, it.w);
     });
-    if (opt.watermark) {
-      ctx.save(); ctx.globalAlpha = 0.16; ctx.fillStyle = '#000'; ctx.font = '700 46px "Frank Ruhl Libre", serif'; ctx.textAlign = 'center';
-      for (var yy = 160; yy < H; yy += 220) { ctx.save(); ctx.translate(W / 2, yy); ctx.rotate(-0.42); ctx.fillText('MyLuach · תצוגה מקדימה', 0, 0); ctx.restore(); }
-      ctx.restore();
-    }
+    if (opt.watermark) drawMark(ctx, r[3], opt.watermark === 'faint' ? 0.08 : 0.17);
     canvas._items = items;
     return canvas;
   });
