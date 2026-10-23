@@ -154,7 +154,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <select id="flS" aria-label="סינון לפי מצב"><option value="">הכל</option><option value="on">מוצגים ללקוחות</option><option value="off">מוסתרים</option></select>
       <select id="flC" aria-label="סינון לפי סוג"><option value="">כל הסוגים</option></select>
       <select id="flL" aria-label="סינון לפי מקור"><option value="">כל המקורות</option><option value="my">האוספים שלך</option><option value="he">Google עברית</option><option value="en">Google אנגלית</option></select>
-      <input id="flT" placeholder="טקסט לדוגמה" value="מזל טוב · שנה טובה" aria-label="טקסט לדוגמה">
+      <input id="flT" placeholder="טקסט לדוגמה" value="מזל טוב · שנה טובה" aria-label="טקסט לדוגמה בעברית"><input id="flTe" dir="ltr" placeholder="English sample" value="Mazal Tov · Celebrate" aria-label="טקסט לדוגמה באנגלית">
       <span class="sub" id="flN"></span>
     </div>
     <div class="fl-bar"><button class="btn sm" type="button" id="flAllOn">הצגת כל המסוננים</button><button class="btn sm" type="button" id="flAllOff">הסתרת כל המסוננים</button></div>
@@ -336,7 +336,7 @@ var FCATS=[['STAM','סת״ם, רש״י וקודש'],['CLASSIC','קלאסי'],['H
 function flInit(){
   FCATS.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1];$('flC').appendChild(o)});
   ['flQ','flS','flC','flL'].forEach(id=>$(id).addEventListener(id==='flQ'?'input':'change',()=>{flShown=60;flRender()}));
-  $('flT').addEventListener('input',()=>document.querySelectorAll('.fl-c .smp').forEach(e=>e.textContent=$('flT').value));
+  ['flT','flTe'].forEach(id=>$(id).addEventListener('input',()=>document.querySelectorAll('.fl-c .smp').forEach(e=>e.textContent=e.dir==='ltr'?$('flTe').value:$('flT').value)));
   $('flMore').onclick=()=>{flShown+=60;flRender()};
   $('flAllOn').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:true}));flRender()};
   $('flAllOff').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:false}));flRender()};
@@ -349,7 +349,8 @@ function flInit(){
 function flSet(id,o){FL[id]=Object.assign({},FL[id]||{},o);GR.applySettings(FL)}
 function flList(){
   const q=$('flQ').value.trim().toLowerCase(),st=$('flS').value,c=$('flC').value,l=$('flL').value;
-  return GR.pickList(true).filter(m=>(!q||(m.id+' '+m.label+' '+m.maker).toLowerCase().includes(q))&&(!st||(st==='on')===m.on)&&(!c||m.cat===c)&&(!l||m.lang===l));
+  const LO={my:0,he:1,en:2};
+  return GR.pickList(true).sort((a,b)=>LO[a.lang]-LO[b.lang]).filter(m=>(!q||(m.id+' '+m.label+' '+m.maker).toLowerCase().includes(q))&&(!st||(st==='on')===m.on)&&(!c||m.cat===c)&&(!l||m.lang===l));
 }
 function flRender(){
   const all=flList(),box=$('flGrid');box.innerHTML='';
@@ -360,8 +361,8 @@ function flRender(){
   all.slice(0,flShown).forEach(m=>{
     const el=document.createElement('div');el.className='fl-c'+(m.on?'':' off');el.dataset.f=m.id;
     el.innerHTML='<div class="smp"></div><div class="nm"></div><div class="row2"><input aria-label="שם בעברית"><select aria-label="סוג">'+catOpts+'</select></div><label class="tg"><input type="checkbox"> מוצג ללקוחות</label>';
-    const smp=el.querySelector('.smp');smp.textContent=$('flT').value;smp.style.fontFamily='"'+m.id+'", serif';if(m.lang==='en')smp.dir='ltr';
-    el.querySelector('.nm').textContent=m.id+(m.maker?' · '+m.maker:'');
+    const smp=el.querySelector('.smp');if(m.lang==='en')smp.dir='ltr';smp.textContent=m.lang==='en'?$('flTe').value:$('flT').value;smp.style.fontFamily='"'+m.id+'", serif';
+    el.querySelector('.nm').textContent=m.id+(m.maker?' · '+m.maker:'')+(m.lang==='en'?' · אנגלית בלבד':'');
     const inp=el.querySelector('input:not([type])');inp.value=m.label;inp.oninput=()=>flSet(m.id,{label:inp.value});
     const sel=el.querySelector('select');sel.value=m.cat;sel.onchange=()=>flSet(m.id,{cat:sel.value});
     const cb=el.querySelector('input[type=checkbox]');cb.checked=m.on;cb.onchange=()=>{flSet(m.id,{on:cb.checked});el.classList.toggle('off',!cb.checked);$('flN').textContent=all.length+' גופנים · '+GR.pickList().length+' מוצגים ללקוחות'};
