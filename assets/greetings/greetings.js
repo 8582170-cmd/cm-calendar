@@ -301,6 +301,7 @@ function layout(ctx, tpl, state){
       if (b.hidden) return;
       var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap };
       if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); }
+      else if (b.type === 'photo') { it.pw = A.w * (b.size || 0.4) * f; it.h = it.pw * photoRatio(b); }
       else {
         var size = b.size * f, colGap = 24, width = b.cols ? (A.w - colGap) / 2 : A.w;
         var a = wrap(ctx, b, b.text, width, size), c = b.cols ? wrap(ctx, b, b.text2, width, size) : { lines: [], wide: false };
@@ -316,6 +317,35 @@ function layout(ctx, tpl, state){
   var off = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
   items.forEach(function(it){ it.y = A.y + off + it.top; it.x = A.x; it.w = A.w; });
   return items;
+}
+
+/* תמונה שהלקוח העלה: צורה, גודל, זום והזזה בתוך המסגרת */
+var SHAPES = [['circle','עיגול'],['arch','קשת'],['rounded','מלבן מעוגל'],['rect','מלבן'],['oval','אליפסה']];
+function photoRatio(b){ return b.shape === 'circle' ? 1 : b.shape === 'arch' ? 1.3 : b.shape === 'oval' ? 1.25 : (b.ratio || 1.25); }
+function shapePath(ctx, b, x, y, w, h){
+  ctx.beginPath();
+  if (b.shape === 'circle' || b.shape === 'oval') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+  else if (b.shape === 'arch') { ctx.moveTo(x, y + h); ctx.lineTo(x, y + w / 2); ctx.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); ctx.lineTo(x + w, y + h); ctx.closePath(); }
+  else { var r = b.shape === 'rounded' ? Math.min(w, h) * 0.08 : 0; ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+}
+var photoCache = {};
+function photoImg(src){
+  if (!src) return Promise.resolve(null);
+  if (!photoCache[src]) photoCache[src] = new Promise(function(ok){ var i = new Image(); i.onload = function(){ ok(i) }; i.onerror = function(){ ok(null) }; i.src = src; });
+  return photoCache[src];
+}
+function photoX(it){ var b = it.b; return b.align === 'right' ? it.x + it.w - it.pw : b.align === 'left' ? it.x : it.x + (it.w - it.pw) / 2; }
+function drawPhoto(ctx, it, img, col){
+  var b = it.b, w = it.pw, h = it.h, x = photoX(it), y = it.y;
+  ctx.save(); shapePath(ctx, b, x, y, w, h);
+  if (img) {
+    ctx.save(); ctx.clip();
+    var z = b.zoom || 1, k = Math.max(w / img.width, h / img.height) * z, iw = img.width * k, ih = img.height * k;
+    var ox = (b.ox || 0) * (iw - w) / 2, oy = (b.oy || 0) * (ih - h) / 2;
+    ctx.drawImage(img, x + (w - iw) / 2 + ox, y + (h - ih) / 2 + oy, iw, ih); ctx.restore();
+  } else { ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fill(); ctx.fillStyle = '#666'; ctx.font = '600 15px Assistant, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('כאן תופיע התמונה', x + w / 2, y + h / 2 + 5); }
+  if (b.border) { shapePath(ctx, b, x, y, w, h); ctx.lineWidth = b.border; ctx.strokeStyle = col; ctx.stroke(); }
+  ctx.restore();
 }
 
 function drawDivider(ctx, it, col){
@@ -352,7 +382,8 @@ function render(canvas, tpl, state, opt){
   state = state || {};
   var colors = state.colors || {}, used = {};
   (state.blocks || []).forEach(function(b){ if (b.font) used[b.font] = 1; });
-  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb)]) }).then(function(r){
+  var photos = {};
+  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null }))]) }).then(function(r){
     var img = r[1];
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
     var ctx = canvas.getContext('2d');
@@ -367,11 +398,13 @@ function render(canvas, tpl, state, opt){
     var items = layout(ctx, tpl, state);
     items.forEach(function(it){
       var b = it.b, col = colorOf(b.color, tpl, colors);
-      if (opt.selected === it.i) {
+      if (opt.selected === it.i && !opt.noFrame) {
         ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5; ctx.strokeStyle = '#1f8a96';
         ctx.strokeRect(it.x - 6, it.y - 4, it.w + 12, it.h + 8); ctx.restore();
       }
+      if (opt.skip === it.i) return;
       if (b.type === 'divider') { drawDivider(ctx, it, col); return; }
+      if (b.type === 'photo') { drawPhoto(ctx, it, photos[b.src], col); return; }
       ctx.font = fontStr(b, it.size); ctx.fillStyle = col;
       function col1(lines, x0, w){
         ctx.textAlign = b.align;
@@ -414,6 +447,18 @@ function newText(tpl, after){
   return b;
 }
 function newDivider(){ return D({ gap: 10 }); }
+function newPhoto(src){ return { type: 'photo', src: src || '', shape: 'circle', size: 0.38, zoom: 1, ox: 0, oy: 0, border: 3, color: '#b08d3c', align: 'center', gap: 12 }; }
+
+/* פרטים אישיים שהלקוח ממלא פעם אחת, ומופיעים בכל העיצובים (נשמרים בדפדפן) */
+var PERSONAL = [['name','שם המבורך / בעל השמחה'],['name2','שם נוסף (חתן / בן מצווה / תינוק)'],['groom','שם החתן'],['bride','שם הכלה'],['details','מועד ומקום'],['times','שעות'],['sign','חתימה (מי מברך / מזמין)']];
+var PROFILE_KEY = 'myluach-greet-profile';
+function profile(){ try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') || {} } catch (e) { return {} } }
+function saveProfile(p){ try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)) } catch (e) {} }
+function applyProfile(blocks, p){
+  p = p || profile();
+  blocks.forEach(function(b){ if (b.type === 'text' && b.k && PERSONAL.some(function(x){ return x[0] === b.k }) && p[b.k] && String(p[b.k]).trim()) b.text = p[b.k]; });
+  return blocks;
+}
 
 /* עיצובים וקטגוריות שנוספו בניהול, והגדרות הגופנים: נטענים פעם אחת מהשרת */
 var remoteP = null, HIDDEN_CATS = {};
@@ -461,5 +506,5 @@ function starter(kind, main, accent){
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, newPhoto: newPhoto, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

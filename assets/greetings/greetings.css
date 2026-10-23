@@ -78,3 +78,20 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .dl .row{display:flex;flex-wrap:wrap;gap:10px}
 .note{font-size:14px;color:var(--mute);margin:0}
 .msg{font-weight:700;min-height:1.4em}
+
+/* ממלאים פעם אחת ורואים בכל העיצובים */
+.mine{background:var(--sheet);border:1.5px solid var(--line);border-radius:20px;margin-bottom:22px;box-shadow:var(--shadow)}
+.mine summary{list-style:none;display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer}
+.mine summary::-webkit-details-marker{display:none}
+.mine .mi{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--teal);color:var(--teal-ink);font-size:22px}
+.mine summary b{display:block;font-size:20px}
+.mine summary small{display:block;font-size:16px;color:var(--mute)}
+.mine-f{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:14px;padding:4px 20px 8px}
+.mf{display:flex;flex-direction:column;gap:6px;font-size:16px;font-weight:800}
+.mf input,.mf textarea{font:inherit;font-weight:400;font-size:18px;padding:11px 13px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);width:100%;resize:vertical}
+.mf input:focus,.mf textarea:focus{border-color:var(--teal);outline:none;box-shadow:0 0 0 3px var(--teal-soft)}
+.mine-n{margin:0;padding:4px 20px 16px;font-size:15px;color:var(--mute)}
+.mine-n button{font:inherit;font-weight:700;color:var(--teal);background:none;border:0;cursor:pointer;text-decoration:underline}
+.filters button{font-size:17px;padding:8px 18px;min-height:44px}
+.card h3{font-size:22px}
+.card .meta{font-size:15px}

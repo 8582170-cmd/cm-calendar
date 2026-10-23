@@ -9,9 +9,9 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&family=Bellefair&display=swap">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=2">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=3">
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=8"></script>
+<script src="/assets/greetings/greetings.js?v=9"></script>
 </head>
 <body>
 <div class="wrap">
@@ -31,6 +31,11 @@
       <h1>ברכה מעוצבת, מוכנה תוך דקות</h1>
       <p>בוחרים עיצוב, כותבים את השמות ואת הנוסח, משנים צבעים וגופנים כרצונכם, ומורידים קובץ להדפסה או תמונה לשליחה בוואטסאפ.</p>
     </div>
+    <details class="mine" id="mine">
+      <summary><span class="mi">✎</span><span><b>רוצים לראות את השמות שלכם?</b><small>כותבים פעם אחת, ורואים אותם בכל העיצובים</small></span></summary>
+      <div class="mine-f" id="mineF"></div>
+      <p class="mine-n">נשמר רק אצלכם בדפדפן. <button type="button" id="mineClr">ניקוי</button></p>
+    </details>
     <div class="filters" id="filters" role="group" aria-label="סינון לפי אירוע"></div>
     <div class="gal" id="gal"></div>
     <p class="soon" id="soon" hidden>עיצובים לקטגוריה הזאת יעלו בקרוב.</p>
@@ -54,6 +59,17 @@ function chips(){
     fl.appendChild(b);
   });
 }
+var prof = G.profile(), mf = document.getElementById('mineF'), tmr;
+G.PERSONAL.forEach(function(f){
+  var w = document.createElement('label'); w.className = 'mf';
+  var s = document.createElement('span'); s.textContent = f[1];
+  var t = document.createElement(f[0] === 'details' ? 'textarea' : 'input'); if (t.tagName === 'INPUT') t.type = 'text'; else t.rows = 2;
+  t.value = prof[f[0]] || '';
+  t.oninput = function(){ prof[f[0]] = t.value; G.saveProfile(prof); clearTimeout(tmr); tmr = setTimeout(list, 350); };
+  w.append(s, t); mf.appendChild(w);
+});
+if (Object.keys(prof).some(function(k){ return String(prof[k] || '').trim() })) document.getElementById('mine').open = true;
+document.getElementById('mineClr').onclick = function(){ prof = {}; G.saveProfile(prof); mf.querySelectorAll('input,textarea').forEach(function(x){ x.value = '' }); list(); };
 function list(){
   gal.innerHTML = '';
   var items = ALL.filter(function(x){ return !G.hiddenCat(x.cat) && (cur === 'all' || x.cat === cur) });
@@ -68,7 +84,8 @@ function list(){
     gal.appendChild(a);
     var cv = a.querySelector('canvas');
     var w = Math.max(250, a.getBoundingClientRect().width || 280) * (window.devicePixelRatio || 1);
-    G.render(cv, t, G.defaults(t), { scale: Math.min(1.5, w / G.W), thumb: true }).catch(function(){});
+    var st = G.defaults(t); G.applyProfile(st.blocks, prof);
+    G.render(cv, t, st, { scale: Math.min(1.5, w / G.W), thumb: true }).catch(function(){});
   });
 }
 chips(); list();
