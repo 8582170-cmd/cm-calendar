@@ -43,6 +43,10 @@
 .dot{width:28px;height:28px;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18);cursor:pointer;padding:0}
 .dot[aria-pressed="true"]{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--teal)}
 .dots input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0;background:none;cursor:pointer}
+.bgp{display:flex;flex-direction:column;gap:10px}
+.bgp-t{display:flex;align-items:center;gap:10px;font-weight:700}.bgp-t input{width:20px;height:20px;accent-color:var(--teal)}
+.bgp-r{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}.bgp-r input{width:160px;accent-color:var(--teal)}
+.bgp-h{font-weight:800;margin-top:4px}.bgp-b{display:flex;flex-wrap:wrap;gap:8px}.bgp .pill{font:inherit;font-size:14px;font-weight:700;padding:6px 12px;border:1.5px solid var(--line);border-radius:99px;background:var(--paper);color:var(--ink);cursor:pointer}
 .adds{display:flex;flex-wrap:wrap;gap:10px}
 .gtools{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
 .gtools label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
@@ -66,7 +70,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=13"></script>
+<script src="/assets/greetings/greetings.js?v=14"></script>
 </head>
 <body>
 <div class="wrap">
@@ -101,6 +105,11 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
       <section class="panel" id="pColors">
         <h2>צבעי העיצוב</h2>
         <div id="colors" class="ed-form" style="gap:14px"></div>
+      </section>
+
+      <section class="panel">
+        <h2>רקע ושטח הטקסט</h2>
+        <div id="bgp" class="bgp"></div>
       </section>
 
       <section class="panel">
@@ -163,7 +172,7 @@ $('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat) + '. כו�
 var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; } } catch (e) {}
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; } } catch (e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} }
 
 /* תצוגה */
@@ -461,7 +470,7 @@ $('resetAll').onclick = function(){
   location.reload();
 };
 
-G.catalog().then(function(){ renderBlocks(); draw(); });
+G.catalog().then(function(){ renderBlocks(); draw(); G.bgPanel($('bgp'), function(){ return S }, changed, colorRow); });
 });
 </script>
 </body>

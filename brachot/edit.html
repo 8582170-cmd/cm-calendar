@@ -112,6 +112,10 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 @media (max-width:1050px){.side{position:static}}
 .side h2{font-size:21px}
 .side .card3{padding:18px;gap:16px;box-shadow:none}
+.bgp{display:flex;flex-direction:column;gap:10px}
+.bgp-t{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}.bgp-t input{width:22px;height:22px;accent-color:var(--teal)}
+.bgp-r{display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:700}.bgp-r input{width:100%;accent-color:var(--teal)}
+.bgp-h{font-size:16px;font-weight:800;margin-top:6px}.bgp-b{display:flex;flex-wrap:wrap;gap:8px}
 .adds{display:grid;grid-template-columns:1fr;gap:8px}
 .adds button{font:inherit;font-size:17px;font-weight:800;min-height:50px;border:1.5px dashed var(--teal);border-radius:14px;background:var(--teal-soft);color:var(--teal);cursor:pointer}
 .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -178,7 +182,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=13"></script>
+<script src="/assets/greetings/greetings.js?v=14"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 </head>
 <body>
@@ -235,6 +239,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
         <div class="card3">
           <h2>כל הדף</h2>
           <div class="f" id="colorsF" hidden><span class="lb">צבעי העיצוב</span><div id="colors" style="display:flex;flex-direction:column;gap:12px"></div></div>
+          <div class="f"><span class="lb">רקע ושטח הטקסט</span><div id="bgp" class="bgp"></div></div>
           <div class="f"><span class="lb">גופן לכל הטקסט</span><button class="fontbtn" type="button" id="allFont">בחירת גופן…</button></div>
           <div class="f"><span class="lb">צבע לכל הטקסט</span><div id="allColor"></div></div>
           <div class="f"><label for="scale">גודל הטקסט</label><input type="range" id="scale" min="60" max="140" step="5"></div>
@@ -309,8 +314,8 @@ var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, narrow = ma
 
 /* מצב העיצוב + שמירה בדפדפן */
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null, fresh = true;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; fresh = false; } } catch (e) {}
-if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; fresh = false; }
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; fresh = false; } } catch (e) {}
+if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; S.panel = REC.state.panel; S.ubg = REC.state.ubg; fresh = false; }
 if (fresh) G.applyProfile(S.blocks);
 /* תשלום: מצב ההזמנה. free = עיצוב חינמי · unpaid · edit = שולם ובזמן השינויים · dl = רק הורדה · expired */
 var PAID = (tpl.price || 0) > 0, ORD = REC && !REC.error ? REC : null, SKEW = ORD ? Date.parse(ORD.now) - Date.now() : 0, PAYCFG = GD.pay || { editHours: 48, dlDays: 30 };
@@ -889,10 +894,11 @@ $('resetAll').onclick = function(){
   location.hash = ''; location.reload();
 };
 
-function refreshAll(){ renderFields(); renderLayers(); renderTb(); allColor(); $('scale').value = Math.round((S.scale || 1) * 100); if (step === 3) outPreview(); draw(); }
+var bgpDraw = null;
+function refreshAll(){ if (bgpDraw) bgpDraw(); renderFields(); renderLayers(); renderTb(); allColor(); $('scale').value = Math.round((S.scale || 1) * 100); if (step === 3) outPreview(); draw(); }
 
 G.catalog().then(function(){
-  allColor(); setList(ui.list !== false); renderPay();
+  allColor(); setList(ui.list !== false); renderPay(); bgpDraw = G.bgPanel($('bgp'), function(){ return S }, changed, colorRow);
   if (mode() === 'edit') cloud('השינויים נשמרים אוטומטית');
   var h = location.hash.slice(1), start = h === 'design' ? 2 : h === 'download' ? 3 : h === 'details' ? 1 : (fresh ? 1 : 2);
   go(start);

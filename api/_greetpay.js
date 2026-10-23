@@ -47,6 +47,10 @@ function cleanState(s) {
     });
     return o;
   }).filter(Boolean);
+  const P = s.panel && typeof s.panel === 'object' ? s.panel : null;
+  if (P) out.panel = { on: !!P.on, color: /^#[0-9a-f]{3,8}$/i.test(String(P.color || '')) ? P.color : '#ffffff', op: Math.max(0, Math.min(1, +P.op || 0)), r: Math.max(0, Math.min(100, +P.r || 0)), pad: Math.max(0, Math.min(120, +P.pad || 0)) };
+  const U = s.ubg && typeof s.ubg === 'object' ? s.ubg : null;
+  if (U && typeof U.src === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(U.src)) out.ubg = { src: U.src, mode: U.mode === 'area' ? 'area' : 'page', op: Math.max(0.05, Math.min(1, +U.op || 1)) };
   return out;
 }
 
