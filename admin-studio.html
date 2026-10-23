@@ -158,7 +158,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
     <h2 id="pr-h">נוסחים מוכנים לברכות</h2>
     <p class="sub">נוסחים שהלקוחות יכולים לבחור בעורך, ואחר כך לערוך. כל נוסח שייך לאירוע ולסוג (ברכה או הזמנה), או לכולם. שדה שנשאר ריק לא משנה את מה שכבר כתוב בעיצוב.</p>
     <div class="actions"><label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px">הצגה<select id="prFilter" style="width:auto"><option value="">כל האירועים</option></select></label>
-      <button class="btn primary" type="button" id="prAdd">נוסח חדש</button></div>
+      <button class="btn primary" type="button" id="prAdd">נוסח חדש</button><button class="btn" type="button" id="prPack">ייבוא חבילת נוסחים מוכנים</button></div>
     <div class="pr-list" id="prList"><p class="sub">טוען…</p></div>
     <div class="savebar"><button class="btn primary" type="button" id="prSave">שמירת הנוסחים</button><span id="prMsg" role="status"></span></div>
   </section>
@@ -337,6 +337,10 @@ function prInit(){
   GR.CATS.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1];$('prFilter').appendChild(o)});
   $('prFilter').onchange=prRender;
   $('prAdd').onclick=()=>{const f=$('prFilter').value;PR.unshift({id:Math.random().toString(36).slice(2,10),title:'',cat:f||'all',kind:'greeting',on:true,fields:{}});prRender();const t=document.querySelector('#prList [data-f="title"]');if(t)t.focus()};
+  $('prPack').onclick=()=>{$('prMsg').className='';$('prMsg').textContent='טוען…';
+    fetch('/assets/greetings/presets-pack.json?v=1').then(r=>r.json()).then(list=>{const have=new Set(PR.map(p=>p.id));const add=list.filter(p=>!have.has(p.id));PR=PR.concat(add);prRender();
+      $('prMsg').className='ok';$('prMsg').textContent=add.length?'נוספו '+add.length+' נוסחים. אפשר לערוך או למחוק, ואז ללחוץ "שמירה".':'כל הנוסחים מהחבילה כבר קיימים.'})
+      .catch(e=>{$('prMsg').className='msg';$('prMsg').textContent='הטעינה נכשלה: '+e.message})};
   $('prSave').onclick=()=>{$('prMsg').className='';$('prMsg').textContent='שומר…';
     api({action:'greetsave',presets:PR}).then(d=>{PR=d.presets||[];prRender();$('prMsg').className='ok';$('prMsg').textContent='נשמר. הלקוחות יראו את הנוסחים תוך כמה דקות.'})
       .catch(e=>{$('prMsg').className='msg';$('prMsg').textContent='השמירה נכשלה: '+e.message})};
