@@ -157,7 +157,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <input id="flT" placeholder="טקסט לדוגמה" value="מזל טוב · שנה טובה" aria-label="טקסט לדוגמה בעברית"><input id="flTe" dir="ltr" placeholder="English sample" value="Mazal Tov · Celebrate" aria-label="טקסט לדוגמה באנגלית">
       <span class="sub" id="flN"></span>
     </div>
-    <div class="fl-bar"><button class="btn sm" type="button" id="flAllOn">הצגת כל המסוננים</button><button class="btn sm" type="button" id="flAllOff">הסתרת כל המסוננים</button></div>
+    <div class="fl-bar"><button class="btn sm primary" type="button" id="flAllOn">הצגת כל הגופנים ללקוחות</button><button class="btn sm" type="button" id="flAllOff">הסתרת כל הגופנים</button><span class="sub">אחרי הלחיצה צריך ללחוץ "שמירת הגופנים" בתחתית.</span></div>
     <div class="fl-grid" id="flGrid"><p class="sub">טוען…</p></div>
     <div class="actions"><button class="btn" type="button" id="flMore" hidden>עוד גופנים</button></div>
     <div class="savebar"><button class="btn primary" type="button" id="flSave">שמירת הגופנים</button><span id="flMsg" role="status"></span></div>
@@ -338,8 +338,8 @@ function flInit(){
   ['flQ','flS','flC','flL'].forEach(id=>$(id).addEventListener(id==='flQ'?'input':'change',()=>{flShown=60;flRender()}));
   ['flT','flTe'].forEach(id=>$(id).addEventListener('input',()=>document.querySelectorAll('.fl-c .smp').forEach(e=>e.textContent=e.dir==='ltr'?$('flTe').value:$('flT').value)));
   $('flMore').onclick=()=>{flShown+=60;flRender()};
-  $('flAllOn').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:true}));flRender()};
-  $('flAllOff').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:false}));flRender()};
+  $('flAllOn').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:true}));flRender();$('flMsg').className='';$('flMsg').textContent='סומנו. ללחוץ "שמירת הגופנים" כדי שזה יעבור ללקוחות.'};
+  $('flAllOff').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:false}));flRender();$('flMsg').className='';$('flMsg').textContent='הוסתרו. ללחוץ "שמירת הגופנים" כדי שזה יעבור ללקוחות.'};
   $('flSave').onclick=()=>{$('flMsg').className='';$('flMsg').textContent='שומר…';
     api({action:'greetfontssave',fonts:FL}).then(d=>{FL=d.fonts||{};GR.applySettings(FL);$('flMsg').className='ok';$('flMsg').textContent='נשמר. הלקוחות יראו את השינוי תוך כמה דקות.'})
       .catch(e=>{$('flMsg').className='msg';$('flMsg').textContent='השמירה נכשלה: '+e.message})};
@@ -368,6 +368,9 @@ function flRender(){
     const cb=el.querySelector('input[type=checkbox]');cb.checked=m.on;cb.onchange=()=>{flSet(m.id,{on:cb.checked});el.classList.toggle('off',!cb.checked);$('flN').textContent=all.length+' גופנים · '+GR.pickList().length+' מוצגים ללקוחות'};
     box.appendChild(el);if(flIO)flIO.observe(el);else GR.fontCss(m.id);
   });
+  const filt=$('flQ').value.trim()||$('flS').value||$('flC').value||$('flL').value;
+  $('flAllOn').textContent=filt?'הצגת '+all.length+' הגופנים שבסינון':'הצגת כל '+all.length+' הגופנים ללקוחות';
+  $('flAllOff').textContent=filt?'הסתרת '+all.length+' הגופנים שבסינון':'הסתרת כל '+all.length+' הגופנים';
   $('flMore').hidden=all.length<=flShown;
   if(!all.length)box.innerHTML='<p class="sub">לא נמצאו גופנים.</p>';
 }
