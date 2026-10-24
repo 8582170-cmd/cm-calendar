@@ -186,8 +186,10 @@ function events(a,b){
 }
 
 /* ---------- תזכורות והערות (נשמרות בדפדפן) ---------- */
-let REM=LS.get('rem',[]),NOTES=LS.get('notes',{});
-const saveRem=()=>LS.set('rem',REM),saveNotes=()=>LS.set('notes',NOTES);
+/* לוח ציבורי (myluach.org/<שם>): מציגים את האירועים של בעל הלוח, בלי לשמור ובלי לערוך */
+const PUB=PAGE.pub?{slug:(()=>{const a=location.pathname.split('/').filter(Boolean);return a.length===1?decodeURIComponent(a[0]).toLowerCase():''})(),d:null,st:'load'}:null;
+let REM=PUB?[]:LS.get('rem',[]),NOTES=PUB?{}:LS.get('notes',{});
+const saveRem=()=>{if(PUB)return;LS.set('rem',REM);pubAuto()},saveNotes=()=>{if(PUB)return;LS.set('notes',NOTES);pubAuto()};
 function remHits(r,d){const hd=new HDate(d);
   if(r.rec==='once')return r.date===iso(d);
   if(r.rec==='greg')return d.getDate()===+r.d&&d.getMonth()+1===+r.m;
@@ -388,7 +390,7 @@ function relDays(d){const n=dayDiff(TODAY,d);return n>=0?t('inDays')(n):t('daysA
 
 /* ---------- תזכורות ---------- */
 function viewReminders(){
-  $('#main').innerHTML='<div class="bar"><h1>'+t('reminders')+'</h1><span class="row"><button class="btn pri" type="button" id="remNew">+ '+t('addRem')+'</button>'+(HE()?'<button class="btn" type="button" id="remYz">📜 מדברי הימים</button>':'')+'</span></div>'+
+  $('#main').innerHTML='<div class="bar"><h1>'+t('reminders')+'</h1><span class="row"><button class="btn pri" type="button" id="remNew">+ '+t('addRem')+'</button>'+(HE()?'<button class="btn" type="button" id="remYz">📜 מדברי הימים</button>':'')+'<button class="btn" type="button" id="pubOpen">📢 '+(HE()?'לוח ציבורי':'Public calendar')+'</button></span></div>'+
     '<div class="card"><p class="small mute" style="margin-top:0">'+(HE()?'ימי הולדת, ימי נישואין, ימי שנה (יארצייטים) ותזכורות. הם מופיעים בלוח, ואפשר להוסיף אותם ליומן בטלפון עם התראה. התזכורות נשמרות בדפדפן הזה.':'Birthdays, anniversaries, yahrzeits and reminders. They show on the calendar and can be added to your phone calendar with alerts. Saved in this browser.')+'</p>'+
     (REM.length?'<div class="tbl-wrap"><table class="t"><tbody>'+REM.map(r=>{const nx=nextOcc(r);return '<tr><td><b>'+esc(r.name)+'</b></td><td>'+esc(remWhen(r))+'</td><td class="mute">'+(nx?esc(gStr(nx))+' · '+esc(relDays(nx)):'')+'</td><td><a class="btn" target="_blank" rel="noopener" href="'+gcalLink(r,nx)+'">Google</a> <button class="btn" type="button" data-redit="'+r.id+'">✎</button></td></tr>'}).join('')+'</tbody></table></div>'+
       '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="remIcs">📅 '+(HE()?'הוספת הכל ליומן בטלפון (קובץ)':'Add all to phone calendar (.ics)')+'</button></div>':'<p>'+(HE()?'עדיין אין תזכורות.':'No reminders yet.')+'</p>')+
@@ -497,10 +499,31 @@ const LRN_T={
   shl:[['שמירת הלשון','Shmirat HaLashon'],d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{const r=L.shemiratHaLashon(new HDate(d));return r?hk(r.k)+' '+numX(r.b)+(r.e&&r.e!==r.b?'–'+numX(r.e):''):''}catch(e){return ''}}],
   dafw:[['דף שבועי','Daf Weekly'],d=>{const L=lrnLib();if(!L||!L.dafWeekly)return '';try{const r=L.dafWeekly(new HDate(d));if(!r)return '';return hk(r.getName?r.getName():r.name)+' '+numX(r.getBlatt?r.getBlatt():r.blatt)}catch(e){return ''}}]
 };
+/* קישור ללימוד עצמו: ספריא בעברית (טקסט מלא, ניקוד ופירושים). הכתובות נבנות מספריית הלימוד של hebcal, ואם אין: חיפוש בספריא */
+const SEF=u=>u?String(u).replace('https://www.sefaria.org/','https://www.sefaria.org.il/').replace('lang=bi','lang=he'):'';
+function lrnEvUrl(cls,d,read){try{const L=lrnLib();if(!L||!L[cls]||!read)return '';const e=new L[cls](new HDate(d),read);return SEF(e.url&&e.url())}catch(e){return ''}}
+const DAF_SEF={'Rosh Hashana':'Rosh Hashanah'};
+const LRN_U={
+  daf:d=>{const day=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2020,0,5))/864e5);let n=((day%2711)+2711)%2711;
+    for(let i=0;i<DAF_T.length;i++){const pg=DAF_T[i][1];if(n<pg-1){const daf=n+2,t=DAF_EN[i];
+      if(t==='Meilah'&&daf>22)return daf<=25||daf>33?'https://www.dafyomi.org/index.php?masechta=meilah&daf='+daf+'a':'https://www.sefaria.org.il/Tamid.'+daf+'a?lang=he';
+      if(t==='Shekalim')return '';return 'https://www.sefaria.org.il/'+(DAF_SEF[t]||t).replace(/ /g,'_')+'.'+daf+'a?lang=he'}n-=pg-1}return ''},
+  mishna:d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_C.mi=LRN_C.mi||new L.MishnaYomiIndex();return lrnEvUrl('MishnaYomiEvent',d,LRN_C.mi.lookup(new HDate(d)))}catch(e){return ''}},
+  nach:d=>{const L=lrnLib();if(!L||!L.NachYomiIndex)return '';try{LRN_C.ni=LRN_C.ni||new L.NachYomiIndex();return lrnEvUrl('NachYomiEvent',d,LRN_C.ni.lookup(new HDate(d)))}catch(e){return ''}},
+  yerushalmi:d=>{const L=lrnLib();if(!L||!L.yerushalmiYomi||!L.vilna)return '';try{return lrnEvUrl('YerushalmiYomiEvent',d,L.yerushalmiYomi(new HDate(d),L.vilna))}catch(e){return ''}},
+  rambam:d=>{const L=lrnLib();if(!L||!L.dailyRambam1)return '';try{const r=L.dailyRambam1(new HDate(d));return lrnEvUrl('DailyRambamEvent',d,r)||lrnEvUrl('DailyRambam1Event',d,r)}catch(e){return ''}},
+  tehillim:d=>{const L=lrnLib();if(!L||!L.dailyPsalms)return '';try{const r=L.dailyPsalms(new HDate(d));return lrnEvUrl('PsalmsEvent',d,r)||(r?'https://www.sefaria.org.il/Psalms.'+String(r[0]).replace(':','.')+'-'+String(r[1]).replace(':','.')+'?lang=he':'')}catch(e){return ''}},
+  cc:d=>{const L=lrnLib();if(!L||!L.chofetzChaim)return '';try{return lrnEvUrl('ChofetzChaimEvent',d,L.chofetzChaim(new HDate(d)))}catch(e){return ''}},
+  shl:d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{return lrnEvUrl('ShemiratHaLashonEvent',d,L.shemiratHaLashon(new HDate(d)))}catch(e){return ''}},
+  dafw:d=>{const L=lrnLib();if(!L||!L.dafWeekly)return '';try{return lrnEvUrl('DafWeeklyEvent',d,L.dafWeekly(new HDate(d)))}catch(e){return ''}}
+};
 const LRN_DEF=['daf','mishna','rambam'];
 const lrnSel=()=>(Array.isArray(st.lrnSel)?st.lrnSel:LRN_DEF).filter(k=>LRN_T[k]);
-function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);return v?{k,n:LRN_T[k][0][HE()?0:1],v}:null}).filter(Boolean)}
-const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> <b>'+esc(x.v)+'</b></div>').join('');
+function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return null;const n=LRN_T[k][0][HE()?0:1];let u='';try{u=LRN_U[k]?LRN_U[k](d):''}catch(e){}
+  return {k,n,v,u:u||'https://www.sefaria.org.il/search?q='+encodeURIComponent((HE()?LRN_T[k][0][0].replace(/ ?יומי(ת)?$/,''):'')+' '+v)+'&tab=text'}}).filter(Boolean)}
+/* כל לימוד הוא קישור שנפתח בכרטיסייה חדשה */
+const lrnA=x=>'<a class="lr-a" href="'+esc(x.u)+'" target="_blank" rel="noopener" title="'+(HE()?'ללמוד עכשיו (נפתח בספריא)':'Study now (opens Sefaria)')+'"><b>'+esc(x.v)+'</b> <i aria-hidden="true">↗</i></a>';
+const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+'</div>').join('');
 function lrnPicker(){const sel=new Set(lrnSel());
   dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
     Object.entries(LRN_T).filter(([,v])=>Array.isArray(v)).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
@@ -597,7 +620,7 @@ function printView(v){if(view!==v)go(v,anchor);setTimeout(()=>window.print(),350
 let APPT=[];
 const apptOn=d=>{const k=iso(d);return APPT.filter(a=>a.date===k).sort((x,y)=>(x.start_t||'').localeCompare(y.start_t||''))};
 async function apptApi(method,body,qs){const A=authTok();if(!A)return {status:401};try{const r=await fetch(BASE+'../api/user?fn=appt'+(qs||''),{method,headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}catch(e){return {status:0}}}
-async function apptLoad(){if(!authTok())return;const r=await apptApi('GET');if(r.status===200){APPT=r.items||[];render()}}
+async function apptLoad(){if(PUB||!authTok())return;const r=await apptApi('GET');if(r.status===200){APPT=r.items||[];render()}}
 const A_COLORS=['','#2a7d86','#2f5f9e','#5a4fb0','#b4501f','#c0392b','#1f8a5b','#a8650a'];
 function apptEditor(id,date,hour){
   if(!authTok()){dialog('<h2 id="dlgT">'+(HE()?'פגישות ביומן':'Appointments')+'</h2><p>'+(HE()?'רישום פגישות זמין למשתמשים רשומים (בחינם). הפגישות נשמרות בחשבון ומופיעות בכל מכשיר, בלוח החודשי, השבועי והיומי, ואפשר להדפיס אותן ולקבל תזכורת במייל.':'Appointments are available with a free account. They sync across devices, appear in all views, can be printed and can email you a reminder.')+'</p><div class="row"><a class="btn pri" href="'+loginUrl(date?'day/'+iso(date):'reminders')+'">'+(HE()?'כניסה / הרשמה בחינם':'Sign in / sign up')+'</a></div>');return}
@@ -617,8 +640,8 @@ function apptEditor(id,date,hour){
     $('#aSave').disabled=true;$('#aMsg').textContent=HE()?'שומרים…':'Saving…';const r=await apptApi('POST',o);$('#aSave').disabled=false;
     if(r.status===401){$('#aMsg').innerHTML=(HE()?'צריך להתחבר מחדש. ':'Please sign in again. ')+'<a href="'+loginUrl('reminders')+'">'+(HE()?'כניסה':'Sign in')+'</a>';return}
     if(r.status!==200){$('#aMsg').textContent=r.status===429?(HE()?'הגעתם למספר הפגישות המרבי.':'Too many appointments.'):(HE()?'לא הצלחנו לשמור. נסו שוב בעוד רגע.':'Could not save. Try again.');return}
-    const row={...o,id:r.id||o.id,start_t:o.start_t||null,end_t:o.end_t||null};if(a)APPT[APPT.indexOf(a)]=row;else APPT.push(row);closeDlg();render()};
-  if(a)$('#aDel').onclick=async()=>{await apptApi('POST',{action:'delete',id:a.id});APPT=APPT.filter(x=>x!==a);closeDlg();render()};
+    const row={...o,id:r.id||o.id,start_t:o.start_t||null,end_t:o.end_t||null};if(a)APPT[APPT.indexOf(a)]=row;else APPT.push(row);closeDlg();render();pubAuto()};
+  if(a)$('#aDel').onclick=async()=>{await apptApi('POST',{action:'delete',id:a.id});APPT=APPT.filter(x=>x!==a);closeDlg();render();pubAuto()};
   setTimeout(()=>$('#aT').focus(),30);
 }
 function apptSection(){
@@ -637,9 +660,10 @@ function dayDialog(d){
     (rs.length?'<div style="margin-bottom:10px">'+rs.map(r=>'<div><a href="#" data-redit="'+r.id+'" class="ev rem" style="font-size:15px">'+esc(r.name)+'</a> <a class="gcal-add" href="'+gcalLink(r.name,d)+'" target="_blank" rel="noopener">+ '+(HE()?'ליומן גוגל':'Google Calendar')+'</a></div>').join('')+'</div>':'')+
     (apptOn(d).length?'<div style="margin-bottom:10px">'+apptOn(d).map(a=>'<div><a href="#" data-aedit="'+a.id+'" class="ev appt" style="font-size:15px'+(a.color?';--ac:'+esc(a.color):'')+'">'+(a.start_t?esc(a.start_t)+(a.end_t?'–'+esc(a.end_t):'')+' ':'')+esc(a.title)+'</a></div>').join('')+'</div>':'')+
     '<details><summary><b>'+t('zmanim')+'</b> <span class="zh">'+esc(horizon())+'</span></summary><div class="zl" style="margin-top:8px">'+Z.map(z=>'<span>'+esc(z.n)+'</span><b>'+fmtT(z.v)+'</b>').join('')+'</div></details>'+
-    '<div class="fld" style="margin-top:12px">'+t('note')+'<textarea id="nT" rows="2">'+esc(note.text||'')+'</textarea></div>'+
+    (PUB?(note.text?'<p style="margin-top:12px">📝 '+esc(note.text)+'</p>':'')+'<div class="row" style="margin-top:12px"><button class="btn" type="button" data-close>'+t('close')+'</button></div>':'<div class="fld" style="margin-top:12px">'+t('note')+'<textarea id="nT" rows="2">'+esc(note.text||'')+'</textarea></div>'+
     '<div class="row" style="margin-top:8px;align-items:center"><span class="small">'+t('color')+'</span><span class="colors">'+COLORS.map(c=>'<button type="button" data-col="'+c+'" aria-pressed="'+((note.color||'')===c)+'" style="background:'+(c||'#fff')+'" aria-label="'+(c||'none')+'"></button>').join('')+'</span></div>'+
-    '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="nS">'+t('save')+'</button><button class="btn" type="button" id="dRem">+ '+t('addRem')+'</button><button class="btn" type="button" id="dAppt">+ '+(HE()?'פגישה':'Appointment')+'</button><button class="btn" type="button" id="dDay">'+t('day')+'</button><a class="btn" href="#zmanim/'+iso(d)+'" id="dZ">'+t('zmanim')+'</a></div>');
+    '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="nS">'+t('save')+'</button><button class="btn" type="button" id="dRem">+ '+t('addRem')+'</button><button class="btn" type="button" id="dAppt">+ '+(HE()?'פגישה':'Appointment')+'</button><button class="btn" type="button" id="dDay">'+t('day')+'</button><a class="btn" href="#zmanim/'+iso(d)+'" id="dZ">'+t('zmanim')+'</a></div>'));
+  if(PUB)return;
   let col=note.color||'';
   document.querySelectorAll('[data-col]').forEach(b=>b.onclick=()=>{col=b.dataset.col;document.querySelectorAll('[data-col]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
   $('#nS').onclick=()=>{const txt=$('#nT').value.trim();if(txt||col)NOTES[iso(d)]={text:txt,color:col};else delete NOTES[iso(d)];saveNotes();closeDlg();render()};
@@ -665,7 +689,7 @@ function lrnCard(){const S=lrnSel();
   let h='<div class="card lr-card"><div class="lr-h"><b>'+(HE()?'לימוד יומי':'Daily learning')+'</b><button type="button" class="linkbtn2" data-lrpick="1">⚙ '+(HE()?'בחירה':'Choose')+'</button></div>';
   if(!S.length)return h+'<p class="small mute">'+(HE()?'לא נבחר לימוד.':'No learning selected.')+'</p></div>';
   for(let i=0;i<7;i++){const d=addD(TODAY,i),L=lrnFor(d);if(!L.length)continue;
-    h+='<div class="lr-day'+(i?'':' cur')+'"><div class="lr-d">'+(i?esc(t('weekdays')[d.getDay()])+' · '+esc(HE()?gem(new HDate(d).getDate()):String(d.getDate())):t('today'))+'</div>'+L.map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> <b>'+esc(x.v)+'</b></div>').join('')+'</div>'}
+    h+='<div class="lr-day'+(i?'':' cur')+'"><div class="lr-d">'+(i?esc(t('weekdays')[d.getDay()])+' · '+esc(HE()?gem(new HDate(d).getDate()):String(d.getDate())):t('today'))+'</div>'+L.map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+'</div>').join('')+'</div>'}
   return h+'<label class="chk small" style="margin-top:6px"><input type="checkbox" data-opt="learn"'+(st.opts.learn?' checked':'')+'> '+(HE()?'להציג גם בתוך ימי הלוח':'Also show inside calendar days')+'</label></div>'}
 function renderSide(){
   const hd=new HDate(TODAY),Z=zm(TODAY),z=k=>fmtT((Z.find(x=>x.k===k)||{}).v);
@@ -692,7 +716,7 @@ function seoBlock(){
 }
 function renderFoot(){$('#foot').innerHTML='<span>© '+TODAY.getFullYear()+' '+t('siteName')+'</span><a href="'+BUILDER+'">'+(HE()?'MyLuach · בניית לוח שנה אישי להדפסה':'MyLuach · personal printed calendars')+'</a><a href="'+BASE+'../index.html">'+(HE()?'מסלולים ומחירים':'Plans & pricing')+'</a>'+(HE()?'<a href="'+BASE+'../articles/">מאמרים: זמני היום ומנהגים</a>':'')+'<span>'+(HE()?'הזמנים מחושבים אסטרונומית ואינם תחליף ללוח של רב הקהילה.':'Times are astronomical calculations.')+'</span>'}
 function renderNav(){
-  $('#nav').innerHTML=VIEWS.filter(v=>v!=='day').map(v=>{const cur=v==='week'?view==='week'||view==='day':v==='countdown'?view==='tools'&&sub==='countdown':v==='tools'?view==='tools'&&sub!=='countdown':v===view;return '<a href="#'+v+'" data-nav="'+v+'"'+(cur?' aria-current="page"':'')+'>'+t(v)+'</a>'}).join('');
+  $('#nav').innerHTML=VIEWS.filter(v=>v!=='day'&&!(PUB&&v==='reminders')).map(v=>{const cur=v==='week'?view==='week'||view==='day':v==='countdown'?view==='tools'&&sub==='countdown':v==='tools'?view==='tools'&&sub!=='countdown':v===view;return '<a href="#'+v+'" data-nav="'+v+'"'+(cur?' aria-current="page"':'')+'>'+t(v)+'</a>'}).join('');
   const sel=$('#city');const groups=[...new Set(CITIES.map(c=>c.g))];
   sel.innerHTML=groups.map(g=>'<optgroup label="'+esc(HE()?g:CITIES.find(c=>c.g===g).gen)+'">'+CITIES.filter(c=>c.g===g).map(c=>'<option value="'+c.id+'">'+esc(cityName(c))+'</option>').join('')+'</optgroup>').join('')+'<optgroup label="'+(HE()?'המיקום שלי':'My location')+'">'+(st.custom?'<option value="custom">'+esc(cityName(st.custom))+'</option>':'')+'<option value="__geo">📍 '+(HE()?'המיקום שלי, מיקוד או כתובת…':'My location, zip or address…')+'</option></optgroup>';sel.value=city().id;
   $('#lang').textContent=HE()?'English':'עברית';
@@ -717,6 +741,9 @@ function saveSt(){LS.set('settings',{lang:st.lang,city:st.city,custom:st.custom,
 /* ---------- אירועים בממשק ---------- */
 document.addEventListener('click',e=>{
   const T2=e.target;
+  if(T2.closest&&T2.closest('a.lr-a'))return;
+  if(PUB&&T2.closest&&T2.closest('[data-redit],[data-aedit],[data-anew],#remNew,#remYz')){e.preventDefault();const r=T2.closest('[data-redit]'),a=T2.closest('[data-aedit]');pubItem(r?REM.find(x=>x.id===r.dataset.redit):null,a?APPT.find(x=>String(x.id)===a.dataset.aedit):null);return}
+  if(T2.id==='pubOpen'){pubDialog();return}
   const nv=T2.closest('[data-nav]');if(nv){e.preventDefault();$('#nav').classList.remove('open');go(nv.dataset.nav,nv.dataset.nav==='month'?TODAY:null,nv.dataset.nav==='tools'?'':undefined);return}
   const tl=T2.closest('[data-tool]');if(tl){e.preventDefault();go('tools',null,tl.dataset.tool);return}
   const ae=T2.closest('[data-aedit]');if(ae){e.preventDefault();apptEditor(+ae.dataset.aedit);return}
@@ -761,10 +788,60 @@ document.addEventListener('change',e=>{
 });
 window.addEventListener('hashchange',()=>{readHash();render()});
 
+/* ---------- לוח ציבורי: myluach.org/<שם> ---------- */
+const PUB_URL=sl=>location.origin+'/'+sl;
+const pubSnap=inc=>({rem:inc.rem?REM.map(r=>({n:r.name,rec:r.rec,d:r.d,m:r.m,date:r.date})):[],appt:inc.appt?APPT.map(a=>({date:a.date,t:a.title,s:a.start_t,e:a.end_t,p:a.place})):[],notes:inc.notes?Object.fromEntries(Object.entries(NOTES).filter(([,v])=>v&&v.text).map(([k,v])=>[k,v.text])):{}});
+async function pubApi(body){const A=authTok();if(!A)return {status:401};try{const r=await fetch(BASE+'../api/user?fn=pubcal',{method:body?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}catch(e){return {status:0}}}
+/* אחרי שינוי באירועים: הלוח הציבורי מתעדכן לבד (אם פורסם מהדפדפן הזה) */
+let PUBT=null;function pubAuto(){const P=LS.get('pub',null);if(!P||!P.slug||!authTok())return;clearTimeout(PUBT);PUBT=setTimeout(()=>pubApi({action:'save',slug:P.slug,title:P.title,about:P.about,city:P.city,data:pubSnap(P.inc||{rem:1})}),1500)}
+function pubDialog(){
+  if(!authTok()){dialog('<h2 id="dlgT">📢 '+(HE()?'לוח ציבורי':'Public calendar')+'</h2><p>'+(HE()?'מפרסמים את האירועים שלכם בכתובת משלכם, למשל <b dir="ltr">myluach.org/cohen</b>, וכל מי שנכנס לכתובת רואה אותם בלוח. כדי לפרסם צריך להתחבר (בחינם).':'Publish your events at your own address, e.g. <b>myluach.org/cohen</b>. Sign in (free) to publish.')+'</p><div class="row"><a class="btn pri" href="'+loginUrl('reminders')+'">'+(HE()?'כניסה / הרשמה':'Sign in')+'</a></div>');return}
+  const P0=LS.get('pub',null)||{};
+  dialog('<h2 id="dlgT">📢 '+(HE()?'לוח ציבורי':'Public calendar')+'</h2><p class="small mute" style="margin-top:0">'+(HE()?'האירועים שתבחרו יופיעו בכתובת משלכם, וכל מי שייכנס אליה יראה אותם בלוח עברי־לועזי. שינויים שתעשו כאן יתעדכנו שם לבד.':'The events you choose appear at your own address for anyone who visits. Changes you make here update there automatically.')+'</p>'+
+    '<label class="fld">'+(HE()?'הכתובת':'Address')+'<span class="pub-url" dir="ltr"><span>myluach.org/</span><input id="pS" maxlength="30" autocomplete="off" spellcheck="false" placeholder="cohen-family" value="'+esc(P0.slug||'')+'"></span></label><p class="small" id="pSm" aria-live="polite">'+(HE()?'אותיות באנגלית, ספרות ומקף. לפחות 3 תווים.':'Letters, digits and hyphens, at least 3.')+'</p>'+
+    '<label class="fld">'+(HE()?'שם הלוח':'Title')+'<input id="pT" maxlength="60" placeholder="'+(HE()?'למשל: לוח משפחת כהן':'e.g. The Cohen family')+'" value="'+esc(P0.title||'')+'"></label>'+
+    '<label class="fld">'+(HE()?'כמה מילים (לא חובה)':'About (optional)')+'<input id="pA" maxlength="200" value="'+esc(P0.about||'')+'"></label>'+
+    '<div class="fld">'+(HE()?'מה לפרסם':'What to publish')+'<label class="chk"><input type="checkbox" id="pIr"'+(!P0.inc||P0.inc.rem?' checked':'')+'> '+(HE()?'אירועים ותזכורות ('+REM.length+')':'Events & reminders ('+REM.length+')')+'</label><label class="chk"><input type="checkbox" id="pIa"'+(P0.inc&&P0.inc.appt?' checked':'')+'> '+(HE()?'פגישות ('+APPT.length+')':'Appointments ('+APPT.length+')')+'</label><label class="chk"><input type="checkbox" id="pIn"'+(P0.inc&&P0.inc.notes?' checked':'')+'> '+(HE()?'הערות לימים':'Day notes')+'</label></div>'+
+    '<p class="small" id="pMsg" aria-live="polite"></p><div class="row"><button class="btn pri" type="button" id="pGo">'+(P0.slug?(HE()?'עדכון':'Update'):(HE()?'פרסום':'Publish'))+'</button><button class="btn" type="button" id="pDel" hidden>'+(HE()?'הסרת הלוח הציבורי':'Unpublish')+'</button><button class="btn" type="button" data-close>'+t('close')+'</button></div><div id="pDone"></div>');
+  const sl=$('#pS'),sm=$('#pSm'),msg=t=>{$('#pMsg').innerHTML=t};let ok=null,ct=null;
+  const done=slug=>{const u=PUB_URL(slug);$('#pDone').innerHTML='<div class="pub-done"><b>'+(HE()?'✓ הלוח פורסם:':'✓ Published:')+'</b> <a href="'+esc(u)+'" target="_blank" rel="noopener" dir="ltr">'+esc(u.replace(/^https?:\/\//,''))+'</a><div class="row"><button class="btn" type="button" id="pCp">'+(HE()?'העתקת הקישור':'Copy link')+'</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent((HE()?'הלוח שלנו: ':'Our calendar: ')+u)+'">WhatsApp</a></div></div>';
+    $('#pCp').onclick=()=>{try{navigator.clipboard.writeText(u);$('#pCp').textContent=HE()?'✓ הועתק':'✓ Copied'}catch(e){}};$('#pDel').hidden=false};
+  const check=async()=>{const v=sl.value.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');if(v!==sl.value)sl.value=v;ok=null;
+    if(v.length<3){sm.textContent=HE()?'אותיות באנגלית, ספרות ומקף. לפחות 3 תווים.':'Letters, digits and hyphens, at least 3.';sm.className='small';return}
+    sm.textContent=HE()?'בודקים…':'Checking…';const r=await pubApi({action:'check',slug:v});if(sl.value!==v)return;
+    ok=!!r.ok;sm.textContent=r.ok?(HE()?'✓ הכתובת פנויה':'✓ Available'):r.why==='format'?(HE()?'אפשר רק אותיות באנגלית, ספרות ומקף (לא בהתחלה ולא בסוף).':'Only letters, digits and hyphens.'):(HE()?'✗ הכתובת תפוסה. נסו שם אחר.':'✗ Taken. Try another.');sm.className='small '+(r.ok?'ok':'bad')};
+  sl.addEventListener('input',()=>{clearTimeout(ct);ct=setTimeout(check,400)});
+  pubApi().then(r=>{if(r.cal){if(!sl.value)sl.value=r.cal.slug;if(!$('#pT').value)$('#pT').value=r.cal.title||'';done(r.cal.slug);$('#pGo').textContent=HE()?'עדכון':'Update'}else if(P0.slug){LS.set('pub',null)}});
+  $('#pGo').onclick=async()=>{const slug=sl.value.trim();if(ok===false){sl.focus();return}
+    const inc={rem:$('#pIr').checked,appt:$('#pIa').checked,notes:$('#pIn').checked},P={slug,title:$('#pT').value.trim(),about:$('#pA').value.trim(),city:st.city==='custom'?'':st.city,inc};
+    $('#pGo').disabled=true;msg(HE()?'מפרסמים…':'Publishing…');const r=await pubApi({action:'save',...P,data:pubSnap(inc)});$('#pGo').disabled=false;
+    if(r.status===401){msg('<a href="'+loginUrl('reminders')+'">'+(HE()?'צריך להתחבר מחדש':'Please sign in again')+'</a>');return}
+    if(!r.ok){msg(r.why==='taken'?(HE()?'הכתובת תפוסה. נסו שם אחר.':'Taken. Try another.'):r.why==='format'?(HE()?'הכתובת לא תקינה.':'Invalid address.'):(HE()?'לא הצלחנו לפרסם. נסו שוב.':'Could not publish. Try again.'));return}
+    LS.set('pub',P);msg('');done(r.slug)};
+  $('#pDel').onclick=async()=>{if(!$('#pDel').dataset.sure){$('#pDel').dataset.sure=1;$('#pDel').textContent=HE()?'להסיר? לחצו שוב':'Sure? Click again';return}await pubApi({action:'del'});LS.set('pub',null);closeDlg()};
+  setTimeout(()=>sl.focus(),30)}
+/* בלוח הציבורי: פרטי אירוע בלי עריכה */
+function pubItem(r,a){if(!r&&!a)return;const d=r?nextOcc(r):fromIso(a.date);
+  dialog('<h2 id="dlgT">'+esc(r?r.name:a.title)+'</h2><p>'+(r?esc(remWhen(r)):esc(gStr(d))+(a.start_t?' · '+esc(a.start_t)+(a.end_t?'–'+esc(a.end_t):''):'')+(a.place?' · '+esc(a.place):''))+'</p>'+(d?'<p class="mute">'+esc(hStr(new HDate(d)))+' · '+esc(relDays(d))+'</p>':'')+'<div class="row">'+(d?'<a class="btn" target="_blank" rel="noopener" href="'+gcalLink(r?r.name:a.title,d)+'">'+(HE()?'ליומן גוגל':'Google Calendar')+'</a>':'')+'<button class="btn" type="button" data-close>'+t('close')+'</button></div>')}
+function pubBar(){let b=document.getElementById('pubBar');if(!b){b=document.createElement('div');b.id='pubBar';b.className='pub-bar';const top=document.querySelector('header.top');if(top)top.after(b);else document.body.prepend(b)}
+  const D=PUB.d;
+  b.innerHTML=PUB.st==='ok'?'<div class="pub-in"><b>📅 '+esc(D.title||PUB.slug)+'</b>'+(D.about?'<span>'+esc(D.about)+'</span>':'')+'<a class="pub-cta" href="'+BASE+'#reminders">'+(HE()?'רוצים לוח כזה משלכם? ←':'Want your own? →')+'</a></div>'
+    :PUB.st==='load'?'<div class="pub-in"><span>'+(HE()?'טוען את הלוח…':'Loading…')+'</span></div>'
+    :'<div class="pub-in"><b>'+(HE()?'הדף לא נמצא':'Page not found')+'</b><span>'+(HE()?'אין לוח ציבורי בכתובת הזאת. בינתיים, הנה הלוח העברי המקוון.':'There is no public calendar at this address. Here is the online Hebrew calendar.')+'</span></div>'}
+async function pubBoot(){pubBar();
+  if(!PUB.slug){PUB.st='nf';pubBar();return}
+  try{const r=await fetch(BASE+'../api/pricing?c=_pubcal&u='+encodeURIComponent(PUB.slug));if(!r.ok)throw 0;const D=await r.json();PUB.d=D;PUB.st='ok';
+    const X=D.data||{};REM=(X.rem||[]).map((x,i)=>({id:'p'+i,name:x.n,rec:x.rec,d:x.d,m:x.m,date:x.date}));APPT=(X.appt||[]).map((x,i)=>({id:i+1,date:x.date,title:x.t,start_t:x.s,end_t:x.e,place:x.p}));
+    NOTES=Object.fromEntries(Object.entries(X.notes||{}).map(([k,v])=>[k,{text:v}]));
+    if(D.city&&!LS.get('settings',{}).city&&CITIES.some(c=>c.id===D.city))st.city=D.city;
+    document.title=(D.title||PUB.slug)+' · MyLuach'}
+  catch(e){PUB.st='nf'}
+  pubBar();evCache.clear();render()}
+
 /* ---------- התחלה ---------- */
 if(new URLSearchParams(location.search).get('lang')==='en')st.lang='en';
 if(PAGE.year){const y=+PAGE.year;anchor=y>4000?noon(new HDate(1,7,y).greg()):new Date(y,0,1,12);if(y>4000)st.mode='heb';else st.mode='greg';if(y>4000&&new HDate(TODAY).getFullYear()===y)anchor=TODAY;if(y<4000&&TODAY.getFullYear()===y)anchor=TODAY}
-readHash();render();apptLoad();
+readHash();render();apptLoad();if(PUB)pubBoot();
 /* מבזקי "היום בתולדות ישראל": פס מתחלף בראש הדף. הטקסט מוצג דרך CSS כדי שלא יהיה נוח להעתיק */
 (function ticker(){if(!HE())return;fetch(BASE+'../api/ticker?d='+iso(TODAY)).then(r=>r.json()).then(o=>{const L=(o&&o.items)||[];if(!L.length)return;
   const top=document.querySelector('header.top');if(!top||document.getElementById('tick'))return;

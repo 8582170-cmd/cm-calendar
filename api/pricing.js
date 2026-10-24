@@ -27,6 +27,8 @@ module.exports = async (req, res) => {
   }
   /* שיתוף לוח עם המשפחה: המשתתפים (בלי הרשמה) */
   if (cp === '_share') return require('./_share').pub(req, res);
+  /* לוח ציבורי מהלוח המקוון: myluach.org/<שם> */
+  if (cp === '_pubcal') return require('./_pubcal').read(req, res);
   if (cp) {
     const { loadSetting } = require('./_lib');
     const all = await loadSetting('content'), c = ((all && all.pages) || {})[cp] || null;

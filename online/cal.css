@@ -386,3 +386,10 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 }
 @media print{body.wide-view .print-head{padding-bottom:2px;margin-bottom:3px}body.wide-view .print-head .pm-logo{font-size:15pt}body.wide-view .print-head .pm-logo img{width:28px;height:28px}}
 @media print{body.wide-view .main::after{display:none}body.wide-view .wk-z{line-height:1.1}}
+.lr-a{color:inherit;text-decoration:none;border-bottom:1px dotted color-mix(in srgb,currentColor 45%,transparent)}.lr-a:hover{color:var(--acc,#1e5a63);border-bottom-color:currentColor}.lr-a i{font-style:normal;font-size:.8em;opacity:.6}
+@media print{.lr-a{border:0}.lr-a i{display:none}}
+.pub-bar{background:color-mix(in srgb,var(--acc,#1e5a63) 10%,#fff);border-bottom:1px solid var(--line,#e3e6e5)}.pub-in{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:15px}
+.pub-in b{font-size:17px}.pub-in span{color:var(--mute,#5c686c)}.pub-cta{margin-inline-start:auto;font-weight:700}
+.pub-url{display:flex;align-items:center;border:1px solid var(--line,#ccd);border-radius:8px;overflow:hidden;background:#fff}.pub-url span{padding:0 8px;color:var(--mute,#5c686c);white-space:nowrap}.pub-url input{border:0!important;flex:1;min-width:0;border-radius:0!important}
+#pSm.ok{color:#1d7a3a}#pSm.bad{color:#b3261e}.pub-done{background:#eef7f1;border-radius:10px;padding:10px 12px;margin-top:10px;word-break:break-all}.pub-done .row{margin-top:8px}
+@media print{.pub-bar{display:none}}
