@@ -46,6 +46,7 @@
 .bgp{display:flex;flex-direction:column;gap:10px}
 .bgp-t{display:flex;align-items:center;gap:10px;font-weight:700}.bgp-t input{width:20px;height:20px;accent-color:var(--teal)}
 .bgp-r{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}.bgp-r input{width:160px;accent-color:var(--teal)}
+.bgp-n{font-size:14px;color:var(--mute)}
 .bgp-h{font-weight:800;margin-top:4px}.bgp-b{display:flex;flex-wrap:wrap;gap:8px}.bgp .pill{font:inherit;font-size:14px;font-weight:700;padding:6px 12px;border:1.5px solid var(--line);border-radius:99px;background:var(--paper);color:var(--ink);cursor:pointer}
 .adds{display:flex;flex-wrap:wrap;gap:10px}
 .gtools{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
@@ -70,7 +71,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=14"></script>
+<script src="/assets/greetings/greetings.js?v=15"></script>
 </head>
 <body>
 <div class="wrap">
@@ -172,7 +173,7 @@ $('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat) + '. כו�
 var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; } } catch (e) {}
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; } } catch (e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} }
 
 /* תצוגה */
@@ -470,7 +471,7 @@ $('resetAll').onclick = function(){
   location.reload();
 };
 
-G.catalog().then(function(){ renderBlocks(); draw(); G.bgPanel($('bgp'), function(){ return S }, changed, colorRow); });
+G.catalog().then(function(){ renderBlocks(); draw(); G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl); });
 });
 </script>
 </body>
