@@ -565,7 +565,11 @@ function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return n
   return {k,n,v,u:u||'https://www.sefaria.org.il/search?q='+encodeURIComponent((HE()?LRN_T[k][0][0].replace(/ ?יומי(ת)?$/,''):'')+' '+v)+'&tab=text'}}).filter(Boolean)}
 /* כל לימוד הוא קישור שנפתח בכרטיסייה חדשה */
 const lrnA=x=>'<a class="lr-a" href="'+esc(x.u)+'" target="_blank" rel="noopener" title="'+(HE()?'ללמוד עכשיו (נפתח בספריא)':'Study now (opens Sefaria)')+'"><b>'+esc(x.v)+'</b> <i aria-hidden="true">↗</i></a>';
-const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+'</div>').join('');
+/* שיעור קולי בקול הלשון: חיפוש לפי הלימוד של היום */
+const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי',yerushalmi:'ירושלמי',mishna:'משנה יומית',nach:'נ״ך יומי',chumash:'חומש',chok:'חוק לישראל',tehillim:'תהלים',tehillimW:'תהלים',rambam:'רמב״ם יומי',rambam3:'רמב״ם יומי',smitzvot:'ספר המצוות',kitzur:'קיצור שולחן ערוך',ahs:'ערוך השולחן',cc:'חפץ חיים',shl:'שמירת הלשון',avot:'פרקי אבות'};
+const kolQ=x=>{let v=String(x.v);if(x.k==='chok')v=v.replace(/^פרשת /,'').split(' · ')[0];else if(x.k==='chumash')v=v.split(',')[0];return (KOL_Q[x.k]||x.n)+' '+v};
+const kolA=x=>HE()?' <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/94/21/'+encodeURIComponent(kolQ(x))+'" target="_blank" rel="noopener" title="שיעור קולי בקול הלשון" aria-label="שיעור קולי בקול הלשון">🎧</a>':'';
+const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+kolA(x)+'</div>').join('');
 function lrnPicker(){const sel=new Set(lrnSel());
   dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
     LRN_ORDER.filter(k=>Array.isArray(LRN_T[k])).map(k=>[k,LRN_T[k]]).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
@@ -731,7 +735,7 @@ function lrnCard(){const S=lrnSel();
   let h='<div class="card lr-card"><div class="lr-h"><b>'+(HE()?'לימוד יומי':'Daily learning')+'</b><button type="button" class="linkbtn2" data-lrpick="1">⚙ '+(HE()?'בחירה':'Choose')+'</button></div>';
   if(!S.length)return h+'<p class="small mute">'+(HE()?'לא נבחר לימוד.':'No learning selected.')+'</p></div>';
   for(let i=0;i<7;i++){const d=addD(TODAY,i),L=lrnFor(d);if(!L.length)continue;
-    h+='<div class="lr-day'+(i?'':' cur')+'"><div class="lr-d">'+(i?esc(t('weekdays')[d.getDay()])+' · '+esc(HE()?gem(new HDate(d).getDate()):String(d.getDate())):t('today'))+'</div>'+L.map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+'</div>').join('')+'</div>'}
+    h+='<div class="lr-day'+(i?'':' cur')+'"><div class="lr-d">'+(i?esc(t('weekdays')[d.getDay()])+' · '+esc(HE()?gem(new HDate(d).getDate()):String(d.getDate())):t('today'))+'</div>'+L.map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+kolA(x)+'</div>').join('')+'</div>'}
   return h+'<label class="chk small" style="margin-top:6px"><input type="checkbox" data-opt="learn"'+(st.opts.learn?' checked':'')+'> '+(HE()?'להציג גם בתוך ימי הלוח':'Also show inside calendar days')+'</label></div>'}
 function renderSide(){
   const hd=new HDate(TODAY),Z=zm(TODAY),z=k=>fmtT((Z.find(x=>x.k===k)||{}).v);
