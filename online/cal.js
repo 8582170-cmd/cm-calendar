@@ -568,11 +568,13 @@ const lrnA=x=>'<a class="lr-a" href="'+esc(x.u)+'" target="_blank" rel="noopener
 /* שיעור קולי בקול הלשון: חיפוש לפי הלימוד של היום */
 const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי',yerushalmi:'ירושלמי',mishna:'משנה יומית',nach:'נ״ך יומי',chumash:'חומש',chok:'חוק לישראל',tehillim:'תהלים',tehillimW:'תהלים',rambam:'רמב״ם יומי',rambam3:'רמב״ם יומי',smitzvot:'ספר המצוות',kitzur:'קיצור שולחן ערוך',ahs:'ערוך השולחן',cc:'חפץ חיים',shl:'שמירת הלשון',avot:'פרקי אבות'};
 const kolQ=x=>{let v=String(x.v);if(x.k==='chok')v=v.replace(/^פרשת /,'').split(' · ')[0];else if(x.k==='chumash')v=v.split(',')[0];return (KOL_Q[x.k]||x.n)+' '+v};
-const kolA=x=>HE()?(x.k==='chok'?' <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/94/21/'+encodeURIComponent(kolQ(x))+'" target="_blank" rel="noopener" title="שיעור קולי בקול הלשון" aria-label="שיעור קולי בקול הלשון">🎧</a>':'')+
+/* קול הלשון: עמוד הלימוד היומי שלהם לכל סוג לימוד (השיעורים האחרונים בראש) */
+const KOL_CAT={nach:['93/21','נך יומי'],chok:['94/21','חוק לישראל'],mishna:['95/21','משנה יומית'],kitzur:['96/21','הלכה יומית'],ahs:['96/21','הלכה יומית'],cc:['97/21','חפץ חיים יומי'],daf:['91/90','תלמוד בבלי'],yerushalmi:['92/90','תלמוד ירושלמי'],amud:['109/90','עמוד יומי לפי סדר דירשו']};
+const kolA=x=>HE()?(KOL_CAT[x.k]?' <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/'+KOL_CAT[x.k][0]+'/'+encodeURIComponent(KOL_CAT[x.k][1])+'" target="_blank" rel="noopener" title="שיעור קולי בקול הלשון ('+KOL_CAT[x.k][1]+')" aria-label="שיעור קולי בקול הלשון">🎧</a>':'')+
   ' <a class="lr-a lr-kol" href="https://www.youtube.com/@Kol-Halashon/search?query='+encodeURIComponent(kolQ(x))+'" target="_blank" rel="noopener" title="שיעור בווידאו ביוטיוב (קול הלשון)" aria-label="שיעור בווידאו ביוטיוב">▶</a>':'';
 /* ביום שישי: שיעורים על פרשת השבוע (שמיעה בקול הלשון וצפייה בערוץ שלהם ביוטיוב) */
 function parRow(d){if(!HE()||d.getDay()!==5)return '';const a=aliyah(d);if(!a)return '';const q='פרשת '+a.p.replace(/-/g,' ');
-  return '<div class="lr lr-par"><span>שיעורים על הפרשה</span> <b>'+esc(q)+'</b> <a class="lr-a lr-kol" href="https://www.youtube.com/results?search_query='+encodeURIComponent('קול הלשון '+q)+'&sp=CAI%253D" target="_blank" rel="noopener" title="שיעורים לצפייה ביוטיוב, מהחדש לישן" aria-label="שיעורים לצפייה ביוטיוב">▶</a></div>'}
+  return '<div class="lr lr-par"><span>שיעורים על הפרשה</span> <b>'+esc(q)+'</b> <a class="lr-a lr-kol" href="https://www.youtube.com/@Kol-Halashon/search?query='+encodeURIComponent(q)+'" target="_blank" rel="noopener" title="שיעורים לצפייה ביוטיוב (קול הלשון)" aria-label="שיעורים לצפייה ביוטיוב">▶</a></div>'}
 const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+kolA(x)+'</div>').join('')+parRow(d);
 function lrnPicker(){const sel=new Set(lrnSel());
   dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
