@@ -570,7 +570,10 @@ const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי'
 const kolQ=x=>{let v=String(x.v);if(x.k==='chok')v=v.replace(/^פרשת /,'').split(' · ')[0];else if(x.k==='chumash')v=v.split(',')[0];return (KOL_Q[x.k]||x.n)+' '+v};
 const kolA=x=>HE()?' <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/94/21/'+encodeURIComponent(kolQ(x))+'" target="_blank" rel="noopener" title="שיעור קולי בקול הלשון" aria-label="שיעור קולי בקול הלשון">🎧</a>'+
   ' <a class="lr-a lr-kol" href="https://www.youtube.com/@Kol-Halashon/search?query='+encodeURIComponent(kolQ(x))+'" target="_blank" rel="noopener" title="שיעור בווידאו ביוטיוב (קול הלשון)" aria-label="שיעור בווידאו ביוטיוב">▶</a>':'';
-const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+kolA(x)+'</div>').join('');
+/* ביום שישי: שיעורים על פרשת השבוע (שמיעה בקול הלשון וצפייה בערוץ שלהם ביוטיוב) */
+function parRow(d){if(!HE()||d.getDay()!==5)return '';const a=aliyah(d);if(!a)return '';const q='פרשת '+a.p.replace(/-/g,' ');
+  return '<div class="lr lr-par"><span>שיעורים על הפרשה</span> <b>'+esc(q)+'</b> <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/94/21/'+encodeURIComponent(q)+'" target="_blank" rel="noopener" title="שיעורים לשמיעה בקול הלשון" aria-label="שיעורים לשמיעה בקול הלשון">🎧</a> <a class="lr-a lr-kol" href="https://www.youtube.com/@Kol-Halashon/search?query='+encodeURIComponent(q)+'" target="_blank" rel="noopener" title="שיעורים לצפייה ביוטיוב (קול הלשון)" aria-label="שיעורים לצפייה ביוטיוב">▶</a></div>'}
+const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+kolA(x)+'</div>').join('')+parRow(d);
 function lrnPicker(){const sel=new Set(lrnSel());
   dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
     LRN_ORDER.filter(k=>Array.isArray(LRN_T[k])).map(k=>[k,LRN_T[k]]).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
@@ -735,8 +738,8 @@ function gcalLink(title,d){if(title&&typeof title==='object')title=title.name;if
 function lrnCard(){const S=lrnSel();
   let h='<div class="card lr-card"><div class="lr-h"><b>'+(HE()?'לימוד יומי':'Daily learning')+'</b><button type="button" class="linkbtn2" data-lrpick="1">⚙ '+(HE()?'בחירה':'Choose')+'</button></div>';
   if(!S.length)return h+'<p class="small mute">'+(HE()?'לא נבחר לימוד.':'No learning selected.')+'</p></div>';
-  for(let i=0;i<7;i++){const d=addD(TODAY,i),L=lrnFor(d);if(!L.length)continue;
-    h+='<div class="lr-day'+(i?'':' cur')+'"><div class="lr-d">'+(i?esc(t('weekdays')[d.getDay()])+' · '+esc(HE()?gem(new HDate(d).getDate()):String(d.getDate())):t('today'))+'</div>'+L.map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+kolA(x)+'</div>').join('')+'</div>'}
+  for(let i=0;i<7;i++){const d=addD(TODAY,i),L=lrnFor(d),P=parRow(d);if(!L.length&&!P)continue;
+    h+='<div class="lr-day'+(i?'':' cur')+'"><div class="lr-d">'+(i?esc(t('weekdays')[d.getDay()])+' · '+esc(HE()?gem(new HDate(d).getDate()):String(d.getDate())):t('today'))+'</div>'+L.map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+kolA(x)+'</div>').join('')+P+'</div>'}
   return h+'<label class="chk small" style="margin-top:6px"><input type="checkbox" data-opt="learn"'+(st.opts.learn?' checked':'')+'> '+(HE()?'להציג גם בתוך ימי הלוח':'Also show inside calendar days')+'</label></div>'}
 function renderSide(){
   const hd=new HDate(TODAY),Z=zm(TODAY),z=k=>fmtT((Z.find(x=>x.k===k)||{}).v);
