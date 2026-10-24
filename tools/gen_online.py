@@ -110,7 +110,7 @@ subprocess.run([sys.executable, str(ROOT / 'tools/gen_articles.py')], check=True
 subprocess.run([sys.executable, str(ROOT / 'tools/gen_landing.py')], check=True)
 
 
-# דף 404 של האתר כולו = הלוח הציבורי: myluach.org/<שם> (אם אין לוח בשם הזה: הודעה, והלוח המקוון הרגיל)
+# דף 404 = הלוח הציבורי: myluach.org/online/<שם> (אם אין לוח בשם הזה: הודעה, והלוח המקוון הרגיל)
 def pub404():
     s = (ON / 'index.html').read_text(encoding='utf-8')
     s = re.sub(r'<title>.*?</title>', '<title>MyLuach · לוח עברי</title>', s, flags=re.S)
@@ -119,5 +119,6 @@ def pub404():
     s = s.replace('href="./"', 'href="/online/"')
     s = s.replace('</head>', '<meta name="robots" content="noindex">\n</head>')
     (ROOT / '404.html').write_text(s, encoding='utf-8')
+    (ON / '404.html').write_text(s, encoding='utf-8')
 pub404()
 print('404.html (public calendars)')

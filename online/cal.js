@@ -187,7 +187,7 @@ function events(a,b){
 
 /* ---------- תזכורות והערות (נשמרות בדפדפן) ---------- */
 /* לוח ציבורי (myluach.org/<שם>): מציגים את האירועים של בעל הלוח, בלי לשמור ובלי לערוך */
-const PUB=PAGE.pub?{slug:(()=>{const a=location.pathname.split('/').filter(Boolean);return a.length===1?decodeURIComponent(a[0]).toLowerCase():''})(),d:null,st:'load'}:null;
+const PUB=PAGE.pub?{slug:(()=>{const a=location.pathname.split('/').filter(Boolean);return a.length===2&&a[0]==='online'?decodeURIComponent(a[1]).toLowerCase():''})(),d:null,st:'load'}:null;
 let REM=PUB?[]:LS.get('rem',[]),NOTES=PUB?{}:LS.get('notes',{});
 const saveRem=()=>{if(PUB)return;LS.set('rem',REM);pubAuto()},saveNotes=()=>{if(PUB)return;LS.set('notes',NOTES);pubAuto()};
 function remHits(r,d){const hd=new HDate(d);
@@ -789,16 +789,16 @@ document.addEventListener('change',e=>{
 window.addEventListener('hashchange',()=>{readHash();render()});
 
 /* ---------- לוח ציבורי: myluach.org/<שם> ---------- */
-const PUB_URL=sl=>location.origin+'/'+sl;
+const PUB_URL=sl=>location.origin+'/online/'+sl;
 const pubSnap=inc=>({rem:inc.rem?REM.map(r=>({n:r.name,rec:r.rec,d:r.d,m:r.m,date:r.date})):[],appt:inc.appt?APPT.map(a=>({date:a.date,t:a.title,s:a.start_t,e:a.end_t,p:a.place})):[],notes:inc.notes?Object.fromEntries(Object.entries(NOTES).filter(([,v])=>v&&v.text).map(([k,v])=>[k,v.text])):{}});
 async function pubApi(body){const A=authTok();if(!A)return {status:401};try{const r=await fetch(BASE+'../api/user?fn=pubcal',{method:body?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}catch(e){return {status:0}}}
 /* אחרי שינוי באירועים: הלוח הציבורי מתעדכן לבד (אם פורסם מהדפדפן הזה) */
 let PUBT=null;function pubAuto(){const P=LS.get('pub',null);if(!P||!P.slug||!authTok())return;clearTimeout(PUBT);PUBT=setTimeout(()=>pubApi({action:'save',slug:P.slug,title:P.title,about:P.about,city:P.city,data:pubSnap(P.inc||{rem:1})}),1500)}
 function pubDialog(){
-  if(!authTok()){dialog('<h2 id="dlgT">📢 '+(HE()?'לוח ציבורי':'Public calendar')+'</h2><p>'+(HE()?'מפרסמים את האירועים שלכם בכתובת משלכם, למשל <b dir="ltr">myluach.org/cohen</b>, וכל מי שנכנס לכתובת רואה אותם בלוח. כדי לפרסם צריך להתחבר (בחינם).':'Publish your events at your own address, e.g. <b>myluach.org/cohen</b>. Sign in (free) to publish.')+'</p><div class="row"><a class="btn pri" href="'+loginUrl('reminders')+'">'+(HE()?'כניסה / הרשמה':'Sign in')+'</a></div>');return}
+  if(!authTok()){dialog('<h2 id="dlgT">📢 '+(HE()?'לוח ציבורי':'Public calendar')+'</h2><p>'+(HE()?'מפרסמים את האירועים שלכם בכתובת משלכם, למשל <b dir="ltr">myluach.org/online/cohen</b>, וכל מי שנכנס לכתובת רואה אותם בלוח. כדי לפרסם צריך להתחבר (בחינם).':'Publish your events at your own address, e.g. <b>myluach.org/online/cohen</b>. Sign in (free) to publish.')+'</p><div class="row"><a class="btn pri" href="'+loginUrl('reminders')+'">'+(HE()?'כניסה / הרשמה':'Sign in')+'</a></div>');return}
   const P0=LS.get('pub',null)||{};
   dialog('<h2 id="dlgT">📢 '+(HE()?'לוח ציבורי':'Public calendar')+'</h2><p class="small mute" style="margin-top:0">'+(HE()?'האירועים שתבחרו יופיעו בכתובת משלכם, וכל מי שייכנס אליה יראה אותם בלוח עברי־לועזי. שינויים שתעשו כאן יתעדכנו שם לבד.':'The events you choose appear at your own address for anyone who visits. Changes you make here update there automatically.')+'</p>'+
-    '<label class="fld">'+(HE()?'הכתובת':'Address')+'<span class="pub-url" dir="ltr"><span>myluach.org/</span><input id="pS" maxlength="30" autocomplete="off" spellcheck="false" placeholder="cohen-family" value="'+esc(P0.slug||'')+'"></span></label><p class="small" id="pSm" aria-live="polite">'+(HE()?'אותיות באנגלית, ספרות ומקף. לפחות 3 תווים.':'Letters, digits and hyphens, at least 3.')+'</p>'+
+    '<label class="fld">'+(HE()?'הכתובת':'Address')+'<span class="pub-url" dir="ltr"><span>myluach.org/online/</span><input id="pS" maxlength="30" autocomplete="off" spellcheck="false" placeholder="cohen-family" value="'+esc(P0.slug||'')+'"></span></label><p class="small" id="pSm" aria-live="polite">'+(HE()?'אותיות באנגלית, ספרות ומקף. לפחות 3 תווים.':'Letters, digits and hyphens, at least 3.')+'</p>'+
     '<label class="fld">'+(HE()?'שם הלוח':'Title')+'<input id="pT" maxlength="60" placeholder="'+(HE()?'למשל: לוח משפחת כהן':'e.g. The Cohen family')+'" value="'+esc(P0.title||'')+'"></label>'+
     '<label class="fld">'+(HE()?'כמה מילים (לא חובה)':'About (optional)')+'<input id="pA" maxlength="200" value="'+esc(P0.about||'')+'"></label>'+
     '<div class="fld">'+(HE()?'מה לפרסם':'What to publish')+'<label class="chk"><input type="checkbox" id="pIr"'+(!P0.inc||P0.inc.rem?' checked':'')+'> '+(HE()?'אירועים ותזכורות ('+REM.length+')':'Events & reminders ('+REM.length+')')+'</label><label class="chk"><input type="checkbox" id="pIa"'+(P0.inc&&P0.inc.appt?' checked':'')+'> '+(HE()?'פגישות ('+APPT.length+')':'Appointments ('+APPT.length+')')+'</label><label class="chk"><input type="checkbox" id="pIn"'+(P0.inc&&P0.inc.notes?' checked':'')+'> '+(HE()?'הערות לימים':'Day notes')+'</label></div>'+
@@ -842,6 +842,7 @@ async function pubBoot(){pubBar();
 if(new URLSearchParams(location.search).get('lang')==='en')st.lang='en';
 if(PAGE.year){const y=+PAGE.year;anchor=y>4000?noon(new HDate(1,7,y).greg()):new Date(y,0,1,12);if(y>4000)st.mode='heb';else st.mode='greg';if(y>4000&&new HDate(TODAY).getFullYear()===y)anchor=TODAY;if(y<4000&&TODAY.getFullYear()===y)anchor=TODAY}
 readHash();render();apptLoad();if(PUB)pubBoot();
+{const w=document.createElement('div');w.className='print-wm';w.setAttribute('aria-hidden','true');document.body.appendChild(w)}
 /* מבזקי "היום בתולדות ישראל": פס מתחלף בראש הדף. הטקסט מוצג דרך CSS כדי שלא יהיה נוח להעתיק */
 (function ticker(){if(!HE())return;fetch(BASE+'../api/ticker?d='+iso(TODAY)).then(r=>r.json()).then(o=>{const L=(o&&o.items)||[];if(!L.length)return;
   const top=document.querySelector('header.top');if(!top||document.getElementById('tick'))return;

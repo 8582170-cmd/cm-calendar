@@ -393,3 +393,7 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .pub-url{display:flex;align-items:center;border:1px solid var(--line,#ccd);border-radius:8px;overflow:hidden;background:#fff}.pub-url span{padding:0 8px;color:var(--mute,#5c686c);white-space:nowrap}.pub-url input{border:0!important;flex:1;min-width:0;border-radius:0!important}
 #pSm.ok{color:#1d7a3a}#pSm.bad{color:#b3261e}.pub-done{background:#eef7f1;border-radius:10px;padding:10px 12px;margin-top:10px;word-break:break-all}.pub-done .row{margin-top:8px}
 @media print{.pub-bar{display:none}}
+.print-wm{display:none}
+/* הדפסה מהלוח המקוון: סימן מים בהיר וחלש בכל עמוד */
+@media print{.print-wm{display:block;position:fixed;inset:0;z-index:2147483000;pointer-events:none;-webkit-print-color-adjust:exact;print-color-adjust:exact;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='190'%3E%3Ctext x='150' y='100' text-anchor='middle' transform='rotate(-28 150 95)' font-family='Arial,Helvetica,sans-serif' font-size='24' font-weight='700' fill='%23000' fill-opacity='0.075'%3EMyLuach.org%3C/text%3E%3C/svg%3E") repeat}}

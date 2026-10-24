@@ -1,4 +1,4 @@
-/* לוחות ציבוריים מהלוח המקוון: כל משתמש מחובר יכול לפרסם את האירועים שלו בכתובת myluach.org/<שם>.
+/* לוחות ציבוריים מהלוח המקוון: כל משתמש מחובר יכול לפרסם את האירועים שלו בכתובת myluach.org/online/<שם>.
    owner: ?fn=pubcal (משתמש מחובר): GET = הלוח שלי, POST {action:'check'|'save'|'del'}
    read:  ?c=_pubcal&u=<שם> (לכולם) */
 'use strict';
@@ -9,7 +9,7 @@ const SLUG = /^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/;
 const RESERVED = new Set(('admin admin-studio api app articles assets brachot calendar countdown countdown-calendar countdown-en data-src donate en functions gallery index '
   + 'new online pricing privacy share simple simple-en terms tools accessibility robots sitemap sitemap-pages favicon p torah u c www mail email login logout signup register '
   + 'account user users me my myluach luach luachot support help about contact blog static cdn img images css js public pub search settings billing pay payment checkout '
-  + 'order orders invoice receipt official team staff root system test demo null undefined 404 500').split(' '));
+  + 'order orders invoice receipt official team staff root system test demo null undefined 404 500 chagim ics luach shabbat zmanim cal cities').split(' '));
 const D = /^\d{4}-\d{2}-\d{2}$/, T = /^([01]\d|2[0-3]):[0-5]\d$/;
 const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
 
