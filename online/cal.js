@@ -542,6 +542,7 @@ const chabadDay=(path,d)=>'https://www.chabad.org/dailystudy/'+path+'?tdate='+(d
 const PS_W=[[1,29],[30,50],[51,72],[73,89],[90,106],[107,119],[120,150]];
 Object.assign(LRN_T,{
   amud:[['עמוד יומי (דרשו)','Amud Yomi (Dirshu)'],d=>ev6T('dirshuAmudYomi',d)],
+  perek:[['פרק יומי במשנה (מפעל הפרק היומי)','Perek Yomi (Mishna chapter a day)'],d=>ev6T('perekYomi',d)],
   chumash:[['חומש יומי','Chumash (daily aliyah)'],d=>{const a=aliyah(d);return a?a.p+', '+(HE()?ALY_HE:ALY_EN)[a.n]:''}],
   chok:[['חק לישראל','Chok LeYisrael'],d=>{const a=aliyah(d);if(!a||a.n===6)return '';const p=HE()?a.p.split('-')[0]:a.raw[0];return (HE()?'פרשת ':'')+p+' · '+t('weekdays')[a.n]}],
   tehillimW:[['תהלים לפי השבוע','Tehillim (weekly)'],d=>{const r=PS_W[d.getDay()];return numH(r[0])+'–'+numH(r[1])}],
@@ -552,7 +553,7 @@ Object.assign(LRN_T,{
   avot:[['פרקי אבות (שבתות הקיץ)','Pirkei Avot (summer Shabbatot)'],d=>d.getDay()===6?ev6T('pirkeiAvotSummer',d):'']
 });
 Object.assign(LRN_U,{
-  amud:d=>ev6U('dirshuAmudYomi',d),
+  amud:d=>ev6U('dirshuAmudYomi',d),perek:d=>ev6U('perekYomi',d),
   chumash:d=>aliyah(d)?chabadDay('torahreading.asp',d):'',
   chok:d=>chokUrl(d),
   tehillimW:d=>{const r=PS_W[d.getDay()];return 'https://www.sefaria.org.il/Psalms.'+r[0]+'-'+r[1]+'?lang=he'},
@@ -560,7 +561,7 @@ Object.assign(LRN_U,{
   avot:d=>d.getDay()===6?ev6U('pirkeiAvotSummer',d):''
 });
 /* סדר ההצגה בבחירה */
-const LRN_ORDER=['daf','amud','dafw','yerushalmi','mishna','nach','chumash','chok','tehillim','tehillimW','rambam','rambam3','smitzvot','kitzur','ahs','cc','shl','avot'];
+const LRN_ORDER=['daf','amud','dafw','yerushalmi','mishna','perek','nach','chumash','chok','tehillim','tehillimW','rambam','rambam3','smitzvot','kitzur','ahs','cc','shl','avot'];
 const LRN_DEF=['daf','mishna','rambam'];
 const lrnSel=()=>(Array.isArray(st.lrnSel)?st.lrnSel:LRN_DEF).filter(k=>LRN_T[k]);
 function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return null;const n=LRN_T[k][0][HE()?0:1];let u='';try{u=LRN_U[k]?LRN_U[k](d):''}catch(e){}
@@ -568,7 +569,7 @@ function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return n
 /* כל לימוד הוא קישור שנפתח בכרטיסייה חדשה */
 const lrnA=x=>'<a class="lr-a" href="'+esc(x.u)+'" target="_blank" rel="noopener" title="'+(HE()?'ללמוד עכשיו (נפתח בספריא)':'Study now (opens Sefaria)')+'"><b>'+esc(x.v)+'</b> <i aria-hidden="true">↗</i></a>';
 /* שיעור קולי בקול הלשון: חיפוש לפי הלימוד של היום */
-const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי',yerushalmi:'ירושלמי',mishna:'משנה יומית',nach:'נ״ך יומי',chumash:'חומש',chok:'חוק לישראל',tehillim:'תהלים',tehillimW:'תהלים',rambam:'רמב״ם יומי',rambam3:'רמב״ם יומי',smitzvot:'ספר המצוות',kitzur:'קיצור שולחן ערוך',ahs:'ערוך השולחן',cc:'חפץ חיים',shl:'שמירת הלשון',avot:'פרקי אבות'};
+const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי',yerushalmi:'ירושלמי',mishna:'משנה יומית',perek:'פרק יומי משניות',nach:'נ״ך יומי',chumash:'חומש',chok:'חוק לישראל',tehillim:'תהלים',tehillimW:'תהלים',rambam:'רמב״ם יומי',rambam3:'רמב״ם יומי',smitzvot:'ספר המצוות',kitzur:'קיצור שולחן ערוך',ahs:'ערוך השולחן',cc:'חפץ חיים',shl:'שמירת הלשון',avot:'פרקי אבות'};
 const kolQ=x=>{let v=String(x.v);if(x.k==='chok')v=v.replace(/^פרשת /,'').split(' · ')[0];else if(x.k==='chumash')v=v.split(',')[0];return (KOL_Q[x.k]||x.n)+' '+v};
 /* קול הלשון: עמוד הלימוד היומי שלהם לכל סוג לימוד (השיעורים האחרונים בראש) */
 const KOL_CAT={nach:['93/21','נך יומי'],chok:['94/21','חוק לישראל'],mishna:['95/21','משנה יומית'],kitzur:['96/21','הלכה יומית'],ahs:['96/21','הלכה יומית'],cc:['97/21','חפץ חיים יומי'],daf:['91/90','תלמוד בבלי'],yerushalmi:['92/90','תלמוד ירושלמי'],amud:['109/90','עמוד יומי לפי סדר דירשו']};
