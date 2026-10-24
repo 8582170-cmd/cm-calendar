@@ -528,14 +528,20 @@ function ev6U(name,d){const e=ev6(name,d);try{return e&&e.url?SEF(e.url()):''}ca
 /* פרשת השבוע והעלייה של היום (לחומש יומי ולחק לישראל) */
 const SED={};
 function aliyah(d){try{const hd=new HDate(d),sat=hd.onOrAfter(6),y=sat.getFullYear(),il=!!city().il,k=y+'|'+il;const sed=SED[k]||(SED[k]=H.getSedra?H.getSedra(y,il):new H.Sedra(y,il));const r=sed.lookup(sat);if(!r||r.chag||!r.parsha)return null;
-  return {p:r.parsha.map(x=>hk(x)).join('-'),n:d.getDay()}}catch(e){return null}}
+  return {p:r.parsha.map(x=>hk(x)).join('-'),raw:r.parsha,n:d.getDay()}}catch(e){return null}}
+/* חק לישראל: hokleisrael.online, עמוד לכל פרשה ויום (לפי סדר הפרשות של hebcal) */
+const CHOK_SLUG=['bereshit','noah','lech','vayera','haye','toldot','vayetse','vayshlah','vayeshev','miketz','vayigash','vayehi','shemot','vaera','bo','beshalah','ytro','mishpatim','teruma','tetsave','kitissa','vayakel','pekoudey','vayikra','tsav','shemini','tazria','metsora','aharei_mot','kedoshim','emor','behar','behukotay','bamidbar','naso','behaalotcha','shelah','korah','hukat','balak','pinhas','matot','massey','devarim','vaethanan','ekev','reeh','shoftim','ki-tetse','ki_tavo','nitsavim','vayelech','haazinu','vbracha'];
+const CHOK_EN=['Bereshit','Noach','Lech-Lecha','Vayera','Chayei Sara','Toldot','Vayetzei','Vayishlach','Vayeshev','Miketz','Vayigash','Vayechi','Shemot','Vaera','Bo','Beshalach','Yitro','Mishpatim','Terumah','Tetzaveh','Ki Tisa','Vayakhel','Pekudei','Vayikra','Tzav','Shmini','Tazria','Metzora','Achrei Mot','Kedoshim','Emor','Behar','Bechukotai','Bamidbar','Nasso','Beha\'alotcha','Sh\'lach','Korach','Chukat','Balak','Pinchas','Matot','Masei','Devarim','Vaetchanan','Eikev','Re\'eh','Shoftim','Ki Teitzei','Ki Tavo','Nitzavim','Vayeilech','Ha\'azinu','Vezot Haberakhah'];
+const chokNorm=x=>String(x).toLowerCase().replace(/[^a-z]/g,'');
+function chokUrl(d){const a=aliyah(d);if(!a||a.n===6)return '';const L=(H.parshiot&&H.parshiot.length===54)?H.parshiot:CHOK_EN;let i=L.indexOf(a.raw[0]);if(i<0)i=L.map(chokNorm).indexOf(chokNorm(a.raw[0]));if(i<0)i=CHOK_EN.map(chokNorm).indexOf(chokNorm(a.raw[0]));if(i<0)return '';
+  return 'https://hokleisrael.online/j/'+CHOK_SLUG[i]+'-'+(a.n<5?a.n+1:i>=50?'6ab':'6b')+'.html'}
 const ALY_HE=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שביעי'],ALY_EN=['1st aliyah','2nd aliyah','3rd aliyah','4th aliyah','5th aliyah','6th aliyah','7th aliyah'];
 const chabadDay=(path,d)=>'https://www.chabad.org/dailystudy/'+path+'?tdate='+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
 const PS_W=[[1,29],[30,50],[51,72],[73,89],[90,106],[107,119],[120,150]];
 Object.assign(LRN_T,{
   amud:[['עמוד יומי (דרשו)','Amud Yomi (Dirshu)'],d=>ev6T('dirshuAmudYomi',d)],
   chumash:[['חומש יומי','Chumash (daily aliyah)'],d=>{const a=aliyah(d);return a?a.p+', '+(HE()?ALY_HE:ALY_EN)[a.n]:''}],
-  chok:[['חק לישראל','Chok LeYisrael'],d=>{const a=aliyah(d);return a?(HE()?'פרשת ':'')+a.p+' · '+t('weekdays')[a.n]:''}],
+  chok:[['חק לישראל','Chok LeYisrael'],d=>{const a=aliyah(d);if(!a||a.n===6)return '';const p=HE()?a.p.split('-')[0]:a.raw[0];return (HE()?'פרשת ':'')+p+' · '+t('weekdays')[a.n]}],
   tehillimW:[['תהלים לפי השבוע','Tehillim (weekly)'],d=>{const r=PS_W[d.getDay()];return numH(r[0])+'–'+numH(r[1])}],
   rambam3:[['רמב״ם (3 פרקים)','Rambam (3 chapters)'],d=>ev6T('rambam3',d)],
   smitzvot:[['ספר המצוות','Sefer HaMitzvot'],d=>ev6T('seferHaMitzvot',d)],
@@ -546,7 +552,7 @@ Object.assign(LRN_T,{
 Object.assign(LRN_U,{
   amud:d=>ev6U('dirshuAmudYomi',d),
   chumash:d=>aliyah(d)?chabadDay('torahreading.asp',d):'',
-  chok:d=>aliyah(d)?chabadDay('torahreading.asp',d):'',
+  chok:d=>chokUrl(d),
   tehillimW:d=>{const r=PS_W[d.getDay()];return 'https://www.sefaria.org.il/Psalms.'+r[0]+'-'+r[1]+'?lang=he'},
   rambam3:d=>ev6U('rambam3',d),smitzvot:d=>ev6U('seferHaMitzvot',d),kitzur:d=>ev6U('kitzurShulchanAruch',d),ahs:d=>ev6U('arukhHaShulchanYomi',d),
   avot:d=>d.getDay()===6?ev6U('pirkeiAvotSummer',d):''
