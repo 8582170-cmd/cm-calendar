@@ -458,7 +458,7 @@ function nachYomi(d){
   try{if(!nachYomi.idx)nachYomi.idx=new L.NachYomiIndex();const r=nachYomi.idx.lookup(new HDate(d));
     let k=r.k||r.name;const hk=NACH_HE[String(k).replace(/^1 /,'I ').replace(/^2 /,'II ')];if(hk)k=hk;else{try{k=stripNikud(window.hebcal.Locale.gettext(k,'he'))}catch(e){}}return k+' '+gem(+r.v||+r.chap||0).replace(/[׳״]/g,'')}catch(e){return ''}
 }
-const LEARN_TYPES=[['daf','דף יומי: ','דף'],['mishna','משנה: ','משנה'],['nach','נ״ך: ','נ״ך'],['chumash','חומש: ','חומש'],['tehillim','תהלים: ','תהלים'],['tehillimW','תהלים (שבועי): ','תהלים'],['yerushalmi','ירושלמי: ','ירושלמי'],['rambam','רמב״ם: ','רמב״ם'],['cc','חפץ חיים: ','ח״ח'],['shl','שמירת הלשון: ','שה״ל'],['avot','פרקי אבות: ','אבות'],['dafw','דף שבועי: ','דף שבועי'],['rambam3','רמב״ם (3 פרקים): ','רמב״ם ג׳'],['smitzvot','ספר המצוות: ','סהמ״צ'],['kitzur','קיצור שו״ע: ','קיצור'],['ahs','ערוך השולחן: ','ערוה״ש'],['amud','עמוד יומי: ','עמוד']];
+const LEARN_TYPES=[['daf','דף יומי: ','דף'],['mishna','משנה: ','משנה'],['nach','נ״ך: ','נ״ך'],['chumash','חומש: ','חומש'],['tehillim','תהלים: ','תהלים'],['tehillimW','תהלים (שבועי): ','תהלים'],['yerushalmi','ירושלמי: ','ירושלמי'],['rambam','רמב״ם: ','רמב״ם'],['cc','חפץ חיים: ','ח״ח'],['shl','שמירת הלשון: ','שה״ל'],['avot','פרקי אבות: ','אבות'],['dafw','דף שבועי: ','דף שבועי'],['rambam3','רמב״ם (3 פרקים): ','רמב״ם ג׳'],['smitzvot','ספר המצוות: ','סהמ״צ'],['kitzur','קיצור שו״ע: ','קיצור'],['ahs','ערוך השולחן: ','ערוה״ש'],['amud','עמוד יומי: ','עמוד'],['chok','חק לישראל: ','חק']];
 /* לימוד יומי משלכם (מסלול מלא): s.learnOwn=[{id,name,short,on, map:{תאריך:טקסט}} או {seq:[...], start, skip}] */
 function learnOwnOn(){return canF('learnOwn')?(state.s.learnOwn||[]).filter(o=>o&&o.on!==false):[]}
 const LO_CACHE=new WeakMap();
@@ -477,6 +477,8 @@ function evHe(ev){try{return stripNikud(ev.render(EN?'en':'he'))}catch(e){return
 const LEARN_EXTRA={
   chumash(d){const hd=new HDate(d),H=window.hebcal;try{const sat=hd.onOrAfter(6),y=sat.getFullYear(),il=!!state.s.il;const key=y+'|'+il;LEARN_EXTRA._sed=LEARN_EXTRA._sed||{};const sed=LEARN_EXTRA._sed[key]||(LEARN_EXTRA._sed[key]=H.getSedra?H.getSedra(y,il):new H.Sedra(y,il));const r=sed.lookup(sat);if(!r||r.chag||!r.parsha)return '';const al=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שביעי'][d.getDay()];return r.parsha.map(heT).join('-')+', '+al}catch(e){return ''}},
   tehillim(d){const L=learnLib();if(!L||!L.dailyPsalms)return '';try{const r=L.dailyPsalms(new HDate(d));return r?gemNum(r[0])+'–'+gemNum(r[1]):''}catch(e){return ''}},
+  /* חק לישראל: לפי פרשת השבוע והיום בשבוע */
+  chok(d){const x=LEARN_EXTRA.chumash(d);if(!x)return '';const i=x.lastIndexOf(', ');return 'פרשת '+x.slice(0,i)+' · יום '+['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][d.getDay()]},
   tehillimW(d){return ['א–כט','ל–נ','נא–עב','עג–פט','צ–קו','קז–קיט','קכ–קנ'][d.getDay()]},
   yerushalmi(d){const L=learnLib();if(!L||!L.yerushalmiYomi||!L.vilna)return '';try{const r=L.yerushalmiYomi(new HDate(d),L.vilna);return r?heT(r.name)+' '+gemNum(r.blatt):''}catch(e){return ''}},
   rambam(d){const L=learnLib();if(!L||!L.dailyRambam1)return '';try{const hd=new HDate(d),r=L.dailyRambam1(hd);if(!r)return '';let s='';if(L.DailyRambamEvent)s=evHe(new L.DailyRambamEvent(hd,r));if(!s||/[A-Za-z]/.test(s))s=heT(r.name)+' '+gemNum(r.perek);return s.replace(/^רמב"?ם:?\s*/,'')}catch(e){return ''}},

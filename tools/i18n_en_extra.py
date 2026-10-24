@@ -2,6 +2,8 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ 'חק לישראל (לפי הפרשה והיום)': 'Chok LeYisrael (by parasha and day)',
+ 'חק לישראל: ': 'Chok LeYisrael: ',
  ' תמונות נוספו': ' photos added',
  'התמונה נוספה': 'Photo added',
  ' ליום': ' to the day',

@@ -5,7 +5,7 @@ const H=window.hebcal;
 const {HDate,HebrewCalendar,Location,Zmanim,flags}=H;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const strip=s=>String(s||'').replace(/[֑-ׇ]/g,'');
+const strip=s=>String(s||'').replace(/[\u0591-\u05BD\u05BF-\u05C7]/g,'');/* בלי ניקוד וטעמים, אבל המקף נשאר (לך־לך) */
 const evName=e=>{let x=strip(e.render(st.lang==='he'?'he':'en'));if(st.lang==='he')x=x.replace(/\b(5\d{3})\b/,(m,y)=>gem(+y%1000));return x};
 const PAGE=window.LC_PAGE||{};
 const BASE=PAGE.base||'';
@@ -517,6 +517,42 @@ const LRN_U={
   shl:d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{return lrnEvUrl('ShemiratHaLashonEvent',d,L.shemiratHaLashon(new HDate(d)))}catch(e){return ''}},
   dafw:d=>{const L=lrnLib();if(!L||!L.dafWeekly)return '';try{return lrnEvUrl('DafWeeklyEvent',d,L.dafWeekly(new HDate(d)))}catch(e){return ''}}
 };
+/* לימודים נוספים (כמו בבונה הלוח): ספריית הלימוד החדשה של hebcal, נטענת רק כשבוחרים אותם */
+const L6URL={learn:'https://cdn.jsdelivr.net/npm/@hebcal/learning@6.10.0/+esm',dl:'https://cdn.jsdelivr.net/npm/@hebcal/core@6.9.2/dist/esm/DailyLearning/+esm',hd:'https://cdn.jsdelivr.net/npm/@hebcal/hdate@0.22.8/+esm'};
+let L6=null,L6P=null;
+function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const [,dl,hm]=await Promise.all([import(L6URL.learn),import(L6URL.dl),import(L6URL.hd)]);L6={DL:dl.DailyLearning,HDate:hm.HDate}}catch(e){L6=false}evCache.clear();render()})();return null}
+const L6STRIP=/^(רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|פרקי אבות)[^:]*:\s*/;
+function ev6(name,d){const L=learn6();if(!L)return null;try{return L.DL.lookup(name,new L.HDate(d),!!city().il)||null}catch(e){return null}}
+function ev6T(name,d){const e=ev6(name,d);if(!e)return '';let x=strip(e.render(HE()?'he':'en'));if(HE()&&/[A-Za-z]{3}/.test(x)&&e.renderBrief)x=strip(e.renderBrief('he'));return x.replace(L6STRIP,'')}
+function ev6U(name,d){const e=ev6(name,d);try{return e&&e.url?SEF(e.url()):''}catch(x){return ''}}
+/* פרשת השבוע והעלייה של היום (לחומש יומי ולחק לישראל) */
+const SED={};
+function aliyah(d){try{const hd=new HDate(d),sat=hd.onOrAfter(6),y=sat.getFullYear(),il=!!city().il,k=y+'|'+il;const sed=SED[k]||(SED[k]=H.getSedra?H.getSedra(y,il):new H.Sedra(y,il));const r=sed.lookup(sat);if(!r||r.chag||!r.parsha)return null;
+  return {p:r.parsha.map(x=>hk(x)).join('-'),n:d.getDay()}}catch(e){return null}}
+const ALY_HE=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שביעי'],ALY_EN=['1st aliyah','2nd aliyah','3rd aliyah','4th aliyah','5th aliyah','6th aliyah','7th aliyah'];
+const chabadDay=(path,d)=>'https://www.chabad.org/dailystudy/'+path+'?tdate='+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+const PS_W=[[1,29],[30,50],[51,72],[73,89],[90,106],[107,119],[120,150]];
+Object.assign(LRN_T,{
+  amud:[['עמוד יומי (דרשו)','Amud Yomi (Dirshu)'],d=>ev6T('dirshuAmudYomi',d)],
+  chumash:[['חומש יומי','Chumash (daily aliyah)'],d=>{const a=aliyah(d);return a?a.p+', '+(HE()?ALY_HE:ALY_EN)[a.n]:''}],
+  chok:[['חק לישראל','Chok LeYisrael'],d=>{const a=aliyah(d);return a?(HE()?'פרשת ':'')+a.p+' · '+t('weekdays')[a.n]:''}],
+  tehillimW:[['תהלים לפי השבוע','Tehillim (weekly)'],d=>{const r=PS_W[d.getDay()];return numH(r[0])+'–'+numH(r[1])}],
+  rambam3:[['רמב״ם (3 פרקים)','Rambam (3 chapters)'],d=>ev6T('rambam3',d)],
+  smitzvot:[['ספר המצוות','Sefer HaMitzvot'],d=>ev6T('seferHaMitzvot',d)],
+  kitzur:[['קיצור שולחן ערוך','Kitzur Shulchan Arukh'],d=>ev6T('kitzurShulchanAruch',d)],
+  ahs:[['ערוך השולחן','Arukh HaShulchan'],d=>ev6T('arukhHaShulchanYomi',d)],
+  avot:[['פרקי אבות (שבתות הקיץ)','Pirkei Avot (summer Shabbatot)'],d=>d.getDay()===6?ev6T('pirkeiAvotSummer',d):'']
+});
+Object.assign(LRN_U,{
+  amud:d=>ev6U('dirshuAmudYomi',d),
+  chumash:d=>aliyah(d)?chabadDay('torahreading.asp',d):'',
+  chok:d=>aliyah(d)?chabadDay('torahreading.asp',d):'',
+  tehillimW:d=>{const r=PS_W[d.getDay()];return 'https://www.sefaria.org.il/Psalms.'+r[0]+'-'+r[1]+'?lang=he'},
+  rambam3:d=>ev6U('rambam3',d),smitzvot:d=>ev6U('seferHaMitzvot',d),kitzur:d=>ev6U('kitzurShulchanAruch',d),ahs:d=>ev6U('arukhHaShulchanYomi',d),
+  avot:d=>d.getDay()===6?ev6U('pirkeiAvotSummer',d):''
+});
+/* סדר ההצגה בבחירה */
+const LRN_ORDER=['daf','amud','dafw','yerushalmi','mishna','nach','chumash','chok','tehillim','tehillimW','rambam','rambam3','smitzvot','kitzur','ahs','cc','shl','avot'];
 const LRN_DEF=['daf','mishna','rambam'];
 const lrnSel=()=>(Array.isArray(st.lrnSel)?st.lrnSel:LRN_DEF).filter(k=>LRN_T[k]);
 function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return null;const n=LRN_T[k][0][HE()?0:1];let u='';try{u=LRN_U[k]?LRN_U[k](d):''}catch(e){}
@@ -526,7 +562,7 @@ const lrnA=x=>'<a class="lr-a" href="'+esc(x.u)+'" target="_blank" rel="noopener
 const lrnHTML=d=>lrnFor(d).map(x=>'<div class="lr"><span>'+esc(x.n)+'</span> '+lrnA(x)+'</div>').join('');
 function lrnPicker(){const sel=new Set(lrnSel());
   dialog('<h2 id="dlgT">'+(HE()?'לימוד יומי בלוח':'Daily learning')+'</h2><p class="small mute">'+(HE()?'מה יופיע בטור הלימוד היומי.':'What appears in the daily learning column.')+'</p><div class="dzp">'+
-    Object.entries(LRN_T).filter(([,v])=>Array.isArray(v)).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
+    LRN_ORDER.filter(k=>Array.isArray(LRN_T[k])).map(k=>[k,LRN_T[k]]).map(([k,v])=>'<label class="chk"><input type="checkbox" value="'+k+'"'+(sel.has(k)?' checked':'')+'> '+esc(v[0][HE()?0:1])+'</label>').join('')+'</div>'+
     '<div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="lrOk">'+t('save')+'</button></div>');
   $('#lrOk').onclick=()=>{st.lrnSel=[...document.querySelectorAll('.dzp input:checked')].map(i=>i.value);saveSt();closeDlg();render()}}
 
