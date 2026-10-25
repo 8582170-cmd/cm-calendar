@@ -468,7 +468,12 @@ function render(canvas, tpl, state, opt){
       function col1(lines, x0, w){
         ctx.textAlign = b.align;
         var x = b.align === 'right' ? x0 + w : b.align === 'left' ? x0 : x0 + w / 2;
-        lines.forEach(function(line, i){ ctx.fillText(line, x, it.y + it.size * 0.95 + i * it.size * b.lh); });
+        lines.forEach(function(line, i){
+          var yy = it.y + it.size * 0.95 + i * it.size * b.lh;
+          if (!b.italic) { ctx.fillText(line, x, yy); return; }
+          /* נטוי: הטיה של האותיות סביב קו הבסיס (גם לגופנים עבריים שאין להם גרסה נטויה) */
+          ctx.save(); ctx.translate(x, yy); ctx.transform(1, 0, -0.21, 1, 0, 0); ctx.fillText(line, 0, 0); ctx.restore();
+        });
       }
       if (b.cols) { col1(it.lines, it.x + it.w - it.width, it.width); col1(it.lines2, it.x, it.width); }
       else col1(it.lines, it.x, it.w);

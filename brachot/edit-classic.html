@@ -71,7 +71,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=15"></script>
+<script src="/assets/greetings/greetings.js?v=16"></script>
 </head>
 <body>
 <div class="wrap">
@@ -346,6 +346,9 @@ function renderBlocks(){
     var bb = document.createElement('button'); bb.type = 'button'; bb.className = 'tb'; bb.textContent = 'B'; bb.style.fontWeight = 900; bb.setAttribute('aria-label', 'מודגש'); bb.setAttribute('aria-pressed', String(!!b.bold));
     bb.onclick = function(){ b.bold = !b.bold; renderBlocks(); changed(); };
     bar2.appendChild(cap(bb, 'מודגש'));
+    var ib = document.createElement('button'); ib.type = 'button'; ib.className = 'tb'; ib.textContent = 'I'; ib.style.fontStyle = 'italic'; ib.style.fontFamily = 'Georgia, serif'; ib.setAttribute('aria-label', 'נטוי'); ib.setAttribute('aria-pressed', String(!!b.italic));
+    ib.onclick = function(){ b.italic = !b.italic; renderBlocks(); changed(); };
+    bar2.appendChild(cap(ib, 'נטוי'));
     var cb2 = document.createElement('button'); cb2.type = 'button'; cb2.className = 'tb'; cb2.innerHTML = '<i class="sw0"></i>צבע'; cb2.querySelector('.sw0').style.background = G.colorOf(b.color, tpl, S.colors);
     cb2.onclick = function(){ openMore[i] = !openMore[i]; renderBlocks(); };
     bar2.appendChild(cap(cb2, 'צבע'));

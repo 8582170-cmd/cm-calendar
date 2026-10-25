@@ -183,7 +183,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=15"></script>
+<script src="/assets/greetings/greetings.js?v=16"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 </head>
 <body>
@@ -415,7 +415,7 @@ function placeInl(it, s){
     t.hidden = false;
     var extra = it.size * Math.max(0, b.lh - 1.2) * s;
     t.style.left = (a[2] * s - 4) + 'px'; t.style.top = (it.y * s - 2 - extra / 2) + 'px'; t.style.width = (w * s + 8) + 'px';
-    t.style.font = (b.bold ? 700 : 400) + ' ' + (it.size * s) + 'px "' + b.font + '", "Frank Ruhl Libre", serif';
+    t.style.font = (b.italic ? 'italic ' : '') + (b.bold ? 700 : 400) + ' ' + (it.size * s) + 'px "' + b.font + '", "Frank Ruhl Libre", serif';
     t.style.lineHeight = (it.size * b.lh * s) + 'px';
     t.style.textAlign = b.align; t.style.color = G.colorOf(b.color, tpl, S.colors);
     if (document.activeElement !== t) t.value = b[a[1]] || '';
@@ -520,6 +520,7 @@ function renderTb(){
     fb.className = 'fnt'; fb.style.fontFamily = '"' + b.font + '", serif'; G.fontCss(b.font);
     num(slot('גודל'), 'גודל', Math.round(b.size), function(d){ b.size = Math.max(8, Math.min(160, Math.round(b.size + d * (b.size > 40 ? 2 : 1)))); return Math.round(b.size); });
     tbBtn(slot('מודגש'), 'B', 'מודגש', function(){ b.bold = !b.bold; changed(); renderTb(); }, b.bold).style.fontWeight = 900;
+    var itb = tbBtn(slot('נטוי'), 'I', 'נטוי', function(){ b.italic = !b.italic; changed(); renderTb(); }, b.italic); itb.style.fontStyle = 'italic'; itb.style.fontFamily = 'Georgia, serif';
     var ALN = { right: ['⇥', 'center', 'יישור לימין'], center: ['≡', 'left', 'יישור למרכז'], left: ['⇤', 'right', 'יישור לשמאל'] }, a = ALN[b.align] || ALN.center;
     tbBtn(slot('יישור'), a[0], a[2] + ' (לחיצה מחליפה)', function(){ b.align = a[1]; changed(); renderTb(); });
   } else if (b.type === 'divider') {
