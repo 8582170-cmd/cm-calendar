@@ -479,8 +479,8 @@ function render(canvas, tpl, state, opt){
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     /* שטח הטקסט: צבע ו/או תמונה בתוך המסגרת, מאחורי הטקסט */
     var P = state.panel || {}, PR0 = panelRect(tpl, state);
-    var px = PR0.x, py = PR0.y, pw = PR0.w, ph = PR0.h, pr = Math.min(pw, ph) / 2 * ((P.r == null ? 20 : P.r) / 100);
-    var panelPath = function(){ ctx.beginPath(); ctx.moveTo(px + pr, py); ctx.arcTo(px + pw, py, px + pw, py + ph, pr); ctx.arcTo(px + pw, py + ph, px, py + ph, pr); ctx.arcTo(px, py + ph, px, py, pr); ctx.arcTo(px, py, px + pw, py, pr); ctx.closePath(); };
+    var px = PR0.x, py = PR0.y, pw = PR0.w, ph = PR0.h, rmax = Math.min(pw / 2, ph / 2), pr = rmax * ((P.r == null ? 20 : P.r) / 100), prb = rmax * ((P.rb == null ? (P.r == null ? 20 : P.r) : P.rb) / 100);
+    var panelPath = function(){ ctx.beginPath(); ctx.moveTo(px + pr, py); ctx.arcTo(px + pw, py, px + pw, py + ph, pr); ctx.arcTo(px + pw, py + ph, px, py + ph, prb); ctx.arcTo(px, py + ph, px, py, prb); ctx.arcTo(px, py, px + pw, py, pr); ctx.closePath(); };
     if (ub && uimg && ub.mode === 'area') {
       ctx.save(); panelPath(); ctx.clip(); ctx.globalAlpha = ub.op == null ? 1 : ub.op;
       var k3 = Math.max(pw / uimg.width, ph / uimg.height); ctx.drawImage(uimg, px + (pw - uimg.width * k3) / 2, py + (ph - uimg.height * k3) / 2, uimg.width * k3, uimg.height * k3);
@@ -588,7 +588,8 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
     if (P.on) {
       box.appendChild(colorRow(P.color, function(c, live){ P.color = /^#/.test(c) ? c : P.color; changed(); if (!live) draw(); }));
       box.appendChild(rng('שקיפות', 10, 100, Math.round((P.op == null ? .85 : P.op) * 100), function(v){ P.op = v / 100; }));
-      box.appendChild(rng('פינות מעוגלות', 0, 100, P.r == null ? 20 : P.r, function(v){ P.r = v; }));
+      box.appendChild(rng('עיגול הפינות למעלה', 0, 100, P.r == null ? 20 : P.r, function(v){ P.r = v; }));
+      box.appendChild(rng('עיגול הפינות למטה', 0, 100, P.rb == null ? (P.r == null ? 20 : P.r) : P.rb, function(v){ P.rb = v; }));
       box.appendChild(rng('שוליים מסביב לטקסט', 0, 80, P.pad == null ? 14 : P.pad, function(v){ P.pad = v; }));
     }
     var U = S.ubg || {};
