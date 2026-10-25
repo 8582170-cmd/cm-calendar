@@ -503,12 +503,16 @@ const LRN_T={
 const SEF=u=>u?String(u).replace('https://www.sefaria.org/','https://www.sefaria.org.il/').replace('lang=bi','lang=he'):'';
 function lrnEvUrl(cls,d,read){try{const L=lrnLib();if(!L||!L[cls]||!read)return '';const e=new L[cls](new HDate(d),read);return SEF(e.url&&e.url())}catch(e){return ''}}
 const DAF_SEF={'Rosh Hashana':'Rosh Hashanah'};
+/* משנה: אתר "אורייתא" (oraita.net), עמוד לכל משנה. מספר העמוד = מספר המשנה ברצף כל הש"ס (כמו בסדר של hebcal) */
+const MISH={"Berakhot":[5,8,6,7,5,8,5,8,5],"Peah":[6,8,8,11,8,11,8,9],"Demai":[4,5,6,7,11,12,8],"Kilayim":[9,11,7,9,8,9,8,6,10],"Sheviit":[8,10,10,10,9,6,7,11,9,9],"Terumot":[10,6,9,13,9,6,7,12,7,12,10],"Maasrot":[8,8,10,6,8],"Maaser Sheni":[7,10,13,12,15],"Challah":[9,8,10,11],"Orlah":[9,17,9],"Bikkurim":[11,11,12,5],"Shabbat":[11,7,6,2,4,10,4,7,7,6,6,6,7,4,3,8,8,3,6,5,3,6,5,5],"Eruvin":[10,6,9,11,9,10,11,11,4,15],"Pesachim":[7,8,8,9,10,6,13,8,11,9],"Shekalim":[7,5,4,9,6,6,7,8],"Yoma":[8,7,11,6,7,8,5,9],"Sukkah":[11,9,15,10,8],"Beitzah":[10,10,8,7,7],"Rosh Hashanah":[9,9,8,9],"Taanit":[7,10,9,8],"Megillah":[11,6,6,10],"Moed Katan":[10,5,9],"Chagigah":[8,7,8],"Yevamot":[4,10,10,13,6,6,6,6,6,9,7,6,13,9,10,7],"Ketubot":[10,10,9,12,9,7,10,8,9,6,6,4,11],"Nedarim":[4,5,11,8,6,10,9,7,10,8,12],"Nazir":[7,10,7,7,7,11,4,2,5],"Sotah":[9,6,8,5,5,4,8,7,15],"Gittin":[6,7,8,9,9,7,9,10,10],"Kiddushin":[10,10,13,14],"Bava Kamma":[4,6,11,9,7,6,7,7,12,10],"Bava Metzia":[8,11,12,12,11,8,11,9,13,6],"Bava Batra":[6,14,8,9,11,8,4,8,10,8],"Sanhedrin":[6,5,8,5,5,6,11,7,6,6,6],"Makkot":[10,8,16],"Shevuot":[7,5,11,13,5,7,8,6],"Eduyot":[14,10,12,12,7,3,9,7],"Avodah Zarah":[9,7,10,12,12],"Avot":[18,16,18,22,23,11],"Horayot":[5,7,8],"Zevachim":[4,5,6,6,8,7,6,12,7,8,8,6,8,10],"Menachot":[4,5,7,5,9,7,6,7,9,9,9,5,11],"Chullin":[7,10,7,7,5,7,6,6,8,4,2,5],"Bekhorot":[7,9,4,10,6,12,7,10,8],"Arakhin":[4,6,5,4,6,5,5,7,8],"Temurah":[6,3,5,4,6,5,6],"Keritot":[7,6,10,3,8,9],"Meilah":[4,9,8,6,5,6],"Tamid":[4,5,9,3,6,3,4],"Middot":[9,6,8,7,4],"Kinnim":[4,5,6],"Kelim":[9,8,8,4,11,4,6,11,8,8,9,8,8,8,6,8,17,9,10,7,3,10,5,17,9,9,12,10,8,4],"Oholot":[8,7,7,3,7,7,6,6,16,7,9,8,6,7,10,5,5,10],"Negaim":[6,5,8,11,5,8,5,10,3,10,12,7,12,13],"Parah":[4,5,11,4,9,5,12,11,9,6,9,11],"Tahorot":[9,8,8,13,9,10,9,9,9,8],"Mikvaot":[8,10,4,5,6,11,7,5,7,8],"Niddah":[7,7,7,7,9,14,5,4,11,8],"Makhshirin":[6,11,8,10,11,8],"Zavim":[6,4,3,7,12],"Tevul Yom":[5,8,6,7],"Yadayim":[5,4,5,8],"Oktzin":[6,10,12]};
+function mishIdx(k,ch,mi){let n=0;for(const t in MISH){if(t===k){const v=MISH[t];if(!(ch>=1&&ch<=v.length))return 0;for(let i=0;i<ch-1;i++)n+=v[i];return n+(mi||1)}n+=MISH[t].reduce((a,b)=>a+b,0)}return 0}
+const oraita=n=>n?'https://oraita.net/mishna/m/'+n+'/':'';
 const LRN_U={
   daf:d=>{const day=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2020,0,5))/864e5);let n=((day%2711)+2711)%2711;
     for(let i=0;i<DAF_T.length;i++){const pg=DAF_T[i][1];if(n<pg-1){const daf=n+2,t=DAF_EN[i];
       if(t==='Meilah'&&daf>22)return daf<=25||daf>33?'https://www.dafyomi.org/index.php?masechta=meilah&daf='+daf+'a':'https://www.sefaria.org.il/Tamid.'+daf+'a?lang=he';
       if(t==='Shekalim')return '';return 'https://www.sefaria.org.il/'+(DAF_SEF[t]||t).replace(/ /g,'_')+'.'+daf+'a?lang=he'}n-=pg-1}return ''},
-  mishna:d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_C.mi=LRN_C.mi||new L.MishnaYomiIndex();return lrnEvUrl('MishnaYomiEvent',d,LRN_C.mi.lookup(new HDate(d)))}catch(e){return ''}},
+  mishna:d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_C.mi=LRN_C.mi||new L.MishnaYomiIndex();const r=LRN_C.mi.lookup(new HDate(d)),f=r&&r[0];if(f){const [c,x]=String(f.v).split(':').map(Number);const u=oraita(mishIdx(f.k,c,x));if(u)return u}return lrnEvUrl('MishnaYomiEvent',d,r)}catch(e){return ''}},
   nach:d=>{const L=lrnLib();if(!L||!L.NachYomiIndex)return '';try{LRN_C.ni=LRN_C.ni||new L.NachYomiIndex();return lrnEvUrl('NachYomiEvent',d,LRN_C.ni.lookup(new HDate(d)))}catch(e){return ''}},
   yerushalmi:d=>{const L=lrnLib();if(!L||!L.yerushalmiYomi||!L.vilna)return '';try{return lrnEvUrl('YerushalmiYomiEvent',d,L.yerushalmiYomi(new HDate(d),L.vilna))}catch(e){return ''}},
   rambam:d=>{const L=lrnLib();if(!L||!L.dailyRambam1)return '';try{const r=L.dailyRambam1(new HDate(d));return lrnEvUrl('DailyRambamEvent',d,r)||lrnEvUrl('DailyRambam1Event',d,r)}catch(e){return ''}},
@@ -553,7 +557,7 @@ Object.assign(LRN_T,{
   avot:[['פרקי אבות (שבתות הקיץ)','Pirkei Avot (summer Shabbatot)'],d=>d.getDay()===6?ev6T('pirkeiAvotSummer',d):'']
 });
 Object.assign(LRN_U,{
-  amud:d=>ev6U('dirshuAmudYomi',d),perek:d=>ev6U('perekYomi',d),
+  amud:d=>ev6U('dirshuAmudYomi',d),perek:d=>{const e=ev6('perekYomi',d);const u=e&&e.k?oraita(mishIdx(e.k,+e.v,1)):'';return u||ev6U('perekYomi',d)},
   chumash:d=>aliyah(d)?chabadDay('torahreading.asp',d):'',
   chok:d=>chokUrl(d),
   tehillimW:d=>{const r=PS_W[d.getDay()];return 'https://www.sefaria.org.il/Psalms.'+r[0]+'-'+r[1]+'?lang=he'},
