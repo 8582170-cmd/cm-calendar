@@ -570,16 +570,20 @@ const LRN_ORDER=['daf','amud','dafw','yerushalmi','mishna','perek','nach','chuma
 const LRN_DEF=['daf','mishna','rambam'];
 const lrnSel=()=>(Array.isArray(st.lrnSel)?st.lrnSel:LRN_DEF).filter(k=>LRN_T[k]);
 function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return null;const n=LRN_T[k][0][HE()?0:1];let u='';try{u=LRN_U[k]?LRN_U[k](d):''}catch(e){}
-  return {k,n,v,u:u||'https://www.sefaria.org.il/search?q='+encodeURIComponent((HE()?LRN_T[k][0][0].replace(/ ?יומי(ת)?$/,''):'')+' '+v)+'&tab=text'}}).filter(Boolean)}
+  return {k,n,v,d,u:u||'https://www.sefaria.org.il/search?q='+encodeURIComponent((HE()?LRN_T[k][0][0].replace(/ ?יומי(ת)?$/,''):'')+' '+v)+'&tab=text'}}).filter(Boolean)}
 /* כל לימוד הוא קישור שנפתח בכרטיסייה חדשה */
 const lrnA=x=>'<a class="lr-a" href="'+esc(x.u)+'" target="_blank" rel="noopener" title="'+(HE()?'ללמוד עכשיו (נפתח בספריא)':'Study now (opens Sefaria)')+'"><b>'+esc(x.v)+'</b> <i aria-hidden="true">↗</i></a>';
 /* שיעור קולי בקול הלשון: חיפוש לפי הלימוד של היום */
 const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי',yerushalmi:'ירושלמי',mishna:'משנה יומית',perek:'פרק יומי משניות',nach:'נ״ך יומי',chumash:'חומש',chok:'חוק לישראל',tehillim:'תהלים',tehillimW:'תהלים',rambam:'רמב״ם יומי',rambam3:'רמב״ם יומי',smitzvot:'ספר המצוות',kitzur:'קיצור שולחן ערוך',ahs:'ערוך השולחן',dhalacha:'דף הלכה דרשו',cc:'חפץ חיים',shl:'שמירת הלשון',avot:'פרקי אבות'};
+/* דף יומי: עמוד הדף באתר דרשו (וידאו, שמע וצילום הדף). למשל dirshu.co.il/הדף-היומי-מסכת-בכורות-דף-לז/ */
+function dafHe(d){const day=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2020,0,5))/864e5);let n=((day%2711)+2711)%2711;
+  for(let i=0;i<DAF_T.length;i++){const [t,pg]=DAF_T[i];if(n<pg-1){const daf=n+2;let name=t;if(t==='מעילה')name=daf<=22?'מעילה':daf<=25?'קינים':daf<=33?'תמיד':'מדות';return [name,daf]}n-=pg-1}return null}
+function dirshuDaf(d){const r=dafHe(d);if(!r)return '';return 'https://www.dirshu.co.il/'+encodeURIComponent('הדף-היומי-מסכת-'+r[0].replace(/ /g,'-')+'-דף-'+gem(r[1]).replace(/[׳״']/g,''))+'/'}
 const kolQ=x=>{let v=String(x.v);if(x.k==='chok')v=v.replace(/^פרשת /,'').split(' · ')[0];else if(x.k==='chumash')v=v.split(',')[0];return (KOL_Q[x.k]||x.n)+' '+v};
 /* קול הלשון: עמוד הלימוד היומי שלהם לכל סוג לימוד (השיעורים האחרונים בראש) */
 const KOL_CAT={nach:['93/21','נך יומי'],chok:['94/21','חוק לישראל'],mishna:['95/21','משנה יומית'],kitzur:['96/21','הלכה יומית'],ahs:['96/21','הלכה יומית'],dhalacha:['96/21','הלכה יומית'],cc:['97/21','חפץ חיים יומי'],daf:['91/90','תלמוד בבלי'],yerushalmi:['92/90','תלמוד ירושלמי'],amud:['109/90','עמוד יומי לפי סדר דירשו']};
 const kolA=x=>HE()?(KOL_CAT[x.k]?' <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/'+KOL_CAT[x.k][0]+'/'+encodeURIComponent(KOL_CAT[x.k][1])+'" target="_blank" rel="noopener" title="שיעור קולי בקול הלשון ('+KOL_CAT[x.k][1]+')" aria-label="שיעור קולי בקול הלשון">🎧</a>':'')+
-  ' <a class="lr-a lr-kol" href="https://www.youtube.com/@Kol-Halashon/search?query='+encodeURIComponent(kolQ(x))+'" target="_blank" rel="noopener" title="שיעור בווידאו ביוטיוב (קול הלשון)" aria-label="שיעור בווידאו ביוטיוב">▶</a>':'';
+  ' <a class="lr-a lr-kol" href="'+(x.k==='daf'&&x.d?dirshuDaf(x.d):'https://www.youtube.com/@Kol-Halashon/search?query='+encodeURIComponent(kolQ(x)))+'" target="_blank" rel="noopener" title="שיעור בווידאו ביוטיוב (קול הלשון)" aria-label="שיעור בווידאו ביוטיוב">▶</a>':'';
 /* ביום שישי: שיעורים על פרשת השבוע (שמיעה בקול הלשון וצפייה בערוץ שלהם ביוטיוב) */
 function parRow(d){if(!HE()||d.getDay()!==5)return '';const a=aliyah(d);if(!a)return '';const q='פרשת '+a.p.replace(/-/g,' ');
   const kol=a.raw.map(x=>parIdx(x)).filter(i=>i>=0).map(i=>' <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/1/'+(i+1)+'/'+encodeURIComponent(KOL_PAR[i])+'" target="_blank" rel="noopener" title="שיעורים ושיחות בפרשת '+KOL_PAR[i]+' (קול הלשון)" aria-label="שיעורים לשמיעה בקול הלשון">🎧</a>').join('');
