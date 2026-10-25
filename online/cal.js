@@ -523,6 +523,14 @@ const LRN_U={
 };
 /* לימודים נוספים (כמו בבונה הלוח): ספריית הלימוד החדשה של hebcal, נטענת רק כשבוחרים אותם */
 const L6URL={learn:'https://cdn.jsdelivr.net/npm/@hebcal/learning@6.11.0/+esm',dl:'https://cdn.jsdelivr.net/npm/@hebcal/core@6.9.2/dist/esm/DailyLearning/+esm',hd:'https://cdn.jsdelivr.net/npm/@hebcal/hdate@0.22.8/+esm'};
+/* טקסט עברי נקי לאירוע לימוד מהספרייה החדשה */
+function l6Text(ev){let x=String(ev.render('he')||'').replace(/[֑-ֽֿ-ׇ]/g,'');
+  x=x.replace(/^[^:]*[A-Za-z][^:]*:\s+/,'');
+  if(/[A-Za-z]{3}/.test(x)&&ev.renderBrief)x=String(ev.renderBrief('he')||'').replace(/[֑-ֽֿ-ׇ]/g,'');
+  x=x.replace(/^Book I\b,?\s*/,'חלק א׳, ').replace(/^Book II\b,?\s*/,'חלק ב׳, ');
+  const sm=/^Day (\d+): (?:N|Negative Commandment )(\d+)/.exec(x)||/^Day (\d+): (?:P|Positive Commandment )(\d+)/.exec(x);
+  if(sm)x='יום '+sm[1]+': '+(/N/.test(x.split(':')[1])?'לא תעשה ':'מצוות עשה ')+sm[2];
+  return x}
 /* בונים את אירוע הלימוד ישירות מהספרייה (בלי הרישום המשותף, שעלול להיטען מגרסה אחרת של hebcal ולהחזיר ריק) */
 const L6DIRECT={
   dirshuAmudYomi:(M,hd)=>new M.DirshuAmudYomiEvent(hd),
@@ -539,11 +547,13 @@ const L6DIRECT={
 function l6Event(L,name,d,il){const hd=new L.HDate(d);const f=L6DIRECT[name];if(f&&L.M){try{const e=f(L.M,hd,il);if(e)return e}catch(e){console.warn('MyLuach learning',name,e&&e.message)}}try{return L.DL?L.DL.lookup(name,hd,il)||null:null}catch(e){return null}}
 let L6=null,L6P=null;
 function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const imp=async L=>{for(const u of L){try{return await import(u)}catch(e){console.warn('MyLuach learning load',u,e&&e.message)}}return null};
-      const [lm,dl,hm]=await Promise.all([imp([L6URL.learn,'https://esm.sh/@hebcal/learning@6.11.0']),imp([L6URL.dl]),imp([L6URL.hd,'https://esm.sh/@hebcal/hdate@0.22.8'])]);
-      if(!lm)throw new Error('learning module');L6={M:lm,DL:dl&&dl.DailyLearning,HDate:(hm&&hm.HDate)||window.hebcal.HDate}}catch(e){console.warn('MyLuach learning disabled',e&&e.message);L6=false}evCache.clear();render()})();return null}
-const L6STRIP=/^(חפץ חיים|שמירת הלשון|פרק יומי|רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|דף הלכה|פרקי אבות)[^:]*:\s*/;
+      /* קודם הספרייה שמאוחסנת באתר עצמו (assets/learn6.js), ואם לא: מהרשת */
+      let lm=await imp(['/assets/learn6.js?v=1']);if(lm&&lm.HDate){L6={M:lm,DL:null,HDate:lm.HDate}}else{
+      const [lm2,dl,hm]=await Promise.all([imp([L6URL.learn,'https://esm.sh/@hebcal/learning@6.11.0']),imp([L6URL.dl]),imp([L6URL.hd,'https://esm.sh/@hebcal/hdate@0.22.8'])]);
+      if(!lm2)throw new Error('learning module');L6={M:lm2,DL:dl&&dl.DailyLearning,HDate:(hm&&hm.HDate)||window.hebcal.HDate}}}catch(e){console.warn('MyLuach learning disabled',e&&e.message);L6=false}evCache.clear();render()})();return null}
+const L6STRIP=/^(דף היומי בהלכה|חפץ חיים|שמירת הלשון|פרק יומי|רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|דף הלכה|פרקי אבות)[^:]*:\s*/;
 function ev6(name,d){const L=learn6();if(!L)return null;return l6Event(L,name,d,!!city().il)}
-function ev6T(name,d){const e=ev6(name,d);if(!e)return '';let x=strip(e.render(HE()?'he':'en'));if(HE()&&/[A-Za-z]{3}/.test(x)&&e.renderBrief)x=strip(e.renderBrief('he'));return x.replace(L6STRIP,'')}
+function ev6T(name,d){const e=ev6(name,d);if(!e)return '';if(!HE())return strip(e.render('en'));return l6Text(e).replace(L6STRIP,'')}
 function ev6U(name,d){const e=ev6(name,d);try{return e&&e.url?SEF(e.url()):''}catch(x){return ''}}
 /* פרשת השבוע והעלייה של היום (לחומש יומי ולחק לישראל) */
 const SED={};
