@@ -214,7 +214,7 @@ var FIELDS = [
 var catalogP = null, OVR = {};
 function catalog(){
   if (!catalogP) catalogP = fetch('/assets/greetings/fonts/catalog.json?v=3').then(function(r){ return r.json() }).then(function(list){
-    list.forEach(function(c){ var f = [c[0], 'my', c[3], c[5] ? 1 : 0, c[2], '/assets/greetings/fonts/' + c[1], !!c[4], c[5] ? '/assets/greetings/fonts/' + c[5] : null, c[6] || '']; FONTS.push(f); FONT_INFO[c[0]] = f; });
+    list.forEach(function(c){ var f = [c[0], 'my', c[3], c[5] ? 1 : 0, c[2], '/assets/greetings/fonts/' + c[1] + '?v=2', !!c[4], c[5] ? '/assets/greetings/fonts/' + c[5] + '?v=2' : null, c[6] || '']; FONTS.push(f); FONT_INFO[c[0]] = f; });
     return FONTS;
   }).catch(function(){ return FONTS; });
   return catalogP;
