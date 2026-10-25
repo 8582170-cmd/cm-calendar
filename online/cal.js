@@ -522,10 +522,10 @@ const LRN_U={
   dafw:d=>{const L=lrnLib();if(!L||!L.dafWeekly)return '';try{return lrnEvUrl('DafWeeklyEvent',d,L.dafWeekly(new HDate(d)))}catch(e){return ''}}
 };
 /* לימודים נוספים (כמו בבונה הלוח): ספריית הלימוד החדשה של hebcal, נטענת רק כשבוחרים אותם */
-const L6URL={learn:'https://cdn.jsdelivr.net/npm/@hebcal/learning@6.10.0/+esm',dl:'https://cdn.jsdelivr.net/npm/@hebcal/core@6.9.2/dist/esm/DailyLearning/+esm',hd:'https://cdn.jsdelivr.net/npm/@hebcal/hdate@0.22.8/+esm'};
+const L6URL={learn:'https://cdn.jsdelivr.net/npm/@hebcal/learning@6.11.0/+esm',dl:'https://cdn.jsdelivr.net/npm/@hebcal/core@6.9.2/dist/esm/DailyLearning/+esm',hd:'https://cdn.jsdelivr.net/npm/@hebcal/hdate@0.22.8/+esm'};
 let L6=null,L6P=null;
 function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const [,dl,hm]=await Promise.all([import(L6URL.learn),import(L6URL.dl),import(L6URL.hd)]);L6={DL:dl.DailyLearning,HDate:hm.HDate}}catch(e){L6=false}evCache.clear();render()})();return null}
-const L6STRIP=/^(רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|פרקי אבות)[^:]*:\s*/;
+const L6STRIP=/^(רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|דף הלכה|פרקי אבות)[^:]*:\s*/;
 function ev6(name,d){const L=learn6();if(!L)return null;try{return L.DL.lookup(name,new L.HDate(d),!!city().il)||null}catch(e){return null}}
 function ev6T(name,d){const e=ev6(name,d);if(!e)return '';let x=strip(e.render(HE()?'he':'en'));if(HE()&&/[A-Za-z]{3}/.test(x)&&e.renderBrief)x=strip(e.renderBrief('he'));return x.replace(L6STRIP,'')}
 function ev6U(name,d){const e=ev6(name,d);try{return e&&e.url?SEF(e.url()):''}catch(x){return ''}}
@@ -554,6 +554,7 @@ Object.assign(LRN_T,{
   smitzvot:[['ספר המצוות','Sefer HaMitzvot'],d=>ev6T('seferHaMitzvot',d)],
   kitzur:[['קיצור שולחן ערוך','Kitzur Shulchan Arukh'],d=>ev6T('kitzurShulchanAruch',d)],
   ahs:[['ערוך השולחן','Arukh HaShulchan'],d=>ev6T('arukhHaShulchanYomi',d)],
+  dhalacha:[['דף הלכה (דרשו, משנה ברורה)','Daf Halacha (Dirshu, Mishna Berura)'],d=>ev6T('dirshuDafHalacha',d)],
   avot:[['פרקי אבות (שבתות הקיץ)','Pirkei Avot (summer Shabbatot)'],d=>d.getDay()===6?ev6T('pirkeiAvotSummer',d):'']
 });
 Object.assign(LRN_U,{
@@ -561,11 +562,11 @@ Object.assign(LRN_U,{
   chumash:d=>aliyah(d)?chabadDay('torahreading.asp',d):'',
   chok:d=>chokUrl(d),
   tehillimW:d=>{const r=PS_W[d.getDay()];return 'https://www.sefaria.org.il/Psalms.'+r[0]+'-'+r[1]+'?lang=he'},
-  rambam3:d=>ev6U('rambam3',d),smitzvot:d=>ev6U('seferHaMitzvot',d),kitzur:d=>ev6U('kitzurShulchanAruch',d),ahs:d=>ev6U('arukhHaShulchanYomi',d),
+  rambam3:d=>ev6U('rambam3',d),smitzvot:d=>ev6U('seferHaMitzvot',d),kitzur:d=>ev6U('kitzurShulchanAruch',d),ahs:d=>ev6U('arukhHaShulchanYomi',d),dhalacha:d=>ev6U('dirshuDafHalacha',d),
   avot:d=>d.getDay()===6?ev6U('pirkeiAvotSummer',d):''
 });
 /* סדר ההצגה בבחירה */
-const LRN_ORDER=['daf','amud','dafw','yerushalmi','mishna','perek','nach','chumash','chok','tehillim','tehillimW','rambam','rambam3','smitzvot','kitzur','ahs','cc','shl','avot'];
+const LRN_ORDER=['daf','amud','dafw','yerushalmi','mishna','perek','nach','chumash','chok','tehillim','tehillimW','rambam','rambam3','smitzvot','kitzur','ahs','dhalacha','cc','shl','avot'];
 const LRN_DEF=['daf','mishna','rambam'];
 const lrnSel=()=>(Array.isArray(st.lrnSel)?st.lrnSel:LRN_DEF).filter(k=>LRN_T[k]);
 function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return null;const n=LRN_T[k][0][HE()?0:1];let u='';try{u=LRN_U[k]?LRN_U[k](d):''}catch(e){}
@@ -573,10 +574,10 @@ function lrnFor(d){return lrnSel().map(k=>{const v=LRN_T[k][1](d);if(!v)return n
 /* כל לימוד הוא קישור שנפתח בכרטיסייה חדשה */
 const lrnA=x=>'<a class="lr-a" href="'+esc(x.u)+'" target="_blank" rel="noopener" title="'+(HE()?'ללמוד עכשיו (נפתח בספריא)':'Study now (opens Sefaria)')+'"><b>'+esc(x.v)+'</b> <i aria-hidden="true">↗</i></a>';
 /* שיעור קולי בקול הלשון: חיפוש לפי הלימוד של היום */
-const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי',yerushalmi:'ירושלמי',mishna:'משנה יומית',perek:'פרק יומי משניות',nach:'נ״ך יומי',chumash:'חומש',chok:'חוק לישראל',tehillim:'תהלים',tehillimW:'תהלים',rambam:'רמב״ם יומי',rambam3:'רמב״ם יומי',smitzvot:'ספר המצוות',kitzur:'קיצור שולחן ערוך',ahs:'ערוך השולחן',cc:'חפץ חיים',shl:'שמירת הלשון',avot:'פרקי אבות'};
+const KOL_Q={daf:'דף יומי',amud:'עמוד יומי',dafw:'דף שבועי',yerushalmi:'ירושלמי',mishna:'משנה יומית',perek:'פרק יומי משניות',nach:'נ״ך יומי',chumash:'חומש',chok:'חוק לישראל',tehillim:'תהלים',tehillimW:'תהלים',rambam:'רמב״ם יומי',rambam3:'רמב״ם יומי',smitzvot:'ספר המצוות',kitzur:'קיצור שולחן ערוך',ahs:'ערוך השולחן',dhalacha:'דף הלכה דרשו',cc:'חפץ חיים',shl:'שמירת הלשון',avot:'פרקי אבות'};
 const kolQ=x=>{let v=String(x.v);if(x.k==='chok')v=v.replace(/^פרשת /,'').split(' · ')[0];else if(x.k==='chumash')v=v.split(',')[0];return (KOL_Q[x.k]||x.n)+' '+v};
 /* קול הלשון: עמוד הלימוד היומי שלהם לכל סוג לימוד (השיעורים האחרונים בראש) */
-const KOL_CAT={nach:['93/21','נך יומי'],chok:['94/21','חוק לישראל'],mishna:['95/21','משנה יומית'],kitzur:['96/21','הלכה יומית'],ahs:['96/21','הלכה יומית'],cc:['97/21','חפץ חיים יומי'],daf:['91/90','תלמוד בבלי'],yerushalmi:['92/90','תלמוד ירושלמי'],amud:['109/90','עמוד יומי לפי סדר דירשו']};
+const KOL_CAT={nach:['93/21','נך יומי'],chok:['94/21','חוק לישראל'],mishna:['95/21','משנה יומית'],kitzur:['96/21','הלכה יומית'],ahs:['96/21','הלכה יומית'],dhalacha:['96/21','הלכה יומית'],cc:['97/21','חפץ חיים יומי'],daf:['91/90','תלמוד בבלי'],yerushalmi:['92/90','תלמוד ירושלמי'],amud:['109/90','עמוד יומי לפי סדר דירשו']};
 const kolA=x=>HE()?(KOL_CAT[x.k]?' <a class="lr-a lr-kol" href="https://www.kolhalashon.com/he/regularSite/searchResults/'+KOL_CAT[x.k][0]+'/'+encodeURIComponent(KOL_CAT[x.k][1])+'" target="_blank" rel="noopener" title="שיעור קולי בקול הלשון ('+KOL_CAT[x.k][1]+')" aria-label="שיעור קולי בקול הלשון">🎧</a>':'')+
   ' <a class="lr-a lr-kol" href="https://www.youtube.com/@Kol-Halashon/search?query='+encodeURIComponent(kolQ(x))+'" target="_blank" rel="noopener" title="שיעור בווידאו ביוטיוב (קול הלשון)" aria-label="שיעור בווידאו ביוטיוב">▶</a>':'';
 /* ביום שישי: שיעורים על פרשת השבוע (שמיעה בקול הלשון וצפייה בערוץ שלהם ביוטיוב) */

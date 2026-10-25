@@ -2,6 +2,8 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ 'הלכה יומית: דף הלכה של דרשו (משנה ברורה)': 'Daily halacha: Dirshu Daf Halacha (Mishna Berura)',
+ 'דף הלכה: ': 'Daf Halacha: ',
  'פרק יומי במשנה (מפעל הפרק היומי)': 'Perek Yomi in Mishna (chapter a day)',
  'פרק יומי: ': 'Perek Yomi: ',
  'חק לישראל (לפי הפרשה והיום)': 'Chok LeYisrael (by parasha and day)',
