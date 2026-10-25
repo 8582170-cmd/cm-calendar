@@ -502,9 +502,11 @@ const L6DIRECT={
   chofetzChaim:(M,hd)=>{const r=M.chofetzChaim(hd);return r?new M.ChofetzChaimEvent(hd,r):null},
   shemiratHaLashon:(M,hd)=>{const r=M.shemiratHaLashon(hd);return r?new M.ShemiratHaLashonEvent(hd,r):null}
 };
-function l6Event(L,name,d,il){const hd=new L.HDate(d);const f=L6DIRECT[name];if(f&&L.M){try{const e=f(L.M,hd,il);if(e)return e}catch(e){}}try{return L.DL.lookup(name,hd,il)||null}catch(e){return null}}
+function l6Event(L,name,d,il){const hd=new L.HDate(d);const f=L6DIRECT[name];if(f&&L.M){try{const e=f(L.M,hd,il);if(e)return e}catch(e){console.warn('MyLuach learning',name,e&&e.message)}}try{return L.DL?L.DL.lookup(name,hd,il)||null:null}catch(e){return null}}
 let L6=null,L6P=null;
-function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const [lm,dl,hm]=await Promise.all([import(L6URL.learn),import(L6URL.dl),import(L6URL.hd)]);L6={M:lm,DL:dl.DailyLearning,HDate:hm.HDate}}catch(e){L6=false}rerender()})();return null}
+function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const imp=async L=>{for(const u of L){try{return await import(u)}catch(e){console.warn('MyLuach learning load',u,e&&e.message)}}return null};
+      const [lm,dl,hm]=await Promise.all([imp([L6URL.learn,'https://esm.sh/@hebcal/learning@6.11.0']),imp([L6URL.dl]),imp([L6URL.hd,'https://esm.sh/@hebcal/hdate@0.22.8'])]);
+      if(!lm)throw new Error('learning module');L6={M:lm,DL:dl&&dl.DailyLearning,HDate:(hm&&hm.HDate)||window.hebcal.HDate}}catch(e){console.warn('MyLuach learning disabled',e&&e.message);L6=false}rerender()})();return null}
 const L6NAME={rambam3:'rambam3',smitzvot:'seferHaMitzvot',kitzur:'kitzurShulchanAruch',ahs:'arukhHaShulchanYomi',amud:'dirshuAmudYomi',perek:'perekYomi',dhalacha:'dirshuDafHalacha'};
 const L6STRIP=/^(רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|דף הלכה)[^:]*:\s*/;
 for(const k in L6NAME)LEARN_EXTRA[k]=d=>{const L=learn6();if(!L)return '';try{const ev=l6Event(L,L6NAME[k],d,!!state.s.il);if(!ev)return '';let s=stripNikud(ev.render('he'));if(/[A-Za-z]{3}/.test(s)&&ev.renderBrief)s=stripNikud(ev.renderBrief('he'));return s.replace(L6STRIP,'')}catch(e){return ''}};
