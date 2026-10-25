@@ -13,7 +13,7 @@ const BUILDER=BASE+'../';
 
 /* ---------- שפה ---------- */
 const T={
- he:{siteName:'MyLuach',city:'עיר',menu:'תפריט',month:'לוח חודשי',week:'לוח שבועי',day:'לוח יומי',year:'לוח שנתי',holidays:'חגים ומועדים',zmanim:'זמני היום',shabbat:'זמני שבת',tools:'כלים',reminders:'תזכורות',
+ he:{yzlist:'יארצייטן',siteName:'MyLuach',city:'עיר',menu:'תפריט',month:'לוח חודשי',week:'לוח שבועי',day:'לוח יומי',year:'לוח שנתי',holidays:'חגים ומועדים',zmanim:'זמני היום',shabbat:'זמני שבת',tools:'כלים',reminders:'תזכורות',
   today:'היום',prev:'הקודם',next:'הבא',prevYear:'שנה אחורה',nextYear:'שנה קדימה',hebMode:'עברי',gregMode:'לועזי',jump:'קפיצה לתאריך',go:'מעבר',
   print:'הדפסה ואפשרויות נוספות',printSub:'לוח מעוצב להדפסה, עם התמונות, ימי ההולדת וימי השנה (יארצייטים) שלכם',
   ctaT:'רוצים לוח כזה מודפס ומעוצב?',ctaP:'ב־MyLuach בונים לוח שנה אישי למשפחה, לבית הכנסת או למוסד: תמונות, אירועים משפחתיים, זמנים ודברי הימים.',ctaB:'לבניית לוח אישי',
@@ -23,7 +23,7 @@ const T={
   convert:'המרת תאריכים',countdown:'ספירה לאחור',barmitzvah:'חישוב בר / בת מצווה',days:'חישוב ימים בין תאריכים',yahrzeit:'חישוב יום שנה (יארצייט)',
   weekdays:['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],wdShort:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
   gMonths:['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']},
- en:{siteName:'MyLuach',city:'City',menu:'Menu',month:'Month',week:'Week',day:'Day',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
+ en:{yzlist:'Yahrzeits',siteName:'MyLuach',city:'City',menu:'Menu',month:'Month',week:'Week',day:'Day',year:'Year',holidays:'Holidays',zmanim:'Zmanim',shabbat:'Shabbat times',tools:'Tools',reminders:'Reminders',
   today:'Today',prev:'Previous',next:'Next',prevYear:'Year back',nextYear:'Year ahead',hebMode:'Hebrew',gregMode:'Gregorian',jump:'Jump to date',go:'Go',
   print:'Print & more options',printSub:'A designed calendar to print, with your photos, birthdays and yahrzeits',
   ctaT:'Want this as a printed calendar?',ctaP:'MyLuach builds a personal Jewish calendar for your family, synagogue or school: photos, family events, zmanim and more.',ctaB:'Build a personal calendar',
@@ -200,7 +200,7 @@ function remHits(r,d){const hd=new HDate(d);
 const remsOn=d=>REM.filter(r=>remHits(r,d));
 
 /* ---------- ניווט ---------- */
-const VIEWS=['month','week','day','year','holidays','zmanim','shabbat','countdown','tools','reminders'];
+const VIEWS=['month','week','day','year','holidays','zmanim','shabbat','countdown','tools','yzlist','reminders'];
 let view=PAGE.view||'month',anchor=TODAY,sub=PAGE.tool||'',CDQ=null;
 function readHash(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const [v,a]=h.split('/');
   if(v==='countdown'){view='tools';sub='countdown';return}
@@ -282,6 +282,30 @@ function viewYear(){
     '<div class="ygrid">'+months.map(mo=>'<div class="ym" role="button" tabindex="0" data-goto="'+iso(mo.days[0])+'"><h3>'+esc(mo.t)+'</h3><div class="g">'+t('wdShort').map(w=>'<span class="h">'+w.replace('׳','')+'</span>').join('')+'<span></span>'.repeat(mo.days[0].getDay())+
       mo.days.map(d=>{const its=ev.get(iso(d))||[],c=its.some(x=>x.chag);const hdd=new HDate(d);return '<span class="'+(d.getDay()===6?'s ':'')+(c?'c ':'')+(iso(d)===iso(TODAY)?'t':'')+'" title="'+esc(its.filter(x=>x.cls!=='time'&&x.cls!=='omer').map(x=>x.txt).join(' · '))+'">'+(st.mode==='heb'?hDay(hdd.getDate()).replace(/[׳״]/g,''):d.getDate())+'</span>'}).join('')+'</div></div>').join('')+'</div>'+seoBlock();
 }
+/* רשימת יארצייטן: חודש בכל פעם. הטקסט מוצג דרך CSS (לא כטקסט בדף), ואי אפשר לסמן, להעתיק או להדפיס אותו */
+let YZM=null,YZL={},YZALL=false;
+function viewYahrzeit(){const hy=new HDate(anchor).getFullYear(),lp=leap(hy);if(YZM==null)YZM=new HDate(TODAY).getMonth();
+  const order=[7,8,9,10,11,12].concat(lp?[13]:[]).concat([1,2,3,4,5,6]);
+  const key=YZM+'|'+(YZALL?1:0),L=YZL[key];
+  if(!L){YZL[key]='load';fetch(BASE+'../api/ticker?ym='+YZM+(YZALL?'&all=1':'')+(!lp&&YZM===12?'&a2=1':'')).then(r=>r.json()).then(j=>{YZL[key]=j.items||[];if(view==='yzlist')render()}).catch(()=>{YZL[key]=[];render()})}
+  let rows='';
+  if(Array.isArray(L)){let last=0;for(const e of L){if(e.d!==last){rows+='<div class="yzl-d" data-t="'+esc(hDay(e.d)+' '+hMonthName(YZM,hy))+'"></div>';last=e.d}
+    rows+='<div class="yzl-r'+(e.p?'':' ev')+'"><span class="yzl-t" data-t="'+esc(e.t)+'"></span>'+(e.y?'<span class="yzl-y" data-t="'+esc(e.y)+'"></span>':'')+
+      '<span class="yzl-a"><button type="button" data-yzrem="'+e.id+'" title="הוספה לתזכורות שלי" aria-label="הוספה לתזכורות שלי">🔔</button><button type="button" data-yzfix="'+e.id+'" title="הצעת תיקון" aria-label="הצעת תיקון">✎</button></span></div>'}
+    if(!L.length)rows='<p class="mute">'+(HE()?'אין רשומות בחודש הזה.':'Nothing this month.')+'</p>'}
+  else rows='<p class="mute">'+(HE()?'טוען…':'Loading…')+'</p>';
+  $('#main').innerHTML='<div class="bar"><h1>'+(HE()?'יארצייטן':'Yahrzeits')+'</h1></div><div class="card"><p class="small mute" style="margin-top:0">'+(HE()?'ימי פטירה של גדולי ישראל לפי החודש העברי. 🔔 מוסיף תזכורת שנתית, ✎ שולח הצעת תיקון.':'Yahrzeits of Torah giants by Hebrew month. 🔔 adds a yearly reminder, ✎ suggests a correction.')+'</p>'+
+    '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><select id="yzM" aria-label="חודש">'+order.map(m=>'<option value="'+m+'"'+(m===YZM?' selected':'')+'>'+esc(hMonthName(m,hy))+'</option>').join('')+'</select>'+
+    '<label class="chk small"><input type="checkbox" id="yzAll"'+(YZALL?' checked':'')+'> '+(HE()?'גם מאורעות מתולדות ישראל':'Include historical events')+'</label></div>'+
+    '<div class="yzl" id="yzl">'+rows+'</div></div>';
+  const box=$('#yzl');['copy','cut','contextmenu','selectstart','dragstart'].forEach(ev=>box.addEventListener(ev,e=>e.preventDefault()));
+  $('#yzM').onchange=e=>{YZM=+e.target.value;render()};$('#yzAll').onchange=e=>{YZALL=e.target.checked;render()};
+  box.addEventListener('click',e=>{const a=e.target.closest('[data-yzrem]'),f=e.target.closest('[data-yzfix]');const all=Array.isArray(YZL[key])?YZL[key]:[];
+    if(a){const it=all.find(x=>x.id===+a.dataset.yzrem);if(it)remEditor(null,null,{m:YZM,d:it.d,name:it.t.split(',')[0].slice(0,80)});return}
+    if(f){const it=all.find(x=>x.id===+f.dataset.yzfix);if(!it)return;
+      dialog('<h2 id="dlgT">'+(HE()?'הצעת תיקון':'Suggest a correction')+'</h2><p class="small mute">'+esc(hDay(it.d)+' '+hMonthName(YZM,hy))+'</p><div class="fld">'+(HE()?'מה לתקן?':'What should change?')+'<textarea id="fxT" rows="3" maxlength="600"></textarea></div><div class="fld">'+(HE()?'מייל לחזרה (לא חובה)':'Your email (optional)')+'<input id="fxE" type="email" maxlength="120" dir="ltr"></div><p class="small" id="fxM"></p><div class="row"><button class="btn pri" type="button" id="fxS">'+(HE()?'שליחה':'Send')+'</button><button class="btn" type="button" data-close>'+t('close')+'</button></div>');
+      $('#fxS').onclick=async()=>{const v=$('#fxT').value.trim();if(v.length<3){$('#fxT').focus();return}$('#fxS').disabled=true;
+        try{const r=await fetch(BASE+'../api/ticker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:it.id,fix:v,email:$('#fxE').value})});$('#fxM').textContent=r.ok?(HE()?'✓ תודה! ההצעה נשלחה.':'✓ Thanks, sent.'):(HE()?'לא נשלח. נסו שוב.':'Not sent. Try again.');if(r.ok)setTimeout(closeDlg,1200)}catch(x){$('#fxM').textContent=HE()?'לא נשלח. נסו שוב.':'Not sent.'}$('#fxS').disabled=false}}})}
 function viewHolidays(){
   const hy=new HDate(anchor).getFullYear();
   let evs=[];try{evs=HebrewCalendar.calendar({year:hy,isHebrewYear:true,il:city().il,noModern:!st.opts.modern})}catch(e){}
@@ -816,7 +840,7 @@ function renderNav(){
 }
 function render(){
   renderNav();
-  ({month:viewMonth,week:viewWeek,day:viewDay,year:viewYear,holidays:viewHolidays,zmanim:viewZmanim,shabbat:viewShabbat,tools:viewTools,reminders:viewReminders}[view]||viewMonth)();
+  ({month:viewMonth,week:viewWeek,day:viewDay,year:viewYear,holidays:viewHolidays,zmanim:viewZmanim,shabbat:viewShabbat,tools:viewTools,yzlist:viewYahrzeit,reminders:viewReminders}[view]||viewMonth)();
   renderSide();renderFoot();
   document.body.classList.toggle('wide-view',view==='week');{let ps=document.getElementById('pgsz');if(!ps){ps=document.createElement('style');ps.id='pgsz';document.head.appendChild(ps)}ps.textContent=view==='week'?'@page{size:A4 landscape;margin:7mm}':'';}
   if(!PAGE.static)document.title=(view==='month'?monthDays().title+' · ':t(view)+' · ')+t('siteName');

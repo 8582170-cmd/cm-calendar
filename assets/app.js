@@ -2018,6 +2018,7 @@ function render(){
   fxApply();
   fxtApply();
   fxBoxRender();
+  try{yiApply()}catch(e){}
   fit();
   fxDecorate();
   fxBoxDecorate();
@@ -3102,7 +3103,7 @@ function syncUI(){if(typeof renderLearnOwn==='function')renderLearnOwn();if(type
   yzInvalidate();
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
-  radio('calType',s.calType);radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
+  radio('calType',s.calType);{const pl=$('#printLang');if(pl)pl.value=s.printLang||'he'}radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
   $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards();cdSyncDay()}spSync();if($('#startDate')){$('#startDate').value=s.startDate||'';$('#startDateClr').hidden=!s.startDate;$('#startDateRow').hidden=$('#startDateHint').hidden=['week','day','table','countdown'].includes(s.view||'month')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';wkSync();$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליומי דהילולא (יארצייטן).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
@@ -3175,9 +3176,27 @@ function renderAds(){
 }
 
 function set(k,v){state.s[k]=v;save();syncUI();rerender()}
+/* ---------- הדפסה ביידיש: אחרי הציור מחליפים את המילים הקבועות בלוח (לא את מה שהמשתמש כתב) ---------- */
+const YI_WD={'ראשון':'זונטאג','שני':'מאנטאג','שלישי':'דינסטאג','רביעי':'מיטוואך','חמישי':'דאנערשטאג','שישי':'פרייטאג','שבת':'שבת קודש'};
+const YI_PH=[['יום ראשון','זונטאג'],['יום שני','מאנטאג'],['יום שלישי','דינסטאג'],['יום רביעי','מיטוואך'],['יום חמישי','דאנערשטאג'],['יום שישי','פרייטאג'],
+  ['ינואר','יאנואר'],['פברואר','פעברואר'],['מרץ','מערץ'],['מאי','מיי'],['אוגוסט','אויגוסט'],['ספטמבר','סעפטעמבער'],['אוקטובר','אקטאבער'],['נובמבר','נאוועמבער'],['דצמבר','דעצעמבער'],
+  ['הדלקת נרות','ליכט צינדן'],['צאת השבת','מוצאי שבת'],['צאת שבת','מוצאי שבת'],['צאת החג','מוצאי יום טוב'],['זמני היום','זמנים'],['הזמנים לאופק','זמנים פאר'],['לפי שיטת','לויט שיטת'],
+  ['שעון קיץ','זומער צייט'],['שעון חורף','ווינטער צייט'],['לפני השקיעה','פאר שקיעה'],['דקות','מינוט'],['דק׳','מינ׳'],['מתחילים','מ\'הייבט אן'],
+  ['הופק בחינם ע״י','געמאכט בחינם אויף'],['הופק ע״י','געמאכט אויף'],['עיצוב לוח שנה אישי עם תמונות וזמנים','א פערזענליכער לוח מיט בילדער און זמנים'],
+  ['תזכורת:','דערמאנונג:']];
+const YI_PRE=[[/יום הולדת ל(?=\S)/g,'געבורטסטאג פון '],[/יום נישואין ל(?=\S)/g,'חתונה־טאג פון '],[/בר מצווה ל(?=\S)/g,'בר מצוה פון '],[/בת מצווה ל(?=\S)/g,'בת מצוה פון ']];
+const YI_RX=YI_PH.map(([a,b])=>[new RegExp('(^|[^א-ת])'+a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![א-ת])','g'),'$1'+b]);
+function yiApply(){if((state.s.printLang||'he')!=='yi')return;
+  stage.querySelectorAll('.page').forEach(pg=>{
+    /* שם יום בשבוע שעומד לבד (כותרות הטבלה) */
+    pg.querySelectorAll('*').forEach(n=>{if(n.children.length||n.closest('[contenteditable],.no-print'))return;const k=n.textContent.trim();if(YI_WD[k])n.textContent=n.textContent.replace(k,YI_WD[k])});
+    const w=document.createTreeWalker(pg,NodeFilter.SHOW_TEXT);let t;
+    while((t=w.nextNode())){const par=t.parentElement;if(!par||par.closest('[contenteditable],.no-print,input,textarea,.cover-title,.ad-title,.banner-text'))continue;
+      let v=t.nodeValue,o=v;for(const [rx,to] of YI_RX)v=v.replace(rx,to);for(const [rx,to] of YI_PRE)v=v.replace(rx,to);if(v!==o)t.nodeValue=v}})}
 document.addEventListener('change',e=>{
   const t=e.target;if(t.closest('.modal'))return;
   if(t.name==='calType'){const st=dStyle();if(st==='hebOnly'&&t.value==='greg')state.s.dateStyle='gregOnly';if(st==='gregOnly'&&t.value==='heb')state.s.dateStyle='hebOnly';return set('calType',t.value)}
+  if(t.id==='printLang')return set('printLang',t.value);
   if(t.id==='dateStyle'){if(t.value==='hebOnly')state.s.calType='heb';if(t.value==='gregOnly')state.s.calType='greg';return set('dateStyle',t.value)}
   if(['zmanimMode','theme','layout','imgText','view'].includes(t.name))return set(t.name,t.value);
   if(t.name==='orient')return set('orient',t.value);

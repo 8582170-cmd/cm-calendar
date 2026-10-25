@@ -5,6 +5,23 @@ const { loadYZ } = require('./_yz');
 const { todayIL } = require('./_rem');
 module.exports = async (req, res) => {
   try {
+    /* רשימת היארצייטן בלוח המקוון: חודש אחד בכל פעם (all=1 כולל גם מאורעות) */
+    const ym = parseInt((req.query || {}).ym, 10);
+    if (ym >= 1 && ym <= 13) {
+      const all = String((req.query || {}).all || '') === '1', { list } = loadYZ();
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+      return json(res, 200, { items: list.filter(e => (e.m === ym || (ym === 12 && String((req.query || {}).a2 || '') === '1' && e.m === 13)) && (all || e.p)).sort((a, b) => a.d - b.d).map(e => ({ id: e.id, d: e.d, y: e.y, t: e.t, p: e.p })) });
+    }
+    /* הצעת תיקון לרשומה: נשלחת במייל לבעל האתר */
+    if (req.method === 'POST') {
+      const { readBody, env } = require('./_lib'), b = readBody(req), id = parseInt(b.id, 10), txt = String(b.fix || '').trim().slice(0, 600);
+      if (!(id >= 0) || txt.length < 3) return json(res, 400, { error: 'bad' });
+      const { list } = loadYZ(), e = list.find(x => x.id === id); if (!e) return json(res, 404, { error: 'nf' });
+      const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');
+      if (to) { const { sendMail, frame, escH } = require('./_mail'); const who = String(b.email || '').trim().slice(0, 120);
+        try { await sendMail({ to, subject: 'הצעת תיקון ליארצייט #' + id, html: frame({ title: 'הצעת תיקון', body: '<b>הרשומה (#' + id + '):</b> ' + escH(e.d + '/' + e.m + ' · ' + e.t) + '<br><br><b>ההצעה:</b> ' + escH(txt).replace(/\n/g, '<br>') + (who ? '<br><br><b>מאת:</b> ' + escH(who) : ''), foot: 'נשלח מרשימת היארצייטן בלוח המקוון' }), text: e.t + '\n\n' + txt }, 'yzfix'); } catch (x) { console.error('yzfix', x.message); } }
+      return json(res, 200, { ok: true });
+    }
     const sq = String((req.query || {}).q || '').trim();
     if (sq) { /* חיפוש באירועים, כדי להוסיף תזכורת */
       if (sq.length < 2) return json(res, 200, { items: [] });
