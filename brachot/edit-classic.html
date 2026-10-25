@@ -134,7 +134,8 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
           <div class="row">
             <button class="btn btn-primary" type="button" id="dlPdf">PDF להדפסה (A4)</button>
             <button class="btn" type="button" id="dlPng">תמונה להדפסה</button>
-            <button class="btn" type="button" id="dlJpg">תמונה לוואטסאפ</button>
+            <button class="btn" type="button" id="dlJpg">תמונה לשליחה</button>
+            <button class="btn" type="button" id="dlMore">גדלים נוספים: A5 עד A0, ריבוע, סטטוס</button>
           </div>
           <p class="note">הקובץ להדפסה ברזולוציה של 300dpi. השינויים נשמרים בדפדפן, כך שאפשר לחזור ולהמשיך.</p>
           <p class="msg" id="msg" role="status"></p>
@@ -462,11 +463,12 @@ $('dlPdf').onclick = function(){
     doc.save(fileBase() + '.pdf'); busy(false, 'ה־PDF ירד. מדפיסים בגודל A4, בלי שוליים.');
   }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); });
 };
+$('dlMore').onclick = function(){ location.href = '/brachot/edit.html?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') + '&steps=1#download'; };
 /* עיצוב בתשלום: התשלום וההורדה בלי סימן מים נעשים בעורך השלבים */
 if ((tpl.price || 0) > 0) {
   var toPay = function(){ location.href = '/brachot/edit.html?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') + '&steps=1#download'; };
   ['dlPdf', 'dlPng', 'dlJpg'].forEach(function(id){ $(id).onclick = toPay; });
-  $('dlPdf').textContent = 'תשלום והורדה (' + tpl.price + ' ₪)'; $('dlPng').hidden = true; $('dlJpg').hidden = true;
+  $('dlPdf').textContent = 'תשלום והורדה (' + tpl.price + ' ₪)'; $('dlPng').hidden = true; $('dlJpg').hidden = true; $('dlMore').hidden = true;
 }
 $('resetAll').onclick = function(){
   if ($('resetQ').hidden) { $('resetQ').hidden = false; setTimeout(function(){ $('resetQ').hidden = true }, 4000); return; }
