@@ -304,6 +304,40 @@ function areaOf(tpl, state){
   var a = state.area, t = (a.t == null ? 13 : a.t) / 100 * H, b = (a.b == null ? 13 : a.b) / 100 * H, r = (a.r == null ? 14 : a.r) / 100 * W, l = (a.l == null ? 14 : a.l) / 100 * W;
   return { x: l, y: t, w: Math.max(80, W - l - r), h: Math.max(80, H - t - b), valign: a.v === 'top' ? 'top' : 'center' };
 }
+/* שטח הטקסט (צבע / תמונה): אזור הטקסט + שוליים, וכל צד אפשר למשוך בנפרד (dt/db/dr/dl ביחידות הדף) */
+function panelRect(tpl, state){
+  var A0 = areaOf(tpl, state), P = (state && state.panel) || {}, pad = P.pad == null ? 14 : P.pad;
+  var l = Math.max(0, A0.x - pad - (P.dl || 0)), r = Math.min(W, A0.x + A0.w + pad + (P.dr || 0));
+  var t = Math.max(0, A0.y - pad - (P.dt || 0)), b = Math.min(H, A0.y + A0.h + pad + (P.db || 0));
+  return { x: l, y: t, w: Math.max(30, r - l), h: Math.max(30, b - t) };
+}
+/* ידיות למשיכת גבולות השטח מעל התצוגה. cv: ה-canvas (בתוך אלמנט עם position:relative) */
+function panelEdges(cv, tpl, getS, changed){
+  var host = cv.parentNode, box = document.createElement('div'), on = false;
+  box.className = 'pedge'; box.hidden = true;
+  box.innerHTML = '<i data-e="t"></i><i data-e="b"></i><i data-e="r"></i><i data-e="l"></i><span>גוררים כל צד כדי להגדיל או להקטין</span>';
+  if (!document.getElementById('pedge-css')) { var st = document.createElement('style'); st.id = 'pedge-css';
+    st.textContent = '.pedge{position:absolute;border:2px dashed #e07a2f;z-index:4;pointer-events:none;box-sizing:border-box}.pedge>i{position:absolute;pointer-events:auto;background:#e07a2f;border-radius:6px;touch-action:none;box-shadow:0 0 0 2px #fff}' +
+      '.pedge>i[data-e=t],.pedge>i[data-e=b]{left:50%;width:46px;height:12px;margin-left:-23px;cursor:ns-resize}.pedge>i[data-e=t]{top:-7px}.pedge>i[data-e=b]{bottom:-7px}' +
+      '.pedge>i[data-e=r],.pedge>i[data-e=l]{top:50%;height:46px;width:12px;margin-top:-23px;cursor:ew-resize}.pedge>i[data-e=r]{right:-7px}.pedge>i[data-e=l]{left:-7px}' +
+      '.pedge>span{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:#e07a2f;color:#fff;font:700 12px Assistant,sans-serif;padding:2px 8px;border-radius:99px;white-space:nowrap}';
+    document.head.appendChild(st); }
+  if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+  host.appendChild(box);
+  function place(){ if (!on) return; var R = panelRect(tpl, getS());
+    box.style.left = (R.x / W * 100) + '%'; box.style.top = (R.y / H * 100) + '%'; box.style.width = (R.w / W * 100) + '%'; box.style.height = (R.h / H * 100) + '%'; }
+  box.querySelectorAll('i').forEach(function(h){
+    h.addEventListener('pointerdown', function(e){
+      e.preventDefault(); e.stopPropagation(); h.setPointerCapture(e.pointerId);
+      var S = getS(), P = S.panel || (S.panel = { on: false, color: '#ffffff', op: 0.85, r: 20, pad: 14 }), ed = h.dataset.e, k0 = 'd' + ed, v0 = P[k0] || 0, x0 = e.clientX, y0 = e.clientY, sc = W / cv.getBoundingClientRect().width;
+      function mv(ev){ var dx = (ev.clientX - x0) * sc, dy = (ev.clientY - y0) * sc;
+        var d = ed === 't' ? -dy : ed === 'b' ? dy : ed === 'r' ? dx : -dx; P[k0] = Math.round(Math.max(-300, Math.min(600, v0 + d))); place(); changed(); }
+      function up(){ h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); }
+      h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
+    });
+  });
+  return { toggle: function(v){ on = v == null ? !on : v; box.hidden = !on; place(); return on; }, place: place, get on(){ return on; } };
+}
 function layout(ctx, tpl, state){
   var A = areaOf(tpl, state), blocks = state.blocks || [], user = state.scale || 1, items, total, f;
   for (f = user; f >= user * 0.45; f -= 0.02) {
@@ -444,8 +478,8 @@ function render(canvas, tpl, state, opt){
     }
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     /* שטח הטקסט: צבע ו/או תמונה בתוך המסגרת, מאחורי הטקסט */
-    var P = state.panel || {}, A0 = areaOf(tpl, state), pad = P.pad == null ? 14 : P.pad;
-    var px = A0.x - pad, py = A0.y - pad, pw = A0.w + pad * 2, ph = A0.h + pad * 2, pr = Math.min(pw, ph) / 2 * ((P.r == null ? 20 : P.r) / 100);
+    var P = state.panel || {}, PR0 = panelRect(tpl, state);
+    var px = PR0.x, py = PR0.y, pw = PR0.w, ph = PR0.h, pr = Math.min(pw, ph) / 2 * ((P.r == null ? 20 : P.r) / 100);
     var panelPath = function(){ ctx.beginPath(); ctx.moveTo(px + pr, py); ctx.arcTo(px + pw, py, px + pw, py + ph, pr); ctx.arcTo(px + pw, py + ph, px, py + ph, pr); ctx.arcTo(px, py + ph, px, py, pr); ctx.arcTo(px, py, px + pw, py, pr); ctx.closePath(); };
     if (ub && uimg && ub.mode === 'area') {
       ctx.save(); panelPath(); ctx.clip(); ctx.globalAlpha = ub.op == null ? 1 : ub.op;
@@ -528,7 +562,7 @@ function readImg(file, max, cb){
   im.onerror = function(){ URL.revokeObjectURL(url); };
   im.src = url;
 }
-function bgPanel(box, getS, changed, colorRow, tpl){
+function bgPanel(box, getS, changed, colorRow, tpl, edges){
   function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
   function rng(label, min, max, val, fn){ var l = el('label', 'bgp-r', label), r = document.createElement('input'); r.type = 'range'; r.min = min; r.max = max; r.value = val; r.oninput = function(){ fn(+r.value); changed(); }; l.appendChild(r); return l; }
   function draw(){
@@ -567,6 +601,12 @@ function bgPanel(box, getS, changed, colorRow, tpl){
     row.append(b2);
     if (U.src) { var b3 = el('button', 'pill', 'הסרת התמונה'); b3.type = 'button'; b3.onclick = function(){ delete S.ubg; changed(); draw(); }; row.appendChild(b3); }
     box.appendChild(row);
+    if (edges && (P.on || U.src)) {
+      var er = el('div', 'bgp-b'), eb = el('button', 'pill', edges.on ? '✓ סיום שינוי הגבולות' : '✥ הגדלה והקטנה של השטח (גרירת הצדדים)'); eb.type = 'button';
+      eb.onclick = function(){ edges.toggle(); draw(); }; er.appendChild(eb);
+      if (P.dt || P.db || P.dr || P.dl) { var rb = el('button', 'pill', 'איפוס הגבולות'); rb.type = 'button'; rb.onclick = function(){ P.dt = P.db = P.dr = P.dl = 0; edges.place(); changed(); draw(); }; er.appendChild(rb); }
+      box.appendChild(er);
+    } else if (edges && edges.on) edges.toggle(false);
     if (U.src) box.appendChild(rng('שקיפות התמונה', 10, 100, Math.round((U.op == null ? 1 : U.op) * 100), function(v){ U.op = v / 100; }));
   }
   draw(); return draw;
@@ -630,5 +670,5 @@ function starter(kind, main, accent){
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, newPhoto: newPhoto, movePad: movePad, bgPanel: bgPanel, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, newPhoto: newPhoto, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();
