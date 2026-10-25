@@ -489,11 +489,25 @@ const LEARN_EXTRA={
 };
 /* newer learning schedules, loaded on demand */
 const L6URL={learn:'https://cdn.jsdelivr.net/npm/@hebcal/learning@6.11.0/+esm',dl:'https://cdn.jsdelivr.net/npm/@hebcal/core@6.9.2/dist/esm/DailyLearning/+esm',hd:'https://cdn.jsdelivr.net/npm/@hebcal/hdate@0.22.8/+esm'};
+/* בונים את אירוע הלימוד ישירות מהספרייה (בלי הרישום המשותף, שעלול להיטען מגרסה אחרת של hebcal ולהחזיר ריק) */
+const L6DIRECT={
+  dirshuAmudYomi:(M,hd)=>new M.DirshuAmudYomiEvent(hd),
+  rambam3:(M,hd)=>new M.DailyRambam3Event(hd,M.dailyRambam3(hd)),
+  seferHaMitzvot:(M,hd)=>new M.SeferHaMitzvotEvent(hd,M.seferHaMitzvot(hd)),
+  kitzurShulchanAruch:(M,hd)=>{const r=M.kitzurShulchanAruch(hd);return r?new M.KitzurShulchanAruchEvent(hd,r):null},
+  arukhHaShulchanYomi:(M,hd)=>new M.ArukhHaShulchanYomiEvent(hd,M.arukhHaShulchanYomi(hd)),
+  perekYomi:(M,hd)=>new M.PerekYomiEvent(hd,M.perekYomi(hd)),
+  dirshuDafHalacha:(M,hd)=>{const r=M.dirshuDafHalacha(hd);return r?new M.DirshuDafHalachaEvent(hd,r):null},
+  pirkeiAvotSummer:(M,hd,il)=>{const r=M.pirkeiAvot(hd,il);return r?new M.PirkeiAvotSummerEvent(hd,r):null},
+  chofetzChaim:(M,hd)=>{const r=M.chofetzChaim(hd);return r?new M.ChofetzChaimEvent(hd,r):null},
+  shemiratHaLashon:(M,hd)=>{const r=M.shemiratHaLashon(hd);return r?new M.ShemiratHaLashonEvent(hd,r):null}
+};
+function l6Event(L,name,d,il){const hd=new L.HDate(d);const f=L6DIRECT[name];if(f&&L.M){try{const e=f(L.M,hd,il);if(e)return e}catch(e){}}try{return L.DL.lookup(name,hd,il)||null}catch(e){return null}}
 let L6=null,L6P=null;
-function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const [,dl,hm]=await Promise.all([import(L6URL.learn),import(L6URL.dl),import(L6URL.hd)]);L6={DL:dl.DailyLearning,HDate:hm.HDate}}catch(e){L6=false}rerender()})();return null}
+function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const [lm,dl,hm]=await Promise.all([import(L6URL.learn),import(L6URL.dl),import(L6URL.hd)]);L6={M:lm,DL:dl.DailyLearning,HDate:hm.HDate}}catch(e){L6=false}rerender()})();return null}
 const L6NAME={rambam3:'rambam3',smitzvot:'seferHaMitzvot',kitzur:'kitzurShulchanAruch',ahs:'arukhHaShulchanYomi',amud:'dirshuAmudYomi',perek:'perekYomi',dhalacha:'dirshuDafHalacha'};
 const L6STRIP=/^(רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|דף הלכה)[^:]*:\s*/;
-for(const k in L6NAME)LEARN_EXTRA[k]=d=>{const L=learn6();if(!L)return '';try{const ev=L.DL.lookup(L6NAME[k],new L.HDate(d),!!state.s.il);if(!ev)return '';let s=stripNikud(ev.render('he'));if(/[A-Za-z]{3}/.test(s)&&ev.renderBrief)s=stripNikud(ev.renderBrief('he'));return s.replace(L6STRIP,'')}catch(e){return ''}};
+for(const k in L6NAME)LEARN_EXTRA[k]=d=>{const L=learn6();if(!L)return '';try{const ev=l6Event(L,L6NAME[k],d,!!state.s.il);if(!ev)return '';let s=stripNikud(ev.render('he'));if(/[A-Za-z]{3}/.test(s)&&ev.renderBrief)s=stripNikud(ev.renderBrief('he'));return s.replace(L6STRIP,'')}catch(e){return ''}};
 function addHebrewExtras(map,start,end){
   const s=state.s,M=s.moon||{},tz=place().tz;
   const put=(d,item)=>{const k=ymd(d);if(!map.has(k))map.set(k,[]);map.get(k).push(item)};

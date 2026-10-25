@@ -489,14 +489,14 @@ const LRN_C={};/* מטמון של הספרייה (לא בתוך LRN_T, שהוא 
 const LRN_T={
   daf:[['דף יומי','Daf Yomi'],d=>{const day=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2020,0,5))/864e5);let n=((day%2711)+2711)%2711;
     for(let i=0;i<DAF_T.length;i++){const [t,pg]=DAF_T[i];if(n<pg-1){const daf=n+2;let name=HE()?t:DAF_EN[i];if(t==='מעילה'){name=daf<=22?(HE()?'מעילה':'Meilah'):daf<=25?(HE()?'קינים':'Kinnim'):daf<=33?(HE()?'תמיד':'Tamid'):(HE()?'מדות':'Middot')}return name+' '+numH(daf)}n-=pg-1}return ''}],
-  mishna:[['משנה יומית','Mishna Yomit'],d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_C.mi=LRN_C.mi||new L.MishnaYomiIndex();return LRN_C.mi.lookup(new HDate(d)).map(x=>hk(x.k)+' '+numX(x.v)).join(', ')}catch(e){return ''}}],
+  mishna:[['משנה יומית','Mishna Yomit'],d=>{const L=lrnLib();if(!L||!L.MishnaYomiIndex)return '';try{LRN_C.mi=LRN_C.mi||new L.MishnaYomiIndex();const r=LRN_C.mi.lookup(new HDate(d));if(r.length===2&&r[0].k===r[1].k){const [c1,m1]=String(r[0].v).split(':'),[c2,m2]=String(r[1].v).split(':');return hk(r[0].k)+' '+(c1===c2?numH(+c1)+', '+numH(+m1)+'–'+numH(+m2):numX(r[0].v)+' – '+numX(r[1].v))}return r.map(x=>hk(x.k)+' '+numX(x.v)).join(', ')}catch(e){return ''}}],
   nach:[['נ״ך יומי','Nach Yomi'],d=>{const L=lrnLib();if(!L||!L.NachYomiIndex)return '';try{LRN_C.ni=LRN_C.ni||new L.NachYomiIndex();const r=LRN_C.ni.lookup(new HDate(d));let k=String(r.k||r.name);
     if(HE()){const h=NACH_HE2[k.replace(/^1 /,'I ').replace(/^2 /,'II ')];k=h||hk(k)}return k+' '+numH(+r.v||+r.chap||0)}catch(e){return ''}}],
   yerushalmi:[['ירושלמי יומי','Yerushalmi Yomi'],d=>{const L=lrnLib();if(!L||!L.yerushalmiYomi||!L.vilna)return '';try{const r=L.yerushalmiYomi(new HDate(d),L.vilna);return r?hk(r.name)+' '+numX(r.blatt):''}catch(e){return ''}}],
   rambam:[['רמב״ם (פרק ליום)','Rambam (1 chapter)'],d=>{const L=lrnLib();if(!L||!L.dailyRambam1)return '';try{const r=L.dailyRambam1(new HDate(d));return r?hk(r.name)+' '+numX(r.perek):''}catch(e){return ''}}],
   tehillim:[['תהלים לפי החודש','Tehillim (monthly)'],d=>{const L=lrnLib();if(!L||!L.dailyPsalms)return '';try{const r=L.dailyPsalms(new HDate(d));return r?numX(r[0])+'–'+numX(r[1]):''}catch(e){return ''}}],
-  cc:[['חפץ חיים','Chafetz Chaim'],d=>{const L=lrnLib();if(!L||!L.chofetzChaim)return '';try{const r=L.chofetzChaim(new HDate(d));return r?hk(r.k)+' '+numX(r.b)+(r.e&&r.e!==r.b?'–'+numX(r.e):''):''}catch(e){return ''}}],
-  shl:[['שמירת הלשון','Shmirat HaLashon'],d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{const r=L.shemiratHaLashon(new HDate(d));return r?hk(r.k)+' '+numX(r.b)+(r.e&&r.e!==r.b?'–'+numX(r.e):''):''}catch(e){return ''}}],
+  cc:[['חפץ חיים','Chafetz Chaim'],d=>ev6T('chofetzChaim',d)||(d=>{const L=lrnLib();if(!L||!L.chofetzChaim)return '';try{const r=L.chofetzChaim(new HDate(d));return r?hk(r.k)+' '+numX(r.b)+(r.e&&r.e!==r.b?'–'+numX(r.e):''):''}catch(e){return ''}})(d)],
+  shl:[['שמירת הלשון','Shmirat HaLashon'],d=>ev6T('shemiratHaLashon',d)||(d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{const r=L.shemiratHaLashon(new HDate(d));return r?hk(r.k)+' '+numX(r.b)+(r.e&&r.e!==r.b?'–'+numX(r.e):''):''}catch(e){return ''}})(d)],
   dafw:[['דף שבועי','Daf Weekly'],d=>{const L=lrnLib();if(!L||!L.dafWeekly)return '';try{const r=L.dafWeekly(new HDate(d));if(!r)return '';return hk(r.getName?r.getName():r.name)+' '+numX(r.getBlatt?r.getBlatt():r.blatt)}catch(e){return ''}}]
 };
 /* קישור ללימוד עצמו: ספריא בעברית (טקסט מלא, ניקוד ופירושים). הכתובות נבנות מספריית הלימוד של hebcal, ואם אין: חיפוש בספריא */
@@ -517,16 +517,30 @@ const LRN_U={
   yerushalmi:d=>{const L=lrnLib();if(!L||!L.yerushalmiYomi||!L.vilna)return '';try{return lrnEvUrl('YerushalmiYomiEvent',d,L.yerushalmiYomi(new HDate(d),L.vilna))}catch(e){return ''}},
   rambam:d=>{const L=lrnLib();if(!L||!L.dailyRambam1)return '';try{const r=L.dailyRambam1(new HDate(d));return lrnEvUrl('DailyRambamEvent',d,r)||lrnEvUrl('DailyRambam1Event',d,r)}catch(e){return ''}},
   tehillim:d=>{const L=lrnLib();if(!L||!L.dailyPsalms)return '';try{const r=L.dailyPsalms(new HDate(d));return lrnEvUrl('PsalmsEvent',d,r)||(r?'https://www.sefaria.org.il/Psalms.'+String(r[0]).replace(':','.')+'-'+String(r[1]).replace(':','.')+'?lang=he':'')}catch(e){return ''}},
-  cc:d=>{const L=lrnLib();if(!L||!L.chofetzChaim)return '';try{return lrnEvUrl('ChofetzChaimEvent',d,L.chofetzChaim(new HDate(d)))}catch(e){return ''}},
-  shl:d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{return lrnEvUrl('ShemiratHaLashonEvent',d,L.shemiratHaLashon(new HDate(d)))}catch(e){return ''}},
+  cc:d=>ev6U('chofetzChaim',d)||(d=>{const L=lrnLib();if(!L||!L.chofetzChaim)return '';try{return lrnEvUrl('ChofetzChaimEvent',d,L.chofetzChaim(new HDate(d)))}catch(e){return ''}})(d),
+  shl:d=>ev6U('shemiratHaLashon',d)||(d=>{const L=lrnLib();if(!L||!L.shemiratHaLashon)return '';try{return lrnEvUrl('ShemiratHaLashonEvent',d,L.shemiratHaLashon(new HDate(d)))}catch(e){return ''}})(d),
   dafw:d=>{const L=lrnLib();if(!L||!L.dafWeekly)return '';try{return lrnEvUrl('DafWeeklyEvent',d,L.dafWeekly(new HDate(d)))}catch(e){return ''}}
 };
 /* לימודים נוספים (כמו בבונה הלוח): ספריית הלימוד החדשה של hebcal, נטענת רק כשבוחרים אותם */
 const L6URL={learn:'https://cdn.jsdelivr.net/npm/@hebcal/learning@6.11.0/+esm',dl:'https://cdn.jsdelivr.net/npm/@hebcal/core@6.9.2/dist/esm/DailyLearning/+esm',hd:'https://cdn.jsdelivr.net/npm/@hebcal/hdate@0.22.8/+esm'};
+/* בונים את אירוע הלימוד ישירות מהספרייה (בלי הרישום המשותף, שעלול להיטען מגרסה אחרת של hebcal ולהחזיר ריק) */
+const L6DIRECT={
+  dirshuAmudYomi:(M,hd)=>new M.DirshuAmudYomiEvent(hd),
+  rambam3:(M,hd)=>new M.DailyRambam3Event(hd,M.dailyRambam3(hd)),
+  seferHaMitzvot:(M,hd)=>new M.SeferHaMitzvotEvent(hd,M.seferHaMitzvot(hd)),
+  kitzurShulchanAruch:(M,hd)=>{const r=M.kitzurShulchanAruch(hd);return r?new M.KitzurShulchanAruchEvent(hd,r):null},
+  arukhHaShulchanYomi:(M,hd)=>new M.ArukhHaShulchanYomiEvent(hd,M.arukhHaShulchanYomi(hd)),
+  perekYomi:(M,hd)=>new M.PerekYomiEvent(hd,M.perekYomi(hd)),
+  dirshuDafHalacha:(M,hd)=>{const r=M.dirshuDafHalacha(hd);return r?new M.DirshuDafHalachaEvent(hd,r):null},
+  pirkeiAvotSummer:(M,hd,il)=>{const r=M.pirkeiAvot(hd,il);return r?new M.PirkeiAvotSummerEvent(hd,r):null},
+  chofetzChaim:(M,hd)=>{const r=M.chofetzChaim(hd);return r?new M.ChofetzChaimEvent(hd,r):null},
+  shemiratHaLashon:(M,hd)=>{const r=M.shemiratHaLashon(hd);return r?new M.ShemiratHaLashonEvent(hd,r):null}
+};
+function l6Event(L,name,d,il){const hd=new L.HDate(d);const f=L6DIRECT[name];if(f&&L.M){try{const e=f(L.M,hd,il);if(e)return e}catch(e){}}try{return L.DL.lookup(name,hd,il)||null}catch(e){return null}}
 let L6=null,L6P=null;
-function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const [,dl,hm]=await Promise.all([import(L6URL.learn),import(L6URL.dl),import(L6URL.hd)]);L6={DL:dl.DailyLearning,HDate:hm.HDate}}catch(e){L6=false}evCache.clear();render()})();return null}
-const L6STRIP=/^(רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|דף הלכה|פרקי אבות)[^:]*:\s*/;
-function ev6(name,d){const L=learn6();if(!L)return null;try{return L.DL.lookup(name,new L.HDate(d),!!city().il)||null}catch(e){return null}}
+function learn6(){if(L6!==null)return L6;if(!L6P)L6P=(async()=>{try{const [lm,dl,hm]=await Promise.all([import(L6URL.learn),import(L6URL.dl),import(L6URL.hd)]);L6={M:lm,DL:dl.DailyLearning,HDate:hm.HDate}}catch(e){L6=false}evCache.clear();render()})();return null}
+const L6STRIP=/^(חפץ חיים|שמירת הלשון|פרק יומי|רמב"?ם|ספר המצוות|קיצור שולחן ערוך|קיצור שו"ע|ערוך השולחן יומי|ערוך השולחן|עמוד יומי|דרשו|דף הלכה|פרקי אבות)[^:]*:\s*/;
+function ev6(name,d){const L=learn6();if(!L)return null;return l6Event(L,name,d,!!city().il)}
 function ev6T(name,d){const e=ev6(name,d);if(!e)return '';let x=strip(e.render(HE()?'he':'en'));if(HE()&&/[A-Za-z]{3}/.test(x)&&e.renderBrief)x=strip(e.renderBrief('he'));return x.replace(L6STRIP,'')}
 function ev6U(name,d){const e=ev6(name,d);try{return e&&e.url?SEF(e.url()):''}catch(x){return ''}}
 /* פרשת השבוע והעלייה של היום (לחומש יומי ולחק לישראל) */
