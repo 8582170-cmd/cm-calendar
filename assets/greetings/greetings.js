@@ -802,7 +802,7 @@ function applyProfile(blocks, p){
 var remoteP = null, HIDDEN_CATS = {};
 function load(){
   if (!remoteP) remoteP = Promise.all([fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).catch(function(){ return {} }),
-    fetch('/assets/greetings/stickers/pack.json?v=3').then(function(r){ return r.json() }).catch(function(){ return null })]).then(function(rr){
+    fetch('/assets/greetings/stickers/pack.json?v=4').then(function(r){ return r.json() }).catch(function(){ return null })]).then(function(rr){
     var d = rr[0] || {}, pk = rr[1];
     /* מדבקות מובנות באתר + מדבקות שהועלו בניהול */
     var st = d.stickers || { cats: [], items: [] };
