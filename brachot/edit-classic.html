@@ -138,7 +138,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
         <div class="blocks" id="blocks"></div>
         <div class="adds">
           <button class="btn" type="button" id="addText">+ פסקה חדשה</button>
-          <button class="btn" type="button" id="addDiv">+ קישוט מפריד</button>
+          <button class="btn" type="button" id="addStk">✿ מדבקות ואלמנטים</button><button class="btn" type="button" id="addDiv">+ קישוט מפריד</button>
         </div>
       </section>
 
@@ -481,6 +481,7 @@ $('dlPdf').onclick = function(){
     doc.save(fileBase() + '.pdf'); busy(false, 'ה־PDF ירד. מדפיסים בגודל A4, בלי שוליים.');
   }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); });
 };
+$('addStk').onclick = function(){ location.href = '/brachot/edit.html?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') + '&steps=1&stk=1#design'; };
 $('dlMore').onclick = function(){ location.href = '/brachot/edit.html?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') + '&steps=1#download'; };
 /* עיצוב או נוסח בתשלום: התשלום וההורדה בלי סימן מים נעשים בעורך השלבים */
 function payRoute(){

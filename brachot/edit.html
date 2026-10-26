@@ -237,7 +237,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
         </div>
         <div id="fields" style="display:flex;flex-direction:column;gap:18px"></div>
         <label class="chk"><input type="checkbox" id="remember" checked> לזכור את השמות לעיצובים אחרים</label>
-        <div class="nextrow"><button class="big-btn ghost" type="button" id="addPhoto1">+ העלאת לוגו / תמונה</button><button class="big-btn" type="button" data-go="2">לעיצוב ←</button></div>
+        <div class="nextrow"><button class="big-btn ghost" type="button" id="addPhoto1">+ העלאת לוגו / תמונה</button><button class="big-btn ghost" type="button" id="addSticker1">✿ מדבקות ואלמנטים</button><button class="big-btn" type="button" data-go="2">לעיצוב ←</button></div>
       </div>
       <div class="slot" id="slot1"></div>
     </section>
@@ -252,6 +252,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
           <button class="pill" type="button" id="undo" disabled title="ביטול (Ctrl+Z)">↶ ביטול</button>
           <button class="pill" type="button" id="redo" disabled title="חזרה (Ctrl+Y)">↷ חזרה</button>
           <button class="pill" type="button" id="listT" aria-pressed="false">☰ רשימת השורות</button>
+          <button class="pill" type="button" id="addSticker2">✿ מדבקות ואלמנטים</button>
         </div>
         <div class="slot" id="slot2"></div>
         <p class="hint" style="text-align:center">לוחצים על שורה כדי לשנות אותה. לחיצה נוספת: עריכת הטקסט.</p>
@@ -682,7 +683,7 @@ function addPhoto(){
 $('addPhoto').onclick = addPhoto;
 /* מדבקות ואלמנטים מהמאגר באתר */
 var STK = GD.stickers || { cats: [], items: [] }, stkCat = '';
-if (!STK.items.length) $('addSticker').hidden = true;
+if (!STK.items.length) ['addSticker', 'addSticker1', 'addSticker2'].forEach(function(id){ $(id).hidden = true; });
 function stkRender(){
   var cats = STK.cats.filter(function(c){ return STK.items.some(function(i){ return i.cat === c.id }) });
   if (!cats.some(function(c){ return c.id === stkCat })) stkCat = cats.length ? cats[0].id : '';
@@ -696,6 +697,7 @@ function stkRender(){
   });
 }
 $('addSticker').onclick = function(){ stkRender(); if ($('stk').showModal) $('stk').showModal(); else $('stk').setAttribute('open', ''); };
+$('addSticker1').onclick = $('addSticker2').onclick = function(){ $('addSticker').onclick(); };
 $('stkClose').onclick = function(){ if ($('stk').close) $('stk').close(); };
 $('stk').addEventListener('click', function(e){ if (e.target === $('stk')) $('stk').close(); }); $('addPhoto1').onclick = addPhoto;
 
@@ -983,7 +985,7 @@ var bgpDraw = null;
 function refreshAll(){ if (bgpDraw) bgpDraw(); renderFields(); renderLayers(); renderTb(); allColor(); $('scale').value = Math.round((S.scale || 1) * 100); if (step === 3) outPreview(); draw(); }
 
 G.catalog().then(function(){
-  allColor(); setList(ui.list !== false); renderPay(); tpInit(); G.pagePanel($('pgp'), function(){ return S }, changed, tpl, colorRow); G.borderPanel($('bdp'), function(){ return S }, changed, tpl, colorRow); bgpDraw = G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed));
+  allColor(); setList(ui.list !== false); renderPay(); if (/[?&]stk=1/.test(location.search) && STK.items.length) setTimeout(function(){ $('addSticker').onclick(); }, 300); tpInit(); G.pagePanel($('pgp'), function(){ return S }, changed, tpl, colorRow); G.borderPanel($('bdp'), function(){ return S }, changed, tpl, colorRow); bgpDraw = G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed));
   if (mode() === 'edit') cloud('השינויים נשמרים אוטומטית');
   var h = location.hash.slice(1), start = h === 'design' ? 2 : h === 'download' ? 3 : h === 'details' ? 1 : (fresh ? 1 : 2);
   go(start);
