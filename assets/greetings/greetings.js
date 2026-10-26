@@ -261,10 +261,10 @@ function fontsReady(list){
 }
 
 var svgCache = {}, imgCache = {};
-function bgImage(tpl, colors, thumb){
+function bgImage(tpl, colors, thumb, hi){
   if (tpl.bg.none) return Promise.resolve(null);
   if (tpl.bg.img) {
-    var u = (thumb && tpl.bg.thumb) || tpl.bg.img;
+    var u = (thumb && tpl.bg.thumb) || (hi && tpl.bg.hi) || tpl.bg.img; /* hi: קובץ באיכות גבוהה להדפסה בגדלים גדולים */
     if (!imgCache[u]) imgCache[u] = new Promise(function(ok, bad){ var i = new Image(); i.crossOrigin = 'anonymous'; i.onload = function(){ ok(i) }; i.onerror = bad; i.src = u; });
     return imgCache[u];
   }
@@ -467,7 +467,7 @@ function render(canvas, tpl, state, opt){
   var colors = state.colors || {}, used = {};
   (state.blocks || []).forEach(function(b){ if (b.font) used[b.font] = 1; });
   var photos = {};
-  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null })), opt.watermark ? logoImg() : null, photoImg(state.ubg && state.ubg.src), photoImg(state.own && state.own.src)]) }).then(function(r){
+  return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb, scale > 3.2), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null })), opt.watermark ? logoImg() : null, photoImg(state.ubg && state.ubg.src), photoImg(state.own && state.own.src)]) }).then(function(r){
     var img = r[1];
     useDims(tpl, state);
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
