@@ -688,8 +688,12 @@ function applyProfile(blocks, p){
 /* עיצובים וקטגוריות שנוספו בניהול, והגדרות הגופנים: נטענים פעם אחת מהשרת */
 var remoteP = null, HIDDEN_CATS = {};
 function load(){
-  if (!remoteP) remoteP = fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).catch(function(){ return {} }).then(function(d){
-    d = d || {};
+  if (!remoteP) remoteP = Promise.all([fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).catch(function(){ return {} }),
+    fetch('/assets/greetings/stickers/pack.json?v=1').then(function(r){ return r.json() }).catch(function(){ return null })]).then(function(rr){
+    var d = rr[0] || {}, pk = rr[1];
+    /* מדבקות מובנות באתר + מדבקות שהועלו בניהול */
+    var st = d.stickers || { cats: [], items: [] };
+    if (pk) d.stickers = { cats: (pk.cats || []).concat(st.cats || []), items: (pk.items || []).concat(st.items || []) };
     applySettings(d.fonts || {});
     PRESETS = d.presets || [];
     (d.cats || []).forEach(function(c){ var e = CATS.find(function(x){ return x[0] === c.id }); if (e) e[1] = c.name; else CATS.push([c.id, c.name]); });
