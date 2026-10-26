@@ -40,7 +40,8 @@ function cleanState(s) {
     const o = {};
     Object.keys(b).slice(0, 30).forEach(k => {
       const v = b[k];
-      if (k === 'src') { if (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)) o.src = v; return; }
+      if (k === 'src') { if (typeof v === 'string' && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) || (/^https:\/\/[^\s"'<>]+$/.test(v) && v.startsWith(base() + '/')))) o.src = v; return; }
+      if (k === 'abs') { if (v && typeof v === 'object') o.abs = { x: +v.x || 0, y: +v.y || 0, w: Math.max(10, +v.w || 100) }; return; }
       if (typeof v === 'number' && isFinite(v)) o[k] = v;
       else if (typeof v === 'boolean') o[k] = v;
       else if (typeof v === 'string') o[k] = v.slice(0, 3000);

@@ -88,6 +88,20 @@ module.exports = async (req, res) => {
       try { const out = await require('./_pages').adminAction(b); return json(res, out.error ? 400 : 200, out); }
       catch (e) { console.error('pages', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
     }
+    /* ברכות והזמנות: מדבקות ואלמנטים (קטגוריות + קבצים שהועלו) */
+    if (req.method === 'POST' && (b.action === 'greetstickget' || b.action === 'greetsticksave')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      const g = (await loadSetting('greetstickers')) || {};
+      if (b.action === 'greetsticksave') {
+        const str = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, n);
+        const url = v => /^https:\/\/[^\s"'<>]+$/.test(String(v || '')) ? String(v) : '';
+        g.cats = (Array.isArray(b.cats) ? b.cats : []).slice(0, 100).map(c => ({ id: str(c.id, 30).replace(/[^\w-]/g, ''), name: str(c.name, 40) })).filter(c => c.id && c.name);
+        const ids = new Set(g.cats.map(c => c.id));
+        g.items = (Array.isArray(b.items) ? b.items : []).slice(0, 3000).map(i => ({ id: str(i.id, 40).replace(/[^\w-]/g, ''), cat: str(i.cat, 30), url: url(i.url), thumb: url(i.thumb), r: Math.max(0.05, Math.min(20, Number(i.r) || 1)), on: i.on !== false })).filter(i => i.url && ids.has(i.cat));
+        await saveSetting('greetstickers', g);
+      }
+      return json(res, 200, { cats: g.cats || [], items: g.items || [] });
+    }
     /* ברכות והזמנות: עיצובים (רקע שהועלה + אזור הטקסט + פסקאות התחלה) וקטגוריות אירועים */
     if (req.method === 'POST' && (b.action === 'greettplget' || b.action === 'greettplsave')) {
       const { loadSetting, saveSetting } = require('./_lib');

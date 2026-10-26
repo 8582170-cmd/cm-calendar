@@ -5,9 +5,9 @@ const { loadSetting, json } = require('./_lib');
 /* נקרא דרך /api/pricing?c=_greetings (כדי לא להוסיף פונקציית שרת נוספת) */
 module.exports = async (req, res) => {
   try {
-    const g = await loadSetting('greetings'), gf = await loadSetting('greetfonts'), gt = await loadSetting('greettpl');
+    const g = await loadSetting('greetings'), gf = await loadSetting('greetfonts'), gt = await loadSetting('greettpl'), gs = (await loadSetting('greetstickers')) || {};
     const presets = (g.presets || []).filter(p => p.on !== false).map(p => ({ id: p.id, title: p.title, cat: p.cat, kind: p.kind, price: +p.price || 0, fields: p.fields }));
     res.setHeader('Cache-Control', 'public, max-age=120');
-    json(res, 200, { presets, fonts: gf.fonts || {}, cats: gt.cats || [], hideCats: gt.hideCats || [], templates: (gt.templates || []).filter(x => x.on !== false), pay: { editHours: +((gt.pay || {}).editHours) || 48, dlDays: (gt.pay || {}).dlDays != null ? +gt.pay.dlDays : 30 } });
+    json(res, 200, { presets, fonts: gf.fonts || {}, cats: gt.cats || [], hideCats: gt.hideCats || [], templates: (gt.templates || []).filter(x => x.on !== false), stickers: { cats: gs.cats || [], items: (gs.items || []).filter(i => i.on !== false).map(i => ({ id: i.id, cat: i.cat, url: i.url, thumb: i.thumb, r: i.r })) }, pay: { editHours: +((gt.pay || {}).editHours) || 48, dlDays: (gt.pay || {}).dlDays != null ? +gt.pay.dlDays : 30 } });
   } catch (e) { console.error('greetings', e); json(res, 200, { presets: [] }); }
 };

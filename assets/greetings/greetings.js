@@ -18,7 +18,8 @@ var CATS = [
   ['birth','ברית / הולדת'],['birthday','יום הולדת'],['donors','תורמים והוקרה'],['torah','הכנסת ספר תורה'],['siyum','סיום מסכת'],
   ['home','חנוכת בית'],['business','פתיחת עסק'],['shul','חנוכת בית כנסת'],['shabbat','שבת התאחדות / אירוע תורני'],
   ['roshhashana','ראש השנה'],['yomkippur','יום כיפור'],['sukkot','סוכות'],['simchattorah','שמחת תורה'],['chanukah','חנוכה'],
-  ['tubishvat','ט״ו בשבט'],['purim','פורים'],['pesach','פסח'],['lagbaomer','ל״ג בעומר'],['shavuot','שבועות'],['condolence','ניחום אבלים']
+  ['tubishvat','ט״ו בשבט'],['purim','פורים'],['pesach','פסח'],['lagbaomer','ל״ג בעומר'],['shavuot','שבועות'],['condolence','ניחום אבלים'],
+  ['thanks','מכתבי תודה'],['certificate','תעודות']
 ];
 var KINDS = { greeting: 'ברכה', invite: 'הזמנה' };
 
@@ -354,7 +355,7 @@ function layout(ctx, tpl, state){
   for (f = user; f >= user * 0.45; f -= 0.02) {
     items = []; total = 0; var bad = false;
     blocks.forEach(function(b, i){
-      if (b.hidden) return;
+      if (b.hidden || b.abs) return;
       var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap };
       if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); }
       else if (b.type === 'photo') { it.pw = A.w * (b.size || 0.4) * f; it.h = it.pw * photoRatio(b); }
@@ -387,7 +388,7 @@ function shapePath(ctx, b, x, y, w, h){
 var photoCache = {};
 function photoImg(src){
   if (!src) return Promise.resolve(null);
-  if (!photoCache[src]) photoCache[src] = new Promise(function(ok){ var i = new Image(); i.onload = function(){ ok(i) }; i.onerror = function(){ ok(null) }; i.src = src; });
+  if (!photoCache[src]) photoCache[src] = new Promise(function(ok){ var i = new Image(); if (/^https?:/.test(src)) i.crossOrigin = 'anonymous'; i.onload = function(){ ok(i) }; i.onerror = function(){ ok(null) }; i.src = src; });
   return photoCache[src];
 }
 function photoX(it){ var b = it.b; return b.align === 'right' ? it.x + it.w - it.pw : b.align === 'left' ? it.x : it.x + (it.w - it.pw) / 2; }
@@ -511,6 +512,13 @@ function render(canvas, tpl, state, opt){
     if (P.on && P.color) { ctx.save(); ctx.globalAlpha = P.op == null ? 0.85 : P.op; ctx.fillStyle = P.color; panelPath(); ctx.fill(); ctx.restore(); }
     ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic';
     var items = layout(ctx, tpl, state);
+    /* מדבקות ואלמנטים במיקום חופשי (מאחורי הטקסט) */
+    var floats = [];
+    (state.blocks || []).forEach(function(b, i){
+      if (!b.abs || b.hidden || b.type !== 'photo') return;
+      var w = Math.max(10, b.abs.w || 150), it = { i: i, b: b, x: b.abs.x || 0, y: b.abs.y || 0, w: w, pw: w, h: w * photoRatio(b), abs: true };
+      drawPhoto(ctx, it, photos[b.src], colorOf(b.color, tpl, colors)); floats.push(it);
+    });
     items.forEach(function(it){
       var b = it.b, col = colorOf(b.color, tpl, colors);
       if (opt.selected === it.i && !opt.noFrame) {
@@ -535,7 +543,7 @@ function render(canvas, tpl, state, opt){
       else col1(it.lines, it.x, it.w);
     });
     if (opt.watermark) drawMark(ctx, r[3], opt.watermark === 'faint' ? 0.08 : 0.17);
-    canvas._items = items;
+    canvas._items = items.concat(floats);
     return canvas;
   });
 }
@@ -545,7 +553,7 @@ function hit(canvas, x, y){
   var best = null;
   (canvas._items || []).forEach(function(it){
     if (x >= it.x - 8 && x <= it.x + it.w + 8 && y >= it.y - 6 && y <= it.y + it.h + 6) {
-      var d = Math.abs(y - (it.y + it.h / 2)); if (!best || d < best.d) best = { i: it.i, d: d };
+      var d = it.abs ? -1 : Math.abs(y - (it.y + it.h / 2)); if (!best || d < best.d) best = { i: it.i, d: d };
     }
   });
   return best ? best.i : null;
@@ -660,6 +668,10 @@ function pagePanel(box, getS, changed, tpl, colorRow){
   }
   draw(); return draw;
 }
+function newSticker(it, tpl, state){
+  var d = dims(tpl, state), w = Math.round(d.W * 0.28), r = it.r || 1, h = w * r;
+  return { type: 'photo', src: it.url, shape: 'orig', ratio: r, abs: { x: Math.round((d.W - w) / 2), y: Math.round((d.H - h) / 2), w: w }, border: 0, op: 1, rot: 0, color: '#b08d3c', align: 'center', gap: 0, sticker: true };
+}
 function newPhoto(src){ return { type: 'photo', src: src || '', shape: 'circle', size: 0.38, zoom: 1, ox: 0, oy: 0, border: 3, color: '#b08d3c', align: 'center', gap: 12 }; }
 
 /* פרטים אישיים שהלקוח ממלא פעם אחת, ומופיעים בכל העיצובים (נשמרים בדפדפן) */
@@ -731,5 +743,5 @@ function starter(kind, main, accent){
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

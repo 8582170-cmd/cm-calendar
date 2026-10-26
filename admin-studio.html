@@ -40,6 +40,10 @@ pre{margin:0;background:var(--code-bg);color:var(--code-fg);font-family:var(--mo
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font:inherit;font-size:14px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.stg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:10px}
+.stg .it{border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/14px 14px}
+.stg .it img{width:90px;height:90px;object-fit:contain}.stg .it.off{opacity:.4}
+.stg .it button{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;padding:2px 6px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
 .card{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;background:var(--paper)}
 .card .hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -101,7 +105,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=20"></script>
+<script src="/assets/greetings/greetings.js?v=21"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -184,6 +188,15 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <div class="fields"><label>שעות לשינויים אחרי התשלום<input id="payH" type="number" min="1" max="720" value="48"></label><label>ימים נוספים להורדה בלבד<input id="payD" type="number" min="0" max="365" value="30"></label></div>
     </div>
     <div class="savebar"><button class="btn primary" type="button" id="tpSave">שמירת העיצובים והאירועים</button><span id="tpMsg" role="status"></span></div>
+  </section>
+
+  <section aria-labelledby="st-h">
+    <h2 id="st-h">מדבקות ואלמנטים</h2>
+    <p class="sub">פרחים, זרים, פירות, קישוטים, וילונות, גילופי עץ ועוד. הלקוח מוסיף אותם לדף, מזיז ומגדיל. מומלץ PNG עם רקע שקוף.</p>
+    <div class="fields"><label>קטגוריה<select id="stCat"></select></label><label>קטגוריה חדשה<input id="stNew" placeholder="למשל: פרחים וזרים"></label></div>
+    <div class="actions"><button class="btn" type="button" id="stAdd">+ הוספת קטגוריה</button><button class="btn" type="button" id="stRen">שינוי שם</button><button class="btn" type="button" id="stDel">מחיקת הקטגוריה</button><button class="btn primary" type="button" id="stUp">העלאת מדבקות לקטגוריה (כמה בבת אחת)</button><span class="sub" id="stProg" role="status"></span></div>
+    <div class="stg" id="stList"></div>
+    <div class="savebar"><button class="btn primary" type="button" id="stSave">שמירת המדבקות</button><span id="stMsg" role="status"></span></div>
   </section>
 
   <section aria-labelledby="fl-h">
@@ -338,7 +351,7 @@ function prInit(){
   $('prFilter').onchange=prRender;
   $('prAdd').onclick=()=>{const f=$('prFilter').value;PR.unshift({id:Math.random().toString(36).slice(2,10),title:'',cat:f||'all',kind:'greeting',on:true,fields:{}});prRender();const t=document.querySelector('#prList [data-f="title"]');if(t)t.focus()};
   $('prPack').onclick=()=>{$('prMsg').className='';$('prMsg').textContent='טוען…';
-    fetch('/assets/greetings/presets-pack.json?v=1').then(r=>r.json()).then(list=>{const have=new Set(PR.map(p=>p.id));const add=list.filter(p=>!have.has(p.id));PR=PR.concat(add);prRender();
+    fetch('/assets/greetings/presets-pack.json?v=2').then(r=>r.json()).then(list=>{const have=new Set(PR.map(p=>p.id));const add=list.filter(p=>!have.has(p.id));PR=PR.concat(add);prRender();
       $('prMsg').className='ok';$('prMsg').textContent=add.length?'נוספו '+add.length+' נוסחים. אפשר לערוך או למחוק, ואז ללחוץ "שמירה".':'כל הנוסחים מהחבילה כבר קיימים.'})
       .catch(e=>{$('prMsg').className='msg';$('prMsg').textContent='הטעינה נכשלה: '+e.message})};
   $('prSave').onclick=()=>{$('prMsg').className='';$('prMsg').textContent='שומר…';
@@ -477,6 +490,31 @@ async function tpUpload(f){
     const s2=await api({action:'libmedia',name:'thumb.jpg',type:'image/jpeg',size:th.size});if(!s2.error){const u2=await fetch(s2.upload,{method:'PUT',headers:{'Content-Type':'image/jpeg','x-upsert':'true'},body:th});if(u2.ok)out.thumb=s2.url}}catch(e){}
   return out;
 }
+/* מדבקות ואלמנטים */
+let ST={cats:[],items:[]};
+const stMsg=(t,ok)=>{$('stMsg').className=ok?'ok':'';$('stMsg').textContent=t};
+function stCats(){const c=$('stCat'),v=c.value;c.innerHTML=ST.cats.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' ('+ST.items.filter(i=>i.cat===x.id).length+')</option>').join('');if(ST.cats.some(x=>x.id===v))c.value=v}
+function stRender(){stCats();const cat=$('stCat').value,box=$('stList');box.innerHTML='';
+  ST.items.filter(i=>i.cat===cat).forEach(i=>{const d=document.createElement('div');d.className='it'+(i.on===false?' off':'');d.innerHTML='<img alt="" loading="lazy"><div><button type="button" data-a="on"></button> <button type="button" data-a="del">מחיקה</button></div>';
+    d.querySelector('img').src=i.thumb||i.url;const ob=d.querySelector('[data-a=on]');ob.textContent=i.on===false?'הצגה':'הסתרה';
+    ob.onclick=()=>{i.on=i.on===false;stRender();stMsg('ללחוץ "שמירה".')};d.querySelector('[data-a=del]').onclick=()=>{ST.items=ST.items.filter(x=>x!==i);stRender();stMsg('ללחוץ "שמירה".')};box.appendChild(d)});
+  if(!cat)box.innerHTML='<p class="sub">מוסיפים קטגוריה ראשונה, ואז מעלים אליה מדבקות.</p>'}
+async function stThumb(f){return new Promise((ok,bad)=>{const im=new Image();im.onload=()=>{const k=Math.min(1,240/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?ok({b,r:im.height/im.width}):bad(),'image/png');URL.revokeObjectURL(im.src)};im.onerror=bad;im.src=URL.createObjectURL(f)})}
+function stInit(){
+  $('stCat').onchange=stRender;
+  $('stAdd').onclick=()=>{const n=$('stNew').value.trim();if(!n)return;const id='s'+Date.now().toString(36);ST.cats.push({id,name:n});$('stNew').value='';stCats();$('stCat').value=id;stRender();stMsg('נוספה. ללחוץ "שמירה".')};
+  $('stRen').onclick=()=>{const c=ST.cats.find(x=>x.id===$('stCat').value),n=$('stNew').value.trim();if(!c||!n){stMsg('כותבים את השם החדש בשדה "קטגוריה חדשה".');return}c.name=n;$('stNew').value='';stRender();stMsg('ללחוץ "שמירה".')};
+  $('stDel').onclick=()=>{const id=$('stCat').value;if(!id)return;const n=ST.items.filter(i=>i.cat===id).length;if(n&&!$('stDel').dataset.sure){$('stDel').dataset.sure=1;$('stDel').textContent='ללחוץ שוב: למחוק גם '+n+' מדבקות';return}delete $('stDel').dataset.sure;$('stDel').textContent='מחיקת הקטגוריה';ST.cats=ST.cats.filter(x=>x.id!==id);ST.items=ST.items.filter(i=>i.cat!==id);stRender();stMsg('ללחוץ "שמירה".')};
+  $('stUp').onclick=()=>{const cat=$('stCat').value;if(!cat){stMsg('קודם מוסיפים קטגוריה.');return}const fi=document.createElement('input');fi.type='file';fi.multiple=true;fi.accept='image/png,image/webp,image/svg+xml,image/jpeg';
+    fi.onchange=async()=>{const fs=[...fi.files];let ok=0;for(let i=0;i<fs.length;i++){const f=fs[i];$('stProg').textContent='מעלה '+(i+1)+' מתוך '+fs.length;
+      try{const s=await api({action:'libmedia',name:f.name,type:f.type,size:f.size});if(s.error)throw new Error(s.error);const up=await fetch(s.upload,{method:'PUT',headers:{'Content-Type':f.type,'x-upsert':'true'},body:f});if(!up.ok)throw new Error(up.status);
+        let thumb='',r=1;try{const t=await stThumb(f);r=t.r;const s2=await api({action:'libmedia',name:'st-thumb.png',type:'image/png',size:t.b.size});if(!s2.error){const u2=await fetch(s2.upload,{method:'PUT',headers:{'Content-Type':'image/png','x-upsert':'true'},body:t.b});if(u2.ok)thumb=s2.url}}catch(e){}
+        ST.items.push({id:'i'+Date.now().toString(36)+i,cat,url:s.url,thumb,r:Math.round(r*1000)/1000,on:true});ok++}catch(e){}}
+      $('stProg').textContent='';stRender();stSave(ok)};fi.click()};
+  $('stSave').onclick=()=>stSave();
+  api({action:'greetstickget'}).then(d=>{ST=d;stRender()}).catch(e=>{$('stList').innerHTML='<p class="msg">לא הצלחתי לטעון: '+esc(e.message)+'</p>'});
+}
+function stSave(n){stMsg('שומר…');api({action:'greetsticksave',...ST}).then(d=>{ST=d;stRender();stMsg((n!=null?'הועלו '+n+'. ':'')+'נשמר. הלקוחות יראו תוך כמה דקות.',true)}).catch(e=>stMsg('השמירה נכשלה: '+e.message))}
 function tpBatchInit(){
   $('tpBatch').onclick=()=>{$('tpBatchBox').hidden=false;$('tbC').innerHTML=TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');$('tbC').value=$('tpFilter').value||'wedding'};
   $('tbX').onclick=()=>{$('tpBatchBox').hidden=true};
@@ -595,7 +633,7 @@ function start(){
       b2.onclick=()=>{$('occ').value=o[0];syncKinds();$('kind').value=kind;$('style').value=s;$('pal').value=p;$('ar').value='5:7';$('center').value='cream';$('extra').value='';render();$('b-h').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})};
       box.appendChild(c)}))}
   $('occ').value='wedding';$('style').value='gate';$('pal').value='navygold';syncKinds();render();chips();cards();
-  prInit();
+  prInit(); stInit();
   flInit();
   tpInit();
 }
