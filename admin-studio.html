@@ -510,7 +510,7 @@ async function scaleTo(f,max,q){
   return{file:new File([b],f.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'}),w:c.width,h:c.height};
 }
 async function putFile(f){const s=await api({action:'libmedia',name:f.name,type:f.type,size:f.size});if(s.error)throw new Error(s.error);
-  const up=await fetch(s.upload,{method:'PUT',headers:{'Content-Type':f.type,'x-upsert':'true'},body:f});if(!up.ok)throw new Error('ההעלאה נכשלה ('+up.status+')');return s.url}
+  const up=await fetch(s.upload,{method:'PUT',headers:{'Content-Type':f.type,...(s.store==='r2'?{}:{'x-upsert':'true'})},body:f});if(!up.ok)throw new Error('ההעלאה נכשלה ('+up.status+')');return s.url}
 async function tpUpload(f){
   if(!/^image\//.test(f.type))throw new Error('זה לא קובץ תמונה');
   const hi=await scaleTo(f,7016,.92), md=await scaleTo(hi.file,2480,.88);
@@ -536,8 +536,8 @@ function stInit(){
   $('stDel').onclick=()=>{const id=$('stCat').value;if(!id)return;const n=ST.items.filter(i=>i.cat===id).length;if(n&&!$('stDel').dataset.sure){$('stDel').dataset.sure=1;$('stDel').textContent='ללחוץ שוב: למחוק גם '+n+' מדבקות';return}delete $('stDel').dataset.sure;$('stDel').textContent='מחיקת הקטגוריה';ST.cats=ST.cats.filter(x=>x.id!==id);ST.items=ST.items.filter(i=>i.cat!==id);stRender();stMsg('ללחוץ "שמירה".')};
   $('stUp').onclick=()=>{const cat=$('stCat').value;if(!cat){stMsg('קודם מוסיפים קטגוריה.');return}const fi=document.createElement('input');fi.type='file';fi.multiple=true;fi.accept='image/png,image/webp,image/svg+xml,image/jpeg';
     fi.onchange=async()=>{const fs=[...fi.files];let ok=0;for(let i=0;i<fs.length;i++){const f=fs[i];$('stProg').textContent='מעלה '+(i+1)+' מתוך '+fs.length;
-      try{const s=await api({action:'libmedia',name:f.name,type:f.type,size:f.size});if(s.error)throw new Error(s.error);const up=await fetch(s.upload,{method:'PUT',headers:{'Content-Type':f.type,'x-upsert':'true'},body:f});if(!up.ok)throw new Error(up.status);
-        let thumb='',r=1;try{const t=await stThumb(f);r=t.r;const s2=await api({action:'libmedia',name:'st-thumb.png',type:'image/png',size:t.b.size});if(!s2.error){const u2=await fetch(s2.upload,{method:'PUT',headers:{'Content-Type':'image/png','x-upsert':'true'},body:t.b});if(u2.ok)thumb=s2.url}}catch(e){}
+      try{const s=await api({action:'libmedia',name:f.name,type:f.type,size:f.size});if(s.error)throw new Error(s.error);const up=await fetch(s.upload,{method:'PUT',headers:{'Content-Type':f.type,...(s.store==='r2'?{}:{'x-upsert':'true'})},body:f});if(!up.ok)throw new Error(up.status);
+        let thumb='',r=1;try{const t=await stThumb(f);r=t.r;const s2=await api({action:'libmedia',name:'st-thumb.png',type:'image/png',size:t.b.size});if(!s2.error){const u2=await fetch(s2.upload,{method:'PUT',headers:{'Content-Type':'image/png',...(s2.store==='r2'?{}:{'x-upsert':'true'})},body:t.b});if(u2.ok)thumb=s2.url}}catch(e){}
         ST.items.push({id:'i'+Date.now().toString(36)+i,cat,url:s.url,thumb,r:Math.round(r*1000)/1000,on:true});ok++}catch(e){}}
       $('stProg').textContent='';stRender();stSave(ok)};fi.click()};
   $('stSave').onclick=()=>stSave();

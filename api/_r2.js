@@ -12,6 +12,9 @@ const cfg = () => {
   return a && k && s && b ? { host: a + '.r2.cloudflarestorage.com', key: k, secret: s, bucket: b } : null;
 };
 const on = () => !!cfg();
+/* דלי ציבורי נפרד לתמונות האתר (רקעים, מדבקות): R2_MEDIA_BUCKET + R2_MEDIA_URL (הכתובת הציבורית שלו).
+   נפרד מהדלי של הלוחות, כי הלוחות פרטיים. */
+const media = () => { const C = cfg(), b = env('R2_MEDIA_BUCKET'), u = env('R2_MEDIA_URL').replace(/\/$/, ''); return C && b && /^https:\/\//.test(u) ? { ...C, bucket: b, url: u } : null; };
 const enc = s => encodeURIComponent(s).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
 const hmac = (k, d) => crypto.createHmac('sha256', k).update(d).digest();
 const sha = d => crypto.createHash('sha256').update(d).digest('hex');
@@ -31,8 +34,8 @@ function sigUrl(o) {
   return 'https://' + o.host + o.path + '?' + cq + '&X-Amz-Signature=' + crypto.createHmac('sha256', kS).update(sts).digest('hex');
 }
 /* כתובת חתומה ל-R2: method על key (ריק = הדלי עצמו, לרשימה) */
-function presign(method, key, expires, query) {
-  const C = cfg(); if (!C) throw new Error('r2 off');
+function presign(method, key, expires, query, bucketCfg) {
+  const C = bucketCfg || cfg(); if (!C) throw new Error('r2 off');
   const path = '/' + C.bucket + (key ? '/' + key.split('/').map(enc).join('/') : '');
   return sigUrl({ method, host: C.host, path, query, key: C.key, secret: C.secret, region: 'auto', expires });
 }
@@ -92,4 +95,6 @@ async function owner(req, res) {
   } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 200) }); }
   return json(res, 400, { error: 'op' });
 }
-module.exports = { on, sigUrl, presign, list, del, exists, pool, owner };
+/* כתובת העלאה לתמונה ציבורית (מהניהול): מחזיר { upload, url } או null אם הדלי הציבורי לא מוגדר */
+function mediaPut(path) { const M = media(); if (!M) return null; return { upload: presign('PUT', path, 1800, null, M), url: M.url + '/' + path.split('/').map(enc).join('/'), store: 'r2' }; }
+module.exports = { on, sigUrl, presign, list, del, exists, pool, owner, media, mediaPut };
