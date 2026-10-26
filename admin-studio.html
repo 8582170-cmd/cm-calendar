@@ -44,6 +44,15 @@ pre{margin:0;background:var(--code-bg);color:var(--code-fg);font-family:var(--mo
 .stg .it{border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/14px 14px}
 .stg .it img{width:90px;height:90px;object-fit:contain}.stg .it.off{opacity:.4}
 .stg .it button{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;padding:2px 6px}
+.pr:not(.open)>:not(.hd){display:none}
+.pr .hd .tgl{font:inherit;font-size:16px;width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--sheet);cursor:pointer;flex:none}
+.pr .hd b{cursor:pointer}.pr .hd .sub{margin-inline-start:8px}
+.prg{border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:10px;background:var(--sheet)}
+.prg>summary{cursor:pointer;font-size:17px;padding:4px 0}.prg[open]>summary{margin-bottom:8px}
+section.col>h2{cursor:pointer;user-select:none;display:flex;align-items:center;gap:10px}
+section.col>h2::before{content:'▾';font-size:18px;color:var(--mute);width:18px}
+section.col.shut>h2::before{content:'▸'}
+section.col.shut>:not(h2){display:none!important}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
 .card{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;background:var(--paper)}
 .card .hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -68,7 +77,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .pr .tx label{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px;min-width:0}
 .pr .tx .full{grid-column:1/-1}
 .pr details summary{cursor:pointer;font-weight:700;color:var(--teal);font-size:14px}
-.pr .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pr .hd{display:flex;justify-content:flex-start;align-items:center;gap:10px;flex-wrap:wrap}.pr .hd .actions{margin-inline-start:auto}
 .pr .hd b{font-size:17px}
 .savebar{position:sticky;bottom:0;background:var(--sheet);padding-block:10px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .ok{color:#1f7a3a;font-weight:700}
@@ -349,7 +358,7 @@ function api(body){return fetch('/api/admin',{method:'POST',headers:{'Content-Ty
 function prInit(){
   GR.CATS.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1];$('prFilter').appendChild(o)});
   $('prFilter').onchange=prRender;
-  $('prAdd').onclick=()=>{const f=$('prFilter').value;PR.unshift({id:Math.random().toString(36).slice(2,10),title:'',cat:f||'all',kind:'greeting',on:true,fields:{}});prRender();const t=document.querySelector('#prList [data-f="title"]');if(t)t.focus()};
+  $('prAdd').onclick=()=>{const f=$('prFilter').value,nid=Math.random().toString(36).slice(2,10);PRopen.p[nid]=1;PRopen.g[f||'all']=1;PR.unshift({id:nid,title:'',cat:f||'all',kind:'greeting',on:true,fields:{}});prRender();const t=document.querySelector('#prList [data-f="title"]');if(t)t.focus()};
   $('prPack').onclick=()=>{$('prMsg').className='';$('prMsg').textContent='טוען…';
     fetch('/assets/greetings/presets-pack.json?v=2').then(r=>r.json()).then(list=>{const have=new Set(PR.map(p=>p.id));const add=list.filter(p=>!have.has(p.id));PR=PR.concat(add);prRender();
       $('prMsg').className='ok';$('prMsg').textContent=add.length?'נוספו '+add.length+' נוסחים. אפשר לערוך או למחוק, ואז ללחוץ "שמירה".':'כל הנוסחים מהחבילה כבר קיימים.'})
@@ -360,17 +369,22 @@ function prInit(){
   api({action:'greetget'}).then(d=>{PR=d.presets||[];prRender()}).catch(e=>{$('prList').innerHTML='<p class="msg">לא הצלחתי לטעון את הנוסחים: '+e.message+'</p>'});
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const PRopen={g:{},p:{}};
 function prRender(){
   const f=$('prFilter').value,box=$('prList');box.innerHTML='';
   const list=PR.filter(p=>!f||p.cat===f||p.cat==='all');
   if(!list.length){box.innerHTML='<p class="sub">אין עדיין נוסחים'+(f?' לאירוע הזה':'')+'. לוחצים "נוסח חדש".</p>';return}
   const catOpts='<option value="all">כל האירועים</option>'+GR.CATS.map(c=>'<option value="'+c[0]+'">'+esc(c[1])+'</option>').join('');
   const lab=k=>(GR.FIELDS.find(x=>x[0]===k)||[k,k])[1];
+  const groups={};list.forEach(p=>{(groups[p.cat||'all']=groups[p.cat||'all']||[]).push(p)});
+  const gbox={};Object.keys(groups).forEach(c=>{const d=document.createElement('details');d.className='prg';d.open=!!(PRopen.g[c]||list.length<8);
+    d.ontoggle=()=>{PRopen.g[c]=d.open};const cn=c==='all'?'כל האירועים':(GR.CATS.find(x=>x[0]===c)||[c,c])[1];
+    d.innerHTML='<summary><b></b> <span class="sub"></span></summary>';d.querySelector('b').textContent=cn;d.querySelector('.sub').textContent='('+groups[c].length+' נוסחים)';box.appendChild(d);gbox[c]=d});
   list.forEach(p=>{
-    const el=document.createElement('div');el.className='pr'+(p.on===false?' off':'');
+    const el=document.createElement('div');el.className='pr'+(p.on===false?' off':'')+(PRopen.p[p.id]?' open':'');
     const ta=k=>'<label class="'+(k==='body'||k==='invite'?'full':'')+'">'+esc(lab(k))+'<textarea data-k="'+k+'" rows="'+(k==='body'||k==='invite'?4:2)+'">'+esc((p.fields||{})[k]||'')+'</textarea></label>';
     const more=GR.FIELDS.map(x=>x[0]).filter(k=>MAIN.indexOf(k)<0);
-    el.innerHTML='<div class="hd"><b>'+esc(p.title||'נוסח בלי שם')+'</b><div class="actions"><label style="display:flex;gap:6px;align-items:center;font-size:14px;font-weight:700"><input type="checkbox" data-f="on" style="width:18px;height:18px"'+(p.on!==false?' checked':'')+'> מוצג ללקוחות</label><button class="btn sm" type="button" data-del>מחיקה</button></div></div>'+
+    el.innerHTML='<div class="hd"><button type="button" class="tgl" data-tgl aria-expanded="'+(!!PRopen.p[p.id])+'">'+(PRopen.p[p.id]?'▾':'▸')+'</button><b>'+esc(p.title||'נוסח בלי שם')+'</b><span class="sub">'+(p.kind==='invite'?'הזמנה':p.kind==='all'?'ברכה והזמנה':'ברכה')+((+p.price)>0?' · '+(+p.price)+' ₪':' · חינם')+'</span><div class="actions"><label style="display:flex;gap:6px;align-items:center;font-size:14px;font-weight:700"><input type="checkbox" data-f="on" style="width:18px;height:18px"'+(p.on!==false?' checked':'')+'> מוצג ללקוחות</label><button class="btn sm" type="button" data-del>מחיקה</button></div></div>'+
       '<div class="fields"><label class="wide">שם הנוסח (הלקוח רואה אותו ברשימה)<input data-f="title" value="'+esc(p.title)+'"></label>'+
       '<label>אירוע<select data-f="cat">'+catOpts+'</select></label>'+
       '<label>סוג<select data-f="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option><option value="all">ברכה והזמנה</option></select></label><label>מחיר הנוסח (0 = חינם)<input data-f="price" type="number" min="0" value="'+(+p.price||0)+'"></label></div>'+
@@ -384,7 +398,9 @@ function prRender(){
     el.querySelector('[data-f=on]').onchange=e=>{p.on=e.target.checked;el.classList.toggle('off',!p.on)};
     el.querySelectorAll('textarea[data-k]').forEach(t=>t.oninput=()=>{p.fields=p.fields||{};p.fields[t.dataset.k]=t.value});
     const del=el.querySelector('[data-del]');del.onclick=()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='בטוח? לחצו שוב';return}PR.splice(PR.indexOf(p),1);prRender()};
-    box.appendChild(el);
+    const tg=el.querySelector('[data-tgl]');const flip=()=>{PRopen.p[p.id]=!PRopen.p[p.id];el.classList.toggle('open',!!PRopen.p[p.id]);tg.textContent=PRopen.p[p.id]?'▾':'▸';tg.setAttribute('aria-expanded',String(!!PRopen.p[p.id]))};
+    tg.onclick=flip;el.querySelector('.hd b').onclick=flip;
+    gbox[p.cat||'all'].appendChild(el);
   });
 }
 
@@ -633,6 +649,12 @@ function start(){
       b2.onclick=()=>{$('occ').value=o[0];syncKinds();$('kind').value=kind;$('style').value=s;$('pal').value=p;$('ar').value='5:7';$('center').value='cream';$('extra').value='';render();$('b-h').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})};
       box.appendChild(c)}))}
   $('occ').value='wedding';$('style').value='gate';$('pal').value='navygold';syncKinds();render();chips();cards();
+  /* כל קטגוריה בניהול נפתחת ונסגרת בלחיצה על הכותרת (נזכר בדפדפן) */
+  let SH={};try{SH=JSON.parse(localStorage.getItem('myluach-studio-shut')||'null')||null}catch(e){}
+  app.querySelectorAll('section').forEach(sec=>{const h=sec.querySelector(':scope>h2');if(!h)return;const id=sec.getAttribute('aria-labelledby')||h.textContent;
+    sec.classList.add('col');if(SH?SH[id]!==false:true)sec.classList.add('shut');h.tabIndex=0;h.setAttribute('role','button');
+    const tog=()=>{sec.classList.toggle('shut');SH=SH||{};app.querySelectorAll('section.col').forEach(x=>{const k=x.getAttribute('aria-labelledby')||'';SH[k]=x.classList.contains('shut')});try{localStorage.setItem('myluach-studio-shut',JSON.stringify(SH))}catch(e){}};
+    h.onclick=tog;h.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog()}}});
   prInit(); stInit();
   flInit();
   tpInit();
