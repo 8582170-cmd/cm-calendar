@@ -498,7 +498,19 @@ function tpRender(){
     GR.render(el.querySelector('canvas'),tpObj(t),{colors:{},blocks:t.blocks,scale:1},{scale:.35,thumb:true}).catch(()=>{});
   });
 }
+/* רקע גדול מדי (למשל PNG אחרי Upscayl): מקטינים ל-300dpi ב-A4 ושומרים כ-JPEG, כדי שייכנס לאחסון ויטען מהר */
+async function prepBg(f){
+  if(!/^image\//.test(f.type))return f;
+  const im=await new Promise((ok,bad)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>bad(new Error('לא הצלחתי לפתוח את התמונה'));i.src=URL.createObjectURL(f)});
+  const max=3508,big=Math.max(im.width,im.height)>max,heavy=f.size>6*1024*1024||f.type==='image/png'||f.type==='image/webp';
+  if(!big&&!heavy){URL.revokeObjectURL(im.src);return f}
+  const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(im.src);
+  const b=await new Promise(ok=>c.toBlob(ok,'image/jpeg',.9));if(!b)return f;
+  return new File([b],f.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});
+}
 async function tpUpload(f){
+  f=await prepBg(f);
   const s=await api({action:'libmedia',name:f.name,type:f.type,size:f.size});if(s.error)throw new Error(s.error);
   const up=await fetch(s.upload,{method:'PUT',headers:{'Content-Type':f.type,'x-upsert':'true'},body:f});if(!up.ok)throw new Error('ההעלאה נכשלה ('+up.status+')');
   const out={img:s.url,thumb:''};
@@ -535,14 +547,16 @@ function tpBatchInit(){
   $('tpBatch').onclick=()=>{$('tpBatchBox').hidden=false;$('tbC').innerHTML=TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');$('tbC').value=$('tpFilter').value||'wedding'};
   $('tbX').onclick=()=>{$('tpBatchBox').hidden=true};
   $('tbGo').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.multiple=true;fi.accept='image/jpeg,image/png,image/webp';
-    fi.onchange=async()=>{const fs=[...fi.files];if(!fs.length)return;let ok=0,bad=0;
+    fi.onchange=async()=>{const fs=[...fi.files];if(!fs.length)return;let ok=0,bad=0;const errs=[];$('tbGo').disabled=true;
       for(let i=0;i<fs.length;i++){const f=fs[i];$('tbMsg').textContent='מעלה '+(i+1)+' מתוך '+fs.length+': '+f.name;
         try{const u=await tpUpload(f);
           TP.templates.push({id:'u'+Date.now().toString(36)+i,title:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),cat:$('tbC').value,kind:$('tbK').value,type:$('tbY').value,price:0,on:$('tbY').value==='bg',draft:$('tbY').value!=='bg',order:TP.templates.length,
             bg:{img:u.img,thumb:u.thumb},area:{x:150,y:230,w:494,h:700,valign:'center'},blocks:$('tbY').value==='design'?GR.starter($('tbK').value,$('tbM').value,$('tbA').value):[],variants:[]});ok++}
-        catch(e){bad++}}
-      $('tbMsg').textContent='שומר…';tpRender();tpCats();
-      try{await api({action:'greettplsave',...TP}).then(d=>{TP=d});tpRender();tpCats();$('tbMsg').textContent='הועלו '+ok+' רקעים'+(bad?' ('+bad+' נכשלו)':'')+'. עכשיו לוחצים "עריכה" על כל אחד, מסמנים אזור טקסט ולוחצים "עדכון".'}
+        catch(e){bad++;errs.push(f.name+': '+(e.message||'שגיאה'))}}
+      $('tbGo').disabled=false;
+      if(!ok){$('tbMsg').textContent='אף רקע לא עלה. '+errs.slice(0,3).join(' · ');return}
+      $('tpFilter').value='';$('tbMsg').textContent='שומר…';tpRender();tpCats();
+      try{await api({action:'greettplsave',...TP}).then(d=>{TP=d});tpRender();tpCats();$('tbMsg').textContent='✓ הועלו '+ok+' רקעים'+(bad?' ('+bad+' נכשלו: '+errs.slice(0,2).join(' · ')+')':'')+'. הם ברשימה למטה'+($('tbY').value==='bg'?' ומוצגים ללקוחות.':', מוסתרים עד שמסמנים לכל אחד אזור טקסט ("עריכה" ← "עדכון").')}
       catch(e){$('tbMsg').textContent='השמירה נכשלה: '+e.message}};fi.click()};
 }
 function tpOpen(t){
