@@ -5,7 +5,13 @@
    הלקוח מוסיף, מוחק ומזיז פסקאות, ומשנה לכל אחת גופן, גודל, צבע, יישור ורווח מעליה. */
 (function(){
 'use strict';
-var W = 794, H = 1123;
+var PW = 794, PH = 1123, W = PW, H = PH;
+/* סוגי דפים: design = דף מעוצב (שטח לטקסט + נוסח מוכן), bg = דף רקע (כותבים על כל הדף), frame = דף עם מסגרת, own = דף שהלקוח מעלה */
+var TYPES = [['design', 'דפים מעוצבים'], ['bg', 'דפי רקע'], ['frame', 'מסגרות'], ['own', 'דף משלכם']];
+function typeOf(t){ return t.own ? 'own' : (t.type === 'bg' || t.type === 'frame') ? t.type : 'design'; }
+function free(t){ return typeOf(t) !== 'design'; } /* דף שהטקסט שלו נבחר בנפרד, ואפשר לסובב אותו */
+function dims(tpl, state){ var land = !!(state && state.page && state.page.land) && free(tpl); return land ? { W: PH, H: PW, land: true } : { W: PW, H: PH, land: false }; }
+function useDims(tpl, state){ var d = dims(tpl, state); W = d.W; H = d.H; return d; }
 
 var CATS = [
   ['wedding','חתונה'],['engagement','אירוסין / וורט'],['anniversary','יום נישואין'],['barmitzvah','בר מצווה'],['batmitzvah','בת מצווה'],
@@ -15,7 +21,7 @@ var CATS = [
   ['tubishvat','ט״ו בשבט'],['purim','פורים'],['pesach','פסח'],['lagbaomer','ל״ג בעומר'],['shavuot','שבועות'],['condolence','ניחום אבלים']
 ];
 var KINDS = { greeting: 'ברכה', invite: 'הזמנה' };
-CATS.unshift(['own', 'דף משלכם']);
+
 
 /* פסקת טקסט. k: תפקיד קבוע (לנוסחים מוכנים מהניהול). gap: רווח מעל הפסקה. צבע שמתחיל ב-@ לוקח את צבע העיצוב באותו שם */
 function T(k, text, size, o){
@@ -28,7 +34,7 @@ function D(o){ o = o || {}; return { type: 'divider', style: o.style || 'flouris
 
 var TEMPLATES = [
   /* דף מעוצב של הלקוח: הלקוח מעלה את הרקע שלו לכל הדף, ובוחר בעצמו איפה יושב הטקסט */
-  { id: 'own', title: 'דף מעוצב משלכם', cat: 'own', kind: 'greeting', price: 0, own: true, bg: { none: true },
+  { id: 'own', title: 'דף מעוצב משלכם', cat: 'own', type: 'own', kind: 'greeting', price: 0, own: true, bg: { none: true },
     area: { x: 110, y: 150, w: 574, h: 823 }, colors: [], blocks: null },
   { id: 'gate-wedding', title: 'שער מפואר', cat: 'wedding', kind: 'greeting', price: 0,
     bg: { svg: '/assets/greetings/bg/gate.svg?v=1' },
@@ -300,8 +306,13 @@ function wrap(ctx, b, text, width, size){
 /* פריסת כל הפסקאות באזור הטקסט. אם לא נכנס, מקטינים הכל באותו יחס */
 /* אזור הטקסט: בדף משלכם הלקוח קובע אותו (שוליים באחוזים) */
 function areaOf(tpl, state){
-  if (!tpl.own || !state || !state.area) return tpl.area;
-  var a = state.area, t = (a.t == null ? 13 : a.t) / 100 * H, b = (a.b == null ? 13 : a.b) / 100 * H, r = (a.r == null ? 14 : a.r) / 100 * W, l = (a.l == null ? 14 : a.l) / 100 * W;
+  var ty = typeOf(tpl), land = !!(state && state.page && state.page.land) && free(tpl);
+  if (ty === 'design') return tpl.area;
+  if (ty === 'frame' && !(state && state.area)) {
+    var A = tpl.area; if (!land) return A;
+    return { x: PH - (A.y + A.h), y: A.x, w: A.h, h: A.w, valign: A.valign }; /* המסגרת מסובבת 90° */
+  }
+  var a = (state && state.area) || (ty === 'bg' ? { t: 9, b: 9, r: 10, l: 10 } : ty === 'frame' ? { t: 18, b: 18, r: 18, l: 18 } : {}), t = (a.t == null ? 13 : a.t) / 100 * H, b = (a.b == null ? 13 : a.b) / 100 * H, r = (a.r == null ? 14 : a.r) / 100 * W, l = (a.l == null ? 14 : a.l) / 100 * W;
   return { x: l, y: t, w: Math.max(80, W - l - r), h: Math.max(80, H - t - b), valign: a.v === 'top' ? 'top' : 'center' };
 }
 /* שטח הטקסט (צבע / תמונה): אזור הטקסט + שוליים, וכל צד אפשר למשוך בנפרד (dt/db/dr/dl ביחידות הדף) */
@@ -312,7 +323,7 @@ function panelRect(tpl, state){
   return { x: l, y: t, w: Math.max(30, r - l), h: Math.max(30, b - t) };
 }
 /* ידיות למשיכת גבולות השטח מעל התצוגה. cv: ה-canvas (בתוך אלמנט עם position:relative) */
-function panelEdges(cv, tpl, getS, changed){
+function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, getS()); };
   var host = cv.parentNode, box = document.createElement('div'), on = false;
   box.className = 'pedge'; box.hidden = true;
   box.innerHTML = '<i data-e="t"></i><i data-e="b"></i><i data-e="r"></i><i data-e="l"></i><span>גוררים כל צד כדי להגדיל או להקטין</span>';
@@ -324,12 +335,12 @@ function panelEdges(cv, tpl, getS, changed){
     document.head.appendChild(st); }
   if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
   host.appendChild(box);
-  function place(){ if (!on) return; var R = panelRect(tpl, getS());
+  function place(){ if (!on) return; _u(); var R = panelRect(tpl, getS());
     box.style.left = (R.x / W * 100) + '%'; box.style.top = (R.y / H * 100) + '%'; box.style.width = (R.w / W * 100) + '%'; box.style.height = (R.h / H * 100) + '%'; }
   box.querySelectorAll('i').forEach(function(h){
     h.addEventListener('pointerdown', function(e){
       e.preventDefault(); e.stopPropagation(); h.setPointerCapture(e.pointerId);
-      var S = getS(), P = S.panel || (S.panel = { on: false, color: '#ffffff', op: 0.85, r: 20, pad: 14 }), ed = h.dataset.e, k0 = 'd' + ed, v0 = P[k0] || 0, x0 = e.clientX, y0 = e.clientY, sc = W / cv.getBoundingClientRect().width;
+      _u(); var S = getS(), P = S.panel || (S.panel = { on: false, color: '#ffffff', op: 0.85, r: 20, pad: 14 }), ed = h.dataset.e, k0 = 'd' + ed, v0 = P[k0] || 0, x0 = e.clientX, y0 = e.clientY, sc = W / cv.getBoundingClientRect().width;
       function mv(ev){ var dx = (ev.clientX - x0) * sc, dy = (ev.clientY - y0) * sc;
         var d = ed === 't' ? -dy : ed === 'b' ? dy : ed === 'r' ? dx : -dx; P[k0] = Math.round(Math.max(-300, Math.min(600, v0 + d))); place(); changed(); }
       function up(){ h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); }
@@ -457,19 +468,30 @@ function render(canvas, tpl, state, opt){
   var photos = {};
   return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null })), opt.watermark ? logoImg() : null, photoImg(state.ubg && state.ubg.src), photoImg(state.own && state.own.src)]) }).then(function(r){
     var img = r[1];
+    useDims(tpl, state);
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
     var ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    var PG = state.page || {};
+    ctx.fillStyle = /^#[0-9a-f]{6}$/i.test(PG.color || '') ? PG.color : '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    /* הרקע עם הגדרות הדף: שקיפות, בהירות, רוויה, גוון, היפוך. תמונה לאורך בדף לרוחב מסתובבת */
+    function pageImg(im){
+      var cw = canvas.width, ch = canvas.height, rot = (cw > ch) !== (im.width > im.height) && free(tpl);
+      ctx.save();
+      var f = []; if (PG.br != null && PG.br !== 100) f.push('brightness(' + PG.br + '%)'); if (PG.sat != null && PG.sat !== 100) f.push('saturate(' + PG.sat + '%)'); if (PG.hue) f.push('hue-rotate(' + PG.hue + 'deg)');
+      if (f.length) ctx.filter = f.join(' ');
+      ctx.globalAlpha = PG.op == null ? 1 : Math.max(0.05, Math.min(1, PG.op));
+      ctx.translate(cw / 2, ch / 2); if (rot) ctx.rotate(Math.PI / 2); ctx.scale(PG.fx ? -1 : 1, PG.fy ? -1 : 1);
+      var bw = rot ? ch : cw, bh = rot ? cw : ch, kk = Math.max(bw / im.width, bh / im.height);
+      ctx.drawImage(im, -im.width * kk / 2, -im.height * kk / 2, im.width * kk, im.height * kk);
+      ctx.restore();
+    }
     if (!img) { /* דף משלכם: הרקע שהלקוח העלה, או דף ריק עם הסבר */
       var oi = r[5];
-      if (oi) { var k4 = Math.max(canvas.width / oi.width, canvas.height / oi.height); ctx.drawImage(oi, (canvas.width - oi.width * k4) / 2, (canvas.height - oi.height * k4) / 2, oi.width * k4, oi.height * k4); }
+      if (oi) pageImg(oi);
       else if (!opt.thumb || true) { ctx.save(); ctx.fillStyle = '#f3f1ea'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.strokeStyle = '#c9c2ad'; ctx.setLineDash([14 * scale, 10 * scale]); ctx.lineWidth = 3 * scale; ctx.strokeRect(30 * scale, 30 * scale, canvas.width - 60 * scale, canvas.height - 60 * scale);
         ctx.fillStyle = '#8a826b'; ctx.font = '700 ' + Math.round(30 * scale) + 'px Assistant, sans-serif'; ctx.textAlign = 'center'; ctx.direction = 'rtl'; ctx.fillText('כאן יופיע הדף שתעלו', canvas.width / 2, 90 * scale); ctx.restore(); }
-    } else if (tpl.bg.img) { /* תמונה שהועלתה: ממלאים את הדף בלי לעוות (חיתוך עדין בשוליים אם היחס שונה) */
-      var k = Math.max(canvas.width / img.width, canvas.height / img.height), iw = img.width * k, ih = img.height * k;
-      ctx.drawImage(img, (canvas.width - iw) / 2, (canvas.height - ih) / 2, iw, ih);
-    } else ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    } else pageImg(img); /* תמונה שהועלתה: ממלאים את הדף בלי לעוות (חיתוך עדין בשוליים אם היחס שונה) */
     var ub = state.ubg && state.ubg.src ? state.ubg : null, uimg = r[4];
     if (false && ub && uimg && ub.mode === 'page') { /* תמונת רקע של הלקוח לכל הדף */
       ctx.save(); ctx.globalAlpha = ub.op == null ? 1 : ub.op;
@@ -531,7 +553,7 @@ function hit(canvas, x, y){
 
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
 function defaults(tpl){
-  var s = { colors: {}, blocks: (tpl.blocks ? clone(tpl.blocks) : starter('greeting', '#14213d', '#8a6a22')), scale: 1 };
+  var s = { colors: {}, blocks: free(tpl) && !(tpl.blocks && tpl.blocks.length) ? [] : (tpl.blocks ? clone(tpl.blocks) : starter('greeting', '#14213d', '#8a6a22')), scale: 1 };
   (tpl.colors || []).forEach(function(c){ s.colors[c.k] = c.def; });
   return s;
 }
@@ -567,14 +589,20 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
   function rng(label, min, max, val, fn){ var l = el('label', 'bgp-r', label), r = document.createElement('input'); r.type = 'range'; r.min = min; r.max = max; r.value = val; r.oninput = function(){ fn(+r.value); changed(); }; l.appendChild(r); return l; }
   function draw(){
     var S = getS(); box.innerHTML = '';
-    if (tpl && tpl.own) {
-      var O = S.own || {}, ar = S.area || (S.area = { t: 13, b: 13, r: 14, l: 14, v: 'center' });
+    var ty = tpl ? typeOf(tpl) : 'design';
+    if (ty === 'own' || ty === 'bg' || ty === 'frame') {
+      var O = S.own || {}, ar = S.area || (S.area = ty === 'bg' ? { t: 9, b: 9, r: 10, l: 10, v: 'center' } : ty === 'frame' ? null : { t: 13, b: 13, r: 14, l: 14, v: 'center' });
+      if (!ar) { var A0 = areaOf(tpl, S), d0 = dims(tpl, S); ar = S.area = { t: Math.round(A0.y / d0.H * 100), b: Math.round((d0.H - A0.y - A0.h) / d0.H * 100), r: Math.round((d0.W - A0.x - A0.w) / d0.W * 100), l: Math.round(A0.x / d0.W * 100), v: A0.valign === 'top' ? 'top' : 'center' }; }
+    }
+    if (ty === 'own' || ty === 'bg' || ty === 'frame') {
+      if (ty === 'own') {
       box.appendChild(el('div', 'bgp-h', 'הדף שלכם'));
       var oi = document.createElement('input'); oi.type = 'file'; oi.accept = 'image/*'; oi.hidden = true; box.appendChild(oi);
       var ob = el('button', 'pill', O.src ? '✓ הדף הועלה · החלפה' : '⬆ העלאת הדף המעוצב שלכם'); ob.type = 'button';
       ob.onclick = function(){ oi.onchange = function(){ var f = oi.files[0]; if (!f) return; readImg(f, 2480, function(src){ S.own = { src: src }; changed(); draw(); }); oi.value = ''; }; oi.click(); };
       var orow = el('div', 'bgp-b'); orow.appendChild(ob); box.appendChild(orow);
-      box.appendChild(el('div', 'bgp-n', 'תמונה לאורך, בגודל A4 (לפחות 1240×1754 פיקסלים להדפסה טובה).'));
+      box.appendChild(el('div', 'bgp-n', 'תמונה בגודל A4 (לפחות 1240×1754 פיקסלים להדפסה טובה).'));
+      }
       box.appendChild(el('div', 'bgp-h', 'איפה יושב הטקסט'));
       [['t', 'מרחק מלמעלה'], ['b', 'מרחק מלמטה'], ['r', 'מרחק מימין'], ['l', 'מרחק משמאל']].forEach(function(x){ box.appendChild(rng(x[1], 0, 45, ar[x[0]] == null ? 13 : ar[x[0]], function(v){ ar[x[0]] = v; })); });
       var vt = document.createElement('input'); vt.type = 'checkbox'; vt.checked = ar.v === 'top'; vt.id = 'bgpV' + Math.random().toString(36).slice(2, 6);
@@ -609,6 +637,26 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
       box.appendChild(er);
     } else if (edges && edges.on) edges.toggle(false);
     if (U.src) box.appendChild(rng('שקיפות התמונה', 10, 100, Math.round((U.op == null ? 1 : U.op) * 100), function(v){ U.op = v / 100; }));
+  }
+  draw(); return draw;
+}
+/* הגדרות הדף: כיוון, היפוך, שקיפות, בהירות, רוויה, גוון, צבע בסיס */
+function pagePanel(box, getS, changed, tpl, colorRow){
+  function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+  function rng(label, min, max, val, fn){ var l = el('label', 'bgp-r', label), r = document.createElement('input'); r.type = 'range'; r.min = min; r.max = max; r.value = val; r.oninput = function(){ fn(+r.value); changed(); }; l.appendChild(r); return l; }
+  function btn(t, on, fn){ var b = el('button', 'pill', t); b.type = 'button'; b.setAttribute('aria-pressed', String(!!on)); b.onclick = function(){ fn(); changed(); draw(); }; return b; }
+  function draw(){
+    var S = getS(), G = S.page || (S.page = {}); box.innerHTML = '';
+    if (free(tpl)) { var o = el('div', 'bgp-b'); o.append(btn('▯ לאורך', !G.land, function(){ G.land = false; }), btn('▭ לרוחב', !!G.land, function(){ G.land = true; })); box.appendChild(o); }
+    var f = el('div', 'bgp-b'); f.append(btn('⇋ היפוך ימין־שמאל', G.fx, function(){ G.fx = !G.fx; }), btn('⇵ היפוך למעלה־למטה', G.fy, function(){ G.fy = !G.fy; })); box.appendChild(f);
+    box.appendChild(rng('שקיפות הרקע', 5, 100, Math.round((G.op == null ? 1 : G.op) * 100), function(v){ G.op = v / 100; }));
+    box.appendChild(rng('בהירות', 40, 160, G.br == null ? 100 : G.br, function(v){ G.br = v; }));
+    box.appendChild(rng('עוצמת הצבעים', 0, 200, G.sat == null ? 100 : G.sat, function(v){ G.sat = v; }));
+    box.appendChild(rng('שינוי גוון', -180, 180, G.hue || 0, function(v){ G.hue = v; }));
+    if ((G.op != null && G.op < 1) || G.color) { box.appendChild(el('div', 'bgp-h', 'צבע מתחת לרקע')); box.appendChild(colorRow(G.color || '#ffffff', function(c, live){ if (/^#/.test(c)) G.color = c; changed(); if (!live) draw(); })); }
+    if (G.fx || G.fy || G.land || G.color || (G.op != null && G.op !== 1) || (G.br != null && G.br !== 100) || (G.sat != null && G.sat !== 100) || G.hue) {
+      var rs = el('div', 'bgp-b'); rs.appendChild(btn('איפוס הגדרות הדף', false, function(){ S.page = {}; })); box.appendChild(rs);
+    }
   }
   draw(); return draw;
 }
@@ -658,6 +706,18 @@ function cards(){
   return out;
 }
 
+/* כתיבה עצמית: כמה שורות פשוטות לעריכה */
+function blankBlocks(main, accent){
+  main = main || '#14213d'; accent = accent || '#8a6a22';
+  return [T('', 'בס״ד', 13, { align: 'right', color: accent, gap: 0 }), T('title', 'כותרת', 48, { font: 'Suez One', color: main, gap: 30 }), D({ color: accent, gap: 14 }),
+    T('body', 'כאן כותבים את הטקסט.\nאפשר להוסיף שורות, לשנות גופן, גודל וצבע.', 20, { color: main, lh: 1.7, gap: 14 }), T('sign', 'חתימה', 22, { bold: true, color: main, gap: 30 })];
+}
+/* נוסח מוכן לדף רקע / מסגרת: פסקאות ההתחלה של ברכה או הזמנה, עם הטקסט של הנוסח */
+function presetBlocks(p, main, accent){
+  var bl = starter(p.kind === 'invite' ? 'invite' : 'greeting', main || '#14213d', accent || '#8a6a22');
+  bl.forEach(function(b){ if (b.k && p.fields[b.k] != null) b.text = p.fields[b.k]; });
+  return bl.filter(function(b){ return b.type !== 'text' || !b.k || p.fields[b.k] != null || ['title', 'name', 'name2', 'groom', 'bride', 'sign'].indexOf(b.k) >= 0; });
+}
 /* פסקאות התחלה לעיצוב חדש מהניהול: נלקחות מהעיצובים המובנים, בצבע שנבחר */
 function starter(kind, main, accent){
   var src = TEMPLATES.find(function(t){ return t.id === (kind === 'invite' ? 'vine-wedding' : 'gate-wedding') });
@@ -671,5 +731,5 @@ function starter(kind, main, accent){
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, newText: newText, newDivider: newDivider, newPhoto: newPhoto, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

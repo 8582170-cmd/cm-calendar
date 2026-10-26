@@ -49,6 +49,14 @@ function cleanState(s) {
   }).filter(Boolean);
   const P = s.panel && typeof s.panel === 'object' ? s.panel : null;
   if (P) out.panel = { on: !!P.on, color: /^#[0-9a-f]{3,8}$/i.test(String(P.color || '')) ? P.color : '#ffffff', op: Math.max(0, Math.min(1, +P.op || 0)), r: Math.max(0, Math.min(100, +P.r || 0)), rb: P.rb == null ? undefined : Math.max(0, Math.min(100, +P.rb || 0)), pad: Math.max(0, Math.min(120, +P.pad || 0)), dt: Math.max(-300, Math.min(600, +P.dt || 0)), db: Math.max(-300, Math.min(600, +P.db || 0)), dr: Math.max(-300, Math.min(600, +P.dr || 0)), dl: Math.max(-300, Math.min(600, +P.dl || 0)) };
+  const n = (v, a, z) => { v = Number(v); return isFinite(v) ? Math.max(a, Math.min(z, v)) : undefined; };
+  const PG = s.page && typeof s.page === 'object' ? s.page : null;
+  if (PG) out.page = { land: !!PG.land, fx: !!PG.fx, fy: !!PG.fy, op: n(PG.op, 0.05, 1), br: n(PG.br, 20, 200), sat: n(PG.sat, 0, 300), hue: n(PG.hue, -180, 180), color: /^#[0-9a-f]{6}$/i.test(String(PG.color || '')) ? PG.color : undefined };
+  const AR = s.area && typeof s.area === 'object' ? s.area : null;
+  if (AR) out.area = { t: n(AR.t, 0, 60), b: n(AR.b, 0, 60), r: n(AR.r, 0, 60), l: n(AR.l, 0, 60), v: AR.v === 'top' ? 'top' : 'center' };
+  if (s.preset && typeof s.preset === 'object' && /^[\w-]{1,40}$/.test(String(s.preset.id || ''))) out.preset = { id: String(s.preset.id) };
+  if (s.selfText) out.selfText = true;
+  if (s.own && typeof s.own.src === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s.own.src)) out.own = { src: s.own.src };
   const U = s.ubg && typeof s.ubg === 'object' ? s.ubg : null;
   if (U && typeof U.src === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(U.src)) out.ubg = { src: U.src, mode: U.mode === 'area' ? 'area' : 'page', op: Math.max(0.05, Math.min(1, +U.op || 1)) };
   return out;
@@ -57,15 +65,25 @@ function cleanState(s) {
 /* מהקופה (checkout): בדיקת העיצוב והמחיר. המחיר נלקח מהניהול, לא מהדפדפן */
 async function prepare(b) {
   const { g } = await settings();
-  const t = (g.templates || []).find(x => x.id === String(b.tpl || '') && x.on !== false);
+  const BUILTIN = ['own', 'gate-wedding', 'vine-wedding', 'harps-barmitzvah'];
+  const id = String(b.tpl || '');
+  let t = (g.templates || []).find(x => x.id === id && x.on !== false);
+  if (!t && BUILTIN.includes(id)) t = { id, title: id === 'own' ? 'דף מעוצב משלכם' : 'עיצוב', price: 0, variants: [] };
   if (!t) return { error: 'העיצוב לא נמצא' };
-  const amount = Math.round(Number(t.price) * 100) / 100;
+  const state = cleanState(b.state);
+  /* נוסח בתשלום: המחיר שלו מהניהול */
+  let pp = 0, ptitle = '';
+  if (state.preset && state.preset.id) {
+    const gp = (await loadSetting('greetings')) || {};
+    const p = (gp.presets || []).find(x => x.id === state.preset.id && x.on !== false);
+    if (p) { pp = Math.max(0, +p.price || 0); ptitle = p.title || ''; state.preset = { id: p.id, price: pp, title: ptitle }; } else delete state.preset;
+  }
+  const amount = Math.round((Number(t.price) + pp) * 100) / 100;
   if (!(amount >= 1)) return { error: 'העיצוב הזה חינמי, אין צורך לשלם' };
   const v = b.v == null || b.v === '' ? -1 : parseInt(b.v, 10);
   const vv = v >= 0 && (t.variants || [])[v] ? v : -1;
-  const state = cleanState(b.state);
   if (JSON.stringify(state).length > MAX) return { error: 'העיצוב גדול מדי לשמירה (כנראה התמונה). נסו תמונה קטנה יותר.' };
-  return { amount, title: t.title || 'עיצוב', tpl: t.id, v: vv, state };
+  return { amount, title: (t.title || 'עיצוב') + (ptitle ? ' · ' + ptitle : ''), tpl: t.id, v: vv, state };
 }
 async function create(id, email, p) {
   await put(id, { id, email, tpl: p.tpl, v: p.v, title: p.title, state: p.state, created: new Date().toISOString(), mails: 0 });

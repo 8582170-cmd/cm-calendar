@@ -9,9 +9,9 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&family=Bellefair&display=swap">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=3">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=4">
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=19"></script>
+<script src="/assets/greetings/greetings.js?v=20"></script>
 </head>
 <body>
 <div class="wrap">
@@ -36,6 +36,8 @@
       <div class="mine-f" id="mineF"></div>
       <p class="mine-n">נשמר רק אצלכם בדפדפן. <button type="button" id="mineClr">ניקוי</button></p>
     </details>
+    <div class="types" id="types" role="tablist" aria-label="סוג הדף"></div>
+    <p class="tdesc" id="tdesc"></p>
     <div class="filters" id="filters" role="group" aria-label="סינון לפי אירוע"></div>
     <div class="gal" id="gal"></div>
     <p class="soon" id="soon" hidden>עיצובים לקטגוריה הזאת יעלו בקרוב.</p>
@@ -48,14 +50,24 @@ window.Greetings.load().then(function(){
 'use strict';
 var G = window.Greetings, gal = document.getElementById('gal'), fl = document.getElementById('filters');
 var ALL = G.cards();
-var cats = G.CATS.filter(function(c){ return !G.hiddenCat(c[0]) && ALL.some(function(x){ return x.cat === c[0] }) });
-var cur = (location.hash || '').slice(1);
-if (!cats.some(function(c){ return c[0] === cur })) cur = 'all';
+ALL.forEach(function(x){ x.type = G.typeOf(x.t); });
+var DESC = { design: 'דף מעוצב עם מקום לטקסט ונוסח מוכן. משנים שמות וצבעים, ומורידים.', bg: 'דף רקע בהיר שכותבים על כל הדף. בוחרים נוסח מהמאגר או כותבים לבד.', frame: 'דף עם מסגרת מעוצבת, והטקסט בפנים. בוחרים נוסח או כותבים לבד.', own: 'מעלים דף מעוצב משלכם, ומוסיפים עליו טקסט.' };
+var types = G.TYPES.filter(function(t){ return ALL.some(function(x){ return x.type === t[0] }) });
+var h0 = (location.hash || '').slice(1).split('.'), ctype = types.some(function(t){ return t[0] === h0[0] }) ? h0[0] : 'design', cur = h0[1] || 'all', cats;
+function tabs(){
+  var tb = document.getElementById('types'); tb.innerHTML = '';
+  types.forEach(function(t){ var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = t[1]; b.setAttribute('aria-selected', String(t[0] === ctype));
+    b.onclick = function(){ ctype = t[0]; cur = 'all'; nav(); }; tb.appendChild(b); });
+  document.getElementById('tdesc').textContent = DESC[ctype] || '';
+  cats = G.CATS.filter(function(c){ return !G.hiddenCat(c[0]) && ALL.some(function(x){ return x.type === ctype && x.cat === c[0] }) });
+  if (!cats.some(function(c){ return c[0] === cur })) cur = 'all';
+}
+function nav(){ try { history.replaceState(null, '', '#' + ctype + (cur !== 'all' ? '.' + cur : '')) } catch (e) {} tabs(); chips(); list(); }
 function chips(){
-  fl.innerHTML = '';
+  fl.innerHTML = ''; fl.hidden = cats.length < 2;
   [['all','הכל']].concat(cats).forEach(function(c){
     var b = document.createElement('button'); b.type = 'button'; b.textContent = c[1]; b.setAttribute('aria-pressed', String(cur === c[0]));
-    b.onclick = function(){ cur = c[0]; try { history.replaceState(null, '', c[0] === 'all' ? location.pathname : '#' + c[0]) } catch (e) {} chips(); list(); };
+    b.onclick = function(){ cur = c[0]; nav(); };
     fl.appendChild(b);
   });
 }
@@ -72,14 +84,14 @@ if (Object.keys(prof).some(function(k){ return String(prof[k] || '').trim() })) 
 document.getElementById('mineClr').onclick = function(){ prof = {}; G.saveProfile(prof); mf.querySelectorAll('input,textarea').forEach(function(x){ x.value = '' }); list(); };
 function list(){
   gal.innerHTML = '';
-  var items = ALL.filter(function(x){ return !G.hiddenCat(x.cat) && (cur === 'all' || x.cat === cur) });
+  var items = ALL.filter(function(x){ return x.type === ctype && (x.type === 'own' || !G.hiddenCat(x.cat)) && (cur === 'all' || x.cat === cur) });
   document.getElementById('soon').hidden = items.length > 0;
   items.forEach(function(x){
     var t = x.v >= 0 ? G.variant(x.t, x.v) : x.t;
     var a = document.createElement('a'); a.className = 'card'; a.href = '/brachot/edit.html?t=' + encodeURIComponent(x.t.id) + (x.v >= 0 ? '&v=' + x.v : '');
-    a.innerHTML = '<div class="sheet"><canvas aria-hidden="true"></canvas>' + (t.price ? '' : '<span class="badge">חינם</span>') + '</div><h3></h3><span class="meta"></span>';
+    a.innerHTML = '<div class="sheet"><canvas aria-hidden="true"></canvas>' + (t.price ? '<span class="badge">' + t.price + ' ₪</span>' : '<span class="badge">חינם</span>') + '</div><h3></h3><span class="meta"></span>';
     a.querySelector('h3').textContent = t.title;
-    a.querySelector('.meta').textContent = G.KINDS[t.kind] + ' · ' + G.catName(t.cat);
+    a.querySelector('.meta').textContent = x.type === 'design' ? G.KINDS[t.kind] + ' · ' + G.catName(t.cat) : x.type === 'own' ? 'מעלים דף משלכם' : (x.type === 'bg' ? 'דף רקע' : 'מסגרת') + (G.catName(t.cat) && t.cat !== 'own' ? ' · ' + G.catName(t.cat) : '');
     a.setAttribute('aria-label', t.title + ', ' + G.KINDS[t.kind] + ' ל' + G.catName(t.cat) + '. לעריכה');
     gal.appendChild(a);
     var cv = a.querySelector('canvas');
@@ -88,7 +100,7 @@ function list(){
     G.render(cv, t, st, { scale: Math.min(1.5, w / G.W), thumb: true, watermark: 'faint' }).catch(function(){});
   });
 }
-chips(); list();
+tabs(); chips(); list();
 });
 </script>
 </body>

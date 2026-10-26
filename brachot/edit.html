@@ -8,7 +8,7 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&display=swap">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=3">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=4">
 <style>
 body{font-size:18px}
 /* שלבים */
@@ -112,6 +112,12 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 @media (max-width:1050px){.side{position:static}}
 .side h2{font-size:21px}
 .side .card3{padding:18px;gap:16px;box-shadow:none}
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:10px}
+.pc{font:inherit;text-align:start;border:2px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);cursor:pointer;padding:12px 14px;display:flex;flex-direction:column;gap:4px;position:relative}
+.pc b{font-size:17px}.pc small{font-size:14px;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pc[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft)}
+.pc .pp{position:absolute;top:8px;inset-inline-end:10px;font-size:13px;font-weight:800;color:var(--gold)}
+.pc.self{border-style:dashed}
 .bgp{display:flex;flex-direction:column;gap:10px}
 .bgp-t{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}.bgp-t input{width:22px;height:22px;accent-color:var(--teal)}
 .bgp-r{display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:700}.bgp-r input{width:100%;accent-color:var(--teal)}
@@ -183,7 +189,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=19"></script>
+<script src="/assets/greetings/greetings.js?v=20"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 </head>
 <body>
@@ -215,6 +221,13 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
       <div class="card3">
         <div><h2>מה כותבים?</h2><p class="hint">ממלאים, ורואים מיד בדף. אפשר לשנות כל מילה.</p></div>
         <div class="f" id="presetF" hidden><label for="preset">נוסח מוכן</label><select id="preset"></select><button class="pill" type="button" id="presetUndo" hidden style="align-self:start">↶ החזרת הטקסט הקודם</button></div>
+        <div class="f" id="tpick" hidden>
+          <span class="lb">איזה טקסט יהיה על הדף?</span>
+          <div class="bgp-b" id="tpKind"></div>
+          <select id="tpCat" aria-label="אירוע"></select>
+          <div class="plist" id="tpList"></div>
+          <button class="pill" type="button" id="tpUndo" hidden style="align-self:start">↶ החזרת הטקסט הקודם</button>
+        </div>
         <div id="fields" style="display:flex;flex-direction:column;gap:18px"></div>
         <label class="chk"><input type="checkbox" id="remember" checked> לזכור את השמות לעיצובים אחרים</label>
         <div class="nextrow"><button class="big-btn ghost" type="button" id="addPhoto1">+ העלאת לוגו / תמונה</button><button class="big-btn" type="button" data-go="2">לעיצוב ←</button></div>
@@ -240,6 +253,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
         <div class="card3">
           <h2>כל הדף</h2>
           <div class="f" id="colorsF" hidden><span class="lb">צבעי העיצוב</span><div id="colors" style="display:flex;flex-direction:column;gap:12px"></div></div>
+          <div class="f"><span class="lb">הדף</span><div id="pgp" class="bgp"></div></div>
           <div class="f"><span class="lb">רקע ושטח הטקסט</span><div id="bgp" class="bgp"></div></div>
           <div class="f"><span class="lb">גופן לכל הטקסט</span><button class="fontbtn" type="button" id="allFont">בחירת גופן…</button></div>
           <div class="f"><span class="lb">צבע לכל הטקסט</span><div id="allColor"></div></div>
@@ -315,12 +329,14 @@ var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, narrow = ma
 
 /* מצב העיצוב + שמירה בדפדפן */
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null, fresh = true;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; fresh = false; } } catch (e) {}
-if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; S.panel = REC.state.panel; S.ubg = REC.state.ubg; fresh = false; }
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; if (sv.page) S.page = sv.page; if (sv.preset) S.preset = sv.preset; if (sv.selfText) S.selfText = true; fresh = false; } } catch (e) {}
+if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; S.panel = REC.state.panel; S.ubg = REC.state.ubg; S.page = REC.state.page; S.area = REC.state.area || S.area; S.preset = REC.state.preset; if (REC.state.own) S.own = REC.state.own; fresh = false; }
 if (fresh) G.applyProfile(S.blocks);
 /* תשלום: מצב ההזמנה. free = עיצוב חינמי · unpaid · edit = שולם ובזמן השינויים · dl = רק הורדה · expired */
 var PAID = (tpl.price || 0) > 0, ORD = REC && !REC.error ? REC : null, SKEW = ORD ? Date.parse(ORD.now) - Date.now() : 0, PAYCFG = GD.pay || { editHours: 48, dlDays: 30 };
-function mode(){ if (!ORD) return PAID ? 'unpaid' : 'free'; var n = Date.now() + SKEW; return n < Date.parse(ORD.editUntil) ? 'edit' : n < Date.parse(ORD.dlUntil) ? 'dl' : 'expired'; }
+function PRICE(){ return (tpl.price || 0) + ((S.preset && S.preset.price) || 0); }
+function D(){ return G.dims(tpl, S); }
+function mode(){ if (!ORD) return PRICE() > 0 ? 'unpaid' : 'free'; var n = Date.now() + SKEW; return n < Date.parse(ORD.editUntil) ? 'edit' : n < Date.parse(ORD.dlUntil) ? 'dl' : 'expired'; }
 function clean(){ var m = mode(); return m === 'edit' || m === 'dl' || m === 'free'; }
 var cloudT = null;
 function cloud(t){ $('cloud').textContent = t || ''; }
@@ -364,7 +380,7 @@ function go(n){
   if (n !== 2) { stopEdit(); sel = null; pop = null; }
   if (n === 1) renderFields();
   if (n === 2) renderLayers();
-  if (n === 3) { renderSizes(); outPreview(); }
+  if (n === 3) { renderSizes(); outPreview(); renderPay(); }
   renderTb(); draw();
   try { history.replaceState(null, '', '#' + ['', 'details', 'design', 'download'][n]) } catch (e) {}
   window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
@@ -378,12 +394,12 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.W), selected: sel, noFrame: true, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(place).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / D().W), selected: sel, noFrame: true, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; place(); }).catch(function(){});
   });
 }
 window.addEventListener('resize', draw);
 function item(i){ return (cv._items || []).find(function(it){ return it.i === i }); }
-function k(){ return cv.getBoundingClientRect().width / G.W; }
+function k(){ return cv.getBoundingClientRect().width / D().W; }
 function boxOf(it){
   var x = it.x, w = it.w;
   if (it.b.type === 'photo') { w = it.pw; x = it.b.align === 'right' ? it.x + it.w - it.pw : it.b.align === 'left' ? it.x : it.x + (it.w - it.pw) / 2; }
@@ -435,7 +451,7 @@ function stopEdit(){ if (!editing) return; editing = false; $('inl').hidden = tr
 });
 
 cv.addEventListener('click', function(e){
-  var r = cv.getBoundingClientRect(), i = G.hit(cv, (e.clientX - r.left) / r.width * G.W, (e.clientY - r.top) / r.height * G.H);
+  var r = cv.getBoundingClientRect(), i = G.hit(cv, (e.clientX - r.left) / r.width * D().W, (e.clientY - r.top) / r.height * D().H);
   if (step === 1) { if (i != null) focusField(i); return; }
   if (step !== 2) return;
   if (i == null) { select(null); return; }
@@ -745,15 +761,45 @@ G.load().then(function(d){
   presets = (d.presets || []).filter(function(p){ return (p.cat === 'all' || p.cat === tpl.cat) && (p.kind === 'all' || p.kind === tpl.kind) && Object.keys(p.fields || {}).some(function(kk){ return keys.indexOf(kk) >= 0 }); });
   if (!presets.length) return;
   $('preset').innerHTML = '<option value="">בחירת נוסח…</option>' + presets.map(function(p, i){ return '<option value="' + i + '"></option>' }).join('');
-  presets.forEach(function(p, i){ $('preset').options[i + 1].textContent = p.title || ('נוסח ' + (i + 1)); });
-  $('presetF').hidden = false;
+  presets.forEach(function(p, i){ $('preset').options[i + 1].textContent = (p.title || ('נוסח ' + (i + 1))) + (p.price > 0 ? ' · ' + p.price + ' ₪' : ''); });
+  if (!G.isFree(tpl)) $('presetF').hidden = false;
 }).catch(function(){});
 $('preset').onchange = function(e){
   var p = presets[+e.target.value]; if (!p) return;
   undoP = JSON.parse(JSON.stringify(S.blocks));
   S.blocks.forEach(function(b){ if (b.k && p.fields[b.k] != null && !(personal(b.k) && G.profile()[b.k])) b.text = p.fields[b.k]; });
+  if (p.price > 0) S.preset = { id: p.id, price: +p.price, title: p.title }; else delete S.preset;
   changed(); renderFields(); $('presetUndo').hidden = false;
 };
+/* דף רקע / מסגרת / דף משלכם: בוחרים נוסח מהמאגר או כותבים לבד */
+var tpKind = 'greeting', tpCatV = '', undoT = null;
+function tpInit(){
+  if (!G.isFree(tpl)) return;
+  $('tpick').hidden = false;
+  var all = (GD.presets || []).filter(function(p){ return p.fields && Object.keys(p.fields).length; });
+  if (S.preset) { var cp = all.find(function(p){ return p.id === S.preset.id }); if (cp) { tpKind = cp.kind === 'invite' ? 'invite' : 'greeting'; tpCatV = cp.cat === 'all' ? '' : cp.cat; } }
+  var kb = $('tpKind'); kb.innerHTML = '';
+  [['greeting', 'ברכה'], ['invite', 'הזמנה']].forEach(function(x){ var b = el('button', 'pill', x[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(tpKind === x[0])); b.onclick = function(){ tpKind = x[0]; tpInit(); }; kb.appendChild(b); });
+  var cats = G.CATS.filter(function(c){ return !G.hiddenCat(c[0]) && all.some(function(p){ return p.cat === c[0] && (p.kind === tpKind || p.kind === 'all') }); });
+  $('tpCat').innerHTML = '<option value="">כל האירועים</option>' + cats.map(function(c){ return '<option value="' + c[0] + '">' + c[1].replace(/[<>&]/g, '') + '</option>' }).join('');
+  $('tpCat').value = cats.some(function(c){ return c[0] === tpCatV }) ? tpCatV : '';
+  $('tpCat').onchange = function(){ tpCatV = $('tpCat').value; tpInit(); };
+  var list = $('tpList'); list.innerHTML = '';
+  var self = el('button', 'pc self'); self.type = 'button'; self.append(el('b', '', '✎ כתיבה עצמית'), el('small', '', 'שורות ריקות לעריכה, בלי נוסח'));
+  self.setAttribute('aria-pressed', String(!S.preset && S.blocks.length > 0 && !!S.selfText));
+  self.onclick = function(){ undoT = JSON.parse(JSON.stringify(S.blocks)); S.blocks = G.blankBlocks(); delete S.preset; S.selfText = true; afterPick(); };
+  list.appendChild(self);
+  all.filter(function(p){ return (p.kind === tpKind || p.kind === 'all') && (!tpCatV || p.cat === tpCatV || p.cat === 'all'); }).forEach(function(p){
+    var b = el('button', 'pc'); b.type = 'button';
+    var f = p.fields, snip = f.title || f.opener || f.quote || ''; snip = [snip, f.body || f.invite || f.intro || ''].filter(Boolean).join(' · ');
+    b.append(el('b', '', p.title || 'נוסח'), el('small', '', snip), el('span', 'pp', p.price > 0 ? p.price + ' ₪' : 'חינם'));
+    b.setAttribute('aria-pressed', String(!!(S.preset && S.preset.id === p.id)));
+    b.onclick = function(){ undoT = JSON.parse(JSON.stringify(S.blocks)); S.blocks = G.presetBlocks(p); G.applyProfile(S.blocks); S.preset = { id: p.id, price: +p.price || 0, title: p.title }; delete S.selfText; afterPick(); };
+    list.appendChild(b);
+  });
+}
+function afterPick(){ $('tpUndo').hidden = !undoT; changed(); tpInit(); renderFields(); renderLayers(); }
+$('tpUndo').onclick = function(){ if (!undoT) return; S.blocks = undoT; undoT = null; changed(); tpInit(); renderFields(); renderLayers(); $('tpUndo').hidden = true; };
 $('presetUndo').onclick = function(){ if (!undoP) return; S.blocks = undoP; undoP = null; $('presetUndo').hidden = true; $('preset').value = ''; changed(); renderFields(); };
 
 /* שלב 3: גדלים והורדה */
@@ -768,7 +814,7 @@ var SIZES = [
 var cur = SIZES[1], fmt = 'pdf';
 var IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 var MAXPX = IOS ? 16e6 : 40e6;
-function mmOf(sz){ if (sz.mm) return sz.mm; var w = Math.max(5, Math.min(300, parseFloat($('cmW').value) || 50)) * 10; return [w, Math.round(w * 297 / 210)]; }
+function mmOf(sz){ var m; if (sz.mm) m = sz.mm.slice(); else { var w = Math.max(5, Math.min(300, parseFloat($('cmW').value) || 50)) * 10; m = D().land ? [w, Math.round(w * 210 / 297)] : [w, Math.round(w * 297 / 210)]; return m; } return D().land ? [m[1], m[0]] : m; }
 function dpiOf(mm){ var a = (mm[0] / 25.4) * (mm[1] / 25.4); return Math.min(300, Math.floor(Math.sqrt(MAXPX / a))); }
 function renderSizes(){
   [['szPrint', false], ['szScreen', true]].forEach(function(g){
@@ -797,7 +843,7 @@ function renderPay(){
   document.querySelectorAll('.steps [data-go="1"],.steps [data-go="2"]').forEach(function(b){ b.disabled = m === 'dl' || m === 'expired'; });
   if (m === 'free') return;
   if (m === 'unpaid') {
-    box.innerHTML = '<div class="pr">' + tpl.price + ' ₪</div><p>אחרי התשלום: הורדה <b>בלי סימן מים</b> בכל הגדלים, ועוד <b>' + PAYCFG.editHours + ' שעות</b> לשינויים אחרונים. קישור אישי לעיצוב יישלח למייל.</p>' +
+    box.innerHTML = '<div class="pr">' + PRICE() + ' ₪</div><p>אחרי התשלום: הורדה <b>בלי סימן מים</b> בכל הגדלים, ועוד <b>' + PAYCFG.editHours + ' שעות</b> לשינויים אחרונים. קישור אישי לעיצוב יישלח למייל.</p>' +
       '<div class="row2"><button class="big-btn" type="button" id="payBtn">תשלום והורדה</button></div>';
     $('payBtn').onclick = startPay; return;
   }
@@ -813,7 +859,7 @@ function renderPay(){
 }
 function startPay(){
   if (!window.MLPay) { flash('טוען…'); setTimeout(startPay, 500); return; }
-  window.MLPay.open({ title: 'תשלום · ' + tpl.title, sub: tpl.price + ' ₪. אחרי התשלום: הורדה בלי סימן מים, ו־' + PAYCFG.editHours + ' שעות לשינויים.',
+  window.MLPay.open({ title: 'תשלום · ' + tpl.title, sub: PRICE() + ' ₪. אחרי התשלום: הורדה בלי סימן מים, ו־' + PAYCFG.editHours + ' שעות לשינויים.',
     body: { plan: 'greet', tpl: tpl.id, v: tpl.variantOf ? tpl.variant : -1, state: S },
     onPaid: function(id){
       flash('התשלום התקבל. פותחים את העיצוב…');
@@ -828,8 +874,8 @@ function startPay(){
 }
 function compose(sz, f){
   var pw = Math.round(sz.px[0] * f), ph = Math.round(sz.px[1] * f);
-  if (sz.id === 'phone') return pageCanvas(pw / G.W);
-  var s = Math.min(pw * 0.86 / G.W, ph * 0.86 / G.H);
+  if (sz.id === 'phone') return pageCanvas(pw / D().W);
+  var s = Math.min(pw * 0.86 / D().W, ph * 0.86 / D().H);
   return pageCanvas(s).then(function(pg){
     var c = document.createElement('canvas'); c.width = pw; c.height = ph; var x = c.getContext('2d');
     var t = document.createElement('canvas'); t.width = t.height = 1; t.getContext('2d').drawImage(pg, 0, 0, 1, 1);
@@ -843,10 +889,10 @@ function compose(sz, f){
   });
 }
 function output(small){
-  if (small) { var o = cur.screen ? compose(cur, 360 / cur.px[0]) : pageCanvas(360 / G.W); return o; }
+  if (small) { var o = cur.screen ? compose(cur, 360 / cur.px[0]) : pageCanvas(360 / D().W); return o; }
   if (cur.screen) return compose(cur, small ? 360 / cur.px[0] : 1);
   var mm = mmOf(cur);
-  return pageCanvas(small ? 360 / G.W : (mm[0] / 25.4 * dpiOf(mm)) / G.W);
+  return pageCanvas(small ? 360 / D().W : (mm[0] / 25.4 * dpiOf(mm)) / D().W);
 }
 var pvT;
 function outPreview(){ clearTimeout(pvT); pvT = setTimeout(function(){ output(true).then(function(c){ var o = $('outPv'); o.width = c.width; o.height = c.height; o.getContext('2d').drawImage(c, 0, 0); }).catch(function(){}); }, 60); }
@@ -866,7 +912,7 @@ function build(){
     if (fmt === 'pdf') {
       var mm = mmOf(cur);
       return Promise.all([jspdf(), toBlob(c, 'image/jpeg')]).then(function(r){ return r[1].arrayBuffer().then(function(buf){
-        var doc = new r[0].jsPDF({ unit: 'mm', format: [mm[0], mm[1]], orientation: 'portrait', compress: true });
+        var doc = new r[0].jsPDF({ unit: 'mm', format: [mm[0], mm[1]], orientation: mm[0] > mm[1] ? 'landscape' : 'portrait', compress: true });
         doc.addImage(new Uint8Array(buf), 'JPEG', 0, 0, mm[0], mm[1]);
         return { blob: doc.output('blob'), name: fileName('pdf') };
       }); });
@@ -900,7 +946,7 @@ var bgpDraw = null;
 function refreshAll(){ if (bgpDraw) bgpDraw(); renderFields(); renderLayers(); renderTb(); allColor(); $('scale').value = Math.round((S.scale || 1) * 100); if (step === 3) outPreview(); draw(); }
 
 G.catalog().then(function(){
-  allColor(); setList(ui.list !== false); renderPay(); bgpDraw = G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed));
+  allColor(); setList(ui.list !== false); renderPay(); tpInit(); G.pagePanel($('pgp'), function(){ return S }, changed, tpl, colorRow); bgpDraw = G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed));
   if (mode() === 'edit') cloud('השינויים נשמרים אוטומטית');
   var h = location.hash.slice(1), start = h === 'design' ? 2 : h === 'download' ? 3 : h === 'details' ? 1 : (fresh ? 1 : 2);
   go(start);

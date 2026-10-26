@@ -95,3 +95,9 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .filters button{font-size:17px;padding:8px 18px;min-height:44px}
 .card h3{font-size:22px}
 .card .meta{font-size:15px}
+
+/* סוגי הדפים בגלריה */
+.types{display:flex;flex-wrap:wrap;gap:8px;padding-block:6px 4px}
+.types button{font:inherit;font-weight:800;font-size:18px;min-height:50px;padding:8px 22px;border-radius:14px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer}
+.types button[aria-selected="true"]{border-color:var(--teal);background:var(--teal);color:var(--teal-ink)}
+.tdesc{margin:4px 0 6px;color:var(--mute);font-size:17px}

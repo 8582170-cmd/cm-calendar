@@ -101,7 +101,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=19"></script>
+<script src="/assets/greetings/greetings.js?v=20"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -169,7 +169,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
     <div class="actions"><button class="btn primary" type="button" id="tpNew">+ עיצוב חדש</button><button class="btn" type="button" id="tpBatch">העלאת כמה רקעים בבת אחת</button><label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px">הצגה<select id="tpFilter" style="width:auto"><option value="">כל האירועים</option></select></label></div>
     <div id="tpBatchBox" hidden class="tp-f" style="border:1px dashed var(--line);border-radius:12px;padding:12px">
       <p class="sub">בוחרים את כל התמונות (למשל אחרי Upscayl). כל תמונה נכנסת כעיצוב חדש, <b>מוסתר</b>, עד שמסמנים לו אזור טקסט ולוחצים "עדכון".</p>
-      <div class="fields"><label>אירוע<select id="tbC"></select></label><label>סוג<select id="tbK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label>
+      <div class="fields"><label>אירוע<select id="tbC"></select></label><label>סוג הדף<select id="tbY"><option value="design">דף מעוצב</option><option value="bg">דף רקע</option><option value="frame">מסגרת</option></select></label><label>סוג<select id="tbK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label>
       <label>צבע הטקסט הראשי<input id="tbM" type="color" value="#14213d"></label><label>צבע להדגשות<input id="tbA" type="color" value="#8a6a22"></label></div>
       <div class="actions"><button class="btn primary" type="button" id="tbGo">בחירת תמונות והעלאה</button><button class="btn" type="button" id="tbX">סגירה</button><span class="sub" id="tbMsg" role="status"></span></div>
     </div>
@@ -360,13 +360,14 @@ function prRender(){
     el.innerHTML='<div class="hd"><b>'+esc(p.title||'נוסח בלי שם')+'</b><div class="actions"><label style="display:flex;gap:6px;align-items:center;font-size:14px;font-weight:700"><input type="checkbox" data-f="on" style="width:18px;height:18px"'+(p.on!==false?' checked':'')+'> מוצג ללקוחות</label><button class="btn sm" type="button" data-del>מחיקה</button></div></div>'+
       '<div class="fields"><label class="wide">שם הנוסח (הלקוח רואה אותו ברשימה)<input data-f="title" value="'+esc(p.title)+'"></label>'+
       '<label>אירוע<select data-f="cat">'+catOpts+'</select></label>'+
-      '<label>סוג<select data-f="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option><option value="all">ברכה והזמנה</option></select></label></div>'+
+      '<label>סוג<select data-f="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option><option value="all">ברכה והזמנה</option></select></label><label>מחיר הנוסח (0 = חינם)<input data-f="price" type="number" min="0" value="'+(+p.price||0)+'"></label></div>'+
       '<div class="tx">'+MAIN.map(ta).join('')+'</div>'+
       '<details'+(more.some(k=>(p.fields||{})[k])?' open':'')+'><summary>שדות נוספים (הזמנות, שמות)</summary><div class="tx" style="margin-top:10px">'+more.map(ta).join('')+'</div></details>';
     el.querySelector('[data-f=cat]').value=p.cat||'all';el.querySelector('[data-f=kind]').value=p.kind||'greeting';
     el.querySelector('[data-f=title]').oninput=e=>{p.title=e.target.value;el.querySelector('.hd b').textContent=p.title||'נוסח בלי שם'};
     el.querySelector('[data-f=cat]').onchange=e=>{p.cat=e.target.value};
     el.querySelector('[data-f=kind]').onchange=e=>{p.kind=e.target.value};
+    el.querySelector('[data-f=price]').oninput=e=>{p.price=Math.max(0,+e.target.value||0)};
     el.querySelector('[data-f=on]').onchange=e=>{p.on=e.target.checked;el.classList.toggle('off',!p.on)};
     el.querySelectorAll('textarea[data-k]').forEach(t=>t.oninput=()=>{p.fields=p.fields||{};p.fields[t.dataset.k]=t.value});
     const del=el.querySelector('[data-del]');del.onclick=()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='בטוח? לחצו שוב';return}PR.splice(PR.indexOf(p),1);prRender()};
@@ -458,7 +459,7 @@ function tpRender(){
   list.forEach(t=>{
     const el=document.createElement('div');el.className='tp-c'+(t.on===false?' off':'');
     el.innerHTML='<canvas></canvas><b></b><span class="m"></span><div class="actions"><button class="btn sm" type="button" data-a="ed">עריכה</button><button class="btn sm" type="button" data-a="on"></button><button class="btn sm" type="button" data-a="del">מחיקה</button></div>';
-    el.querySelector('b').textContent=(t.draft?'⚠ לסמן אזור טקסט · ':'')+(t.title||'בלי שם');
+    el.querySelector('b').textContent=(t.draft?'⚠ לסמן אזור טקסט · ':'')+({bg:'דף רקע · ',frame:'מסגרת · '}[t.type]||'')+(t.title||'בלי שם');
     el.querySelector('.m').textContent=(GR.KINDS[t.kind]||'')+' · '+tpCatName(t.cat)+((t.variants||[]).length?' + עוד '+t.variants.length+' אירועים':'')+(t.price?' · ₪'+t.price:' · חינם');
     el.querySelector('[data-a=on]').textContent=t.on===false?'הצגה':'הסתרה';
     el.querySelector('[data-a=ed]').onclick=()=>tpOpen(t);
@@ -483,8 +484,8 @@ function tpBatchInit(){
     fi.onchange=async()=>{const fs=[...fi.files];if(!fs.length)return;let ok=0,bad=0;
       for(let i=0;i<fs.length;i++){const f=fs[i];$('tbMsg').textContent='מעלה '+(i+1)+' מתוך '+fs.length+': '+f.name;
         try{const u=await tpUpload(f);
-          TP.templates.push({id:'u'+Date.now().toString(36)+i,title:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),cat:$('tbC').value,kind:$('tbK').value,price:0,on:false,draft:true,order:TP.templates.length,
-            bg:{img:u.img,thumb:u.thumb},area:{x:150,y:230,w:494,h:700,valign:'center'},blocks:GR.starter($('tbK').value,$('tbM').value,$('tbA').value),variants:[]});ok++}
+          TP.templates.push({id:'u'+Date.now().toString(36)+i,title:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),cat:$('tbC').value,kind:$('tbK').value,type:$('tbY').value,price:0,on:$('tbY').value==='bg',draft:$('tbY').value!=='bg',order:TP.templates.length,
+            bg:{img:u.img,thumb:u.thumb},area:{x:150,y:230,w:494,h:700,valign:'center'},blocks:$('tbY').value==='design'?GR.starter($('tbK').value,$('tbM').value,$('tbA').value):[],variants:[]});ok++}
         catch(e){bad++}}
       $('tbMsg').textContent='שומר…';tpRender();tpCats();
       try{await api({action:'greettplsave',...TP}).then(d=>{TP=d});tpRender();tpCats();$('tbMsg').textContent='הועלו '+ok+' רקעים'+(bad?' ('+bad+' נכשלו)':'')+'. עכשיו לוחצים "עריכה" על כל אחד, מסמנים אזור טקסט ולוחצים "עדכון".'}
@@ -500,7 +501,7 @@ function tpOpen(t){
    '<div class="actions"><button class="btn primary" type="button" id="tpUp">העלאת רקע (JPG / PNG)</button><span class="sub" id="tpUpMsg"></span></div>'+
    '<p class="sub">אחרי ההעלאה: <b>גוררים על התמונה</b> מלבן במקום שבו יופיע הטקסט. הכי מתאים רקע ביחס של דף A4 לאורך.</p>'+
    '<div class="fields"><label>שם העיצוב<input id="tpT"></label><label>אירוע<select id="tpC"></select></label>'+
-   '<label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
+   '<label>סוג הדף<select id="tpY"><option value="design">דף מעוצב (שטח לטקסט + נוסח מוכן)</option><option value="bg">דף רקע (כותבים על כל הדף, בלי נוסח)</option><option value="frame">מסגרת (הטקסט בתוך המסגרת, בלי נוסח)</option></select></label><label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
    '<label>צבע הטקסט הראשי<input id="tpM" type="color" value="#14213d"></label><label>צבע להדגשות ולקישוטים<input id="tpA" type="color" value="#8a6a22"></label>'+
    '<label>גופן לכותרות<select id="tpFH"></select></label><label>גופן לטקסט<select id="tpFB"></select></label>'+
    '<label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
@@ -516,7 +517,7 @@ function tpOpen(t){
   const fo=fonts.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.label)+'</option>').join('');$('tpFH').innerHTML=fo;$('tpFB').innerHTML=fo;
   const head=(w.blocks.find(b=>b.type==='text'&&b.size>=26)||{}).font||'Suez One',body=(w.blocks.find(b=>b.type==='text'&&b.size<26&&b.size>=15)||{}).font||'Frank Ruhl Libre';
   $('tpFH').value=head;$('tpFB').value=body;
-  $('tpT').value=w.title;$('tpC').value=w.cat;$('tpK').value=w.kind;$('tpP').value=w.price||0;$('tpV').value=w.area.valign||'center';$('tpS').value=w.kind;
+  $('tpT').value=w.title;$('tpC').value=w.cat;$('tpK').value=w.kind;$('tpY').value=w.type||'design';$('tpP').value=w.price||0;$('tpV').value=w.area.valign||'center';$('tpS').value=w.kind;
   const cv=$('tpCv'),ar=$('tpAr'),pv=$('tpPv');
   let pend=false;const draw=()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;
     const r=pv.getBoundingClientRect();ar.style.cssText='left:'+(w.area.x/794*100)+'%;top:'+(w.area.y/1123*100)+'%;width:'+(w.area.w/794*100)+'%;height:'+(w.area.h/1123*100)+'%';
@@ -550,7 +551,7 @@ function tpOpen(t){
   $('tpCancel').onclick=()=>{box.innerHTML=''};
   $('tpOk').onclick=()=>{if(!w.bg.img){$('tpUpMsg').textContent='קודם מעלים רקע.';return}
     if(w.draft){w.draft=false;w.on=true}
-    w.title=$('tpT').value.trim();w.cat=$('tpC').value;w.kind=$('tpK').value;w.price=+$('tpP').value||0;
+    w.title=$('tpT').value.trim();w.cat=$('tpC').value;w.kind=$('tpK').value;w.type=$('tpY').value;if(w.type!=='design')w.blocks=[];w.price=+$('tpP').value||0;
     const i=(TP.templates||[]).findIndex(x=>x.id===w.id);if(i>=0)TP.templates[i]=w;else TP.templates.push(w);
     box.innerHTML='';tpRender();tpCats();tpSaveAll()};
   draw();window.addEventListener('resize',draw);

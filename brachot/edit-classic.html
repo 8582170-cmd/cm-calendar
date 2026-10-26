@@ -71,7 +71,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=19"></script>
+<script src="/assets/greetings/greetings.js?v=20"></script>
 </head>
 <body>
 <div class="wrap">
@@ -106,6 +106,11 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
       <section class="panel" id="pColors">
         <h2>צבעי העיצוב</h2>
         <div id="colors" class="ed-form" style="gap:14px"></div>
+      </section>
+
+      <section class="panel">
+        <h2>הדף</h2>
+        <div id="pgp" class="bgp"></div>
       </section>
 
       <section class="panel">
@@ -174,7 +179,7 @@ $('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat) + '. כו�
 var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; } } catch (e) {}
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; if (sv.page) S.page = sv.page; if (sv.preset) S.preset = sv.preset; } } catch (e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} }
 
 /* תצוגה */
@@ -184,13 +189,13 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.W), selected: sel, watermark: 'edit' }).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.dims(tpl, S).W), selected: sel, watermark: 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; }).catch(function(){});
   });
 }
 function changed(){ save(); draw(); }
 window.addEventListener('resize', draw);
 cv.addEventListener('click', function(e){
-  var r = cv.getBoundingClientRect(), i = G.hit(cv, (e.clientX - r.left) / r.width * G.W, (e.clientY - r.top) / r.height * G.H);
+  var r = cv.getBoundingClientRect(), i = G.hit(cv, (e.clientX - r.left) / r.width * G.dims(tpl, S).W, (e.clientY - r.top) / r.height * G.dims(tpl, S).H);
   if (i == null) return;
   select(i);
   var el = document.querySelector('.blk[data-i="' + i + '"]');
@@ -425,18 +430,21 @@ G.load().then(function(d){
   G.applySettings(d.fonts || {});
   var keys = S.blocks.map(function(b){ return b.k }).filter(Boolean);
   presets = (d.presets || []).filter(function(p){
+    if (G.isFree(tpl)) return p.fields && Object.keys(p.fields).length;
     return (p.cat === 'all' || p.cat === tpl.cat) && (p.kind === 'all' || p.kind === tpl.kind) && Object.keys(p.fields || {}).some(function(k){ return keys.indexOf(k) >= 0 });
   });
   if (!presets.length) return;
   $('preset').innerHTML = '<option value="">בחירת נוסח…</option>' + presets.map(function(p, i){ return '<option value="' + i + '"></option>' }).join('');
-  presets.forEach(function(p, i){ $('preset').options[i + 1].textContent = p.title || ('נוסח ' + (i + 1)); });
+  presets.forEach(function(p, i){ $('preset').options[i + 1].textContent = (G.isFree(tpl) ? G.catName(p.cat === 'all' ? '' : p.cat) + ' · ' : '') + (p.title || ('נוסח ' + (i + 1))) + (p.price > 0 ? ' · ' + p.price + ' ₪' : ''); });
   $('pPreset').hidden = false;
 }).catch(function(){});
 $('preset').onchange = function(e){
   var p = presets[+e.target.value]; if (!p) return;
   undo = JSON.parse(JSON.stringify(S.blocks));
-  S.blocks.forEach(function(b){ if (b.k && p.fields[b.k] != null) b.text = p.fields[b.k]; });
-  renderBlocks(); changed(); $('presetUndo').hidden = false;
+  if (G.isFree(tpl)) { S.blocks = G.presetBlocks(p); G.applyProfile(S.blocks); }
+  else S.blocks.forEach(function(b){ if (b.k && p.fields[b.k] != null) b.text = p.fields[b.k]; });
+  if (p.price > 0) S.preset = { id: p.id, price: +p.price, title: p.title }; else delete S.preset;
+  renderBlocks(); changed(); $('presetUndo').hidden = false; payRoute();
 };
 $('presetUndo').onclick = function(){ if (!undo) return; S.blocks = undo; undo = null; $('presetUndo').hidden = true; $('preset').value = ''; renderBlocks(); changed(); };
 
@@ -448,35 +456,39 @@ function saveBlob(blob, name){
 }
 function big(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale, watermark: (tpl.price || 0) > 0 ? 'edit' : null }); }
 function busy(on, text){ ['dlPdf','dlPng','dlJpg'].forEach(function(id){ $(id).disabled = on }); $('msg').textContent = text || ''; }
-var PRINT = 2480 / G.W;
-$('dlPng').onclick = function(){ busy(true, 'מכין את הקובץ…'); big(PRINT).then(function(c){ c.toBlob(function(b){ saveBlob(b, fileBase() + '.png'); busy(false, 'הקובץ ירד.'); }, 'image/png'); }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); }); };
-$('dlJpg').onclick = function(){ busy(true, 'מכין את התמונה…'); big(1080 / G.W).then(function(c){ c.toBlob(function(b){ saveBlob(b, fileBase() + '.jpg'); busy(false, 'התמונה ירדה. אפשר לשלוח אותה בוואטסאפ.'); }, 'image/jpeg', 0.9); }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); }); };
+var PRINT = 2480 / 794; /* 300dpi לפי הצד הקצר של A4 */
+function LAND(){ return G.dims(tpl, S).land; }
+$('dlPng').onclick = function(){ busy(true, 'מכין את הקובץ…'); big(LAND() ? 3508 / 1123 : PRINT).then(function(c){ c.toBlob(function(b){ saveBlob(b, fileBase() + '.png'); busy(false, 'הקובץ ירד.'); }, 'image/png'); }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); }); };
+$('dlJpg').onclick = function(){ busy(true, 'מכין את התמונה…'); big(1080 / G.dims(tpl, S).W).then(function(c){ c.toBlob(function(b){ saveBlob(b, fileBase() + '.jpg'); busy(false, 'התמונה ירדה. אפשר לשלוח אותה בוואטסאפ.'); }, 'image/jpeg', 0.9); }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); }); };
 function jspdf(){
   if (window.jspdf) return Promise.resolve(window.jspdf);
   return new Promise(function(ok, bad){ var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = function(){ ok(window.jspdf) }; s.onerror = bad; document.head.appendChild(s); });
 }
 $('dlPdf').onclick = function(){
   busy(true, 'מכין PDF…');
-  Promise.all([jspdf(), big(PRINT)]).then(function(r){
-    var doc = new r[0].jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    doc.addImage(r[1].toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
+  Promise.all([jspdf(), big(LAND() ? 3508 / 1123 : PRINT)]).then(function(r){
+    var L = LAND(), doc = new r[0].jsPDF({ unit: 'mm', format: 'a4', orientation: L ? 'landscape' : 'portrait' });
+    doc.addImage(r[1].toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, L ? 297 : 210, L ? 210 : 297);
     doc.save(fileBase() + '.pdf'); busy(false, 'ה־PDF ירד. מדפיסים בגודל A4, בלי שוליים.');
   }).catch(function(){ busy(false, 'משהו השתבש. נסו שוב.'); });
 };
 $('dlMore').onclick = function(){ location.href = '/brachot/edit.html?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') + '&steps=1#download'; };
-/* עיצוב בתשלום: התשלום וההורדה בלי סימן מים נעשים בעורך השלבים */
-if ((tpl.price || 0) > 0) {
+/* עיצוב או נוסח בתשלום: התשלום וההורדה בלי סימן מים נעשים בעורך השלבים */
+function payRoute(){
+  var price = (tpl.price || 0) + ((S.preset && S.preset.price) || 0);
+  if (!(price > 0)) return;
   var toPay = function(){ location.href = '/brachot/edit.html?t=' + encodeURIComponent(tpl.id) + (tpl.variantOf ? '&v=' + tpl.variant : '') + '&steps=1#download'; };
   ['dlPdf', 'dlPng', 'dlJpg'].forEach(function(id){ $(id).onclick = toPay; });
-  $('dlPdf').textContent = 'תשלום והורדה (' + tpl.price + ' ₪)'; $('dlPng').hidden = true; $('dlJpg').hidden = true; $('dlMore').hidden = true;
+  $('dlPdf').textContent = 'תשלום והורדה (' + price + ' ₪)'; $('dlPng').hidden = true; $('dlJpg').hidden = true; $('dlMore').hidden = true;
 }
+payRoute();
 $('resetAll').onclick = function(){
   if ($('resetQ').hidden) { $('resetQ').hidden = false; setTimeout(function(){ $('resetQ').hidden = true }, 4000); return; }
   try { localStorage.removeItem(KEY) } catch (e) {}
   location.reload();
 };
 
-G.catalog().then(function(){ renderBlocks(); draw(); G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed)); });
+G.catalog().then(function(){ renderBlocks(); draw(); G.pagePanel($('pgp'), function(){ return S }, changed, tpl, colorRow); G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed)); });
 });
 </script>
 </body>
