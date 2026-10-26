@@ -500,6 +500,7 @@ function render(canvas, tpl, state, opt){
       ctx.restore();
     }
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    if (state.border && state.border.style) drawBorder(ctx, state.border, W, H);
     /* שטח הטקסט: צבע ו/או תמונה בתוך המסגרת, מאחורי הטקסט */
     var P = state.panel || {}, PR0 = panelRect(tpl, state);
     var px = PR0.x, py = PR0.y, pw = PR0.w, ph = PR0.h, rmax = Math.min(pw / 2, ph / 2), pr = rmax * ((P.r == null ? 20 : P.r) / 100), prb = rmax * ((P.rb == null ? (P.r == null ? 20 : P.r) : P.rb) / 100);
@@ -649,6 +650,103 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
   draw(); return draw;
 }
 /* הגדרות הדף: כיוון, היפוך, שקיפות, בהירות, רוויה, גוון, צבע בסיס */
+/* בונה מסגרות: מסגרת לכל הדף, מצוירת (חדה בכל גודל הדפסה). B = { style, color ('gold' או #hex), s: עובי/גודל, m: מרחק מהקצה, op } */
+var BORDERS = [['double','קו כפול'],['thinthick','עבה ודק'],['triple','שלושה קווים'],['deco','ארט דקו'],['corners','פינות מעוטרות'],['flourish','סלסולים'],['meander','מפתח יווני'],['vine','גפן ועלים'],['pearls','פנינים'],['dots','קו ונקודות'],['diamonds','יהלומים'],['hearts','לבבות'],['magen','מגני דוד'],['stars','כוכבים'],['scallop','קשתות'],['rope','חבל קלוע']];
+function drawBorder(ctx, B, PWd, PHd){
+  var s = B.s || 1, m = B.m == null ? 28 : B.m, x0 = m, y0 = m, x1 = PWd - m, y1 = PHd - m, w = x1 - x0, h = y1 - y0;
+  ctx.save(); ctx.globalAlpha = B.op == null ? 1 : B.op;
+  var col;
+  if (!B.color || B.color === 'gold') { col = ctx.createLinearGradient(0, 0, PWd, PHd); [[0, '#f3d98a'], [.25, '#b8892c'], [.5, '#f0d27c'], [.75, '#a87a22'], [1, '#e9c869']].forEach(function(c){ col.addColorStop(c[0], c[1]) }); }
+  else if (B.color === 'silver') { col = ctx.createLinearGradient(0, 0, PWd, PHd); [[0, '#f2f4f7'], [.3, '#9aa1ab'], [.55, '#e9ecf0'], [.8, '#8b929c'], [1, '#d9dde3']].forEach(function(c){ col.addColorStop(c[0], c[1]) }); }
+  else col = B.color;
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  function rect(inset, lw){ ctx.lineWidth = lw; ctx.strokeRect(x0 + inset, y0 + inset, w - inset * 2, h - inset * 2); }
+  /* מוטיב חוזר לאורך ארבע הצלעות. f(x, y, ang, i) מצייר מוטיב אחד שמרכזו בנקודה */
+  function along(step, f, inset){
+    inset = inset || 0; var X0 = x0 + inset, Y0 = y0 + inset, X1 = x1 - inset, Y1 = y1 - inset;
+    [[X0, Y0, X1, Y0, 0], [X1, Y0, X1, Y1, 90], [X1, Y1, X0, Y1, 180], [X0, Y1, X0, Y0, 270]].forEach(function(e, ei){
+      var L = Math.hypot(e[2] - e[0], e[3] - e[1]), n = Math.max(1, Math.round(L / step)), st = L / n;
+      for (var i = 0; i < n; i++) { var t = (i + .5) * st / L; f(e[0] + (e[2] - e[0]) * t, e[1] + (e[3] - e[1]) * t, e[4], i, ei); }
+    });
+  }
+  function at(x, y, ang, fn){ ctx.save(); ctx.translate(x, y); ctx.rotate(ang * Math.PI / 180); fn(); ctx.restore(); }
+  function heart(sz){ ctx.beginPath(); ctx.moveTo(0, sz * .35); ctx.bezierCurveTo(-sz * .9, -sz * .25, -sz * .45, -sz * .95, 0, -sz * .4); ctx.bezierCurveTo(sz * .45, -sz * .95, sz * .9, -sz * .25, 0, sz * .35); ctx.fill(); }
+  function star(r, pts, inner){ ctx.beginPath(); for (var k = 0; k < pts * 2; k++) { var rr = k % 2 ? r * inner : r, a = Math.PI * k / pts - Math.PI / 2; ctx[k ? 'lineTo' : 'moveTo'](Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); }
+  function magen(r, lw){ ctx.lineWidth = lw; [0, Math.PI].forEach(function(o){ ctx.beginPath(); for (var k = 0; k < 3; k++) { var a = o - Math.PI / 2 + k * 2 * Math.PI / 3; ctx[k ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); ctx.stroke(); }); }
+  function scrollC(sz){ ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(sz * .6, -sz * .1, sz * .9, sz * .35, sz * .55, sz * .55); ctx.bezierCurveTo(sz * .3, sz * .7, sz * .1, sz * .45, sz * .3, sz * .3); ctx.stroke(); }
+  function corners(fn){ [[x0, y0, 0], [x1, y0, 90], [x1, y1, 180], [x0, y1, 270]].forEach(function(c){ at(c[0], c[1], c[2], fn); }); }
+  var st = B.style;
+  if (st === 'double') { rect(0, 3 * s); rect(9 * s, 3 * s); }
+  else if (st === 'thinthick') { rect(0, 9 * s); rect(16 * s, 2 * s); }
+  else if (st === 'triple') { rect(0, 2 * s); rect(7 * s, 5 * s); rect(16 * s, 2 * s); }
+  else if (st === 'deco') {
+    rect(0, 2.5 * s); rect(12 * s, 1.5 * s);
+    corners(function(){ ctx.lineWidth = 2.5 * s; var a = 46 * s; ctx.beginPath(); ctx.moveTo(a, 0); ctx.lineTo(a, a * .5); ctx.lineTo(a * .5, a * .5); ctx.lineTo(a * .5, a); ctx.lineTo(0, a); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a * 1.5, 12 * s); ctx.lineTo(a * 1.5, a * 1.05); ctx.lineTo(a * 1.05, a * 1.05); ctx.lineTo(a * 1.05, a * 1.5); ctx.lineTo(12 * s, a * 1.5); ctx.stroke();
+      ctx.fillRect(a * .62, a * .62, a * .26, a * .26); });
+  }
+  else if (st === 'corners') {
+    rect(6 * s, 2 * s);
+    corners(function(){ var a = 70 * s; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(0, a); ctx.quadraticCurveTo(0, 0, a, 0); ctx.stroke();
+      ctx.save(); ctx.translate(16 * s, 16 * s); star(14 * s, 4, .35); ctx.restore();
+      ctx.save(); ctx.translate(a * .62, a * .1); ctx.rotate(.2); scrollC(30 * s); ctx.restore(); ctx.save(); ctx.translate(a * .1, a * .62); ctx.scale(-1, 1); ctx.rotate(-Math.PI / 2 - .2); scrollC(30 * s); ctx.restore(); });
+  }
+  else if (st === 'flourish') {
+    ctx.lineWidth = 2 * s; var g = 80 * s;
+    ctx.beginPath(); ctx.moveTo(x0 + g, y0); ctx.lineTo(x1 - g, y0); ctx.moveTo(x1, y0 + g); ctx.lineTo(x1, y1 - g); ctx.moveTo(x1 - g, y1); ctx.lineTo(x0 + g, y1); ctx.moveTo(x0, y1 - g); ctx.lineTo(x0, y0 + g); ctx.stroke();
+    corners(function(){ ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(g, 0); ctx.bezierCurveTo(g * .4, 0, g * .2, g * .25, g * .45, g * .45); ctx.bezierCurveTo(g * .6, g * .6, g * .75, g * .35, g * .55, g * .28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, g); ctx.bezierCurveTo(0, g * .4, g * .25, g * .2, g * .45, g * .45); ctx.stroke(); ctx.beginPath(); ctx.arc(g * .18, g * .18, 6 * s, 0, 7); ctx.fill(); });
+    [[ (x0 + x1) / 2, y0, 0], [(x0 + x1) / 2, y1, 180]].forEach(function(c){ at(c[0], c[1], c[2], function(){ ctx.lineWidth = 2.5 * s; [-1, 1].forEach(function(d){ ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(d * 20 * s, 18 * s, d * 45 * s, 10 * s, d * 40 * s, -2 * s); ctx.stroke(); }); ctx.save(); ctx.rotate(Math.PI / 4); ctx.fillRect(-6 * s, -6 * s, 12 * s, 12 * s); ctx.restore(); }); });
+  }
+  else if (st === 'meander') {
+    var u = 9 * s; rect(-u * .2, 1.6 * s); rect(u * 5.2, 1.6 * s);
+    ctx.lineWidth = 2 * s;
+    along(u * 6, function(x, y, ang){ at(x, y + 0, ang, function(){ ctx.translate(0, u * 2.5); ctx.beginPath(); ctx.moveTo(-u * 3, u * 2); ctx.lineTo(-u * 3, -u * 2); ctx.lineTo(u * 1, -u * 2); ctx.lineTo(u * 1, u * 1); ctx.lineTo(-u * 1, u * 1); ctx.lineTo(-u * 1, -u * .5); ctx.stroke(); }); }, 0);
+  }
+  else if (st === 'vine') {
+    ctx.lineWidth = 2 * s; rect(10 * s, 1.5 * s);
+    along(42 * s, function(x, y, ang, i){ at(x, y, ang, function(){ var d = i % 2 ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(-21 * s, 0); ctx.quadraticCurveTo(0, d * 10 * s, 21 * s, 0); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, d * 9 * s, 9 * s, 4 * s, d * .5, 0, 7); ctx.fill(); }); }, 0);
+  }
+  else if (st === 'pearls') { rect(14 * s, 1.5 * s); along(16 * s, function(x, y){ ctx.beginPath(); ctx.arc(x, y, 5.5 * s, 0, 7); ctx.fill(); }, 0); }
+  else if (st === 'dots') { rect(0, 2 * s); rect(18 * s, 2 * s); along(18 * s, function(x, y){ ctx.beginPath(); ctx.arc(x, y, 2.6 * s, 0, 7); ctx.fill(); }, 9 * s); }
+  else if (st === 'diamonds') { rect(0, 1.5 * s); rect(22 * s, 1.5 * s); along(22 * s, function(x, y, ang){ at(x, y, ang + 45, function(){ ctx.fillRect(-5 * s, -5 * s, 10 * s, 10 * s); }); }, 11 * s); }
+  else if (st === 'hearts') { along(30 * s, function(x, y, ang){ at(x, y, ang, function(){ heart(11 * s); }); }, 0); rect(20 * s, 1.5 * s); }
+  else if (st === 'magen') { rect(0, 1.5 * s); rect(32 * s, 1.5 * s); along(34 * s, function(x, y){ at(x, y, 0, function(){ magen(10 * s, 1.8 * s); }); }, 16 * s); }
+  else if (st === 'stars') { along(30 * s, function(x, y){ at(x, y, 0, function(){ star(9 * s, 5, .45); }); }, 0); rect(18 * s, 1.5 * s); }
+  else if (st === 'scallop') {
+    ctx.lineWidth = 2.5 * s; rect(12 * s, 1.5 * s);
+    along(26 * s, function(x, y, ang){ at(x, y, ang, function(){ ctx.beginPath(); ctx.arc(0, 0, 13 * s, Math.PI, 0); ctx.stroke(); ctx.beginPath(); ctx.arc(0, -6 * s, 2.5 * s, 0, 7); ctx.fill(); }); }, 0);
+  }
+  else if (st === 'rope') { ctx.lineWidth = 2.2 * s; along(12 * s, function(x, y, ang){ at(x, y, ang + 35, function(){ ctx.beginPath(); ctx.ellipse(0, 0, 8 * s, 3.6 * s, 0, 0, 7); ctx.stroke(); }); }, 0); rect(14 * s, 1.2 * s); }
+  ctx.restore();
+}
+function borderPanel(box, getS, changed, tpl, colorRow){
+  function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+  function rng(label, min, max, val, fn){ var l = el('label', 'bgp-r', label), r = document.createElement('input'); r.type = 'range'; r.min = min; r.max = max; r.value = val; r.oninput = function(){ fn(+r.value); changed(); }; l.appendChild(r); return l; }
+  function draw(){
+    var S = getS(), B = S.border || {}; box.innerHTML = '';
+    var g = el('div', 'bdg'); box.appendChild(g);
+    [['', 'בלי מסגרת']].concat(BORDERS).forEach(function(b){
+      var bt = el('button', 'bdi'); bt.type = 'button'; bt.title = b[1]; bt.setAttribute('aria-label', b[1]); bt.setAttribute('aria-pressed', String((B.style || '') === b[0]));
+      var c = document.createElement('canvas'); c.width = 84; c.height = 112; var x = c.getContext('2d'); x.fillStyle = '#fffdf7'; x.fillRect(0, 0, 84, 112);
+      if (b[0]) { x.scale(84 / 397, 112 / 561); drawBorder(x, { style: b[0], color: B.color || 'gold', s: 1.1, m: 22 }, 397, 561); }
+      else { x.strokeStyle = '#c8c2b0'; x.setLineDash([4, 4]); x.strokeRect(10, 10, 64, 92); }
+      bt.append(c, el('small', '', b[1]));
+      bt.onclick = function(){ if (!b[0]) delete S.border; else { S.border = Object.assign({ color: 'gold', s: 1.4, m: 30 }, S.border || {}, { style: b[0] }); } changed(); draw(); };
+      g.appendChild(bt);
+    });
+    if (!B.style) return;
+    var cr = el('div', 'bgp-b'); [['gold', 'זהב'], ['silver', 'כסף']].forEach(function(c){ var b = el('button', 'pill', c[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(B.color === c[0])); b.onclick = function(){ B.color = c[0]; changed(); draw(); }; cr.appendChild(b); });
+    box.appendChild(cr);
+    box.appendChild(colorRow(/^#/.test(B.color || '') ? B.color : '', function(c, live){ if (/^#/.test(c)) B.color = c; else return; changed(); if (!live) draw(); }));
+    box.appendChild(rng('עובי וגודל', 40, 250, Math.round((B.s || 1) * 100), function(v){ B.s = v / 100; }));
+    box.appendChild(rng('מרחק מקצה הדף', 0, 140, B.m == null ? 28 : B.m, function(v){ B.m = v; }));
+    box.appendChild(rng('שקיפות', 10, 100, Math.round((B.op == null ? 1 : B.op) * 100), function(v){ B.op = v / 100; }));
+  }
+  draw(); return draw;
+}
 function pagePanel(box, getS, changed, tpl, colorRow){
   function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
   function rng(label, min, max, val, fn){ var l = el('label', 'bgp-r', label), r = document.createElement('input'); r.type = 'range'; r.min = min; r.max = max; r.value = val; r.oninput = function(){ fn(+r.value); changed(); }; l.appendChild(r); return l; }
@@ -689,7 +787,7 @@ function applyProfile(blocks, p){
 var remoteP = null, HIDDEN_CATS = {};
 function load(){
   if (!remoteP) remoteP = Promise.all([fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).catch(function(){ return {} }),
-    fetch('/assets/greetings/stickers/pack.json?v=2').then(function(r){ return r.json() }).catch(function(){ return null })]).then(function(rr){
+    fetch('/assets/greetings/stickers/pack.json?v=3').then(function(r){ return r.json() }).catch(function(){ return null })]).then(function(rr){
     var d = rr[0] || {}, pk = rr[1];
     /* מדבקות מובנות באתר + מדבקות שהועלו בניהול */
     var st = d.stickers || { cats: [], items: [] };
@@ -747,5 +845,5 @@ function starter(kind, main, accent){
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

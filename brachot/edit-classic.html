@@ -43,6 +43,10 @@
 .dot{width:28px;height:28px;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18);cursor:pointer;padding:0}
 .dot[aria-pressed="true"]{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--teal)}
 .dots input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0;background:none;cursor:pointer}
+.bdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
+.bdi{font:inherit;border:2px solid var(--line);border-radius:10px;background:var(--paper);cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.bdi canvas{width:100%;height:auto;border-radius:3px}.bdi small{font-size:11px;line-height:1.2;color:var(--ink);text-align:center}
+.bdi[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft)}
 .bgp{display:flex;flex-direction:column;gap:10px}
 .bgp-t{display:flex;align-items:center;gap:10px;font-weight:700}.bgp-t input{width:20px;height:20px;accent-color:var(--teal)}
 .bgp-r{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}.bgp-r input{width:160px;accent-color:var(--teal)}
@@ -71,7 +75,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=23"></script>
+<script src="/assets/greetings/greetings.js?v=25"></script>
 </head>
 <body>
 <div class="wrap">
@@ -106,6 +110,11 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
       <section class="panel" id="pColors">
         <h2>צבעי העיצוב</h2>
         <div id="colors" class="ed-form" style="gap:14px"></div>
+      </section>
+
+      <section class="panel">
+        <h2>מסגרת לדף</h2>
+        <div id="bdp" class="bgp"></div>
       </section>
 
       <section class="panel">
@@ -179,7 +188,7 @@ $('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat) + '. כו�
 var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; if (sv.page) S.page = sv.page; if (sv.preset) S.preset = sv.preset; } } catch (e) {}
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; if (sv.page) S.page = sv.page; if (sv.border) S.border = sv.border; if (sv.preset) S.preset = sv.preset; } } catch (e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} }
 
 /* תצוגה */
@@ -488,7 +497,7 @@ $('resetAll').onclick = function(){
   location.reload();
 };
 
-G.catalog().then(function(){ renderBlocks(); draw(); G.pagePanel($('pgp'), function(){ return S }, changed, tpl, colorRow); G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed)); });
+G.catalog().then(function(){ renderBlocks(); draw(); G.pagePanel($('pgp'), function(){ return S }, changed, tpl, colorRow); G.borderPanel($('bdp'), function(){ return S }, changed, tpl, colorRow); G.bgPanel($('bgp'), function(){ return S }, changed, colorRow, tpl, G.panelEdges($('cv'), tpl, function(){ return S }, changed)); });
 });
 </script>
 </body>
