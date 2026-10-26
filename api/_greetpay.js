@@ -54,7 +54,7 @@ function cleanState(s) {
   const PG = s.page && typeof s.page === 'object' ? s.page : null;
   if (PG) out.page = { land: !!PG.land, fx: !!PG.fx, fy: !!PG.fy, op: n(PG.op, 0.05, 1), br: n(PG.br, 20, 200), sat: n(PG.sat, 0, 300), hue: n(PG.hue, -180, 180), color: /^#[0-9a-f]{6}$/i.test(String(PG.color || '')) ? PG.color : undefined };
   const BD = s.border && typeof s.border === 'object' ? s.border : null;
-  if (BD && /^[a-z]{2,20}$/.test(String(BD.style || ''))) out.border = { style: BD.style, color: /^(gold|silver|#[0-9a-f]{6})$/i.test(String(BD.color || '')) ? BD.color : 'gold', s: n(BD.s, 0.2, 4), m: n(BD.m, 0, 200), op: n(BD.op, 0.05, 1) };
+  if (BD && /^[a-z]{2,20}$/.test(String(BD.style || ''))) out.border = { style: BD.style, color: /^([a-z]{3,12}|#[0-9a-f]{6})$/i.test(String(BD.color || '')) ? BD.color : 'gold', s: n(BD.s, 0.2, 4), m: n(BD.m, 0, 200), op: n(BD.op, 0.05, 1) };
   const AR = s.area && typeof s.area === 'object' ? s.area : null;
   if (AR) out.area = { t: n(AR.t, 0, 60), b: n(AR.b, 0, 60), r: n(AR.r, 0, 60), l: n(AR.l, 0, 60), v: AR.v === 'top' ? 'top' : 'center' };
   if (s.preset && typeof s.preset === 'object' && /^[\w-]{1,40}$/.test(String(s.preset.id || ''))) out.preset = { id: String(s.preset.id) };

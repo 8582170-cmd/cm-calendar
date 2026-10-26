@@ -118,6 +118,10 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 .pc[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft)}
 .pc .pp{position:absolute;top:8px;inset-inline-end:10px;font-size:13px;font-weight:800;color:var(--gold)}
 .pc.self{border-style:dashed}
+.mtl{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.mt{font:inherit;height:46px;border:2px solid transparent;border-radius:10px;cursor:pointer;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:2px}
+.mt small{font-size:11px;font-weight:700;background:rgb(255 255 255 / .85);color:#222;border-radius:6px;padding:0 4px;line-height:1.4}
+.mt[aria-pressed="true"]{border-color:var(--teal);box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--teal)}
 .bdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
 .bdi{font:inherit;border:2px solid var(--line);border-radius:10px;background:var(--paper);cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .bdi canvas{width:100%;height:auto;border-radius:3px}.bdi small{font-size:11px;line-height:1.2;color:var(--ink);text-align:center}
@@ -196,7 +200,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=25"></script>
+<script src="/assets/greetings/greetings.js?v=26"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 </head>
 <body>

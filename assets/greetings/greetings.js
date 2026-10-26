@@ -651,13 +651,21 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
 }
 /* הגדרות הדף: כיוון, היפוך, שקיפות, בהירות, רוויה, גוון, צבע בסיס */
 /* בונה מסגרות: מסגרת לכל הדף, מצוירת (חדה בכל גודל הדפסה). B = { style, color ('gold' או #hex), s: עובי/גודל, m: מרחק מהקצה, op } */
+/* צבעי מתכת ואבני חן למסגרות (מעבר צבע מבריק) */
+var METALS = {
+  gold: ['זהב', ['#f3d98a', '#b8892c', '#f0d27c', '#a87a22', '#e9c869']], rosegold: ['זהב ורוד', ['#f7d3c4', '#c9866f', '#f4c3ae', '#b06f5a', '#ecc0ad']],
+  silver: ['כסף', ['#f2f4f7', '#9aa1ab', '#e9ecf0', '#8b929c', '#d9dde3']], copper: ['נחושת', ['#f2b98d', '#a65a2a', '#e8a070', '#8a4520', '#d98d5c']],
+  bronze: ['ברונזה', ['#e2c08a', '#8c6a35', '#d4b07a', '#6e5226', '#c9a46a']], champagne: ['שמפניה', ['#fbf1da', '#d8c39a', '#f6e8c8', '#c4ab7c', '#efe0bd']],
+  emerald: ['אמרלד', ['#8fe0b5', '#1d6b48', '#5cc795', '#0f4a30', '#46b383']], sapphire: ['ספיר', ['#9ec5f5', '#1f4f9a', '#6aa3e8', '#14336b', '#4f8ad6']],
+  ruby: ['רובי', ['#f5a3b0', '#9e1b33', '#e5677d', '#6e0f22', '#d24a63']], amethyst: ['אמטיסט', ['#d9b8f2', '#6a2f9e', '#b98ae0', '#4a1d70', '#a070d0']],
+  navy: ['כחול וזהב', ['#1d2f5a', '#c9a24a', '#1d2f5a', '#e6c76c', '#1d2f5a']], black: ['שחור מבריק', ['#5a5a5a', '#111111', '#3a3a3a', '#000000', '#2a2a2a']]
+};
 var BORDERS = [['double','קו כפול'],['thinthick','עבה ודק'],['triple','שלושה קווים'],['deco','ארט דקו'],['corners','פינות מעוטרות'],['flourish','סלסולים'],['meander','מפתח יווני'],['vine','גפן ועלים'],['pearls','פנינים'],['dots','קו ונקודות'],['diamonds','יהלומים'],['hearts','לבבות'],['magen','מגני דוד'],['stars','כוכבים'],['scallop','קשתות'],['rope','חבל קלוע']];
 function drawBorder(ctx, B, PWd, PHd){
   var s = B.s || 1, m = B.m == null ? 28 : B.m, x0 = m, y0 = m, x1 = PWd - m, y1 = PHd - m, w = x1 - x0, h = y1 - y0;
   ctx.save(); ctx.globalAlpha = B.op == null ? 1 : B.op;
-  var col;
-  if (!B.color || B.color === 'gold') { col = ctx.createLinearGradient(0, 0, PWd, PHd); [[0, '#f3d98a'], [.25, '#b8892c'], [.5, '#f0d27c'], [.75, '#a87a22'], [1, '#e9c869']].forEach(function(c){ col.addColorStop(c[0], c[1]) }); }
-  else if (B.color === 'silver') { col = ctx.createLinearGradient(0, 0, PWd, PHd); [[0, '#f2f4f7'], [.3, '#9aa1ab'], [.55, '#e9ecf0'], [.8, '#8b929c'], [1, '#d9dde3']].forEach(function(c){ col.addColorStop(c[0], c[1]) }); }
+  var col, gs = METALS[B.color || 'gold'];
+  if (gs) { col = ctx.createLinearGradient(0, 0, PWd, PHd); gs[1].forEach(function(c, i){ col.addColorStop(i / (gs[1].length - 1), c) }); }
   else col = B.color;
   ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   function rect(inset, lw){ ctx.lineWidth = lw; ctx.strokeRect(x0 + inset, y0 + inset, w - inset * 2, h - inset * 2); }
@@ -727,18 +735,25 @@ function borderPanel(box, getS, changed, tpl, colorRow){
   function rng(label, min, max, val, fn){ var l = el('label', 'bgp-r', label), r = document.createElement('input'); r.type = 'range'; r.min = min; r.max = max; r.value = val; r.oninput = function(){ fn(+r.value); changed(); }; l.appendChild(r); return l; }
   function draw(){
     var S = getS(), B = S.border || {}; box.innerHTML = '';
-    var g = el('div', 'bdg'); box.appendChild(g);
+    var cur = BORDERS.find(function(x){ return x[0] === B.style }), top = el('div', 'bgp-b');
+    var tg = el('button', 'pill', (box._open ? '▴ ' : '▾ ') + (cur ? 'מסגרת: ' + cur[1] + ' · החלפה' : 'בחירת מסגרת')); tg.type = 'button'; tg.setAttribute('aria-expanded', String(!!box._open));
+    tg.onclick = function(){ box._open = !box._open; draw(); }; top.appendChild(tg);
+    if (cur) { var rm = el('button', 'pill', 'הסרת המסגרת'); rm.type = 'button'; rm.onclick = function(){ delete S.border; box._open = false; changed(); draw(); }; top.appendChild(rm); }
+    box.appendChild(top);
+    var g = el('div', 'bdg'); g.hidden = !box._open; box.appendChild(g);
     [['', 'בלי מסגרת']].concat(BORDERS).forEach(function(b){
       var bt = el('button', 'bdi'); bt.type = 'button'; bt.title = b[1]; bt.setAttribute('aria-label', b[1]); bt.setAttribute('aria-pressed', String((B.style || '') === b[0]));
       var c = document.createElement('canvas'); c.width = 84; c.height = 112; var x = c.getContext('2d'); x.fillStyle = '#fffdf7'; x.fillRect(0, 0, 84, 112);
       if (b[0]) { x.scale(84 / 397, 112 / 561); drawBorder(x, { style: b[0], color: B.color || 'gold', s: 1.1, m: 22 }, 397, 561); }
       else { x.strokeStyle = '#c8c2b0'; x.setLineDash([4, 4]); x.strokeRect(10, 10, 64, 92); }
       bt.append(c, el('small', '', b[1]));
-      bt.onclick = function(){ if (!b[0]) delete S.border; else { S.border = Object.assign({ color: 'gold', s: 1.4, m: 30 }, S.border || {}, { style: b[0] }); } changed(); draw(); };
+      bt.onclick = function(){ if (!b[0]) delete S.border; else { S.border = Object.assign({ color: 'gold', s: 1.4, m: 30 }, S.border || {}, { style: b[0] }); } box._open = false; changed(); draw(); };
       g.appendChild(bt);
     });
     if (!B.style) return;
-    var cr = el('div', 'bgp-b'); [['gold', 'זהב'], ['silver', 'כסף']].forEach(function(c){ var b = el('button', 'pill', c[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(B.color === c[0])); b.onclick = function(){ B.color = c[0]; changed(); draw(); }; cr.appendChild(b); });
+    box.appendChild(el('div', 'bgp-h', 'צבע המסגרת'));
+    var cr = el('div', 'mtl'); Object.keys(METALS).forEach(function(k){ var m = METALS[k], b = el('button', 'mt'); b.type = 'button'; b.title = m[0]; b.setAttribute('aria-label', m[0]); b.setAttribute('aria-pressed', String((B.color || 'gold') === k));
+      b.style.background = 'linear-gradient(135deg,' + m[1].join(',') + ')'; b.appendChild(el('small', '', m[0])); b.onclick = function(){ B.color = k; changed(); draw(); }; cr.appendChild(b); });
     box.appendChild(cr);
     box.appendChild(colorRow(/^#/.test(B.color || '') ? B.color : '', function(c, live){ if (/^#/.test(c)) B.color = c; else return; changed(); if (!live) draw(); }));
     box.appendChild(rng('עובי וגודל', 40, 250, Math.round((B.s || 1) * 100), function(v){ B.s = v / 100; }));

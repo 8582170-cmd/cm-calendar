@@ -43,6 +43,10 @@
 .dot{width:28px;height:28px;border-radius:50%;border:1.5px solid rgb(0 0 0 / .18);cursor:pointer;padding:0}
 .dot[aria-pressed="true"]{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--teal)}
 .dots input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0;background:none;cursor:pointer}
+.mtl{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.mt{font:inherit;height:46px;border:2px solid transparent;border-radius:10px;cursor:pointer;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:2px}
+.mt small{font-size:11px;font-weight:700;background:rgb(255 255 255 / .85);color:#222;border-radius:6px;padding:0 4px;line-height:1.4}
+.mt[aria-pressed="true"]{border-color:var(--teal);box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--teal)}
 .bdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
 .bdi{font:inherit;border:2px solid var(--line);border-radius:10px;background:var(--paper);cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .bdi canvas{width:100%;height:auto;border-radius:3px}.bdi small{font-size:11px;line-height:1.2;color:var(--ink);text-align:center}
@@ -75,7 +79,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=25"></script>
+<script src="/assets/greetings/greetings.js?v=26"></script>
 </head>
 <body>
 <div class="wrap">
