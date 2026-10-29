@@ -1673,3 +1673,4 @@ body.file-drag .sx-drop-hint{display:block}
 .cell .e.e-pos{white-space:normal}
 
 .cell .e[data-eid]{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.ci-grow{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);cursor:pointer}

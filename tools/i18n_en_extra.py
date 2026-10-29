@@ -2,6 +2,8 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ ' להגדיל את השורה כשהטקסט לא נכנס (על חשבון שאר השורות)': ' Enlarge the row when the text does not fit (taking space from the other rows)',
+ ' שורה שהטקסט שלה לא נכנס גדלה, על חשבון שאר השורות (בלי סימון: הטקסט מוקטן)': ' A row whose text does not fit grows, taking space from the other rows (unchecked: the text shrinks)',
  '＋ הוסף אירוע': '＋ Add event',
  'טקסט': 'Text',
  'פגישה': 'Meeting',

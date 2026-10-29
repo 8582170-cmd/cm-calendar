@@ -5169,6 +5169,7 @@ function sxSegify(sel){if(!sel||sel.dataset.seg)return;sel.dataset.seg='1';const
   sel.addEventListener('change',draw);new MutationObserver(draw).observe(sel,{childList:true});sel.hidden=true;sel.insertAdjacentElement('afterend',box);setInterval(()=>{if(box.querySelector('[aria-checked=true]')?.dataset.v!==sel.value)draw()},1500)}
 
 function sxInit(saved){
+  try{sxRowGrowUI()}catch(e){}
   try{sxDates();new MutationObserver(()=>sxDates()).observe(document.body,{childList:true,subtree:false})}catch(e){}
   try{sxSegify($('#cdUnit'))}catch(e){}
   try{sxTouchDrag()}catch(e){}
@@ -5201,7 +5202,8 @@ function cellInline(c){const date=c.dataset.date;if(!date)return;document.queryS
   const others=eventsOn(d,hd).filter(e=>e!==ex);
   let kind=ex?ex.kind:'other',ts=ex&&ex.ts||1,col=ex&&ex.col||'';
   const r=c.getBoundingClientRect(),box=el('div','ci-box no-print');
-  box.innerHTML='<textarea class="ci-ta" rows="2" maxlength="80" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
+  box.innerHTML='<textarea class="ci-ta" rows="2" maxlength="300" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
+    '<label class="ci-grow"><input type="checkbox" data-rowgrow'+(state.s.rowGrow?' checked':'')+'> להגדיל את השורה כשהטקסט לא נכנס (על חשבון שאר השורות)</label>'+
     '<div class="ci-style"><span>גודל</span><button type="button" data-cis="-1" aria-label="הקטנת הטקסט">א−</button><button type="button" data-cis="1" aria-label="הגדלת הטקסט">א+</button><span class="ci-sep"></span><span>צבע</span>'+CI_COLS.map(x=>'<button type="button" class="ci-col" data-cic="'+x+'" style="--c:'+(x||'var(--c-pers,#7a3b16)')+'" aria-label="'+(x?'צבע '+x:'צבע רגיל')+'"></button>').join('')+'</div>'+
     (others.length?'<div class="ci-have">'+others.map(e=>'<span class="ci-chip">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span>'+esc(e.name||'תמונה')+'</span><button type="button" data-cidel="'+e.id+'" aria-label="מחיקה" title="'+(e.rec&&e.rec!=='once'?'מחיקה מכל השנים':'מחיקה')+'">×</button></span>').join('')+'</div>':'')+
     '<div class="ci-bar"><button type="button" data-ci="more">＋ הוסף אירוע</button><button type="button" data-ci="img">＋ הוסף תמונה</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
@@ -5257,10 +5259,30 @@ stage.addEventListener('click',e=>{if(Date.now()-sxNoClick<400){e.preventDefault
 
 
 /* טקסט ארוך ביום: נראה כולו. אם הוא לא נכנס בתא, הוא מוקטן עד שייכנס */
-function sxFitDays(){stage.querySelectorAll('.cell[data-date]').forEach(c=>{const L=[...c.querySelectorAll('.e[data-eid]')];if(!L.length)return;
+function sxFitDays(){
+  /* הגדלת שורה: שורה שיש בה טקסט שלא נכנס גדלה, ושאר השורות באותו חודש קטנות בהתאם */
+  if(state.s.rowGrow)stage.querySelectorAll('.page .grid').forEach(g=>{const cells=[...g.children].filter(x=>x.classList.contains('cell'));const n=Math.ceil(cells.length/7);if(n<2)return;
+    const H=[],N=[];for(let r=0;r<n;r++){const row=cells.slice(r*7,r*7+7);H.push(row[0].offsetHeight);
+      let need=0;for(const c of row){let q=c.scrollHeight;const dt=c.querySelector('.d-top'),dtH=dt?dt.offsetTop+dt.offsetHeight:0;c.querySelectorAll('.e.e-pos').forEach(e=>{const y=(parseFloat(e.style.top)||50)/100,hh=e.offsetHeight/2+4;q=Math.max(q,hh/Math.max(.08,Math.min(y,1-y)),dtH+e.offsetHeight+10)});need=Math.max(need,q)}N.push(Math.max(need,row[0].offsetHeight))}
+    const T=H.reduce((x,y)=>x+y,0);if(!N.some((v,i)=>v>H[i]+1))return;
+    const grow=N.map((v,i)=>v>H[i]+1),minH=T/n*0.55;let fixed=N.reduce((s,v,i)=>s+(grow[i]?v:0),0),rest=n-grow.filter(Boolean).length;
+    let other=rest?Math.max(minH,(T-fixed)/rest):0;if(fixed+other*rest>T){const k=(T-other*rest)/fixed;if(k<1)for(let i=0;i<n;i++)if(grow[i])N[i]*=k}
+    const W=N.map((v,i)=>grow[i]?v:other);const head=(g.style.gridTemplateRows||'auto').split(' ')[0];g.style.gridTemplateRows=head+' '+W.map(v=>'minmax(0,'+v.toFixed(1)+'fr)').join(' ')});
+  stage.querySelectorAll('.cell[data-date]').forEach(c=>{const L=[...c.querySelectorAll('.e[data-eid]')];if(!L.length)return;
+  /* טקסט שהוזז לא עולה על התאריך: אם הוא גבוה, הוא יורד אל מתחת לתאריך */
+  const keep=()=>{const dt=c.querySelector('.d-top');if(!dt)return;const cr=c.getBoundingClientRect(),db=dt.getBoundingClientRect().bottom+2;
+    L.forEach(e=>{if(!e.classList.contains('e-pos'))return;const r=e.getBoundingClientRect();if(r.top<db&&r.bottom>dt.getBoundingClientRect().top)e.style.top=((db-cr.top+r.height/2)/cr.height*100).toFixed(1)+'%'})};
+  keep();
   const over=()=>{if(c.scrollHeight>c.clientHeight+1)return true;const cr=c.getBoundingClientRect();return L.some(e=>{const r=e.getBoundingClientRect();return r.top<cr.top-1||r.bottom>cr.bottom+1||r.left<cr.left-1||r.right>cr.right+1})};
   if(!over())return;const base=L.map(e=>parseFloat(e.style.fontSize)||100);let k=1;
-  while(over()&&k>0.5){k=+(k-0.06).toFixed(2);L.forEach((e,i)=>e.style.fontSize=Math.round(base[i]*k)+'%')}})}
+  while(over()&&k>0.5){k=+(k-0.06).toFixed(2);L.forEach((e,i)=>e.style.fontSize=Math.round(base[i]*k)+'%');keep()}})}
+
+
+document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('[data-rowgrow]')){state.s.rowGrow=e.target.checked;document.querySelectorAll('[data-rowgrow]').forEach(x=>x.checked=e.target.checked);save();render()}});
+function sxRowGrowUI(){const lab='<label class="chk sx-rg"><input type="checkbox" data-rowgrow> שורה שהטקסט שלה לא נכנס גדלה, על חשבון שאר השורות (בלי סימון: הטקסט מוקטן)</label>';
+  ['#textScale2','#textScale'].forEach(s=>{const i=$(s),l=i&&i.closest('label');if(l&&!l.nextElementSibling?.classList?.contains('sx-rg'))l.insertAdjacentHTML('afterend',lab)});
+  {const sp=$('#spCards');if(sp&&!sp.nextElementSibling?.classList?.contains('sx-rg'))sp.insertAdjacentHTML('afterend',lab)}
+  document.querySelectorAll('[data-rowgrow]').forEach(x=>x.checked=!!state.s.rowGrow)}
 
 /* boot */
 (async function(){
