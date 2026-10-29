@@ -758,7 +758,9 @@ function zmanimFor(date,all){
   return out;
 }
 /* זמנים לעוד ערים (למשפחה שגרה בכמה ערים): state.s.xlocs=[{id}|{custom:{name,lat,lng,el,tz,il,candle}}, short] */
-const xlocsOn=()=>state.s.noTimes?[]:(state.s.xlocs||[]).filter(x=>xPlace(x));
+/* בלי תשלום: עד 2 ערים נוספות. במסלול בתשלום: עד 10 */
+const xPaid=()=>{try{return !!LP&&LP.current().id!=='free'}catch(e){return false}},xMax=()=>xPaid()?10:2;
+const xlocsOn=()=>state.s.noTimes?[]:(state.s.xlocs||[]).filter(x=>xPlace(x)).slice(0,xMax());
 function xPlace(x){return x&&(x.custom||CITIES.find(c=>c.id===x.id))||null}
 const XABBR={'ירושלים':'י־ם','בני ברק':'ב״ב','תל אביב':'ת״א','פתח תקווה':'פ״ת','בית שמש':'ב״ש','ראשון לציון':'ראשל״צ','באר שבע':'ב״ש','קריית גת':'ק״ג','רמת גן':'ר״ג','מודיעין עילית':'מודיעין עי׳'};
 function xName(x){const p=xPlace(x),n=(p&&p.name)||'';return (x.short||XABBR[n]||n).trim()}
@@ -3623,8 +3625,8 @@ function planCards(highlight){
 function openUpgrade(reason){
   if(!LP)return;
   const need=LP.cheapestWith(reason),what=LP.FEATURE_NAMES[reason]||'';
-  const title=reason==='download'?'הורדה והדפסה של הלוח':reason==='months'?'פתיחת כל חודשי השנה':reason?what:'המסלולים של MyLuach';
-  const sub=reason==='events'?'במסלול שלכם אפשר עד '+PLAN().events+' אירועים משפחתיים.':reason&&reason!=='months'&&reason!=='download'?'האפשרות הזאת כלולה במסלול '+need.name+' ומעלה.':'בוחרים מסלול, וכל מה שבניתם נשאר בדיוק כמו שהוא.';
+  const title=reason==='xlocs'?'זמנים לעוד ערים':reason==='download'?'הורדה והדפסה של הלוח':reason==='months'?'פתיחת כל חודשי השנה':reason?what:'המסלולים של MyLuach';
+  const sub=reason==='xlocs'?'בלי תשלום אפשר להוסיף עד 2 ערים נוספות. בכל מסלול בתשלום אפשר עד 10.':reason==='events'?'במסלול שלכם אפשר עד '+PLAN().events+' אירועים משפחתיים.':reason&&reason!=='months'&&reason!=='download'?'האפשרות הזאת כלולה במסלול '+need.name+' ומעלה.':'בוחרים מסלול, וכל מה שבניתם נשאר בדיוק כמו שהוא.';
   const m=modal('<h3>'+esc(title)+'</h3><p class="hint">'+esc(sub)+'</p>'+(PLAN().id==='free'?'<div class="sample-offer"><div><b>רוצים לראות קודם איך זה יוצא?</b><span>חודש אחד מלא להורדה בחינם.</span></div><button class="btn" type="button" data-sample>חודש לדוגמה בחינם</button></div>':'')+planCards(need.id)+'<p class="hint plan-note">כל מסלול הוא לשנה אחת, ללוח של אותה שנה. בשלב הזה התשלום עוד לא מחובר: הבחירה רק מחליפה את המסלול כדי לבדוק את האתר.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
   m.querySelector('.modal').classList.add('upgrade');
   m.addEventListener('click',e=>{if(e.target.closest('[data-sample]')){m.remove();openSample();return}const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});
@@ -4904,10 +4906,10 @@ function locSync(){const s=state.s,sc=$('#sCity');
     $('#sTimes').hidden=!!s.noTimes;const zs=$('#sZsun');if(zs)zs.checked=!!(s.zmanim||{}).sunset;const zb=$('#sZshab');if(zb)zb.checked=!s.noShabTimes}
   document.querySelectorAll('[data-xlocs]').forEach(box=>{
     if(s.noTimes){box.innerHTML='';return}
-    const X=s.xlocs||[];
+    const X=s.xlocs||[],mx=xMax(),over=X.length>mx;
     box.innerHTML='<div class="xl"><b>זמנים לעוד ערים</b><p class="hint">למשפחה שגרה בכמה ערים: ליד כל זמן (למשל השקיעה, הדלקת נרות ויציאת שבת) יופיע גם הזמן בערים האלה.</p>'+
-      X.map((x,i)=>'<div class="xl-r"><input type="text" data-xn="'+i+'" value="'+esc(xName(x))+'" aria-label="השם שיופיע בלוח" maxlength="16"><span class="hint">'+esc((xPlace(x)||{}).name||'')+'</span><button type="button" class="x" data-xdel="'+i+'" aria-label="הסרה">✕</button></div>').join('')+
-      (X.length<4?'<div class="xl-add"><select data-xadd><option value="">＋ הוספת עיר…</option>'+cityOpts('',false).replace('<optgroup label="מיקום שלי">'+opt('custom',(s.custom||{}).name||'מיקום מותאם')+'</optgroup>','')+'</select><button type="button" class="btn small" data-xgeo>📍 לפי מיקוד / כתובת</button></div>':'<p class="hint">אפשר עד 4 ערים נוספות.</p>')+'</div>'})}
+      X.map((x,i)=>'<div class="xl-r"><input type="text" data-xn="'+i+'" value="'+esc(xName(x))+'" aria-label="השם שיופיע בלוח" maxlength="16"><span class="hint">'+esc((xPlace(x)||{}).name||'')+'</span><button type="button" class="x" data-xdel="'+i+'" aria-label="הסרה">✕</button>'+(i>=mx?'<span class="hint">🔒 לא יודפס בלי מסלול</span>':'')+'</div>').join('')+
+      (X.length<mx?'<div class="xl-add"><select data-xadd><option value="">＋ הוספת עיר…</option>'+cityOpts('',false).replace('<optgroup label="מיקום שלי">'+opt('custom',(s.custom||{}).name||'מיקום מותאם')+'</optgroup>','')+'</select><button type="button" class="btn small" data-xgeo>📍 לפי מיקוד / כתובת</button></div>'+(xPaid()?'':'<p class="hint">בלי תשלום אפשר עד 2 ערים נוספות. במסלול בתשלום: עד 10.</p>'):xPaid()?'<p class="hint">אפשר עד 10 ערים נוספות.</p>':'<p class="hint">🔒 בלי תשלום אפשר עד 2 ערים נוספות. במסלול בתשלום אפשר עד 10. <button type="button" class="linkbtn" data-upgrade="xlocs">למסלולים</button></p>')+'</div>'})}
 document.addEventListener('change',e=>{const t=e.target,s=state.s;
   if(t.id==='sCity'){if(!t.value){s.noTimes=true;save();syncUI();render();return}locChosen();if(t.value!=='custom'){const c=CITIES.find(x=>x.id===t.value);if(c){s.candleMins=c.candle;s.il=c.il}}set('city',t.value);return}
   if(t.id==='sZsun'){s.zmanim={...(s.zmanim||{}),sunset:t.checked};save();render();return}

@@ -93,7 +93,7 @@
     ready: null,
     /* מי שמסלול ממנו חסרה יכולת: המסלול הזול ביותר שכולל אותה */
     cheapestWith(feature){ const cd = typeof window !== 'undefined' && window.MYLUACH_MODE === 'countdown';
-      const ok = p => p.id !== 'free' && !p.hidden && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' ? true : p.features[feature]);
+      const ok = p => p.id !== 'free' && !p.hidden && (feature === 'events' ? p.events > this.current().events : feature === 'months' || feature === 'download' || feature === 'xlocs' ? true : p.features[feature]);
       /* בלוח ספירה: קודם מסלולי הספירה */
       return (cd && PLANS.find(p => p.cd && ok(p))) || PLANS.find(p => !p.cd && ok(p)) || PLANS[3] }
   };
