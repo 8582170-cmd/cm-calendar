@@ -2,6 +2,8 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ '✎ עריכה': '✎ Edit',
+ 'שיפור צבעים, חיתוך, טקסט על התמונה, מדבקות וגזירת דמות': 'Enhance colors, crop, text on the photo, stickers and figure cutout',
  'לחצו כדי לכתוב ביום · אפשר לגרור לכאן תמונה': 'Click to type in this day · you can drag a photo here',
  'שחררו את התמונה על יום בלוח, או על המקום לתמונה של החודש': 'Drop the photo on a day, or on the month photo area',
  'זה הבונה המהיר: סוג לוח, עיצוב, תמונות ואירועים.': 'This is the quick builder: calendar type, design, photos and events.',

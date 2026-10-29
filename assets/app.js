@@ -4552,6 +4552,7 @@ function openDayImages(date){
     q('#diList').innerHTML=L.order.map((id,i)=>{const e=evs.find(x=>x.id===id),t=L.im[id]||{};return '<div class="di-it" data-id="'+id+'"><img src="'+e.img+'" alt=""><span class="di-n">'+(i+1)+'. '+esc(e.name||'תמונה')+'</span>'+
       '<button type="button" class="x" data-z="1" aria-label="הגדלה">＋</button><button type="button" class="x" data-z="-1" aria-label="הקטנה">−</button>'+
       '<label class="di-op" title="שקיפות: פחות = התמונה חלשה יותר, כמו רקע">◐<input type="range" min="10" max="100" step="5" data-op="1" value="'+Math.round((t.o??1)*100)+'" aria-label="שקיפות התמונה"><span>'+Math.round((t.o??1)*100)+'%</span></label>'+
+      '<button type="button" class="x di-tg" data-ied="1" title="שיפור צבעים, חיתוך, טקסט על התמונה, מדבקות וגזירת דמות">✎ עריכה</button>'+
       '<button type="button" class="x di-tg'+(t.f?' on':'')+'" data-flip="1" aria-pressed="'+!!t.f+'" title="היפוך התמונה (מראה)">⇋ היפוך</button>'+
       '<button type="button" class="x di-tg'+(t.c?' on':'')+'" data-fit="1" aria-pressed="'+!!t.c+'" title="לראות את כל התמונה, בלי חיתוך">▣ כל התמונה</button>'+
       (!diGrid(L.dir)?'<span class="di-pct">'+Math.round(L.sizes[i])+'%</span>':'')+
@@ -4562,6 +4563,7 @@ function openDayImages(date){
   q('#diEq').onclick=()=>{L.sizes=L.order.map(()=>100/L.order.length);L.gr=50;L.gc=50;draw()};
   q('#diList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const id=b.closest('[data-id]').dataset.id,i=L.order.indexOf(id);
     const t=L.im[id]={...(L.im[id]||{})};
+    if(b.dataset.ied){const ev=evs.find(x=>x.id===id);if(ev)openImageEditor({img:ev.img,edit:ev.edit},async v=>{if(v.img)ev.img=v.img;if('edit' in v)ev.edit=v.edit;try{ev.imgLum=await imageLum(ev.img)}catch(err){}save();draw()});return}
     if(b.dataset.z){const z0=t.z??1,st=z0<1||(z0===1&&+b.dataset.z<0)?0.1:0.25;t.z=Math.max(0.1,Math.min(4,+(z0+(+b.dataset.z)*st).toFixed(2)))}
     if(b.dataset.flip)t.f=t.f?0:1;
     if(b.dataset.fit){t.c=t.c?0:1;if(t.c)t.z=1}
