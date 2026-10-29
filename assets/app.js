@@ -1311,7 +1311,7 @@ function addFootLine(p){
 const CD_STYLES={
   classic:{n:'קלאסי',goal:'🎉'},
   bride:{n:'כלה וחתונה: ורוד עתיק וזהב, פרחים',goal:'💍',acc:'#a8646f',font:'Bellefair',num:'Bellefair'},
-  barmitzvah:{n:'בר מצווה: כחול וזהב, פסי טלית',goal:'✡',acc:'#1f3a5f',font:'Suez One',num:'Suez One'},
+  barmitzvah:{n:'בר מצווה: כחול וזהב, פסי טלית',goal:'📜',acc:'#1f3a5f',font:'Suez One',num:'Suez One'},
   batmitzvah:{n:'בת מצווה: ורוד וזהב, פרחים',goal:'🌸',acc:'#b8487a',font:'Secular One',num:'Secular One'},
   kids:{n:'ילדים: צבעוני ושמח',goal:'🎈',acc:'#e0663a',font:'Playpen Sans Hebrew',num:'Rubik Bubbles'},
   baby:{n:'לידה ותינוק: תכלת רך, עננים',goal:'👶',acc:'#5b8db8',font:'Playpen Sans Hebrew',num:'Playpen Sans Hebrew'},
