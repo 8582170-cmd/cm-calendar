@@ -99,6 +99,13 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr));gap:12px}
 .tp-c{border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--paper);min-width:0}
 .tp-c.off{opacity:.55}
+.tp-c{position:relative}.tp-c .sel{position:absolute;top:12px;inset-inline-start:12px;z-index:2;display:flex;align-items:center;gap:4px;background:#fff;border-radius:8px;padding:3px 7px;font-size:13px;font-weight:700;box-shadow:0 1px 4px rgb(0 0 0 / .2);cursor:pointer}
+.tp-c .sel input{width:18px;height:18px;margin:0}.tp-c.picked{outline:3px solid var(--teal);outline-offset:-1px}
+.bulk{position:sticky;top:0;z-index:5;border:2px solid var(--teal);border-radius:12px;padding:12px;background:var(--paper);display:flex;flex-direction:column;gap:10px;box-shadow:0 4px 14px rgb(0 0 0 / .12)}
+.bulk .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.bulk .row>b{min-width:120px}
+.bulk select,.bulk input[type=number]{width:auto;min-width:110px}
+.bulk .cats{display:flex;flex-wrap:wrap;gap:4px 12px;max-height:150px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.bulk .cats label{display:flex;gap:5px;align-items:center;font-size:14px}.bulk .cats input{width:auto;margin:0}
 .tp-c canvas{width:100%;aspect-ratio:794/1123;object-fit:contain;border-radius:4px;background:var(--sheet);box-shadow:0 1px 4px rgb(0 0 0 / .15)}
 .tp-c b{font-size:15px}.tp-c .m{font-size:13px;color:var(--mute)}
 .tp-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;border:2px solid var(--teal);border-radius:14px;padding:14px}
@@ -120,7 +127,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=31"></script>
+<script src="/assets/greetings/greetings.js?v=32"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -193,6 +200,8 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <div class="actions"><button class="btn primary" type="button" id="tbGo">בחירת תמונות והעלאה</button><button class="btn" type="button" id="tbX">סגירה</button><span class="sub" id="tbMsg" role="status"></span></div>
     </div>
     <div id="tpEd"></div>
+    <div class="actions"><button class="btn sm" type="button" id="tpSelAll">בחירת כל העיצובים שברשימה</button><button class="btn sm" type="button" id="tpSelNone" hidden>ביטול הבחירה</button><span class="sub">מסמנים ☐ על כמה עיצובים כדי לשנות לכולם יחד מחיר, אירועים ושאר ההגדרות.</span></div>
+    <div class="bulk" id="tpBulk" hidden></div>
     <div class="tp-grid" id="tpList"><p class="sub">טוען…</p></div>
     <h3 style="margin:8px 0 0;font-size:17px">אירועים (קטגוריות בגלריה)</h3>
     <p class="sub">מסמנים ✓ ליד כל אירוע שפעיל באתר. אירוע בלי סימון לא מוצג ללקוחות: לא בגלריה, לא בעיצובים שבו ולא בבחירת הנוסחים. אחרי השינוי ללחוץ "שמירה".</p>
@@ -482,6 +491,7 @@ function tpInit(){
   $('payH').oninput=()=>{TP.pay=TP.pay||{};TP.pay.editHours=+$('payH').value;tpMsg('ללחוץ "שמירה" בתחתית.')};
   $('payD').oninput=()=>{TP.pay=TP.pay||{};TP.pay.dlDays=+$('payD').value;tpMsg('ללחוץ "שמירה" בתחתית.')};
   tpBatchInit();
+  $('tpSelAll').onclick=()=>{tpVisible().forEach(t=>TPSEL.add(t.id));tpRender()};$('tpSelNone').onclick=()=>{TPSEL.clear();tpRender()};
   Promise.all([GR.catalog(),api({action:'greettplget'})]).then(([_,d])=>{TP=d;TP.pay=TP.pay||{editHours:48,dlDays:30};$('payH').value=TP.pay.editHours;$('payD').value=TP.pay.dlDays;tpCats();tpRender()}).catch(e=>{$('tpList').innerHTML='<p class="msg">לא הצלחתי לטעון: '+esc(e.message)+'</p>'});
 }
 function tpMsg(t,ok){$('tpMsg').className=ok?'ok':'';$('tpMsg').textContent=t}
@@ -526,23 +536,62 @@ function tpCats(){
   });
   const f=$('tpFilter'),cur=f.value;f.innerHTML='<option value="">כל האירועים</option>'+TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');f.value=cur;
 }
-function tpObj(t){return {id:t.id,type:t.type,land:!!t.land,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
+function tpObj(t){return {id:t.id,type:t.type,land:t.land,noArea:!!t.noArea,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
+/* בחירה של כמה עיצובים ושינוי הגדרות לכולם יחד (חוץ מאזור הטקסט, שהוא לכל דף בנפרד) */
+const TPSEL=new Set();
+function tpVisible(){const f=$('tpFilter').value;return (TP.templates||[]).filter(t=>!f||t.cat===f||(t.variants||[]).some(v=>v.cat===f))}
+function tpBulk(){
+  const box=$('tpBulk'),sel=(TP.templates||[]).filter(t=>TPSEL.has(t.id));$('tpSelNone').hidden=!sel.length;
+  if(!sel.length){box.hidden=true;box.innerHTML='';return}
+  box.hidden=false;
+  const catOpts=TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');
+  box.innerHTML='<div class="row"><b>נבחרו '+sel.length+' עיצובים</b><button class="btn sm" type="button" data-b="none">ביטול הבחירה</button><span class="sub">כל שינוי חל על כל הנבחרים. אחרי זה ללחוץ "שמירת העיצובים והאירועים".</span></div>'+
+    '<div class="row"><b>מחיר (₪)</b><input type="number" min="0" step="1" data-v="price" placeholder="0 = חינם"><button class="btn sm primary" type="button" data-b="price">קביעת המחיר</button></div>'+
+    '<div class="row"><b>סוג הדף</b><select data-v="type"><option value="design">דף מעוצב</option><option value="bg">דף רקע</option><option value="frame">מסגרת</option></select><button class="btn sm" type="button" data-b="type">החלה</button>'+
+      '<b>ברכה / הזמנה</b><select data-v="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select><button class="btn sm" type="button" data-b="kind">החלה</button></div>'+
+    '<div class="row"><b>כיוון הדף</b><button class="btn sm" type="button" data-b="port">▯ לאורך</button><button class="btn sm" type="button" data-b="land">▭ לרוחב</button><button class="btn sm" type="button" data-b="auto">לפי התמונה</button></div>'+
+    '<div class="row"><b>אזור טקסט</b><button class="btn sm" type="button" data-b="noarea">בלי אזור טקסט (כותבים על כל הדף)</button><button class="btn sm" type="button" data-b="area">עם אזור הטקסט שסומן</button></div>'+
+    '<div class="row"><b>הצגה ללקוחות</b><button class="btn sm" type="button" data-b="on">מוצג באתר</button><button class="btn sm" type="button" data-b="off">מוסתר</button></div>'+
+    '<div class="row"><b>אירוע ראשי</b><select data-v="cat">'+catOpts+'</select><button class="btn sm" type="button" data-b="cat">החלה</button></div>'+
+    '<div><b>אירועים נוספים</b> <span class="sub">מסמנים אירועים, ואז "הוספה" או "הסרה". העיצוב יופיע גם בהם בגלריה.</span><div class="cats">'+TPCATS().map(c=>'<label><input type="checkbox" value="'+esc(c[0])+'">'+esc(c[1])+'</label>').join('')+'</div>'+
+      '<div class="row" style="margin-top:6px"><button class="btn sm primary" type="button" data-b="addcats">הוספה לאירועים המסומנים</button><button class="btn sm" type="button" data-b="rmcats">הסרה מהאירועים המסומנים</button><button class="btn sm" type="button" data-b="clrcats">רק באירוע הראשי</button></div></div>'+
+    '<div class="row"><button class="btn sm" type="button" data-b="del" style="color:#a8382c">מחיקת '+sel.length+' העיצובים</button></div>';
+  const v=k=>box.querySelector('[data-v='+k+']').value,cats=()=>[...box.querySelectorAll('.cats input:checked')].map(x=>x.value);
+  const done=t=>{tpRender();tpCats();tpMsg(t+' ('+sel.length+' עיצובים). ללחוץ "שמירה" בתחתית.')};
+  box.onclick=e=>{const b=e.target.closest('[data-b]');if(!b)return;const k=b.dataset.b;
+    if(k==='none'){TPSEL.clear();tpRender();return}
+    if(k==='price'){const p=Math.max(0,Math.min(10000,+v('price')||0));sel.forEach(t=>t.price=p);return done(p?'המחיר נקבע ל־'+p+' ₪':'סומנו כחינם')}
+    if(k==='type'){const y=v('type');sel.forEach(t=>{t.type=y;if(y!=='design')t.blocks=[];else if(!(t.blocks||[]).length)t.blocks=GR.starter(t.kind,'#14213d','#8a6a22')});return done('סוג הדף עודכן')}
+    if(k==='kind'){sel.forEach(t=>t.kind=v('kind'));return done('עודכן')}
+    if(k==='port'||k==='land'||k==='auto'){sel.forEach(t=>{if(k==='auto')delete t.land;else t.land=k==='land'});return done('הכיוון עודכן')}
+    if(k==='noarea'){sel.forEach(t=>{t.noArea=true;if(t.draft){t.draft=false;t.on=true}});return done('בלי אזור טקסט: כותבים על כל הדף')}
+    if(k==='area'){sel.forEach(t=>delete t.noArea);return done('חוזר לאזור הטקסט שסומן')}
+    if(k==='on'||k==='off'){sel.forEach(t=>{t.on=k==='on';if(k==='on'&&t.draft&&t.noArea)t.draft=false});return done(k==='on'?'מוצגים באתר':'הוסתרו')}
+    if(k==='cat'){sel.forEach(t=>{t.cat=v('cat');t.variants=(t.variants||[]).filter(x=>x.cat!==t.cat)});return done('האירוע הראשי עודכן')}
+    if(k==='addcats'){const cs=cats();if(!cs.length){tpMsg('קודם מסמנים אירועים.');return}sel.forEach(t=>{t.variants=t.variants||[];cs.forEach(c=>{if(c!==t.cat&&!t.variants.some(x=>x.cat===c&&x.kind===t.kind))t.variants.push({cat:c,kind:t.kind,preset:''})})});return done('נוספו '+cs.length+' אירועים')}
+    if(k==='rmcats'){const cs=cats();sel.forEach(t=>t.variants=(t.variants||[]).filter(x=>!cs.includes(x.cat)));return done('הוסרו')}
+    if(k==='clrcats'){sel.forEach(t=>t.variants=[]);return done('רק באירוע הראשי')}
+    if(k==='del'){if(!b.dataset.sure){b.dataset.sure=1;b.textContent='ללחוץ שוב כדי למחוק '+sel.length+' עיצובים';return}const ids=new Set(sel.map(t=>t.id));TP.templates=TP.templates.filter(t=>!ids.has(t.id));TPSEL.clear();return done('נמחקו')}
+  };
+}
 function tpRender(){
   const box=$('tpList'),f=$('tpFilter').value;box.innerHTML='';
   const list=(TP.templates||[]).filter(t=>!f||t.cat===f||(t.variants||[]).some(v=>v.cat===f)).sort((a,b)=>(a.order||0)-(b.order||0));
-  if(!list.length){box.innerHTML='<p class="sub">עדיין אין עיצובים שהעלית'+(f?' לאירוע הזה':'')+'. לוחצים "+ עיצוב חדש".</p>';return}
+  if(!list.length){box.innerHTML='<p class="sub">עדיין אין עיצובים שהעלית'+(f?' לאירוע הזה':'')+'. לוחצים "+ עיצוב חדש".</p>';tpBulk();return}
   list.forEach(t=>{
     const el=document.createElement('div');el.className='tp-c'+(t.on===false?' off':'');
-    el.innerHTML='<canvas></canvas><b></b><span class="m"></span><div class="actions"><button class="btn sm" type="button" data-a="ed">עריכה</button><button class="btn sm" type="button" data-a="on"></button><button class="btn sm" type="button" data-a="del">מחיקה</button></div>';
-    el.querySelector('b').textContent=(t.draft?'⚠ לסמן אזור טקסט · ':'')+({bg:'דף רקע · ',frame:'מסגרת · '}[t.type]||'')+(t.title||'בלי שם');
-    el.querySelector('.m').textContent=(GR.KINDS[t.kind]||'')+' · '+tpCatName(t.cat)+((t.variants||[]).length?' + עוד '+t.variants.length+' אירועים':'')+(t.price?' · ₪'+t.price:' · חינם');
+    el.innerHTML='<label class="sel"><input type="checkbox"> בחירה</label><canvas></canvas><b></b><span class="m"></span><div class="actions"><button class="btn sm" type="button" data-a="ed">עריכה</button><button class="btn sm" type="button" data-a="on"></button><button class="btn sm" type="button" data-a="del">מחיקה</button></div>';
+    el.querySelector('b').textContent=(t.draft&&!t.noArea?'⚠ לסמן אזור טקסט · ':'')+({bg:'דף רקע · ',frame:'מסגרת · '}[t.type]||'')+(t.title||'בלי שם');
+    el.querySelector('.m').textContent=(GR.KINDS[t.kind]||'')+' · '+tpCatName(t.cat)+((t.variants||[]).length?' + עוד '+t.variants.length+' אירועים':'')+(t.price?' · ₪'+t.price:' · חינם')+(t.land?' · לרוחב':'')+(t.noArea?' · בלי אזור טקסט':'');
     el.querySelector('[data-a=on]').textContent=t.on===false?'הצגה':'הסתרה';
     el.querySelector('[data-a=ed]').onclick=()=>tpOpen(t);
+    const sc=el.querySelector('.sel input');sc.checked=TPSEL.has(t.id);el.classList.toggle('picked',sc.checked);sc.onchange=()=>{if(sc.checked)TPSEL.add(t.id);else TPSEL.delete(t.id);el.classList.toggle('picked',sc.checked);tpBulk()};
     el.querySelector('[data-a=on]').onclick=()=>{t.on=t.on===false;tpRender();tpMsg('ללחוץ "שמירה" בתחתית.')};
     const d=el.querySelector('[data-a=del]');d.onclick=()=>{if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}TP.templates=TP.templates.filter(x=>x!==t);tpRender();tpCats();tpMsg('נמחק. ללחוץ "שמירה" בתחתית.')};
     box.appendChild(el);
     GR.render(el.querySelector('canvas'),tpObj(t),{colors:{},blocks:t.blocks,scale:1},{scale:.35,thumb:true}).catch(()=>{});
   });
+  const ids=new Set((TP.templates||[]).map(t=>t.id));[...TPSEL].forEach(id=>{if(!ids.has(id))TPSEL.delete(id)});tpBulk();
 }
 /* רקע גדול מדי (למשל PNG אחרי Upscayl): מקטינים ל-300dpi ב-A4 ושומרים כ-JPEG, כדי שייכנס לאחסון ויטען מהר */
 /* רקע: שומרים שני קבצים. "hi" עד 7016 פיקסלים (A2 ב-300dpi) להורדה בגדלים גדולים, ו"img" עד 2480 לעריכה מהירה */
@@ -619,7 +668,7 @@ function tpOpen(t){
    '<label>סוג הדף<select id="tpY"><option value="design">דף מעוצב (שטח לטקסט + נוסח מוכן)</option><option value="bg">דף רקע (כותבים על כל הדף, בלי נוסח)</option><option value="frame">מסגרת (הטקסט בתוך המסגרת, בלי נוסח)</option></select></label><label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
    '<label>צבע הטקסט הראשי<input id="tpM" type="color" value="#14213d"></label><label>צבע להדגשות ולקישוטים<input id="tpA" type="color" value="#8a6a22"></label>'+
    '<label>גופן לכותרות<select id="tpFH"></select></label><label>גופן לטקסט<select id="tpFB"></select></label>'+
-   '<label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
+   '<label>אזור טקסט<select id="tpNA"><option value="0">באזור שמסמנים בגרירה</option><option value="1">בלי אזור: כותבים על כל הדף</option></select></label><label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
    '<label>מבנה התחלתי<select id="tpS"><option value="greeting">ברכה (כותרת, שם, לרגל, ברכה, חתימה)</option><option value="invite">הזמנה (חתן וכלה, מועד, הורים)</option></select></label></div>'+
    '<div class="actions"><button class="btn" type="button" id="tpApply">החלת הצבעים והגופנים על הטקסט</button></div>'+
    '<p class="sub">ללקוח יהיה אפשר לשנות הכל בעורך: טקסט, גופנים, צבעים, להוסיף ולמחוק פסקאות.</p>'+
@@ -643,11 +692,12 @@ function tpOpen(t){
   $('tpV').onchange=()=>{w.area.valign=$('tpV').value;draw()};
   const setLand=v=>{v=!!v;if(v===!!w.land)return;w.land=v;const A=w.area,Wd=DW(),Hd=DH();A.x=Math.round(Wd*.16);A.y=Math.round(Hd*.18);A.w=Math.round(Wd*.68);A.h=Math.round(Hd*.64);$('tpL').value=v?'1':'0';draw()};
   $('tpL').value=w.land?'1':'0';$('tpL').onchange=()=>setLand($('tpL').value==='1');
+  $('tpNA').value=w.noArea?'1':'0';ar.hidden=!!w.noArea;$('tpNA').onchange=()=>{if($('tpNA').value==='1')w.noArea=true;else delete w.noArea;ar.hidden=!!w.noArea;draw()};
   /* עיצוב ישן שהועלה לרוחב: מזהים לפי התמונה */
   if(w.bg.img&&w.land==null){const im=new Image();im.onload=()=>{if(im.width>im.height){setLand(true);$('tpUpMsg').textContent='התמונה לרוחב, אז הדף הוגדר לרוחב. כדאי לסמן מחדש את אזור הטקסט.'}};im.src=w.bg.img}
   /* גרירת אזור הטקסט */
   let st=null;
-  pv.addEventListener('pointerdown',e=>{if(!w.bg.img)return;const r=pv.getBoundingClientRect();st={x:(e.clientX-r.left)/r.width*DW(),y:(e.clientY-r.top)/r.height*DH()};pv.setPointerCapture(e.pointerId)});
+  pv.addEventListener('pointerdown',e=>{if(!w.bg.img)return;if(w.noArea){delete w.noArea;$('tpNA').value='0';ar.hidden=false}const r=pv.getBoundingClientRect();st={x:(e.clientX-r.left)/r.width*DW(),y:(e.clientY-r.top)/r.height*DH()};pv.setPointerCapture(e.pointerId)});
   pv.addEventListener('pointermove',e=>{if(!st)return;const r=pv.getBoundingClientRect(),x=Math.max(0,Math.min(DW(),(e.clientX-r.left)/r.width*DW())),y=Math.max(0,Math.min(DH(),(e.clientY-r.top)/r.height*DH()));
     w.area.x=Math.round(Math.min(st.x,x));w.area.y=Math.round(Math.min(st.y,y));w.area.w=Math.max(40,Math.round(Math.abs(x-st.x)));w.area.h=Math.max(40,Math.round(Math.abs(y-st.y)));ar.style.cssText='left:'+(w.area.x/DW()*100)+'%;top:'+(w.area.y/DH()*100)+'%;width:'+(w.area.w/DW()*100)+'%;height:'+(w.area.h/DH()*100)+'%'});
   pv.addEventListener('pointerup',()=>{if(st){st=null;draw()}});
@@ -669,6 +719,7 @@ function tpOpen(t){
   vars();
   $('tpCancel').onclick=()=>{box.innerHTML=''};
   $('tpOk').onclick=()=>{if(!w.bg.img){$('tpUpMsg').textContent='קודם מעלים רקע.';return}
+    if(w.noArea)w.draft=false;
     if(w.draft){w.draft=false;w.on=true}
     w.title=$('tpT').value.trim();w.cat=$('tpC').value;w.kind=$('tpK').value;w.type=$('tpY').value;if(w.type!=='design')w.blocks=[];w.price=+$('tpP').value||0;
     const i=(TP.templates||[]).findIndex(x=>x.id===w.id);if(i>=0)TP.templates[i]=w;else TP.templates.push(w);

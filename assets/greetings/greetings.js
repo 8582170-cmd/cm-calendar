@@ -314,7 +314,7 @@ function quarter(tpl, state){ var G = (state && state.page) || {}; if (G.rot != 
 function natImg(tpl){ return tpl._imgLand != null ? !!tpl._imgLand : natLand(tpl); }
 function areaOf(tpl, state){
   var ty = typeOf(tpl);
-  if (ty === 'design') return tpl.area;
+  if (ty === 'design' && !tpl.noArea) return tpl.area;
   if (ty === 'frame' && !(state && state.area)) {
     /* אזור הטקסט של המסגרת מסתובב יחד עם המסגרת */
     var A = tpl.area, q = quarter(tpl, state), nl = natImg(tpl), Wn = nl ? PH : PW, Hn = nl ? PW : PH;
@@ -323,7 +323,7 @@ function areaOf(tpl, state){
     if (q === 3) return { x: A.y, y: Wn - (A.x + A.w), w: A.h, h: A.w, valign: A.valign };
     return A;
   }
-  var a = (state && state.area) || (ty === 'bg' ? { t: 9, b: 9, r: 10, l: 10 } : ty === 'frame' ? { t: 18, b: 18, r: 18, l: 18 } : {}), t = (a.t == null ? 13 : a.t) / 100 * H, b = (a.b == null ? 13 : a.b) / 100 * H, r = (a.r == null ? 14 : a.r) / 100 * W, l = (a.l == null ? 14 : a.l) / 100 * W;
+  var a = (state && state.area) || (ty === 'bg' || ty === 'design' ? { t: 9, b: 9, r: 10, l: 10 } : ty === 'frame' ? { t: 18, b: 18, r: 18, l: 18 } : {}), t = (a.t == null ? 13 : a.t) / 100 * H, b = (a.b == null ? 13 : a.b) / 100 * H, r = (a.r == null ? 14 : a.r) / 100 * W, l = (a.l == null ? 14 : a.l) / 100 * W;
   return { x: l, y: t, w: Math.max(80, W - l - r), h: Math.max(80, H - t - b), valign: a.v === 'top' ? 'top' : 'center' };
 }
 /* שטח הטקסט (צבע / תמונה): אזור הטקסט + שוליים, וכל צד אפשר למשוך בנפרד (dt/db/dr/dl ביחידות הדף) */
@@ -642,11 +642,12 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
   function draw(){
     var S = getS(); box.innerHTML = '';
     var ty = tpl ? typeOf(tpl) : 'design';
-    if (ty === 'own' || ty === 'bg' || ty === 'frame') {
-      var O = S.own || {}, ar = S.area || (S.area = ty === 'bg' ? { t: 9, b: 9, r: 10, l: 10, v: 'center' } : ty === 'frame' ? null : { t: 13, b: 13, r: 14, l: 14, v: 'center' });
+    var marg = ty === 'own' || ty === 'bg' || ty === 'frame' || (ty === 'design' && tpl.noArea);
+    if (marg) {
+      var O = S.own || {}, ar = S.area || (S.area = ty === 'bg' || ty === 'design' ? { t: 9, b: 9, r: 10, l: 10, v: 'center' } : ty === 'frame' ? null : { t: 13, b: 13, r: 14, l: 14, v: 'center' });
       if (!ar) { var A0 = areaOf(tpl, S), d0 = dims(tpl, S); ar = S.area = { t: Math.round(A0.y / d0.H * 100), b: Math.round((d0.H - A0.y - A0.h) / d0.H * 100), r: Math.round((d0.W - A0.x - A0.w) / d0.W * 100), l: Math.round(A0.x / d0.W * 100), v: A0.valign === 'top' ? 'top' : 'center' }; }
     }
-    if (ty === 'own' || ty === 'bg' || ty === 'frame') {
+    if (marg) {
       if (ty === 'own') {
       box.appendChild(el('div', 'bgp-h', 'הדף שלכם'));
       var oi = document.createElement('input'); oi.type = 'file'; oi.accept = 'image/*'; oi.hidden = true; box.appendChild(oi);
