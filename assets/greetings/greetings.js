@@ -318,7 +318,8 @@ function areaOf(tpl, state){
   /* מסגרת, או דף רקע שסומן לו אזור בניהול: האזור שסומן, מסתובב יחד עם הדף */
   if ((ty === 'frame' || (ty === 'bg' && tpl.areaSet)) && !(state && state.area)) {
     /* אזור הטקסט של המסגרת מסתובב יחד עם המסגרת */
-    var A = tpl.area, q = quarter(tpl, state), nl = natImg(tpl), Wn = nl ? PH : PW, Hn = nl ? PW : PH;
+    /* האזור סומן בניהול על הדף כפי שהוא נראה שם; מסובבים רק לפי מה שהלקוח סובב מעבר לזה */
+    var A = tpl.area, q = (quarter(tpl, state) - quarter(tpl, {}) + 4) % 4, nl = isLand(tpl, {}), Wn = nl ? PH : PW, Hn = nl ? PW : PH;
     if (q === 1) return { x: Hn - (A.y + A.h), y: A.x, w: A.h, h: A.w, valign: A.valign };
     if (q === 2) return { x: Wn - (A.x + A.w), y: Hn - (A.y + A.h), w: A.w, h: A.h, valign: A.valign };
     if (q === 3) return { x: A.y, y: Wn - (A.x + A.w), w: A.h, h: A.w, valign: A.valign };
