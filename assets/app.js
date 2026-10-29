@@ -1088,7 +1088,7 @@ function makeImageBox(get,setv,heightMm){
     b('+',()=>setv({zoom:Math.min(4,+((data.zoom??1)+0.25).toFixed(2))}));
     b('−',()=>setv({zoom:Math.max(1,+((data.zoom??1)-0.25).toFixed(2))}));
     if((data.zoom??1)!==1||(data.px??50)!==50||(data.pos??50)!==50)b('איפוס',()=>setv({zoom:1,px:50,pos:50}));
-    b('עריכה',()=>openImageEditor(data,v=>setv(v)));
+    b('עריכה',()=>openImageEditor(data,v=>setv(v),()=>setv({img:null,edit:null})));
     b('הסרה',()=>setv({img:null,edit:null}));
     box.appendChild(tools);
   }else{
@@ -1211,7 +1211,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-bglib]')){bgLibPick();return}
   const b=e.target.closest('[data-pbg]');if(b){const k=b.dataset.pbg;if(k==='custom'&&!state.s.pageBgImg){bgOwn();return}if(k==='lib'&&(!(state.s.pageBgLib||{}).img||state.s.pageBg==='lib')){bgLibPick();return}if(state.s.pageBg==='lib'&&k!=='lib'&&(state.s.pageBgOp??0)>0.6)state.s.pageBgOp=0.32;if(k==='lib'&&state.s.pageBg!=='lib')state.s.pageBgOp=0.9;state.s.pageBg=k;save();render();return}
   if(e.target.closest('[data-bgown]')){bgOwn();return}
-  if(e.target.closest('[data-bgedit]')){const s=state.s;openImageEditor({img:s.pageBgImg,edit:s.pageBgEdit||null},v=>{if(v.img)s.pageBgImg=v.img;if('edit' in v)s.pageBgEdit=v.edit;save();render()});return}
+  if(e.target.closest('[data-bgedit]')){const s=state.s;openImageEditor({img:s.pageBgImg,edit:s.pageBgEdit||null},v=>{if(v.img)s.pageBgImg=v.img;if('edit' in v)s.pageBgEdit=v.edit;save();render()},()=>{s.pageBgImg=null;s.pageBgEdit=null;s.pageBg='none';save();render()});return}
   if(e.target.closest('[data-cover-on]')){state.s.cover=true;save();render();const w=stage.querySelector('.sheet-wrap');if(w)w.scrollIntoView({behavior:'smooth',block:'start'});try{syncUI()}catch(err){}return}
   if(e.target.closest('[data-cover-off]')){state.s.cover=false;save();render();try{syncUI()}catch(err){}}
 });
@@ -2668,7 +2668,7 @@ function drawLayers(g,W,H,sel){
     });
   };
 }
-async function openImageEditor(data,onSave){
+async function openImageEditor(data,onSave,onRemove){
   if(!canF('imageEditor')){openUpgrade('imageEditor');return}
   const ed=data.edit?JSON.parse(JSON.stringify(data.edit)):{orig:data.img,adj:{},rot:0,flip:false,layers:[]};
   let src=await loadImg(ed.cut&&ed.cut.src||ed.orig);if(!src)return;
@@ -2679,7 +2679,7 @@ async function openImageEditor(data,onSave){
     '<div class="ie"><div class="ie-stage"><canvas id="ieC"></canvas></div><div class="ie-side">'+
     '<div class="seg" role="tablist"><label><input type="radio" name="ieTab" value="fix" checked> שיפור</label><label><input type="radio" name="ieTab" value="text"> טקסט</label><label><input type="radio" name="ieTab" value="img"> תמונה על תמונה</label><label><input type="radio" name="ieTab" value="stk"> מדבקות וכובעים</label></div>'+
     '<div id="iePanel" class="ie-panel"></div></div></div>'+
-    '<div class="row"><button class="btn primary" type="button" id="ieSave">שמירה</button><button class="btn" type="button" data-close>ביטול</button></div>');
+    '<div class="row"><button class="btn primary" type="button" id="ieSave">שמירה</button><button class="btn" type="button" data-close>ביטול</button>'+(onRemove?'<button class="btn ie-rm" type="button" id="ieRemove">🗑 הסרת התמונה</button>':'')+'</div>');
   m.querySelector('.modal').classList.add('wide','ie-modal');
   const q=x=>m.querySelector(x),cv=q('#ieC'),g=cv.getContext('2d');
   let tab='fix',sel=-1,basePrev,adjPrev,faces=null,faceI=0;
@@ -2827,6 +2827,7 @@ async function openImageEditor(data,onSave){
     }
     panel();redraw();
   });
+  {const rb=q('#ieRemove');if(rb)rb.onclick=()=>{if(!rb.dataset.sure){rb.dataset.sure='1';rb.textContent='בטוח? לחצו שוב להסרה';return}m.remove();onRemove()}}
   q('#ieSave').onclick=async()=>{
     const b=q('#ieSave');b.textContent='שומר…';b.disabled=true;
     if(document.fonts)await document.fonts.ready;
@@ -3001,7 +3002,7 @@ function cdDayModal(date,dropImg){
   const draw=()=>{q('#cddImg').innerHTML=cur.img?'<img alt="" src="'+cur.img+'"><div class="row"><button class="btn small" type="button" data-a="ed">✎ עריכה</button><button class="btn small" type="button" data-a="pick">החלפה</button><button class="btn small danger" type="button" data-a="del">הסרה</button></div>':'<button class="btn small" type="button" data-a="pick">＋ הוספת תמונה</button>'};draw();
   q('#cddImg').addEventListener('click',e=>{const a=(e.target.closest('[data-a]')||{}).dataset;if(!a||!a.a)return;
     if(a.a==='del'){delete cur.img;delete cur.edit;draw()}
-    else if(a.a==='ed')openImageEditor({img:cur.img,edit:cur.edit},v=>{cur.img=v.img;cur.edit=v.edit;draw()});
+    else if(a.a==='ed')openImageEditor({img:cur.img,edit:cur.edit},v=>{cur.img=v.img;cur.edit=v.edit;draw()},()=>{delete cur.img;delete cur.edit;draw()});
     else{const f=v=>{if(!v.img)return;cur.img=v.img;delete cur.edit;if('edit' in v)cur.edit=v.edit;draw()};f.maxPx=QPX('day');pickImage(f)}});
   if(q('#cddUp'))q('#cddUp').onclick=()=>{m.remove();openUpgrade('cdDaily')};
   q('#cddEv').onclick=e=>{e.preventDefault();m.remove();openEventEditor({date})};
@@ -3103,7 +3104,7 @@ function openEventEditor({date,id,img,kind}){
   if(ev.img&&!ev.imgLum)imageLum(ev.img).then(l=>ev.imgLum=l);
   q('#mImgBtn').onclick=()=>pickImage(imgSet);
   q('#mImgDel').onclick=()=>{ev.img=null;ev.edit=null;drawImg();prev()};
-  q('#mImgEdit').onclick=()=>openImageEditor({img:ev.img,edit:ev.edit},v=>imgSet(v));
+  q('#mImgEdit').onclick=()=>openImageEditor({img:ev.img,edit:ev.edit},v=>imgSet(v),()=>q('#mImgDel').click());
   m.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{m.remove();openEventEditor({id:b.dataset.edit})});
   q('#mSave').onclick=()=>{
     const o=build();
@@ -4269,7 +4270,7 @@ function icsToEvents(t){
   return out}
 const EV_SAMPLE='﻿שם,סוג,תאריך,חזרה,אחרי השקיעה\nשירה,יום הולדת,12/08/2018,עברי,\nההורים,יום נישואין,03/06/1990,לועזי,\nסבא משה,יום שנה (יארצייט),21/11/2010,עברי,כן\nטיול שנתי,אירוע,15/05/2027,פעם אחת,\n';
 const CD_FOC={first:'intro',goal:'outro',bg:'page'};
-document.addEventListener('click',e=>{const be=e.target.closest('[data-cdimged]');if(be){const k=be.dataset.cdimged,cur=(state.cdImgs||{})[k];if(cur)openImageEditor(cur,v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};save();syncUI();cdFocus(CD_FOC[k]);render()});return}});
+document.addEventListener('click',e=>{const be=e.target.closest('[data-cdimged]');if(be){const k=be.dataset.cdimged,cur=(state.cdImgs||{})[k];if(cur)openImageEditor(cur,v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};save();syncUI();cdFocus(CD_FOC[k]);render()},()=>{const o={...(state.cdImgs||{})};delete o[k];state.cdImgs=o;save();syncUI();render()});return}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cdimg],[data-cdimgdel]');if(!b)return;const k=b.dataset.cdimg||b.dataset.cdimgdel;
   if(b.dataset.cdimgdel){const o={...(state.cdImgs||{})};delete o[k];state.cdImgs=o;save();syncUI();cdFocus(CD_FOC[k]);render();return}
   const f=v=>{state.cdImgs={...(state.cdImgs||{}),[k]:v};
@@ -4563,7 +4564,7 @@ function openDayImages(date){
   q('#diEq').onclick=()=>{L.sizes=L.order.map(()=>100/L.order.length);L.gr=50;L.gc=50;draw()};
   q('#diList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const id=b.closest('[data-id]').dataset.id,i=L.order.indexOf(id);
     const t=L.im[id]={...(L.im[id]||{})};
-    if(b.dataset.ied){const ev=evs.find(x=>x.id===id);if(ev)openImageEditor({img:ev.img,edit:ev.edit},async v=>{if(v.img)ev.img=v.img;if('edit' in v)ev.edit=v.edit;try{ev.imgLum=await imageLum(ev.img)}catch(err){}save();draw()});return}
+    if(b.dataset.ied){const ev=evs.find(x=>x.id===id);if(ev)openImageEditor({img:ev.img,edit:ev.edit},async v=>{if(v.img)ev.img=v.img;if('edit' in v)ev.edit=v.edit;try{ev.imgLum=await imageLum(ev.img)}catch(err){}save();draw()},()=>{const x=q('#diList [data-id="'+id+'"] [data-del]');if(x)x.click()});return}
     if(b.dataset.z){const z0=t.z??1,st=z0<1||(z0===1&&+b.dataset.z<0)?0.1:0.25;t.z=Math.max(0.1,Math.min(4,+(z0+(+b.dataset.z)*st).toFixed(2)))}
     if(b.dataset.flip)t.f=t.f?0:1;
     if(b.dataset.fit){t.c=t.c?0:1;if(t.c)t.z=1}
