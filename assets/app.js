@@ -1132,7 +1132,8 @@ function pageShell(label,key){
   if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown'&&!(key==='cover'&&IMGBG(s.pageBg))){
     p.classList.add('pbg','pbg-'+s.pageBg);
     if(IMGBG(s.pageBg)){const u=s.pageBg==='custom'?s.pageBgImg:s.pageBg==='lib'?bgLibUrl():monthArt(key,s.pageBg);
-      if(u){p.classList.add('pbg-img');p.style.setProperty('--bgimg','url("'+u+'")');p.style.setProperty('--bgop',String(s.pageBgOp??0.32))}}}
+      if(u){p.classList.add('pbg-img');p.style.setProperty('--bgimg','url("'+u+'")');p.style.setProperty('--bgop',String(s.pageBgOp??0.32))}}
+    p.style.setProperty('--cv',String(+(1-(s.pageBgCell??1)).toFixed(2)))}
   fxLines(p);
   for(const [k,v] of Object.entries(s.tcolors||{}))if(v)p.style.setProperty('--c-'+k,v);
   if(s.headFont)p.style.setProperty('--f-head',fontCSS(s.headFont));
@@ -1185,16 +1186,17 @@ async function bgLibPick(){
   grid.onclick=e=>{const b=e.target.closest('[data-bl]');if(!b)return;const x=L.items[+b.dataset.bl],s=state.s;
     if(s.pageBg!=='lib')s.pageBgOp=0.9;s.pageBgLib={id:x.id,img:x.img,hi:x.hi||'',thumb:x.thumb,title:x.title};s.pageBg='lib';m.remove();save();render()}}
 function bgOwn(){const f=v=>{if(!v.img)return;state.s.pageBgImg=v.img;state.s.pageBg='custom';save();render()};f.maxPx=QPX('page');pickImage(f)}
-document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-bgop]')){state.s.pageBgOp=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120)}});
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-bgcell]')){state.s.pageBgCell=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120);return}
+  if(e.target.matches&&e.target.matches('[data-bgop]')){state.s.pageBgOp=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120)}});
 let bgOpT=0;
 function bgOffSync(){const b=$('#bgOffBtn');if(!b)return;const cur=state.s.pageBg||'none',img=IMGBG(cur);
   b.hidden=CDMODE||!(img||(cur==='none'&&state.s.pageBgPrev));b.textContent=img?'✕ בלי תמונות רקע':'↺ להחזיר את תמונות הרקע'}
 $('#bgOffBtn').onclick=()=>{const s=state.s,cur=s.pageBg||'none';if(IMGBG(cur)){s.pageBgPrev=cur;s.pageBg='none'}else if(s.pageBgPrev){s.pageBg=s.pageBgPrev;delete s.pageBgPrev}save();render()};
 function bgPickSync(){bgOffSync();const cur=state.s.pageBg||'none';document.querySelectorAll('[data-bgpick]').forEach(box=>{
   if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(IMGBG(k)?' pbg-img':'')+'"'+(k==='month'||k==='art'||k==='lib'?' style="--bgimg:url('+new URL(k==='art'?'assets/library/rosh-hashana.svg':k==='lib'?'assets/backgrounds/fl-meadow-t.jpg':'assets/library/nat-elul.jpg',document.baseURI).href+');--bgop:'+(k==='lib'?'1':'.7')+'"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
-    box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="1" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bglib>🖼 בחירת רקע מעוצב אחר</button><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button><button type="button" class="btn bg-own" hidden data-bgedit>✎ עריכת הרקע: עוד תמונות, טקסט ושכבות</button>')}
+    box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="1" step="0.02" data-bgop></label><label class="fld bg-op2" hidden>חוזק הרקע בתוך הימים<input type="range" min="0" max="1" step="0.05" data-bgcell><span class="hint">שמאלה: הימים בהירים יותר, והרקע נשאר בעיקר מסביב. תמונה שהוספתם ליום מכסה את הרקע.</span></label><button type="button" class="btn bg-own" hidden data-bglib>🖼 בחירת רקע מעוצב אחר</button><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button><button type="button" class="btn bg-own" hidden data-bgedit>✎ עריכת הרקע: עוד תמונות, טקסט ושכבות</button>')}
   box.style.setProperty('--acc',state.s.accent);
-  {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown],[data-bgedit]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);par.querySelectorAll('[data-bglib]').forEach(x=>x.hidden=cur!=='lib');
+  {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('.bg-op2').forEach(x=>{x.hidden=cur==='none';const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgCell??1});par.querySelectorAll('[data-bgown],[data-bgedit]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);par.querySelectorAll('[data-bglib]').forEach(x=>x.hidden=cur!=='lib');
    const lp=box.querySelector('[data-pbg="lib"] .bgp-prev'),lb=state.s.pageBgLib;if(lp&&lb&&lb.thumb)lp.style.setProperty('--bgimg','url("'+new URL(lb.thumb,document.baseURI).href+'")');
    const cp=box.querySelector('[data-pbg="custom"] .bgp-prev');if(cp){if(state.s.pageBgImg){cp.style.setProperty('--bgimg','url("'+state.s.pageBgImg+'")');cp.style.setProperty('--bgop','.6');cp.innerHTML=''}}}
   box.querySelectorAll('[data-pbg]').forEach(b=>{const on=b.dataset.pbg===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})})}

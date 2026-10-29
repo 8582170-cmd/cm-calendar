@@ -1198,7 +1198,6 @@ body.tray-picking .pg-img{cursor:copy}
 
 @media print{.tray,.tray-pick{display:none!important}}
 .tray-pick .btn{background:#fff;color:var(--accent);border-color:#fff}
-}
 
 /* ---------- רקע לעמוד ---------- */
 .page.pbg{isolation:isolate}
@@ -1488,3 +1487,7 @@ body:has(.modal-back) .fx-bar{display:none!important}
 .sp-card.th-bubble .sp-grid i.sh,.sp-card.th-tiles .sp-grid i.sh{background:color-mix(in srgb,var(--a) 30%,#fff)}
 .seg[aria-label="סגנון"]{flex-wrap:wrap}
 .seg[aria-label="סגנון"] label{flex:1 0 30%;border-bottom:1px solid var(--line)}
+
+/* חוזק הרקע בתוך הימים: שכבה לבנה בתוך כל יום (תמונה של יום נמצאת מעליה ומכסה הכל) */
+.pbg .cell:not(.pad)::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;background:rgb(255 255 255 / var(--cv,0));-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bg-op2 .hint{display:block;font-weight:400}
