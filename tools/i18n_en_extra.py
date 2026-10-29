@@ -375,7 +375,7 @@ EXACT = {
  '📷 תמונה ליום (לא חובה)': '📷 Photo for the day (optional)',
  'החלפת תמונה': 'Replace photo',
  'הסרה': 'Remove',
- '👨\u200d👩\u200d👧 שיתוף עם המשפחה': '👨\u200d👩\u200d👧 Share with family',
+ '🏠 שיתוף עם המשפחה': '🏠 Share with family',
  'שיתוף עם המשפחה': 'Share with family',
  'שולחים קישור, וכל אחד מוסיף ימי הולדת, אירועים ותמונות, בלי הרשמה': 'Send a link, and everyone adds birthdays, events and photos, no sign-up needed',
  'יצירת קישור לשיתוף': 'Create a share link',
