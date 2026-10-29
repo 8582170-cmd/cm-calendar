@@ -1131,7 +1131,7 @@ function pageShell(label,key){
   p.style.setProperty('--acc',s.accent);
   if(s.pageBg&&s.pageBg!=='none'&&s.view!=='countdown'&&!(key==='cover'&&IMGBG(s.pageBg))){
     p.classList.add('pbg','pbg-'+s.pageBg);
-    if(IMGBG(s.pageBg)){const u=s.pageBg==='custom'?s.pageBgImg:monthArt(key,s.pageBg);
+    if(IMGBG(s.pageBg)){const u=s.pageBg==='custom'?s.pageBgImg:s.pageBg==='lib'?bgLibUrl():monthArt(key,s.pageBg);
       if(u){p.classList.add('pbg-img');p.style.setProperty('--bgimg','url("'+u+'")');p.style.setProperty('--bgop',String(s.pageBgOp??0.32))}}}
   fxLines(p);
   for(const [k,v] of Object.entries(s.tcolors||{}))if(v)p.style.setProperty('--c-'+k,v);
@@ -1147,7 +1147,7 @@ function pageShell(label,key){
 }
 /* רקע לעמוד: גוונים ועיטורים עדינים בצבע הלוח, שמודפסים גם הם */
 /* איור לכל חודש (מהמאגר), לפי החודש העברי. בלוח לועזי: לפי החודש העברי של אמצע החודש */
-const IMGBG=k=>k==='month'||k==='art'||k==='custom';
+const IMGBG=k=>k==='month'||k==='art'||k==='custom'||k==='lib';
 /* נוף טבעי לכל חודש (assets/library/nat-*.svg, נוצר ב-tools/gen_nature.py) */
 const MONTH_NAT={7:'tishrei',8:'cheshvan',9:'kislev',10:'tevet',11:'shvat',12:'adar',13:'adar',1:'nisan',2:'iyar',3:'sivan',4:'tamuz',5:'av',6:'elul'};
 const MONTH_ART={7:'rosh-hashana',8:'forest-mist',9:'chanukah',10:'starry-night',11:'tu-bishvat',12:'purim',13:'purim',1:'pesach',2:'lag-baomer',3:'shavuot',4:'sea-sunset',5:'jerusalem-walls',6:'sunrise-mountains'};
@@ -1157,7 +1157,30 @@ function monthArt(key,kind){key=String(key||'').replace(/^(mi-|h-)/,'');let hm=n
   else{const d=/^(?:w|d|t)-(\d{4}-\d{2}-\d{2})$/.exec(key);if(d)hm=new HDate(dateFromIso(d[1])).getMonth()}
   if(hm==null&&monthsCache[0])hm=new HDate(monthsCache[0].days[0]).getMonth();
   return hm?new URL('assets/library/'+(kind==='art'?MONTH_ART[hm]+'.svg':'nat-'+MONTH_NAT[hm]+'.jpg'),document.baseURI).href:''}
-const PAGE_BGS=[['month','נוף לכל חודש'],['art','איורי חגים'],['custom','תמונה משלכם'],['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
+const PAGE_BGS=[['lib','רקעים מעוצבים'],['month','נוף לכל חודש'],['art','איורי חגים'],['custom','תמונה משלכם'],['none','לבן'],['soft','הילה עדינה'],['sky','גוון עליון'],['paper','נייר חם'],['dots','נקודות'],['frame','מסגרת'],['corners','פינות מעוטרות'],['waves','גלים']];
+/* רקעים מעוצבים: מאגר משותף ללוח ולברכות (צבעי מים, פרחים, מרקמים, נופים), וכל דפי הרקע, המסגרות והדפים המעוצבים שהועלו לברכות */
+const BGPACK='/assets/backgrounds/pack.json?v=1';
+function bgLibUrl(){const b=state.s.pageBgLib;if(!b||!b.img)return '';const [w,h]=pageDims(),big=w*h>297*420*1.05;return new URL(big&&b.hi?b.hi:b.img,document.baseURI).href}
+let BGLIB=null;
+async function bgLibLoad(){if(BGLIB)return BGLIB;const cats=[],items=[];
+  const [pk,gr,lib]=await Promise.all([fetch(BGPACK).then(r=>r.json()).catch(()=>null),fetch('/api/pricing?c=_greetings').then(r=>r.json()).catch(()=>null),libLoad().catch(()=>[])]);
+  if(pk){(pk.cats||[]).forEach(c=>cats.push([c.id,c.name]));(pk.items||[]).forEach(x=>items.push({id:x.id,cat:x.cat,title:x.title,img:x.img,hi:x.hi,thumb:x.thumb||x.img}))}
+  (lib||[]).forEach(x=>{if(x.cat==='bg'&&!/^seed-/.test(x.id||'')&&x.url)items.push({id:'cl-'+x.id,cat:'lib',title:x.title||'',img:x.url,thumb:x.thumb||x.url})});
+  const TN={bg:['g-bg','מהברכות: דפי רקע'],frame:['g-frame','מהברכות: מסגרות'],design:['g-design','מהברכות: דפים מעוצבים']};
+  ((gr&&gr.templates)||[]).forEach(t=>{const b=t.bg||{};if(!b.img)return;const c=TN[t.type==='bg'||t.type==='frame'?t.type:'design'];if(!cats.some(x=>x[0]===c[0]))cats.push(c);items.push({id:'g-'+t.id,cat:c[0],title:t.title||'',img:b.img,hi:b.hi,thumb:b.thumb||b.img})});
+  BGLIB={cats:[['all','הכל'],...cats.filter(([k])=>items.some(x=>x.cat===k))],items};return BGLIB}
+async function bgLibPick(){
+  const m=modal('<h2>רקעים מעוצבים</h2><p class="hint">רקע לכל עמודי הלוח. אותם רקעים יש גם בברכות ובהזמנות. אחרי הבחירה אפשר לשנות את חוזק הרקע.</p><div class="lib-tabs" role="tablist"></div><div class="lib-grid bgl-grid" aria-live="polite"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+  m.querySelector('.modal').classList.add('modal-wide');
+  const L=await bgLibLoad(),tabs=m.querySelector('.lib-tabs'),grid=m.querySelector('.lib-grid');let cur='all';
+  const sel=(state.s.pageBgLib||{}).id;
+  const draw=()=>{tabs.innerHTML=L.cats.map(([k,n])=>'<button type="button" role="tab" data-lc="'+k+'" aria-selected="'+(k===cur)+'">'+esc(n)+'</button>').join('');
+    const it=L.items.filter(x=>cur==='all'||x.cat===cur);
+    grid.innerHTML=it.length?it.map(x=>'<button type="button" class="lib-i'+(x.id===sel?' on':'')+'" data-bl="'+L.items.indexOf(x)+'" title="'+esc(x.title)+'"><img loading="lazy" alt="" src="'+esc(x.thumb)+'"><span>'+esc(x.title)+'</span></button>').join(''):'<p class="hint">אין עדיין רקעים כאן.</p>'};
+  draw();
+  tabs.onclick=e=>{const b=e.target.closest('[data-lc]');if(b){cur=b.dataset.lc;draw()}};
+  grid.onclick=e=>{const b=e.target.closest('[data-bl]');if(!b)return;const x=L.items[+b.dataset.bl],s=state.s;
+    if(s.pageBg!=='lib')s.pageBgOp=0.9;s.pageBgLib={id:x.id,img:x.img,hi:x.hi||'',thumb:x.thumb,title:x.title};s.pageBg='lib';m.remove();save();render()}}
 function bgOwn(){const f=v=>{if(!v.img)return;state.s.pageBgImg=v.img;state.s.pageBg='custom';save();render()};f.maxPx=QPX('page');pickImage(f)}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-bgop]')){state.s.pageBgOp=+e.target.value;save();clearTimeout(bgOpT);bgOpT=setTimeout(render,120)}});
 let bgOpT=0;
@@ -1165,14 +1188,16 @@ function bgOffSync(){const b=$('#bgOffBtn');if(!b)return;const cur=state.s.pageB
   b.hidden=CDMODE||!(img||(cur==='none'&&state.s.pageBgPrev));b.textContent=img?'✕ בלי תמונות רקע':'↺ להחזיר את תמונות הרקע'}
 $('#bgOffBtn').onclick=()=>{const s=state.s,cur=s.pageBg||'none';if(IMGBG(cur)){s.pageBgPrev=cur;s.pageBg='none'}else if(s.pageBgPrev){s.pageBg=s.pageBgPrev;delete s.pageBgPrev}save();render()};
 function bgPickSync(){bgOffSync();const cur=state.s.pageBg||'none';document.querySelectorAll('[data-bgpick]').forEach(box=>{
-  if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(IMGBG(k)?' pbg-img':'')+'"'+(k==='month'||k==='art'?' style="--bgimg:url('+new URL(k==='art'?'assets/library/rosh-hashana.svg':'assets/library/nat-elul.jpg',document.baseURI).href+');--bgop:.7"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
-    box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="0.8" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button><button type="button" class="btn bg-own" hidden data-bgedit>✎ עריכת הרקע: עוד תמונות, טקסט ושכבות</button>')}
+  if(!box.children.length){box.innerHTML=PAGE_BGS.map(([k,n])=>'<button type="button" class="bgp" data-pbg="'+k+'" role="radio"><span class="bgp-prev pbg pbg-'+k+(IMGBG(k)?' pbg-img':'')+'"'+(k==='month'||k==='art'||k==='lib'?' style="--bgimg:url('+new URL(k==='art'?'assets/library/rosh-hashana.svg':k==='lib'?'assets/backgrounds/fl-meadow-t.jpg':'assets/library/nat-elul.jpg',document.baseURI).href+');--bgop:'+(k==='lib'?'1':'.7')+'"':'')+'>'+(k==='custom'?'<b class="bgp-plus">＋</b>':'<i></i><i></i><i></i>')+'</span><span class="bgp-n">'+n+'</span></button>').join('');
+    box.insertAdjacentHTML('afterend','<label class="fld bg-op" hidden>חוזק הרקע<input type="range" min="0.1" max="1" step="0.02" data-bgop></label><button type="button" class="btn bg-own" hidden data-bglib>🖼 בחירת רקע מעוצב אחר</button><button type="button" class="btn bg-own" hidden data-bgown>החלפת התמונה לרקע</button><button type="button" class="btn bg-own" hidden data-bgedit>✎ עריכת הרקע: עוד תמונות, טקסט ושכבות</button>')}
   box.style.setProperty('--acc',state.s.accent);
-  {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown],[data-bgedit]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);
+  {const img=IMGBG(cur),par=box.parentNode;par.querySelectorAll('.bg-op').forEach(x=>{x.hidden=!img;const r=x.querySelector('input');if(r&&document.activeElement!==r)r.value=state.s.pageBgOp??0.32});par.querySelectorAll('[data-bgown],[data-bgedit]').forEach(x=>x.hidden=cur!=='custom'||!state.s.pageBgImg);par.querySelectorAll('[data-bglib]').forEach(x=>x.hidden=cur!=='lib');
+   const lp=box.querySelector('[data-pbg="lib"] .bgp-prev'),lb=state.s.pageBgLib;if(lp&&lb&&lb.thumb)lp.style.setProperty('--bgimg','url("'+new URL(lb.thumb,document.baseURI).href+'")');
    const cp=box.querySelector('[data-pbg="custom"] .bgp-prev');if(cp){if(state.s.pageBgImg){cp.style.setProperty('--bgimg','url("'+state.s.pageBgImg+'")');cp.style.setProperty('--bgop','.6');cp.innerHTML=''}}}
   box.querySelectorAll('[data-pbg]').forEach(b=>{const on=b.dataset.pbg===cur;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})})}
 document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-pbg]');if(b){const k=b.dataset.pbg;if(k==='custom'&&!state.s.pageBgImg){bgOwn();return}state.s.pageBg=k;save();render();return}
+  if(e.target.closest('[data-bglib]')){bgLibPick();return}
+  const b=e.target.closest('[data-pbg]');if(b){const k=b.dataset.pbg;if(k==='custom'&&!state.s.pageBgImg){bgOwn();return}if(k==='lib'&&(!(state.s.pageBgLib||{}).img||state.s.pageBg==='lib')){bgLibPick();return}if(state.s.pageBg==='lib'&&k!=='lib'&&(state.s.pageBgOp??0)>0.6)state.s.pageBgOp=0.32;if(k==='lib'&&state.s.pageBg!=='lib')state.s.pageBgOp=0.9;state.s.pageBg=k;save();render();return}
   if(e.target.closest('[data-bgown]')){bgOwn();return}
   if(e.target.closest('[data-bgedit]')){const s=state.s;openImageEditor({img:s.pageBgImg,edit:s.pageBgEdit||null},v=>{if(v.img)s.pageBgImg=v.img;if('edit' in v)s.pageBgEdit=v.edit;save();render()});return}
   if(e.target.closest('[data-cover-on]')){state.s.cover=true;save();render();const w=stage.querySelector('.sheet-wrap');if(w)w.scrollIntoView({behavior:'smooth',block:'start'});try{syncUI()}catch(err){}return}

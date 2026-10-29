@@ -1,0 +1,244 @@
+{
+"v": 1,
+"cats": [
+{
+"id": "water",
+"name": "צבעי מים"
+},
+{
+"id": "floral",
+"name": "פרחים ועלים"
+},
+{
+"id": "texture",
+"name": "נייר ומרקמים"
+},
+{
+"id": "nature",
+"name": "נופים"
+},
+{
+"id": "lib",
+"name": "מהמאגר של הלוח"
+}
+],
+"items": [
+{
+"id": "wc-blue-gold",
+"title": "כחול וזהב בצבעי מים",
+"cat": "water",
+"img": "/assets/backgrounds/wc-blue-gold.jpg",
+"thumb": "/assets/backgrounds/wc-blue-gold-t.jpg"
+},
+{
+"id": "wc-blush",
+"title": "ורוד ותכלת עדין",
+"cat": "water",
+"img": "/assets/backgrounds/wc-blush.jpg",
+"thumb": "/assets/backgrounds/wc-blush-t.jpg"
+},
+{
+"id": "wc-peach",
+"title": "אפרסק והילה",
+"cat": "water",
+"img": "/assets/backgrounds/wc-peach.jpg",
+"thumb": "/assets/backgrounds/wc-peach-t.jpg"
+},
+{
+"id": "wc-lavender",
+"title": "סגול לבנדר",
+"cat": "water",
+"img": "/assets/backgrounds/wc-lavender.jpg",
+"thumb": "/assets/backgrounds/wc-lavender-t.jpg"
+},
+{
+"id": "wc-mint",
+"title": "מנטה וטורקיז",
+"cat": "water",
+"img": "/assets/backgrounds/wc-mint.jpg",
+"thumb": "/assets/backgrounds/wc-mint-t.jpg"
+},
+{
+"id": "wc-sky",
+"title": "שמיים תכולים",
+"cat": "water",
+"img": "/assets/backgrounds/wc-sky.jpg",
+"thumb": "/assets/backgrounds/wc-sky-t.jpg"
+},
+{
+"id": "wc-gold",
+"title": "זהב חם וחול",
+"cat": "water",
+"img": "/assets/backgrounds/wc-gold.jpg",
+"thumb": "/assets/backgrounds/wc-gold-t.jpg"
+},
+{
+"id": "wc-swirl",
+"title": "פסטל מתערבל",
+"cat": "water",
+"img": "/assets/backgrounds/wc-swirl.jpg",
+"thumb": "/assets/backgrounds/wc-swirl-t.jpg"
+},
+{
+"id": "fl-eucalyptus",
+"title": "אקליפטוס על שיש",
+"cat": "floral",
+"img": "/assets/backgrounds/fl-eucalyptus.jpg",
+"thumb": "/assets/backgrounds/fl-eucalyptus-t.jpg"
+},
+{
+"id": "fl-meadow",
+"title": "פרחי בר ועלים",
+"cat": "floral",
+"img": "/assets/backgrounds/fl-meadow.jpg",
+"thumb": "/assets/backgrounds/fl-meadow-t.jpg"
+},
+{
+"id": "fl-peach-flowers",
+"title": "פרחים באפרסק",
+"cat": "floral",
+"img": "/assets/backgrounds/fl-peach-flowers.jpg",
+"thumb": "/assets/backgrounds/fl-peach-flowers-t.jpg"
+},
+{
+"id": "fl-sage-corners",
+"title": "עלים בפינות",
+"cat": "floral",
+"img": "/assets/backgrounds/fl-sage-corners.jpg",
+"thumb": "/assets/backgrounds/fl-sage-corners-t.jpg"
+},
+{
+"id": "fl-olive",
+"title": "ענפי זית",
+"cat": "floral",
+"img": "/assets/backgrounds/fl-olive.jpg",
+"thumb": "/assets/backgrounds/fl-olive-t.jpg"
+},
+{
+"id": "fl-wheat",
+"title": "שיבולים",
+"cat": "floral",
+"img": "/assets/backgrounds/fl-wheat.jpg",
+"thumb": "/assets/backgrounds/fl-wheat-t.jpg"
+},
+{
+"id": "tx-concrete",
+"title": "בטון אפור בהיר",
+"cat": "texture",
+"img": "/assets/backgrounds/tx-concrete.jpg",
+"thumb": "/assets/backgrounds/tx-concrete-t.jpg"
+},
+{
+"id": "tx-marble",
+"title": "שיש לבן",
+"cat": "texture",
+"img": "/assets/backgrounds/tx-marble.jpg",
+"thumb": "/assets/backgrounds/tx-marble-t.jpg"
+},
+{
+"id": "tx-paper",
+"title": "נייר עבודת יד",
+"cat": "texture",
+"img": "/assets/backgrounds/tx-paper.jpg",
+"thumb": "/assets/backgrounds/tx-paper-t.jpg"
+},
+{
+"id": "tx-parchment",
+"title": "קלף עתיק",
+"cat": "texture",
+"img": "/assets/backgrounds/tx-parchment.jpg",
+"thumb": "/assets/backgrounds/tx-parchment-t.jpg"
+},
+{
+"id": "tx-linen",
+"title": "פשתן",
+"cat": "texture",
+"img": "/assets/backgrounds/tx-linen.jpg",
+"thumb": "/assets/backgrounds/tx-linen-t.jpg"
+},
+{
+"id": "nat-nisan",
+"title": "כלניות באביב",
+"cat": "nature",
+"img": "/assets/library/nat-nisan.jpg",
+"thumb": "/assets/library/nat-nisan.jpg"
+},
+{
+"id": "nat-iyar",
+"title": "אחו סגול",
+"cat": "nature",
+"img": "/assets/library/nat-iyar.jpg",
+"thumb": "/assets/library/nat-iyar.jpg"
+},
+{
+"id": "nat-sivan",
+"title": "שדות חיטה",
+"cat": "nature",
+"img": "/assets/library/nat-sivan.jpg",
+"thumb": "/assets/library/nat-sivan.jpg"
+},
+{
+"id": "nat-tamuz",
+"title": "ים ושמש",
+"cat": "nature",
+"img": "/assets/library/nat-tamuz.jpg",
+"thumb": "/assets/library/nat-tamuz.jpg"
+},
+{
+"id": "nat-av",
+"title": "דיונות בשקיעה",
+"cat": "nature",
+"img": "/assets/library/nat-av.jpg",
+"thumb": "/assets/library/nat-av.jpg"
+},
+{
+"id": "nat-elul",
+"title": "זריחה מעל רכסים",
+"cat": "nature",
+"img": "/assets/library/nat-elul.jpg",
+"thumb": "/assets/library/nat-elul.jpg"
+},
+{
+"id": "nat-tishrei",
+"title": "שעת זהב בגבעות",
+"cat": "nature",
+"img": "/assets/library/nat-tishrei.jpg",
+"thumb": "/assets/library/nat-tishrei.jpg"
+},
+{
+"id": "nat-cheshvan",
+"title": "עננים וערפל",
+"cat": "nature",
+"img": "/assets/library/nat-cheshvan.jpg",
+"thumb": "/assets/library/nat-cheshvan.jpg"
+},
+{
+"id": "nat-kislev",
+"title": "ערב חורף וירח",
+"cat": "nature",
+"img": "/assets/library/nat-kislev.jpg",
+"thumb": "/assets/library/nat-kislev.jpg"
+},
+{
+"id": "nat-tevet",
+"title": "הרים מושלגים",
+"cat": "nature",
+"img": "/assets/library/nat-tevet.jpg",
+"thumb": "/assets/library/nat-tevet.jpg"
+},
+{
+"id": "nat-shvat",
+"title": "פריחת השקדיות",
+"cat": "nature",
+"img": "/assets/library/nat-shvat.jpg",
+"thumb": "/assets/library/nat-shvat.jpg"
+},
+{
+"id": "nat-adar",
+"title": "גבעות וחרציות",
+"cat": "nature",
+"img": "/assets/library/nat-adar.jpg",
+"thumb": "/assets/library/nat-adar.jpg"
+}
+]
+}

@@ -72,6 +72,8 @@ async function prepare(b) {
   const id = String(b.tpl || '');
   let t = (g.templates || []).find(x => x.id === id && x.on !== false);
   if (!t && BUILTIN.includes(id)) t = { id, title: id === 'own' ? 'דף מעוצב משלכם' : 'עיצוב', price: 0, variants: [] };
+  /* רקעים משותפים (מהמאגר המובנה ומהמאגר של הלוח): הרקע עצמו חינם, משלמים רק על נוסח בתשלום */
+  if (!t && /^(pk|cl)-[\w-]{1,48}$/.test(id)) t = { id, title: 'דף רקע', price: 0, variants: [] };
   if (!t) return { error: 'העיצוב לא נמצא' };
   const state = cleanState(b.state);
   /* נוסח בתשלום: המחיר שלו מהניהול */

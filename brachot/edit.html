@@ -200,7 +200,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=28"></script>
+<script src="/assets/greetings/greetings.js?v=29"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 </head>
 <body>
@@ -346,7 +346,7 @@ if (REC && REC.error) { $('stage').remove(); $('ed').innerHTML = '<div class="ca
 if (!tpl) { $('stage').remove(); $('ed').innerHTML = '<div class="card3"><h2>העיצוב לא נמצא</h2><p><a href="/brachot/">לכל העיצובים</a></p></div>'; return; }
 document.title = tpl.title + ' · עריכה | MyLuach';
 $('ttl').textContent = tpl.title;
-$('sub').textContent = G.KINDS[tpl.kind] + ' ל' + G.catName(tpl.cat);
+$('sub').textContent = G.subTitle(tpl);
 var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, narrow = matchMedia('(max-width:700px)');
 
 /* מצב העיצוב + שמירה בדפדפן */

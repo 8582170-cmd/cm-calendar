@@ -802,8 +802,15 @@ function applyProfile(blocks, p){
 var remoteP = null, HIDDEN_CATS = {};
 function load(){
   if (!remoteP) remoteP = Promise.all([fetch('/api/pricing?c=_greetings').then(function(r){ return r.json() }).catch(function(){ return {} }),
-    fetch('/assets/greetings/stickers/pack.json?v=4').then(function(r){ return r.json() }).catch(function(){ return null })]).then(function(rr){
+    fetch('/assets/greetings/stickers/pack.json?v=4').then(function(r){ return r.json() }).catch(function(){ return null }),
+    fetch('/assets/backgrounds/pack.json?v=1').then(function(r){ return r.json() }).catch(function(){ return null }),
+    fetch('/api/pricing?c=_lib').then(function(r){ return r.json() }).catch(function(){ return null })]).then(function(rr){
     var d = rr[0] || {}, pk = rr[1];
+    /* רקעים משותפים ללוח השנה ולברכות: המאגר המובנה, ורקעים שהועלו למאגר התמונות של הלוח (קטגוריית "רקעים ומסגרות") */
+    var bp = rr[2] || { cats: [], items: [] }, bgs = (bp.items || []).map(function(x){ return { id: 'pk-' + x.id, title: x.title, cat: 'bg-' + x.cat, img: x.img, hi: x.hi, thumb: x.thumb }; });
+    (bp.cats || []).forEach(function(c){ if (!CATS.some(function(x){ return x[0] === 'bg-' + c.id })) CATS.push(['bg-' + c.id, c.name]); });
+    ((rr[3] || {}).items || []).forEach(function(x){ if (x.cat === 'bg' && x.url) bgs.push({ id: 'cl-' + String(x.id).replace(/[^\w-]/g, '').slice(0, 40), title: x.title || 'רקע', cat: 'bg-lib', img: x.url, thumb: x.thumb || x.url }); });
+    if (!CATS.some(function(x){ return x[0] === 'bg-lib' })) CATS.push(['bg-lib', 'מהמאגר של הלוח']);
     /* מדבקות מובנות באתר + מדבקות שהועלו בניהול */
     var st = d.stickers || { cats: [], items: [] };
     if (pk) d.stickers = { cats: (pk.cats || []).concat(st.cats || []), items: (pk.items || []).concat(st.items || []) };
@@ -814,6 +821,11 @@ function load(){
     (d.templates || []).slice().sort(function(a, b){ return (a.order || 0) - (b.order || 0) }).forEach(function(t){
       if (TEMPLATES.some(function(x){ return x.id === t.id })) return;
       t.colors = []; t.remote = true; TEMPLATES.push(t);
+    });
+    bgs.forEach(function(x){
+      if (TEMPLATES.some(function(t){ return t.id === x.id })) return;
+      TEMPLATES.push({ id: x.id, title: x.title, cat: x.cat, kind: 'greeting', type: 'bg', price: 0, shared: true, remote: true, colors: [], blocks: [],
+        bg: { img: x.img, hi: x.hi, thumb: x.thumb }, area: { x: 80, y: 110, w: 634, h: 903, valign: 'center' } });
     });
     return d;
   });
@@ -859,6 +871,7 @@ function starter(kind, main, accent){
 
 window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES, FONTS: FONTS, FONT_GROUPS: FONT_GROUPS, fontLabel: function(f){ var m = meta(f); return m ? m.label : f; }, catalog: catalog, applySettings: applySettings, meta: meta, pickList: pickList, fontCss: fontCss, loadFont: loadFont, FIELDS: FIELDS, DIVIDERS: DIVIDERS,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
+  subTitle: function(t){ return /^bg-/.test(t.cat || '') ? 'דף רקע · ' + (CATS.find(function(x){ return x[0] === t.cat }) || [0, ''])[1] : KINDS[t.kind] + ' ל' + ((CATS.find(function(x){ return x[0] === t.cat }) || [0, t.cat])[1]); },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
   render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

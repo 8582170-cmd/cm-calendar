@@ -443,8 +443,12 @@ body.mode-adv #freeSec,body.mode-adv #finishSec{display:none}
 
 @media print{
   :root{padding:0!important}
-  body{background:#fff;padding:0}
-  .app{display:block;max-width:none}
+  /* בלי שוליים לדף הדפדפן: אחרת העמוד הראשון זז מעט למטה, ושורת התחתית שלו נדחפת לדף נוסף */
+  html,body{background:#fff;padding:0!important;margin:0!important}
+  .app{display:block;max-width:none;margin:0!important;padding:0!important}
+  .stage{margin:0!important;padding:0!important}
+  .sheet-wrap{margin:0!important}
+  .sheet-wrap .page{overflow:hidden;break-inside:avoid;page-break-inside:avoid}
   .bar,.side,.notice,.stage-head,.img-tools,.drop,.sheet-label,.no-print,.home,.welcome,.stepper,.simple-note,#howto,.dev-plan,.mla-btn,.mla-p,.tray,.tray-pick,.cover-add,.ins,.c-imgbtn,.modal-back{display:none!important}
   .stage{display:block}
   .sheet-wrap{width:auto!important;height:auto!important;position:static}
@@ -1092,6 +1096,7 @@ body.simple-app .nosimple{display:none!important}
 .lib-i span{font-size:12.5px;line-height:1.25;padding:0 2px 2px}
 .lib-i:hover,.lib-i:focus-visible{border-color:var(--accent);outline:none}
 .lib-i.busy{opacity:.5;pointer-events:none}
+.bgl-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}.bgl-grid .lib-i img{aspect-ratio:210/297}.bgl-grid .lib-i.on{border-color:var(--accent)}
 
 /* English pages (simple-en.html, countdown-en.html) */
 html[lang=en] body,html[lang=en] .page,html[lang=en] .pl-demo{direction:ltr}
