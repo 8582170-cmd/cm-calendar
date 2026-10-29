@@ -187,6 +187,19 @@ module.exports = async (req, res) => {
       return json(res, 200, { data: all.pages[page] || null });
     }
     /* IndexNow: מודיע לבינג (ולמנועים נוספים) על כל דפי האתר מתוך מפת האתר */
+    /* משובים ופניות מהאתר: רשימה, סימון אילו משובים להציג באתר, ומחיקה */
+    if (req.method === 'POST' && (b.action === 'fbget' || b.action === 'fbpub' || b.action === 'fbdel')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      let L = await loadSetting('feedback'); if (!Array.isArray(L)) L = [];
+      if (b.action !== 'fbget') {
+        const i = L.findIndex(x => x && x.t === String(b.t || ''));
+        if (i < 0) return json(res, 404, { error: 'nf' });
+        if (b.action === 'fbdel') L.splice(i, 1);
+        else { L[i].pub = !!b.pub; L[i].pubName = String(b.pubName == null ? (L[i].pubName || '') : b.pubName).replace(/<[^>]*>/g, '').slice(0, 40); }
+        await saveSetting('feedback', L);
+      }
+      return json(res, 200, { items: L });
+    }
     if (req.method === 'POST' && b.action === 'indexnow') {
       const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org';
       let urls = [];

@@ -34,6 +34,16 @@ module.exports = async (req, res) => {
     let city = String(H['x-vercel-ip-city'] || cf.city || ''); try { city = decodeURIComponent(city); } catch (e) {}
     return json(res, 200, ok ? { lat, lng, cc: String(H['x-vercel-ip-country'] || cf.country || ''), city: city.slice(0, 60), tz: String(H['x-vercel-ip-timezone'] || cf.timezone || '') } : {});
   }
+  /* משובים שבעל האתר סימן בדף הניהול להצגה באתר (ברירת מחדל: אף אחד) */
+  if (cp === '_reviews') {
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120');
+    let L = []; try { L = await require('./_lib').loadSetting('feedback'); } catch (e) {}
+    const items = (Array.isArray(L) ? L : []).filter(x => x && x.pub && x.kind === 'feedback').slice(0, 30).map(x => {
+      const v = Object.values(x.r || {}).filter(n => n >= 1 && n <= 5);
+      return { stars: v.length ? Math.round(v.reduce((a, n) => a + n, 0) / v.length * 2) / 2 : 0, text: String(x.text || '').slice(0, 600), name: String(x.pubName || ''), t: String(x.t || '').slice(0, 10) };
+    });
+    return json(res, 200, { items });
+  }
   /* משוב על בניית הלוח, וטופס פנייה מהדף הראשי: נשמר לדף הניהול ונשלח במייל לבעל האתר */
   if (cp === '_contact') {
     res.setHeader('Cache-Control', 'private, no-store');

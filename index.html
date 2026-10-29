@@ -397,6 +397,8 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
       </div>
     </section>
 
+    <section id="reviews" hidden></section>
+
     <section id="contact" class="fb-sec">
       <div class="fb-grid"><div id="contactBox"></div><div id="fbHome"></div></div>
     </section>
@@ -477,7 +479,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   document.querySelectorAll('a[href="app.html"]').forEach(function(a){a.setAttribute('href','app.html'+h)});
   try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}})();
 </script>
-<script src="assets/feedback.js?v=2"></script>
-<script>(function(){var F=window.MyLuachFeedback;if(!F)return;F.contact(document.getElementById("contactBox"),{page:"index"});F.mount(document.getElementById("fbHome"),{page:"index",title:"בניתם לוח? נשמח לשמוע מה דעתכם"})})();</script>
+<script src="assets/feedback.js?v=3"></script>
+<script>(function(){var F=window.MyLuachFeedback;if(!F)return;F.contact(document.getElementById("contactBox"),{page:"index"});F.reviews(document.getElementById("reviews"));F.mount(document.getElementById("fbHome"),{page:"index",title:"בניתם לוח? נשמח לשמוע מה דעתכם"})})();</script>
 </body>
 </html>

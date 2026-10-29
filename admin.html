@@ -108,7 +108,7 @@ function render(){
   C.plans=C.plans||{};C.sale=C.sale||{on:false,percent:20,plans:[],until:'',label:''};C.coupons=C.coupons||[];
   const eff=D.effective||{plans:{}};
   app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><div class="row"><a class="btn" href="/admin-studio">סטודיו רקעים לברכות</a><button class="btn" type="button" id="out">יציאה</button></div></div>'+
-  actSection()+usageSection()+
+  actSection()+fbSection()+usageSection()+
   (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
   '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול. "מוצג למכירה" כבוי = המסלול לא מופיע באתר ולא נמכר (מי שכבר קנה ממשיך להשתמש בו).</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th><th>מוצג למכירה</th></tr></thead><tbody>'+
   IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils||null)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd||null)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td><td><input type="checkbox" class="plan-sell" value="'+id+'"'+((C.off||[]).includes(id)?'':' checked')+' title="כבוי = המסלול לא מוצג ולא נמכר. מי שכבר קנה ממשיך להשתמש בו."></td></tr>'}).join('')+
@@ -171,6 +171,22 @@ const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון א
 let DBS={name:'profiles',q:'',offset:0};
 const ACT_T=[['downloads','הורדות והדפסות'],['reminders','תזכורות במייל'],['voice_reminders','תזכורות קוליות'],['appointments','פגישות ביומן'],['free_lite','מימוש הלוח החינמי']];
 let ACT={name:'downloads',q:'',offset:0};
+/* משובים ופניות מהאתר */
+let FB=null,FBF='all';
+function fbSection(){setTimeout(fbLoad,0);return '<section id="fbSec"><h2>משובים ופניות מהאתר</h2><p class="sub">דירוגים והצעות לשיפור מהבונים ומהדף הראשי, ופניות מטופס "נשמח להיות בקשר". כל אחד מהם נשלח גם במייל. מסמנים "להציג באתר" כדי שהמשוב יופיע בדף הראשי בחלק "מה אומרים עלינו" (בלי סימון לא מוצג כלום). אפשר לכתוב שם להצגה, למשל "משפחת כהן, בני ברק".</p><div id="fbBox">טוען…</div></section>'}
+function fbLoad(){api({action:'fbget'}).then(j=>{FB=j.items||[];fbDraw()}).catch(e=>{const b=$('#fbBox');if(b)b.textContent='שגיאה בטעינה'})}
+function fbDraw(){const b=$('#fbBox');if(!b||!FB)return;const NM={opt:'אפשרויות',design:'עיצובים',ease:'נוחות'};
+  const F=FB.filter(x=>x.kind==='feedback'),avg=k=>{const v=F.map(x=>(x.r||{})[k]).filter(Boolean);return v.length?(v.reduce((a,n)=>a+n,0)/v.length).toFixed(1)+' ('+v.length+')':'—'};
+  const L=FB.filter(x=>FBF==='all'||x.kind===FBF||(FBF==='pub'&&x.pub));
+  const st=r=>Object.entries(r||{}).map(([k,v])=>'<div style="white-space:nowrap"><small>'+NM[k]+'</small> <span style="color:#e0a000">'+'★'.repeat(v)+'</span><span style="color:#ccc">'+'★'.repeat(5-v)+'</span></div>').join('');
+  b.innerHTML='<div class="row" style="gap:16px;flex-wrap:wrap"><span>ממוצע: '+Object.keys(NM).map(k=>'<b>'+NM[k]+'</b> '+avg(k)).join(' · ')+'</span><span>משובים: <b>'+F.length+'</b> · פניות: <b>'+(FB.length-F.length)+'</b> · מוצגים באתר: <b>'+FB.filter(x=>x.pub).length+'</b></span></div>'+
+    '<div class="row" style="margin:8px 0">'+[['all','הכל'],['feedback','משובים'],['contact','פניות'],['pub','מוצגים באתר']].map(([k,n])=>'<button type="button" class="btn small'+(FBF===k?' primary':'')+'" data-fbf="'+k+'">'+n+'</button>').join('')+'<button type="button" class="btn small" data-fbre>רענון</button></div>'+
+    (L.length?'<div class="tw"><table><thead><tr><th>תאריך</th><th>סוג</th><th>דירוג</th><th>טקסט</th><th>מאת</th><th>להציג באתר</th><th></th></tr></thead><tbody>'+L.map(x=>{const who=[x.name?esc(x.name):'',x.email?'<a href="mailto:'+esc(x.email)+'" dir="ltr">'+esc(x.email)+'</a>':'',x.phone?'<a href="tel:'+esc(x.phone)+'" dir="ltr">'+esc(x.phone)+'</a>':''].filter(Boolean).join('<br>');
+      return '<tr data-fbt="'+esc(x.t)+'"><td style="white-space:nowrap">'+new Date(x.t).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</td><td>'+(x.kind==='contact'?'פנייה':'משוב')+'<br><small>'+esc(x.page||'')+(x.plan?' · '+esc(x.plan):'')+'</small></td><td>'+st(x.r)+'</td><td style="max-width:360px;white-space:pre-wrap">'+esc(x.text||'')+'</td><td>'+who+'</td><td>'+(x.kind==='feedback'?'<label><input type="checkbox" data-fbpub'+(x.pub?' checked':'')+'> מוצג</label><br><input type="text" data-fbname maxlength="40" placeholder="שם להצגה" value="'+esc(x.pubName||'')+'" style="width:150px">':'')+'</td><td><button type="button" class="btn small danger" data-fbdel>מחיקה</button></td></tr>'}).join('')+'</tbody></table></div>':'<p class="sub">אין עדיין.</p>')}
+document.addEventListener('click',e=>{const f=e.target.closest('[data-fbf]');if(f){FBF=f.dataset.fbf;fbDraw();return}if(e.target.closest('[data-fbre]')){fbLoad();return}
+  const d=e.target.closest('[data-fbdel]');if(d){if(!confirm('למחוק?'))return;const t=d.closest('[data-fbt]').dataset.fbt;api({action:'fbdel',t}).then(j=>{FB=j.items||[];fbDraw()})}});
+document.addEventListener('change',e=>{const c=e.target.closest('[data-fbpub],[data-fbname]');if(!c)return;const tr=c.closest('[data-fbt]');
+  api({action:'fbpub',t:tr.dataset.fbt,pub:tr.querySelector('[data-fbpub]').checked,pubName:tr.querySelector('[data-fbname]').value.trim()}).then(j=>{FB=j.items||[];fbDraw()}).catch(()=>alert('השמירה נכשלה'))});
 function actSection(){const d=D.dl,sum=o=>Object.values(o||{}).reduce((a,b)=>a+b,0),by=o=>Object.entries(o||{}).map(([k,v])=>esc(DL_K[k]||k)+': '+v).join(' · ');
   const r=(D.mail&&D.mail.reminders)||{},u=(D.mail&&D.mail.users)||{};
   return '<section><h2>הורדות ותזכורות</h2>'+

@@ -112,5 +112,21 @@
     };
     return el;
   }
-  window.MyLuachFeedback = { mount: build, open: open, afterDownload: afterDownload, contact: contact };
+  /* משובים שבעל האתר בחר להציג (בדף הניהול). אם אין, החלק נשאר מוסתר */
+  function reviews(el) {
+    addCss();
+    fetch('/api/pricing?c=_reviews').then(function (r) { return r.json(); }).then(function (j) {
+      var L = (j && j.items) || []; if (!L.length) return;
+      var st = function (n) { var h = ''; for (var i = 1; i <= 5; i++) h += '<span class="' + (n >= i ? 'on' : n >= i - .5 ? 'half' : '') + '">★</span>'; return h; };
+      el.innerHTML = '<h2>' + (EN ? 'What our customers say' : 'מה אומרים עלינו') + '</h2><div class="mlrv-g">' + L.map(function (x) {
+        return '<figure class="mlrv">' + (x.stars ? '<div class="mlrv-s" aria-label="' + x.stars + T.stars + '">' + st(x.stars) + '</div>' : '') + (x.text ? '<blockquote>' + esc(x.text) + '</blockquote>' : '') + '<figcaption>' + esc(x.name || (EN ? 'A customer' : 'לקוח/ה')) + '</figcaption></figure>';
+      }).join('') + '</div>';
+      el.hidden = false;
+    }).catch(function () {});
+  }
+  var css2 = '.mlrv-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}.mlrv{margin:0;background:var(--panel,#fff);border:1px solid var(--line,#d3dae0);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}' +
+    '.mlrv-s{direction:ltr;text-align:right;font-size:18px;color:#d5d9dd}.mlrv-s .on{color:#f2a900}.mlrv-s .half{background:linear-gradient(90deg,#d5d9dd 50%,#f2a900 50%);-webkit-background-clip:text;background-clip:text;color:transparent}' +
+    '.mlrv blockquote{margin:0;line-height:1.55;white-space:pre-wrap}.mlrv figcaption{color:var(--mute,#5d6873);font-size:14px;font-weight:600}';
+  css += css2;
+  window.MyLuachFeedback = { mount: build, open: open, afterDownload: afterDownload, contact: contact, reviews: reviews };
 })();
