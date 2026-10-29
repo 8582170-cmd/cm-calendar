@@ -1023,7 +1023,7 @@ function zCol(d,all){if(!zOn())return [];return zmanimFor(d,all).filter(z=>zpl(z
 function yzPanelOn(){return placeOf('yz')==='col'}
 function personalOnly(date,hd){
   const out=[];
-  for(const e of eventsOn(date,hd))if(e.kind!=='task'&&(e.name||!e.img))out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd),eid:e.id});
+  for(const e of eventsOn(date,hd))if(e.kind!=='task'&&(e.name||!e.img))out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd),eid:e.id,pos:e.pos});
   return out;
 }
 /* משימות (מסלול מלא): בתוך הימים או בטור נפרד, עם תיבת סימון */
@@ -1606,12 +1606,12 @@ function addMonthGrid(p,mo,evMap){
     const items=(evMap.get(ymd(d))||[]).filter(it=>!(s.zmanimMode==='table'&&it.tkind&&(dow===5||dow===6))&&!((it.learn||it.cls==='moon')&&placeOf('learn')!=='cell')).sort((a,b)=>a.order-b.order);
     const isChag=items.some(i=>i.chag);
     const c=el('div','cell'+(dow===6?' shabbat':'')+(isChag?' chag':''));
-    c.dataset.date=iso(d);c.tabIndex=0;c.setAttribute('role','button');
+    c.dataset.date=iso(d);c.tabIndex=0;c.setAttribute('role','button');if(SX&&!SAMPLE)c.title='לחצו כדי לכתוב ביום · אפשר לגרור לכאן תמונה';
     const hDay=gem(hd.getDate());
     c.setAttribute('aria-label',hDay+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+', '+d.getDate()+(EN?' ':' ב')+GREG_MONTHS[d.getMonth()]+'. הוספת אירוע');
     c.appendChild(el('div','d-top'+(dStyle()==='both'?' both':''),dateTop(d,hd)));
     if(s.dayMonth)dayMonthInline(c.lastChild,d,hd);
-    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('tasks')==='cell'?tasksOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;if(it.eid&&!SAMPLE){e.dataset.eid=it.eid;e.insertAdjacentHTML('beforeend','<button type="button" class="e-x no-print" data-edel="'+it.eid+'" aria-label="מחיקה" title="מחיקה">×</button>')}c.appendChild(e)}
+    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('tasks')==='cell'?tasksOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;if(it.pos&&it.pos.y!=null){e.classList.add('e-pos');e.style.left=it.pos.x+'%';e.style.top=it.pos.y+'%';c.style.position='relative'}if(it.eid&&!SAMPLE){e.dataset.eid=it.eid;e.insertAdjacentHTML('beforeend','<button type="button" class="e-x no-print" data-edel="'+it.eid+'" aria-label="מחיקה" title="מחיקה">×</button>')}c.appendChild(e)}
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
     if(imgEvs.length>1){c.prepend(dayImgsEl(iso(d),imgEvs));c.classList.add('has-img','multi-img')}
@@ -5208,7 +5208,7 @@ function cellInline(c){const date=c.dataset.date;if(!date)return;document.queryS
     if(!saveIt)return;
     if(ex){if(v===ex.name)return;if(v)ex.name=v;else state.events=state.events.filter(x=>x!==ex)}
     else{if(!v)return;if(state.events.length>=PLAN().events){openUpgrade('events');return}
-      state.events.push({id:uid(),kind:'other',name:v,rec:'once',date,img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null})}
+      state.events.push({id:uid(),kind:'other',name:v,rec:'once',date,img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null,pos:{x:50,y:46}})}
     save();if(later)setTimeout(()=>{renderEvents();render()},350);else{renderEvents();render()}};
   box._close=close;setTimeout(()=>document.addEventListener('pointerdown',outside,true),0);
   ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();close(true)}else if(e.key==='Escape'){e.preventDefault();close(false)}});
@@ -5218,6 +5218,26 @@ function cellInline(c){const date=c.dataset.date;if(!date)return;document.queryS
     else if(a==='more'){close(true);if(SIMPLE)quickEvent({date});else openEventEditor({date})}
     else if(a==='img'){close(true);const f=async v=>{if(!v||!v.img)return;if(state.events.length>=PLAN().events){openUpgrade('events');return}
       state.events.push({id:uid(),kind:'other',name:'',rec:'once',date,img:v.img,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:await imageLum(v.img),edit:null});save();renderEvents();render()};f.maxPx=QPX('day');pickImage(f)}})}
+
+
+/* הזזת טקסט בתוך היום: תופסים את הטקסט וגוררים לכל מקום בתא */
+let sxNoClick=0;
+stage.addEventListener('pointerdown',e=>{if(e.button!==0||fxOn())return;const t=e.target.closest('.cell .e[data-eid]');if(!t||e.target.closest('.e-x'))return;
+  const c=t.closest('.cell'),ev=state.events.find(x=>x.id===t.dataset.eid);if(!c||!ev)return;
+  const r=c.getBoundingClientRect(),sx0=e.clientX,sy0=e.clientY;let moved=false,px=0,py=0;
+  const mv=m=>{const dx=m.clientX-sx0,dy=m.clientY-sy0;if(!moved&&Math.abs(dx)+Math.abs(dy)<5)return;
+    if(!moved){moved=true;c.style.position='relative';t.classList.add('e-pos','e-drag');try{t.setPointerCapture(e.pointerId)}catch(err){}}
+    px=Math.max(8,Math.min(92,(m.clientX-r.left)/r.width*100));py=Math.max(8,Math.min(94,(m.clientY-r.top)/r.height*100));t.style.left=px+'%';t.style.top=py+'%'};
+  const up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);document.removeEventListener('pointercancel',up);
+    if(!moved)return;sxNoClick=Date.now();ev.pos={x:Math.round(px),y:Math.round(py)};save();render()};
+  document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up)},true);
+stage.addEventListener('click',e=>{if(Date.now()-sxNoClick<400){e.preventDefault();e.stopPropagation()}},true);
+/* כשגוררים קובץ תמונה מעל הדף: הימים והמקומות לתמונה מסומנים, והודעה קצרה אומרת לאן לשחרר */
+{let dn=0;const off=()=>{dn=0;document.body.classList.remove('file-drag')};
+  document.addEventListener('dragenter',e=>{const T=e.dataTransfer&&e.dataTransfer.types;if(!T||![...T].includes('Files'))return;dn++;
+    if(!document.body.classList.contains('file-drag')){document.body.classList.add('file-drag');let b=$('#sxDropHint');if(!b){b=el('div','sx-drop-hint no-print','שחררו את התמונה על יום בלוח, או על המקום לתמונה של החודש');b.id='sxDropHint';document.body.appendChild(b)}}});
+  document.addEventListener('dragleave',e=>{if(!document.body.classList.contains('file-drag'))return;dn--;if(dn<=0||!e.relatedTarget)off()});
+  document.addEventListener('drop',()=>setTimeout(off,0));document.addEventListener('dragend',off)}
 
 /* boot */
 (async function(){
