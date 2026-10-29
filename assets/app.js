@@ -140,6 +140,7 @@ const KINDS={
  yahrzeit:{label:'יום שנה (יארצייט)',ask:'שם הנפטר',ph:'למשל: סבא משה',rec:'heb'},
  event:{label:'אירוע',ask:'מה האירוע?',ph:'למשל: חתונה של יוסי',rec:'once'},
  reminder:{label:'תזכורת',ask:'על מה להזכיר?',ph:'למשל: תשלום ארנונה',rec:'once'},
+ meeting:{label:'פגישה',ask:'עם מי, או על מה?',ph:'למשל: רופא שיניים 16:00',rec:'once'},
  other:{label:'טקסט חופשי',ask:'הטקסט שיופיע ביום',ph:'למשל: טיול שנתי',rec:'once'},
  task:{label:'משימה',ask:'מה המשימה?',ph:'למשל: לשלם ארנונה',rec:'once'}};
 const WD_FULL=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
@@ -1023,11 +1024,11 @@ function zCol(d,all){if(!zOn())return [];return zmanimFor(d,all).filter(z=>zpl(z
 function yzPanelOn(){return placeOf('yz')==='col'}
 function personalOnly(date,hd){
   const out=[];
-  for(const e of eventsOn(date,hd))if(e.kind!=='task'&&(e.name||!e.img))out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd),eid:e.id,pos:e.pos});
+  for(const e of eventsOn(date,hd))if(e.kind!=='task'&&(e.name||!e.img))out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd),eid:e.id,pos:e.pos,ts:e.ts,col:e.col});
   return out;
 }
 /* משימות (מסלול מלא): בתוך הימים או בטור נפרד, עם תיבת סימון */
-function tasksOnly(date,hd){if(!canF('tasks'))return [];return eventsOn(date,hd).filter(e=>e.kind==='task'&&e.name).map(e=>({cls:'task',text:e.name}))}
+function tasksOnly(date,hd){if(!canF('tasks'))return [];return eventsOn(date,hd).filter(e=>e.kind==='task'&&e.name).map(e=>({cls:'task',text:e.name,eid:e.id,pos:e.pos,ts:e.ts,col:e.col}))}
 function gedolimFor(hd,big,noLimit){
   const out=[],leap=isLeap(hd.getFullYear());
   for(const g of GEDOLIM.concat(state.customGedolim)){
@@ -1611,7 +1612,7 @@ function addMonthGrid(p,mo,evMap){
     c.setAttribute('aria-label',hDay+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+', '+d.getDate()+(EN?' ':' ב')+GREG_MONTHS[d.getMonth()]+'. הוספת אירוע');
     c.appendChild(el('div','d-top'+(dStyle()==='both'?' both':''),dateTop(d,hd)));
     if(s.dayMonth)dayMonthInline(c.lastChild,d,hd);
-    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('tasks')==='cell'?tasksOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;if(it.pos&&it.pos.y!=null){e.classList.add('e-pos');e.style.left=it.pos.x+'%';e.style.top=it.pos.y+'%';c.style.position='relative'}if(it.eid&&!SAMPLE){e.dataset.eid=it.eid;e.insertAdjacentHTML('beforeend','<button type="button" class="e-x no-print" data-edel="'+it.eid+'" aria-label="מחיקה" title="מחיקה">×</button>')}c.appendChild(e)}
+    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('tasks')==='cell'?tasksOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;if(it.ts&&it.ts!==1)e.style.fontSize=Math.round(it.ts*100)+'%';if(it.col)e.style.color=it.col;if(it.pos&&it.pos.y!=null){e.classList.add('e-pos');e.style.left=it.pos.x+'%';e.style.top=it.pos.y+'%';c.style.position='relative'}if(it.eid&&!SAMPLE){e.dataset.eid=it.eid;e.insertAdjacentHTML('beforeend','<button type="button" class="e-x no-print" data-edel="'+it.eid+'" aria-label="מחיקה" title="מחיקה">×</button>')}c.appendChild(e)}
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
     if(imgEvs.length>1){c.prepend(dayImgsEl(iso(d),imgEvs));c.classList.add('has-img','multi-img')}
@@ -5191,37 +5192,49 @@ function sxDelEv(id,imgOnly){const ev=state.events.find(x=>x.id===id);if(!ev)ret
   save();renderEvents();render();
   sxUndo(t,()=>{Object.assign(ev,old);state.events=snap;save();renderEvents();render()})}
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-edel],[data-eimg]');if(!b)return;e.preventDefault();e.stopPropagation();document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));sxDelEv(b.dataset.edel||b.dataset.eimg,!!b.dataset.eimg)},true);
+const CI_KINDS=[['other','טקסט'],['event','אירוע'],['meeting','פגישה'],['reminder','תזכורת'],['task','משימה']];
+const CI_COLS=['','#1a232c','#b3261e','#1d4ed8','#2e7d32','#6b2d8f','#c2410c'];
 function cellInline(c){const date=c.dataset.date;if(!date)return;document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));
-  const d=dateFromIso(date),hd=new HDate(d);
-  const ex=state.events.find(e=>e.kind==='other'&&e.rec==='once'&&e.date===date&&!e.img&&e.name);
+  const d=dateFromIso(date),hd=new HDate(d),KS=CI_KINDS.map(k=>k[0]);
+  const ex=state.events.find(e=>KS.includes(e.kind)&&e.rec==='once'&&e.date===date&&!e.img&&e.name);
   const others=eventsOn(d,hd).filter(e=>e!==ex);
+  let kind=ex?ex.kind:'other',ts=ex&&ex.ts||1,col=ex&&ex.col||'';
   const r=c.getBoundingClientRect(),box=el('div','ci-box no-print');
-  box.innerHTML='<textarea class="ci-ta" rows="2" maxlength="80" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
+  box.innerHTML='<div class="ci-kinds" role="radiogroup" aria-label="סוג">'+CI_KINDS.map(([k,n])=>'<button type="button" role="radio" data-cik="'+k+'">'+n+(k==='task'&&!canF('tasks')?' 🔒':'')+'</button>').join('')+'</div>'+
+    '<textarea class="ci-ta" rows="2" maxlength="80" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
+    '<div class="ci-style"><span>גודל</span><button type="button" data-cis="-1" aria-label="הקטנת הטקסט">א−</button><button type="button" data-cis="1" aria-label="הגדלת הטקסט">א+</button><span class="ci-sep"></span><span>צבע</span>'+CI_COLS.map(x=>'<button type="button" class="ci-col" data-cic="'+x+'" style="--c:'+(x||'var(--c-pers,#7a3b16)')+'" aria-label="'+(x?'צבע '+x:'צבע רגיל')+'"></button>').join('')+'</div>'+
     (others.length?'<div class="ci-have">'+others.map(e=>'<span class="ci-chip">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span>'+esc(e.name||'תמונה')+'</span><button type="button" data-cidel="'+e.id+'" aria-label="מחיקה" title="'+(e.rec&&e.rec!=='once'?'מחיקה מכל השנים':'מחיקה')+'">×</button></span>').join('')+'</div>':'')+
-    '<div class="ci-bar"><button type="button" data-ci="more">יום הולדת, יארצייט ועוד…</button><button type="button" data-ci="img">תמונה</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
+    '<div class="ci-bar"><button type="button" data-ci="img">＋ הוסף תמונה</button><button type="button" data-ci="more">＋ יום הולדת, יארצייט…</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
   document.body.appendChild(box);
-  const w=Math.min(innerWidth-16,Math.max(r.width+16,250));box.style.width=w+'px';
+  const w=Math.min(innerWidth-16,Math.max(r.width+16,300));box.style.width=w+'px';
   box.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+scrollX+'px';
   box.style.top=(r.top+scrollY+Math.min(r.height*0.3,36))+'px';
-  const ta=box.querySelector('textarea');ta.value=ex?ex.name:'';ta.focus();ta.select();
+  const ta=box.querySelector('textarea');ta.value=ex?ex.name:'';
+  const paint=()=>{box.querySelectorAll('[data-cik]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.cik===kind)));box.querySelectorAll('[data-cic]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cic===col)));
+    ta.style.color=col||'';ta.style.fontSize=Math.round(15*Math.min(1.6,ts))+'px';ta.placeholder=kind==='other'?'כתבו כאן, ו־Enter לשמירה':(KINDS[kind]||{}).ph||''};paint();
+  ta.focus();ta.select();
   {const br=box.getBoundingClientRect();if(br.bottom>innerHeight-8)window.scrollBy({top:br.bottom-innerHeight+80,behavior:'smooth'})}
   let done=false;
   const outside=e=>{if(!box.contains(e.target))close(true,true)};
   const close=(saveIt,later)=>{if(done)return;done=true;const v=ta.value.trim();box.remove();document.removeEventListener('pointerdown',outside,true);
     if(!saveIt)return;
-    if(ex){if(v===ex.name)return;if(v)ex.name=v;else state.events=state.events.filter(x=>x!==ex)}
+    if(kind==='task'&&!canF('tasks')&&v&&(!ex||ex.kind!=='task')){openUpgrade('tasks');return}
+    const st={kind,ts:ts===1?undefined:ts,col:col||undefined};
+    if(ex){if(v===ex.name&&ex.kind===kind&&(ex.ts||1)===ts&&(ex.col||'')===col)return;if(v){ex.name=v;Object.assign(ex,st);if(!st.ts)delete ex.ts;if(!st.col)delete ex.col}else state.events=state.events.filter(x=>x!==ex)}
     else{if(!v)return;if(state.events.length>=PLAN().events){openUpgrade('events');return}
-      state.events.push({id:uid(),kind:'other',name:v,rec:'once',date,img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null,pos:{x:50,y:46}})}
+      const o={id:uid(),name:v,rec:'once',date,img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null,pos:{x:50,y:46},...st};if(!o.ts)delete o.ts;if(!o.col)delete o.col;state.events.push(o)}
     save();if(later)setTimeout(()=>{renderEvents();render()},350);else{renderEvents();render()}};
   box._close=close;setTimeout(()=>document.addEventListener('pointerdown',outside,true),0);
   ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();close(true)}else if(e.key==='Escape'){e.preventDefault();close(false)}});
   box.addEventListener('click',e=>{const x=e.target.closest('[data-cidel]');if(x){close(true);sxDelEv(x.dataset.cidel,false);return}
+    const k=e.target.closest('[data-cik]');if(k){kind=k.dataset.cik;paint();ta.focus();return}
+    const z=e.target.closest('[data-cis]');if(z){ts=Math.max(0.7,Math.min(2.2,+(ts+(+z.dataset.cis)*0.15).toFixed(2)));paint();ta.focus();return}
+    const cc=e.target.closest('[data-cic]');if(cc){col=cc.dataset.cic;paint();ta.focus();return}
     const b=e.target.closest('[data-ci]');if(!b)return;const a=b.dataset.ci;
     if(a==='ok')close(true);
     else if(a==='more'){close(true);if(SIMPLE)quickEvent({date});else openEventEditor({date})}
     else if(a==='img'){close(true);const f=async v=>{if(!v||!v.img)return;if(state.events.length>=PLAN().events){openUpgrade('events');return}
       state.events.push({id:uid(),kind:'other',name:'',rec:'once',date,img:v.img,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:await imageLum(v.img),edit:null});save();renderEvents();render()};f.maxPx=QPX('day');pickImage(f)}})}
-
 
 /* הזזת טקסט בתוך היום: תופסים את הטקסט וגוררים לכל מקום בתא */
 let sxNoClick=0;
