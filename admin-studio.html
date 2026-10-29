@@ -101,6 +101,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .tp-c.off{opacity:.55}
 .tp-c{position:relative}.tp-c .sel{position:absolute;top:12px;inset-inline-start:12px;z-index:2;display:flex;align-items:center;gap:4px;background:#fff;border-radius:8px;padding:3px 7px;font-size:13px;font-weight:700;box-shadow:0 1px 4px rgb(0 0 0 / .2);cursor:pointer}
 .tp-c .sel input{width:18px;height:18px;margin:0}.tp-c.picked{outline:3px solid var(--teal);outline-offset:-1px}
+.bulk .more{display:flex;flex-direction:column;gap:10px;max-height:min(60vh,520px);overflow:auto}
 .bulk{position:sticky;top:0;z-index:5;border:2px solid var(--teal);border-radius:12px;padding:12px;background:var(--paper);display:flex;flex-direction:column;gap:10px;box-shadow:0 4px 14px rgb(0 0 0 / .12)}
 .bulk .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.bulk .row>b{min-width:120px}
 .bulk select,.bulk input[type=number]{width:auto;min-width:110px}
@@ -547,14 +548,15 @@ function tpCats(){
 }
 function tpObj(t){return {id:t.id,areas2:t.areas2,areaSet:!!t.areaSet,type:t.type,land:t.land,rot:t.rot||0,tshape:t.tshape,noArea:!!t.noArea,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
 /* בחירה של כמה עיצובים ושינוי הגדרות לכולם יחד (חוץ מאזור הטקסט, שהוא לכל דף בנפרד) */
-const TPSEL=new Set();
+const TPSEL=new Set();let tpBulkOpen=false;
 function tpVisible(){const f=$('tpFilter').value;return (TP.templates||[]).filter(t=>!f||t.cat===f||(t.variants||[]).some(v=>v.cat===f))}
 function tpBulk(){
   const box=$('tpBulk'),sel=(TP.templates||[]).filter(t=>TPSEL.has(t.id));$('tpSelNone').hidden=!sel.length;
   if(!sel.length){box.hidden=true;box.innerHTML='';return}
   box.hidden=false;
   const catOpts=TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');
-  box.innerHTML='<div class="row"><b>נבחרו '+sel.length+' עיצובים</b><button class="btn sm" type="button" data-b="none">ביטול הבחירה</button><span class="sub">כל שינוי חל על כל הנבחרים. אחרי זה ללחוץ "שמירת העיצובים והאירועים".</span></div>'+
+  /* שורה קטנה למעלה (לא מסתירה את הרשימה, אפשר להמשיך לסמן); הפעולות נפתחות בלחיצה */
+  box.innerHTML='<div class="row"><b>נבחרו '+sel.length+' עיצובים</b><button class="btn sm primary" type="button" data-b="tog">'+(tpBulkOpen?'▴ סגירת השינויים':'▾ שינוי לכל הנבחרים')+'</button><button class="btn sm" type="button" data-b="none">ביטול הבחירה</button><span class="sub">'+(tpBulkOpen?'כל שינוי חל על כל הנבחרים. אחרי זה ללחוץ "שמירת העיצובים והאירועים".':'ממשיכים לסמן עיצובים, ואז פותחים את השינויים.')+'</span></div>'+(tpBulkOpen?'<div class="more">':'<div class="more" hidden>')+
     '<div class="row"><b>מחיר (₪)</b><input type="number" min="0" step="1" data-v="price" placeholder="0 = חינם"><button class="btn sm primary" type="button" data-b="price">קביעת המחיר</button></div>'+
     '<div class="row"><b>סוג הדף</b><select data-v="type"><option value="design">דף מעוצב</option><option value="bg">דף רקע</option><option value="frame">מסגרת</option></select><button class="btn sm" type="button" data-b="type">החלה</button>'+
       '<b>ברכה / הזמנה</b><select data-v="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select><button class="btn sm" type="button" data-b="kind">החלה</button></div>'+
@@ -566,11 +568,12 @@ function tpBulk(){
     '<div><b>אירועים נוספים</b> <span class="sub">מסמנים אירועים, ואז "הוספה" או "הסרה". העיצוב יופיע גם בהם בגלריה.</span><div class="cats">'+TPCATS().map(c=>'<label><input type="checkbox" value="'+esc(c[0])+'">'+esc(c[1])+'</label>').join('')+'</div>'+
       '<div class="row" style="margin-top:6px"><button class="btn sm primary" type="button" data-b="addcats">הוספה לאירועים המסומנים</button><button class="btn sm" type="button" data-b="rmcats">הסרה מהאירועים המסומנים</button><button class="btn sm" type="button" data-b="clrcats">רק באירוע הראשי</button></div></div>'+
     '<div class="row"><b>שמות</b><input type="text" data-v="nbase" placeholder="השם לפני המספר (ריק = שם האירוע)" style="min-width:230px"><button class="btn sm primary" type="button" data-b="names">שינוי השמות: השם + מספר (001, 002…)</button><span class="sub">לפי הסדר ברשימה. בלי שם: כל אירוע ממוספר בנפרד בשם שלו.</span></div>'+
-    '<div class="row"><button class="btn sm" type="button" data-b="del" style="color:#a8382c">מחיקת '+sel.length+' העיצובים</button></div>';
+    '<div class="row"><button class="btn sm" type="button" data-b="del" style="color:#a8382c">מחיקת '+sel.length+' העיצובים</button></div></div>';
   const v=k=>box.querySelector('[data-v='+k+']').value,cats=()=>[...box.querySelectorAll('.cats input:checked')].map(x=>x.value);
   const done=t=>{tpRender();tpCats();tpMsg(t+' ('+sel.length+' עיצובים). ללחוץ "שמירה" בתחתית.')};
   box.onclick=e=>{const b=e.target.closest('[data-b]');if(!b)return;const k=b.dataset.b;
-    if(k==='none'){TPSEL.clear();tpRender();return}
+    if(k==='none'){TPSEL.clear();tpBulkOpen=false;tpRender();return}
+    if(k==='tog'){tpBulkOpen=!tpBulkOpen;tpBulk();return}
     if(k==='price'){const p=Math.max(0,Math.min(10000,+v('price')||0));sel.forEach(t=>t.price=p);return done(p?'המחיר נקבע ל־'+p+' ₪':'סומנו כחינם')}
     if(k==='type'){const y=v('type');sel.forEach(t=>{t.type=y;if(y!=='design')t.blocks=[];else if(!(t.blocks||[]).length)t.blocks=GR.starter(t.kind,'#14213d','#8a6a22')});return done('סוג הדף עודכן')}
     if(k==='kind'){sel.forEach(t=>t.kind=v('kind'));return done('עודכן')}
