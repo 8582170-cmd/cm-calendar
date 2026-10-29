@@ -4737,7 +4737,7 @@ stage.addEventListener('click',e=>{if(!TSEL)return;
   const c=e.target.closest('[data-date]');if(c){e.preventDefault();e.stopPropagation();const id=TSEL;traySelect(null);trayToDay(c.dataset.date,id)}},true);
 
 /* הוספה מהירה ליום (בבונה הפשוט, ובכל מקום שנגררת תמונה מהמגש ליום) */
-const QK=[['birthday','יום הולדת'],['anniversary','יום נישואין'],['yahrzeit','יום שנה'],['event','אירוע'],['other','טקסט חופשי']];
+const QK=[['birthday','יום הולדת'],['anniversary','יום נישואין'],['yahrzeit','יום שנה'],['event','אירוע'],['other','טקסט חד פעמי']];
 function quickEvent({date,img,trayId}){
   const base=dateFromIso(date),hd=new HDate(base),leap=isLeap(hd.getFullYear());
   const hTxt=gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),leap),gTxt=base.getDate()+(EN?' ':' ב')+GREG_MONTHS[base.getMonth()];
@@ -4758,7 +4758,7 @@ function quickEvent({date,img,trayId}){
   const draw=()=>{const k=KINDS[kind];q('#qAsk').textContent=k.ask;q('#qName').placeholder=k.ph;
     m.querySelectorAll('input[name=qR]').forEach(r=>r.checked=r.value===rec);
     q('#qImg').hidden=q('#qPicX').hidden=!pic;if(pic)q('#qImg').src=pic;q('#qPic').textContent=pic?'החלפת תמונה':'📷 תמונה ליום (לא חובה)'};
-  m.addEventListener('change',e=>{if(e.target.name==='qK'){kind=e.target.value;if(!q('#qName').value)rec=KINDS[kind].rec;draw()}if(e.target.name==='qR')rec=e.target.value});
+  m.addEventListener('change',e=>{if(e.target.name==='qK'){kind=e.target.value;if(!q('#qName').value||kind==='other')rec=KINDS[kind].rec;draw()}if(e.target.name==='qR')rec=e.target.value});
   q('#qPic').onclick=()=>{const s=async v=>{pic=v.img;draw()};s.maxPx=QPX('day');pickImage(s)};
   q('#qPicX').onclick=()=>{pic=null;draw()};
   const build=()=>{const o={id:uid(),kind,name:q('#qName').value.trim(),rec,img:pic,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null};
