@@ -339,7 +339,7 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .dv-z .zh{margin:-4px 0 6px}
 #printM{display:none}
 @media print{
-  body.print-month>*:not(#printM){display:none!important}
+  body.print-month>*:not(#printM):not(.print-wm){display:none!important}
   body.print-month #printM{display:block!important;font-family:Assistant,Arial,sans-serif;color:#1d2a2e}
   .pm-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;border-bottom:2px solid #1e5a63;padding-bottom:6px}
   .pm-logo{display:flex;align-items:center;gap:8px;font:800 22pt "Frank Ruhl Libre",serif;color:#1e5a63}
@@ -361,7 +361,7 @@ table.t tr.major td:first-child{font-weight:700;color:var(--chag)}
 .dv-z .zh{margin:-4px 0 6px}
 #printM{display:none}
 @media print{
-  body.print-month>*:not(#printM){display:none!important}
+  body.print-month>*:not(#printM):not(.print-wm){display:none!important}
   body.print-month #printM{display:block!important;font-family:Assistant,Arial,sans-serif;color:#1d2a2e}
   .pm-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;border-bottom:2px solid #1e5a63;padding-bottom:6px}
   .pm-logo{display:flex;align-items:center;gap:8px;font:800 22pt "Frank Ruhl Libre",serif;color:#1e5a63}
