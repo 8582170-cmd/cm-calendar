@@ -111,7 +111,7 @@ module.exports = async (req, res) => {
         const num = (v, a, z) => Math.max(a, Math.min(z, Number(v) || 0));
         const col = v => /^(#[0-9a-f]{3,8}|@[A-Z]{1,8})$/i.test(String(v || '')) ? String(v) : '#14213d';
         g.cats = (Array.isArray(b.cats) ? b.cats : []).slice(0, 80).map(c => ({ id: str(c.id, 30).replace(/[^\w-]/g, ''), name: str(c.name, 40) })).filter(c => c.id && c.name);
-        g.hideCats = (Array.isArray(b.hideCats) ? b.hideCats : []).slice(0, 80).map(x => str(x, 30));
+        g.hideCats = (Array.isArray(b.hideCats) ? b.hideCats : []).slice(0, 200).map(x => str(x, 30));
         g.templates = (Array.isArray(b.templates) ? b.templates : []).slice(0, 600).map(x => ({
           id: str(x.id, 40).replace(/[^\w-]/g, '') || ('u' + Date.now().toString(36)), title: str(x.title, 80), cat: str(x.cat, 30).replace(/[^\w-]/g, ''),
           kind: x.kind === 'invite' ? 'invite' : 'greeting', type: ['bg', 'frame'].includes(x.type) ? x.type : 'design', price: num(x.price, 0, 10000), on: x.on !== false, draft: !!x.draft, order: num(x.order, 0, 100000),
@@ -141,6 +141,7 @@ module.exports = async (req, res) => {
           if (typeof v.on === 'boolean') o.on = v.on;
           if (v.label) o.label = String(v.label).replace(/[<>]/g, '').slice(0, 60);
           if (CATS.includes(v.cat)) o.cat = v.cat;
+          if (['ok', 'no', 'chk'].includes(v.lic)) o.lic = v.lic;
           if (Object.keys(o).length) out[id] = o;
         });
         g.fonts = out; g.updated = new Date().toISOString();

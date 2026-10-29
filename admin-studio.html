@@ -86,6 +86,11 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .fl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
 .fl-c{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--paper);min-width:0}
 .fl-c.off{opacity:.55}
+.fl-c .lic{display:flex;gap:6px;align-items:center;font-size:12.5px}
+.fl-c .lic b{border-radius:999px;padding:1px 8px;font-size:12px;white-space:nowrap}
+.fl-c .lic b.ok{background:#e3f3e6;color:#1d6b33}.fl-c .lic b.no{background:#fbe4e1;color:#a8382c}.fl-c .lic b.chk{background:#fff2d6;color:#8a5a00}
+.fl-c .lic select{flex:1;min-width:0;font-size:12.5px;padding:2px 4px}
+.fl-c .lic-why{font-size:11.5px;color:var(--mute)}
 .fl-c .smp{font-size:30px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;min-height:42px}
 .fl-c .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
 .fl-c .nm{font-size:12px;color:var(--mute);direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -106,7 +111,8 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .tp-f input[type=color]{width:100%;height:38px;padding:2px}
 .cat-l{display:flex;flex-wrap:wrap;gap:6px}
 .cat-i{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 12px;font-size:14px;background:var(--paper)}
-.cat-i.off{opacity:.5;text-decoration:line-through}
+.cat-i.off{opacity:.55}.cat-i.off>label>span{text-decoration:line-through}
+.cat-i label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.cat-i label input{width:auto;margin:0}
 .cat-i button{font:inherit;font-size:12px;border:0;background:none;color:var(--teal);cursor:pointer;padding:2px 4px}
 .login{max-width:360px;margin:60px auto;display:flex;flex-direction:column;gap:10px}
 .msg{font-weight:700;color:var(--bad)}
@@ -189,7 +195,8 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
     <div id="tpEd"></div>
     <div class="tp-grid" id="tpList"><p class="sub">טוען…</p></div>
     <h3 style="margin:8px 0 0;font-size:17px">אירועים (קטגוריות בגלריה)</h3>
-    <p class="sub">אפשר להוסיף אירוע חדש, לשנות שם, או להסתיר אירוע מהגלריה. אירוע מוסתר לא מוצג ללקוחות גם אם יש בו עיצובים.</p>
+    <p class="sub">מסמנים ✓ ליד כל אירוע שפעיל באתר. אירוע בלי סימון לא מוצג ללקוחות: לא בגלריה, לא בעיצובים שבו ולא בבחירת הנוסחים. אחרי השינוי ללחוץ "שמירה".</p>
+    <div class="actions"><button class="btn sm" type="button" id="catAllOn">✓ כל האירועים פעילים</button><button class="btn sm" type="button" id="catAllOff">כיבוי כל האירועים</button><button class="btn sm" type="button" id="catUsedOnly">פעילים רק אירועים שיש בהם עיצובים</button></div>
     <div class="cat-l" id="catList"></div>
     <div class="actions"><input id="catNew" placeholder="שם אירוע חדש, למשל אפשערניש" style="width:auto;min-width:220px"><button class="btn sm" type="button" id="catAdd">הוספת אירוע</button></div>
     <div class="tp-f" style="border:1px solid var(--line);border-radius:12px;padding:12px">
@@ -215,11 +222,14 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
       <input type="search" id="flQ" placeholder="חיפוש לפי שם או יצרן" aria-label="חיפוש גופן">
       <select id="flS" aria-label="סינון לפי מצב"><option value="">הכל</option><option value="on">מוצגים ללקוחות</option><option value="off">מוסתרים</option></select>
       <select id="flC" aria-label="סינון לפי סוג"><option value="">כל הסוגים</option></select>
+      <select id="flLc" aria-label="סינון לפי רישיון"><option value="">כל הרישיונות</option><option value="ok">✓ מותר לשימוש מסחרי</option><option value="no">✗ אסור לשימוש מסחרי</option><option value="chk">? לבדיקה</option></select>
       <select id="flL" aria-label="סינון לפי מקור"><option value="">כל המקורות</option><option value="my">האוספים שלך</option><option value="he">Google עברית</option><option value="en">Google אנגלית</option></select>
       <input id="flT" placeholder="טקסט לדוגמה" value="מזל טוב · שנה טובה" aria-label="טקסט לדוגמה בעברית"><input id="flTe" dir="ltr" placeholder="English sample" value="Mazal Tov · Celebrate" aria-label="טקסט לדוגמה באנגלית">
       <span class="sub" id="flN"></span>
     </div>
     <div class="fl-bar"><button class="btn sm primary" type="button" id="flAllOn">הצגת כל הגופנים ללקוחות</button><button class="btn sm" type="button" id="flAllOff">הסתרת כל הגופנים</button><span class="sub">אחרי הלחיצה צריך ללחוץ "שמירת הגופנים" בתחתית.</span></div>
+    <div class="fl-bar"><button class="btn sm primary" type="button" id="flOkOnly">✓ להציג רק גופנים שבוודאי מותרים לשימוש מסחרי</button><button class="btn sm" type="button" id="flNoOff">✗ להסתיר את הגופנים שבוודאי אסורים</button><span class="sub" id="flLicN"></span></div>
+    <p class="sub">הרישיון נקבע אוטומטית לפי מה שכתוב בתוך קובץ הגופן: גופני Google, ‏OFL ו־GPL (כמו Culmus) מותרים. מאסטרפונט, פונטביט, גוטמן ורישיונות "לא מסחרי" אסורים. כל השאר "לבדיקה". אפשר לשנות לכל גופן ידנית אחרי שבדקת. זה לא ייעוץ משפטי.</p>
     <div class="fl-grid" id="flGrid"><p class="sub">טוען…</p></div>
     <div class="actions"><button class="btn" type="button" id="flMore" hidden>עוד גופנים</button></div>
     <div class="savebar"><button class="btn primary" type="button" id="flSave">שמירת הגופנים</button><span id="flMsg" role="status"></span></div>
@@ -405,26 +415,32 @@ function prRender(){
 }
 
 /* גופנים לברכות */
-var FL={}, flShown=60, flIO=null;
+var FL={}, flShown=60, flIO=null, FLIC={};
+const LICN={ok:'✓ מותר מסחרי',no:'✗ אסור מסחרי',chk:'? לבדיקה'};
+function flAuto(m){return m.lang!=='my'?['ok','Google Fonts: רישיון חופשי, מותר מסחרי']:(FLIC[m.id]||['chk','לא כתוב בקובץ רישיון ברור'])}
+function flLic(m){const o=FL[m.id]||{};return o.lic||flAuto(m)[0]}
+function flLicCount(){const a=GR.pickList(true),c={ok:0,no:0,chk:0};a.forEach(m=>c[flLic(m)]++);$('flLicN').textContent=c.ok+' מותרים · '+c.no+' אסורים · '+c.chk+' לבדיקה'}
 var FCATS=[['STAM','סת״ם, רש״י וקודש'],['CLASSIC','קלאסי'],['HAND','כתב יד'],['OUTLINE','חלול ומעוטר'],['DISPLAY','כותרות'],['FUN','שמח וצבעוני'],['NEW','נוספים (לא ממוין)'],['SERIF','קלאסי (Google)'],['SANS_SERIF','מודרני (Google)'],['HANDWRITING','כתב יד (Google)']];
 function flInit(){
   FCATS.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1];$('flC').appendChild(o)});
-  ['flQ','flS','flC','flL'].forEach(id=>$(id).addEventListener(id==='flQ'?'input':'change',()=>{flShown=60;flRender()}));
+  ['flQ','flS','flC','flL','flLc'].forEach(id=>$(id).addEventListener(id==='flQ'?'input':'change',()=>{flShown=60;flRender()}));
   ['flT','flTe'].forEach(id=>$(id).addEventListener('input',()=>document.querySelectorAll('.fl-c .smp').forEach(e=>e.textContent=e.dir==='ltr'?$('flTe').value:$('flT').value)));
   $('flMore').onclick=()=>{flShown+=60;flRender()};
   $('flAllOn').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:true}));flRender();$('flMsg').className='';$('flMsg').textContent='סומנו. ללחוץ "שמירת הגופנים" כדי שזה יעבור ללקוחות.'};
   $('flAllOff').onclick=()=>{flList().forEach(m=>flSet(m.id,{on:false}));flRender();$('flMsg').className='';$('flMsg').textContent='הוסתרו. ללחוץ "שמירת הגופנים" כדי שזה יעבור ללקוחות.'};
+  $('flOkOnly').onclick=()=>{let n=0;GR.pickList(true).forEach(m=>{const ok=flLic(m)==='ok';if(ok)n++;flSet(m.id,{on:ok})});flRender();$('flMsg').className='';$('flMsg').textContent='מוצגים עכשיו רק '+n+' הגופנים שבוודאי מותרים. ללחוץ "שמירת הגופנים" כדי שזה יעבור ללקוחות.'};
+  $('flNoOff').onclick=()=>{let n=0;GR.pickList(true).forEach(m=>{if(flLic(m)==='no'){n++;flSet(m.id,{on:false})}});flRender();$('flMsg').className='';$('flMsg').textContent=n+' גופנים אסורים הוסתרו. ללחוץ "שמירת הגופנים" כדי שזה יעבור ללקוחות.'};
   $('flSave').onclick=()=>{$('flMsg').className='';$('flMsg').textContent='שומר…';
     api({action:'greetfontssave',fonts:FL}).then(d=>{FL=d.fonts||{};GR.applySettings(FL);$('flMsg').className='ok';$('flMsg').textContent='נשמר. הלקוחות יראו את השינוי תוך כמה דקות.'})
       .catch(e=>{$('flMsg').className='msg';$('flMsg').textContent='השמירה נכשלה: '+e.message})};
-  Promise.all([GR.catalog(),api({action:'greetfontsget'})]).then(([_,d])=>{FL=d.fonts||{};GR.applySettings(FL);flRender()})
+  Promise.all([GR.catalog(),api({action:'greetfontsget'}),fetch('/assets/greetings/fonts/license.json?v=1').then(r=>r.json()).catch(()=>({}))]).then(([_,d,lc])=>{FLIC=lc||{};FL=d.fonts||{};GR.applySettings(FL);flRender()})
     .catch(e=>{$('flGrid').innerHTML='<p class="msg">לא הצלחתי לטעון את הגופנים: '+esc(e.message)+'</p>'});
 }
 function flSet(id,o){FL[id]=Object.assign({},FL[id]||{},o);GR.applySettings(FL)}
 function flList(){
-  const q=$('flQ').value.trim().toLowerCase(),st=$('flS').value,c=$('flC').value,l=$('flL').value;
+  const q=$('flQ').value.trim().toLowerCase(),st=$('flS').value,c=$('flC').value,l=$('flL').value,lc=$('flLc').value;
   const LO={my:0,he:1,en:2};
-  return GR.pickList(true).sort((a,b)=>LO[a.lang]-LO[b.lang]).filter(m=>(!q||(m.id+' '+m.label+' '+m.maker).toLowerCase().includes(q))&&(!st||(st==='on')===m.on)&&(!c||m.cat===c)&&(!l||m.lang===l));
+  return GR.pickList(true).sort((a,b)=>LO[a.lang]-LO[b.lang]).filter(m=>(!q||(m.id+' '+m.label+' '+m.maker).toLowerCase().includes(q))&&(!st||(st==='on')===m.on)&&(!c||m.cat===c)&&(!l||m.lang===l)&&(!lc||flLic(m)===lc));
 }
 function flRender(){
   const all=flList(),box=$('flGrid');box.innerHTML='';
@@ -434,15 +450,19 @@ function flRender(){
   const catOpts=FCATS.map(c=>'<option value="'+c[0]+'">'+esc(c[1])+'</option>').join('');
   all.slice(0,flShown).forEach(m=>{
     const el=document.createElement('div');el.className='fl-c'+(m.on?'':' off');el.dataset.f=m.id;
-    el.innerHTML='<div class="smp"></div><div class="nm"></div><div class="row2"><input aria-label="שם בעברית"><select aria-label="סוג">'+catOpts+'</select></div><label class="tg"><input type="checkbox"> מוצג ללקוחות</label>';
+    el.innerHTML='<div class="smp"></div><div class="nm"></div><div class="row2"><input aria-label="שם בעברית"><select aria-label="סוג">'+catOpts+'</select></div><div class="lic"><b></b><select aria-label="רישיון"><option value="">אוטומטי</option><option value="ok">בדקתי: מותר מסחרי</option><option value="no">בדקתי: אסור מסחרי</option><option value="chk">לבדיקה</option></select></div><div class="lic-why"></div><label class="tg"><input type="checkbox"> מוצג ללקוחות</label>';
     const smp=el.querySelector('.smp');if(m.lang==='en')smp.dir='ltr';smp.textContent=m.lang==='en'?$('flTe').value:$('flT').value;smp.style.fontFamily='"'+m.id+'", serif';
     el.querySelector('.nm').textContent=m.id+(m.maker?' · '+m.maker:'')+(m.lang==='en'?' · אנגלית בלבד':'');
     const inp=el.querySelector('input:not([type])');inp.value=m.label;inp.oninput=()=>flSet(m.id,{label:inp.value});
     const sel=el.querySelector('select');sel.value=m.cat;sel.onchange=()=>flSet(m.id,{cat:sel.value});
+    const lb=el.querySelector('.lic b'),ls=el.querySelector('.lic select'),lw=el.querySelector('.lic-why');
+    const lpaint=()=>{const k=flLic(m),a=flAuto(m),man=(FL[m.id]||{}).lic;lb.className=k;lb.textContent=LICN[k];lw.textContent=man?'סומן ידנית · אוטומטי: '+LICN[a[0]]+' ('+a[1]+')':a[1]};
+    ls.value=(FL[m.id]||{}).lic||'';lpaint();ls.onchange=()=>{const o=Object.assign({},FL[m.id]||{});if(ls.value)o.lic=ls.value;else delete o.lic;FL[m.id]=o;lpaint();flLicCount()};
     const cb=el.querySelector('input[type=checkbox]');cb.checked=m.on;cb.onchange=()=>{flSet(m.id,{on:cb.checked});el.classList.toggle('off',!cb.checked);$('flN').textContent=all.length+' גופנים · '+GR.pickList().length+' מוצגים ללקוחות'};
     box.appendChild(el);if(flIO)flIO.observe(el);else GR.fontCss(m.id);
   });
-  const filt=$('flQ').value.trim()||$('flS').value||$('flC').value||$('flL').value;
+  flLicCount();
+  const filt=$('flQ').value.trim()||$('flS').value||$('flC').value||$('flL').value||$('flLc').value;
   $('flAllOn').textContent=filt?'הצגת '+all.length+' הגופנים שבסינון':'הצגת כל '+all.length+' הגופנים ללקוחות';
   $('flAllOff').textContent=filt?'הסתרת '+all.length+' הגופנים שבסינון':'הסתרת כל '+all.length+' הגופנים';
   $('flMore').hidden=all.length<=flShown;
@@ -465,16 +485,19 @@ function tpInit(){
 }
 function tpMsg(t,ok){$('tpMsg').className=ok?'ok':'';$('tpMsg').textContent=t}
 function tpSaveAll(){tpMsg('שומר…');api({action:'greettplsave',...TP}).then(d=>{TP=d;tpCats();tpRender();tpMsg('נשמר. הלקוחות יראו את השינוי תוך כמה דקות.',true)}).catch(e=>{$('tpMsg').className='msg';$('tpMsg').textContent='השמירה נכשלה: '+e.message})}
+function tpCatsAll(fn){TP.hideCats=TPCATS().map(c=>c[0]).filter(id=>!fn(id));tpCats();tpMsg('ללחוץ "שמירה" בתחתית.')}
+function tpCatUsed(id){return /^bg-/.test(id)||GR.TEMPLATES.some(t=>!t.remote&&t.cat===id)||(TP.templates||[]).some(t=>t.cat===id||(t.variants||[]).some(v=>v.cat===id))}
 function tpCats(){
+  if(!$('catAllOn').onclick){$('catAllOn').onclick=()=>tpCatsAll(()=>true);$('catAllOff').onclick=()=>tpCatsAll(()=>false);$('catUsedOnly').onclick=()=>tpCatsAll(tpCatUsed)}
   const box=$('catList');box.innerHTML='';const hid=new Set(TP.hideCats||[]);
   TPCATS().forEach(([id,name])=>{
     const custom=(TP.cats||[]).some(c=>c.id===id&&!GR.CATS.some(x=>x[0]===id)),used=(TP.templates||[]).filter(t=>t.cat===id||(t.variants||[]).some(v=>v.cat===id)).length;
     const el=document.createElement('span');el.className='cat-i'+(hid.has(id)?' off':'');
-    el.innerHTML='<span></span><button type="button" data-a="ren">שינוי שם</button><button type="button" data-a="hide"></button>'+(custom?'<button type="button" data-a="del">מחיקה</button>':'');
-    el.querySelector('span').textContent=name+(used?' ('+used+')':'');
-    el.querySelector('[data-a=hide]').textContent=hid.has(id)?'הצגה':'הסתרה';
-    el.querySelector('[data-a=ren]').onclick=()=>{const inp=document.createElement('input');inp.value=name;inp.style.width='140px';el.firstChild.replaceWith(inp);inp.focus();inp.onkeydown=e=>{if(e.key==='Enter')inp.blur()};inp.onblur=()=>{const v=inp.value.trim();if(v&&v!==name){const c=(TP.cats||[]).find(c=>c.id===id);if(c)c.name=v;else TP.cats.push({id,name:v})}tpCats();tpRender()}};
-    el.querySelector('[data-a=hide]').onclick=()=>{TP.hideCats=hid.has(id)?TP.hideCats.filter(x=>x!==id):[...(TP.hideCats||[]),id];tpCats();tpMsg('ללחוץ "שמירה" בתחתית.')};
+    el.innerHTML='<label><input type="checkbox" data-a="hide"><span></span></label><button type="button" data-a="ren">שינוי שם</button>'+(custom?'<button type="button" data-a="del">מחיקה</button>':'');
+    el.querySelector('label span').textContent=name+(used?' ('+used+')':'');
+    el.querySelector('[data-a=hide]').checked=!hid.has(id);el.title=hid.has(id)?'לא פעיל: לא מוצג באתר':'פעיל: מוצג באתר';
+    el.querySelector('[data-a=ren]').onclick=()=>{const inp=document.createElement('input');inp.value=name;inp.style.width='140px';el.querySelector('label span').replaceWith(inp);inp.focus();inp.onkeydown=e=>{if(e.key==='Enter')inp.blur()};inp.onblur=()=>{const v=inp.value.trim();if(v&&v!==name){const c=(TP.cats||[]).find(c=>c.id===id);if(c)c.name=v;else TP.cats.push({id,name:v})}tpCats();tpRender()}};
+    el.querySelector('[data-a=hide]').onchange=e=>{TP.hideCats=e.target.checked?(TP.hideCats||[]).filter(x=>x!==id):[...(TP.hideCats||[]),id];tpCats();tpMsg('ללחוץ "שמירה" בתחתית.')};
     const del=el.querySelector('[data-a=del]');if(del)del.onclick=()=>{if(used){tpMsg('יש באירוע הזה '+used+' עיצובים. קודם מעבירים אותם לאירוע אחר.');return}if(!del.dataset.sure){del.dataset.sure=1;del.textContent='בטוח?';return}TP.cats=TP.cats.filter(c=>c.id!==id);tpCats()};
     box.appendChild(el);
   });
