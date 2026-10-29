@@ -1218,12 +1218,16 @@ function addResizer(target,dir,onEnd){
   });
   target.appendChild(h);
 }
+/* תמונה מעל הלוח: כל עוד אין בה תמונה, השטח לא מוצג בדף. הוא נוסף רק בלחיצה על "＋ תמונה" (והשורה לטקסט: בלחיצה על "＋ טקסט") */
 function addSlotImage(p,key,heightMm,what){
-  const s=state.s;RS.slots.push(key);
-  const box=makeImageBox(()=>state.slots[key],slotSetter(key),heightMm);
+  const s=state.s,sl=state.slots[key]||{},w=p.parentNode;RS.slots.push(key);
+  const lazy=heightMm!=null,showImg=!lazy||sl.img||sl.openImg,showCap=s.showCaption&&(!lazy||sl.caption||sl.openCap||(sl.img&&sl.openImg!==false));
+  if(w&&w.dataset){if(!showImg)w.dataset.slotImg=key;if(s.showCaption&&!showCap)w.dataset.slotCap=key}
+  if(showImg){
+  const box=makeImageBox(()=>state.slots[key],v=>{if('img' in v&&!v.img)v.openImg=false;slotSetter(key)(v)},heightMm);
   if(heightMm!=null)addResizer(box,'bottom',mm=>set('imgRatio',Math.max(5,Math.min(75,Math.round(mm/innerH()*100)))));
-  p.appendChild(box);
-  if(s.showCaption)p.appendChild(editable('caption',(state.slots[key]||{}).caption,'לחצו כאן להוספת משפט או ברכה ל'+(what||'חודש'),t=>{state.slots[key]={...(state.slots[key]||{}),caption:t};save()}));
+  p.appendChild(box);}
+  if(showCap)p.appendChild(editable('caption',(state.slots[key]||{}).caption,'לחצו כאן להוספת משפט או ברכה ל'+(what||'חודש'),t=>{state.slots[key]={...(state.slots[key]||{}),caption:t};save()}));
 }
 function moonShort(x){return String(x).replace('המולד: ','מולד ').replace(/מתחילים קידוש לבנה/,'ק״ל מ־').replace(/סוף זמן קידוש לבנה/,'סוף ק״ל').replace(/בערבית מתחילים ״ותן טל ומטר״/,'ותן טל ומטר').replace(/^תקופת /,'תק׳ ').replace(/ ?\((אשכנז|ספרד|רמ״א|שו״ע)\)/,(m,g)=>' '+({'אשכנז':'אשכ׳','ספרד':'ספ׳','רמ״א':'רמ״א','שו״ע':'שו״ע'}[g]))}
 function addHistBox(p,mo,full){
@@ -4839,7 +4843,11 @@ $('#shareBtn').onclick=shareModal;
 function fxQuickAdd(kind,key){const s=state.s,on=fxOn();if(!on){if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7)}else{s.fxOn=true;save();applyMode()}}
   setTimeout(()=>{try{fxBoxAdd(kind,key)}catch(e){}},on?0:350)}
 $('#addTextTop').onclick=()=>fxQuickAdd('text');
-document.addEventListener('click',e=>{const b=e.target.closest('[data-fxquick]');if(b){e.preventDefault();e.stopPropagation();const w=b.closest('.sheet-wrap');fxQuickAdd(b.dataset.fxquick,w&&w.dataset.key)}},true);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-fxquick]');if(b){e.preventDefault();e.stopPropagation();const w=b.closest('.sheet-wrap'),k=b.dataset.fxquick,d=w&&w.dataset;
+  /* בעמוד שהשטח לתמונה / לשורת הטקסט מעל הלוח מוסתר: הלחיצה מוסיפה אותו. אחרי שהוא בדף: שדה חופשי כרגיל */
+  if(d&&k==='img'&&d.slotImg){const key=d.slotImg,f=v=>{if(v&&v.img)slotSetter(key)({...v,openImg:true})};f.maxPx=QPX('slot');pickImage(f);return}
+  if(d&&k==='text'&&d.slotCap){const key=d.slotCap;slotSetter(key)({openCap:true});setTimeout(()=>{const x=stage.querySelector('.sheet-wrap[data-key="'+CSS.escape(w.dataset.key)+'"] .caption');if(x)x.focus()},60);return}
+  fxQuickAdd(k,w&&w.dataset.key)}},true);
 
 /* ---------- מיקום וזמנים בבונה הפשוט, וזמנים לעוד ערים ---------- */
 function cityOpts(cur,withNone){let h=withNone?'<option value="">בלי מיקום (בלי זמנים)</option>':'';
