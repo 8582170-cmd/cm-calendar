@@ -5172,7 +5172,6 @@ function sxInit(saved){
   /* בטלפון: תמיד שלב אחר שלב (הלוח למעלה והגדרות במגירה), גם למי שעבד במחשב עם "כל ההגדרות בבת אחת" */
   if(innerWidth<=900&&uiMode()==='adv'){state.s.uiMode='wizard';applyMode()}
   sxBar();sxMobile();sxSteps();
-  {const n=$('.simple-note');if(n)n.innerHTML='<b>בבונה המורחב יש גם:</b> זמני היום לפי המנהג, לימוד יומי, דברי הימים ויארצייטים של צדיקים, ימים צבועים, באנרים, עמודים נוספים וזמני תפילות לבית הכנסת. <a href="app.html">לבונה המורחב ←</a> (כל מה שבניתם עובר איתכם)'}
   {const h=$('.stage-head>span:last-of-type');if(h&&!h.id)h.textContent='לחצו על יום כדי לכתוב בו · גררו תמונות לחודשים ולימים'}
   if(SIMPLE&&!saved&&!sxLS('sx-onb')&&!window.location.hash)setTimeout(sxOnboard,500);else setTimeout(sxTip,1200);
   sxNextYear();

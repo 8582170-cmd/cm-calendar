@@ -1522,8 +1522,7 @@ body.sx .stepper,body.sx .step-head,body.sx #howto{display:none!important}
 .sx-step.cur .sx-n{background:var(--accent);color:var(--accent-ink)}
 body.sx.sx-collapsed .side>details.sec.cur{display:none}
 body.sx .side>.step-nav{order:980}
-body.sx .side>.simple-note{order:995;font-size:12.5px;line-height:1.5;background:none;border:0;padding:4px 2px;color:var(--mute)}
-body.sx .side>.simple-note b{color:var(--ink)}
+body.sx .side>.simple-note{order:1}
 .sx-dhead{display:none}
 .sx-nav{display:none}
 body.sx:not(.mode-wizard) .sx-step{display:none}
