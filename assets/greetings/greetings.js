@@ -635,7 +635,7 @@ function render(canvas, tpl, state, opt){
         var A = z.A, c = k ? { cx: A.x + A.w / 2, cy: A.y + A.h / 2 } : { cx: pcx, cy: pcy }, a = z.sh.a * Math.PI / 180;
         ctx.save(); if (a) { ctx.translate(c.cx, c.cy); ctx.rotate(a); ctx.translate(-c.cx, -c.cy); }
         ctx.setLineDash([8, 6]); ctx.lineWidth = 2.5; ctx.strokeStyle = '#d6336c';
-        if (opt.guide === 'full' || z.sh.s !== 'rect') { if (k) zonePath(ctx, A.x, A.y, A.w, A.h, z.sh, 0, 0); else panelPath(); ctx.stroke(); }
+        if (opt.guide === 'full' || z.sh.s !== 'rect' || z.sh.a) { if (k) zonePath(ctx, A.x, A.y, A.w, A.h, z.sh, 0, 0); else panelPath(); ctx.stroke(); }
         var IA = innerArea(A, z.sh); ctx.strokeStyle = opt.guide === 'full' ? '#1f8a96' : 'rgba(0,0,0,0)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
         if (IA.wfn) { var mx = IA.x + IA.w / 2, N = 24, yy, q; ctx.beginPath(); for (q = 0; q <= N; q++) { yy = IA.y + IA.h * q / N; ctx[q ? 'lineTo' : 'moveTo'](mx + IA.wfn(yy) / 2, yy); } for (q = N; q >= 0; q--) { yy = IA.y + IA.h * q / N; ctx.lineTo(mx - IA.wfn(yy) / 2, yy); } ctx.closePath(); ctx.stroke(); }
         else ctx.strokeRect(IA.x, IA.y, IA.w, IA.h);

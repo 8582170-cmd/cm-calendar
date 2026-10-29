@@ -131,7 +131,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=39"></script>
+<script src="/assets/greetings/greetings.js?v=40"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -694,7 +694,7 @@ function tpOpen(t){
   let pend=false;const draw=()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;
     pv.style.aspectRatio=DW()+'/'+DH();const r=pv.getBoundingClientRect();placeAr();
     if(!w.bg.img){const c=cv.getContext('2d');cv.width=400;cv.height=566;c.fillStyle='#eee';c.fillRect(0,0,400,566);c.fillStyle='#888';c.font='18px Assistant';c.textAlign='center';c.fillText('עדיין לא הועלה רקע',200,283);return}
-    GR.render(cv,tpObj(w),{colors:{},blocks:w.blocks,scale:1,panel:{pad:0}},{scale:Math.max(.4,r.width*(devicePixelRatio||1)/DW()),guide:w.noArea?false:($('tpFull')&&$('tpFull').checked?'full':'shape')}).catch(()=>{$('tpUpMsg').textContent='לא הצלחתי להציג את התמונה'})})};
+    GR.render(cv,tpObj(w),{colors:{},blocks:w.type&&w.type!=='design'?(w._smp||(w._smp=GR.starter('greeting',$('tpM').value,$('tpA').value))):w.blocks,scale:1,panel:{pad:0}},{scale:Math.max(.4,r.width*(devicePixelRatio||1)/DW()),guide:w.noArea?false:($('tpFull')&&$('tpFull').checked?'full':'shape')}).catch(()=>{$('tpUpMsg').textContent='לא הצלחתי להציג את התמונה'})})};
   const apply=()=>{const nb=GR.starter($('tpS').value,$('tpM').value,$('tpA').value);nb.forEach(b=>{if(b.type==='text')b.font=b.size>=26?$('tpFH').value:$('tpFB').value});w.blocks=nb;draw();if(typeof azDraw==='function')azDraw()};
   $('tpApply').onclick=apply;['tpS'].forEach(id=>$(id).onchange=()=>{$('tpK').value=$('tpS').value;apply()});
   $('tpV').onchange=()=>{w.area.valign=$('tpV').value;draw()};
@@ -729,7 +729,8 @@ function tpOpen(t){
   if(w.bg.img&&w.land==null){const im=new Image();im.onload=()=>{if(im.width>im.height){setLand(true);$('tpUpMsg').textContent='התמונה לרוחב, אז הדף הוגדר לרוחב. כדאי לסמן מחדש את אזור הטקסט.'}};im.src=w.bg.img}
   /* אזור הטקסט: מזיזים בגרירה, מגדילים ומקטינים בעיגולים שבצדדים ובפינות, או גוררים מלבן חדש על מקום ריק */
   const pct=(Q)=>'left:'+(Q.x/DW()*100)+'%;top:'+(Q.y/DH()*100)+'%;width:'+(Q.w/DW()*100)+'%;height:'+(Q.h/DH()*100)+'%';
-  function placeAr(){const Q=AA();ar.style.cssText=pct(Q);ar.hidden=!!w.noArea;
+  const tiltOf=()=>+(ts().a||0);
+  function placeAr(){const Q=AA();ar.style.cssText=pct(Q)+';transform:rotate('+tiltOf()+'deg)';ar.hidden=!!w.noArea;
     pv.querySelectorAll('.azo').forEach(x=>x.remove());if(w.noArea)return;
     const all=[w.area].concat(w.areas2||[]);all.forEach((A,k)=>{if(k===actA)return;const o=document.createElement('div');o.className='azo';o.style.cssText=pct(A);o.title='אזור '+(k+1)+': לחיצה לבחירה';
       o.onpointerdown=e=>{e.stopPropagation();actA=k;azDraw();tsShow();draw()};pv.appendChild(o)})}
@@ -737,12 +738,15 @@ function tpOpen(t){
   const toPage=e=>{const r=pv.getBoundingClientRect();return{x:Math.max(0,Math.min(DW(),(e.clientX-r.left)/r.width*DW())),y:Math.max(0,Math.min(DH(),(e.clientY-r.top)/r.height*DH()))}};
   ar.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const h=e.target.dataset&&e.target.dataset.h,Q=AA();st={mode:h||'move',p:toPage(e),o:{x:Q.x,y:Q.y,w:Q.w,h:Q.h}};ar.setPointerCapture(e.pointerId)});
   ar.addEventListener('pointermove',e=>{if(!st)return;const p=toPage(e),dx=p.x-st.p.x,dy=p.y-st.p.y,o=st.o,Q=AA(),m=st.mode;
-    /* הדף מימין לשמאל במסך, אבל הקואורדינטות משמאל לימין: "e" = הצד השמאלי */
+    /* "e" = הצד השמאלי, "w" = הימני. במסגרת משופעת מודדים את המשיכה לאורך הצדדים שלה */
     let x=o.x,y=o.y,ww=o.w,hh=o.h;
     if(m==='move'){x=o.x+dx;y=o.y+dy}
-    else{if(/w/.test(m)){ww=o.w+dx}if(/e/.test(m)){x=o.x+dx;ww=o.w-dx}if(/s/.test(m)){hh=o.h+dy}if(/n/.test(m)){y=o.y+dy;hh=o.h-dy}}
-    ww=Math.max(40,ww);hh=Math.max(40,hh);x=Math.max(0,Math.min(DW()-ww,x));y=Math.max(0,Math.min(DH()-hh,y));
-    w.areaSet=true;Q.x=Math.round(x);Q.y=Math.round(y);Q.w=Math.round(Math.min(ww,DW()));Q.h=Math.round(Math.min(hh,DH()));ar.style.cssText=pct(Q)});
+    else{const a=tiltOf()*Math.PI/180,c=Math.cos(a),sn=Math.sin(a),lx=dx*c+dy*sn,ly=-dx*sn+dy*c;let mx=0,my=0;
+      if(/w/.test(m)){ww=o.w+lx;mx=lx/2}if(/e/.test(m)){ww=o.w-lx;mx=lx/2}if(/s/.test(m)){hh=o.h+ly;my=ly/2}if(/n/.test(m)){hh=o.h-ly;my=ly/2}
+      ww=Math.max(40,ww);hh=Math.max(40,hh);if(ww===40)mx=0;if(hh===40)my=0;
+      const cx=o.x+o.w/2+mx*c-my*sn,cy=o.y+o.h/2+mx*sn+my*c;x=cx-ww/2;y=cy-hh/2}
+    ww=Math.max(40,ww);hh=Math.max(40,hh);x=Math.max(-ww/3,Math.min(DW()-ww*2/3,x));y=Math.max(-hh/3,Math.min(DH()-hh*2/3,y));
+    w.areaSet=true;Q.x=Math.round(x);Q.y=Math.round(y);Q.w=Math.round(Math.min(ww,DW()));Q.h=Math.round(Math.min(hh,DH()));ar.style.cssText=pct(Q)+';transform:rotate('+tiltOf()+'deg)'});
   ar.addEventListener('pointerup',()=>{if(st){st=null;draw()}});
   /* מלבן חדש על מקום ריק */
   pv.addEventListener('pointerdown',e=>{if(!w.bg.img||e.target!==cv)return;if(w.noArea){delete w.noArea;$('tpNA').value='0'}st={mode:'new',p:toPage(e)};pv.setPointerCapture(e.pointerId)});
