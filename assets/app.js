@@ -2068,6 +2068,7 @@ function renderNow(){
   fxBoxRender();
   try{yiApply()}catch(e){}
   fit();
+  try{sxFitDays()}catch(e){}
   fxDecorate();
   fxBoxDecorate();
   if(CDMODE)requestAnimationFrame(()=>cdApplyFocus());
@@ -5200,11 +5201,10 @@ function cellInline(c){const date=c.dataset.date;if(!date)return;document.queryS
   const others=eventsOn(d,hd).filter(e=>e!==ex);
   let kind=ex?ex.kind:'other',ts=ex&&ex.ts||1,col=ex&&ex.col||'';
   const r=c.getBoundingClientRect(),box=el('div','ci-box no-print');
-  box.innerHTML='<div class="ci-kinds" role="radiogroup" aria-label="סוג">'+CI_KINDS.map(([k,n])=>'<button type="button" role="radio" data-cik="'+k+'">'+n+(k==='task'&&!canF('tasks')?' 🔒':'')+'</button>').join('')+'</div>'+
-    '<textarea class="ci-ta" rows="2" maxlength="80" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
+  box.innerHTML='<textarea class="ci-ta" rows="2" maxlength="80" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
     '<div class="ci-style"><span>גודל</span><button type="button" data-cis="-1" aria-label="הקטנת הטקסט">א−</button><button type="button" data-cis="1" aria-label="הגדלת הטקסט">א+</button><span class="ci-sep"></span><span>צבע</span>'+CI_COLS.map(x=>'<button type="button" class="ci-col" data-cic="'+x+'" style="--c:'+(x||'var(--c-pers,#7a3b16)')+'" aria-label="'+(x?'צבע '+x:'צבע רגיל')+'"></button>').join('')+'</div>'+
     (others.length?'<div class="ci-have">'+others.map(e=>'<span class="ci-chip">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span>'+esc(e.name||'תמונה')+'</span><button type="button" data-cidel="'+e.id+'" aria-label="מחיקה" title="'+(e.rec&&e.rec!=='once'?'מחיקה מכל השנים':'מחיקה')+'">×</button></span>').join('')+'</div>':'')+
-    '<div class="ci-bar"><button type="button" data-ci="img">＋ הוסף תמונה</button><button type="button" data-ci="more">＋ יום הולדת, יארצייט…</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
+    '<div class="ci-bar"><button type="button" data-ci="more">＋ הוסף אירוע</button><button type="button" data-ci="img">＋ הוסף תמונה</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
   document.body.appendChild(box);
   const w=Math.min(innerWidth-16,Math.max(r.width+16,300));box.style.width=w+'px';
   box.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+scrollX+'px';
@@ -5254,6 +5254,13 @@ stage.addEventListener('click',e=>{if(Date.now()-sxNoClick<400){e.preventDefault
     if(!document.body.classList.contains('file-drag')){document.body.classList.add('file-drag');let b=$('#sxDropHint');if(!b){b=el('div','sx-drop-hint no-print','שחררו את התמונה על יום בלוח, או על המקום לתמונה של החודש');b.id='sxDropHint';document.body.appendChild(b)}}});
   document.addEventListener('dragleave',e=>{if(!document.body.classList.contains('file-drag'))return;dn--;if(dn<=0||!e.relatedTarget)off()});
   document.addEventListener('drop',()=>setTimeout(off,0));document.addEventListener('dragend',off)}
+
+
+/* טקסט ארוך ביום: נראה כולו. אם הוא לא נכנס בתא, הוא מוקטן עד שייכנס */
+function sxFitDays(){stage.querySelectorAll('.cell[data-date]').forEach(c=>{const L=[...c.querySelectorAll('.e[data-eid]')];if(!L.length)return;
+  const over=()=>{if(c.scrollHeight>c.clientHeight+1)return true;const cr=c.getBoundingClientRect();return L.some(e=>{const r=e.getBoundingClientRect();return r.top<cr.top-1||r.bottom>cr.bottom+1||r.left<cr.left-1||r.right>cr.right+1})};
+  if(!over())return;const base=L.map(e=>parseFloat(e.style.fontSize)||100);let k=1;
+  while(over()&&k>0.5){k=+(k-0.06).toFixed(2);L.forEach((e,i)=>e.style.fontSize=Math.round(base[i]*k)+'%')}})}
 
 /* boot */
 (async function(){

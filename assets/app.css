@@ -1653,7 +1653,7 @@ body.fx-on .e-x,body.fx-on .c-imgx{display:none!important}
   body.sx .bar .actions{width:100%;justify-content:flex-start}
   body.sx .bar .sx-sep{display:none}
 }
-.cell .e.e-pos{position:absolute;transform:translate(-50%,-50%);max-width:94%;text-align:center;z-index:2;margin:0}
+.cell .e.e-pos{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:94%;text-align:center;z-index:2;margin:0}
 .cell .e[data-eid]{cursor:grab}
 .cell .e.e-drag{cursor:grabbing;outline:1px dashed var(--acc);background:rgb(255 255 255 / .7)}
 body.file-drag .page .cell[data-date]{outline:1px dashed var(--acc);outline-offset:-3px}
@@ -1671,3 +1671,5 @@ body.file-drag .sx-drop-hint{display:block}
 .ci-style .ci-col{display:inline-block;width:18px;height:18px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 1px rgb(0 0 0 / .15)}
 .ci-style .ci-col[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:1px}
 .cell .e.e-pos{white-space:normal}
+
+.cell .e[data-eid]{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
