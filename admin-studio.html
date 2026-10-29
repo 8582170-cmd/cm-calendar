@@ -487,6 +487,11 @@ function flRender(){
 var TP={cats:[],hideCats:[],templates:[]}, tpEdit=null;
 const TPCATS=()=>{const m=new Map(GR.CATS.map(c=>[c[0],c[1]]));(TP.cats||[]).forEach(c=>m.set(c.id,c.name));return [...m.entries()]};
 const tpCatName=id=>(TPCATS().find(c=>c[0]===id)||[id,id])[1];
+/* שם אוטומטי: שם האירוע + מספר סידורי בן 3 ספרות (רקעים ומסגרות 001, 002…). המספר הבא = הגבוה ביותר שכבר קיים לאירוע + 1 */
+const pad3=n=>String(n).padStart(3,'0');
+const rxEsc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function tpNextNo(cat,skip){const nm=tpCatName(cat),rx=new RegExp('^'+rxEsc(nm)+' (\\d+)$');let mx=0;(TP.templates||[]).forEach(t=>{if(skip&&skip.has(t))return;const m=rx.exec(String(t.title||'').trim());if(m)mx=Math.max(mx,+m[1])});return mx+1}
+function tpAutoName(cat){return tpCatName(cat)+' '+pad3(tpNextNo(cat))}
 function tpInit(){
   $('tpNew').onclick=()=>tpOpen(null);
   $('tpFilter').onchange=tpRender;
@@ -560,6 +565,7 @@ function tpBulk(){
     '<div class="row"><b>אירוע ראשי</b><select data-v="cat">'+catOpts+'</select><button class="btn sm" type="button" data-b="cat">החלה</button></div>'+
     '<div><b>אירועים נוספים</b> <span class="sub">מסמנים אירועים, ואז "הוספה" או "הסרה". העיצוב יופיע גם בהם בגלריה.</span><div class="cats">'+TPCATS().map(c=>'<label><input type="checkbox" value="'+esc(c[0])+'">'+esc(c[1])+'</label>').join('')+'</div>'+
       '<div class="row" style="margin-top:6px"><button class="btn sm primary" type="button" data-b="addcats">הוספה לאירועים המסומנים</button><button class="btn sm" type="button" data-b="rmcats">הסרה מהאירועים המסומנים</button><button class="btn sm" type="button" data-b="clrcats">רק באירוע הראשי</button></div></div>'+
+    '<div class="row"><b>שמות</b><button class="btn sm primary" type="button" data-b="names">שינוי השמות לשם האירוע + מספר (001, 002…)</button><span class="sub">לפי הסדר ברשימה. כל אירוע ממוספר בנפרד.</span></div>'+
     '<div class="row"><button class="btn sm" type="button" data-b="del" style="color:#a8382c">מחיקת '+sel.length+' העיצובים</button></div>';
   const v=k=>box.querySelector('[data-v='+k+']').value,cats=()=>[...box.querySelectorAll('.cats input:checked')].map(x=>x.value);
   const done=t=>{tpRender();tpCats();tpMsg(t+' ('+sel.length+' עיצובים). ללחוץ "שמירה" בתחתית.')};
@@ -570,6 +576,7 @@ function tpBulk(){
     if(k==='kind'){sel.forEach(t=>t.kind=v('kind'));return done('עודכן')}
     if(k==='port'||k==='land'||k==='auto'){sel.forEach(t=>{if(k==='auto')delete t.land;else t.land=k==='land'});return done('הכיוון עודכן')}
     if(/^r[0-3]$/.test(k)){const d=+k[1];sel.forEach(t=>{const old=t.rot||0,nw=d?(old+d)%4:0;if((nw-old)%2&&!(t.land==null&&t.type&&t.type!=='design')){t.land=!(t.land!=null?t.land:false);if(t.area){const W0=t.land?794:1123,H0=t.land?1123:794,W1=t.land?1123:794,H1=t.land?794:1123,A=t.area;t.area={x:Math.round(A.x/W0*W1),y:Math.round(A.y/H0*H1),w:Math.round(A.w/W0*W1),h:Math.round(A.h/H0*H1),valign:A.valign}}}if(nw)t.rot=nw;else delete t.rot});return done('הרקע סובב (כדאי לבדוק את אזור הטקסט בכל דף)')}
+    if(k==='names'){const skip=new Set(sel),byCat={};sel.slice().sort((a,b)=>(a.order||0)-(b.order||0)).forEach(t=>{if(byCat[t.cat]==null)byCat[t.cat]=tpNextNo(t.cat,skip);t.title=tpCatName(t.cat)+' '+pad3(byCat[t.cat]++)});return done('השמות שונו')}
     if(k==='noarea'){sel.forEach(t=>{t.noArea=true;if(t.draft){t.draft=false;t.on=true}});return done('בלי אזור טקסט: כותבים על כל הדף')}
     if(k==='area'){sel.forEach(t=>delete t.noArea);return done('חוזר לאזור הטקסט שסומן')}
     if(k==='on'||k==='off'){sel.forEach(t=>{t.on=k==='on';if(k==='on'&&t.draft&&t.noArea)t.draft=false});return done(k==='on'?'מוצגים באתר':'הוסתרו')}
@@ -652,7 +659,7 @@ function tpBatchInit(){
     fi.onchange=async()=>{const fs=[...fi.files];if(!fs.length)return;let ok=0,bad=0;const errs=[];$('tbGo').disabled=true;
       for(let i=0;i<fs.length;i++){const f=fs[i];$('tbMsg').textContent='מעלה '+(i+1)+' מתוך '+fs.length+': '+f.name;
         try{const u=await tpUpload(f);
-          TP.templates.push({id:'u'+Date.now().toString(36)+i,title:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),cat:$('tbC').value,kind:$('tbK').value,type:$('tbY').value,price:0,on:$('tbY').value==='bg',draft:$('tbY').value!=='bg',order:TP.templates.length,
+          TP.templates.push({id:'u'+Date.now().toString(36)+i,title:tpAutoName($('tbC').value),cat:$('tbC').value,kind:$('tbK').value,type:$('tbY').value,price:0,on:$('tbY').value==='bg',draft:$('tbY').value!=='bg',order:TP.templates.length,
             bg:{img:u.img,thumb:u.thumb,hi:u.hi},land:u.w>u.h,area:u.w>u.h?{x:180,y:140,w:763,h:514,valign:'center'}:{x:150,y:230,w:494,h:700,valign:'center'},blocks:$('tbY').value==='design'?GR.starter($('tbK').value,$('tbM').value,$('tbA').value):[],variants:[]});ok++}
         catch(e){bad++;errs.push(f.name+': '+(e.message||'שגיאה'))}}
       $('tbGo').disabled=false;
@@ -759,7 +766,7 @@ function tpOpen(t){
   /* העלאת רקע */
   $('tpUp').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/jpeg,image/png,image/webp';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;$('tpUpMsg').textContent='מעלה…';
     try{const u=await tpUpload(f);if(u.w&&u.h)setLand(u.w>u.h);w.bg.img=u.img;w.bg.thumb=u.thumb;if(u.hi)w.bg.hi=u.hi;else delete w.bg.hi;
-      if(!$('tpT').value)$('tpT').value=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');$('tpUpMsg').textContent='הרקע הועלה. עכשיו גוררים מלבן לאזור הטקסט.';draw()}catch(err){$('tpUpMsg').textContent=err.message}};fi.click()};
+      if(!$('tpT').value.trim())$('tpT').value=tpAutoName($('tpC').value);$('tpUpMsg').textContent='הרקע הועלה. עכשיו גוררים מלבן לאזור הטקסט.';draw()}catch(err){$('tpUpMsg').textContent=err.message}};fi.click()};
   w.variants=w.variants||[];
   const presetOpts=(cat,kind)=>'<option value="">בלי נוסח מיוחד (הטקסט של העיצוב)</option>'+PR.filter(p=>p.on!==false&&(p.cat==='all'||p.cat===cat)&&(p.kind==='all'||p.kind===kind)).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.title||'נוסח בלי שם')+'</option>').join('');
   const vars=()=>{const vb=$('tpVars');vb.innerHTML='';
@@ -776,7 +783,7 @@ function tpOpen(t){
   $('tpOk').onclick=()=>{if(!w.bg.img){$('tpUpMsg').textContent='קודם מעלים רקע.';return}
     if(w.noArea)w.draft=false;
     if(w.draft){w.draft=false;w.on=true}
-    w.title=$('tpT').value.trim();w.cat=$('tpC').value;w.kind=$('tpK').value;w.type=$('tpY').value;if(w.type!=='design')w.blocks=[];w.price=+$('tpP').value||0;
+    w.title=$('tpT').value.trim()||tpAutoName($('tpC').value);w.cat=$('tpC').value;w.kind=$('tpK').value;w.type=$('tpY').value;if(w.type!=='design')w.blocks=[];w.price=+$('tpP').value||0;
     const i=(TP.templates||[]).findIndex(x=>x.id===w.id);if(i>=0)TP.templates[i]=w;else TP.templates.push(w);
     box.innerHTML='';tpRender();tpCats();tpSaveAll()};
   draw();window.addEventListener('resize',draw);
