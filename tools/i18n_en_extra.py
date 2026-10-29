@@ -2,6 +2,10 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ 'או גררו לכאן תמונה': 'or drag a photo here',
+ 'או גררו לכאן עוד תמונה': 'or drag another photo here',
+ 'לחצו להוספה · אפשר לגרור לכאן תמונה': 'Click to add · you can drag a photo here',
+ 'לחצו להוספה · אפשר לגרור לכאן עוד תמונה': 'Click to add · you can drag another photo here',
  'כל צבע': 'Any color',
  'בחירת כל צבע': 'Pick any color',
  ' להגדיל את השורה כשהטקסט לא נכנס (על חשבון שאר השורות)': ' Enlarge the row when the text does not fit (taking space from the other rows)',

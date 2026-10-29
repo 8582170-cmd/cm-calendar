@@ -1527,13 +1527,12 @@ body.sx .side>.simple-note{order:1}
 .sx-nav{display:none}
 body.sx:not(.mode-wizard) .sx-step{display:none}
 /* יום בלוח: "+" בריחוף, ויום שמודגש אחרי "הצגה" */
-@media screen and (hover:hover){
-body.sx .page .cell[data-date]:hover::after{content:'✎ לחצו לכתיבה · 🖼 אפשר לגרור לכאן תמונה';top:auto;bottom:calc(var(--u)*1);transform:translateX(-50%);max-width:92%;opacity:.93}
-body.sx .page .cell.has-img[data-date]:hover::after{content:'✎ לחצו לכתיבה · 🖼 לעריכת התמונות'}
-html[lang=en] body.sx .page .cell[data-date]:hover::after{content:'✎ Click to type · 🖼 drag a photo here'}
-html[lang=en] body.sx .page .cell.has-img[data-date]:hover::after{content:'✎ Click to type · 🖼 edit photos'}
-body.sx.tray-picking .page .cell[data-date]:hover::after{content:'לחצו כדי לשים כאן את התמונה'}
-}
+body.sx:not(.tray-picking) .page .cell[data-date]:hover::after{display:none}
+.sx-hov{position:absolute;z-index:70;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;transform:translate(-50%,-50%);transition:opacity .12s;opacity:0}
+.sx-hov.on{opacity:1}
+.sx-hov b{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font:700 24px/1 var(--f-ui);box-shadow:0 4px 12px rgb(0 0 0 / .2)}
+.sx-hov small{background:rgb(29 42 48 / .85);color:#fff;border-radius:10px;padding:2px 8px;font-size:11.5px;white-space:nowrap}
+@media print{.sx-hov{display:none!important}}
 .sx-hl{animation:sxhl 2.4s ease}
 @keyframes sxhl{0%,60%{box-shadow:inset 0 0 0 calc(var(--u,1mm)*1) #e08a2e}100%{box-shadow:none}}
 .sx-over{outline:3px solid var(--accent)!important;outline-offset:-3px}

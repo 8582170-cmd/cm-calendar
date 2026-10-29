@@ -5285,6 +5285,16 @@ function sxRowGrowUI(){const lab='<label class="chk sx-rg"><input type="checkbox
   {const sp=$('#spCards');if(sp&&!sp.nextElementSibling?.classList?.contains('sx-rg'))sp.insertAdjacentHTML('afterend',lab)}
   document.querySelectorAll('[data-rowgrow]').forEach(x=>x.checked=!!state.s.rowGrow)}
 
+
+/* ריחוף על יום: פלוס באמצע, ומתחתיו שאפשר לגרור לשם תמונה */
+{let hv=null,cur=null;const hide=()=>{if(hv)hv.classList.remove('on');cur=null};
+  stage.addEventListener('mousemove',e=>{if(!SX||fxOn()||document.body.classList.contains('tray-picking')||matchMedia('(hover:none)').matches)return hide();
+    const c=e.target.closest('.page .cell[data-date]');if(!c)return hide();if(c===cur&&hv&&hv.classList.contains('on'))return;cur=c;
+    if(!hv){hv=el('div','sx-hov no-print','<b>+</b><small></small>');document.body.appendChild(hv)}
+    hv.querySelector('small').textContent=c.classList.contains('has-img')?'או גררו לכאן עוד תמונה':'או גררו לכאן תמונה';
+    const r=c.getBoundingClientRect();hv.style.left=(r.left+r.width/2+scrollX)+'px';hv.style.top=(r.top+r.height*0.55+scrollY)+'px';hv.classList.add('on')});
+  stage.addEventListener('mouseleave',hide);window.addEventListener('scroll',hide,{passive:true});stage.addEventListener('pointerdown',hide)}
+
 /* boot */
 (async function(){
   fillStatic();bindReset();
