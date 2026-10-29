@@ -490,7 +490,7 @@ const tpCatName=id=>(TPCATS().find(c=>c[0]===id)||[id,id])[1];
 /* שם אוטומטי: שם האירוע + מספר סידורי בן 3 ספרות (רקעים ומסגרות 001, 002…). המספר הבא = הגבוה ביותר שכבר קיים לאירוע + 1 */
 const pad3=n=>String(n).padStart(3,'0');
 const rxEsc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-function tpNextNo(cat,skip){const nm=tpCatName(cat),rx=new RegExp('^'+rxEsc(nm)+' (\\d+)$');let mx=0;(TP.templates||[]).forEach(t=>{if(skip&&skip.has(t))return;const m=rx.exec(String(t.title||'').trim());if(m)mx=Math.max(mx,+m[1])});return mx+1}
+function tpNextNo(cat,skip,base){const nm=base||tpCatName(cat),rx=new RegExp('^'+rxEsc(nm)+' (\\d+)$');let mx=0;(TP.templates||[]).forEach(t=>{if(skip&&skip.has(t))return;const m=rx.exec(String(t.title||'').trim());if(m)mx=Math.max(mx,+m[1])});return mx+1}
 function tpAutoName(cat){return tpCatName(cat)+' '+pad3(tpNextNo(cat))}
 function tpInit(){
   $('tpNew').onclick=()=>tpOpen(null);
@@ -565,7 +565,7 @@ function tpBulk(){
     '<div class="row"><b>אירוע ראשי</b><select data-v="cat">'+catOpts+'</select><button class="btn sm" type="button" data-b="cat">החלה</button></div>'+
     '<div><b>אירועים נוספים</b> <span class="sub">מסמנים אירועים, ואז "הוספה" או "הסרה". העיצוב יופיע גם בהם בגלריה.</span><div class="cats">'+TPCATS().map(c=>'<label><input type="checkbox" value="'+esc(c[0])+'">'+esc(c[1])+'</label>').join('')+'</div>'+
       '<div class="row" style="margin-top:6px"><button class="btn sm primary" type="button" data-b="addcats">הוספה לאירועים המסומנים</button><button class="btn sm" type="button" data-b="rmcats">הסרה מהאירועים המסומנים</button><button class="btn sm" type="button" data-b="clrcats">רק באירוע הראשי</button></div></div>'+
-    '<div class="row"><b>שמות</b><button class="btn sm primary" type="button" data-b="names">שינוי השמות לשם האירוע + מספר (001, 002…)</button><span class="sub">לפי הסדר ברשימה. כל אירוע ממוספר בנפרד.</span></div>'+
+    '<div class="row"><b>שמות</b><input type="text" data-v="nbase" placeholder="השם לפני המספר (ריק = שם האירוע)" style="min-width:230px"><button class="btn sm primary" type="button" data-b="names">שינוי השמות: השם + מספר (001, 002…)</button><span class="sub">לפי הסדר ברשימה. בלי שם: כל אירוע ממוספר בנפרד בשם שלו.</span></div>'+
     '<div class="row"><button class="btn sm" type="button" data-b="del" style="color:#a8382c">מחיקת '+sel.length+' העיצובים</button></div>';
   const v=k=>box.querySelector('[data-v='+k+']').value,cats=()=>[...box.querySelectorAll('.cats input:checked')].map(x=>x.value);
   const done=t=>{tpRender();tpCats();tpMsg(t+' ('+sel.length+' עיצובים). ללחוץ "שמירה" בתחתית.')};
@@ -576,7 +576,8 @@ function tpBulk(){
     if(k==='kind'){sel.forEach(t=>t.kind=v('kind'));return done('עודכן')}
     if(k==='port'||k==='land'||k==='auto'){sel.forEach(t=>{if(k==='auto')delete t.land;else t.land=k==='land'});return done('הכיוון עודכן')}
     if(/^r[0-3]$/.test(k)){const d=+k[1];sel.forEach(t=>{const old=t.rot||0,nw=d?(old+d)%4:0;if((nw-old)%2&&!(t.land==null&&t.type&&t.type!=='design')){t.land=!(t.land!=null?t.land:false);if(t.area){const W0=t.land?794:1123,H0=t.land?1123:794,W1=t.land?1123:794,H1=t.land?794:1123,A=t.area;t.area={x:Math.round(A.x/W0*W1),y:Math.round(A.y/H0*H1),w:Math.round(A.w/W0*W1),h:Math.round(A.h/H0*H1),valign:A.valign}}}if(nw)t.rot=nw;else delete t.rot});return done('הרקע סובב (כדאי לבדוק את אזור הטקסט בכל דף)')}
-    if(k==='names'){const skip=new Set(sel),byCat={};sel.slice().sort((a,b)=>(a.order||0)-(b.order||0)).forEach(t=>{if(byCat[t.cat]==null)byCat[t.cat]=tpNextNo(t.cat,skip);t.title=tpCatName(t.cat)+' '+pad3(byCat[t.cat]++)});return done('השמות שונו')}
+    if(k==='names'){const skip=new Set(sel),base=String(v('nbase')||'').trim().replace(/[<>]/g,''),byCat={};let n=base?tpNextNo('',skip,base):0;
+      sel.slice().sort((a,b)=>(a.order||0)-(b.order||0)).forEach(t=>{if(base){t.title=base+' '+pad3(n++);return}if(byCat[t.cat]==null)byCat[t.cat]=tpNextNo(t.cat,skip);t.title=tpCatName(t.cat)+' '+pad3(byCat[t.cat]++)});return done('השמות שונו')}
     if(k==='noarea'){sel.forEach(t=>{t.noArea=true;if(t.draft){t.draft=false;t.on=true}});return done('בלי אזור טקסט: כותבים על כל הדף')}
     if(k==='area'){sel.forEach(t=>delete t.noArea);return done('חוזר לאזור הטקסט שסומן')}
     if(k==='on'||k==='off'){sel.forEach(t=>{t.on=k==='on';if(k==='on'&&t.draft&&t.noArea)t.draft=false});return done(k==='on'?'מוצגים באתר':'הוסתרו')}
