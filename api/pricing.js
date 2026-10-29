@@ -34,6 +34,31 @@ module.exports = async (req, res) => {
     let city = String(H['x-vercel-ip-city'] || cf.city || ''); try { city = decodeURIComponent(city); } catch (e) {}
     return json(res, 200, ok ? { lat, lng, cc: String(H['x-vercel-ip-country'] || cf.country || ''), city: city.slice(0, 60), tz: String(H['x-vercel-ip-timezone'] || cf.timezone || '') } : {});
   }
+  /* משוב על בניית הלוח, וטופס פנייה מהדף הראשי: נשמר לדף הניהול ונשלח במייל לבעל האתר */
+  if (cp === '_contact') {
+    res.setHeader('Cache-Control', 'private, no-store');
+    if (req.method !== 'POST') return json(res, 405, { error: 'method' });
+    const { readBody, env, loadSetting, saveSetting } = require('./_lib'), b = readBody(req) || {};
+    if (b.hp) return json(res, 200, { ok: true });
+    const cl = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+    const kind = b.kind === 'contact' ? 'contact' : 'feedback', R = {};
+    for (const k of ['opt', 'design', 'ease']) { const v = parseInt((b.r || {})[k], 10); if (v >= 1 && v <= 5) R[k] = v; }
+    const it = { t: new Date().toISOString(), kind, r: R, text: cl(b.text, 2000), name: cl(b.name, 80), email: cl(b.email, 120), phone: cl(b.phone, 30), page: cl(b.page, 60), plan: cl(b.plan, 20) };
+    if (kind === 'contact' && (it.text.length < 3 || !(it.email || it.phone))) return json(res, 400, { error: 'bad' });
+    if (kind === 'feedback' && !Object.keys(R).length && it.text.length < 2) return json(res, 400, { error: 'bad' });
+    try { const L = (await loadSetting('feedback')) || []; await saveSetting('feedback', [it].concat(Array.isArray(L) ? L : []).slice(0, 500)); } catch (e) { console.error('feedback save', e.message); }
+    const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');
+    if (to) {
+      const { sendMail, frame, escH } = require('./_mail'), NM = { opt: 'אפשרויות', design: 'עיצובים', ease: 'נוחות' };
+      const st = Object.entries(R).map(([k, v]) => NM[k] + ': ' + '★'.repeat(v) + '☆'.repeat(5 - v)).join('<br>');
+      const avg = Object.keys(R).length ? (Object.values(R).reduce((a, x) => a + x, 0) / Object.keys(R).length).toFixed(1) : '';
+      const who = [it.name, it.email, it.phone].filter(Boolean).map(escH).join(' · ');
+      const body = (st ? st + '<br><br>' : '') + (it.text ? '<b>' + (kind === 'contact' ? 'ההודעה' : 'הצעות לשיפור') + ':</b><br>' + escH(it.text).replace(/\n/g, '<br>') + '<br><br>' : '') + (who ? '<b>מאת:</b> ' + who + '<br>' : '') + '<small>' + escH(it.page) + (it.plan ? ' · מסלול ' + escH(it.plan) : '') + '</small>';
+      const okMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(it.email);
+      try { await sendMail({ to, subject: kind === 'contact' ? 'פנייה מהאתר' + (it.name ? ': ' + it.name : '') : 'משוב על בניית לוח' + (avg ? ' ★' + avg : ''), html: frame({ title: kind === 'contact' ? 'פנייה חדשה מהאתר' : 'משוב חדש', body, foot: kind === 'contact' ? 'אפשר להשיב ישירות למייל הזה' + (okMail ? '' : ' (לא נמסר מייל: ' + escH(it.phone) + ')') : 'נשלח מטופס המשוב בבונה הלוח' }), text: it.text, ...(okMail ? { replyTo: it.email } : {}) }, kind === 'contact' ? 'contact' : 'feedback'); } catch (x) { console.error('contact mail', x.message); }
+    }
+    return json(res, 200, { ok: true });
+  }
   /* שיתוף לוח עם המשפחה: המשתתפים (בלי הרשמה) */
   if (cp === '_share') return require('./_share').pub(req, res);
   /* לוח ציבורי מהלוח המקוון: myluach.org/<שם> */

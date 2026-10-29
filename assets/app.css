@@ -1682,3 +1682,4 @@ body.file-drag .sx-drop-hint{display:block}
 .ci-any{position:relative;display:inline-block;width:18px;height:18px;border-radius:50%;cursor:pointer;background:conic-gradient(#e53935,#fb8c00,#fdd835,#43a047,#1e88e5,#8e24aa,#e53935);box-shadow:inset 0 0 0 1px rgb(0 0 0 / .15)}
 .ci-any.on{background:var(--c);outline:2px solid var(--accent);outline-offset:1px}
 .ci-any input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:0;padding:0}
+.fb-box{margin-top:14px}

@@ -178,6 +178,9 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .note{color:var(--mute);font-size:15px;margin-top:18px}
 .plans.compact .plan{padding:18px 18px 16px;gap:8px}.plans.compact .plan h3{font-size:22px}.plans.compact .price{font-size:28px}
 
+/* משוב ופנייה */
+.fb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.fb-sec .mlfb{border-radius:16px}
 /* faq */
 .faq{display:flex;flex-direction:column;max-width:780px}
 .faq details{border-bottom:1px solid var(--line);padding-block:14px}
@@ -394,6 +397,10 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
       </div>
     </section>
 
+    <section id="contact" class="fb-sec">
+      <div class="fb-grid"><div id="contactBox"></div><div id="fbHome"></div></div>
+    </section>
+
     <section class="final">
       <h2>הלוח של השנה הבאה מתחיל עכשיו</h2>
       <a class="btn btn-primary" href="app.html">להתחיל לבנות בחינם</a>
@@ -470,5 +477,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   document.querySelectorAll('a[href="app.html"]').forEach(function(a){a.setAttribute('href','app.html'+h)});
   try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}})();
 </script>
+<script src="assets/feedback.js?v=2"></script>
+<script>(function(){var F=window.MyLuachFeedback;if(!F)return;F.contact(document.getElementById("contactBox"),{page:"index"});F.mount(document.getElementById("fbHome"),{page:"index",title:"בניתם לוח? נשמח לשמוע מה דעתכם"})})();</script>
 </body>
 </html>

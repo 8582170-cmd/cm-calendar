@@ -22,7 +22,7 @@ const PLAN=()=>{const p=PLAN0();if(SAMPLE||!p.watermark)return p;if(freeCd())ret
 window.addEventListener('beforeprint',()=>document.body.classList.toggle('free-cd',!!PLAN().freeCd));
 /* הדפסה שלא דרך הכפתורים באתר (Ctrl+P או תפריט הדפדפן): נרשמת בדף הניהול כ"הדפסה מהדפדפן" */
 let OURPRINT=false,BRPRINT_T=0;
-function ourPrint(){OURPRINT=true;try{window.print()}finally{setTimeout(()=>{OURPRINT=false},1500)}}
+function ourPrint(){OURPRINT=true;try{window.print()}finally{setTimeout(()=>{OURPRINT=false},1500);try{if(window.MyLuachFeedback&&!SNAPVIEW)MyLuachFeedback.afterDownload({page:SIMPLE?'simple':CDMODE?'countdown':'app'})}catch(e){}}}
 window.addEventListener('beforeprint',()=>{if(OURPRINT||Date.now()-BRPRINT_T<5000)return;BRPRINT_T=Date.now();try{logDl('browser',{wm:PLAN().watermark?1:0})}catch(e){}});
 /* לוח ספירה בלי מסלול: היכולות של "ספירה בסיסית" (ספירה עד 40 יום בחינם לכולם) */
 const canF=f=>SAMPLE?true:!LP?true:(CDMODE&&LP.current().id==='free'&&LP.byId('cdbasic').id==='cdbasic')?!!LP.byId('cdbasic').features[f]:LP.can(f);
@@ -5170,6 +5170,7 @@ function sxSegify(sel){if(!sel||sel.dataset.seg)return;sel.dataset.seg='1';const
 
 function sxInit(saved){
   try{sxRowGrowUI()}catch(e){}
+  try{const fb=$('#fbBox');if(fb&&window.MyLuachFeedback)MyLuachFeedback.mount(fb,{page:SIMPLE?'simple':CDMODE?'countdown':'app'})}catch(e){}
   try{sxDates();new MutationObserver(()=>sxDates()).observe(document.body,{childList:true,subtree:false})}catch(e){}
   try{sxSegify($('#cdUnit'))}catch(e){}
   try{sxTouchDrag()}catch(e){}

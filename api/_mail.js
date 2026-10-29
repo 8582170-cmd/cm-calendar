@@ -11,21 +11,21 @@ const REPLY = () => env('MAIL_REPLY_TO') || env('OWNER_EMAIL') || '';
 async function viaResend(m) {
   const k = env('RESEND_API_KEY'); if (!k) return null;
   const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM_NAME + ' <' + FROM_EMAIL() + '>', to: [m.to], subject: m.subject, html: m.html, text: m.text, headers: m.headers || {}, ...(REPLY() ? { reply_to: REPLY() } : {}) }) });
+    body: JSON.stringify({ from: FROM_NAME + ' <' + FROM_EMAIL() + '>', to: [m.to], subject: m.subject, html: m.html, text: m.text, headers: m.headers || {}, ...((m.replyTo || REPLY()) ? { reply_to: m.replyTo || REPLY() } : {}) }) });
   if (!r.ok) throw new Error('resend ' + r.status + ' ' + (await r.text()).slice(0, 200));
   return 'resend';
 }
 async function viaBrevo(m) {
   const k = env('BREVO_API_KEY'); if (!k) return null;
   const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': k, 'Content-Type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ sender: { name: FROM_NAME, email: FROM_EMAIL() }, to: [{ email: m.to }], subject: m.subject, htmlContent: m.html, textContent: m.text, headers: m.headers || undefined, ...(REPLY() ? { replyTo: { email: REPLY() } } : {}) }) });
+    body: JSON.stringify({ sender: { name: FROM_NAME, email: FROM_EMAIL() }, to: [{ email: m.to }], subject: m.subject, htmlContent: m.html, textContent: m.text, headers: m.headers || undefined, ...((m.replyTo || REPLY()) ? { replyTo: { email: m.replyTo || REPLY() } } : {}) }) });
   if (!r.ok) throw new Error('brevo ' + r.status + ' ' + (await r.text()).slice(0, 200));
   return 'brevo';
 }
 async function viaMailjet(m) {
   const k = env('MAILJET_API_KEY'), s = env('MAILJET_SECRET_KEY'); if (!k || !s) return null;
   const r = await fetch('https://api.mailjet.com/v3.1/send', { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(k + ':' + s).toString('base64'), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Messages: [{ From: { Email: FROM_EMAIL(), Name: FROM_NAME }, To: [{ Email: m.to }], Subject: m.subject, HTMLPart: m.html, TextPart: m.text, Headers: m.headers || undefined, ...(REPLY() ? { ReplyTo: { Email: REPLY() } } : {}) }] }) });
+    body: JSON.stringify({ Messages: [{ From: { Email: FROM_EMAIL(), Name: FROM_NAME }, To: [{ Email: m.to }], Subject: m.subject, HTMLPart: m.html, TextPart: m.text, Headers: m.headers || undefined, ...((m.replyTo || REPLY()) ? { ReplyTo: { Email: m.replyTo || REPLY() } } : {}) }] }) });
   if (!r.ok) throw new Error('mailjet ' + r.status + ' ' + (await r.text()).slice(0, 200));
   return 'mailjet';
 }
