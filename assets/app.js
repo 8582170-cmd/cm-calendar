@@ -1139,7 +1139,7 @@ function pageShell(label,key){
   if(s.bodyFont)p.style.setProperty('--f-body',fontCSS(s.bodyFont));
   const wrap=el('div','sheet-wrap');wrap.appendChild(p);
   if(label)wrap.appendChild(el('div','sheet-label',esc(label)));
-  if(key){const qa=el('div','sheet-add no-print');qa.innerHTML='<button type="button" data-fxquick="text" title="שדה טקסט שאפשר להזיז ולהגדיל, מעל הלוח, מתחתיו או בצדדים">＋ טקסט</button><button type="button" data-fxquick="img" title="שדה תמונה שאפשר להזיז ולהגדיל בכל מקום בדף">＋ תמונה</button>';wrap.appendChild(qa)}
+  if(key){const qa=el('div','sheet-add no-print');qa.innerHTML='<button type="button" data-fxquick="text" title="שדה טקסט שאפשר להזיז ולהגדיל, מעל הלוח, מתחתיו או בצדדים">＋ טקסט</button><button type="button" data-fxquick="img" title="שדה תמונה שאפשר להזיז ולהגדיל בכל מקום בדף">＋ תמונה</button><span class="sa-hint">לעמוד הזה, מעל הלוח · לתמונה או אירוע ביום: לוחצים על היום</span>';wrap.appendChild(qa)}
   if(key){wrap.dataset.key=key;RS.labels[key]=label;RS.emitted.add(key)}
   RS.curKey=key||label||'';RS.tc={};
   stage.appendChild(wrap);RS.count++;
