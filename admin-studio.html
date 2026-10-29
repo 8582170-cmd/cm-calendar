@@ -127,7 +127,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=32"></script>
+<script src="/assets/greetings/greetings.js?v=33"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -536,7 +536,7 @@ function tpCats(){
   });
   const f=$('tpFilter'),cur=f.value;f.innerHTML='<option value="">כל האירועים</option>'+TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');f.value=cur;
 }
-function tpObj(t){return {id:t.id,type:t.type,land:t.land,noArea:!!t.noArea,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
+function tpObj(t){return {id:t.id,type:t.type,land:t.land,rot:t.rot||0,noArea:!!t.noArea,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
 /* בחירה של כמה עיצובים ושינוי הגדרות לכולם יחד (חוץ מאזור הטקסט, שהוא לכל דף בנפרד) */
 const TPSEL=new Set();
 function tpVisible(){const f=$('tpFilter').value;return (TP.templates||[]).filter(t=>!f||t.cat===f||(t.variants||[]).some(v=>v.cat===f))}
@@ -550,6 +550,7 @@ function tpBulk(){
     '<div class="row"><b>סוג הדף</b><select data-v="type"><option value="design">דף מעוצב</option><option value="bg">דף רקע</option><option value="frame">מסגרת</option></select><button class="btn sm" type="button" data-b="type">החלה</button>'+
       '<b>ברכה / הזמנה</b><select data-v="kind"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select><button class="btn sm" type="button" data-b="kind">החלה</button></div>'+
     '<div class="row"><b>כיוון הדף</b><button class="btn sm" type="button" data-b="port">▯ לאורך</button><button class="btn sm" type="button" data-b="land">▭ לרוחב</button><button class="btn sm" type="button" data-b="auto">לפי התמונה</button></div>'+
+    '<div class="row"><b>סיבוב הרקע</b><button class="btn sm" type="button" data-b="r3">⟲ 90° שמאלה</button><button class="btn sm" type="button" data-b="r1">⟳ 90° ימינה</button><button class="btn sm" type="button" data-b="r2">↻ 180°</button><button class="btn sm" type="button" data-b="r0">בלי סיבוב</button></div>'+
     '<div class="row"><b>אזור טקסט</b><button class="btn sm" type="button" data-b="noarea">בלי אזור טקסט (כותבים על כל הדף)</button><button class="btn sm" type="button" data-b="area">עם אזור הטקסט שסומן</button></div>'+
     '<div class="row"><b>הצגה ללקוחות</b><button class="btn sm" type="button" data-b="on">מוצג באתר</button><button class="btn sm" type="button" data-b="off">מוסתר</button></div>'+
     '<div class="row"><b>אירוע ראשי</b><select data-v="cat">'+catOpts+'</select><button class="btn sm" type="button" data-b="cat">החלה</button></div>'+
@@ -564,6 +565,7 @@ function tpBulk(){
     if(k==='type'){const y=v('type');sel.forEach(t=>{t.type=y;if(y!=='design')t.blocks=[];else if(!(t.blocks||[]).length)t.blocks=GR.starter(t.kind,'#14213d','#8a6a22')});return done('סוג הדף עודכן')}
     if(k==='kind'){sel.forEach(t=>t.kind=v('kind'));return done('עודכן')}
     if(k==='port'||k==='land'||k==='auto'){sel.forEach(t=>{if(k==='auto')delete t.land;else t.land=k==='land'});return done('הכיוון עודכן')}
+    if(/^r[0-3]$/.test(k)){const d=+k[1];sel.forEach(t=>{const old=t.rot||0,nw=d?(old+d)%4:0;if((nw-old)%2&&!(t.land==null&&t.type&&t.type!=='design')){t.land=!(t.land!=null?t.land:false);if(t.area){const W0=t.land?794:1123,H0=t.land?1123:794,W1=t.land?1123:794,H1=t.land?794:1123,A=t.area;t.area={x:Math.round(A.x/W0*W1),y:Math.round(A.y/H0*H1),w:Math.round(A.w/W0*W1),h:Math.round(A.h/H0*H1),valign:A.valign}}}if(nw)t.rot=nw;else delete t.rot});return done('הרקע סובב (כדאי לבדוק את אזור הטקסט בכל דף)')}
     if(k==='noarea'){sel.forEach(t=>{t.noArea=true;if(t.draft){t.draft=false;t.on=true}});return done('בלי אזור טקסט: כותבים על כל הדף')}
     if(k==='area'){sel.forEach(t=>delete t.noArea);return done('חוזר לאזור הטקסט שסומן')}
     if(k==='on'||k==='off'){sel.forEach(t=>{t.on=k==='on';if(k==='on'&&t.draft&&t.noArea)t.draft=false});return done(k==='on'?'מוצגים באתר':'הוסתרו')}
@@ -668,7 +670,7 @@ function tpOpen(t){
    '<label>סוג הדף<select id="tpY"><option value="design">דף מעוצב (שטח לטקסט + נוסח מוכן)</option><option value="bg">דף רקע (כותבים על כל הדף, בלי נוסח)</option><option value="frame">מסגרת (הטקסט בתוך המסגרת, בלי נוסח)</option></select></label><label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
    '<label>צבע הטקסט הראשי<input id="tpM" type="color" value="#14213d"></label><label>צבע להדגשות ולקישוטים<input id="tpA" type="color" value="#8a6a22"></label>'+
    '<label>גופן לכותרות<select id="tpFH"></select></label><label>גופן לטקסט<select id="tpFB"></select></label>'+
-   '<label>אזור טקסט<select id="tpNA"><option value="0">באזור שמסמנים בגרירה</option><option value="1">בלי אזור: כותבים על כל הדף</option></select></label><label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
+   '<label>אזור טקסט<select id="tpNA"><option value="0">באזור שמסמנים בגרירה</option><option value="1">בלי אזור: כותבים על כל הדף</option></select></label><label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><div><b style="font-size:14px">סיבוב הרקע</b><div class="actions" style="margin-top:4px"><button class="btn sm" type="button" data-rot="3">⟲ 90° שמאלה</button><button class="btn sm" type="button" data-rot="1">⟳ 90° ימינה</button><button class="btn sm" type="button" data-rot="2">↻ 180°</button></div></div><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
    '<label>מבנה התחלתי<select id="tpS"><option value="greeting">ברכה (כותרת, שם, לרגל, ברכה, חתימה)</option><option value="invite">הזמנה (חתן וכלה, מועד, הורים)</option></select></label></div>'+
    '<div class="actions"><button class="btn" type="button" id="tpApply">החלת הצבעים והגופנים על הטקסט</button></div>'+
    '<p class="sub">ללקוח יהיה אפשר לשנות הכל בעורך: טקסט, גופנים, צבעים, להוסיף ולמחוק פסקאות.</p>'+
@@ -692,6 +694,7 @@ function tpOpen(t){
   $('tpV').onchange=()=>{w.area.valign=$('tpV').value;draw()};
   const setLand=v=>{v=!!v;if(v===!!w.land)return;w.land=v;const A=w.area,Wd=DW(),Hd=DH();A.x=Math.round(Wd*.16);A.y=Math.round(Hd*.18);A.w=Math.round(Wd*.68);A.h=Math.round(Hd*.64);$('tpL').value=v?'1':'0';draw()};
   $('tpL').value=w.land?'1':'0';$('tpL').onchange=()=>setLand($('tpL').value==='1');
+  ed.querySelectorAll('[data-rot]').forEach(b=>b.onclick=()=>{const k=+b.dataset.rot;w.rot=((w.rot||0)+k)%4;if(!w.rot)delete w.rot;if(k%2)setLand(!w.land);else draw();$('tpUpMsg').textContent='הרקע סובב. נשמר אחרי "עדכון" ו"שמירה".'+(k%2?' כדאי לסמן מחדש את אזור הטקסט.':'')});
   $('tpNA').value=w.noArea?'1':'0';ar.hidden=!!w.noArea;$('tpNA').onchange=()=>{if($('tpNA').value==='1')w.noArea=true;else delete w.noArea;ar.hidden=!!w.noArea;draw()};
   /* עיצוב ישן שהועלה לרוחב: מזהים לפי התמונה */
   if(w.bg.img&&w.land==null){const im=new Image();im.onload=()=>{if(im.width>im.height){setLand(true);$('tpUpMsg').textContent='התמונה לרוחב, אז הדף הוגדר לרוחב. כדאי לסמן מחדש את אזור הטקסט.'}};im.src=w.bg.img}

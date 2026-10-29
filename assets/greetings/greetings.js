@@ -492,7 +492,9 @@ function render(canvas, tpl, state, opt){
   return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb, scale > 3.2), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null })), opt.watermark ? logoImg() : null, photoImg(state.ubg && state.ubg.src), photoImg(state.own && state.own.src)]) }).then(function(r){
     var img = r[1], oimg = r[5];
     /* כיוון תמונת הרקע (לדף שהועלה לרוחב) */
-    if (img && img.width) tpl._imgLand = img.width > img.height; else if (tpl.own && oimg && oimg.width) tpl._imgLand = oimg.width > oimg.height;
+    /* סיבוב שנקבע בניהול (tpl.rot, ברבעי סיבוב): משנה גם את כיוון התמונה */
+    var trot = (((tpl.rot || 0) % 4) + 4) % 4;
+    if (img && img.width) tpl._imgLand = (img.width > img.height) !== (trot % 2 === 1); else if (tpl.own && oimg && oimg.width) tpl._imgLand = oimg.width > oimg.height;
     useDims(tpl, state);
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
     var ctx = canvas.getContext('2d');
@@ -501,7 +503,7 @@ function render(canvas, tpl, state, opt){
     ctx.fillStyle = /^#[0-9a-f]{6}$/i.test(PG.color || '') ? PG.color : '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     /* הרקע עם הגדרות הדף: שקיפות, בהירות, רוויה, גוון, היפוך. תמונה לאורך בדף לרוחב מסתובבת */
     function pageImg(im){
-      var cw = canvas.width, ch = canvas.height, q = free(tpl) ? quarter(tpl, state) : 0, rot = q % 2 === 1;
+      var cw = canvas.width, ch = canvas.height, q0 = free(tpl) ? quarter(tpl, state) : 0, q = (q0 + (im === img ? trot : 0)) % 4, rot = q % 2 === 1;
       ctx.save();
       var f = []; if (PG.br != null && PG.br !== 100) f.push('brightness(' + PG.br + '%)'); if (PG.sat != null && PG.sat !== 100) f.push('saturate(' + PG.sat + '%)'); if (PG.hue) f.push('hue-rotate(' + PG.hue + 'deg)');
       if (f.length) ctx.filter = f.join(' ');
