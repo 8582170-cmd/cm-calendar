@@ -324,7 +324,7 @@ function turnArea(tpl, state, A){
 /* כל אזורי הטקסט: [{ A, sh }]. הראשון = האזור הראשי; הנוספים סומנו בניהול (tpl.areas2), כל אחד עם צורה ושיפוע משלו */
 function areasOf(tpl, state){
   var out = [{ A: areaOf(tpl, state), sh: tshape(state, tpl) }];
-  if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', a: Math.max(-45, Math.min(45, +x.a || 0)), k: x.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +x.k)) } }); });
+  if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', tt: x.tt !== false, a: Math.max(-45, Math.min(45, +x.a || 0)), k: x.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +x.k)) } }); });
   return out;
 }
 function areaOf(tpl, state){
@@ -381,9 +381,30 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
 /* צורת שטח הטקסט: מלבן, אליפסה/עיגול, קשת למעלה, קשת למטה, מעוין. הטקסט נכנס למלבן שבתוך הצורה */
 var TSHAPES = [['rect', '▭ מלבן'], ['ellipse', '⬭ אליפסה / עיגול'], ['arch', '⌒ קשת למעלה'], ['archb', '⌣ קשת למטה'], ['trap', '⏶ צר למעלה, רחב למטה'], ['trapi', '⏷ רחב למעלה, צר למטה'], ['diamond', '◇ מעוין'], ['hex', '⬡ משושה']];
 /* צורה ושיפוע: מה שהלקוח בחר, אחרת מה שנקבע בניהול לעיצוב (tpl.tshape) */
-function tshape(state, tpl){ var t = (state && state.tshape) || (tpl && tpl.tshape) || {}; return { s: t.s || 'rect', a: Math.max(-45, Math.min(45, +t.a || 0)), k: t.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +t.k)) }; }
+function tshape(state, tpl){ var t = (state && state.tshape) || (tpl && tpl.tshape) || {}; return { s: t.s || 'rect', tt: t.tt !== false, a: Math.max(-45, Math.min(45, +t.a || 0)), k: t.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +t.k)) }; }
+/* האזור בשיפוע והטקסט ישר: נקודות הצורה (מסובבות), ולכל גובה מחשבים מאיפה עד איפה יש מקום */
+function shapePts(A, sh){
+  var s = sh.s, x = A.x, y = A.y, w = A.w, h = A.h, cx = x + w / 2, cy = y + h / 2, P = [], i;
+  if (s === 'ellipse') for (i = 0; i < 48; i++) P.push([cx + w / 2 * Math.cos(i / 48 * 2 * Math.PI), cy + h / 2 * Math.sin(i / 48 * 2 * Math.PI)]);
+  else if (s === 'diamond') P = [[cx, y], [x + w, cy], [cx, y + h], [x, cy]];
+  else if (s === 'hex') { var hx = w * 0.22; P = [[x + hx, y], [x + w - hx, y], [x + w, cy], [x + w - hx, y + h], [x + hx, y + h], [x, cy]]; }
+  else if (s === 'trap' || s === 'trapi') { var nw = w * sh.k / 2; P = s === 'trap' ? [[cx - nw, y], [cx + nw, y], [x + w, y + h], [x, y + h]] : [[x, y], [x + w, y], [cx + nw, y + h], [cx - nw, y + h]]; }
+  else if (s === 'arch' || s === 'archb') { var r = Math.min(w / 2, h * 0.6);
+    if (s === 'arch') { P.push([x, y + h]); for (i = 0; i <= 16; i++) P.push([cx - w / 2 * Math.cos(i / 16 * Math.PI), y + r - r * Math.sin(i / 16 * Math.PI)]); P.push([x + w, y + h]); }
+    else { P.push([x, y]); P.push([x + w, y]); for (i = 0; i <= 16; i++) P.push([cx + w / 2 * Math.cos(i / 16 * Math.PI), y + h - r + r * Math.sin(i / 16 * Math.PI)]); } }
+  else P = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  var a = sh.a * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+  return P.map(function(p){ var dx = (p[0] - cx) * 0.9, dy = (p[1] - cy) * 0.9; return [cx + dx * c - dy * sn, cy + dx * sn + dy * c]; });
+}
+function uprightArea(A, sh){
+  var P = shapePts(A, sh), xs = P.map(function(p){ return p[0] }), ys = P.map(function(p){ return p[1] });
+  var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+  function chord(yy){ var l = Infinity, r = -Infinity; for (var i = 0; i < P.length; i++) { var p = P[i], q = P[(i + 1) % P.length]; if ((p[1] - yy) * (q[1] - yy) > 0 || p[1] === q[1]) continue; var xx = p[0] + (q[0] - p[0]) * (yy - p[1]) / (q[1] - p[1]); if (xx < l) l = xx; if (xx > r) r = xx; } return l <= r ? [l, r] : null; }
+  return { x: x0, y: y0 + 2, w: x1 - x0, h: y1 - y0 - 4, valign: A.valign, cfn: function(a, b){ var L = -Infinity, R = Infinity, ok = false; [a, (a + b) / 2, b].forEach(function(yy){ var c = chord(yy); if (c) { ok = true; L = Math.max(L, c[0]); R = Math.min(R, c[1]); } else { L = Infinity; } }); return ok && L < R ? { l: L, r: R } : { l: (x0 + x1) / 2 - 10, r: (x0 + x1) / 2 + 10 }; } };
+}
 function innerArea(A, sh){
   var s = sh.s, w = A.w, h = A.h, x = A.x, y = A.y;
+  if (sh.a && sh.tt === false) return uprightArea(A, sh);
   /* רוחב השורה בכל גובה, לצורות שהרוחב שלהן משתנה */
   var cy = y + h / 2, tt = function(yy){ return Math.max(0, Math.min(1, (yy - y) / h)); };
   if (s === 'ellipse') return { x: x + w * 0.04, y: y + h * 0.1, w: w * 0.92, h: h * 0.8, valign: A.valign, wfn: function(yy){ var d = (yy - cy) / (h / 2); return w * 0.9 * Math.sqrt(Math.max(0.04, 1 - d * d)); } };
@@ -401,19 +422,20 @@ function layout(ctx, tpl, state){
 function layout1(ctx, A, blocks, state, z, k){
   var user = state.scale || 1, items, total, f, off = A.valign === 'top' ? 0 : A.h * 0.25;
   /* wfn: רוחב השורה לפי הגובה (צורה שמשתנה: טרפז, אליפסה, מעוין). כל פסקה מקבלת את הרוחב הצר שבגובה שלה */
+  /* מאיפה עד איפה יש מקום בין שני גבהים */
+  function span(a, b){ if (A.cfn) return A.cfn(a, b); var cx = A.x + A.w / 2, ww = A.wfn ? Math.min(A.wfn(a), A.wfn(b)) : A.w; return { l: cx - ww / 2, r: cx + ww / 2 }; }
   function pass(f){
     items = []; total = 0; var bad = false;
     blocks.forEach(function(b, i){
       if (!b || b.hidden || b.abs) return;
-      var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap, ar: k }, bw = A.w;
-      var y0 = A.y + off + it.top;
-      if (A.wfn) bw = A.wfn(y0);
-      if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); if (A.wfn) bw = Math.min(bw, A.wfn(y0 + it.h)); }
+      var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap, ar: k };
+      var y0 = A.y + off + it.top, S0 = span(y0, y0), bw = S0.r - S0.l; it.bl = S0.l;
+      if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); var S1 = span(y0, y0 + it.h); bw = S1.r - S1.l; it.bl = S1.l; }
       else if (b.type === 'photo') { it.pw = bw * (b.size || 0.4) * f; it.h = it.pw * photoRatio(b); }
       else {
         var size = b.size * f, colGap = 24, wr = function(W0){ var width = b.cols ? (W0 - colGap) / 2 : W0; return { width: width, a: wrap(ctx, b, b.text, width, size), c: b.cols ? wrap(ctx, b, b.text2, width, size) : { lines: [], wide: false } }; };
         var R = wr(bw), hh = function(R){ return (Math.max(R.a.lines.length, R.c.lines.length, 1) - 1) * size * b.lh + size * 1.2; };
-        if (A.wfn) { var w2 = Math.min(bw, A.wfn(y0 + hh(R))); if (w2 < bw - 1) { bw = w2; R = wr(bw); } }
+        if (A.wfn || A.cfn) { var S2 = span(y0, y0 + hh(R)), w2 = S2.r - S2.l; it.bl = S2.l; if (w2 < bw - 1) { bw = w2; R = wr(Math.max(20, bw)); } }
         if (R.a.wide || R.c.wide) bad = true;
         it.size = size; it.lines = R.a.lines; it.lines2 = R.c.lines; it.width = R.width; it.colGap = colGap;
         it.h = hh(R);
@@ -425,13 +447,13 @@ function layout1(ctx, A, blocks, state, z, k){
   }
   for (f = user; f >= user * 0.45; f -= 0.02) {
     var bad = pass(f), o2 = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
-    if (A.wfn && Math.abs(o2 - off) > 2) { off = o2; bad = pass(f); o2 = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2); }
+    if ((A.wfn || A.cfn) && Math.abs(o2 - off) > 2) { off = o2; bad = pass(f); o2 = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2); }
     off = o2;
     if (!bad && total <= A.h) break;
   }
   off = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
-  var tl = z.sh.a ? { cx: z.A.x + z.A.w / 2, cy: z.A.y + z.A.h / 2, a: z.sh.a * Math.PI / 180 } : null;
-  items.forEach(function(it){ it.y = A.y + off + it.top; it.w = it.bw || A.w; it.x = A.x + (A.w - it.w) / 2 + (it.b.dx || 0); it.tilt = tl; });
+  var tl = z.sh.a && z.sh.tt !== false ? { cx: z.A.x + z.A.w / 2, cy: z.A.y + z.A.h / 2, a: z.sh.a * Math.PI / 180 } : null;
+  items.forEach(function(it){ it.y = A.y + off + it.top; it.w = it.bw || A.w; it.x = (it.bl != null ? it.bl : A.x + (A.w - it.w) / 2) + (it.b.dx || 0); it.tilt = tl; });
   return items;
 }
 
@@ -637,7 +659,9 @@ function render(canvas, tpl, state, opt){
         ctx.setLineDash([8, 6]); ctx.lineWidth = 2.5; ctx.strokeStyle = '#d6336c';
         if (opt.guide === 'full' || z.sh.s !== 'rect' || z.sh.a) { if (k) zonePath(ctx, A.x, A.y, A.w, A.h, z.sh, 0, 0); else panelPath(); ctx.stroke(); }
         var IA = innerArea(A, z.sh); ctx.strokeStyle = opt.guide === 'full' ? '#1f8a96' : 'rgba(0,0,0,0)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
-        if (IA.wfn) { var mx = IA.x + IA.w / 2, N = 24, yy, q; ctx.beginPath(); for (q = 0; q <= N; q++) { yy = IA.y + IA.h * q / N; ctx[q ? 'lineTo' : 'moveTo'](mx + IA.wfn(yy) / 2, yy); } for (q = N; q >= 0; q--) { yy = IA.y + IA.h * q / N; ctx.lineTo(mx - IA.wfn(yy) / 2, yy); } ctx.closePath(); ctx.stroke(); }
+        if (IA.cfn) { var N2 = 24, q2, y2, c2; ctx.restore(); ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = opt.guide === 'full' ? '#1f8a96' : 'rgba(0,0,0,0)'; ctx.lineWidth = 1.5; ctx.beginPath();
+          for (q2 = 0; q2 <= N2; q2++) { y2 = IA.y + IA.h * q2 / N2; c2 = IA.cfn(y2, y2); ctx[q2 ? 'lineTo' : 'moveTo'](c2.r, y2); } for (q2 = N2; q2 >= 0; q2--) { y2 = IA.y + IA.h * q2 / N2; c2 = IA.cfn(y2, y2); ctx.lineTo(c2.l, y2); } ctx.closePath(); ctx.stroke(); }
+        else if (IA.wfn) { var mx = IA.x + IA.w / 2, N = 24, yy, q; ctx.beginPath(); for (q = 0; q <= N; q++) { yy = IA.y + IA.h * q / N; ctx[q ? 'lineTo' : 'moveTo'](mx + IA.wfn(yy) / 2, yy); } for (q = N; q >= 0; q--) { yy = IA.y + IA.h * q / N; ctx.lineTo(mx - IA.wfn(yy) / 2, yy); } ctx.closePath(); ctx.stroke(); }
         else ctx.strokeRect(IA.x, IA.y, IA.w, IA.h);
         if (areasOf(tpl, state).length > 1) { ctx.setLineDash([]); ctx.fillStyle = '#d6336c'; ctx.font = '700 22px Assistant, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(String(k + 1), A.x + A.w / 2, A.y + 24); }
         ctx.restore(); });
@@ -727,6 +751,9 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
     TSHAPES.forEach(function(x){ var b = el('button', 'pill', x[1]); b.type = 'button'; b.setAttribute('aria-pressed', String((TS.s || 'rect') === x[0])); b.onclick = function(){ TS.s = x[0]; if (x[0] !== 'rect' && S.panel && !S.panel.on && !(S.ubg && S.ubg.src)) { S.panel.on = true; } changed(); draw(); }; sr.appendChild(b); });
     box.appendChild(sr);
     box.appendChild(rng('שיפוע (מעלות)', -45, 45, TS.a || 0, function(v){ TS.a = Math.abs(v) < 2 ? 0 : v; }));
+    { var tq = el('div', 'bgp-t'), tc = document.createElement('input'); tc.type = 'checkbox'; tc.checked = TS.tt !== false; tc.id = 'bgpTT' + Math.random().toString(36).slice(2, 6);
+      var tlb = el('label', '', 'גם הטקסט בשיפוע (בלי סימון: רק האזור משופע, והטקסט ישר)'); tlb.htmlFor = tc.id; tq.append(tc, tlb); box.appendChild(tq);
+      tc.onchange = function(){ if (tc.checked) delete TS.tt; else TS.tt = false; changed(); }; }
     if (TS.s === 'trap' || TS.s === 'trapi') box.appendChild(rng('רוחב החלק הצר', 15, 95, Math.round((TS.k == null ? 0.5 : TS.k) * 100), function(v){ TS.k = v / 100; }));
     if (TS.a) { var zr = el('div', 'bgp-b'), zb = el('button', 'pill', 'ישר, בלי שיפוע'); zb.type = 'button'; zb.onclick = function(){ TS.a = 0; changed(); draw(); }; zr.appendChild(zb); box.appendChild(zr); }
     var P = S.panel || (S.panel = { on: false, color: '#ffffff', op: 0.85, r: 20, pad: 14 });

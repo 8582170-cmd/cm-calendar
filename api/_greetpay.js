@@ -56,7 +56,7 @@ function cleanState(s) {
   const BD = s.border && typeof s.border === 'object' ? s.border : null;
   if (BD && /^[a-z]{2,20}$/.test(String(BD.style || ''))) out.border = { style: BD.style, color: /^([a-z]{3,12}|#[0-9a-f]{6})$/i.test(String(BD.color || '')) ? BD.color : 'gold', s: n(BD.s, 0.2, 4), m: n(BD.m, 0, 200), op: n(BD.op, 0.05, 1) };
   const TS = s.tshape && typeof s.tshape === 'object' ? s.tshape : null;
-  if (TS) out.tshape = { s: ['rect', 'ellipse', 'arch', 'archb', 'trap', 'trapi', 'diamond', 'hex'].includes(TS.s) ? TS.s : 'rect', a: n(TS.a, -45, 45), k: n(TS.k, 0.15, 0.95) };
+  if (TS) out.tshape = { s: ['rect', 'ellipse', 'arch', 'archb', 'trap', 'trapi', 'diamond', 'hex'].includes(TS.s) ? TS.s : 'rect', a: n(TS.a, -45, 45), k: n(TS.k, 0.15, 0.95), tt: TS.tt === false ? false : undefined };
   const AR = s.area && typeof s.area === 'object' ? s.area : null;
   if (AR) out.area = { t: n(AR.t, 0, 60), b: n(AR.b, 0, 60), r: n(AR.r, 0, 60), l: n(AR.l, 0, 60), v: AR.v === 'top' ? 'top' : 'center' };
   if (s.preset && typeof s.preset === 'object' && /^[\w-]{1,40}$/.test(String(s.preset.id || ''))) out.preset = { id: String(s.preset.id) };
