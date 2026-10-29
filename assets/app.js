@@ -4963,6 +4963,7 @@ function sxBar(){const A=$('.bar .actions');if(!A||A.dataset.sx)return;A.dataset
   item('bulkBtn','סידור תמונות לחודשים');
   const tr=el('button','sx-mi','מגש התמונות');tr.type='button';tr.id='sxTray';tr.setAttribute('role','menuitem');M.appendChild(tr);
   item('addTextTop','טקסט על הדף');
+  if(SIMPLE){const qq=el('button','sx-mi','הגדרה מהירה: 3 שאלות');qq.type='button';qq.setAttribute('role','menuitem');qq.onclick=()=>sxOnboard();M.appendChild(qq)}
   const pg=el('button','sx-mi','עמוד נוסף (ברכה, פרסומת, הערות)');pg.type='button';pg.id='sxPage';pg.setAttribute('role','menuitem');M.appendChild(pg);
   const chk=el('button','btn','<span aria-hidden="true">✓</span> בדיקה');chk.type='button';chk.id='sxCheckBtn';chk.title='בדיקה של הלוח לפני הדפסה';
   const pr=$('#printBtn');if(pr){pr.innerHTML='<span aria-hidden="true">⬇</span> הורדה והדפסה'}

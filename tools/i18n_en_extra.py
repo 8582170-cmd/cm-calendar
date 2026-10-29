@@ -2,6 +2,7 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ 'הגדרה מהירה: 3 שאלות': 'Quick setup: 3 questions',
  'כתבו כאן, ו־Enter לשמירה': 'Type here, Enter to save',
  'יום הולדת, יארצייט ועוד…': 'Birthday, yahrzeit and more…',
  'תמונה': 'Photo',
