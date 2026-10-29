@@ -180,7 +180,7 @@ const todayH=new HDate(new Date());
 const DEFAULT={
   v:2,
   s:{calType:'heb',hebYear:todayH.getFullYear(),gregYear:new Date().getFullYear()+1,gregStart:1,cover:true,
-     showDst:true,credit:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:true,ytsg:'faint',showIsru:true,showChametz:true,chanukah:'tzeit',showMevarchim:false,showOmer:false,
+     showDst:true,credit:true,showHolidays:true,showParasha:true,showRC:true,showFasts:true,showSpecial:true,showModern:false,ytsg:'faint',showIsru:true,showChametz:true,chanukah:'tzeit',showMevarchim:false,showOmer:false,
      city:'jerusalem',custom:null,candleMins:40,il:true,zmanimMode:'daily',
      zmanim:{sunrise:true,shma:true,sunset:true},
      m_shma:'gra',zmPreset:'ashkenaz',zm:null,secs:false,zsecs:{},zbold:{},zlab:{},zround:{},zmode:{},
