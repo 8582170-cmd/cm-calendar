@@ -1683,3 +1683,23 @@ body.file-drag .sx-drop-hint{display:block}
 .ci-any.on{background:var(--c);outline:2px solid var(--accent);outline-offset:1px}
 .ci-any input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:0;padding:0}
 .fb-box{margin-top:14px}
+/* טלפון לרוחב: סרגל תחתון צר, וההגדרות נפתחות מהצד ולא מלמטה */
+@media (max-width:900px) and (max-height:520px) and (orientation:landscape){
+  body.sx{padding-bottom:56px}
+  body.sx.mode-wizard .sx-nav{height:46px}
+  .sx-nav button{flex-direction:row;gap:5px;font-size:12px}
+  .sx-nav svg{width:18px;height:18px}
+  .sx-nav .sx-dl svg{width:30px;height:20px;padding:2px 7px}
+  body.sx.mode-wizard .side{top:0;bottom:46px;inset-inline-start:0;inset-inline-end:auto;width:min(400px,58vw);max-height:none!important;border-radius:0;transform:translateX(105%);box-shadow:-10px 0 30px rgb(0 0 0 / .2)}
+  html[dir=ltr] body.sx.mode-wizard .side{transform:translateX(-105%)}
+  body.sx.mode-wizard.sx-drawer .side{transform:none}
+  body.sx .tray{bottom:46px}
+  body.sx.mode-wizard .mla-btn{inset-block-end:54px!important}
+  body.sx .dev-plan{bottom:52px}
+}
+/* טיפ קטן לטלפון: להפוך לרוחב */
+.sx-rot{position:fixed;top:10px;left:50%;transform:translate(-50%,-140%);z-index:96;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 24px);background:#1d2a30;color:#fff;border-radius:14px;padding:9px 12px;font-size:14px;line-height:1.4;box-shadow:0 8px 24px rgb(0 0 0 / .25);transition:transform .3s}
+.sx-rot.on{transform:translate(-50%,0)}
+.sx-rot svg{flex:0 0 26px;width:26px;height:26px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sx-rot button{all:unset;cursor:pointer;font-size:20px;line-height:1;padding:0 4px}
+@media print{.sx-rot{display:none!important}}

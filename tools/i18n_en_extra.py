@@ -2,6 +2,8 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ 'הדף שבחרתם לרוחב. כדי לראות אותו גדול יותר, הפכו את הטלפון לרוחב.': 'Your page is landscape. Turn your phone sideways to see it larger.',
+ 'טיפ: לכתיבה בימים נוח יותר להפוך את הטלפון לרוחב, כך התאים גדולים יותר.': 'Tip: for typing in days, turn your phone sideways so the days are larger.',
  'כאן רואים איזו תמונה גדולה תופיע בראש כל חודש (ובדף השער), ואפשר להוסיף תמונות ולשנות את הסדר. תמונה בתוך יום: גוררים אותה ליום בלוח, או לוחצים על היום.': 'Here you see which large photo appears at the top of each month (and on the cover), add photos and change the order. A photo inside a day: drag it to the day, or click the day.',
  'סידור תמונות לחודשים (התמונה הגדולה של כל חודש, לא לימים)': 'Arrange month photos (the large photo of each month, not days)',
  'סידור תמונות לחודשים': 'Arrange month photos',

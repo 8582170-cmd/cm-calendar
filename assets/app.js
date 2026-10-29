@@ -2069,6 +2069,7 @@ function renderNow(){
   try{yiApply()}catch(e){}
   fit();
   try{sxFitDays()}catch(e){}
+  if(SX&&!SAMPLE){const [pw,ph]=pageDims();if(pw>ph*1.05)setTimeout(()=>sxRotTip('page'),1500)}
   fxDecorate();
   fxBoxDecorate();
   if(CDMODE)requestAnimationFrame(()=>cdApplyFocus());
@@ -5197,7 +5198,7 @@ function sxDelEv(id,imgOnly){const ev=state.events.find(x=>x.id===id);if(!ev)ret
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-edel],[data-eimg]');if(!b)return;e.preventDefault();e.stopPropagation();document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));sxDelEv(b.dataset.edel||b.dataset.eimg,!!b.dataset.eimg)},true);
 const CI_KINDS=[['other','טקסט'],['event','אירוע'],['meeting','פגישה'],['reminder','תזכורת'],['task','משימה']];
 const CI_COLS=['','#1a232c','#b3261e','#1d4ed8','#2e7d32','#6b2d8f'];
-function cellInline(c){const date=c.dataset.date;if(!date)return;document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));
+function cellInline(c){const date=c.dataset.date;if(!date)return;setTimeout(()=>sxRotTip('days'),600);document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));
   const d=dateFromIso(date),hd=new HDate(d),KS=CI_KINDS.map(k=>k[0]);
   const ex=state.events.find(e=>KS.includes(e.kind)&&e.rec==='once'&&e.date===date&&!e.img&&e.name);
   const others=eventsOn(d,hd).filter(e=>e!==ex);
@@ -5295,6 +5296,16 @@ function sxRowGrowUI(){const lab='<label class="chk sx-rg"><input type="checkbox
     hv.querySelector('small').textContent=c.classList.contains('has-img')?'או גררו לכאן עוד תמונה':'או גררו לכאן תמונה';
     const r=c.getBoundingClientRect();hv.style.left=(r.left+r.width/2+scrollX)+'px';hv.style.top=(r.top+r.height*0.55+scrollY)+'px';hv.classList.add('on')});
   stage.addEventListener('mouseleave',hide);window.addEventListener('scroll',hide,{passive:true});stage.addEventListener('pointerdown',hide)}
+
+
+/* טלפון לאורך: טיפ קטן, פעם אחת בלבד, להפוך את הטלפון לרוחב. רק כשזה באמת עוזר:
+   כשהדף עצמו לרוחב (העמוד יוצא קטן מאוד), או כשמתחילים לכתוב בימים */
+function sxPhonePortrait(){try{return matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600&&innerHeight>innerWidth}catch(e){return false}}
+function sxRotTip(why){if(!SX||!sxPhonePortrait()||sxLS('sx-rot-'+why))return;sxLS('sx-rot-'+why,'1');
+  const t=el('div','sx-rot no-print','<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="18" rx="2"/><path d="M3 15a9 9 0 0 0 6 6l-1.5-2.5M21 9a9 9 0 0 0-6-6l1.5 2.5"/></svg><span>'+(why==='page'?'הדף שבחרתם לרוחב. כדי לראות אותו גדול יותר, הפכו את הטלפון לרוחב.':'טיפ: לכתיבה בימים נוח יותר להפוך את הטלפון לרוחב, כך התאים גדולים יותר.')+'</span><button type="button" aria-label="סגירה">×</button>');
+  t.setAttribute('role','status');document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add('on'));
+  const off=()=>{t.classList.remove('on');setTimeout(()=>t.remove(),400);window.removeEventListener('orientationchange',off)};
+  t.querySelector('button').onclick=off;window.addEventListener('orientationchange',off);setTimeout(off,9000)}
 
 /* boot */
 (async function(){
