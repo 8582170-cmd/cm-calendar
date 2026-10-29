@@ -2,6 +2,11 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ '🔍 הגדלה': '🔍 Zoom in',
+ 'הקטנה': 'Zoom out',
+ ' הקטנה חזרה': ' Zoom back out',
+ 'הגדלת העמוד': 'Zoom in on the page',
+ 'הקטנת העמוד': 'Zoom out',
  'בלי תשלום אפשר להוסיף עד 2 ערים נוספות. בכל מסלול בתשלום אפשר עד 10.': 'Without a plan you can add up to 2 more cities. Any paid plan: up to 10.',
  'בלי תשלום אפשר עד 2 ערים נוספות. במסלול בתשלום: עד 10.': 'Without a plan: up to 2 more cities. Paid plan: up to 10.',
  '🔒 בלי תשלום אפשר עד 2 ערים נוספות. במסלול בתשלום אפשר עד 10. ': '🔒 Without a plan: up to 2 more cities. With a paid plan: up to 10. ',

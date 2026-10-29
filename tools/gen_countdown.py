@@ -30,7 +30,7 @@ def english(src_mode, out, title, desc, body_cls):
     t=re.sub(r'<meta name="description" content="[^"]*">','',t,count=1)
     he = 'simple.html' if src_mode=='simple' else 'countdown.html'
     t=t.replace('<link rel="canonical" href="https://www.myluach.org/app.html">','<link rel="canonical" href="https://www.myluach.org/'+out+'">\n<link rel="alternate" hreflang="en" href="https://www.myluach.org/'+out+'">\n<link rel="alternate" hreflang="he" href="https://www.myluach.org/'+he+'">\n<meta name="description" content="'+desc+'">',1)
-    t=t.replace('<script src="https://cdn.jsdelivr.net/npm/@supabase','<script>window.MYLUACH_MODE=\''+src_mode+'\'</script>\n<script src="/assets/i18n-en-dict.js?v=202610292340"></script>\n<script src="/assets/i18n-en.js?v=1"></script>\n<script src="/online/cities.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/@supabase',1)
+    t=t.replace('<script src="https://cdn.jsdelivr.net/npm/@supabase','<script>window.MYLUACH_MODE=\''+src_mode+'\'</script>\n<script src="/assets/i18n-en-dict.js?v=202610292400"></script>\n<script src="/assets/i18n-en.js?v=1"></script>\n<script src="/online/cities.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/@supabase',1)
     t=t.replace('<body>','<body class="'+body_cls+'">',1)
     t=t.replace('href="index.html"','href="en.html"')
     (ROOT/out).write_text(t,encoding='utf-8'); print(out)

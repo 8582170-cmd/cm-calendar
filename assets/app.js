@@ -2071,6 +2071,7 @@ function renderNow(){
   try{yiApply()}catch(e){}
   fit();
   try{sxFitDays()}catch(e){}
+  try{sxZoomBtns()}catch(e){}
   if(SX&&!SAMPLE){const [pw,ph]=pageDims();if(pw>ph*1.05)setTimeout(()=>sxRotTip('page'),1500)}
   fxDecorate();
   fxBoxDecorate();
@@ -2082,10 +2083,14 @@ stage.addEventListener('click',e=>{
   const m=modal('<h3>איזה עמוד להוסיף?<small>אחרי: '+esc(RS.labels[b.dataset.after]||'')+'</small></h3><div class="kinds" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+Object.entries(XTYPES).map(([k,v])=>'<label><input type="radio" name="xType" value="'+k+'"> '+v+'</label>').join('')+'</div><div class="row"><button class="btn" type="button" data-close>ביטול</button></div>');
   m.addEventListener('change',ev=>{if(ev.target.name==='xType'){state.ads.push({id:uid(),type:ev.target.value,after:b.dataset.after,img:null,text:''});save();m.remove();render()}});
 });
+let ZK=null;
 function fit(){
   const [w,h]=pageDims(),pw=mm2px(w),ph=mm2px(h);
   const avail=Math.max(240,stage.clientWidth-4),scale=Math.min(1,avail/pw);
-  stage.querySelectorAll('.sheet-wrap').forEach(wr=>{wr.style.width=pw*scale+'px';wr.style.height=ph*scale+'px';wr.firstChild.style.transform='scale('+scale+')'});
+  stage.querySelectorAll('.sheet-wrap').forEach(wr=>{const pg=wr.firstChild;
+    /* בטלפון: עמוד מוגדל (בערך פי 2), גוללים בו הצידה באצבע */
+    if(SX&&ZK&&wr.dataset.key===ZK&&innerWidth<=900){const z=scale*2.1;wr.classList.add('zoomed');wr.style.width=avail+'px';wr.style.height=(ph*z+14)+'px';pg.style.transform='none';pg.style.zoom=String(z);return}
+    wr.classList.remove('zoomed');pg.style.zoom='';wr.style.width=pw*scale+'px';wr.style.height=ph*scale+'px';pg.style.transform='scale('+scale+')'});
   shrinkPanels();
 }
 function shrinkPanels(){
@@ -5308,6 +5313,15 @@ function sxRotTip(why){if(!SX||!sxPhonePortrait()||sxLS('sx-rot-'+why))return;sx
   t.setAttribute('role','status');document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add('on'));
   const off=()=>{t.classList.remove('on');setTimeout(()=>t.remove(),400);window.removeEventListener('orientationchange',off)};
   t.querySelector('button').onclick=off;window.addEventListener('orientationchange',off);setTimeout(off,9000)}
+
+
+/* הגדלת עמוד בטלפון: כפתור על כל עמוד, וכפתור קבוע להקטנה חזרה */
+function sxZoomBtns(){if(!SX)return;stage.querySelectorAll('.sheet-wrap[data-key]').forEach(w=>{if(w.querySelector(':scope>.sx-zb'))return;const b=el('button','sx-zb no-print',w.dataset.key===ZK?'הקטנה':'🔍 הגדלה');b.type='button';b.dataset.zk=w.dataset.key;b.setAttribute('aria-label',w.dataset.key===ZK?'הקטנת העמוד':'הגדלת העמוד');w.appendChild(b)});
+  let o=$('#sxZoomOut');if(ZK&&!o){o=el('button','sx-zout no-print','<span aria-hidden="true">⤡</span> הקטנה חזרה');o.type='button';o.id='sxZoomOut';document.body.appendChild(o);o.onclick=()=>sxZoom(null)}if(o)o.hidden=!ZK}
+function sxZoom(k){const prev=ZK;ZK=k;stage.querySelectorAll('.sx-zb').forEach(b=>b.remove());fit();sxZoomBtns();
+  const w=stage.querySelector('.sheet-wrap[data-key="'+CSS.escape(k||prev||'')+'"]');if(w){w.scrollIntoView({block:'start'});if(k)w.scrollLeft=0;window.scrollBy(0,-8)}}
+stage.addEventListener('click',e=>{const b=e.target.closest('.sx-zb');if(!b)return;e.preventDefault();e.stopPropagation();sxZoom(b.dataset.zk===ZK?null:b.dataset.zk)},true);
+window.addEventListener('resize',()=>{if(ZK&&innerWidth>900)sxZoom(null)});
 
 /* boot */
 (async function(){
