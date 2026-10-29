@@ -315,7 +315,8 @@ function natImg(tpl){ return tpl._imgLand != null ? !!tpl._imgLand : natLand(tpl
 function areaOf(tpl, state){
   var ty = typeOf(tpl);
   if (ty === 'design' && !tpl.noArea) return tpl.area;
-  if (ty === 'frame' && !(state && state.area)) {
+  /* מסגרת, או דף רקע שסומן לו אזור בניהול: האזור שסומן, מסתובב יחד עם הדף */
+  if ((ty === 'frame' || (ty === 'bg' && tpl.areaSet)) && !(state && state.area)) {
     /* אזור הטקסט של המסגרת מסתובב יחד עם המסגרת */
     var A = tpl.area, q = quarter(tpl, state), nl = natImg(tpl), Wn = nl ? PH : PW, Hn = nl ? PW : PH;
     if (q === 1) return { x: Hn - (A.y + A.h), y: A.x, w: A.h, h: A.w, valign: A.valign };
@@ -650,7 +651,7 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
     var ty = tpl ? typeOf(tpl) : 'design';
     var marg = ty === 'own' || ty === 'bg' || ty === 'frame' || (ty === 'design' && tpl.noArea);
     if (marg) {
-      var O = S.own || {}, ar = S.area || (S.area = ty === 'bg' || ty === 'design' ? { t: 9, b: 9, r: 10, l: 10, v: 'center' } : ty === 'frame' ? null : { t: 13, b: 13, r: 14, l: 14, v: 'center' });
+      var O = S.own || {}, ar = S.area || (S.area = (ty === 'bg' && !tpl.areaSet) || ty === 'design' ? { t: 9, b: 9, r: 10, l: 10, v: 'center' } : ty === 'frame' || ty === 'bg' ? null : { t: 13, b: 13, r: 14, l: 14, v: 'center' });
       if (!ar) { var A0 = areaOf(tpl, S), d0 = dims(tpl, S); ar = S.area = { t: Math.round(A0.y / d0.H * 100), b: Math.round((d0.H - A0.y - A0.h) / d0.H * 100), r: Math.round((d0.W - A0.x - A0.w) / d0.W * 100), l: Math.round(A0.x / d0.W * 100), v: A0.valign === 'top' ? 'top' : 'center' }; }
     }
     if (marg) {
