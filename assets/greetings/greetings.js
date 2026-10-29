@@ -327,6 +327,22 @@ function areasOf(tpl, state){
   if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', tt: x.tt !== false, a: Math.max(-45, Math.min(45, +x.a || 0)), k: x.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +x.k)) } }); });
   return out;
 }
+/* שמות לאזורים ללקוח: שם שנקבע בניהול, אחרת לפי המקום בדף (ימין / שמאל / למעלה / למטה) */
+function areaNames(tpl, state){
+  var Z = areasOf(tpl, state); if (Z.length < 2) return [];
+  var c = Z.map(function(z){ return { x: z.A.x + z.A.w / 2, y: z.A.y + z.A.h / 2 }; });
+  var xs = c.map(function(p){ return p.x }), ys = c.map(function(p){ return p.y }), sx = Math.max.apply(null, xs) - Math.min.apply(null, xs), sy = Math.max.apply(null, ys) - Math.min.apply(null, ys);
+  var mx = (Math.max.apply(null, xs) + Math.min.apply(null, xs)) / 2, my = (Math.max.apply(null, ys) + Math.min.apply(null, ys)) / 2;
+  var own = [tpl.areaName].concat((tpl.areas2 || []).map(function(x){ return x && x.name; }));
+  var names = c.map(function(p, k){
+    if (own[k] && String(own[k]).trim()) return String(own[k]).trim();
+    var h = sx > 60 ? (Math.abs(p.x - mx) < sx * 0.2 ? '' : p.x > mx ? 'ימין' : 'שמאל') : '', v = sy > 60 ? (Math.abs(p.y - my) < sy * 0.2 ? '' : p.y < my ? 'למעלה' : 'למטה') : '';
+    if (sx > 60 && sy > 60 && h && v) return (v === 'למעלה' ? 'למעלה' : 'למטה') + ' ' + (h === 'ימין' ? 'מימין' : 'משמאל');
+    return (sx >= sy ? h || v : v || h) || 'באמצע';
+  });
+  /* אם יצאו שני שמות זהים: מוסיפים מספר */
+  return names.map(function(n, k){ return names.indexOf(n) !== names.lastIndexOf(n) ? n + ' ' + (k + 1) : n; });
+}
 function areaOf(tpl, state){
   var ty = typeOf(tpl);
   if (ty === 'design' && !tpl.noArea) return tpl.area;
@@ -652,6 +668,11 @@ function render(canvas, tpl, state, opt){
       else col1(it.lines, it.x, it.w);
       }
     });
+    if (opt.hintArea != null) { /* בעורך: מסמנים בעדינות את האזור של השורה שנבחרה */
+      var HZ = areasOf(tpl, state)[opt.hintArea];
+      if (HZ && areasOf(tpl, state).length > 1) { var HA = HZ.A, hc = opt.hintArea ? { cx: HA.x + HA.w / 2, cy: HA.y + HA.h / 2 } : { cx: pcx, cy: pcy }, ha = HZ.sh.a * Math.PI / 180;
+        ctx.save(); if (ha) { ctx.translate(hc.cx, hc.cy); ctx.rotate(ha); ctx.translate(-hc.cx, -hc.cy); } ctx.setLineDash([10, 7]); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(31,138,150,.75)'; zonePath(ctx, HA.x, HA.y, HA.w, HA.h, HZ.sh, 12, 12); ctx.stroke(); ctx.restore(); }
+    }
     if (opt.guide) { /* בניהול: קו מקווקו של הצורה ושל המקום שבו הטקסט נכנס, לכל אזור */
       areasOf(tpl, state).forEach(function(z, k){
         var A = z.A, c = k ? { cx: A.x + A.w / 2, cy: A.y + A.h / 2 } : { cx: pcx, cy: pcy }, a = z.sh.a * Math.PI / 180;
@@ -1056,5 +1077,5 @@ window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   subTitle: function(t){ return /^bg-/.test(t.cat || '') ? 'דף רקע · ' + (CATS.find(function(x){ return x[0] === t.cat }) || [0, ''])[1] : KINDS[t.kind] + ' ל' + ((CATS.find(function(x){ return x[0] === t.cat }) || [0, t.cat])[1]); },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, areaNames: areaNames, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

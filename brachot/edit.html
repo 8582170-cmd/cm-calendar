@@ -198,10 +198,10 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i[aria-current="true"]{border-color:var(--teal)}
 .fp-i .s{font-size:27px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
-.azr{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mute);margin-top:4px}.azb{font:inherit;font-weight:700;min-width:34px;min-height:30px;border-radius:999px;border:1.5px solid var(--line);background:var(--sheet);cursor:pointer}.azb[aria-pressed=true]{background:var(--teal);color:#fff;border-color:var(--teal)}
+.azr{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mute);margin-top:4px}.azb{font:inherit;font-weight:700;min-width:34px;min-height:30px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--sheet);cursor:pointer}.azb[aria-pressed=true]{background:var(--teal);color:#fff;border-color:var(--teal)}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=41"></script>
+<script src="/assets/greetings/greetings.js?v=42"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
@@ -418,7 +418,7 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / D().W), selected: sel, noFrame: true, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; place(); }).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / D().W), selected: sel, noFrame: true, hintArea: sel != null && S.blocks[sel] ? (S.blocks[sel].ar | 0) : null, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; place(); }).catch(function(){});
   });
 }
 window.addEventListener('resize', draw);
@@ -662,11 +662,11 @@ function renderFields(){
     if (b.cols) { var two = el('div', 'two'); two.append(ta('text', id), ta('text2', id + 'b')); f.appendChild(two); }
     else f.appendChild(ta('text', id));
     if (b.hidden) f.style.opacity = '.5';
-    /* כמה אזורי טקסט בדף: בוחרים לכל שורה באיזה אזור היא */
-    var NA = 1 + ((tpl.areas2 || []).length || 0);
-    if (NA > 1 && !tpl.noArea) { var az = el('div', 'azr'); az.appendChild(el('span', '', 'באזור:'));
-      for (var q = 0; q < NA; q++) (function(q){ var bb = el('button', 'azb', String(q + 1)); bb.type = 'button'; bb.setAttribute('aria-pressed', String((b.ar | 0) === q)); bb.setAttribute('aria-label', 'אזור ' + (q + 1));
-        bb.onclick = function(){ if (q) b.ar = q; else delete b.ar; changed(); renderFields(); }; az.appendChild(bb); })(q);
+    /* כמה מקומות לטקסט בדף: לכל שורה בוחרים איפה בדף היא תופיע (ימין / שמאל / למעלה…) */
+    var AN = tpl.noArea ? [] : G.areaNames(tpl, S);
+    if (AN.length > 1) { var az = el('div', 'azr'); az.appendChild(el('span', '', 'איפה בדף:'));
+      AN.forEach(function(nm, q){ var bb = el('button', 'azb', nm); bb.type = 'button'; bb.setAttribute('aria-pressed', String(Math.min(AN.length - 1, b.ar | 0) === q)); bb.title = 'להעביר את השורה הזאת ל' + nm;
+        bb.onclick = function(){ if (q) b.ar = q; else delete b.ar; sel = i; changed(); renderFields(); }; az.appendChild(bb); });
       f.appendChild(az); }
     box.appendChild(f);
   });
