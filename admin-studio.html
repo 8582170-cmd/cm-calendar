@@ -99,7 +99,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr));gap:12px}
 .tp-c{border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--paper);min-width:0}
 .tp-c.off{opacity:.55}
-.tp-c canvas{width:100%;aspect-ratio:794/1123;border-radius:4px;background:var(--sheet);box-shadow:0 1px 4px rgb(0 0 0 / .15)}
+.tp-c canvas{width:100%;aspect-ratio:794/1123;object-fit:contain;border-radius:4px;background:var(--sheet);box-shadow:0 1px 4px rgb(0 0 0 / .15)}
 .tp-c b{font-size:15px}.tp-c .m{font-size:13px;color:var(--mute)}
 .tp-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;border:2px solid var(--teal);border-radius:14px;padding:14px}
 @media (max-width:820px){.tp-ed{grid-template-columns:minmax(0,1fr)}}
@@ -120,7 +120,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=30"></script>
+<script src="/assets/greetings/greetings.js?v=31"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -526,7 +526,7 @@ function tpCats(){
   });
   const f=$('tpFilter'),cur=f.value;f.innerHTML='<option value="">כל האירועים</option>'+TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');f.value=cur;
 }
-function tpObj(t){return {id:t.id,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
+function tpObj(t){return {id:t.id,type:t.type,land:!!t.land,bg:{img:t.bg.img,thumb:t.bg.thumb},area:t.area,blocks:t.blocks,colors:[]}}
 function tpRender(){
   const box=$('tpList'),f=$('tpFilter').value;box.innerHTML='';
   const list=(TP.templates||[]).filter(t=>!f||t.cat===f||(t.variants||[]).some(v=>v.cat===f)).sort((a,b)=>(a.order||0)-(b.order||0));
@@ -560,7 +560,7 @@ async function putFile(f){const s=await api({action:'libmedia',name:f.name,type:
 async function tpUpload(f){
   if(!/^image\//.test(f.type))throw new Error('זה לא קובץ תמונה');
   const hi=await scaleTo(f,7016,.92), md=await scaleTo(hi.file,2480,.88);
-  const out={img:await putFile(md.file),thumb:''};
+  const out={img:await putFile(md.file),thumb:'',w:md.w,h:md.h};
   if(Math.max(hi.w,hi.h)>2480)out.hi=await putFile(hi.file);
   try{const th=await scaleTo(md.file,560,.82);out.thumb=await putFile(th.file)}catch(e){}
   return out;
@@ -598,7 +598,7 @@ function tpBatchInit(){
       for(let i=0;i<fs.length;i++){const f=fs[i];$('tbMsg').textContent='מעלה '+(i+1)+' מתוך '+fs.length+': '+f.name;
         try{const u=await tpUpload(f);
           TP.templates.push({id:'u'+Date.now().toString(36)+i,title:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),cat:$('tbC').value,kind:$('tbK').value,type:$('tbY').value,price:0,on:$('tbY').value==='bg',draft:$('tbY').value!=='bg',order:TP.templates.length,
-            bg:{img:u.img,thumb:u.thumb,hi:u.hi},area:{x:150,y:230,w:494,h:700,valign:'center'},blocks:$('tbY').value==='design'?GR.starter($('tbK').value,$('tbM').value,$('tbA').value):[],variants:[]});ok++}
+            bg:{img:u.img,thumb:u.thumb,hi:u.hi},land:u.w>u.h,area:u.w>u.h?{x:180,y:140,w:763,h:514,valign:'center'}:{x:150,y:230,w:494,h:700,valign:'center'},blocks:$('tbY').value==='design'?GR.starter($('tbK').value,$('tbM').value,$('tbA').value):[],variants:[]});ok++}
         catch(e){bad++;errs.push(f.name+': '+(e.message||'שגיאה'))}}
       $('tbGo').disabled=false;
       if(!ok){$('tbMsg').textContent='אף רקע לא עלה. '+errs.slice(0,3).join(' · ');return}
@@ -614,12 +614,12 @@ function tpOpen(t){
   ed.innerHTML='<div class="tp-pv" id="tpPv"><canvas id="tpCv"></canvas><div class="ar" id="tpAr"></div></div>'+
    '<div class="tp-f"><h3 style="margin:0">'+(isNew?'עיצוב חדש':'עריכת עיצוב')+'</h3>'+
    '<div class="actions"><button class="btn primary" type="button" id="tpUp">העלאת רקע (JPG / PNG)</button><span class="sub" id="tpUpMsg"></span></div>'+
-   '<p class="sub">אחרי ההעלאה: <b>גוררים על התמונה</b> מלבן במקום שבו יופיע הטקסט. הכי מתאים רקע ביחס של דף A4 לאורך.</p>'+
+   '<p class="sub">אחרי ההעלאה: <b>גוררים על התמונה</b> מלבן במקום שבו יופיע הטקסט. מתאים רקע ביחס של דף A4, לאורך או לרוחב (הכיוון נקבע לפי התמונה, ואפשר לשנות).</p>'+
    '<div class="fields"><label>שם העיצוב<input id="tpT"></label><label>אירוע<select id="tpC"></select></label>'+
    '<label>סוג הדף<select id="tpY"><option value="design">דף מעוצב (שטח לטקסט + נוסח מוכן)</option><option value="bg">דף רקע (כותבים על כל הדף, בלי נוסח)</option><option value="frame">מסגרת (הטקסט בתוך המסגרת, בלי נוסח)</option></select></label><label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
    '<label>צבע הטקסט הראשי<input id="tpM" type="color" value="#14213d"></label><label>צבע להדגשות ולקישוטים<input id="tpA" type="color" value="#8a6a22"></label>'+
    '<label>גופן לכותרות<select id="tpFH"></select></label><label>גופן לטקסט<select id="tpFB"></select></label>'+
-   '<label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
+   '<label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
    '<label>מבנה התחלתי<select id="tpS"><option value="greeting">ברכה (כותרת, שם, לרגל, ברכה, חתימה)</option><option value="invite">הזמנה (חתן וכלה, מועד, הורים)</option></select></label></div>'+
    '<div class="actions"><button class="btn" type="button" id="tpApply">החלת הצבעים והגופנים על הטקסט</button></div>'+
    '<p class="sub">ללקוח יהיה אפשר לשנות הכל בעורך: טקסט, גופנים, צבעים, להוסיף ולמחוק פסקאות.</p>'+
@@ -633,23 +633,27 @@ function tpOpen(t){
   const head=(w.blocks.find(b=>b.type==='text'&&b.size>=26)||{}).font||'Suez One',body=(w.blocks.find(b=>b.type==='text'&&b.size<26&&b.size>=15)||{}).font||'Frank Ruhl Libre';
   $('tpFH').value=head;$('tpFB').value=body;
   $('tpT').value=w.title;$('tpC').value=w.cat;$('tpK').value=w.kind;$('tpY').value=w.type||'design';$('tpP').value=w.price||0;$('tpV').value=w.area.valign||'center';$('tpS').value=w.kind;
-  const cv=$('tpCv'),ar=$('tpAr'),pv=$('tpPv');
+  const cv=$('tpCv'),ar=$('tpAr'),pv=$('tpPv'),DW=()=>w.land?1123:794,DH=()=>w.land?794:1123;
   let pend=false;const draw=()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;
-    const r=pv.getBoundingClientRect();ar.style.cssText='left:'+(w.area.x/794*100)+'%;top:'+(w.area.y/1123*100)+'%;width:'+(w.area.w/794*100)+'%;height:'+(w.area.h/1123*100)+'%';
+    pv.style.aspectRatio=DW()+'/'+DH();const r=pv.getBoundingClientRect();ar.style.cssText='left:'+(w.area.x/DW()*100)+'%;top:'+(w.area.y/DH()*100)+'%;width:'+(w.area.w/DW()*100)+'%;height:'+(w.area.h/DH()*100)+'%';
     if(!w.bg.img){const c=cv.getContext('2d');cv.width=400;cv.height=566;c.fillStyle='#eee';c.fillRect(0,0,400,566);c.fillStyle='#888';c.font='18px Assistant';c.textAlign='center';c.fillText('עדיין לא הועלה רקע',200,283);return}
-    GR.render(cv,tpObj(w),{colors:{},blocks:w.blocks,scale:1},{scale:Math.max(.4,r.width*(devicePixelRatio||1)/794)}).catch(()=>{$('tpUpMsg').textContent='לא הצלחתי להציג את התמונה'})})};
+    GR.render(cv,tpObj(w),{colors:{},blocks:w.blocks,scale:1},{scale:Math.max(.4,r.width*(devicePixelRatio||1)/DW())}).catch(()=>{$('tpUpMsg').textContent='לא הצלחתי להציג את התמונה'})})};
   const apply=()=>{const nb=GR.starter($('tpS').value,$('tpM').value,$('tpA').value);nb.forEach(b=>{if(b.type==='text')b.font=b.size>=26?$('tpFH').value:$('tpFB').value});w.blocks=nb;draw()};
   $('tpApply').onclick=apply;['tpS'].forEach(id=>$(id).onchange=()=>{$('tpK').value=$('tpS').value;apply()});
   $('tpV').onchange=()=>{w.area.valign=$('tpV').value;draw()};
+  const setLand=v=>{v=!!v;if(v===!!w.land)return;w.land=v;const A=w.area,Wd=DW(),Hd=DH();A.x=Math.round(Wd*.16);A.y=Math.round(Hd*.18);A.w=Math.round(Wd*.68);A.h=Math.round(Hd*.64);$('tpL').value=v?'1':'0';draw()};
+  $('tpL').value=w.land?'1':'0';$('tpL').onchange=()=>setLand($('tpL').value==='1');
+  /* עיצוב ישן שהועלה לרוחב: מזהים לפי התמונה */
+  if(w.bg.img&&w.land==null){const im=new Image();im.onload=()=>{if(im.width>im.height){setLand(true);$('tpUpMsg').textContent='התמונה לרוחב, אז הדף הוגדר לרוחב. כדאי לסמן מחדש את אזור הטקסט.'}};im.src=w.bg.img}
   /* גרירת אזור הטקסט */
   let st=null;
-  pv.addEventListener('pointerdown',e=>{if(!w.bg.img)return;const r=pv.getBoundingClientRect();st={x:(e.clientX-r.left)/r.width*794,y:(e.clientY-r.top)/r.height*1123};pv.setPointerCapture(e.pointerId)});
-  pv.addEventListener('pointermove',e=>{if(!st)return;const r=pv.getBoundingClientRect(),x=Math.max(0,Math.min(794,(e.clientX-r.left)/r.width*794)),y=Math.max(0,Math.min(1123,(e.clientY-r.top)/r.height*1123));
-    w.area.x=Math.round(Math.min(st.x,x));w.area.y=Math.round(Math.min(st.y,y));w.area.w=Math.max(40,Math.round(Math.abs(x-st.x)));w.area.h=Math.max(40,Math.round(Math.abs(y-st.y)));ar.style.cssText='left:'+(w.area.x/794*100)+'%;top:'+(w.area.y/1123*100)+'%;width:'+(w.area.w/794*100)+'%;height:'+(w.area.h/1123*100)+'%'});
+  pv.addEventListener('pointerdown',e=>{if(!w.bg.img)return;const r=pv.getBoundingClientRect();st={x:(e.clientX-r.left)/r.width*DW(),y:(e.clientY-r.top)/r.height*DH()};pv.setPointerCapture(e.pointerId)});
+  pv.addEventListener('pointermove',e=>{if(!st)return;const r=pv.getBoundingClientRect(),x=Math.max(0,Math.min(DW(),(e.clientX-r.left)/r.width*DW())),y=Math.max(0,Math.min(DH(),(e.clientY-r.top)/r.height*DH()));
+    w.area.x=Math.round(Math.min(st.x,x));w.area.y=Math.round(Math.min(st.y,y));w.area.w=Math.max(40,Math.round(Math.abs(x-st.x)));w.area.h=Math.max(40,Math.round(Math.abs(y-st.y)));ar.style.cssText='left:'+(w.area.x/DW()*100)+'%;top:'+(w.area.y/DH()*100)+'%;width:'+(w.area.w/DW()*100)+'%;height:'+(w.area.h/DH()*100)+'%'});
   pv.addEventListener('pointerup',()=>{if(st){st=null;draw()}});
   /* העלאת רקע */
   $('tpUp').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/jpeg,image/png,image/webp';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;$('tpUpMsg').textContent='מעלה…';
-    try{const u=await tpUpload(f);w.bg.img=u.img;w.bg.thumb=u.thumb;if(u.hi)w.bg.hi=u.hi;else delete w.bg.hi;
+    try{const u=await tpUpload(f);if(u.w&&u.h)setLand(u.w>u.h);w.bg.img=u.img;w.bg.thumb=u.thumb;if(u.hi)w.bg.hi=u.hi;else delete w.bg.hi;
       if(!$('tpT').value)$('tpT').value=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');$('tpUpMsg').textContent='הרקע הועלה. עכשיו גוררים מלבן לאזור הטקסט.';draw()}catch(err){$('tpUpMsg').textContent=err.message}};fi.click()};
   w.variants=w.variants||[];
   const presetOpts=(cat,kind)=>'<option value="">בלי נוסח מיוחד (הטקסט של העיצוב)</option>'+PR.filter(p=>p.on!==false&&(p.cat==='all'||p.cat===cat)&&(p.kind==='all'||p.kind===kind)).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.title||'נוסח בלי שם')+'</option>').join('');

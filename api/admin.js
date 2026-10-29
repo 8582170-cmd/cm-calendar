@@ -123,10 +123,10 @@ module.exports = async (req, res) => {
         });
         g.templates = (Array.isArray(b.templates) ? b.templates : []).slice(0, 600).map(x => ({
           id: str(x.id, 40).replace(/[^\w-]/g, '') || ('u' + Date.now().toString(36)), title: str(x.title, 80), cat: str(x.cat, 30).replace(/[^\w-]/g, ''),
-          kind: x.kind === 'invite' ? 'invite' : 'greeting', type: ['bg', 'frame'].includes(x.type) ? x.type : 'design', price: num(x.price, 0, 10000), on: x.on !== false, draft: !!x.draft, order: num(x.order, 0, 100000),
+          kind: x.kind === 'invite' ? 'invite' : 'greeting', type: ['bg', 'frame'].includes(x.type) ? x.type : 'design', land: !!x.land, price: num(x.price, 0, 10000), on: x.on !== false, draft: !!x.draft, order: num(x.order, 0, 100000),
           bg: { hi: /^https:\/\/[^\s"'<>]+$/.test(String((x.bg || {}).hi || '')) ? String(x.bg.hi) : undefined, img: /^https:\/\/[^\s"'<>]+$/.test(String((x.bg || {}).img || '')) ? String(x.bg.img) : '', thumb: /^https:\/\/[^\s"'<>]+$/.test(String((x.bg || {}).thumb || '')) ? String(x.bg.thumb) : '' },
           variants: (Array.isArray(x.variants) ? x.variants : []).slice(0, 40).map(v => ({ cat: str(v.cat, 30).replace(/[^\w-]/g, ''), kind: v.kind === 'invite' ? 'invite' : 'greeting', preset: str(v.preset, 40).replace(/[^\w-]/g, '') })).filter(v => v.cat),
-          area: { x: num((x.area || {}).x, 0, 794), y: num((x.area || {}).y, 0, 1123), w: num((x.area || {}).w, 40, 794), h: num((x.area || {}).h, 40, 1123), valign: (x.area || {}).valign === 'top' ? 'top' : 'center' },
+          area: { x: num((x.area || {}).x, 0, 1123), y: num((x.area || {}).y, 0, 1123), w: num((x.area || {}).w, 40, 1123), h: num((x.area || {}).h, 40, 1123), valign: (x.area || {}).valign === 'top' ? 'top' : 'center' },
           blocks: (Array.isArray(x.blocks) ? x.blocks : []).slice(0, 40).map(k => k.type === 'divider'
             ? { type: 'divider', style: str(k.style, 12), color: col(k.color), width: num(k.width, 0.1, 1), gap: num(k.gap, 0, 300) }
             : { type: 'text', k: str(k.k, 20), text: str(k.text, 3000), text2: str(k.text2, 1000), cols: !!k.cols, font: str(k.font, 60), size: num(k.size, 6, 140), bold: !!k.bold, color: col(k.color), align: ['right', 'center', 'left'].includes(k.align) ? k.align : 'center', lh: num(k.lh, 0.8, 3), gap: num(k.gap, 0, 300) })

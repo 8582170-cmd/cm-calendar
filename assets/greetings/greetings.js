@@ -10,7 +10,10 @@ var PW = 794, PH = 1123, W = PW, H = PH;
 var TYPES = [['design', 'דפים מעוצבים'], ['bg', 'דפי רקע'], ['frame', 'מסגרות'], ['own', 'דף משלכם']];
 function typeOf(t){ return t.own ? 'own' : (t.type === 'bg' || t.type === 'frame') ? t.type : 'design'; }
 function free(t){ return typeOf(t) !== 'design'; } /* דף שהטקסט שלו נבחר בנפרד, ואפשר לסובב אותו */
-function dims(tpl, state){ var land = !!(state && state.page && state.page.land) && free(tpl); return land ? { W: PH, H: PW, land: true } : { W: PW, H: PH, land: false }; }
+/* כיוון הדף: עיצוב שהועלה לרוחב (tpl.land, או תמונת רקע רחבה) נפתח לרוחב. בדף רקע / מסגרת / דף משלכם הלקוח יכול לסובב */
+function natLand(tpl){ return !!(tpl && (tpl.land || (tpl.land == null && free(tpl) && tpl._imgLand))); }
+function isLand(tpl, state){ var G = (state && state.page) || {}; return free(tpl) && G.land != null ? !!G.land : natLand(tpl); }
+function dims(tpl, state){ var land = isLand(tpl, state); return land ? { W: PH, H: PW, land: true } : { W: PW, H: PH, land: false }; }
 function useDims(tpl, state){ var d = dims(tpl, state); W = d.W; H = d.H; return d; }
 
 var CATS = [
@@ -306,12 +309,19 @@ function wrap(ctx, b, text, width, size){
 
 /* פריסת כל הפסקאות באזור הטקסט. אם לא נכנס, מקטינים הכל באותו יחס */
 /* אזור הטקסט: בדף משלכם הלקוח קובע אותו (שוליים באחוזים) */
+/* כמה רבעי סיבוב מסתובב הרקע (0-3). בלי הגדרה: מסובבים רק אם כיוון התמונה שונה מכיוון הדף */
+function quarter(tpl, state){ var G = (state && state.page) || {}; if (G.rot != null) return ((G.rot % 4) + 4) % 4; return isLand(tpl, state) !== natImg(tpl) ? 1 : 0; }
+function natImg(tpl){ return tpl._imgLand != null ? !!tpl._imgLand : natLand(tpl); }
 function areaOf(tpl, state){
-  var ty = typeOf(tpl), land = !!(state && state.page && state.page.land) && free(tpl);
+  var ty = typeOf(tpl);
   if (ty === 'design') return tpl.area;
   if (ty === 'frame' && !(state && state.area)) {
-    var A = tpl.area; if (!land) return A;
-    return { x: PH - (A.y + A.h), y: A.x, w: A.h, h: A.w, valign: A.valign }; /* המסגרת מסובבת 90° */
+    /* אזור הטקסט של המסגרת מסתובב יחד עם המסגרת */
+    var A = tpl.area, q = quarter(tpl, state), nl = natImg(tpl), Wn = nl ? PH : PW, Hn = nl ? PW : PH;
+    if (q === 1) return { x: Hn - (A.y + A.h), y: A.x, w: A.h, h: A.w, valign: A.valign };
+    if (q === 2) return { x: Wn - (A.x + A.w), y: Hn - (A.y + A.h), w: A.w, h: A.h, valign: A.valign };
+    if (q === 3) return { x: A.y, y: Wn - (A.x + A.w), w: A.h, h: A.w, valign: A.valign };
+    return A;
   }
   var a = (state && state.area) || (ty === 'bg' ? { t: 9, b: 9, r: 10, l: 10 } : ty === 'frame' ? { t: 18, b: 18, r: 18, l: 18 } : {}), t = (a.t == null ? 13 : a.t) / 100 * H, b = (a.b == null ? 13 : a.b) / 100 * H, r = (a.r == null ? 14 : a.r) / 100 * W, l = (a.l == null ? 14 : a.l) / 100 * W;
   return { x: l, y: t, w: Math.max(80, W - l - r), h: Math.max(80, H - t - b), valign: a.v === 'top' ? 'top' : 'center' };
@@ -337,7 +347,8 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
   if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
   host.appendChild(box);
   function place(){ if (!on) return; _u(); var R = panelRect(tpl, getS());
-    box.style.left = (R.x / W * 100) + '%'; box.style.top = (R.y / H * 100) + '%'; box.style.width = (R.w / W * 100) + '%'; box.style.height = (R.h / H * 100) + '%'; }
+    box.style.left = (R.x / W * 100) + '%'; box.style.top = (R.y / H * 100) + '%'; box.style.width = (R.w / W * 100) + '%'; box.style.height = (R.h / H * 100) + '%';
+    var a = tshape(getS()).a; box.style.transform = a ? 'rotate(' + a + 'deg)' : ''; }
   box.querySelectorAll('i').forEach(function(h){
     h.addEventListener('pointerdown', function(e){
       e.preventDefault(); e.stopPropagation(); h.setPointerCapture(e.pointerId);
@@ -350,8 +361,19 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
   });
   return { toggle: function(v){ on = v == null ? !on : v; box.hidden = !on; place(); return on; }, place: place, get on(){ return on; } };
 }
+/* צורת שטח הטקסט: מלבן, אליפסה/עיגול, קשת למעלה, קשת למטה, מעוין. הטקסט נכנס למלבן שבתוך הצורה */
+var TSHAPES = [['rect', '▭ מלבן'], ['ellipse', '⬭ אליפסה / עיגול'], ['arch', '⌒ קשת למעלה'], ['archb', '⌣ קשת למטה'], ['diamond', '◇ מעוין'], ['hex', '⬡ משושה']];
+function tshape(state){ var t = (state && state.tshape) || {}; return { s: t.s || 'rect', a: Math.max(-45, Math.min(45, +t.a || 0)) }; }
+function innerArea(A, sh){
+  var s = sh.s, w = A.w, h = A.h, x = A.x, y = A.y;
+  if (s === 'ellipse') { var kx = 0.76, ky = 0.74; return { x: x + w * (1 - kx) / 2, y: y + h * (1 - ky) / 2, w: w * kx, h: h * ky, valign: A.valign }; }
+  if (s === 'diamond') { return { x: x + w * 0.25, y: y + h * 0.25, w: w * 0.5, h: h * 0.5, valign: A.valign }; }
+  if (s === 'hex') { return { x: x + w * 0.12, y: y + h * 0.08, w: w * 0.76, h: h * 0.84, valign: A.valign }; }
+  if (s === 'arch' || s === 'archb') { var r = Math.min(w / 2, h * 0.6), cut = r * 0.42; return { x: x + w * 0.04, y: s === 'arch' ? y + cut : y, w: w * 0.92, h: h - cut, valign: A.valign }; }
+  return A;
+}
 function layout(ctx, tpl, state){
-  var A = areaOf(tpl, state), blocks = state.blocks || [], user = state.scale || 1, items, total, f;
+  var A = innerArea(areaOf(tpl, state), tshape(state)), blocks = state.blocks || [], user = state.scale || 1, items, total, f;
   for (f = user; f >= user * 0.45; f -= 0.02) {
     items = []; total = 0; var bad = false;
     blocks.forEach(function(b, i){
@@ -468,7 +490,9 @@ function render(canvas, tpl, state, opt){
   (state.blocks || []).forEach(function(b){ if (b.font) used[b.font] = 1; });
   var photos = {};
   return catalog().then(function(){ return Promise.all([fontsReady(Object.keys(used)), bgImage(tpl, colors, opt.thumb, scale > 3.2), Promise.all((state.blocks || []).map(function(b){ return b.type === 'photo' ? photoImg(b.src).then(function(i){ photos[b.src] = i }) : null })), opt.watermark ? logoImg() : null, photoImg(state.ubg && state.ubg.src), photoImg(state.own && state.own.src)]) }).then(function(r){
-    var img = r[1];
+    var img = r[1], oimg = r[5];
+    /* כיוון תמונת הרקע (לדף שהועלה לרוחב) */
+    if (img && img.width) tpl._imgLand = img.width > img.height; else if (tpl.own && oimg && oimg.width) tpl._imgLand = oimg.width > oimg.height;
     useDims(tpl, state);
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
     var ctx = canvas.getContext('2d');
@@ -477,12 +501,12 @@ function render(canvas, tpl, state, opt){
     ctx.fillStyle = /^#[0-9a-f]{6}$/i.test(PG.color || '') ? PG.color : '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     /* הרקע עם הגדרות הדף: שקיפות, בהירות, רוויה, גוון, היפוך. תמונה לאורך בדף לרוחב מסתובבת */
     function pageImg(im){
-      var cw = canvas.width, ch = canvas.height, rot = (cw > ch) !== (im.width > im.height) && free(tpl);
+      var cw = canvas.width, ch = canvas.height, q = free(tpl) ? quarter(tpl, state) : 0, rot = q % 2 === 1;
       ctx.save();
       var f = []; if (PG.br != null && PG.br !== 100) f.push('brightness(' + PG.br + '%)'); if (PG.sat != null && PG.sat !== 100) f.push('saturate(' + PG.sat + '%)'); if (PG.hue) f.push('hue-rotate(' + PG.hue + 'deg)');
       if (f.length) ctx.filter = f.join(' ');
       ctx.globalAlpha = PG.op == null ? 1 : Math.max(0.05, Math.min(1, PG.op));
-      ctx.translate(cw / 2, ch / 2); if (rot) ctx.rotate(Math.PI / 2); ctx.scale(PG.fx ? -1 : 1, PG.fy ? -1 : 1);
+      ctx.translate(cw / 2, ch / 2); if (q) ctx.rotate(q * Math.PI / 2); ctx.scale(PG.fx ? -1 : 1, PG.fy ? -1 : 1);
       var bw = rot ? ch : cw, bh = rot ? cw : ch, kk = Math.max(bw / im.width, bh / im.height);
       ctx.drawImage(im, -im.width * kk / 2, -im.height * kk / 2, im.width * kk, im.height * kk);
       ctx.restore();
@@ -504,13 +528,27 @@ function render(canvas, tpl, state, opt){
     /* שטח הטקסט: צבע ו/או תמונה בתוך המסגרת, מאחורי הטקסט */
     var P = state.panel || {}, PR0 = panelRect(tpl, state);
     var px = PR0.x, py = PR0.y, pw = PR0.w, ph = PR0.h, rmax = Math.min(pw / 2, ph / 2), pr = rmax * ((P.r == null ? 20 : P.r) / 100), prb = rmax * ((P.rb == null ? (P.r == null ? 20 : P.r) : P.rb) / 100);
-    var panelPath = function(){ ctx.beginPath(); ctx.moveTo(px + pr, py); ctx.arcTo(px + pw, py, px + pw, py + ph, pr); ctx.arcTo(px + pw, py + ph, px, py + ph, prb); ctx.arcTo(px, py + ph, px, py, prb); ctx.arcTo(px, py, px + pw, py, pr); ctx.closePath(); };
+    var SH = tshape(state), pcx = px + pw / 2, pcy = py + ph / 2;
+    var panelPath = function(){ ctx.beginPath();
+      if (SH.s === 'ellipse') { ctx.ellipse(pcx, pcy, pw / 2, ph / 2, 0, 0, Math.PI * 2); }
+      else if (SH.s === 'diamond') { ctx.moveTo(pcx, py); ctx.lineTo(px + pw, pcy); ctx.lineTo(pcx, py + ph); ctx.lineTo(px, pcy); }
+      else if (SH.s === 'hex') { var hx = pw * 0.22; ctx.moveTo(px + hx, py); ctx.lineTo(px + pw - hx, py); ctx.lineTo(px + pw, pcy); ctx.lineTo(px + pw - hx, py + ph); ctx.lineTo(px + hx, py + ph); ctx.lineTo(px, pcy); }
+      else if (SH.s === 'arch' || SH.s === 'archb') { var ar = Math.min(pw / 2, ph * 0.6), sy = ar / (pw / 2);
+        if (SH.s === 'arch') { ctx.moveTo(px, py + ph); ctx.lineTo(px, py + ar); ctx.ellipse(pcx, py + ar, pw / 2, ar, 0, Math.PI, 0); ctx.lineTo(px + pw, py + ph); }
+        else { ctx.moveTo(px, py); ctx.lineTo(px + pw, py); ctx.lineTo(px + pw, py + ph - ar); ctx.ellipse(pcx, py + ph - ar, pw / 2, ar, 0, 0, Math.PI); ctx.lineTo(px, py); } }
+      else { ctx.moveTo(px + pr, py); ctx.arcTo(px + pw, py, px + pw, py + ph, pr); ctx.arcTo(px + pw, py + ph, px, py + ph, prb); ctx.arcTo(px, py + ph, px, py, prb); ctx.arcTo(px, py, px + pw, py, pr); }
+      ctx.closePath(); };
+    /* שיפוע: השטח והטקסט מסתובבים סביב מרכז השטח */
+    var tilt = SH.a * Math.PI / 180;
+    function tiltOn(){ if (tilt) { ctx.translate(pcx, pcy); ctx.rotate(tilt); ctx.translate(-pcx, -pcy); } }
+    ctx.save(); tiltOn();
     if (ub && uimg && ub.mode === 'area') {
       ctx.save(); panelPath(); ctx.clip(); ctx.globalAlpha = ub.op == null ? 1 : ub.op;
       var k3 = Math.max(pw / uimg.width, ph / uimg.height); ctx.drawImage(uimg, px + (pw - uimg.width * k3) / 2, py + (ph - uimg.height * k3) / 2, uimg.width * k3, uimg.height * k3);
       ctx.restore();
     }
     if (P.on && P.color) { ctx.save(); ctx.globalAlpha = P.op == null ? 0.85 : P.op; ctx.fillStyle = P.color; panelPath(); ctx.fill(); ctx.restore(); }
+    ctx.restore();
     ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic';
     var items = layout(ctx, tpl, state);
     /* מדבקות ואלמנטים במיקום חופשי (מאחורי הטקסט) */
@@ -520,6 +558,7 @@ function render(canvas, tpl, state, opt){
       var w = Math.max(10, b.abs.w || 150), it = { i: i, b: b, x: b.abs.x || 0, y: b.abs.y || 0, w: w, pw: w, h: w * photoRatio(b), abs: true };
       drawPhoto(ctx, it, photos[b.src], colorOf(b.color, tpl, colors)); floats.push(it);
     });
+    ctx.save(); tiltOn();
     items.forEach(function(it){
       var b = it.b, col = colorOf(b.color, tpl, colors);
       if (opt.selected === it.i && !opt.noFrame) {
@@ -543,6 +582,8 @@ function render(canvas, tpl, state, opt){
       if (b.cols) { col1(it.lines, it.x + it.w - it.width, it.width); col1(it.lines2, it.x, it.width); }
       else col1(it.lines, it.x, it.w);
     });
+    ctx.restore();
+    canvas._tilt = tilt ? { cx: pcx, cy: pcy, a: tilt } : null;
     if (opt.watermark) drawMark(ctx, r[3], opt.watermark === 'faint' ? 0.08 : 0.17);
     canvas._items = items.concat(floats);
     return canvas;
@@ -550,9 +591,11 @@ function render(canvas, tpl, state, opt){
 }
 
 /* לחיצה על התצוגה: איזו פסקה נמצאת בנקודה (ביחידות העיצוב) */
-function hit(canvas, x, y){
-  var best = null;
+function hit(canvas, x0, y0){
+  var best = null, T = canvas._tilt;
   (canvas._items || []).forEach(function(it){
+    var x = x0, y = y0;
+    if (T && !it.abs) { var dx = x0 - T.cx, dy = y0 - T.cy, c = Math.cos(-T.a), sn = Math.sin(-T.a); x = T.cx + dx * c - dy * sn; y = T.cy + dx * sn + dy * c; }
     if (x >= it.x - 8 && x <= it.x + it.w + 8 && y >= it.y - 6 && y <= it.y + it.h + 6) {
       var d = it.abs ? -1 : Math.abs(y - (it.y + it.h / 2)); if (!best || d < best.d) best = { i: it.i, d: d };
     }
@@ -618,6 +661,14 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
       var vl = el('label', '', 'הטקסט מתחיל מלמעלה (במקום באמצע)'); vl.htmlFor = vt.id; var vw = el('div', 'bgp-t'); vw.append(vt, vl); box.appendChild(vw);
       vt.onchange = function(){ ar.v = vt.checked ? 'top' : 'center'; changed(); };
     }
+    /* צורה ושיפוע של שטח הטקסט */
+    var TS = S.tshape || (S.tshape = {});
+    box.appendChild(el('div', 'bgp-h', 'צורת שטח הטקסט'));
+    var sr = el('div', 'bgp-b');
+    TSHAPES.forEach(function(x){ var b = el('button', 'pill', x[1]); b.type = 'button'; b.setAttribute('aria-pressed', String((TS.s || 'rect') === x[0])); b.onclick = function(){ TS.s = x[0]; if (x[0] !== 'rect' && S.panel && !S.panel.on && !(S.ubg && S.ubg.src)) { S.panel.on = true; } changed(); draw(); }; sr.appendChild(b); });
+    box.appendChild(sr);
+    box.appendChild(rng('שיפוע (מעלות)', -45, 45, TS.a || 0, function(v){ TS.a = Math.abs(v) < 2 ? 0 : v; }));
+    if (TS.a) { var zr = el('div', 'bgp-b'), zb = el('button', 'pill', 'ישר, בלי שיפוע'); zb.type = 'button'; zb.onclick = function(){ TS.a = 0; changed(); draw(); }; zr.appendChild(zb); box.appendChild(zr); }
     var P = S.panel || (S.panel = { on: false, color: '#ffffff', op: 0.85, r: 20, pad: 14 });
     var t = el('div', 'bgp-t'); var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!P.on; cb.id = 'bgpOn' + Math.random().toString(36).slice(2, 6);
     var lb = el('label', '', 'צבע לשטח הטקסט'); lb.htmlFor = cb.id; t.append(cb, lb); box.appendChild(t);
@@ -625,8 +676,10 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
     if (P.on) {
       box.appendChild(colorRow(P.color, function(c, live){ P.color = /^#/.test(c) ? c : P.color; changed(); if (!live) draw(); }));
       box.appendChild(rng('שקיפות', 10, 100, Math.round((P.op == null ? .85 : P.op) * 100), function(v){ P.op = v / 100; }));
+      if ((TS.s || 'rect') === 'rect') {
       box.appendChild(rng('עיגול הפינות למעלה', 0, 100, P.r == null ? 20 : P.r, function(v){ P.r = v; }));
       box.appendChild(rng('עיגול הפינות למטה', 0, 100, P.rb == null ? (P.r == null ? 20 : P.r) : P.rb, function(v){ P.rb = v; }));
+      }
       box.appendChild(rng('שוליים מסביב לטקסט', 0, 80, P.pad == null ? 14 : P.pad, function(v){ P.pad = v; }));
     }
     var U = S.ubg || {};
@@ -768,14 +821,21 @@ function pagePanel(box, getS, changed, tpl, colorRow){
   function btn(t, on, fn){ var b = el('button', 'pill', t); b.type = 'button'; b.setAttribute('aria-pressed', String(!!on)); b.onclick = function(){ fn(); changed(); draw(); }; return b; }
   function draw(){
     var S = getS(), G = S.page || (S.page = {}); box.innerHTML = '';
-    if (free(tpl)) { var o = el('div', 'bgp-b'); o.append(btn('▯ לאורך', !G.land, function(){ G.land = false; }), btn('▭ לרוחב', !!G.land, function(){ G.land = true; })); box.appendChild(o); }
+    if (free(tpl)) {
+      var L = isLand(tpl, S), q0 = quarter(tpl, S);
+      /* לאורך / לרוחב: הרקע מסתובב 90° יחד עם הדף. סיבוב: כל לחיצה עוד 90° */
+      var o = el('div', 'bgp-b');
+      o.append(btn('▯ לאורך', !L, function(){ if (L) { G.rot = (q0 + 1) % 4; G.land = false; } }), btn('▭ לרוחב', L, function(){ if (!L) { G.rot = (q0 + 1) % 4; G.land = true; } }),
+        btn('⟳ סיבוב 90°', false, function(){ G.rot = (q0 + 1) % 4; G.land = !L; }));
+      box.appendChild(o);
+    }
     var f = el('div', 'bgp-b'); f.append(btn('⇋ היפוך ימין־שמאל', G.fx, function(){ G.fx = !G.fx; }), btn('⇵ היפוך למעלה־למטה', G.fy, function(){ G.fy = !G.fy; })); box.appendChild(f);
     box.appendChild(rng('שקיפות הרקע', 5, 100, Math.round((G.op == null ? 1 : G.op) * 100), function(v){ G.op = v / 100; }));
     box.appendChild(rng('בהירות', 40, 160, G.br == null ? 100 : G.br, function(v){ G.br = v; }));
     box.appendChild(rng('עוצמת הצבעים', 0, 200, G.sat == null ? 100 : G.sat, function(v){ G.sat = v; }));
     box.appendChild(rng('שינוי גוון', -180, 180, G.hue || 0, function(v){ G.hue = v; }));
     if ((G.op != null && G.op < 1) || G.color) { box.appendChild(el('div', 'bgp-h', 'צבע מתחת לרקע')); box.appendChild(colorRow(G.color || '#ffffff', function(c, live){ if (/^#/.test(c)) G.color = c; changed(); if (!live) draw(); })); }
-    if (G.fx || G.fy || G.land || G.color || (G.op != null && G.op !== 1) || (G.br != null && G.br !== 100) || (G.sat != null && G.sat !== 100) || G.hue) {
+    if (G.fx || G.fy || G.land != null || G.rot || G.color || (G.op != null && G.op !== 1) || (G.br != null && G.br !== 100) || (G.sat != null && G.sat !== 100) || G.hue) {
       var rs = el('div', 'bgp-b'); rs.appendChild(btn('איפוס הגדרות הדף', false, function(){ S.page = {}; })); box.appendChild(rs);
     }
   }
@@ -909,5 +969,5 @@ window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   subTitle: function(t){ return /^bg-/.test(t.cat || '') ? 'דף רקע · ' + (CATS.find(function(x){ return x[0] === t.cat }) || [0, ''])[1] : KINDS[t.kind] + ' ל' + ((CATS.find(function(x){ return x[0] === t.cat }) || [0, t.cat])[1]); },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

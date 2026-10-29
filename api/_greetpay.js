@@ -52,9 +52,11 @@ function cleanState(s) {
   if (P) out.panel = { on: !!P.on, color: /^#[0-9a-f]{3,8}$/i.test(String(P.color || '')) ? P.color : '#ffffff', op: Math.max(0, Math.min(1, +P.op || 0)), r: Math.max(0, Math.min(100, +P.r || 0)), rb: P.rb == null ? undefined : Math.max(0, Math.min(100, +P.rb || 0)), pad: Math.max(0, Math.min(120, +P.pad || 0)), dt: Math.max(-300, Math.min(600, +P.dt || 0)), db: Math.max(-300, Math.min(600, +P.db || 0)), dr: Math.max(-300, Math.min(600, +P.dr || 0)), dl: Math.max(-300, Math.min(600, +P.dl || 0)) };
   const n = (v, a, z) => { v = Number(v); return isFinite(v) ? Math.max(a, Math.min(z, v)) : undefined; };
   const PG = s.page && typeof s.page === 'object' ? s.page : null;
-  if (PG) out.page = { land: !!PG.land, fx: !!PG.fx, fy: !!PG.fy, op: n(PG.op, 0.05, 1), br: n(PG.br, 20, 200), sat: n(PG.sat, 0, 300), hue: n(PG.hue, -180, 180), color: /^#[0-9a-f]{6}$/i.test(String(PG.color || '')) ? PG.color : undefined };
+  if (PG) out.page = { land: PG.land == null ? undefined : !!PG.land, rot: PG.rot == null ? undefined : Math.max(0, Math.min(3, Math.round(+PG.rot || 0))), fx: !!PG.fx, fy: !!PG.fy, op: n(PG.op, 0.05, 1), br: n(PG.br, 20, 200), sat: n(PG.sat, 0, 300), hue: n(PG.hue, -180, 180), color: /^#[0-9a-f]{6}$/i.test(String(PG.color || '')) ? PG.color : undefined };
   const BD = s.border && typeof s.border === 'object' ? s.border : null;
   if (BD && /^[a-z]{2,20}$/.test(String(BD.style || ''))) out.border = { style: BD.style, color: /^([a-z]{3,12}|#[0-9a-f]{6})$/i.test(String(BD.color || '')) ? BD.color : 'gold', s: n(BD.s, 0.2, 4), m: n(BD.m, 0, 200), op: n(BD.op, 0.05, 1) };
+  const TS = s.tshape && typeof s.tshape === 'object' ? s.tshape : null;
+  if (TS) out.tshape = { s: ['rect', 'ellipse', 'arch', 'archb', 'diamond', 'hex'].includes(TS.s) ? TS.s : 'rect', a: n(TS.a, -45, 45) };
   const AR = s.area && typeof s.area === 'object' ? s.area : null;
   if (AR) out.area = { t: n(AR.t, 0, 60), b: n(AR.b, 0, 60), r: n(AR.r, 0, 60), l: n(AR.l, 0, 60), v: AR.v === 'top' ? 'top' : 'center' };
   if (s.preset && typeof s.preset === 'object' && /^[\w-]{1,40}$/.test(String(s.preset.id || ''))) out.preset = { id: String(s.preset.id) };
