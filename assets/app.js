@@ -28,7 +28,13 @@ const canF=f=>SAMPLE?true:!LP?true:(CDMODE&&LP.current().id==='free'&&LP.byId('c
 function monthCut(months){const n=PLAN().months;return n<months.length&&months[n]?months[n].days[0]:null}
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
 const stage=$('#stage');
-if(!window.hebcal){stage.insertAdjacentHTML('beforeend','<div class="err">לא הצלחתי לטעון את ספריית הלוח העברי. בדקו את החיבור לאינטרנט ורעננו את הדף.</div>');return}
+/* ספריית הלוח העברי לא נטענה: מנסים שוב לבד משרת אחר, ורק אם גם זה נכשל מציגים כפתור "נסו שוב" */
+if(!window.hebcal){const t=window.__hcTry=(window.__hcTry||0)+1,SRC=['https://cdn.jsdelivr.net/npm/@hebcal/core@5.10.1/dist/bundle.min.js','https://unpkg.com/@hebcal/core@5.10.1/dist/bundle.min.js'];
+  stage.querySelectorAll('.err').forEach(n=>n.remove());
+  if(t<=SRC.length){stage.insertAdjacentHTML('beforeend','<div class="err hc-wait">טוען את הלוח…</div>');const x=document.createElement('script');x.src=SRC[t-1]+(t===1?'?r='+Date.now():'');
+    x.onload=x.onerror=()=>{const me=[...document.scripts].find(z=>/assets\/app\.js/.test(z.src));const y=document.createElement('script');y.src=me?me.src.replace(/([?&])rt=\d+/,'')+(me.src.includes('?')?'&':'?')+'rt='+t:'assets/app.js';document.body.appendChild(y)};
+    setTimeout(()=>document.head.appendChild(x),t===1?600:1500);return}
+  stage.insertAdjacentHTML('beforeend','<div class="err">לא הצלחנו לטעון את הלוח. בדקו את החיבור לאינטרנט. <button type="button" class="btn small" onclick="location.reload()">נסו שוב</button></div>');return}
 const {HDate,HebrewCalendar,Location,Zmanim,flags}=window.hebcal;
 
 /* ---------- places ---------- */
@@ -1964,7 +1970,12 @@ function photoCount(){let n=(state.cover&&state.cover.img)?1:0;for(const k in st
 function wmScreen(){const p=PLAN();if(!p.watermark||SAMPLE||LITE)return '';const L=p.id==='free'||!p.id?LITE_LIM:{events:p.events,photos:Infinity};
   const ev=state.events.length,ph=photoCount();if(ev>L.events)return 'יש בלוח '+ev+' אירועים, ובחינם אפשר עד '+L.events+'.';
   if(ph>L.photos)return 'יש בלוח '+ph+' תמונות, ובחינם אפשר עד '+L.photos+'.';return ''}
-function render(){
+/* אחרי כל שינוי הלוח נבנה מחדש. שומרים את העמוד שרואים עכשיו במקומו, כדי שהתצוגה לא תקפוץ לעמוד אחר */
+function renderAnchor(){if(scrollY<40)return null;const top=Math.max(0,(stage.getBoundingClientRect().top||0));
+  for(const w of stage.querySelectorAll('.sheet-wrap')){const r=w.getBoundingClientRect();if(r.bottom>Math.max(top,60))return {key:w.dataset.key||'',i:[...stage.querySelectorAll('.sheet-wrap')].indexOf(w),top:r.top}}return null}
+function renderKeep(a){if(!a)return;const L=[...stage.querySelectorAll('.sheet-wrap')];const w=(a.key&&L.find(x=>x.dataset.key===a.key))||L[a.i];if(!w)return;const d=w.getBoundingClientRect().top-a.top;if(Math.abs(d)>1)window.scrollBy(0,d)}
+function render(){const a=renderAnchor();try{renderNow()}finally{try{renderKeep(a)}catch(e){}}}
+function renderNow(){
   yzInvalidate();
   try{printGate()}catch(err){}
   {const w=wmScreen();document.body.classList.toggle('wm-screen',!!w);const n=$('#wmNote');if(n){n.hidden=!w;n.innerHTML=w?esc(w)+' <button type="button" class="linkbtn" data-upgrade="events">למסלולים</button>':''}}
@@ -2057,6 +2068,7 @@ function render(){
   fxDecorate();
   fxBoxDecorate();
   if(CDMODE)requestAnimationFrame(()=>cdApplyFocus());
+  if(SIMPLE)try{sxSteps()}catch(e){}
 }
 stage.addEventListener('click',e=>{
   const b=e.target.closest('.ins');if(!b)return;
@@ -3493,12 +3505,13 @@ function applyMode(){
   document.querySelectorAll('#swatches2 .sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.acc===s.accent));
   setTimeout(fitSide,30);
   try{trayShow()}catch(e){}
+  if(SIMPLE)try{sxSteps()}catch(e){}
 }
 /* הלוח שבצד גלול בפני עצמו: הגובה שלו הוא החלק הגלוי במסך, כך שאפשר לגלול אותו עד הסוף בלי לגלול קודם את התצוגה */
 function fitSide(){const sd=document.querySelector('.side');if(!sd)return;if(innerWidth<901){sd.style.maxHeight='';return}const t=Math.max(0,sd.getBoundingClientRect().top),th=document.body.classList.contains('tray-on')?(parseFloat(getComputedStyle(document.body).getPropertyValue('--trayh'))||0):0;sd.style.maxHeight=Math.max(240,innerHeight-t-th)+'px'}
 let fitSideRaf=0;window.addEventListener('scroll',()=>{if(!fitSideRaf)fitSideRaf=requestAnimationFrame(()=>{fitSideRaf=0;fitSide()})},{passive:true});window.addEventListener('resize',fitSide);setTimeout(fitSide,300);
 function goMode(m,step){const s=state.s;s.uiMode=m;if(step)s.step=step;save();applyMode();window.scrollTo({top:0,behavior:'smooth'});setTimeout(fit,50)}
-function goStep(n){state.s.step=Math.min(8,Math.max(1,n));state.s.uiMode='wizard';save();applyMode();const sd=$('.side');if(sd)sd.scrollTop=0;window.scrollTo({top:0,behavior:'smooth'})}
+function goStep(n,keep){const a=keep?renderAnchor():null;state.s.step=Math.min(8,Math.max(1,n));state.s.uiMode='wizard';save();applyMode();const sd=$('.side');if(sd)sd.scrollTop=0;if(keep){renderKeep(a);setTimeout(()=>renderKeep(a),300)}else window.scrollTo({top:0,behavior:'smooth'})}
 $('#stepper').addEventListener('click',e=>{const b=e.target.closest('[data-goto]');if(b)goStep(+b.dataset.goto)});
 const stepMove=d=>{const SL=STEP_LIST(),n=+state.s.step||1;let i=SL.indexOf(n);if(i<0)i=0;const j=Math.min(SL.length-1,Math.max(0,i+d));return SL[j]};
 $('#stepPrev').onclick=()=>goStep(stepMove(-1));
@@ -4674,7 +4687,7 @@ function trayDraw(){const L=$('#trayList');if(!L)return;
   L.innerHTML=TRAY.length?TRAY.map(t=>'<div class="tray-i'+(t.used?' used':'')+(TSEL===t.id?' sel':'')+'" draggable="true" data-ti="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(TSEL===t.id)+'" title="'+(t.from?'מאת '+esc(t.from)+' · ':'')+'גררו לחודש או ליום, או לחצו ואז בחרו מקום"><img src="'+t.th+'" alt="" draggable="false">'+(t.used?'<span class="tray-ok" aria-label="בשימוש">✓</span>':'')+(t.from?'<span class="tray-from">'+esc(t.from)+'</span>':'')+'<button type="button" class="tray-x" data-tx="'+t.id+'" aria-label="הסרה מהמגש">×</button></div>').join('')
     :'<div class="tray-empty"><b>המסלול המהיר:</b> ① מעלים את כל התמונות לכאן בבת אחת ② גוררים כל תמונה לחודש או ליום, או לוחצים "מילוי אוטומטי" ③ לוחצים על יום כדי להוסיף יום הולדת או אירוע</div>';
   const n=TRAY.filter(t=>!t.used).length;$('#trayTabN').textContent=n||'';$('#trayCount').textContent=TRAY.length?(n?n+' מחכות':'כולן בלוח ✓'):'';
-  $('#trayFill').hidden=!TRAY.some(t=>!t.used)}
+  $('#trayFill').hidden=!TRAY.some(t=>!t.used);{const c=$('#trayByDate');if(c){c.checked=!!state.s.trayByDate;c.parentNode.hidden=$('#trayFill').hidden}}}
 function traySelect(id){TSEL=TSEL===id?null:id;document.body.classList.toggle('tray-picking',!!TSEL);trayDraw();
   const bar=$('#trayPickBar');if(bar)bar.hidden=!TSEL}
 function trayPlaced(id){const t=trayItem(id);if(t){t.used=1;traySave()}if(TSEL)traySelect(null);trayDraw()}
@@ -4682,10 +4695,13 @@ function trayPlaced(id){const t=trayItem(id);if(t){t.used=1;traySave()}if(TSEL)t
 function photoKeys(){return (state.s.cover?['cover']:[]).concat([...new Set(RS.slots)])}
 function slotHas(k){const o=k==='cover'?state.cover:state.slots[k];return !!(o&&o.img)}
 function slotPut(k,img){const o={img,edit:null,zoom:1,px:50,pos:50};if(k==='cover')state.cover={...state.cover,...o};else state.slots[k]={...(state.slots[k]||{}),...o}}
-function trayFill(){const free=TRAY.filter(t=>!t.used);let i=0;
+function trayFill(){let free=TRAY.filter(t=>!t.used);let i=0,byD=0;
+  /* לפי תאריך הצילום (אם סימנו): כל תמונה לחודש שבו צולמה, בכל שנה שהיא */
+  if(state.s.trayByDate){const K=new Set(photoKeys());for(const t of free){if(!t.taken)continue;const k=sxMonthKeyOf(t.taken);if(K.has(k)&&!slotHas(k)){slotPut(k,t.img);t.used=1;byD++}}free=free.filter(t=>!t.used)}
   for(const k of photoKeys()){if(i>=free.length)break;if(!slotHas(k)){slotPut(k,free[i].img);free[i].used=1;i++}}
+  const left=free.length-i;i+=byD;
   traySave();save();render();trayDraw();
-  const left=free.length-i,few=photoKeys().length<4;
+  const few=photoKeys().length<4;
   trayNote((i?(i===1?'נכנסה תמונה אחת':'נכנסו '+i+' תמונות')+' למקומות הריקים. ':'אין מקומות ריקים לתמונות. ')+(left&&few?'כדי שתהיה תמונה לכל חודש, בחרו בשלב "עיצוב" פריסה עם תמונה. ':'')+(left?'אפשר גם לגרור תמונה ליום, או על תמונה קיימת כדי להחליף.':''))}
 function trayNote(t){let n=$('#trayNote');if(!n)return;n.textContent=t;n.hidden=false;clearTimeout(trayNote.t);trayNote.t=setTimeout(()=>n.hidden=true,6000)}
 function trayHelp(){modal('<h3>המסלול המהיר<small>לוח עם תמונות ותאריכים בכמה דקות</small></h3><ol class="fast-steps">'+
@@ -4698,9 +4714,11 @@ function trayHelp(){modal('<h3>המסלול המהיר<small>לוח עם תמו�
   '<div class="row"><button class="btn primary" type="button" data-close>הבנתי</button></div>')}
 $('#trayAdd').onclick=()=>{const f=$('#fileMany');f.value='';f.onchange=async()=>{
   const files=[...f.files].filter(x=>x.type.startsWith('image/')).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
-  trayNote('מכין '+files.length+' תמונות…');for(const x of files){await trayAdd(await compress(x));trayDraw()}traySave();
+  trayNote('מכין '+files.length+' תמונות…');for(const x of files){const tk=await exifDate(x);await trayAdd(await compress(x),tk?{taken:tk}:null);trayDraw()}traySave();
   trayNote(files.length?'נוספו '+files.length+' תמונות. גררו כל תמונה לחודש או ליום, או לחצו "מילוי אוטומטי".':'')};f.click()};
-$('#trayFill').onclick=trayFill;$('#trayHelp').onclick=trayHelp;
+$('#trayFill').onclick=trayFill;
+{const b=$('#trayFill');if(b&&!$('#trayByDate')){const l=el('label','chk tray-bd','<input type="checkbox" id="trayByDate"> לפי תאריך הצילום');l.title='כל תמונה תיכנס לחודש שבו היא צולמה (לפי המידע שבקובץ). תמונות בלי תאריך ימלאו את החודשים שנשארו ריקים.';b.insertAdjacentElement('afterend',l);
+  l.querySelector('input').addEventListener('change',e=>{state.s.trayByDate=e.target.checked;save()})}}$('#trayHelp').onclick=trayHelp;
 $('#trayMin').onclick=()=>{state.s.trayMin=true;save();trayShow()};
 $('#trayTab').onclick=()=>{state.s.trayMin=document.body.classList.contains('tray-open');save();trayShow()};
 $('#trayPickX').onclick=()=>traySelect(null);
@@ -4848,7 +4866,7 @@ async function shareModal(){
 }
 $('#shareBtn').onclick=shareModal;
 /* כפתור "טקסט על הדף": עובר לעיצוב החופשי ומוסיף תיבת כיתוב לעמוד שרואים */
-function fxQuickAdd(kind,key){const s=state.s,on=fxOn();if(!on){if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7)}else{s.fxOn=true;save();applyMode()}}
+function fxQuickAdd(kind,key){const s=state.s,on=fxOn();if(!on){if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7,!!key)}else{s.fxOn=true;save();applyMode()}}
   setTimeout(()=>{try{fxBoxAdd(kind,key)}catch(e){}},on?0:350)}
 $('#addTextTop').onclick=()=>fxQuickAdd('text');
 document.addEventListener('click',e=>{const b=e.target.closest('[data-fxquick]');if(b){e.preventDefault();e.stopPropagation();const w=b.closest('.sheet-wrap'),k=b.dataset.fxquick,d=w&&w.dataset;
@@ -4882,6 +4900,261 @@ document.addEventListener('click',e=>{const s=state.s;
   if(e.target.closest('[data-xgeo]')&&window.MyLuachGeo){MyLuachGeo.open({en:EN,near:(lat,lng)=>{const n=nearest(lat,lng);return {tz:n.city.tz,el:n.city.el,km:n.km}}}).then(p=>{if(!p)return;const n=nearest(p.lat,p.lng);
     s.xlocs=(s.xlocs||[]).concat({custom:{name:p.name,lat:p.lat,lng:p.lng,el:p.el,tz:p.tz,il:p.il,candle:n.km<10?n.city.candle:(p.il?30:18)}});save();render()});return}
   if(e.target.closest('[data-geo]')){const g=$('#geoPick');if(g)g.click()}});
+
+/* ---------- הבונה הפשוט: ממשק נוח יותר ----------
+   סרגל עליון מסודר (הוספה בתפריט אחד, בדיקה, הורדה), שלבים מכווצים עם סיכום, בדיקה לפני הדפסה,
+   הוספה מהירה מרשימה, שיבוץ תמונות לפי תאריך הצילום, שאלות פתיחה, ובטלפון: הלוח למעלה וסרגל שלבים בתחתית */
+const SX_SHORT={1:'הלוח',2:'עיצוב',5:'תמונות',7:'חופשי',8:'סיום'};
+const SX_IC={
+  1:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  2:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 21c-1.5-2 0-4 2-4h2"/></svg>',
+  5:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/></svg>',
+  7:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg>',
+  8:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>'};
+let sxCollapsed=false;
+function sxLS(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function sxSummary(k){const s=state.s;
+  if(k===1){const yr=s.calType==='heb'?hebYearStr(+s.hebYear):String(s.gregYear),v={month:'חודשי',week:'שבועי',day:'יומי',table:'טבלה',year:'שנתי'}[s.view||'month']||'';
+    const z=s.size==='custom'?'גודל אישי':((SIZES[s.size]||{}).label||'').replace(/^.*\((.*)\)$/,'$1');return [yr,v,z].filter(Boolean).join(' · ')}
+  if(k===2){const P=SIMPLE_PRESETS.find(x=>x[0]===s.preset);return P?P[1]:'בוחרים עיצוב'}
+  if(k===5){let ph=0,tot=0;try{const K=photoKeys();tot=K.length;ph=K.filter(slotHas).length}catch(e){}const ev=state.events.length;
+    return (s.layout==='full'?'':ph+' מתוך '+tot+' תמונות · ')+(ev===1?'אירוע אחד':ev+' אירועים')}
+  if(k===7)return 'הזזה, הגדלה וכיתוב בכל מקום';
+  return 'הורדה, הדפסה וגיבוי'}
+function sxSteps(){const side=$('.side');if(!side||!SIMPLE)return;const SL=STEP_LIST(),n=+state.s.step||1,mode=uiMode();
+  SL.forEach((k,i)=>{let h=side.querySelector('.sx-step[data-sxs="'+k+'"]');
+    if(!h){h=el('button','sx-step');h.type='button';h.dataset.sxs=k;side.appendChild(h)}
+    h.style.order=String((i+1)*10);
+    const cur=mode==='wizard'&&k===n;h.classList.toggle('cur',cur);h.setAttribute('aria-expanded',String(cur&&!sxCollapsed));
+    h.innerHTML='<b class="sx-n">'+(i+1)+'</b><span class="sx-t"><span class="sx-ti">'+esc(stepInfo(k)[0])+'</span><small>'+esc(cur&&!sxCollapsed?stepInfo(k)[1]:sxSummary(k))+'</small></span><span class="sx-chev" aria-hidden="true"></span>'});
+  side.querySelectorAll(':scope>details.sec').forEach(d=>{const i=SL.indexOf(+d.dataset.step);d.style.order=String(i<0?990:(i+1)*10+1)});
+  document.body.classList.toggle('sx-collapsed',sxCollapsed);
+  const nav=$('#sxNav');if(nav)nav.querySelectorAll('[data-sxg]').forEach(b=>b.classList.toggle('on',+b.dataset.sxg===n&&document.body.classList.contains('sx-drawer')))}
+document.addEventListener('click',e=>{const h=e.target.closest('.sx-step');if(!h)return;const k=+h.dataset.sxs;
+  if(k===+state.s.step&&uiMode()==='wizard'){sxCollapsed=!sxCollapsed;sxSteps();return}
+  sxCollapsed=false;goStep(k,true);const sd=$('.side');if(sd&&innerWidth>900)sd.scrollTop=0});
+
+/* סרגל עליון: "הוסף" אחד במקום שלושה כפתורים, בדיקה, והורדה בולטת */
+function sxBar(){const A=$('.bar .actions');if(!A||A.dataset.sx)return;A.dataset.sx='1';
+  const menu=el('div','sx-add');menu.innerHTML='<button class="btn" type="button" id="sxAddBtn" aria-haspopup="true" aria-expanded="false"><span aria-hidden="true">＋</span> הוסף</button><div class="sx-menu" id="sxMenu" role="menu" hidden></div>';
+  const M=menu.querySelector('#sxMenu');
+  const item=(id,txt)=>{const b=$('#'+id);if(!b)return;b.classList.remove('btn');b.classList.add('sx-mi');b.setAttribute('role','menuitem');b.textContent=txt;M.appendChild(b)};
+  item('addEvTop','אירוע ליום (יום הולדת, יארצייט, תזכורת)');
+  const q=el('button','sx-mi','הוספה מהירה של כמה תאריכים');q.type='button';q.id='sxQuick';q.setAttribute('role','menuitem');M.appendChild(q);
+  item('bulkBtn','סידור תמונות לחודשים');
+  const tr=el('button','sx-mi','מגש התמונות');tr.type='button';tr.id='sxTray';tr.setAttribute('role','menuitem');M.appendChild(tr);
+  item('addTextTop','טקסט על הדף');
+  const pg=el('button','sx-mi','עמוד נוסף (ברכה, פרסומת, הערות)');pg.type='button';pg.id='sxPage';pg.setAttribute('role','menuitem');M.appendChild(pg);
+  const chk=el('button','btn','<span aria-hidden="true">✓</span> בדיקה');chk.type='button';chk.id='sxCheckBtn';chk.title='בדיקה של הלוח לפני הדפסה';
+  const pr=$('#printBtn');if(pr){pr.innerHTML='<span aria-hidden="true">⬇</span> הורדה והדפסה'}
+  ['sampleBtn','liteBtn','upgradeBtn','shareBtn'].forEach(id=>{const b=$('#'+id);if(b)b.classList.add('sx-ghost')});
+  const big=el('button','btn sx-ghost sx-ic','א+');big.type='button';big.id='sxBig';big.title='הגדלת הטקסט באתר';big.setAttribute('aria-pressed','false');
+  const dk=el('button','btn sx-ghost sx-ic','<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>');dk.type='button';dk.id='sxDark';dk.setAttribute('aria-label','מצב כהה');
+  const sep=el('span','sx-sep');
+  A.append(big,dk,sep,menu,chk);if(pr)A.appendChild(pr);
+  $('#sxAddBtn').onclick=e=>{e.stopPropagation();const open=M.hidden;M.hidden=!open;$('#sxAddBtn').setAttribute('aria-expanded',String(open))};
+  document.addEventListener('click',e=>{if(!M.hidden&&!e.target.closest('#sxMenu'))M.hidden=true,$('#sxAddBtn').setAttribute('aria-expanded','false')});
+  M.addEventListener('click',()=>{M.hidden=true});
+  q.onclick=()=>sxQuickModal();
+  tr.onclick=()=>{state.s.trayMin=false;state.s.trayOn=true;if(uiMode()==='wizard'&&![1,2,5].includes(+state.s.step))goStep(5,true);save();trayShow()};
+  pg.onclick=()=>{const b=stage.querySelector('.ins');if(b){b.scrollIntoView({block:'center',behavior:'smooth'});setTimeout(()=>b.click(),350)}};
+  chk.onclick=()=>sxCheck(false);
+  big.onclick=()=>{const on=!document.documentElement.classList.contains('ui-big');document.documentElement.classList.toggle('ui-big',on);big.setAttribute('aria-pressed',String(on));sxLS('ml-uibig',on?'1':'0');setTimeout(()=>{fit();fitSide()},60)};
+  dk.onclick=()=>{const R=document.documentElement,cur=R.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),nx=cur==='dark'?'light':'dark';R.dataset.theme=nx;sxLS('ml-theme',nx);sxDarkIcon()};
+  if(sxLS('ml-uibig')==='1'){document.documentElement.classList.add('ui-big');big.setAttribute('aria-pressed','true')}
+  sxDarkIcon()}
+function sxDarkIcon(){const b=$('#sxDark');if(!b)return;const R=document.documentElement,dark=(R.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'))==='dark';
+  b.innerHTML=dark?'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
+  b.setAttribute('aria-label',dark?'מצב בהיר':'מצב כהה');b.title=b.getAttribute('aria-label')}
+{const t=sxLS('ml-theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}
+
+/* בטלפון: סרגל שלבים קבוע בתחתית, וההגדרות נפתחות כמגירה מעל הלוח */
+function sxMobile(){if($('#sxNav'))return;const nav=el('nav','sx-nav no-print');nav.id='sxNav';nav.setAttribute('aria-label','שלבי הלוח');
+  nav.innerHTML=STEP_LIST().filter(k=>k!==8).map(k=>'<button type="button" data-sxg="'+k+'">'+SX_IC[k]+'<span>'+SX_SHORT[k]+'</span></button>').join('')+'<button type="button" class="sx-dl" data-sxprint>'+SX_IC[8]+'<span>הורדה</span></button>';
+  document.body.appendChild(nav);
+  const side=$('.side'),hd=el('div','sx-dhead');hd.innerHTML='<span class="sx-grab" aria-hidden="true"></span><button type="button" class="btn small" data-sxclose>סגירה</button>';side.prepend(hd);
+  nav.addEventListener('click',e=>{const p=e.target.closest('[data-sxprint]');if(p){sxDrawer(false);sxPrint();return}
+    const b=e.target.closest('[data-sxg]');if(!b)return;const k=+b.dataset.sxg,open=document.body.classList.contains('sx-drawer');
+    if(open&&k===+state.s.step){sxDrawer(false);return}sxCollapsed=false;goStep(k,true);sxDrawer(true)});
+  hd.addEventListener('click',e=>{if(e.target.closest('[data-sxclose]'))sxDrawer(false)});
+  let y0=null;hd.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});hd.addEventListener('touchend',e=>{if(y0!=null&&e.changedTouches[0].clientY-y0>50)sxDrawer(false);y0=null})}
+function sxDrawer(on){document.body.classList.toggle('sx-drawer',!!on);const sd=$('.side');if(sd&&on)sd.scrollTop=0;sxSteps()}
+
+/* בדיקה לפני הדפסה */
+function sxImgPx(src){return new Promise(res=>{const im=new Image();im.onload=()=>res([im.naturalWidth,im.naturalHeight]);im.onerror=()=>res([0,0]);im.src=src})}
+async function sxIssues(){const s=state.s,out=[],ok=[];const [W]=pageDims();
+  let K=[];try{K=photoKeys()}catch(e){}
+  if(s.layout!=='full'&&(s.view||'month')==='month'){const miss=K.filter(k=>k!=='cover'&&!slotHas(k));
+    if(miss.length)out.push({t:miss.length===1?'ב'+slotLabel(miss[0])+' אין תמונה':miss.length+' חודשים בלי תמונה',s:miss.slice(0,6).map(slotLabel).join(', ')+(miss.length>6?' ועוד':'')+'. '+(s.layout==='split'?'עמודי התמונה שלהם יודפסו ריקים.':'הם יודפסו בלי תמונה.'),b:'הוספת תמונה',f:()=>sxGoSlot(miss[0])});
+    else if(K.length)ok.push('יש תמונה בכל החודשים')}
+  const low=[];for(const k of K){const o=k==='cover'?state.cover:state.slots[k];if(!o||!o.img)continue;const [w]=await sxImgPx(o.img);const need=W/25.4*(k==='cover'?110:90)*(s.layout==='split'||k==='cover'?1:0.9);if(w&&w<need)low.push(k)}
+  if(low.length)out.push({t:low.length===1?'התמונה של '+slotLabel(low[0])+' קטנה מדי':low.length+' תמונות קטנות מדי',s:'בגודל הדף שבחרתם הן עלולות לצאת מטושטשות. כדאי להחליף בקובץ המקורי.',b:'החלפה',f:()=>sxGoSlot(low[0],true)});
+  const noY=state.events.filter(e=>e.kind==='birthday'&&e.rec!=='once'&&!String(e.year||'').trim());
+  if(noY.length)out.push({t:noY.length===1?'ליום ההולדת של '+(noY[0].name||'')+' אין שנה':noY.length+' ימי הולדת בלי שנת לידה',s:'בלי שנה לא יוצג הגיל.',b:'הוספת שנה',f:()=>openEventEditor({id:noY[0].id})});
+  let crowd=null,cn=0;try{for(const mo of (monthsCache||[]).slice(0,PLAN().months))for(const d of mo.days){const n=eventsOn(d,new HDate(d)).length;if(n>=3&&n>cn){cn=n;crowd=d}}}catch(e){}
+  if(crowd){const hd=new HDate(crowd);out.push({t:cn+' אירועים ב־'+gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())),s:'התא צפוף, והטקסט יוקטן.',b:'הצגה',f:()=>sxGoDay(iso(crowd))})}
+  else ok.push('אין ימים צפופים מדי');
+  if(s.cover&&!((state.cover||{}).title||'').trim())out.push({t:'בדף השער אין כותרת',s:'למשל: לוח השנה של משפחת כהן',b:'הצגה',f:()=>{const w=stage.querySelector('.sheet-wrap[data-key="cover"]');if(w){w.scrollIntoView({block:'start',behavior:'smooth'});setTimeout(()=>{const t=w.querySelector('.cover-title');if(t)t.focus()},500)}}});
+  ok.push('גודל הדף: '+((SIZES[s.size]||{}).label||'מותאם אישית'));
+  if(!s.noTimes)ok.push('זמני היום לפי '+place().name);
+  return {out,ok}}
+function sxGoSlot(k,replace){const w=stage.querySelector('.sheet-wrap[data-key="'+CSS.escape(k==='cover'?'cover':k)+'"]');if(w)w.scrollIntoView({block:'start',behavior:'smooth'});
+  const f=v=>{if(v&&v.img){if(k==='cover'){state.cover={...state.cover,...v};save();render()}else slotSetter(k)({...v,openImg:true})}};f.maxPx=QPX(k==='cover'?'page':'slot');setTimeout(()=>pickImage(f),350)}
+function sxGoDay(dt){const c=stage.querySelector('[data-date="'+dt+'"]');if(!c)return;c.scrollIntoView({block:'center',behavior:'smooth'});c.classList.add('sx-hl');setTimeout(()=>c.classList.remove('sx-hl'),2600)}
+async function sxCheck(beforePrint){const m=modal('<h3>בדיקה לפני הדפסה</h3><div class="sx-chk"><p class="hint">בודקים…</p></div><div class="row" id="sxChkBtns"></div>');
+  const {out,ok}=await sxIssues();const box=m.querySelector('.sx-chk');
+  box.innerHTML=(out.length?'<p class="hint">מצאנו '+(out.length===1?'דבר אחד':out.length+' דברים')+' שכדאי לבדוק. אפשר לתקן בלחיצה, או להוריד בכל זאת.</p>':'<p class="sx-allok">הכל נראה מוכן להדפסה.</p>')+
+    out.map((x,i)=>'<div class="sx-is"><span class="sx-w" aria-hidden="true">!</span><span class="sx-it"><b>'+esc(x.t)+'</b><small>'+esc(x.s)+'</small></span><button type="button" class="btn small" data-sxfix="'+i+'">'+esc(x.b)+'</button></div>').join('')+
+    '<ul class="sx-ok">'+ok.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>';
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-sxfix]');if(!b)return;m.remove();out[+b.dataset.sxfix].f()});
+  const B=m.querySelector('#sxChkBtns');B.innerHTML='<button class="btn primary" type="button" id="sxChkGo">'+(out.length?'להורדה בכל זאת':'להורדה והדפסה')+'</button><button class="btn" type="button" data-close>'+(out.length?'אתקן קודם':'סגירה')+'</button>';
+  m.querySelector('#sxChkGo').onclick=()=>{m.remove();doPrint()};
+  if(beforePrint&&!out.length){m.remove();doPrint()}}
+function sxPrint(){if(framed){const b=$('#printBtn');if(b)b.click();return}sxCheck(true)}
+
+/* הוספה מהירה של כמה תאריכים: שורה לכל תאריך, כמו שכותבים בוואטסאפ */
+const SX_HM={'תשרי':7,'חשון':8,'חשוון':8,'מרחשון':8,'מרחשוון':8,'כסלו':9,'כסליו':9,'טבת':10,'שבט':11,'אדר':12,'אדר א':12,'אדר ב':13,'ניסן':1,'אייר':2,'אייר':2,'סיון':3,'סיוון':3,'תמוז':4,'אב':5,'מנחם אב':5,'אלול':6};
+const SX_GV={'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,'כ':20,'ל':30};
+function sxGemNum(t){t=t.replace(/["׳״']/g,'');if(!/^[א-ל]{1,2}$/.test(t))return 0;let n=0;for(const c of t){if(!SX_GV[c])return 0;n+=SX_GV[c]}return n>=1&&n<=30?n:0}
+function sxParseLine(line){let t=line.replace(/[‏‎]/g,'').trim();if(!t)return null;
+  let kind='birthday';
+  if(/(יא["״׳']?צ|יארצייט|יום השנה|יום פטירה|אזכרה|נפטר|נפטרה|ז["״]ל)/.test(t))kind='yahrzeit';
+  else if(/(חתונה|נישואין|יום נישואים|יום הנישואין)/.test(t))kind='anniversary';
+  else if(/(יום הולדת|יומולדת|נולד|נולדה|הולדת)/.test(t))kind='birthday';
+  else if(/(אירוע|תזכורת|פגישה|טיול)/.test(t))kind='event';
+  let o=null,rest=t;
+  const g=/(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?/.exec(t);
+  if(g){let d=+g[1],mo=+g[2],y=g[3]?+g[3]:0;if(y&&y<100)y+=y>30?1900:2000;if(d>=1&&d<=31&&mo>=1&&mo<=12){o={rec:'greg',day:d,month:mo,year:y?String(y):''};rest=t.replace(g[0],' ')}}
+  if(!o){const names=Object.keys(SX_HM).sort((a,b)=>b.length-a.length).map(x=>x.replace(/ /g,'\\s*'));
+    const re=new RegExp('([א-ל]{1,2}[״"׳\']?[א-ל]?|\\d{1,2})\\s*(?:ב|ל)?\\s*('+names.join('|')+')(?:\\s*[״"׳\']?\\s*(ב|א)(?![א-ת]))?(?:\\s+(ה?ת[א-ת״"׳\']{2,5}|\\d{4}))?');
+    const h=re.exec(t);if(h){const day=/^\d+$/.test(h[1])?+h[1]:sxGemNum(h[1]);let key=h[2].replace(/\s+/g,' ');if(h[3]&&key==='אדר')key='אדר '+h[3];const m=SX_HM[key]||SX_HM[h[2].replace(/\s+/g,'')];
+      if(day&&m){let y='';if(h[4]){if(/^\d{4}$/.test(h[4]))y=h[4];else{try{const v=window.hebcal.gematriyaStrToNum?window.hebcal.gematriyaStrToNum(h[4].replace(/^ה/,'')):0;if(v)y=String(v<1000?v+5000:v)}catch(e){}}}
+        o={rec:'heb',day,month:m,year:y};rest=t.replace(h[0],' ')}}}
+  if(!o)return {err:true,line:t};
+  if(o.rec==='heb'&&kind==='birthday'&&/(יא|יום השנה)/.test(t))kind='yahrzeit';
+  let name=rest.replace(/(יום הולדת|יומולדת|יום השנה|יום פטירה|יום נישואין|יום הנישואין|יום נישואים|יארצייט|יא["״׳']?צ|אזכרה|חתונה|של|נולדה?|נפטרה?|ז["״]ל|ל־|[-–:,|]+)/g,' ').replace(/\s+/g,' ').trim();
+  if(kind==='anniversary'&&!name)name='יום נישואין';
+  return {kind,name,...o,line:t}}
+function sxRowDate(r){if(r.rec==='greg')return r.day+'.'+r.month+(r.year?'.'+r.year:'');return gem(r.day)+' '+hebMonthName(r.month,r.month===13)+(r.year?' '+hebYearStr(+r.year):'')}
+function sxQuickModal(){const KN={birthday:'יום הולדת',yahrzeit:'יום שנה',anniversary:'נישואין',event:'אירוע'};
+  const m=modal('<h3>הוספה מהירה של כמה תאריכים<small>שורה לכל תאריך. אפשר להדביק רשימה, למשל מקבוצת המשפחה בוואטסאפ</small></h3>'+
+    '<label class="fld">התאריכים<textarea id="sxQt" rows="6" placeholder="שירה 12.3.2015\nיא״צ סבא משה ג׳ שבט\nחתונה של ההורים 24.6.1998\nיוסי כ״ה כסלו תשע״ב"></textarea></label>'+
+    '<div id="sxQp" class="sx-qp" aria-live="polite"></div>'+
+    '<div class="row"><button class="btn primary" type="button" id="sxQgo" disabled>הוספה ללוח</button><button class="btn" type="button" data-close>ביטול</button></div>');
+  const q=x=>m.querySelector(x);let rows=[];
+  const draw=()=>{rows=q('#sxQt').value.split(/\n+/).map(sxParseLine).filter(Boolean);const good=rows.filter(r=>!r.err);
+    q('#sxQp').innerHTML=rows.length?('<b>זיהינו '+(good.length===1?'תאריך אחד':good.length+' תאריכים')+'. בדקו ובטלו סימון במה שלא נכון:</b>'+rows.map((r,i)=>r.err?'<div class="sx-qr bad">לא זיהינו תאריך: '+esc(r.line)+'</div>':
+      '<label class="sx-qr"><input type="checkbox" data-sxq="'+i+'" checked><span class="sx-qn"><b>'+esc(r.name||'(בלי שם)')+'</b><small>'+esc(sxRowDate(r))+(r.rec==='heb'?' · כל שנה בתאריך העברי':' · כל שנה בתאריך הלועזי')+'</small></span><select data-sxk="'+i+'" aria-label="סוג">'+Object.entries(KN).map(([k,n])=>'<option value="'+k+'"'+(k===r.kind?' selected':'')+'>'+n+'</option>').join('')+'</select></label>').join('')):'';
+    q('#sxQgo').disabled=!good.length;q('#sxQgo').textContent=good.length?'הוספת '+(good.length===1?'תאריך אחד':good.length+' תאריכים')+' ללוח':'הוספה ללוח'};
+  q('#sxQt').addEventListener('input',draw);
+  m.addEventListener('change',e=>{const k=e.target.dataset.sxk;if(k!=null)rows[+k].kind=e.target.value});
+  q('#sxQgo').onclick=()=>{let n=0,full=false;
+    rows.forEach((r,i)=>{if(r.err)return;const c=m.querySelector('[data-sxq="'+i+'"]');if(c&&!c.checked)return;
+      if(state.events.length>=PLAN().events){full=true;return}
+      state.events.push({id:uid(),kind:r.kind,name:r.name,rec:r.rec,day:r.day,month:r.month,year:r.year||'',img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null});n++});
+    save();renderEvents();render();m.remove();
+    if(full)openUpgrade('events');else shareToast(n===1?'נוסף תאריך אחד ללוח':'נוספו '+n+' תאריכים ללוח')};
+  setTimeout(()=>q('#sxQt').focus(),40)}
+
+/* תאריך הצילום מתוך הקובץ (EXIF), לשיבוץ תמונות בחודש שבו צולמו */
+async function exifDate(file){try{if(!/jpe?g/i.test(file.type||''))return '';const b=new DataView(await file.slice(0,262144).arrayBuffer());if(b.getUint16(0)!==0xFFD8)return '';let o=2;
+  while(o+10<b.byteLength){const mk=b.getUint16(o);if((mk&0xFF00)!==0xFF00)break;const len=b.getUint16(o+2);
+    if(mk===0xFFE1&&b.getUint32(o+4)===0x45786966){const t=o+10,le=b.getUint16(t)===0x4949,g16=x=>b.getUint16(x,le),g32=x=>b.getUint32(x,le);
+      const rd=ifd=>{const r={};if(t+ifd+2>b.byteLength)return r;const n=g16(t+ifd);for(let i=0;i<n&&i<300;i++){const e=t+ifd+2+i*12;if(e+12>b.byteLength)break;r[g16(e)]=e}return r};
+      const str=e=>{const c=g32(e+4),off=c>4?t+g32(e+8):e+8;let s='';for(let i=0;i<c-1&&i<30&&off+i<b.byteLength;i++)s+=String.fromCharCode(b.getUint8(off+i));return s};
+      const i0=rd(g32(t+4));let d='';if(i0[0x8769]){const sub=rd(g32(i0[0x8769]+8));if(sub[0x9003])d=str(sub[0x9003])}if(!d&&i0[0x132])d=str(i0[0x132]);
+      const mm=/^(\d{4}):(\d\d):(\d\d)/.exec(d);return mm&&+mm[1]>1990?mm[1]+'-'+mm[2]+'-'+mm[3]:''}
+    o+=2+len}}catch(e){}return ''}
+function sxMonthKeyOf(isoD){const d=dateFromIso(isoD);if(state.s.calType==='heb'){let m=new HDate(d).getMonth();const has=k=>(monthsCache||[]).some(x=>x.key==='heb-'+k);if(m===13&&!has(13))m=12;if(m===12&&!has(12)&&has(13))m=13;return 'heb-'+m}return 'greg-'+d.getMonth()}
+
+/* גרירה באצבע מהמגש לחודש או ליום (לחיצה ארוכה ואז גרירה) */
+function sxTouchDrag(){const L=$('#trayList');if(!L||L.dataset.sxt)return;L.dataset.sxt='1';
+  let st=null;
+  const end=()=>{if(st){clearTimeout(st.tm);if(st.g)st.g.remove();document.querySelectorAll('.sx-over').forEach(x=>x.classList.remove('sx-over'));document.body.classList.remove('tray-dragging')}st=null};
+  const target=(x,y)=>{if(st&&st.g)st.g.style.visibility='hidden';const e=document.elementFromPoint(x,y);if(st&&st.g)st.g.style.visibility='';if(!e)return null;
+    const box=e.closest('.pg-img');if(box&&box._setv)return {el:box,put:t=>{box._setv({img:t.img,edit:null,zoom:1,px:50,pos:50});trayPlaced(t.id)}};
+    const pill=e.closest('[data-fxquick="img"]'),w=pill&&pill.closest('.sheet-wrap');if(w&&w.dataset.slotImg){const k=w.dataset.slotImg;return {el:pill,put:t=>{slotSetter(k)({img:t.img,edit:null,zoom:1,px:50,pos:50,openImg:true});trayPlaced(t.id)}}}
+    const c=e.closest('#stage [data-date]');if(c)return {el:c,put:t=>trayToDay(c.dataset.date,t.id)};return null};
+  L.addEventListener('touchstart',e=>{const it=e.target.closest('[data-ti]');if(!it||e.target.closest('[data-tx]')||e.touches.length>1)return;const p=e.touches[0];
+    st={id:it.dataset.ti,x:p.clientX,y:p.clientY,on:false,g:null};st.tm=setTimeout(()=>{if(!st)return;st.on=true;const g=it.querySelector('img').cloneNode();g.className='sx-ghost-img';document.body.appendChild(g);st.g=g;g.style.left=st.x+'px';g.style.top=st.y+'px';document.body.classList.add('tray-dragging');try{navigator.vibrate&&navigator.vibrate(15)}catch(err){}},320)},{passive:true});
+  L.addEventListener('touchmove',e=>{if(!st)return;const p=e.touches[0];
+    if(!st.on){if(Math.abs(p.clientX-st.x)+Math.abs(p.clientY-st.y)>10){clearTimeout(st.tm);st=null}return}
+    e.preventDefault();st.g.style.left=p.clientX+'px';st.g.style.top=p.clientY+'px';
+    document.querySelectorAll('.sx-over').forEach(x=>x.classList.remove('sx-over'));const tg=target(p.clientX,p.clientY);if(tg)tg.el.classList.add('sx-over');
+    if(p.clientY<60)window.scrollBy(0,-14);else if(p.clientY>innerHeight-200&&p.clientY<innerHeight-120)window.scrollBy(0,14)},{passive:false});
+  L.addEventListener('touchend',e=>{if(!st)return;if(st.on){e.preventDefault();const p=e.changedTouches[0],tg=target(p.clientX,p.clientY),t=trayItem(st.id);end();if(tg&&t)tg.put(t)}else end()},{passive:false});
+  L.addEventListener('touchcancel',end)}
+
+/* בועת הסבר קצרה בפעם הראשונה, במקום תיבת ההסבר הארוכה */
+function sxTip(){if(sxLS('sx-tip1')||uiMode()==='home')return;const c=stage.querySelector('.sheet-wrap [data-date]');if(!c)return;
+  const r=c.getBoundingClientRect();if(r.top>innerHeight-80||r.bottom<0)return;
+  const t=el('div','sx-tip no-print','<span>לחצו על יום כדי להוסיף יום הולדת, יארצייט או תזכורת. אפשר גם לגרור לשם תמונה.</span><button type="button" aria-label="סגירה">×</button>');
+  document.body.appendChild(t);const tw=Math.min(260,innerWidth-24);t.style.width=tw+'px';
+  t.style.top=(r.bottom+scrollY+8)+'px';t.style.left=Math.max(12,Math.min(innerWidth-tw-12,r.left+r.width/2-tw/2+scrollX))+'px';
+  const off=()=>{t.remove();sxLS('sx-tip1','1');document.removeEventListener('click',off,true)};setTimeout(()=>document.addEventListener('click',off,true),50);setTimeout(()=>{if(t.isConnected)t.remove()},14000)}
+
+/* שאלות פתיחה בלוח חדש: למי הלוח, איפה תולים, ואיזה מנהג. העיר מוצעת לפי המיקום */
+async function sxNearCity(){try{const r=await fetch('/api/pricing?c=_ipgeo',{cache:'no-store'});if(!r.ok)return null;const g=await r.json();if(!(Math.abs(g.lat)<=90))return null;
+  let best=null,bd=1e9;for(const c of CITIES){const dx=(c.lng-g.lng)*Math.cos(g.lat*Math.PI/180),dy=c.lat-g.lat,d=Math.sqrt(dx*dx+dy*dy)*111;if(d<bd){bd=d;best=c}}return bd<70?best:null}catch(e){return null}}
+function sxOnboard(){const ans={who:'family',hang:'wall',nusach:'ashkenaz'};let city=null;
+  const grp=(k,label,opts)=>'<div class="fld sx-q"><b>'+label+'</b><div class="sx-opts" role="radiogroup" aria-label="'+label+'">'+opts.map(([v,n,h])=>'<label class="sx-o"><input type="radio" name="sxo-'+k+'" value="'+v+'"'+(ans[k]===v?' checked':'')+'><span><b>'+n+'</b>'+(h?'<small>'+h+'</small>':'')+'</span></label>').join('')+'</div></div>';
+  const m=modal('<h3>שלוש שאלות, והלוח מוכן<small>אפשר לשנות הכל אחר כך</small></h3>'+
+    grp('who','למי הלוח?',[['family','משפחה','עם תמונות'],['grand','סבא וסבתא','אותיות גדולות'],['shul','בית כנסת','זמנים, בלי תמונות']])+
+    grp('hang','איפה תולים?',[['fridge','מקרר','A5'],['wall','קיר','A3'],['desk','שולחן','21×15']])+
+    grp('nusach','לפי איזה מנהג הזמנים?',[['ashkenaz','אשכנז'],['sefardi','ספרד'],['tanya','חב״ד']])+
+    '<div class="sx-city" id="sxCity" hidden></div>'+
+    '<div class="row"><button class="btn primary" type="button" id="sxGo">ליצירת הלוח</button><button class="btn" type="button" id="sxSkip">דילוג</button></div>');
+  m.querySelector('.modal').classList.add('sx-onb');
+  m.addEventListener('change',e=>{const n=e.target.name||'';if(n.startsWith('sxo-'))ans[n.slice(4)]=e.target.value;if(n==='sxo-who'&&e.target.value==='shul'){const c=m.querySelector('#sxCityOn');if(c)c.checked=true}});
+  sxNearCity().then(c=>{if(!c||!m.isConnected)return;city=c;const b=m.querySelector('#sxCity');b.hidden=false;
+    b.innerHTML='<label class="chk"><input type="checkbox" id="sxCityOn"'+(ans.who==='shul'?' checked':'')+'> להוסיף זמני שבת ושקיעה לפי <b>'+esc(c.name)+'</b></label><small class="hint">העיר זוהתה לפי המיקום המשוער שלכם. אפשר לבחור עיר אחרת בשלב "הלוח".</small>'});
+  const done=()=>{sxLS('sx-onb','1');m.remove();setTimeout(sxTip,600)};
+  m.querySelector('#sxSkip').onclick=done;
+  m.querySelector('#sxGo').onclick=()=>{const s=state.s;
+    const P=SIMPLE_PRESETS.find(x=>x[0]===(ans.who==='shul'?'wall':ans.who==='grand'?'classic':'family'));
+    if(P){Object.assign(s,{preset:P[0],theme:P[2],accent:P[3],headFont:P[4],bodyFont:P[5],layout:P[6],tcolors:{}});loadFont(P[4]);loadFont(P[5])}
+    s.size=ans.hang==='fridge'?'fridge':ans.hang==='desk'?'desk':'wall';s.orient=(SIZES[s.size]||{}).o||'portrait';
+    if(ans.who==='grand')s.textScale=125;
+    s.zm={...ZM_PRESETS[ans.nusach]};s.zmPreset=ans.nusach;
+    const on=m.querySelector('#sxCityOn');if((on&&on.checked)||(ans.who==='shul'&&city)){s.city=city.id;s.il=city.il;s.candleMins=city.candle;s.noTimes=false;s.noShabTimes=false;s.zmanim={...(s.zmanim||{}),sunset:true}}
+    else if(ans.who==='shul'){s.noTimes=false}
+    save();syncUI();render();done()}}
+
+/* לוח של שנה שעברה: הצעה להמשיך ממנו לשנה הבאה */
+function sxNextYear(){const old=$('#sxYear');if(old)old.remove();if(uiMode()==='home')return;const M=monthsCache||[];if(!M.length)return;const last=M.at(-1).days.at(-1);if(!last||last>=new Date())return;
+  const s=state.s,cur=s.calType==='heb'?hebYearStr(+s.hebYear):String(s.gregYear),nx=s.calType==='heb'?hebYearStr(+s.hebYear+1):String(+s.gregYear+1);
+  const b=el('div','notice sx-year no-print','<span>הלוח הזה הוא של <b>'+esc(cur)+'</b>, שכבר הסתיימה. להמשיך ממנו ל־'+esc(nx)+'? כל התאריכים, הזמנים והעיצוב יישארו, ונשאר רק להחליף תמונות.</span><span class="row"><button type="button" class="btn primary small" id="sxYGo">כן, ללוח '+esc(nx)+'</button><button type="button" class="btn small" id="sxYNo">לא עכשיו</button></span>');b.id='sxYear';
+  stage.prepend(b);b.querySelector('#sxYNo').onclick=()=>b.remove();
+  b.querySelector('#sxYGo').onclick=()=>{if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;s.rangeFrom='';s.rangeTo='';s.startDate='';save();syncUI();render();b.remove();shareToast('הלוח עבר ל־'+nx)}}
+
+/* תאריך עברי ליד כל שדה תאריך, ובחירה מלוח עברי */
+function sxDates(root){(root||document).querySelectorAll('.side input[type=date],.modal input[type=date]').forEach(inp=>{if(inp.dataset.sxd)return;inp.dataset.sxd='1';
+  const w=el('span','sx-hd');const b=el('button','btn small sx-hdb','בחירה בעברית');b.type='button';b.title='בחירת התאריך מלוח עברי';const t=el('small','sx-hdt');w.append(t,b);inp.insertAdjacentElement('afterend',w);
+  const show=()=>{const v=inp.value;if(!v){t.textContent='';return}try{const hd=new HDate(dateFromIso(v));t.textContent=gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+' '+hebYearStr(hd.getFullYear())}catch(e){t.textContent=''}};
+  inp.addEventListener('input',show);inp.addEventListener('change',show);show();
+  b.onclick=()=>{if(!window.MyLuachHPick)return;MyLuachHPick.open(b,{date:inp.value?dateFromIso(inp.value):undefined,onPick:x=>{inp.value=iso(x.date);inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));show()}})};
+  setInterval(()=>{if(inp.isConnected&&t.dataset.v!==inp.value){t.dataset.v=inp.value;show()}},1500)})}
+
+/* תפריט נפתח קצר → כפתורים גדולים */
+function sxSegify(sel){if(!sel||sel.dataset.seg)return;sel.dataset.seg='1';const box=el('div','sx-seg');box.setAttribute('role','radiogroup');
+  const draw=()=>{box.innerHTML=[...sel.options].map(o=>'<button type="button" role="radio" aria-checked="'+(o.value===sel.value)+'" data-v="'+esc(o.value)+'">'+esc(o.textContent.split(':')[0])+'</button>').join('')};
+  draw();box.onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;sel.value=b.dataset.v;sel.dispatchEvent(new Event('change',{bubbles:true}));draw()};
+  sel.addEventListener('change',draw);new MutationObserver(draw).observe(sel,{childList:true});sel.hidden=true;sel.insertAdjacentElement('afterend',box);setInterval(()=>{if(box.querySelector('[aria-checked=true]')?.dataset.v!==sel.value)draw()},1500)}
+
+function sxInit(saved){
+  try{sxDates();new MutationObserver(()=>sxDates()).observe(document.body,{childList:true,subtree:false})}catch(e){}
+  try{sxSegify($('#cdUnit'))}catch(e){}
+  try{sxTouchDrag()}catch(e){}
+  if(!SIMPLE)return;
+  document.body.classList.add('sx');
+  sxBar();sxMobile();sxSteps();
+  {const n=$('.simple-note');if(n)n.innerHTML='<b>בבונה המורחב יש גם:</b> זמני היום לפי המנהג, לימוד יומי, דברי הימים ויארצייטים של צדיקים, ימים צבועים, באנרים, עמודים נוספים וזמני תפילות לבית הכנסת. <a href="app.html">לבונה המורחב ←</a> (כל מה שבניתם עובר איתכם)'}
+  {const h=$('.stage-head>span:last-of-type');if(h&&!h.id)h.textContent='לחצו על יום כדי להוסיף אירוע · גררו תמונות לחודשים ולימים'}
+  if(!saved&&!sxLS('sx-onb')&&!window.location.hash)setTimeout(sxOnboard,500);else setTimeout(sxTip,1200);
+  sxNextYear();
+  const pr=$('#printBtn');if(pr)pr.onclick=()=>sxPrint();
+  {const p2=$('#printBtn2');if(p2)p2.onclick=()=>sxPrint()}
+  window.addEventListener('resize',()=>{if(innerWidth>900)document.body.classList.remove('sx-drawer')})}
 
 /* boot */
 (async function(){
@@ -4948,6 +5221,7 @@ document.addEventListener('click',e=>{const s=state.s;
      if(m[1]==='school'&&!(s.hl||[]).length)s.hl=[{id:'h'+uid(),name:'חופשות',color:'#f6d365',days:{},show:true,repeat:'none'},{id:'h'+uid(),name:'ימי הורים',color:'#a7c7e7',days:{},show:true,repeat:'none'}];
      s.uiMode='wizard';s.step=1;save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   syncUI();applyMode();render();fillLums();trayLoad();
+  try{sxInit(!!saved)}catch(e){console.warn('sx',e)}
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
   acctInit();
 })();

@@ -25,6 +25,15 @@ module.exports = async (req, res) => {
     try { const S = require('./_shabbat'); return json(res, 200, await S.status(Date.now(), S.placeOf(req), await loadConfig())); }
     catch (e) { console.error('shabbat', e.message); return json(res, 200, { on: false, closed: false }); }
   }
+  /* המיקום המשוער של הגולש לפי הרשת (בלי לשאול), להצעת עיר בבונה. לא נשמר בשום מקום */
+  if (cp === '_ipgeo') {
+    res.setHeader('Cache-Control', 'private, no-store');
+    const H = req.headers || {}, cf = req.cf || {};
+    const lat = parseFloat(H['x-vercel-ip-latitude'] || cf.latitude), lng = parseFloat(H['x-vercel-ip-longitude'] || cf.longitude);
+    const ok = Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    let city = String(H['x-vercel-ip-city'] || cf.city || ''); try { city = decodeURIComponent(city); } catch (e) {}
+    return json(res, 200, ok ? { lat, lng, cc: String(H['x-vercel-ip-country'] || cf.country || ''), city: city.slice(0, 60), tz: String(H['x-vercel-ip-timezone'] || cf.timezone || '') } : {});
+  }
   /* שיתוף לוח עם המשפחה: המשתתפים (בלי הרשמה) */
   if (cp === '_share') return require('./_share').pub(req, res);
   /* לוח ציבורי מהלוח המקוון: myluach.org/<שם> */
