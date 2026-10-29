@@ -5195,7 +5195,7 @@ function sxDelEv(id,imgOnly){const ev=state.events.find(x=>x.id===id);if(!ev)ret
   sxUndo(t,()=>{Object.assign(ev,old);state.events=snap;save();renderEvents();render()})}
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-edel],[data-eimg]');if(!b)return;e.preventDefault();e.stopPropagation();document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));sxDelEv(b.dataset.edel||b.dataset.eimg,!!b.dataset.eimg)},true);
 const CI_KINDS=[['other','טקסט'],['event','אירוע'],['meeting','פגישה'],['reminder','תזכורת'],['task','משימה']];
-const CI_COLS=['','#1a232c','#b3261e','#1d4ed8','#2e7d32','#6b2d8f','#c2410c'];
+const CI_COLS=['','#1a232c','#b3261e','#1d4ed8','#2e7d32','#6b2d8f'];
 function cellInline(c){const date=c.dataset.date;if(!date)return;document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));
   const d=dateFromIso(date),hd=new HDate(d),KS=CI_KINDS.map(k=>k[0]);
   const ex=state.events.find(e=>KS.includes(e.kind)&&e.rec==='once'&&e.date===date&&!e.img&&e.name);
@@ -5204,7 +5204,7 @@ function cellInline(c){const date=c.dataset.date;if(!date)return;document.queryS
   const r=c.getBoundingClientRect(),box=el('div','ci-box no-print');
   box.innerHTML='<textarea class="ci-ta" rows="2" maxlength="300" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
     '<label class="ci-grow"><input type="checkbox" data-rowgrow'+(state.s.rowGrow?' checked':'')+'> להגדיל את השורה כשהטקסט לא נכנס (על חשבון שאר השורות)</label>'+
-    '<div class="ci-style"><span>גודל</span><button type="button" data-cis="-1" aria-label="הקטנת הטקסט">א−</button><button type="button" data-cis="1" aria-label="הגדלת הטקסט">א+</button><span class="ci-sep"></span><span>צבע</span>'+CI_COLS.map(x=>'<button type="button" class="ci-col" data-cic="'+x+'" style="--c:'+(x||'var(--c-pers,#7a3b16)')+'" aria-label="'+(x?'צבע '+x:'צבע רגיל')+'"></button>').join('')+'</div>'+
+    '<div class="ci-style"><span>גודל</span><button type="button" data-cis="-1" aria-label="הקטנת הטקסט">א−</button><button type="button" data-cis="1" aria-label="הגדלת הטקסט">א+</button><span class="ci-sep"></span><span>צבע</span>'+CI_COLS.map(x=>'<button type="button" class="ci-col" data-cic="'+x+'" style="--c:'+(x||'var(--c-pers,#7a3b16)')+'" aria-label="'+(x?'צבע '+x:'צבע רגיל')+'"></button>').join('')+'<label class="ci-any" title="כל צבע"><input type="color" data-cicany aria-label="בחירת כל צבע"></label></div>'+
     (others.length?'<div class="ci-have">'+others.map(e=>'<span class="ci-chip">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span>'+esc(e.name||'תמונה')+'</span><button type="button" data-cidel="'+e.id+'" aria-label="מחיקה" title="'+(e.rec&&e.rec!=='once'?'מחיקה מכל השנים':'מחיקה')+'">×</button></span>').join('')+'</div>':'')+
     '<div class="ci-bar"><button type="button" data-ci="more">＋ הוסף אירוע</button><button type="button" data-ci="img">＋ הוסף תמונה</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
   document.body.appendChild(box);
@@ -5212,8 +5212,9 @@ function cellInline(c){const date=c.dataset.date;if(!date)return;document.queryS
   box.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+scrollX+'px';
   box.style.top=(r.top+scrollY+Math.min(r.height*0.3,36))+'px';
   const ta=box.querySelector('textarea');ta.value=ex?ex.name:'';
-  const paint=()=>{box.querySelectorAll('[data-cik]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.cik===kind)));box.querySelectorAll('[data-cic]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cic===col)));
+  const paint=()=>{box.querySelectorAll('[data-cik]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.cik===kind)));box.querySelectorAll('[data-cic]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cic===col)));{const an=box.querySelector('.ci-any'),own=!!col&&!CI_COLS.includes(col);an.classList.toggle('on',own);an.style.setProperty('--c',own?col:'');an.querySelector('input').value=/^#[0-9a-f]{6}$/i.test(col)?col:'#7a3b16'}
     ta.style.color=col||'';ta.style.fontSize=Math.round(15*Math.min(1.6,ts))+'px';ta.placeholder=kind==='other'?'כתבו כאן, ו־Enter לשמירה':(KINDS[kind]||{}).ph||''};paint();
+  box.querySelector('[data-cicany]').addEventListener('input',e=>{col=e.target.value;paint()});
   ta.focus();ta.select();
   {const br=box.getBoundingClientRect();if(br.bottom>innerHeight-8)window.scrollBy({top:br.bottom-innerHeight+80,behavior:'smooth'})}
   let done=false;
