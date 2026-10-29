@@ -2907,7 +2907,7 @@ function openImageOrganizer(){
   const keys=(s.cover?['cover']:[]).concat([...new Set(RS.slots)]);
   const pick=k=>{const o=k==='cover'?state.cover:(state.slots[k]||{});return o&&o.img?{img:o.img,fit:o.fit,pos:o.pos,px:o.px,zoom:o.zoom,edit:o.edit||null}:null};
   let arr=keys.map(pick);
-  const m=modal('<h3>סידור תמונות<small>כאן רואים איזו תמונה תופיע בכל עמוד, ואפשר להוסיף תמונות ולשנות את הסדר.</small></h3>'+
+  const m=modal('<h3>סידור תמונות לחודשים<small>כאן רואים איזו תמונה גדולה תופיע בראש כל חודש (ובדף השער), ואפשר להוסיף תמונות ולשנות את הסדר. תמונה בתוך יום: גוררים אותה ליום בלוח, או לוחצים על היום.</small></h3>'+
     '<div class="hint"><ol><li>לחצו "הוספת תמונות" ובחרו כמה תמונות ביחד. הן ייכנסו לפי הסדר למקומות הריקים.</li><li>כדי לשנות סדר: גררו תמונה על תמונה אחרת והן יתחלפו, או השתמשו בחצים.</li><li>לחצו "שמירה" כדי להחיל על הלוח.</li></ol></div>'+
     (keys.length?'':'<p class="msg-bad">בפריסה הנוכחית אין מקומות לתמונה. בחרו פריסה "תמונה ולוח" או "עמוד לתמונה", או סמנו עמוד שער.</p>')+
     '<div class="row"><button class="btn" type="button" id="oAdd">הוספת תמונות</button>'+(CFG.googleClientId?'<button class="btn gphotos-btn" type="button" id="oGP">מ־Google Photos</button>':'')+(CFG.googleClientId&&CFG.googleApiKey?'<button class="btn" type="button" id="oGD">מגוגל דרייב</button>':'')+'<button class="btn small danger" type="button" id="oClear">ריקון הכל</button></div>'+
@@ -4684,7 +4684,7 @@ async function trayLoad(){if(CDMODE||SNAPVIEW)return;const v=await idbGet(TKEY);
 function thumbOf(img){return new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,220/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res(img);im.src=img})}
 async function trayAdd(img,meta){const t={id:'t'+uid(),img,th:await thumbOf(img),used:0,...(meta||{})};TRAY.push(t);return t}
 function trayShow(){const b=$('#tray');if(!b)return;const s=state.s,mode=s.uiMode,n=+s.step||1;
-  const on=!CDMODE&&!SNAPVIEW&&((mode==='wizard'&&(n===5||(SIMPLE&&n<8)))||(mode==='adv'&&(TRAY.length>0||!!s.trayOn)));
+  const on=!CDMODE&&!SNAPVIEW&&((mode==='wizard'&&(n===5||(SIMPLE&&n<8)||(!!s.trayOn&&n<8)))||(mode==='adv'&&(TRAY.length>0||!!s.trayOn)));
   const open=on&&(s.trayMin===false||(s.trayMin==null&&(n===5||TRAY.some(t=>!t.used)))),was=document.body.classList.contains('tray-open');b.hidden=!on;document.body.classList.toggle('tray-on',on);b.classList.toggle('min',!open);document.body.classList.toggle('tray-open',open);
   if(was!==open)setTimeout(()=>{try{fit()}catch(e){}},280);trayH()}
 /* גובה המגש: כפתורי "הבא" ו"הקודם" והפאנל שבצד עולים מעליו */
@@ -4965,7 +4965,7 @@ function sxBar(){const A=$('.bar .actions');if(!A||A.dataset.sx)return;A.dataset
   const item=(id,txt)=>{const b=$('#'+id);if(!b)return;b.classList.remove('btn');b.classList.add('sx-mi');b.setAttribute('role','menuitem');b.textContent=txt;M.appendChild(b)};
   item('addEvTop','אירוע ליום (יום הולדת, יארצייט, תזכורת)');
   const q=el('button','sx-mi','הוספה מהירה של כמה תאריכים');q.type='button';q.id='sxQuick';q.setAttribute('role','menuitem');M.appendChild(q);
-  item('bulkBtn','סידור תמונות לחודשים');
+  item('bulkBtn','סידור תמונות לחודשים (התמונה הגדולה של כל חודש, לא לימים)');
   const tr=el('button','sx-mi','מגש התמונות');tr.type='button';tr.id='sxTray';tr.setAttribute('role','menuitem');M.appendChild(tr);
   item('addTextTop','טקסט על הדף');
   if(SIMPLE){const qq=el('button','sx-mi','הגדרה מהירה: 3 שאלות');qq.type='button';qq.setAttribute('role','menuitem');qq.onclick=()=>sxOnboard();M.appendChild(qq)}
@@ -4981,7 +4981,7 @@ function sxBar(){const A=$('.bar .actions');if(!A||A.dataset.sx)return;A.dataset
   document.addEventListener('click',e=>{if(!M.hidden&&!e.target.closest('#sxMenu'))M.hidden=true,$('#sxAddBtn').setAttribute('aria-expanded','false')});
   M.addEventListener('click',()=>{M.hidden=true});
   q.onclick=()=>sxQuickModal();
-  tr.onclick=()=>{state.s.trayMin=false;state.s.trayOn=true;if(uiMode()==='wizard'&&![1,2,5].includes(+state.s.step))goStep(5,true);save();trayShow()};
+  tr.onclick=()=>{state.s.trayMin=false;state.s.trayOn=true;if(uiMode()==='wizard'&&+state.s.step===8)goStep(5,true);save();trayShow()};
   pg.onclick=()=>{const b=stage.querySelector('.ins');if(b){b.scrollIntoView({block:'center',behavior:'smooth'});setTimeout(()=>b.click(),350)}};
   chk.onclick=()=>sxCheck(false);
   big.onclick=()=>{const on=!document.documentElement.classList.contains('ui-big');document.documentElement.classList.toggle('ui-big',on);big.setAttribute('aria-pressed',String(on));sxLS('ml-uibig',on?'1':'0');setTimeout(()=>{fit();fitSide()},60)};
