@@ -1527,7 +1527,13 @@ body.sx .side>.simple-note{order:1}
 .sx-nav{display:none}
 body.sx:not(.mode-wizard) .sx-step{display:none}
 /* יום בלוח: "+" בריחוף, ויום שמודגש אחרי "הצגה" */
-body.sx .page .cell[data-date]:hover::after{content:'+';margin-top:auto;align-self:flex-end;width:calc(var(--u)*4.2);height:calc(var(--u)*4.2);border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font:700 calc(var(--u)*3.6)/1 var(--f-ui);flex:0 0 auto}
+@media screen and (hover:hover){
+body.sx .page .cell[data-date]:hover::after{content:'✎ לחצו לכתיבה · 🖼 אפשר לגרור לכאן תמונה';top:auto;bottom:calc(var(--u)*1);transform:translateX(-50%);max-width:92%;opacity:.93}
+body.sx .page .cell.has-img[data-date]:hover::after{content:'✎ לחצו לכתיבה · 🖼 לעריכת התמונות'}
+html[lang=en] body.sx .page .cell[data-date]:hover::after{content:'✎ Click to type · 🖼 drag a photo here'}
+html[lang=en] body.sx .page .cell.has-img[data-date]:hover::after{content:'✎ Click to type · 🖼 edit photos'}
+body.sx.tray-picking .page .cell[data-date]:hover::after{content:'לחצו כדי לשים כאן את התמונה'}
+}
 .sx-hl{animation:sxhl 2.4s ease}
 @keyframes sxhl{0%,60%{box-shadow:inset 0 0 0 calc(var(--u,1mm)*1) #e08a2e}100%{box-shadow:none}}
 .sx-over{outline:3px solid var(--accent)!important;outline-offset:-3px}
