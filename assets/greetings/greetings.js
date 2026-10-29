@@ -348,7 +348,7 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
   host.appendChild(box);
   function place(){ if (!on) return; _u(); var R = panelRect(tpl, getS());
     box.style.left = (R.x / W * 100) + '%'; box.style.top = (R.y / H * 100) + '%'; box.style.width = (R.w / W * 100) + '%'; box.style.height = (R.h / H * 100) + '%';
-    var a = tshape(getS()).a; box.style.transform = a ? 'rotate(' + a + 'deg)' : ''; }
+    var a = tshape(getS(), tpl).a; box.style.transform = a ? 'rotate(' + a + 'deg)' : ''; }
   box.querySelectorAll('i').forEach(function(h){
     h.addEventListener('pointerdown', function(e){
       e.preventDefault(); e.stopPropagation(); h.setPointerCapture(e.pointerId);
@@ -363,7 +363,8 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
 }
 /* צורת שטח הטקסט: מלבן, אליפסה/עיגול, קשת למעלה, קשת למטה, מעוין. הטקסט נכנס למלבן שבתוך הצורה */
 var TSHAPES = [['rect', '▭ מלבן'], ['ellipse', '⬭ אליפסה / עיגול'], ['arch', '⌒ קשת למעלה'], ['archb', '⌣ קשת למטה'], ['diamond', '◇ מעוין'], ['hex', '⬡ משושה']];
-function tshape(state){ var t = (state && state.tshape) || {}; return { s: t.s || 'rect', a: Math.max(-45, Math.min(45, +t.a || 0)) }; }
+/* צורה ושיפוע: מה שהלקוח בחר, אחרת מה שנקבע בניהול לעיצוב (tpl.tshape) */
+function tshape(state, tpl){ var t = (state && state.tshape) || (tpl && tpl.tshape) || {}; return { s: t.s || 'rect', a: Math.max(-45, Math.min(45, +t.a || 0)) }; }
 function innerArea(A, sh){
   var s = sh.s, w = A.w, h = A.h, x = A.x, y = A.y;
   if (s === 'ellipse') { var kx = 0.76, ky = 0.74; return { x: x + w * (1 - kx) / 2, y: y + h * (1 - ky) / 2, w: w * kx, h: h * ky, valign: A.valign }; }
@@ -373,7 +374,7 @@ function innerArea(A, sh){
   return A;
 }
 function layout(ctx, tpl, state){
-  var A = innerArea(areaOf(tpl, state), tshape(state)), blocks = state.blocks || [], user = state.scale || 1, items, total, f;
+  var A = innerArea(areaOf(tpl, state), tshape(state, tpl)), blocks = state.blocks || [], user = state.scale || 1, items, total, f;
   for (f = user; f >= user * 0.45; f -= 0.02) {
     items = []; total = 0; var bad = false;
     blocks.forEach(function(b, i){
@@ -530,7 +531,7 @@ function render(canvas, tpl, state, opt){
     /* שטח הטקסט: צבע ו/או תמונה בתוך המסגרת, מאחורי הטקסט */
     var P = state.panel || {}, PR0 = panelRect(tpl, state);
     var px = PR0.x, py = PR0.y, pw = PR0.w, ph = PR0.h, rmax = Math.min(pw / 2, ph / 2), pr = rmax * ((P.r == null ? 20 : P.r) / 100), prb = rmax * ((P.rb == null ? (P.r == null ? 20 : P.r) : P.rb) / 100);
-    var SH = tshape(state), pcx = px + pw / 2, pcy = py + ph / 2;
+    var SH = tshape(state, tpl), pcx = px + pw / 2, pcy = py + ph / 2;
     var panelPath = function(){ ctx.beginPath();
       if (SH.s === 'ellipse') { ctx.ellipse(pcx, pcy, pw / 2, ph / 2, 0, 0, Math.PI * 2); }
       else if (SH.s === 'diamond') { ctx.moveTo(pcx, py); ctx.lineTo(px + pw, pcy); ctx.lineTo(pcx, py + ph); ctx.lineTo(px, pcy); }
@@ -586,6 +587,9 @@ function render(canvas, tpl, state, opt){
     });
     ctx.restore();
     canvas._tilt = tilt ? { cx: pcx, cy: pcy, a: tilt } : null;
+    if (opt.guide) { /* בניהול: קו מקווקו של הצורה ושל המקום שבו הטקסט נכנס */
+      ctx.save(); tiltOn(); ctx.setLineDash([8, 6]); ctx.lineWidth = 2.5; ctx.strokeStyle = '#d6336c'; panelPath(); ctx.stroke();
+      var IA = innerArea(areaOf(tpl, state), SH); ctx.strokeStyle = '#1f8a96'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.strokeRect(IA.x, IA.y, IA.w, IA.h); ctx.restore(); }
     if (opt.watermark) drawMark(ctx, r[3], opt.watermark === 'faint' ? 0.08 : 0.17);
     canvas._items = items.concat(floats);
     return canvas;
@@ -665,7 +669,7 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
       vt.onchange = function(){ ar.v = vt.checked ? 'top' : 'center'; changed(); };
     }
     /* צורה ושיפוע של שטח הטקסט */
-    var TS = S.tshape || (S.tshape = {});
+    var TS = S.tshape || (S.tshape = clone((tpl && tpl.tshape) || {}));
     box.appendChild(el('div', 'bgp-h', 'צורת שטח הטקסט'));
     var sr = el('div', 'bgp-b');
     TSHAPES.forEach(function(x){ var b = el('button', 'pill', x[1]); b.type = 'button'; b.setAttribute('aria-pressed', String((TS.s || 'rect') === x[0])); b.onclick = function(){ TS.s = x[0]; if (x[0] !== 'rect' && S.panel && !S.panel.on && !(S.ubg && S.ubg.src)) { S.panel.on = true; } changed(); draw(); }; sr.appendChild(b); });
