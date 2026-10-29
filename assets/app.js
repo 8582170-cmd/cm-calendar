@@ -4737,12 +4737,13 @@ stage.addEventListener('click',e=>{if(!TSEL)return;
   const c=e.target.closest('[data-date]');if(c){e.preventDefault();e.stopPropagation();const id=TSEL;traySelect(null);trayToDay(c.dataset.date,id)}},true);
 
 /* הוספה מהירה ליום (בבונה הפשוט, ובכל מקום שנגררת תמונה מהמגש ליום) */
-const QK=[['birthday','יום הולדת'],['anniversary','יום נישואין'],['yahrzeit','יום שנה'],['event','אירוע']];
+const QK=[['birthday','יום הולדת'],['anniversary','יום נישואין'],['yahrzeit','יום שנה'],['event','אירוע'],['other','טקסט חופשי']];
 function quickEvent({date,img,trayId}){
   const base=dateFromIso(date),hd=new HDate(base),leap=isLeap(hd.getFullYear());
   const hTxt=gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),leap),gTxt=base.getDate()+(EN?' ':' ב')+GREG_MONTHS[base.getMonth()];
   let kind=img?'event':'birthday',rec=KINDS[kind].rec,pic=img||null;
   const m=modal('<h3>'+esc(hTxt+' '+hebYearStr(hd.getFullYear()))+'<small>'+esc(gTxt+' '+base.getFullYear())+'</small></h3>'+
+    '<div class="q-have" id="qHave"></div>'+
     '<div class="q-kinds" role="radiogroup" aria-label="סוג">'+QK.map(([k,n])=>'<label><input type="radio" name="qK" value="'+k+'"'+(k===kind?' checked':'')+'><span>'+n+'</span></label>').join('')+'</div>'+
     '<label class="fld"><span id="qAsk"></span><input type="text" id="qName" maxlength="60" autocomplete="off"></label>'+
     '<div class="seg q-rec" role="radiogroup" aria-label="חוזר">'+
@@ -4768,6 +4769,16 @@ function quickEvent({date,img,trayId}){
   q('#qSave').onclick=()=>{if(add())m.remove()};
   q('#qName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();q('#qSave').click()}});
   q('#qMore').onclick=()=>{const has=q('#qName').value.trim()||pic;if(!has){m.remove();openEventEditor({date,img:pic||undefined});return}const o=add();if(o){m.remove();openEventEditor({id:o.id})}};
+  /* מה שכבר ביום הזה: הסרת התמונה, עריכה או מחיקה בלחיצה */
+  const have=()=>{const L=eventsOn(base,hd),b=q('#qHave');if(!L.length){b.innerHTML='';b.hidden=true;return}b.hidden=false;
+    b.innerHTML='<b>כבר ביום הזה</b>'+L.map(e=>{const rec=e.rec&&e.rec!=='once';return '<div class="q-hv" data-qe="'+e.id+'">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span class="q-hn"><b>'+esc(e.name||(e.img?'תמונה':''))+'</b><small>'+esc((KINDS[e.kind]||{}).label||'')+(rec?' · כל שנה':'')+'</small></span>'+
+      (e.img&&e.name?'<button type="button" class="btn small" data-qa="img">הסרת התמונה</button>':'')+(e.img&&!e.name?'':'<button type="button" class="btn small" data-qa="edit">עריכה</button>')+'<button type="button" class="btn small q-del" data-qa="del">'+(rec?'מחיקה (מכל השנים)':'מחיקה')+'</button></div>'}).join('')};
+  q('#qHave').addEventListener('click',e=>{const bt=e.target.closest('[data-qa]');if(!bt)return;const id=bt.closest('[data-qe]').dataset.qe,ev=state.events.find(x=>x.id===id);if(!ev)return;const a=bt.dataset.qa;
+    if(a==='edit'){m.remove();openEventEditor({id});return}
+    if(a==='img'){ev.img=null;ev.edit=null;ev.imgLum=null}
+    if(a==='del'){if(!bt.dataset.sure){bt.dataset.sure='1';bt.textContent='בטוח? לחצו שוב';return}state.events=state.events.filter(x=>x.id!==id)}
+    save();renderEvents();render();have()});
+  have();
   draw();setTimeout(()=>q('#qName').focus(),30);
 }
 

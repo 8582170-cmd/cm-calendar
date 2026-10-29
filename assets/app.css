@@ -1613,3 +1613,10 @@ html.ui-big .side,html.ui-big .bar,html.ui-big .modal,html.ui-big .sx-nav,html.u
 @media print{.sx-nav,.sx-tip,.sx-year,.sx-hd{display:none!important}}
 @media (max-width:900px){body.sx.mode-wizard .mla-btn{inset-block-end:76px!important;width:42px!important;height:42px!important}body.sx.sx-drawer .mla-btn{display:none!important}}
 .modal #sxQt{font-family:var(--f-ui);font-size:15px;line-height:1.6}
+.q-have{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;padding:10px;border-radius:10px;background:var(--soft)}
+.q-have[hidden]{display:none}
+.q-hv{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.q-hv img{width:40px;height:40px;object-fit:cover;border-radius:6px}
+.q-hn{flex:1;min-width:120px;display:flex;flex-direction:column}
+.q-hn small{color:var(--mute)}
+.q-del{color:var(--danger)!important}

@@ -2,6 +2,12 @@
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
  '🔓 רק זה': '🔓 Just this',
+ 'כבר ביום הזה': 'Already on this day',
+ 'הסרת התמונה': 'Remove photo',
+ 'מחיקה (מכל השנים)': 'Delete (all years)',
+ 'בטוח? לחצו שוב': 'Sure? Click again',
+ 'טקסט חופשי': 'Free text',
+ ' · כל שנה': ' · every year',
  ' הוסף': ' Add',
  'אירוע ליום (יום הולדת, יארצייט, תזכורת)': 'Event on a day (birthday, yahrzeit, reminder)',
  'הוספה מהירה של כמה תאריכים': 'Quick add of several dates',
