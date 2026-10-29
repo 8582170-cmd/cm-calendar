@@ -957,7 +957,10 @@ async function pubBoot(){pubBar();
 if(new URLSearchParams(location.search).get('lang')==='en')st.lang='en';
 if(PAGE.year){const y=+PAGE.year;anchor=y>4000?noon(new HDate(1,7,y).greg()):new Date(y,0,1,12);if(y>4000)st.mode='heb';else st.mode='greg';if(y>4000&&new HDate(TODAY).getFullYear()===y)anchor=TODAY;if(y<4000&&TODAY.getFullYear()===y)anchor=TODAY}
 readHash();render();apptLoad();if(PUB)pubBoot();
-{const w=document.createElement('div');w.className='print-wm';w.setAttribute('aria-hidden','true');document.body.appendChild(w)}
+/* סימן המים מצויר כ-SVG רגיל ולא כרקע, כדי שיודפס גם כשבחלון ההדפסה מבטלים את "גרפיקת רקע" */
+{const w=document.createElement('div');w.className='print-wm';w.setAttribute('aria-hidden','true');
+  w.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="mlWm" width="300" height="190" patternUnits="userSpaceOnUse"><text x="150" y="100" text-anchor="middle" transform="rotate(-28 150 95)" font-family="Arial,Helvetica,sans-serif" font-size="24" font-weight="700" fill="#000" fill-opacity="0.11">MyLuach.org</text></pattern></defs><rect width="100%" height="100%" fill="url(#mlWm)"/></svg>';
+  document.body.appendChild(w)}
 /* מבזקי "היום בתולדות ישראל": פס מתחלף בראש הדף. הטקסט מוצג דרך CSS כדי שלא יהיה נוח להעתיק */
 (function ticker(){if(!HE())return;fetch(BASE+'../api/ticker?d='+iso(TODAY)).then(r=>r.json()).then(o=>{const L=(o&&o.items)||[];if(!L.length)return;
   const top=document.querySelector('header.top');if(!top||document.getElementById('tick'))return;
