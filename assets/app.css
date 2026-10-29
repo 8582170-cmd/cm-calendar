@@ -1433,3 +1433,58 @@ body:has(.modal-back) .fx-bar{display:none!important}
 .drop-toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:70;display:flex;gap:10px;align-items:center;background:#1f2a33;color:#fff;border-radius:12px;padding:9px 14px;box-shadow:0 6px 18px #0004;font-size:14px}
 .drop-toast button{font:inherit;font-weight:700;background:none;border:0;color:#9fe1e8;cursor:pointer;padding:2px 4px}
 [data-date].dropping{opacity:.6}
+
+/* ---------- עוד סגנונות ללוח: קווים בולטים, מסגרת עבה, ותאים מעוגלים ומרווחים ---------- */
+/* קווים בולטים: קווים עבים וכהים בצבע הלוח */
+.t-bold{--f-head:"Secular One",sans-serif;--lw:.75mm;--p-line:color-mix(in srgb,var(--acc) 72%,#111)}
+.t-bold .grid{border-top-width:var(--lw);border-inline-start-width:var(--lw)}
+.t-bold .wd{background:var(--acc);color:#fff;font-weight:800;border-color:var(--p-line)}
+.t-bold .d-main{font-weight:800}
+.t-bold .pg-head{border-bottom:calc(var(--u)*1.1) solid var(--acc)}
+.t-bold .cell.shabbat{background:color-mix(in srgb,var(--acc) 14%,#fff)}
+/* מסגרת עבה ומעוגלת מסביב, קווים פנימיים בינוניים */
+.t-frame{--f-head:"Frank Ruhl Libre",serif;--lw:.4mm;--p-line:color-mix(in srgb,var(--acc) 45%,#fff)}
+.t-frame .grid{border:calc(var(--u)*1.1) solid var(--acc);border-radius:calc(var(--u)*3);overflow:hidden}
+.t-frame .grid>:nth-child(7n){border-inline-end:0}
+.t-frame .wd{background:var(--acc-t);color:var(--acc);font-weight:800;border-bottom:calc(var(--u)*.6) solid var(--acc)}
+.t-frame .pg-head{border-bottom:0;justify-content:center;text-align:center}
+.t-frame .d-main{font-weight:700}
+/* בועות: תאים מעוגלים עם מסגרת צבעונית עבה ורווח גדול ביניהם */
+.t-bubble{--f-head:"Rubik",sans-serif}
+.t-bubble .grid{border:0;gap:calc(var(--u)*1.8)}
+.t-bubble .wd{border:0;border-radius:999px;background:var(--acc);color:#fff;padding:calc(var(--u)*.9) 0;font-weight:700}
+.t-bubble .cell{border:calc(var(--u)*.55) solid color-mix(in srgb,var(--acc) 60%,#fff);border-radius:calc(var(--u)*3.4);background:rgb(255 255 255 / .9);padding:calc(var(--u)*1.1) calc(var(--u)*1.5)}
+.t-bubble .cell.shabbat{background:color-mix(in srgb,var(--acc) 12%,#fff);border-color:var(--acc)}
+.t-bubble .cell.pad{background:transparent;border-style:dashed;border-color:color-mix(in srgb,var(--acc) 22%,#fff)}
+.t-bubble .pg-head{border-bottom:0}
+.t-bubble .d-main{font-weight:700}
+.t-bubble .d-z{border-top-color:color-mix(in srgb,var(--acc) 25%,transparent)}
+/* אריחים: תאים צבועים בגוון עדין, בלי קווים, עם רווח לבן ביניהם */
+.t-tiles{--f-head:"Heebo",sans-serif}
+.t-tiles .grid{border:0;gap:calc(var(--u)*1.3)}
+.t-tiles .wd{border:0;background:none;color:var(--acc);font-weight:800;border-bottom:calc(var(--u)*.7) solid var(--acc);border-radius:0}
+.t-tiles .cell{border:0;border-radius:calc(var(--u)*1.8);background:color-mix(in srgb,var(--acc) 9%,#fff)}
+.t-tiles .cell.shabbat{background:color-mix(in srgb,var(--acc) 24%,#fff)}
+.t-tiles .cell.pad{background:transparent}
+.t-tiles .d-main{font-weight:800;color:var(--acc)}
+.t-tiles .pg-head{border-bottom:0}
+.t-tiles .d-z{border-top-color:rgb(255 255 255 / .9)}
+/* כרטיסים: כל יום כרטיס מעוגל עם פס צבע למעלה */
+.t-cards{--f-head:"Assistant",sans-serif}
+.t-cards .grid{border:0;gap:calc(var(--u)*1.4)}
+.t-cards .wd{border:0;border-radius:calc(var(--u)*1.4);background:var(--acc-t);color:var(--acc);font-weight:800}
+.t-cards .cell{border:.3mm solid color-mix(in srgb,var(--acc) 30%,#ccc);border-top:calc(var(--u)*1.2) solid var(--acc);border-radius:calc(var(--u)*2);background:#fff}
+.t-cards .cell.shabbat{background:var(--acc-t)}
+.t-cards .cell.pad{background:transparent;border:0}
+.t-cards .d-main{font-weight:700}
+.t-cards .pg-head{border-bottom:0}
+@media print{.t-bubble .cell,.t-tiles .cell,.t-cards .cell,.t-bold .wd,.t-frame .wd{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+/* תמונות קטנות לבחירת העיצוב */
+.sp-card.th-bold .sp-grid{gap:0;border:2px solid var(--a)}.sp-card.th-bold .sp-grid i{background:#fff;border:1.5px solid var(--a);border-radius:0}
+.sp-card.th-frame .sp-grid{gap:0;border:3px solid var(--a);border-radius:5px;overflow:hidden}.sp-card.th-frame .sp-grid i{background:#fff;border:.5px solid color-mix(in srgb,var(--a) 45%,#fff);border-radius:0}
+.sp-card.th-bubble .sp-grid{gap:3px}.sp-card.th-bubble .sp-grid i{background:#fff;border:1.5px solid color-mix(in srgb,var(--a) 60%,#fff);border-radius:4px}
+.sp-card.th-tiles .sp-grid{gap:3px}.sp-card.th-tiles .sp-grid i{background:color-mix(in srgb,var(--a) 14%,#fff);border-radius:3px}
+.sp-card.th-cards .sp-grid{gap:3px}.sp-card.th-cards .sp-grid i{background:#fff;border:1px solid #d5dada;border-top:3px solid var(--a);border-radius:3px}
+.sp-card.th-bubble .sp-grid i.sh,.sp-card.th-tiles .sp-grid i.sh{background:color-mix(in srgb,var(--a) 30%,#fff)}
+.seg[aria-label="סגנון"]{flex-wrap:wrap}
+.seg[aria-label="סגנון"] label{flex:1 0 30%;border-bottom:1px solid var(--line)}

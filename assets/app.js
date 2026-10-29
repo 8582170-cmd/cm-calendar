@@ -3445,6 +3445,9 @@ const SIMPLE_STEPS={7:['עיצוב חופשי','מגדילים, מקטינים �
 /* עיצובים מוכנים לבונה הפשוט: לחיצה אחת משנה סגנון, צבע, גופנים ופריסה */
 const SIMPLE_PRESETS=[
  ['round','מעוגל ומרווח','round','#1e5a63','Rubik','Assistant','full'],
+ ['bubble','בועות מרווחות','bubble','#5b3f8c','Rubik','Assistant','full'],['tiles','אריחים צבעוניים','tiles','#1d6f8a','Heebo','Heebo','same'],
+ ['cards','כרטיסים','cards','#b8487a','Secular One','Assistant','same'],['boldlines','קווים בולטים','bold','#24427a','Secular One','Rubik','same'],
+ ['frame','מסגרת עבה','frame','#7a4a17','Frank Ruhl Libre','Assistant','same'],['boldwall','קווים בולטים, לוח מלא','bold','#2b2b2b','Rubik','Rubik','full'],
  ['classic','קלאסי','ink','#1e5a63','Frank Ruhl Libre','Assistant','same'],['modern','מודרני ונקי','soft','#24427a','Heebo','Heebo','same'],
  ['bold','בולט ושמח','block','#8a2c2c','Suez One','Rubik','same'],['family','משפחתי חם','soft','#7a4a17','Secular One','Assistant','same'],
  ['elegant','אלגנטי','ink','#2f2f3a','Bellefair','David Libre','same'],['nature','טבע','soft','#3d5a2a','Alef','Alef','same'],
