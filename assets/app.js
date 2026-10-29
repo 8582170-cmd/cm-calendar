@@ -9,6 +9,7 @@ const AUTH={user:null,ready:false},LOGIN_MONTHS=8;
 /* דף הספירה לאחור (countdown.html) משתמש באותו בונה, עם לוח נפרד ושמור בנפרד */
 const SNAPVIEW=window.location.hash==='#snapview'&&!!window.opener;
 const CDMODE=window.MYLUACH_MODE==='countdown',SIMPLE=window.MYLUACH_MODE==='simple',SKEY=CDMODE?'state-cd':'state';
+const SX=!CDMODE&&!(window.location.hash==='#snapview'&&!!window.opener); /* הממשק החדש: בבונה הפשוט ובבונה המורחב */
 /* גרסה באנגלית (simple-en.html, countdown-en.html): תאריכים, חגים וכיוון הדף באנגלית; טקסטי הממשק מתורגמים ב-assets/i18n-en.js */
 const EN=document.documentElement.lang==='en';const PGN=n=>EN?n.replace(/^(countdown|simple)\.html/,'$1-en.html'):n;
 let SNAPPLAN='';
@@ -1022,7 +1023,7 @@ function zCol(d,all){if(!zOn())return [];return zmanimFor(d,all).filter(z=>zpl(z
 function yzPanelOn(){return placeOf('yz')==='col'}
 function personalOnly(date,hd){
   const out=[];
-  for(const e of eventsOn(date,hd))if(e.kind!=='task'&&(e.name||!e.img))out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd)});
+  for(const e of eventsOn(date,hd))if(e.kind!=='task'&&(e.name||!e.img))out.push({cls:e.kind==='reminder'?'reminder':'personal',text:eventLabel(e,date,hd),eid:e.id});
   return out;
 }
 /* משימות (מסלול מלא): בתוך הימים או בטור נפרד, עם תיבת סימון */
@@ -1610,10 +1611,11 @@ function addMonthGrid(p,mo,evMap){
     c.setAttribute('aria-label',hDay+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear()))+', '+d.getDate()+(EN?' ':' ב')+GREG_MONTHS[d.getMonth()]+'. הוספת אירוע');
     c.appendChild(el('div','d-top'+(dStyle()==='both'?' both':''),dateTop(d,hd)));
     if(s.dayMonth)dayMonthInline(c.lastChild,d,hd);
-    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('tasks')==='cell'?tasksOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;c.appendChild(e)}
+    for(const it of items.concat(placeOf('personal')==='cell'?personalOnly(d,hd):[],placeOf('tasks')==='cell'?tasksOnly(d,hd):[],placeOf('yz')==='cell'?gedolimFor(hd,false):[])){if(!it.text)continue;const e=el('div','e '+it.cls+(String(it.text).includes('\n')?' ml':''));e.textContent=it.text;if(it.eid&&!SAMPLE){e.dataset.eid=it.eid;e.insertAdjacentHTML('beforeend','<button type="button" class="e-x no-print" data-edel="'+it.eid+'" aria-label="מחיקה" title="מחיקה">×</button>')}c.appendChild(e)}
     const imgEvs=eventsOn(d,hd).filter(e=>e.img),withImg=imgEvs.length===1?imgEvs[0]:null;
     if(imgEvs.length)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgbtn no-print" data-dayimgs="'+iso(d)+'" title="סידור התמונות ביום: הזזה, גודל, והוספת עוד תמונות" aria-label="סידור התמונות ביום">🖼</button>');
     if(imgEvs.length>1){c.prepend(dayImgsEl(iso(d),imgEvs));c.classList.add('has-img','multi-img')}
+    if(withImg&&!SAMPLE)c.insertAdjacentHTML('beforeend','<button type="button" class="c-imgx no-print" data-eimg="'+withImg.id+'" aria-label="הסרת התמונה" title="הסרת התמונה">×</button>');
     if(withImg){const im=el('img','c-img'+(withImg.imgFit==='contain'?' contain':''));im.src=withImg.img;im.alt='';const T1=(((state.dayImgs||{})[iso(d)]||{}).im||{})[withImg.id];imgXform(im,T1,withImg);c.prepend(im);c.classList.add('has-img');
       const tone=withImg.textTone||'auto';
       if(tone==='band'||(tone==='auto'&&s.imgText==='band')){}
@@ -2068,7 +2070,7 @@ function renderNow(){
   fxDecorate();
   fxBoxDecorate();
   if(CDMODE)requestAnimationFrame(()=>cdApplyFocus());
-  if(SIMPLE)try{sxSteps()}catch(e){}
+  if(SX)try{sxSteps()}catch(e){}
 }
 stage.addEventListener('click',e=>{
   const b=e.target.closest('.ins');if(!b)return;
@@ -2960,9 +2962,9 @@ stage.addEventListener('click',e=>{
   const c=e.target.closest('[data-date]');if(!c||e.target.closest('[contenteditable]'))return;
   if(PAINT){hlToggle(c.dataset.date);return}
   if(CDMODE){cdDayModal(c.dataset.date);return}
-  if(SIMPLE)quickEvent({date:c.dataset.date});else openEventEditor({date:c.dataset.date});
+  cellInline(c);
 });
-stage.addEventListener('keydown',e=>{if(e.target.isContentEditable)return;const c=e.target.closest&&e.target.closest('[data-date]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(SIMPLE)quickEvent({date:c.dataset.date});else openEventEditor({date:c.dataset.date})}});
+stage.addEventListener('keydown',e=>{if(e.target.isContentEditable)return;const c=e.target.closest&&e.target.closest('[data-date]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();cellInline(c)}});
 stage.addEventListener('dragover',e=>{const c=e.target.closest('[data-date]');if(c){e.preventDefault();stage.querySelectorAll('[data-date].over').forEach(x=>x.classList.remove('over'));c.classList.add('over')}});
 stage.addEventListener('dragleave',e=>{const c=e.target.closest('[data-date]');if(c)c.classList.remove('over')});
 stage.addEventListener('drop',async e=>{
@@ -3505,7 +3507,7 @@ function applyMode(){
   document.querySelectorAll('#swatches2 .sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.acc===s.accent));
   setTimeout(fitSide,30);
   try{trayShow()}catch(e){}
-  if(SIMPLE)try{sxSteps()}catch(e){}
+  if(SX)try{sxSteps()}catch(e){}
 }
 /* הלוח שבצד גלול בפני עצמו: הגובה שלו הוא החלק הגלוי במסך, כך שאפשר לגלול אותו עד הסוף בלי לגלול קודם את התצוגה */
 function fitSide(){const sd=document.querySelector('.side');if(!sd)return;if(innerWidth<901){sd.style.maxHeight='';return}const t=Math.max(0,sd.getBoundingClientRect().top),th=document.body.classList.contains('tray-on')?(parseFloat(getComputedStyle(document.body).getPropertyValue('--trayh'))||0):0;sd.style.maxHeight=Math.max(240,innerHeight-t-th)+'px'}
@@ -4915,12 +4917,15 @@ document.addEventListener('click',e=>{const s=state.s;
 /* ---------- הבונה הפשוט: ממשק נוח יותר ----------
    סרגל עליון מסודר (הוספה בתפריט אחד, בדיקה, הורדה), שלבים מכווצים עם סיכום, בדיקה לפני הדפסה,
    הוספה מהירה מרשימה, שיבוץ תמונות לפי תאריך הצילום, שאלות פתיחה, ובטלפון: הלוח למעלה וסרגל שלבים בתחתית */
-const SX_SHORT={1:'הלוח',2:'עיצוב',5:'תמונות',7:'חופשי',8:'סיום'};
+const SX_SHORT=SIMPLE?{1:'הלוח',2:'עיצוב',5:'תמונות',7:'חופשי',8:'סיום'}:{1:'הלוח',2:'עיצוב',3:'זמנים',4:'מה בלוח',5:'אירועים',6:'עמודים',7:'חופשי',8:'סיום'};
 const SX_IC={
   1:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   2:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 21c-1.5-2 0-4 2-4h2"/></svg>',
   5:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/></svg>',
   7:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg>',
+  3:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  4:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg>',
+  6:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="12" height="16" rx="1.5"/><path d="M8 21h12V7"/></svg>',
   8:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>'};
 let sxCollapsed=false;
 function sxLS(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
@@ -4930,15 +4935,18 @@ function sxSummary(k){const s=state.s;
   if(k===2){const P=SIMPLE_PRESETS.find(x=>x[0]===s.preset);return P?P[1]:'בוחרים עיצוב'}
   if(k===5){let ph=0,tot=0;try{const K=photoKeys();tot=K.length;ph=K.filter(slotHas).length}catch(e){}const ev=state.events.length;
     return (s.layout==='full'?'':ph+' מתוך '+tot+' תמונות · ')+(ev===1?'אירוע אחד':ev+' אירועים')}
+  if(k===3)return s.noTimes?'בלי זמני היום':place().name+(s.zmanimMode==='none'?' · בלי זמנים':'');
+  if(k===4){const L=Object.entries(s.learn||{}).filter(([x,v])=>v&&x!=='box').length;return (L?'לימוד יומי: '+L:'בלי לימוד יומי')+' · '+({none:'בלי יארצייטים',selected:'יארצייטים מסומנים',all:'כל היארצייטים'}[s.yzMode]||'')}
+  if(k===6){const b=(s.banners||[]).length,ad=(state.ads||[]).length;return (b?b+' באנרים':'בלי באנרים')+' · '+(ad?ad+' עמודים נוספים':'בלי עמודים נוספים')}
   if(k===7)return 'הזזה, הגדלה וכיתוב בכל מקום';
   return 'הורדה, הדפסה וגיבוי'}
-function sxSteps(){const side=$('.side');if(!side||!SIMPLE)return;const SL=STEP_LIST(),n=+state.s.step||1,mode=uiMode();
+function sxSteps(){const side=$('.side');if(!side||!SX)return;const SL=STEP_LIST(),n=+state.s.step||1,mode=uiMode();
   SL.forEach((k,i)=>{let h=side.querySelector('.sx-step[data-sxs="'+k+'"]');
     if(!h){h=el('button','sx-step');h.type='button';h.dataset.sxs=k;side.appendChild(h)}
     h.style.order=String((i+1)*10);
     const cur=mode==='wizard'&&k===n;h.classList.toggle('cur',cur);h.setAttribute('aria-expanded',String(cur&&!sxCollapsed));
     h.innerHTML='<b class="sx-n">'+(i+1)+'</b><span class="sx-t"><span class="sx-ti">'+esc(stepInfo(k)[0])+'</span><small>'+esc(cur&&!sxCollapsed?stepInfo(k)[1]:sxSummary(k))+'</small></span><span class="sx-chev" aria-hidden="true"></span>'});
-  side.querySelectorAll(':scope>details.sec').forEach(d=>{const i=SL.indexOf(+d.dataset.step);d.style.order=String(i<0?990:(i+1)*10+1)});
+  side.querySelectorAll(':scope>details.sec').forEach(d=>{const i=SL.indexOf(+d.dataset.step);d.style.order=mode!=='wizard'?'':String(i<0?990:(i+1)*10+1)});
   document.body.classList.toggle('sx-collapsed',sxCollapsed);
   const nav=$('#sxNav');if(nav)nav.querySelectorAll('[data-sxg]').forEach(b=>b.classList.toggle('on',+b.dataset.sxg===n&&document.body.classList.contains('sx-drawer')))}
 document.addEventListener('click',e=>{const h=e.target.closest('.sx-step');if(!h)return;const k=+h.dataset.sxs;
@@ -4958,7 +4966,7 @@ function sxBar(){const A=$('.bar .actions');if(!A||A.dataset.sx)return;A.dataset
   const pg=el('button','sx-mi','עמוד נוסף (ברכה, פרסומת, הערות)');pg.type='button';pg.id='sxPage';pg.setAttribute('role','menuitem');M.appendChild(pg);
   const chk=el('button','btn','<span aria-hidden="true">✓</span> בדיקה');chk.type='button';chk.id='sxCheckBtn';chk.title='בדיקה של הלוח לפני הדפסה';
   const pr=$('#printBtn');if(pr){pr.innerHTML='<span aria-hidden="true">⬇</span> הורדה והדפסה'}
-  ['sampleBtn','liteBtn','upgradeBtn','shareBtn'].forEach(id=>{const b=$('#'+id);if(b)b.classList.add('sx-ghost')});
+  ['sampleBtn','liteBtn','upgradeBtn','shareBtn','modeBtn'].forEach(id=>{const b=$('#'+id);if(b)b.classList.add('sx-ghost')});
   const big=el('button','btn sx-ghost sx-ic','א+');big.type='button';big.id='sxBig';big.title='הגדלת הטקסט באתר';big.setAttribute('aria-pressed','false');
   const dk=el('button','btn sx-ghost sx-ic','<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>');dk.type='button';dk.id='sxDark';dk.setAttribute('aria-label','מצב כהה');
   const sep=el('span','sx-sep');
@@ -4973,6 +4981,8 @@ function sxBar(){const A=$('.bar .actions');if(!A||A.dataset.sx)return;A.dataset
   big.onclick=()=>{const on=!document.documentElement.classList.contains('ui-big');document.documentElement.classList.toggle('ui-big',on);big.setAttribute('aria-pressed',String(on));sxLS('ml-uibig',on?'1':'0');setTimeout(()=>{fit();fitSide()},60)};
   dk.onclick=()=>{const R=document.documentElement,cur=R.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),nx=cur==='dark'?'light':'dark';R.dataset.theme=nx;sxLS('ml-theme',nx);sxDarkIcon()};
   if(sxLS('ml-uibig')==='1'){document.documentElement.classList.add('ui-big');big.setAttribute('aria-pressed','true')}
+  /* בטלפון: הכפתורים המשניים עוברים לתפריט "הוסף", כדי שהסרגל יהיה שורה אחת */
+  if(innerWidth<=900){const hr=el('div','sx-mh');M.appendChild(hr);['shareBtn','upgradeBtn','modeBtn','sampleBtn','liteBtn'].forEach(id=>{const b=$('#'+id);if(!b)return;b.classList.remove('btn','sx-ghost','upgrade-btn');b.classList.add('sx-mi');b.setAttribute('role','menuitem');M.appendChild(b)})}
   sxDarkIcon()}
 function sxDarkIcon(){const b=$('#sxDark');if(!b)return;const R=document.documentElement,dark=(R.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'))==='dark';
   b.innerHTML=dark?'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
@@ -4981,7 +4991,7 @@ function sxDarkIcon(){const b=$('#sxDark');if(!b)return;const R=document.documen
 
 /* בטלפון: סרגל שלבים קבוע בתחתית, וההגדרות נפתחות כמגירה מעל הלוח */
 function sxMobile(){if($('#sxNav'))return;const nav=el('nav','sx-nav no-print');nav.id='sxNav';nav.setAttribute('aria-label','שלבי הלוח');
-  nav.innerHTML=STEP_LIST().filter(k=>k!==8).map(k=>'<button type="button" data-sxg="'+k+'">'+SX_IC[k]+'<span>'+SX_SHORT[k]+'</span></button>').join('')+'<button type="button" class="sx-dl" data-sxprint>'+SX_IC[8]+'<span>הורדה</span></button>';
+  nav.innerHTML='<div class="sx-nav-s">'+STEP_LIST().filter(k=>k!==8).map(k=>'<button type="button" data-sxg="'+k+'">'+SX_IC[k]+'<span>'+SX_SHORT[k]+'</span></button>').join('')+'</div><button type="button" class="sx-dl" data-sxprint>'+SX_IC[8]+'<span>הורדה</span></button>';
   document.body.appendChild(nav);
   const side=$('.side'),hd=el('div','sx-dhead');hd.innerHTML='<span class="sx-grab" aria-hidden="true"></span><button type="button" class="btn small" data-sxclose>סגירה</button>';side.prepend(hd);
   nav.addEventListener('click',e=>{const p=e.target.closest('[data-sxprint]');if(p){sxDrawer(false);sxPrint();return}
@@ -5099,7 +5109,7 @@ function sxTouchDrag(){const L=$('#trayList');if(!L||L.dataset.sxt)return;L.data
 /* בועת הסבר קצרה בפעם הראשונה, במקום תיבת ההסבר הארוכה */
 function sxTip(){if(sxLS('sx-tip1')||uiMode()==='home')return;const c=stage.querySelector('.sheet-wrap [data-date]');if(!c)return;
   const r=c.getBoundingClientRect();if(r.top>innerHeight-80||r.bottom<0)return;
-  const t=el('div','sx-tip no-print','<span>לחצו על יום כדי להוסיף יום הולדת, יארצייט או תזכורת. אפשר גם לגרור לשם תמונה.</span><button type="button" aria-label="סגירה">×</button>');
+  const t=el('div','sx-tip no-print','<span>לחצו על יום וכתבו בו ישר. יום הולדת, יארצייט ותמונה: בכפתורים שמופיעים מתחת.</span><button type="button" aria-label="סגירה">×</button>');
   document.body.appendChild(t);const tw=Math.min(260,innerWidth-24);t.style.width=tw+'px';
   t.style.top=(r.bottom+scrollY+8)+'px';t.style.left=Math.max(12,Math.min(innerWidth-tw-12,r.left+r.width/2-tw/2+scrollX))+'px';
   const off=()=>{t.remove();sxLS('sx-tip1','1');document.removeEventListener('click',off,true)};setTimeout(()=>document.addEventListener('click',off,true),50);setTimeout(()=>{if(t.isConnected)t.remove()},14000)}
@@ -5156,16 +5166,58 @@ function sxInit(saved){
   try{sxDates();new MutationObserver(()=>sxDates()).observe(document.body,{childList:true,subtree:false})}catch(e){}
   try{sxSegify($('#cdUnit'))}catch(e){}
   try{sxTouchDrag()}catch(e){}
-  if(!SIMPLE)return;
+  if(!SX)return;
   document.body.classList.add('sx');
+  /* בטלפון: תמיד שלב אחר שלב (הלוח למעלה והגדרות במגירה), גם למי שעבד במחשב עם "כל ההגדרות בבת אחת" */
+  if(innerWidth<=900&&uiMode()==='adv'){state.s.uiMode='wizard';applyMode()}
   sxBar();sxMobile();sxSteps();
   {const n=$('.simple-note');if(n)n.innerHTML='<b>בבונה המורחב יש גם:</b> זמני היום לפי המנהג, לימוד יומי, דברי הימים ויארצייטים של צדיקים, ימים צבועים, באנרים, עמודים נוספים וזמני תפילות לבית הכנסת. <a href="app.html">לבונה המורחב ←</a> (כל מה שבניתם עובר איתכם)'}
-  {const h=$('.stage-head>span:last-of-type');if(h&&!h.id)h.textContent='לחצו על יום כדי להוסיף אירוע · גררו תמונות לחודשים ולימים'}
-  if(!saved&&!sxLS('sx-onb')&&!window.location.hash)setTimeout(sxOnboard,500);else setTimeout(sxTip,1200);
+  {const h=$('.stage-head>span:last-of-type');if(h&&!h.id)h.textContent='לחצו על יום כדי לכתוב בו · גררו תמונות לחודשים ולימים'}
+  if(SIMPLE&&!saved&&!sxLS('sx-onb')&&!window.location.hash)setTimeout(sxOnboard,500);else setTimeout(sxTip,1200);
   sxNextYear();
   const pr=$('#printBtn');if(pr)pr.onclick=()=>sxPrint();
   {const p2=$('#printBtn2');if(p2)p2.onclick=()=>sxPrint()}
   window.addEventListener('resize',()=>{if(innerWidth>900)document.body.classList.remove('sx-drawer')})}
+
+/* כתיבה ישר בתוך יום בלוח: לוחצים על היום, כותבים, ו־Enter. נשמר כטקסט חד פעמי ביום הזה.
+   מתחת לתיבה: יום הולדת / יארצייט ועוד, תמונה, ומחיקה מהירה של מה שכבר ביום */
+function sxUndo(t,undo){const d=el('div','cd-toast sx-undo','<span>'+esc(t)+'</span>'+(undo?'<button type="button">ביטול</button>':''));document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
+  const off=()=>{d.classList.remove('on');setTimeout(()=>d.remove(),400)};const b=d.querySelector('button');if(b)b.onclick=()=>{undo();off()};setTimeout(off,7000)}
+function sxDelEv(id,imgOnly){const ev=state.events.find(x=>x.id===id);if(!ev)return;const snap=state.events.slice(),old={img:ev.img,edit:ev.edit,imgLum:ev.imgLum};
+  let t;if(imgOnly&&ev.name){ev.img=null;ev.edit=null;ev.imgLum=null;t='התמונה הוסרה'}else{state.events=state.events.filter(x=>x.id!==id);t=ev.rec&&ev.rec!=='once'?'נמחק (מכל השנים)':ev.img&&!ev.name?'התמונה הוסרה':'נמחק'}
+  save();renderEvents();render();
+  sxUndo(t,()=>{Object.assign(ev,old);state.events=snap;save();renderEvents();render()})}
+stage.addEventListener('click',e=>{const b=e.target.closest('[data-edel],[data-eimg]');if(!b)return;e.preventDefault();e.stopPropagation();document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));sxDelEv(b.dataset.edel||b.dataset.eimg,!!b.dataset.eimg)},true);
+function cellInline(c){const date=c.dataset.date;if(!date)return;document.querySelectorAll('.ci-box').forEach(x=>x._close&&x._close(true));
+  const d=dateFromIso(date),hd=new HDate(d);
+  const ex=state.events.find(e=>e.kind==='other'&&e.rec==='once'&&e.date===date&&!e.img&&e.name);
+  const others=eventsOn(d,hd).filter(e=>e!==ex);
+  const r=c.getBoundingClientRect(),box=el('div','ci-box no-print');
+  box.innerHTML='<textarea class="ci-ta" rows="2" maxlength="80" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
+    (others.length?'<div class="ci-have">'+others.map(e=>'<span class="ci-chip">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span>'+esc(e.name||'תמונה')+'</span><button type="button" data-cidel="'+e.id+'" aria-label="מחיקה" title="'+(e.rec&&e.rec!=='once'?'מחיקה מכל השנים':'מחיקה')+'">×</button></span>').join('')+'</div>':'')+
+    '<div class="ci-bar"><button type="button" data-ci="more">יום הולדת, יארצייט ועוד…</button><button type="button" data-ci="img">תמונה</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
+  document.body.appendChild(box);
+  const w=Math.min(innerWidth-16,Math.max(r.width+16,250));box.style.width=w+'px';
+  box.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+scrollX+'px';
+  box.style.top=(r.top+scrollY+Math.min(r.height*0.3,36))+'px';
+  const ta=box.querySelector('textarea');ta.value=ex?ex.name:'';ta.focus();ta.select();
+  {const br=box.getBoundingClientRect();if(br.bottom>innerHeight-8)window.scrollBy({top:br.bottom-innerHeight+80,behavior:'smooth'})}
+  let done=false;
+  const outside=e=>{if(!box.contains(e.target))close(true,true)};
+  const close=(saveIt,later)=>{if(done)return;done=true;const v=ta.value.trim();box.remove();document.removeEventListener('pointerdown',outside,true);
+    if(!saveIt)return;
+    if(ex){if(v===ex.name)return;if(v)ex.name=v;else state.events=state.events.filter(x=>x!==ex)}
+    else{if(!v)return;if(state.events.length>=PLAN().events){openUpgrade('events');return}
+      state.events.push({id:uid(),kind:'other',name:v,rec:'once',date,img:null,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:null,edit:null})}
+    save();if(later)setTimeout(()=>{renderEvents();render()},350);else{renderEvents();render()}};
+  box._close=close;setTimeout(()=>document.addEventListener('pointerdown',outside,true),0);
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();close(true)}else if(e.key==='Escape'){e.preventDefault();close(false)}});
+  box.addEventListener('click',e=>{const x=e.target.closest('[data-cidel]');if(x){close(true);sxDelEv(x.dataset.cidel,false);return}
+    const b=e.target.closest('[data-ci]');if(!b)return;const a=b.dataset.ci;
+    if(a==='ok')close(true);
+    else if(a==='more'){close(true);if(SIMPLE)quickEvent({date});else openEventEditor({date})}
+    else if(a==='img'){close(true);const f=async v=>{if(!v||!v.img)return;if(state.events.length>=PLAN().events){openUpgrade('events');return}
+      state.events.push({id:uid(),kind:'other',name:'',rec:'once',date,img:v.img,imgFit:'cover',imgPos:50,textTone:'auto',imgLum:await imageLum(v.img),edit:null});save();renderEvents();render()};f.maxPx=QPX('day');pickImage(f)}})}
 
 /* boot */
 (async function(){
