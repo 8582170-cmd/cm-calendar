@@ -110,6 +110,19 @@ subprocess.run([sys.executable, str(ROOT / 'tools/gen_articles.py')], check=True
 subprocess.run([sys.executable, str(ROOT / 'tools/gen_landing.py')], check=True)
 
 
+NF404 = r"""<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>הדף לא נמצא · MyLuach</title>
+<script>if(/^\/online\/[^/]+\/?$/.test(location.pathname)){document.documentElement.style.visibility='hidden';fetch('/online/404.html').then(function(r){return r.text()}).then(function(h){document.open();document.write(h);document.close()}).catch(function(){document.documentElement.style.visibility=''})}</script>
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<style>body{margin:0;font-family:Assistant,Heebo,Arial,sans-serif;background:#f5f5f3;color:#1a232c;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.nf{max-width:520px;text-align:center}.nf img{width:56px;height:56px}.nf h1{font-size:30px;margin:12px 0 6px}.nf p{color:#5d6873;font-size:17px;margin:0 0 18px}
+.nf nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.nf a{display:inline-block;padding:10px 16px;border-radius:12px;background:#fff;border:1px solid #d3dae0;color:#1e5a63;font-weight:700;text-decoration:none}.nf a.p{background:#1e5a63;color:#fff;border-color:#1e5a63}</style>
+<script src="/assets/sitemsg.js?v=1" defer></script>
+</head><body><main class="nf"><img src="/assets/logo.svg?v=2" alt=""><h1>הדף לא נמצא</h1><p>ייתכן שהכתובת השתנתה או שיש בה טעות. אפשר להמשיך מכאן:</p>
+<nav><a class="p" href="/">לדף הבית</a><a href="/simple.html">לבנות לוח</a><a href="/online/">הלוח המקוון</a><a href="/brachot">ברכות והזמנות</a><a href="/countdown.html">לוח ספירה לאחור</a></nav></main></body></html>
+"""
+
 # דף 404 = הלוח הציבורי: myluach.org/online/<שם> (אם אין לוח בשם הזה: הודעה, והלוח המקוון הרגיל)
 def pub404():
     s = (ON / 'index.html').read_text(encoding='utf-8')
@@ -118,7 +131,8 @@ def pub404():
     s = s.replace('<script>window.LC_PAGE=window.LC_PAGE||{};</script>', '<script>window.LC_PAGE={"pub":1,"base":"/online/"};</script>')
     s = s.replace('href="./"', 'href="/online/"')
     s = s.replace('</head>', '<meta name="robots" content="noindex">\n</head>')
-    (ROOT / '404.html').write_text(s, encoding='utf-8')
     (ON / '404.html').write_text(s, encoding='utf-8')
+    # 404 לכל האתר: לוח ציבורי רק בכתובות /online/<שם>. כל כתובת אחרת שלא קיימת: "הדף לא נמצא" עם קישורים
+    (ROOT / '404.html').write_text(NF404, encoding='utf-8')
 pub404()
 print('404.html (public calendars)')

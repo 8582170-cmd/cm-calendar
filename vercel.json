@@ -71,5 +71,22 @@
    "source": "/sitemap-pages.xml",
    "destination": "/api/pricing?pg=_sitemap"
   }
+ ],
+ "redirects": [
+  {
+   "source": "/brachot.html",
+   "destination": "/brachot",
+   "permanent": true
+  },
+  {
+   "source": "/brachot/index.html",
+   "destination": "/brachot",
+   "permanent": true
+  },
+  {
+   "source": "/online.html",
+   "destination": "/online/",
+   "permanent": true
+  }
  ]
 }
