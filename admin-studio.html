@@ -112,7 +112,11 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 @media (max-width:820px){.tp-ed{grid-template-columns:minmax(0,1fr)}}
 .tp-pv{position:relative;width:100%;max-width:420px;aspect-ratio:794/1123;touch-action:none;cursor:crosshair;justify-self:center}
 .tp-pv canvas{width:100%;height:100%;display:block;border-radius:4px;box-shadow:0 2px 10px rgb(0 0 0 / .2)}
-.tp-pv .ar{position:absolute;border:1.5px solid rgb(0 0 0 / .45);outline:1.5px solid rgb(255 255 255 / .8);pointer-events:none}
+.tp-pv .ar{position:absolute;border:2px solid #d6336c;box-shadow:0 0 0 1px #fff;cursor:move;touch-action:none;z-index:3}
+.tp-pv .ar i{position:absolute;width:14px;height:14px;background:#fff;border:2px solid #d6336c;border-radius:50%;touch-action:none}
+.tp-pv .ar i[data-h=nw]{top:-8px;right:-8px;cursor:nesw-resize}.tp-pv .ar i[data-h=ne]{top:-8px;left:-8px;cursor:nwse-resize}.tp-pv .ar i[data-h=sw]{bottom:-8px;right:-8px;cursor:nwse-resize}.tp-pv .ar i[data-h=se]{bottom:-8px;left:-8px;cursor:nesw-resize}
+.tp-pv .ar i[data-h=n]{top:-8px;left:50%;margin-left:-7px;cursor:ns-resize}.tp-pv .ar i[data-h=s]{bottom:-8px;left:50%;margin-left:-7px;cursor:ns-resize}.tp-pv .ar i[data-h=e]{left:-8px;top:50%;margin-top:-7px;cursor:ew-resize}.tp-pv .ar i[data-h=w]{right:-8px;top:50%;margin-top:-7px;cursor:ew-resize}
+.tp-pv .azo{position:absolute;z-index:2;cursor:pointer;border:1px dashed rgb(0 0 0 / .35)}.tp-pv .azo:hover{background:rgb(214 51 108 / .08)}
 .tp-f{display:flex;flex-direction:column;gap:12px;min-width:0}
 .tp-f .fields{grid-template-columns:repeat(2,minmax(0,1fr))}
 .tp-f input[type=color]{width:100%;height:38px;padding:2px}
@@ -127,7 +131,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=38"></script>
+<script src="/assets/greetings/greetings.js?v=39"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -662,10 +666,11 @@ function tpOpen(t){
   const w=t?JSON.parse(JSON.stringify(t)):{variants:[],id:'u'+Date.now().toString(36),title:'',cat:$('tpFilter').value||'wedding',kind:'greeting',price:0,on:true,order:(TP.templates||[]).length,bg:{img:''},area:{x:150,y:230,w:494,h:700,valign:'center'},blocks:GR.starter('greeting','#14213d','#8a6a22')};
   const box=$('tpEd');box.innerHTML='';
   const ed=document.createElement('div');ed.className='tp-ed';
-  ed.innerHTML='<div class="tp-pv" id="tpPv"><canvas id="tpCv"></canvas><div class="ar" id="tpAr"></div></div>'+
+  ed.innerHTML='<div class="tp-pv" id="tpPv"><canvas id="tpCv"></canvas><div class="ar" id="tpAr"><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div></div>'+
    '<div class="tp-f"><h3 style="margin:0">'+(isNew?'עיצוב חדש':'עריכת עיצוב')+'</h3>'+
    '<div class="actions"><button class="btn primary" type="button" id="tpUp">העלאת רקע (JPG / PNG)</button><span class="sub" id="tpUpMsg"></span></div>'+
-   '<p class="sub">בתצוגה: <b>מלבן אפור</b> = מה שגררת · <b>קו ורוד</b> = צורת אזור הטקסט (בתוך המלבן, עם השיפוע) · <b>קו טורקיז</b> = המקום שבו הטקסט נכנס בפועל.</p><p class="sub">אחרי ההעלאה: <b>גוררים על התמונה</b> מלבן במקום שבו יופיע הטקסט. מתאים רקע ביחס של דף A4, לאורך או לרוחב (הכיוון נקבע לפי התמונה, ואפשר לשנות).</p>'+
+   '<p class="sub"><b>אזור הטקסט:</b> המסגרת הוורודה על התמונה. גוררים אותה כדי להזיז, ומושכים את העיגולים הקטנים כדי להגדיל ולהקטין. אפשר גם לגרור מלבן חדש על מקום ריק בתמונה. לאזור אחר: לוחצים עליו או על הכפתור שלו.</p>'+
+   '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="tpFull" style="width:auto"> להראות בקו טורקיז איפה בדיוק נכנס הטקסט</label>'+
    '<div class="fields"><label>שם העיצוב<input id="tpT"></label><label>אירוע<select id="tpC"></select></label>'+
    '<label>סוג הדף<select id="tpY"><option value="design">דף מעוצב (שטח לטקסט + נוסח מוכן)</option><option value="bg">דף רקע (כותבים על כל הדף, בלי נוסח)</option><option value="frame">מסגרת (הטקסט בתוך המסגרת, בלי נוסח)</option></select></label><label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
    '<label>צבע הטקסט הראשי<input id="tpM" type="color" value="#14213d"></label><label>צבע להדגשות ולקישוטים<input id="tpA" type="color" value="#8a6a22"></label>'+
@@ -687,9 +692,9 @@ function tpOpen(t){
   const cv=$('tpCv'),ar=$('tpAr'),pv=$('tpPv'),DW=()=>w.land?1123:794,DH=()=>w.land?794:1123;
   let actA=0;const AA=()=>actA&&(w.areas2||[])[actA-1]?w.areas2[actA-1]:(actA=0,w.area);
   let pend=false;const draw=()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;
-    pv.style.aspectRatio=DW()+'/'+DH();const r=pv.getBoundingClientRect(),Q=AA();ar.style.cssText='left:'+(Q.x/DW()*100)+'%;top:'+(Q.y/DH()*100)+'%;width:'+(Q.w/DW()*100)+'%;height:'+(Q.h/DH()*100)+'%';
+    pv.style.aspectRatio=DW()+'/'+DH();const r=pv.getBoundingClientRect();placeAr();
     if(!w.bg.img){const c=cv.getContext('2d');cv.width=400;cv.height=566;c.fillStyle='#eee';c.fillRect(0,0,400,566);c.fillStyle='#888';c.font='18px Assistant';c.textAlign='center';c.fillText('עדיין לא הועלה רקע',200,283);return}
-    GR.render(cv,tpObj(w),{colors:{},blocks:w.blocks,scale:1,panel:{pad:0}},{scale:Math.max(.4,r.width*(devicePixelRatio||1)/DW()),guide:!w.noArea}).catch(()=>{$('tpUpMsg').textContent='לא הצלחתי להציג את התמונה'})})};
+    GR.render(cv,tpObj(w),{colors:{},blocks:w.blocks,scale:1,panel:{pad:0}},{scale:Math.max(.4,r.width*(devicePixelRatio||1)/DW()),guide:w.noArea?false:($('tpFull')&&$('tpFull').checked?'full':'shape')}).catch(()=>{$('tpUpMsg').textContent='לא הצלחתי להציג את התמונה'})})};
   const apply=()=>{const nb=GR.starter($('tpS').value,$('tpM').value,$('tpA').value);nb.forEach(b=>{if(b.type==='text')b.font=b.size>=26?$('tpFH').value:$('tpFB').value});w.blocks=nb;draw();if(typeof azDraw==='function')azDraw()};
   $('tpApply').onclick=apply;['tpS'].forEach(id=>$(id).onchange=()=>{$('tpK').value=$('tpS').value;apply()});
   $('tpV').onchange=()=>{w.area.valign=$('tpV').value;draw()};
@@ -699,8 +704,8 @@ function tpOpen(t){
   /* צורה ושיפוע לאזור הטקסט: גוררים מלבן כרגיל, והצורה נכנסת לתוכו. בתצוגה: ורוד = הצורה, טורקיז = המקום שבו הטקסט נכנס */
   $('tpSh').innerHTML=GR.TSHAPES.map(x=>'<option value="'+x[0]+'">'+esc(x[1])+'</option>').join('');
   const ts=()=>actA?{s:AA().s,a:AA().a,k:AA().k}:(w.tshape||{});
-  const tsShow=()=>{const t=ts(),kk=Math.round((t.k==null?.5:t.k)*100);$('tpSh').value=t.s||'rect';$('tpTilt').value=t.a||0;$('tpTiltV').textContent=(t.a||0)+'°';$('tpK').value=kk;$('tpKV').textContent=kk+'%';$('tpKL').hidden=!/^trap/.test(t.s||'')};tsShow();
-  const tsSet=()=>{const sh=$('tpSh').value,a=+$('tpTilt').value,k=+$('tpK').value/100;$('tpTiltV').textContent=a+'°';$('tpKV').textContent=Math.round(k*100)+'%';$('tpKL').hidden=!/^trap/.test(sh);
+  const tsShow=()=>{const t=ts(),kk=Math.round((t.k==null?.5:t.k)*100);$('tpSh').value=t.s||'rect';$('tpTilt').value=t.a||0;$('tpTiltV').textContent=(t.a||0)+'°';$('tpK').value=kk;$('tpKV').textContent=kk+'%';$('tpKL').style.display=/^trap/.test(t.s||'')?'':'none'};tsShow();
+  const tsSet=()=>{const sh=$('tpSh').value,a=+$('tpTilt').value,k=+$('tpK').value/100;$('tpTiltV').textContent=a+'°';$('tpKV').textContent=Math.round(k*100)+'%';$('tpKL').style.display=/^trap/.test(sh)?'':'none';
     const kv=/^trap/.test(sh)?k:undefined;
     if(actA){const Q=AA();if(sh==='rect')delete Q.s;else Q.s=sh;if(a)Q.a=a;else delete Q.a;if(kv!=null)Q.k=kv;else delete Q.k}else if(sh==='rect'&&!a)delete w.tshape;else w.tshape={s:sh,a,k:kv};draw()};
   $('tpK').oninput=tsSet;
@@ -719,15 +724,32 @@ function tpOpen(t){
         sl.onchange=()=>{if(+sl.value)b.ar=+sl.value;else delete b.ar;draw()};bb.appendChild(r)})}};
   azDraw();
   $('tpSh').onchange=tsSet;$('tpTilt').oninput=tsSet;
-  $('tpNA').value=w.noArea?'1':'0';ar.hidden=!!w.noArea;$('tpNA').onchange=()=>{if($('tpNA').value==='1')w.noArea=true;else delete w.noArea;ar.hidden=!!w.noArea;draw()};
+  $('tpNA').value=w.noArea?'1':'0';$('tpNA').onchange=()=>{if($('tpNA').value==='1')w.noArea=true;else delete w.noArea;draw()};
   /* עיצוב ישן שהועלה לרוחב: מזהים לפי התמונה */
   if(w.bg.img&&w.land==null){const im=new Image();im.onload=()=>{if(im.width>im.height){setLand(true);$('tpUpMsg').textContent='התמונה לרוחב, אז הדף הוגדר לרוחב. כדאי לסמן מחדש את אזור הטקסט.'}};im.src=w.bg.img}
-  /* גרירת אזור הטקסט */
+  /* אזור הטקסט: מזיזים בגרירה, מגדילים ומקטינים בעיגולים שבצדדים ובפינות, או גוררים מלבן חדש על מקום ריק */
+  const pct=(Q)=>'left:'+(Q.x/DW()*100)+'%;top:'+(Q.y/DH()*100)+'%;width:'+(Q.w/DW()*100)+'%;height:'+(Q.h/DH()*100)+'%';
+  function placeAr(){const Q=AA();ar.style.cssText=pct(Q);ar.hidden=!!w.noArea;
+    pv.querySelectorAll('.azo').forEach(x=>x.remove());if(w.noArea)return;
+    const all=[w.area].concat(w.areas2||[]);all.forEach((A,k)=>{if(k===actA)return;const o=document.createElement('div');o.className='azo';o.style.cssText=pct(A);o.title='אזור '+(k+1)+': לחיצה לבחירה';
+      o.onpointerdown=e=>{e.stopPropagation();actA=k;azDraw();tsShow();draw()};pv.appendChild(o)})}
   let st=null;
-  pv.addEventListener('pointerdown',e=>{if(!w.bg.img)return;if(w.noArea){delete w.noArea;$('tpNA').value='0';ar.hidden=false}const r=pv.getBoundingClientRect();st={x:(e.clientX-r.left)/r.width*DW(),y:(e.clientY-r.top)/r.height*DH()};pv.setPointerCapture(e.pointerId)});
-  pv.addEventListener('pointermove',e=>{if(!st)return;const r=pv.getBoundingClientRect(),x=Math.max(0,Math.min(DW(),(e.clientX-r.left)/r.width*DW())),y=Math.max(0,Math.min(DH(),(e.clientY-r.top)/r.height*DH()));
-    w.areaSet=true;const Q=AA();Q.x=Math.round(Math.min(st.x,x));Q.y=Math.round(Math.min(st.y,y));Q.w=Math.max(40,Math.round(Math.abs(x-st.x)));Q.h=Math.max(40,Math.round(Math.abs(y-st.y)));ar.style.cssText='left:'+(Q.x/DW()*100)+'%;top:'+(Q.y/DH()*100)+'%;width:'+(Q.w/DW()*100)+'%;height:'+(Q.h/DH()*100)+'%'});
-  pv.addEventListener('pointerup',()=>{if(st){st=null;draw()}});
+  const toPage=e=>{const r=pv.getBoundingClientRect();return{x:Math.max(0,Math.min(DW(),(e.clientX-r.left)/r.width*DW())),y:Math.max(0,Math.min(DH(),(e.clientY-r.top)/r.height*DH()))}};
+  ar.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const h=e.target.dataset&&e.target.dataset.h,Q=AA();st={mode:h||'move',p:toPage(e),o:{x:Q.x,y:Q.y,w:Q.w,h:Q.h}};ar.setPointerCapture(e.pointerId)});
+  ar.addEventListener('pointermove',e=>{if(!st)return;const p=toPage(e),dx=p.x-st.p.x,dy=p.y-st.p.y,o=st.o,Q=AA(),m=st.mode;
+    /* הדף מימין לשמאל במסך, אבל הקואורדינטות משמאל לימין: "e" = הצד השמאלי */
+    let x=o.x,y=o.y,ww=o.w,hh=o.h;
+    if(m==='move'){x=o.x+dx;y=o.y+dy}
+    else{if(/w/.test(m)){ww=o.w+dx}if(/e/.test(m)){x=o.x+dx;ww=o.w-dx}if(/s/.test(m)){hh=o.h+dy}if(/n/.test(m)){y=o.y+dy;hh=o.h-dy}}
+    ww=Math.max(40,ww);hh=Math.max(40,hh);x=Math.max(0,Math.min(DW()-ww,x));y=Math.max(0,Math.min(DH()-hh,y));
+    w.areaSet=true;Q.x=Math.round(x);Q.y=Math.round(y);Q.w=Math.round(Math.min(ww,DW()));Q.h=Math.round(Math.min(hh,DH()));ar.style.cssText=pct(Q)});
+  ar.addEventListener('pointerup',()=>{if(st){st=null;draw()}});
+  /* מלבן חדש על מקום ריק */
+  pv.addEventListener('pointerdown',e=>{if(!w.bg.img||e.target!==cv)return;if(w.noArea){delete w.noArea;$('tpNA').value='0'}st={mode:'new',p:toPage(e)};pv.setPointerCapture(e.pointerId)});
+  pv.addEventListener('pointermove',e=>{if(!st||st.mode!=='new')return;const p=toPage(e),Q=AA();
+    w.areaSet=true;Q.x=Math.round(Math.min(st.p.x,p.x));Q.y=Math.round(Math.min(st.p.y,p.y));Q.w=Math.max(40,Math.round(Math.abs(p.x-st.p.x)));Q.h=Math.max(40,Math.round(Math.abs(p.y-st.p.y)));ar.hidden=false;ar.style.cssText=pct(Q)});
+  pv.addEventListener('pointerup',()=>{if(st&&st.mode==='new'){st=null;draw()}});
+  $('tpFull').onchange=draw;
   /* העלאת רקע */
   $('tpUp').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/jpeg,image/png,image/webp';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;$('tpUpMsg').textContent='מעלה…';
     try{const u=await tpUpload(f);if(u.w&&u.h)setLand(u.w>u.h);w.bg.img=u.img;w.bg.thumb=u.thumb;if(u.hi)w.bg.hi=u.hi;else delete w.bg.hi;
