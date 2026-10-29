@@ -108,7 +108,7 @@ function render(){
   C.plans=C.plans||{};C.sale=C.sale||{on:false,percent:20,plans:[],until:'',label:''};C.coupons=C.coupons||[];
   const eff=D.effective||{plans:{}};
   app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><div class="row"><a class="btn" href="/admin-studio">סטודיו רקעים לברכות</a><button class="btn" type="button" id="out">יציאה</button></div></div>'+
-  actSection()+fbSection()+usageSection()+
+  actSection()+msgSection()+fbSection()+usageSection()+
   (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
   '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול. "מוצג למכירה" כבוי = המסלול לא מופיע באתר ולא נמכר (מי שכבר קנה ממשיך להשתמש בו).</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th><th>מוצג למכירה</th></tr></thead><tbody>'+
   IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils||null)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd||null)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td><td><input type="checkbox" class="plan-sell" value="'+id+'"'+((C.off||[]).includes(id)?'':' checked')+' title="כבוי = המסלול לא מוצג ולא נמכר. מי שכבר קנה ממשיך להשתמש בו."></td></tr>'}).join('')+
@@ -171,6 +171,21 @@ const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון א
 let DBS={name:'profiles',q:'',offset:0};
 const ACT_T=[['downloads','הורדות והדפסות'],['reminders','תזכורות במייל'],['voice_reminders','תזכורות קוליות'],['appointments','פגישות ביומן'],['free_lite','מימוש הלוח החינמי']];
 let ACT={name:'downloads',q:'',offset:0};
+/* הודעות לגולשים */
+let MSG=null;const MSG_AREAS=[['home','דף הבית'],['builder','בוני הלוח'],['online','הלוח המקוון'],['brachot','ברכות והזמנות']],MSG_ST=[['info','כחול־ירוק (מידע)'],['ok','ירוק (חדשות טובות)'],['warn','צהוב (שימו לב)'],['sale','ורוד (מבצע)']];
+function msgSection(){setTimeout(msgLoad,0);return '<section id="msgSec"><h2>הודעות לגולשים</h2><p class="sub">הודעה שמופיעה בפס בראש הדף, באזורים שבוחרים. קישור: כותבים [טקסט](https://…) או כתובת מלאה. תאריכים ריקים = בלי הגבלה. גולש שסגר הודעה לא יראה אותה שוב, עד שמשנים את הטקסט שלה. אחרי שמירה ההודעה מופיעה באתר תוך דקה בערך.</p><div id="msgBox">טוען…</div></section>'}
+function msgLoad(){api({action:'msgget'}).then(j=>{MSG=j.items||[];msgDraw()}).catch(()=>{const b=$('#msgBox');if(b)b.textContent='שגיאה בטעינה'})}
+function msgDraw(){const b=$('#msgBox');if(!b||!MSG)return;
+  b.innerHTML=MSG.map((m,i)=>'<div class="msg-it" data-mi="'+i+'" style="border:1px solid #d3dae0;border-radius:10px;padding:10px 12px;margin-bottom:10px">'+
+    '<div class="row" style="gap:10px;flex-wrap:wrap"><label><input type="checkbox" data-m="on"'+(m.on?' checked':'')+'> פעילה</label><label>כותרת (לא חובה) <input type="text" data-m="title" maxlength="80" value="'+esc(m.title||'')+'" style="width:200px"></label><label>צבע <select data-m="style">'+MSG_ST.map(([k,n])=>'<option value="'+k+'"'+(m.style===k?' selected':'')+'>'+n+'</option>').join('')+'</select></label><label>שפה <select data-m="lang"><option value="">עברית ואנגלית</option><option value="he"'+(m.lang==='he'?' selected':'')+'>רק עברית</option><option value="en"'+(m.lang==='en'?' selected':'')+'>רק אנגלית</option></select></label></div>'+
+    '<label style="display:block;margin-top:6px">הטקסט<textarea data-m="text" rows="2" maxlength="600" style="width:100%">'+esc(m.text||'')+'</textarea></label>'+
+    '<div class="row" style="gap:10px;flex-wrap:wrap;margin-top:6px"><span>איפה: '+MSG_AREAS.map(([k,n])=>'<label><input type="checkbox" data-ma="'+k+'"'+((m.areas||[]).includes(k)?' checked':'')+'> '+n+'</label>').join(' ')+'</span><label>מתאריך <input type="date" data-m="from" value="'+esc(m.from||'')+'"></label><label>עד תאריך <input type="date" data-m="until" value="'+esc(m.until||'')+'"></label><label><input type="checkbox" data-m="close"'+(m.close!==false?' checked':'')+'> אפשר לסגור</label><button type="button" class="btn small danger" data-mdel>מחיקה</button></div></div>').join('')+
+    '<div class="row"><button type="button" class="btn" data-madd>+ הודעה חדשה</button><button type="button" class="btn primary" data-msave>שמירת ההודעות</button><span class="msg" id="msgMsg"></span></div>'}
+function msgRead(){document.querySelectorAll('#msgBox [data-mi]').forEach(d=>{const m=MSG[+d.dataset.mi];d.querySelectorAll('[data-m]').forEach(x=>{const k=x.dataset.m;m[k]=x.type==='checkbox'?x.checked:x.value});m.areas=[...d.querySelectorAll('[data-ma]:checked')].map(x=>x.dataset.ma)})}
+document.addEventListener('click',e=>{if(!e.target.closest('#msgBox'))return;
+  if(e.target.closest('[data-madd]')){msgRead();MSG.push({on:true,title:'',text:'',style:'info',areas:['home','builder','online','brachot'],close:true});msgDraw();return}
+  const d=e.target.closest('[data-mdel]');if(d){msgRead();MSG.splice(+d.closest('[data-mi]').dataset.mi,1);msgDraw();return}
+  if(e.target.closest('[data-msave]')){msgRead();const t=$('#msgMsg');t.textContent='שומר…';api({action:'msgsave',items:MSG}).then(j=>{MSG=j.items||[];msgDraw();$('#msgMsg').textContent='נשמר ✓'}).catch(()=>{t.textContent='השמירה נכשלה'})}});
 /* משובים ופניות מהאתר */
 let FB=null,FBF='all';
 function fbSection(){setTimeout(fbLoad,0);return '<section id="fbSec"><h2>משובים ופניות מהאתר</h2><p class="sub">דירוגים והצעות לשיפור מהבונים ומהדף הראשי, ופניות מטופס "נשמח להיות בקשר". כל אחד מהם נשלח גם במייל. מסמנים "להציג באתר" כדי שהמשוב יופיע בדף הראשי בחלק "מה אומרים עלינו" (בלי סימון לא מוצג כלום). אפשר לכתוב שם להצגה, למשל "משפחת כהן, בני ברק".</p><div id="fbBox">טוען…</div></section>'}

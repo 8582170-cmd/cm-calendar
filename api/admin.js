@@ -187,6 +187,23 @@ module.exports = async (req, res) => {
       return json(res, 200, { data: all.pages[page] || null });
     }
     /* IndexNow: מודיע לבינג (ולמנועים נוספים) על כל דפי האתר מתוך מפת האתר */
+    /* הודעות לגולשים: מוצגות בראש הדפים שנבחרו (דף הבית, הבונים, הלוח המקוון, הברכות) */
+    if (req.method === 'POST' && (b.action === 'msgget' || b.action === 'msgsave')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      let L = await loadSetting('sitemsgs'); if (!Array.isArray(L)) L = [];
+      if (b.action === 'msgsave') {
+        const str = (v, n) => String(v == null ? '' : v).replace(/<[^>]*>/g, '').slice(0, n), dt = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '';
+        const old = {}; L.forEach(m => { if (m && m.id) old[m.id] = m; });
+        L = (Array.isArray(b.items) ? b.items : []).slice(0, 20).map(m => {
+          const id = str(m.id, 16).replace(/[^\w]/g, '') || Math.random().toString(36).slice(2, 10), text = str(m.text, 600), title = str(m.title, 80);
+          const o = old[id], same = o && o.text === text && o.title === title;
+          return { id, v: same ? o.v : Date.now().toString(36), on: !!m.on, title, text, style: ['info', 'ok', 'warn', 'sale'].includes(m.style) ? m.style : 'info',
+            areas: (Array.isArray(m.areas) ? m.areas : []).filter(x => ['home', 'builder', 'online', 'brachot'].includes(x)), from: dt(m.from), until: dt(m.until), close: m.close !== false, lang: ['he', 'en'].includes(m.lang) ? m.lang : '' };
+        });
+        await saveSetting('sitemsgs', L);
+      }
+      return json(res, 200, { items: L });
+    }
     /* משובים ופניות מהאתר: רשימה, סימון אילו משובים להציג באתר, ומחיקה */
     if (req.method === 'POST' && (b.action === 'fbget' || b.action === 'fbpub' || b.action === 'fbdel')) {
       const { loadSetting, saveSetting } = require('./_lib');
