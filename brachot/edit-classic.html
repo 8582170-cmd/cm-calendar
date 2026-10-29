@@ -8,7 +8,7 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&display=swap">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=2">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=5">
 <style>
 .blocks{display:flex;flex-direction:column;gap:10px}
 .blk{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:stretch}
@@ -79,7 +79,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=29"></script>
+<script src="/assets/greetings/greetings.js?v=30"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -455,7 +455,7 @@ G.load().then(function(d){
 $('preset').onchange = function(e){
   var p = presets[+e.target.value]; if (!p) return;
   undo = JSON.parse(JSON.stringify(S.blocks));
-  if (G.isFree(tpl)) { S.blocks = G.presetBlocks(p); G.applyProfile(S.blocks); }
+  if (G.isFree(tpl)) { S.blocks = G.presetBlocks(p); G.applyProfile(S.blocks, null, p.cat !== 'all' ? p.cat : '', p.kind !== 'all' ? p.kind : ''); }
   else S.blocks.forEach(function(b){ if (b.k && p.fields[b.k] != null) b.text = p.fields[b.k]; });
   if (p.price > 0) S.preset = { id: p.id, price: +p.price, title: p.title }; else delete S.preset;
   renderBlocks(); changed(); $('presetUndo').hidden = false; payRoute();

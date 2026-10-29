@@ -120,7 +120,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=29"></script>
+<script src="/assets/greetings/greetings.js?v=30"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -198,6 +198,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
     <p class="sub">מסמנים ✓ ליד כל אירוע שפעיל באתר. אירוע בלי סימון לא מוצג ללקוחות: לא בגלריה, לא בעיצובים שבו ולא בבחירת הנוסחים. אחרי השינוי ללחוץ "שמירה".</p>
     <div class="actions"><button class="btn sm" type="button" id="catAllOn">✓ כל האירועים פעילים</button><button class="btn sm" type="button" id="catAllOff">כיבוי כל האירועים</button><button class="btn sm" type="button" id="catUsedOnly">פעילים רק אירועים שיש בהם עיצובים</button></div>
     <div class="cat-l" id="catList"></div>
+    <div id="catF" class="tp-f" hidden style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px"></div>
     <div class="actions"><input id="catNew" placeholder="שם אירוע חדש, למשל אפשערניש" style="width:auto;min-width:220px"><button class="btn sm" type="button" id="catAdd">הוספת אירוע</button></div>
     <div class="tp-f" style="border:1px solid var(--line);border-radius:12px;padding:12px">
       <p class="sub"><b>אחרי תשלום</b> הלקוח מקבל במייל קישור אישי לעיצוב: אפשר לשנות בו עוד כמה שעות, ואחר כך רק להוריד עוד כמה ימים. המחיר נקבע לכל עיצוב (0 = חינם).</p>
@@ -485,6 +486,27 @@ function tpInit(){
 }
 function tpMsg(t,ok){$('tpMsg').className=ok?'ok':'';$('tpMsg').textContent=t}
 function tpSaveAll(){tpMsg('שומר…');api({action:'greettplsave',...TP}).then(d=>{TP=d;tpCats();tpRender();tpMsg('נשמר. הלקוחות יראו את השינוי תוך כמה דקות.',true)}).catch(e=>{$('tpMsg').className='msg';$('tpMsg').textContent='השמירה נכשלה: '+e.message})}
+/* השדות של "רוצים לראות את השמות שלכם" לכל אירוע: מה מוצג ובאיזה שם */
+function tpFields(id,name){
+  const box=$('catF');box.hidden=false;TP.fields=TP.fields||{};
+  const def=GR.FIELDS_DEF[id]||{},cur=TP.fields[id]||def,KN={greeting:'בברכה',invite:'בהזמנה'};
+  box.innerHTML='<b>השדות לאירוע: '+esc(name)+'</b><p class="sub">מסמנים אילו שדות הלקוח ממלא באירוע הזה ("רוצים לראות את השמות שלכם" בגלריה, ושלב הפרטים בעורך), בנפרד לברכה ולהזמנה, ואפשר לתת לכל שדה שם מתאים. שדה ריק = השם הרגיל.</p><div class="fields" id="cfL" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"></div><div class="actions"><button class="btn sm primary" type="button" id="cfOk">אישור</button><button class="btn sm" type="button" id="cfDef">חזרה לברירת המחדל</button><button class="btn sm" type="button" id="cfX">סגירה</button></div>';
+  const L=box.querySelector('#cfL');
+  ['greeting','invite'].forEach(kd=>{const c=(cur[kd])||{keys:GR.PERSONAL.map(x=>x[0]),labels:{}},col=document.createElement('div');col.dataset.kd=kd;col.style.cssText='display:flex;flex-direction:column;gap:6px';
+    col.innerHTML='<b>'+KN[kd]+'</b>';
+    GR.PERSONAL.forEach(([k,lab])=>{const r=document.createElement('label');r.style.cssText='display:flex;flex-direction:row;gap:8px;align-items:center';
+      r.innerHTML='<input type="checkbox" style="width:auto;flex:none"><input type="text" style="flex:1">';const [cb,tx]=r.querySelectorAll('input');
+      cb.checked=(c.keys||[]).includes(k);tx.value=(c.labels||{})[k]||'';tx.placeholder=lab;cb.dataset.k=k;tx.dataset.k=k;col.appendChild(r)});
+    L.appendChild(col)});
+  box.querySelector('#cfOk').onclick=()=>{const o={};let bad=false;
+    L.querySelectorAll('[data-kd]').forEach(col=>{const keys=[...col.querySelectorAll('input[type=checkbox]')].filter(x=>x.checked).map(x=>x.dataset.k);if(!keys.length)bad=true;
+      const labels={};col.querySelectorAll('input[type=text]').forEach(x=>{if(x.value.trim())labels[x.dataset.k]=x.value.trim()});o[col.dataset.kd]={keys,labels}});
+    if(bad){tpMsg('צריך לסמן לפחות שדה אחד בברכה ואחד בהזמנה.');return}
+    TP.fields[id]=o;box.hidden=true;tpMsg('השדות של "'+name+'" עודכנו. ללחוץ "שמירה" בתחתית.')};
+  box.querySelector('#cfDef').onclick=()=>{delete TP.fields[id];box.hidden=true;tpMsg('חזרה לברירת המחדל. ללחוץ "שמירה" בתחתית.')};
+  box.querySelector('#cfX').onclick=()=>{box.hidden=true};
+  box.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
 function tpCatsAll(fn){TP.hideCats=TPCATS().map(c=>c[0]).filter(id=>!fn(id));tpCats();tpMsg('ללחוץ "שמירה" בתחתית.')}
 function tpCatUsed(id){return /^bg-/.test(id)||GR.TEMPLATES.some(t=>!t.remote&&t.cat===id)||(TP.templates||[]).some(t=>t.cat===id||(t.variants||[]).some(v=>v.cat===id))}
 function tpCats(){
@@ -493,11 +515,12 @@ function tpCats(){
   TPCATS().forEach(([id,name])=>{
     const custom=(TP.cats||[]).some(c=>c.id===id&&!GR.CATS.some(x=>x[0]===id)),used=(TP.templates||[]).filter(t=>t.cat===id||(t.variants||[]).some(v=>v.cat===id)).length;
     const el=document.createElement('span');el.className='cat-i'+(hid.has(id)?' off':'');
-    el.innerHTML='<label><input type="checkbox" data-a="hide"><span></span></label><button type="button" data-a="ren">שינוי שם</button>'+(custom?'<button type="button" data-a="del">מחיקה</button>':'');
+    el.innerHTML='<label><input type="checkbox" data-a="hide"><span></span></label><button type="button" data-a="ren">שינוי שם</button><button type="button" data-a="fld">שדות</button>'+(custom?'<button type="button" data-a="del">מחיקה</button>':'');
     el.querySelector('label span').textContent=name+(used?' ('+used+')':'');
     el.querySelector('[data-a=hide]').checked=!hid.has(id);el.title=hid.has(id)?'לא פעיל: לא מוצג באתר':'פעיל: מוצג באתר';
     el.querySelector('[data-a=ren]').onclick=()=>{const inp=document.createElement('input');inp.value=name;inp.style.width='140px';el.querySelector('label span').replaceWith(inp);inp.focus();inp.onkeydown=e=>{if(e.key==='Enter')inp.blur()};inp.onblur=()=>{const v=inp.value.trim();if(v&&v!==name){const c=(TP.cats||[]).find(c=>c.id===id);if(c)c.name=v;else TP.cats.push({id,name:v})}tpCats();tpRender()}};
     el.querySelector('[data-a=hide]').onchange=e=>{TP.hideCats=e.target.checked?(TP.hideCats||[]).filter(x=>x!==id):[...(TP.hideCats||[]),id];tpCats();tpMsg('ללחוץ "שמירה" בתחתית.')};
+    el.querySelector('[data-a=fld]').onclick=()=>tpFields(id,name);
     const del=el.querySelector('[data-a=del]');if(del)del.onclick=()=>{if(used){tpMsg('יש באירוע הזה '+used+' עיצובים. קודם מעבירים אותם לאירוע אחר.');return}if(!del.dataset.sure){del.dataset.sure=1;del.textContent='בטוח?';return}TP.cats=TP.cats.filter(c=>c.id!==id);tpCats()};
     box.appendChild(el);
   });

@@ -112,6 +112,15 @@ module.exports = async (req, res) => {
         const col = v => /^(#[0-9a-f]{3,8}|@[A-Z]{1,8})$/i.test(String(v || '')) ? String(v) : '#14213d';
         g.cats = (Array.isArray(b.cats) ? b.cats : []).slice(0, 80).map(c => ({ id: str(c.id, 30).replace(/[^\w-]/g, ''), name: str(c.name, 40) })).filter(c => c.id && c.name);
         g.hideCats = (Array.isArray(b.hideCats) ? b.hideCats : []).slice(0, 200).map(x => str(x, 30));
+        /* השדות האישיים לכל אירוע: איזה שדות מוצגים ובאיזה שם */
+        const FK = ['name', 'name2', 'groom', 'bride', 'details', 'times', 'sign'];
+        g.fields = {};
+        const one = v => { const keys = (Array.isArray((v || {}).keys) ? v.keys : []).filter(k => FK.includes(k)); const labels = {}; Object.entries((v || {}).labels || {}).forEach(([k, l]) => { if (FK.includes(k) && String(l || '').trim()) labels[k] = str(l, 60); }); return keys.length ? { keys, labels } : null; };
+        Object.entries(b.fields && typeof b.fields === 'object' ? b.fields : {}).slice(0, 200).forEach(([cid, v]) => {
+          cid = str(cid, 30).replace(/[^\w-]/g, ''); if (!cid || !v) return;
+          const gr = one(v.greeting), iv = one(v.invite);
+          if (gr && iv) g.fields[cid] = { greeting: gr, invite: iv };
+        });
         g.templates = (Array.isArray(b.templates) ? b.templates : []).slice(0, 600).map(x => ({
           id: str(x.id, 40).replace(/[^\w-]/g, '') || ('u' + Date.now().toString(36)), title: str(x.title, 80), cat: str(x.cat, 30).replace(/[^\w-]/g, ''),
           kind: x.kind === 'invite' ? 'invite' : 'greeting', type: ['bg', 'frame'].includes(x.type) ? x.type : 'design', price: num(x.price, 0, 10000), on: x.on !== false, draft: !!x.draft, order: num(x.order, 0, 100000),
@@ -127,7 +136,7 @@ module.exports = async (req, res) => {
         g.updated = new Date().toISOString();
         await saveSetting('greettpl', g);
       }
-      return json(res, 200, { cats: g.cats || [], hideCats: g.hideCats || [], templates: g.templates || [], pay: g.pay || { editHours: 48, dlDays: 30 } });
+      return json(res, 200, { cats: g.cats || [], hideCats: g.hideCats || [], fields: g.fields || {}, templates: g.templates || [], pay: g.pay || { editHours: 48, dlDays: 30 } });
     }
     /* ברכות והזמנות: אילו גופנים מוצגים ללקוחות, השם והסוג של כל גופן */
     if (req.method === 'POST' && (b.action === 'greetfontsget' || b.action === 'greetfontssave')) {

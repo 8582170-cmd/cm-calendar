@@ -789,12 +789,47 @@ function newPhoto(src){ return { type: 'photo', src: src || '', shape: 'circle',
 
 /* פרטים אישיים שהלקוח ממלא פעם אחת, ומופיעים בכל העיצובים (נשמרים בדפדפן) */
 var PERSONAL = [['name','שם המבורך / בעל השמחה'],['name2','שם נוסף (חתן / בן מצווה / תינוק)'],['groom','שם החתן'],['bride','שם הכלה'],['details','מועד ומקום'],['times','שעות'],['sign','חתימה (מי מברך / מזמין)']];
+/* אילו שדות שייכים לכל אירוע, ובאיזה שם, בנפרד לברכה ולהזמנה (ברירת מחדל; בניהול אפשר לשנות לכל אירוע) */
+function FD(gk, gl, ik, il){ return { greeting: { keys: gk, labels: gl || {} }, invite: { keys: ik || gk, labels: il || gl || {} } }; }
+var SIGN_INV = 'חתימה (ההורים / המזמינים)';
+var HOLI = FD(['name', 'sign'], { name: 'למי הברכה (לא חובה)', sign: 'חתימה (ממי הברכה)' }, ['name', 'details', 'times', 'sign'], { name: 'שם האירוע / המארגנים', sign: 'חתימה (המזמינים)' });
+var FIELDS_DEF = {
+  wedding: FD(['name', 'name2', 'sign'], { name: 'שם המבורך (למשל הורי החתן)', name2: 'שם החתן / הכלה', sign: 'חתימה (ממי הברכה)' }, ['groom', 'bride', 'details', 'times', 'sign'], { sign: SIGN_INV }),
+  engagement: FD(['name', 'name2', 'sign'], { name: 'שם המבורך (למשל הורי החתן)', name2: 'שם החתן / הכלה', sign: 'חתימה (ממי הברכה)' }, ['groom', 'bride', 'details', 'times', 'sign'], { sign: SIGN_INV }),
+  anniversary: FD(['name', 'sign'], { name: 'שמות בני הזוג' }, ['name', 'details', 'times', 'sign'], { name: 'שמות בני הזוג' }),
+  barmitzvah: FD(['name', 'name2', 'sign'], { name: 'שם המבורך (למשל ההורים)', name2: 'שם בן המצווה' }, ['name2', 'details', 'times', 'sign'], { name2: 'שם בן המצווה', sign: SIGN_INV }),
+  batmitzvah: FD(['name', 'name2', 'sign'], { name: 'שם המבורך (למשל ההורים)', name2: 'שם בת המצווה' }, ['name2', 'details', 'times', 'sign'], { name2: 'שם בת המצווה', sign: SIGN_INV }),
+  birth: FD(['name', 'name2', 'sign'], { name: 'שמות ההורים', name2: 'שם התינוק / התינוקת' }, ['name2', 'details', 'times', 'sign'], { name2: 'שם התינוק / התינוקת', sign: SIGN_INV }),
+  birthday: FD(['name', 'sign'], { name: 'שם בעל/ת יום ההולדת' }, ['name', 'details', 'times', 'sign'], { name: 'שם בעל/ת יום ההולדת' }),
+  donors: FD(['name', 'sign'], { name: 'שם התורם / המשפחה' }),
+  torah: FD(['name', 'sign'], { name: 'שם התורם / המשפחה' }, ['name', 'details', 'times', 'sign'], { name: 'שם התורם / המשפחה' }),
+  siyum: FD(['name', 'sign'], { name: 'שם המסיים / הלומדים' }, ['name', 'details', 'times', 'sign'], { name: 'שם המסיים / הלומדים' }),
+  home: FD(['name', 'sign'], { name: 'שם המשפחה' }, ['name', 'details', 'times', 'sign'], { name: 'שם המשפחה' }),
+  business: FD(['name', 'name2', 'sign'], { name: 'שם בעל העסק', name2: 'שם העסק' }, ['name', 'name2', 'details', 'times', 'sign'], { name: 'שם בעל העסק', name2: 'שם העסק' }),
+  shul: FD(['name', 'sign'], { name: 'שם בית הכנסת / הקהילה' }, ['name', 'details', 'times', 'sign'], { name: 'שם בית הכנסת / הקהילה' }),
+  shabbat: FD(['name', 'sign'], { name: 'שם המבורך / המארגנים' }, ['name', 'details', 'times', 'sign'], { name: 'שם האירוע / המארגנים' }),
+  roshhashana: HOLI, yomkippur: HOLI, sukkot: HOLI, simchattorah: HOLI, chanukah: HOLI, tubishvat: HOLI, purim: HOLI, pesach: HOLI, lagbaomer: HOLI, shavuot: HOLI,
+  condolence: FD(['name', 'sign'], { name: 'שם האבל / המשפחה', sign: 'חתימה (המנחמים)' }),
+  thanks: FD(['name', 'sign'], { name: 'למי התודה' }),
+  certificate: FD(['name', 'sign'], { name: 'שם מקבל התעודה', sign: 'חתימה (מעניק התעודה)' })
+};
+var FIELDS_OVR = {};
+/* השדות של אירוע: [[מפתח, שם], ...]. kind: 'greeting' / 'invite', או ריק = שניהם יחד. אירוע שלא הוגדר: כל השדות */
+function fieldsFor(cat, kind){
+  var c = FIELDS_OVR[cat] || FIELDS_DEF[cat];
+  if (!c) return PERSONAL.slice();
+  var ks = kind ? [kind] : ['greeting', 'invite'], keys = [], labels = {};
+  ks.forEach(function(k){ var x = c[k] || {}; (x.keys || []).forEach(function(q){ if (keys.indexOf(q) < 0) keys.push(q); if (x.labels && x.labels[q] && !labels[q]) labels[q] = x.labels[q]; }); });
+  if (!keys.length) return PERSONAL.slice();
+  return PERSONAL.filter(function(x){ return keys.indexOf(x[0]) >= 0 }).map(function(x){ return [x[0], labels[x[0]] || x[1]]; });
+}
 var PROFILE_KEY = 'myluach-greet-profile';
 function profile(){ try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') || {} } catch (e) { return {} } }
 function saveProfile(p){ try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)) } catch (e) {} }
-function applyProfile(blocks, p){
+function applyProfile(blocks, p, cat, kind){
   p = p || profile();
-  blocks.forEach(function(b){ if (b.type === 'text' && b.k && PERSONAL.some(function(x){ return x[0] === b.k }) && p[b.k] && String(p[b.k]).trim()) b.text = p[b.k]; });
+  var keys = (cat ? fieldsFor(cat, kind) : PERSONAL).map(function(x){ return x[0] });
+  blocks.forEach(function(b){ if (b.type === 'text' && b.k && keys.indexOf(b.k) >= 0 && p[b.k] && String(p[b.k]).trim()) b.text = p[b.k]; });
   return blocks;
 }
 
@@ -818,6 +853,7 @@ function load(){
     PRESETS = d.presets || [];
     (d.cats || []).forEach(function(c){ var e = CATS.find(function(x){ return x[0] === c.id }); if (e) e[1] = c.name; else CATS.push([c.id, c.name]); });
     (d.hideCats || []).forEach(function(id){ HIDDEN_CATS[id] = 1; });
+    FIELDS_OVR = d.fields || {};
     (d.templates || []).slice().sort(function(a, b){ return (a.order || 0) - (b.order || 0) }).forEach(function(t){
       if (TEMPLATES.some(function(x){ return x.id === t.id })) return;
       t.colors = []; t.remote = true; TEMPLATES.push(t);
@@ -873,5 +909,5 @@ window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   subTitle: function(t){ return /^bg-/.test(t.cat || '') ? 'דף רקע · ' + (CATS.find(function(x){ return x[0] === t.cat }) || [0, ''])[1] : KINDS[t.kind] + ' ל' + ((CATS.find(function(x){ return x[0] === t.cat }) || [0, t.cat])[1]); },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

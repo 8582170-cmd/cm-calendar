@@ -8,7 +8,7 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&display=swap">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=4">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=5">
 <style>
 body{font-size:18px}
 /* שלבים */
@@ -200,7 +200,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .fp-i .n{font-size:13px;color:var(--mute);flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=29"></script>
+<script src="/assets/greetings/greetings.js?v=30"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
@@ -354,7 +354,7 @@ var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, narrow = ma
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null, fresh = true;
 try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; if (sv.page) S.page = sv.page; if (sv.border) S.border = sv.border; if (sv.preset) S.preset = sv.preset; if (sv.selfText) S.selfText = true; fresh = false; } } catch (e) {}
 if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; S.panel = REC.state.panel; S.ubg = REC.state.ubg; S.page = REC.state.page; S.border = REC.state.border; S.area = REC.state.area || S.area; S.preset = REC.state.preset; if (REC.state.own) S.own = REC.state.own; fresh = false; }
-if (fresh) G.applyProfile(S.blocks);
+if (fresh) G.applyProfile(S.blocks, null, tpl.cat, tpl.kind);
 /* תשלום: מצב ההזמנה. free = עיצוב חינמי · unpaid · edit = שולם ובזמן השינויים · dl = רק הורדה · expired */
 var PAID = (tpl.price || 0) > 0, ORD = REC && !REC.error ? REC : null, SKEW = ORD ? Date.parse(ORD.now) - Date.now() : 0, PAYCFG = GD.pay || { editHours: 48, dlDays: 30 };
 function PRICE(){ return (tpl.price || 0) + ((S.preset && S.preset.price) || 0); }
@@ -629,6 +629,10 @@ function renderTb(){
 /* שלב 1: שדות הטקסט */
 var LABELS = {}; G.FIELDS.forEach(function(f){ LABELS[f[0]] = f[1]; });
 G.PERSONAL.forEach(function(f){ LABELS[f[0]] = f[1]; });
+/* שמות השדות לפי האירוע (לדף רקע: לפי האירוע של הנוסח שנבחר) */
+function catNow(){ var pc = S.preset && G.presets().find(function(p){ return p.id === S.preset.id }); return (pc && pc.cat !== 'all' ? pc.cat : '') || (/^bg-/.test(tpl.cat || '') ? '' : tpl.cat); }
+function catLabels(){ var c = catNow(), pk = S.preset && G.presets().find(function(p){ return p.id === S.preset.id }); if (c) G.fieldsFor(c, (pk && pk.kind !== 'all' && pk.kind) || tpl.kind).forEach(function(f){ LABELS[f[0]] = f[1]; }); }
+catLabels();
 function personal(kk){ return G.PERSONAL.some(function(x){ return x[0] === kk }); }
 function remember(b){ if (!$('remember').checked || !personal(b.k)) return; var p = G.profile(); p[b.k] = b.text; G.saveProfile(p); }
 function autoRows(t){ t.rows = Math.min(7, Math.max(1, t.value.split('\n').length)); }
@@ -838,7 +842,7 @@ function tpInit(){
     var f = p.fields, snip = f.title || f.opener || f.quote || ''; snip = [snip, f.body || f.invite || f.intro || ''].filter(Boolean).join(' · ');
     b.append(el('b', '', p.title || 'נוסח'), el('small', '', snip), el('span', 'pp', p.price > 0 ? p.price + ' ₪' : 'חינם'));
     b.setAttribute('aria-pressed', String(!!(S.preset && S.preset.id === p.id)));
-    b.onclick = function(){ undoT = JSON.parse(JSON.stringify(S.blocks)); S.blocks = G.presetBlocks(p); G.applyProfile(S.blocks); S.preset = { id: p.id, price: +p.price || 0, title: p.title }; delete S.selfText; afterPick(); };
+    b.onclick = function(){ undoT = JSON.parse(JSON.stringify(S.blocks)); S.blocks = G.presetBlocks(p); G.applyProfile(S.blocks, null, p.cat !== 'all' ? p.cat : '', p.kind !== 'all' ? p.kind : ''); catLabels(); S.preset = { id: p.id, price: +p.price || 0, title: p.title }; delete S.selfText; afterPick(); };
     list.appendChild(b);
   });
 }
