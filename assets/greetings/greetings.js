@@ -312,6 +312,21 @@ function wrap(ctx, b, text, width, size){
 /* כמה רבעי סיבוב מסתובב הרקע (0-3). בלי הגדרה: מסובבים רק אם כיוון התמונה שונה מכיוון הדף */
 function quarter(tpl, state){ var G = (state && state.page) || {}; if (G.rot != null) return ((G.rot % 4) + 4) % 4; return isLand(tpl, state) !== natImg(tpl) ? 1 : 0; }
 function natImg(tpl){ return tpl._imgLand != null ? !!tpl._imgLand : natLand(tpl); }
+/* מסובב אזור שסומן בניהול לפי הסיבוב שהלקוח הוסיף */
+function turnArea(tpl, state, A){
+  var q = (quarter(tpl, state) - quarter(tpl, {}) + 4) % 4, nl = isLand(tpl, {}), Wn = nl ? PH : PW, Hn = nl ? PW : PH, o;
+  if (q === 1) o = { x: Hn - (A.y + A.h), y: A.x, w: A.h, h: A.w };
+  else if (q === 2) o = { x: Wn - (A.x + A.w), y: Hn - (A.y + A.h), w: A.w, h: A.h };
+  else if (q === 3) o = { x: A.y, y: Wn - (A.x + A.w), w: A.h, h: A.w };
+  else o = { x: A.x, y: A.y, w: A.w, h: A.h };
+  o.valign = A.valign; return o;
+}
+/* כל אזורי הטקסט: [{ A, sh }]. הראשון = האזור הראשי; הנוספים סומנו בניהול (tpl.areas2), כל אחד עם צורה ושיפוע משלו */
+function areasOf(tpl, state){
+  var out = [{ A: areaOf(tpl, state), sh: tshape(state, tpl) }];
+  if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', a: Math.max(-45, Math.min(45, +x.a || 0)) } }); });
+  return out;
+}
 function areaOf(tpl, state){
   var ty = typeOf(tpl);
   if (ty === 'design' && !tpl.noArea) return tpl.area;
@@ -376,12 +391,17 @@ function innerArea(A, sh){
   return A;
 }
 function layout(ctx, tpl, state){
-  var A = innerArea(areaOf(tpl, state), tshape(state, tpl)), blocks = state.blocks || [], user = state.scale || 1, items, total, f;
+  var AR = areasOf(tpl, state), all = [];
+  AR.forEach(function(z, k){ all = all.concat(layout1(ctx, innerArea(z.A, z.sh), (state.blocks || []).map(function(b){ return Math.min(AR.length - 1, Math.max(0, b.ar | 0)) === k ? b : null; }), state, z, k)); });
+  return all;
+}
+function layout1(ctx, A, blocks, state, z, k){
+  var user = state.scale || 1, items, total, f;
   for (f = user; f >= user * 0.45; f -= 0.02) {
     items = []; total = 0; var bad = false;
     blocks.forEach(function(b, i){
-      if (b.hidden || b.abs) return;
-      var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap };
+      if (!b || b.hidden || b.abs) return;
+      var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap, ar: k };
       if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); }
       else if (b.type === 'photo') { it.pw = A.w * (b.size || 0.4) * f; it.h = it.pw * photoRatio(b); }
       else {
@@ -397,7 +417,8 @@ function layout(ctx, tpl, state){
     if (!bad && total <= A.h) break;
   }
   var off = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
-  items.forEach(function(it){ it.y = A.y + off + it.top; it.x = A.x + (it.b.dx || 0); it.w = A.w; });
+  var tl = z.sh.a ? { cx: z.A.x + z.A.w / 2, cy: z.A.y + z.A.h / 2, a: z.sh.a * Math.PI / 180 } : null;
+  items.forEach(function(it){ it.y = A.y + off + it.top; it.x = A.x + (it.b.dx || 0); it.w = A.w; it.tilt = tl; });
   return items;
 }
 
@@ -485,6 +506,16 @@ function drawDivider(ctx, it, col){
 
 /* state: { colors:{K:#hex}, blocks:[...], scale } · opt: { scale, watermark, selected: index }
    מחזיר את ה-canvas; ב-canvas._items נשמרים מיקומי הפסקאות (לזיהוי לחיצה) */
+/* צורת אזור: מלבן מעוגל, אליפסה, קשת, מעוין, משושה */
+function zonePath(ctx, px, py, pw, ph, SH, pr, prb){ var pcx = px + pw / 2, pcy = py + ph / 2; ctx.beginPath();
+      if (SH.s === 'ellipse') { ctx.ellipse(pcx, pcy, pw / 2, ph / 2, 0, 0, Math.PI * 2); }
+      else if (SH.s === 'diamond') { ctx.moveTo(pcx, py); ctx.lineTo(px + pw, pcy); ctx.lineTo(pcx, py + ph); ctx.lineTo(px, pcy); }
+      else if (SH.s === 'hex') { var hx = pw * 0.22; ctx.moveTo(px + hx, py); ctx.lineTo(px + pw - hx, py); ctx.lineTo(px + pw, pcy); ctx.lineTo(px + pw - hx, py + ph); ctx.lineTo(px + hx, py + ph); ctx.lineTo(px, pcy); }
+      else if (SH.s === 'arch' || SH.s === 'archb') { var ar = Math.min(pw / 2, ph * 0.6), sy = ar / (pw / 2);
+        if (SH.s === 'arch') { ctx.moveTo(px, py + ph); ctx.lineTo(px, py + ar); ctx.ellipse(pcx, py + ar, pw / 2, ar, 0, Math.PI, 0); ctx.lineTo(px + pw, py + ph); }
+        else { ctx.moveTo(px, py); ctx.lineTo(px + pw, py); ctx.lineTo(px + pw, py + ph - ar); ctx.ellipse(pcx, py + ph - ar, pw / 2, ar, 0, 0, Math.PI); ctx.lineTo(px, py); } }
+      else { ctx.moveTo(px + pr, py); ctx.arcTo(px + pw, py, px + pw, py + ph, pr); ctx.arcTo(px + pw, py + ph, px, py + ph, prb); ctx.arcTo(px, py + ph, px, py, prb); ctx.arcTo(px, py, px + pw, py, pr); }
+      ctx.closePath(); }
 function render(canvas, tpl, state, opt){
   opt = opt || {};
   var scale = opt.scale || 1;
@@ -534,15 +565,7 @@ function render(canvas, tpl, state, opt){
     var P = state.panel || {}, PR0 = panelRect(tpl, state);
     var px = PR0.x, py = PR0.y, pw = PR0.w, ph = PR0.h, rmax = Math.min(pw / 2, ph / 2), pr = rmax * ((P.r == null ? 20 : P.r) / 100), prb = rmax * ((P.rb == null ? (P.r == null ? 20 : P.r) : P.rb) / 100);
     var SH = tshape(state, tpl), pcx = px + pw / 2, pcy = py + ph / 2;
-    var panelPath = function(){ ctx.beginPath();
-      if (SH.s === 'ellipse') { ctx.ellipse(pcx, pcy, pw / 2, ph / 2, 0, 0, Math.PI * 2); }
-      else if (SH.s === 'diamond') { ctx.moveTo(pcx, py); ctx.lineTo(px + pw, pcy); ctx.lineTo(pcx, py + ph); ctx.lineTo(px, pcy); }
-      else if (SH.s === 'hex') { var hx = pw * 0.22; ctx.moveTo(px + hx, py); ctx.lineTo(px + pw - hx, py); ctx.lineTo(px + pw, pcy); ctx.lineTo(px + pw - hx, py + ph); ctx.lineTo(px + hx, py + ph); ctx.lineTo(px, pcy); }
-      else if (SH.s === 'arch' || SH.s === 'archb') { var ar = Math.min(pw / 2, ph * 0.6), sy = ar / (pw / 2);
-        if (SH.s === 'arch') { ctx.moveTo(px, py + ph); ctx.lineTo(px, py + ar); ctx.ellipse(pcx, py + ar, pw / 2, ar, 0, Math.PI, 0); ctx.lineTo(px + pw, py + ph); }
-        else { ctx.moveTo(px, py); ctx.lineTo(px + pw, py); ctx.lineTo(px + pw, py + ph - ar); ctx.ellipse(pcx, py + ph - ar, pw / 2, ar, 0, 0, Math.PI); ctx.lineTo(px, py); } }
-      else { ctx.moveTo(px + pr, py); ctx.arcTo(px + pw, py, px + pw, py + ph, pr); ctx.arcTo(px + pw, py + ph, px, py + ph, prb); ctx.arcTo(px, py + ph, px, py, prb); ctx.arcTo(px, py, px + pw, py, pr); }
-      ctx.closePath(); };
+    var panelPath = function(){ zonePath(ctx, px, py, pw, ph, SH, pr, prb); };
     /* שיפוע: השטח והטקסט מסתובבים סביב מרכז השטח */
     var tilt = SH.a * Math.PI / 180;
     function tiltOn(){ if (tilt) { ctx.translate(pcx, pcy); ctx.rotate(tilt); ctx.translate(-pcx, -pcy); } }
@@ -563,9 +586,12 @@ function render(canvas, tpl, state, opt){
       var w = Math.max(10, b.abs.w || 150), it = { i: i, b: b, x: b.abs.x || 0, y: b.abs.y || 0, w: w, pw: w, h: w * photoRatio(b), abs: true };
       drawPhoto(ctx, it, photos[b.src], colorOf(b.color, tpl, colors)); floats.push(it);
     });
-    ctx.save(); tiltOn();
+    items.forEach(function(it){ if (it.ar === 0 && it.tilt) { it.tilt.cx = pcx; it.tilt.cy = pcy; } });
     items.forEach(function(it){
-      var b = it.b, col = colorOf(b.color, tpl, colors);
+      var b = it.b, col = colorOf(b.color, tpl, colors), T = it.tilt;
+      ctx.save(); if (T) { ctx.translate(T.cx, T.cy); ctx.rotate(T.a); ctx.translate(-T.cx, -T.cy); }
+      try { drawItem(); } finally { ctx.restore(); }
+      function drawItem(){
       if (opt.selected === it.i && !opt.noFrame) {
         ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5; ctx.strokeStyle = '#1f8a96';
         ctx.strokeRect(it.x - 6, it.y - 4, it.w + 12, it.h + 8); ctx.restore();
@@ -586,12 +612,18 @@ function render(canvas, tpl, state, opt){
       }
       if (b.cols) { col1(it.lines, it.x + it.w - it.width, it.width); col1(it.lines2, it.x, it.width); }
       else col1(it.lines, it.x, it.w);
+      }
     });
-    ctx.restore();
-    canvas._tilt = tilt ? { cx: pcx, cy: pcy, a: tilt } : null;
-    if (opt.guide) { /* בניהול: קו מקווקו של הצורה ושל המקום שבו הטקסט נכנס */
-      ctx.save(); tiltOn(); ctx.setLineDash([8, 6]); ctx.lineWidth = 2.5; ctx.strokeStyle = '#d6336c'; panelPath(); ctx.stroke();
-      var IA = innerArea(areaOf(tpl, state), SH); ctx.strokeStyle = '#1f8a96'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.strokeRect(IA.x, IA.y, IA.w, IA.h); ctx.restore(); }
+    if (opt.guide) { /* בניהול: קו מקווקו של הצורה ושל המקום שבו הטקסט נכנס, לכל אזור */
+      areasOf(tpl, state).forEach(function(z, k){
+        var A = z.A, c = k ? { cx: A.x + A.w / 2, cy: A.y + A.h / 2 } : { cx: pcx, cy: pcy }, a = z.sh.a * Math.PI / 180;
+        ctx.save(); if (a) { ctx.translate(c.cx, c.cy); ctx.rotate(a); ctx.translate(-c.cx, -c.cy); }
+        ctx.setLineDash([8, 6]); ctx.lineWidth = 2.5; ctx.strokeStyle = '#d6336c';
+        if (k) zonePath(ctx, A.x, A.y, A.w, A.h, z.sh, 0, 0); else panelPath(); ctx.stroke();
+        var IA = innerArea(A, z.sh); ctx.strokeStyle = '#1f8a96'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.strokeRect(IA.x, IA.y, IA.w, IA.h);
+        if (areasOf(tpl, state).length > 1) { ctx.setLineDash([]); ctx.fillStyle = '#d6336c'; ctx.font = '700 22px Assistant, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(String(k + 1), A.x + A.w / 2, A.y + 24); }
+        ctx.restore(); });
+    }
     if (opt.watermark) drawMark(ctx, r[3], opt.watermark === 'faint' ? 0.08 : 0.17);
     canvas._items = items.concat(floats);
     return canvas;
@@ -600,9 +632,9 @@ function render(canvas, tpl, state, opt){
 
 /* לחיצה על התצוגה: איזו פסקה נמצאת בנקודה (ביחידות העיצוב) */
 function hit(canvas, x0, y0){
-  var best = null, T = canvas._tilt;
+  var best = null;
   (canvas._items || []).forEach(function(it){
-    var x = x0, y = y0;
+    var x = x0, y = y0, T = it.tilt;
     if (T && !it.abs) { var dx = x0 - T.cx, dy = y0 - T.cy, c = Math.cos(-T.a), sn = Math.sin(-T.a); x = T.cx + dx * c - dy * sn; y = T.cy + dx * sn + dy * c; }
     if (x >= it.x - 8 && x <= it.x + it.w + 8 && y >= it.y - 6 && y <= it.y + it.h + 6) {
       var d = it.abs ? -1 : Math.abs(y - (it.y + it.h / 2)); if (!best || d < best.d) best = { i: it.i, d: d };

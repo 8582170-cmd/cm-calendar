@@ -79,7 +79,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=36"></script>
+<script src="/assets/greetings/greetings.js?v=37"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -403,6 +403,10 @@ function renderBlocks(){
       var hidL = document.createElement('label'); var hid = document.createElement('input'); hid.type = 'checkbox'; hid.checked = !!b.hidden;
       hid.onchange = function(){ b.hidden = hid.checked; renderBlocks(); changed(); }; hidL.appendChild(hid); hidL.appendChild(document.createTextNode('הסתרה זמנית'));
       r1.appendChild(hidL);
+      var NA = 1 + ((tpl.areas2 || []).length || 0);
+      if (NA > 1 && !tpl.noArea) { var azL = document.createElement('label'); azL.appendChild(document.createTextNode('באזור ')); var az = document.createElement('select');
+        for (var q = 0; q < NA; q++) { var o = document.createElement('option'); o.value = q; o.textContent = 'אזור ' + (q + 1); az.appendChild(o); }
+        az.value = String(b.ar | 0); az.onchange = function(){ if (+az.value) b.ar = +az.value; else delete b.ar; changed(); }; azL.appendChild(az); r1.appendChild(azL); }
       m2.appendChild(r1);
       var r2 = document.createElement('div'); r2.className = 'tbar'; actions(r2, b, i, true); m2.appendChild(r2);
       card.appendChild(m2);
