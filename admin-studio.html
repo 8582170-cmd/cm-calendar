@@ -127,7 +127,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=37"></script>
+<script src="/assets/greetings/greetings.js?v=38"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -670,7 +670,7 @@ function tpOpen(t){
    '<label>סוג הדף<select id="tpY"><option value="design">דף מעוצב (שטח לטקסט + נוסח מוכן)</option><option value="bg">דף רקע (כותבים על כל הדף, בלי נוסח)</option><option value="frame">מסגרת (הטקסט בתוך המסגרת, בלי נוסח)</option></select></label><label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
    '<label>צבע הטקסט הראשי<input id="tpM" type="color" value="#14213d"></label><label>צבע להדגשות ולקישוטים<input id="tpA" type="color" value="#8a6a22"></label>'+
    '<label>גופן לכותרות<select id="tpFH"></select></label><label>גופן לטקסט<select id="tpFB"></select></label>'+
-   '<div style="grid-column:1/-1"><b style="font-size:14px">אזורי טקסט</b> <span class="sub">אפשר כמה אזורים בדף (למשל שני צדדים). בוחרים אזור, גוררים אותו על התמונה, ונותנים לו צורה ושיפוע.</span><div class="actions" id="tpAz" style="margin-top:4px"></div><div id="tpAzB"></div></div><label>צורת אזור הטקסט<select id="tpSh"></select></label><label>שיפוע אזור הטקסט: <span id="tpTiltV">0°</span><input type="range" id="tpTilt" min="-45" max="45" step="1" value="0"></label><label>אזור טקסט<select id="tpNA"><option value="0">באזור שמסמנים בגרירה</option><option value="1">בלי אזור: כותבים על כל הדף</option></select></label><label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><div><b style="font-size:14px">סיבוב הרקע</b><div class="actions" style="margin-top:4px"><button class="btn sm" type="button" data-rot="3">⟲ 90° שמאלה</button><button class="btn sm" type="button" data-rot="1">⟳ 90° ימינה</button><button class="btn sm" type="button" data-rot="2">↻ 180°</button></div></div><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
+   '<div style="grid-column:1/-1"><b style="font-size:14px">אזורי טקסט</b> <span class="sub">אפשר כמה אזורים בדף (למשל שני צדדים). בוחרים אזור, גוררים אותו על התמונה, ונותנים לו צורה ושיפוע.</span><div class="actions" id="tpAz" style="margin-top:4px"></div><div id="tpAzB"></div></div><label>צורת אזור הטקסט<select id="tpSh"></select></label><label>שיפוע אזור הטקסט: <span id="tpTiltV">0°</span><input type="range" id="tpTilt" min="-45" max="45" step="1" value="0"></label><label id="tpKL" hidden>רוחב החלק הצר: <span id="tpKV">50%</span><input type="range" id="tpK" min="15" max="95" step="1" value="50"></label><label>אזור טקסט<select id="tpNA"><option value="0">באזור שמסמנים בגרירה</option><option value="1">בלי אזור: כותבים על כל הדף</option></select></label><label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><div><b style="font-size:14px">סיבוב הרקע</b><div class="actions" style="margin-top:4px"><button class="btn sm" type="button" data-rot="3">⟲ 90° שמאלה</button><button class="btn sm" type="button" data-rot="1">⟳ 90° ימינה</button><button class="btn sm" type="button" data-rot="2">↻ 180°</button></div></div><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
    '<label>מבנה התחלתי<select id="tpS"><option value="greeting">ברכה (כותרת, שם, לרגל, ברכה, חתימה)</option><option value="invite">הזמנה (חתן וכלה, מועד, הורים)</option></select></label></div>'+
    '<div class="actions"><button class="btn" type="button" id="tpApply">החלת הצבעים והגופנים על הטקסט</button></div>'+
    '<p class="sub">ללקוח יהיה אפשר לשנות הכל בעורך: טקסט, גופנים, צבעים, להוסיף ולמחוק פסקאות.</p>'+
@@ -698,10 +698,12 @@ function tpOpen(t){
   ed.querySelectorAll('[data-rot]').forEach(b=>b.onclick=()=>{const k=+b.dataset.rot;w.rot=((w.rot||0)+k)%4;if(!w.rot)delete w.rot;if(k%2)setLand(!w.land);else draw();$('tpUpMsg').textContent='הרקע סובב. נשמר אחרי "עדכון" ו"שמירה".'+(k%2?' כדאי לסמן מחדש את אזור הטקסט.':'')});
   /* צורה ושיפוע לאזור הטקסט: גוררים מלבן כרגיל, והצורה נכנסת לתוכו. בתצוגה: ורוד = הצורה, טורקיז = המקום שבו הטקסט נכנס */
   $('tpSh').innerHTML=GR.TSHAPES.map(x=>'<option value="'+x[0]+'">'+esc(x[1])+'</option>').join('');
-  const ts=()=>actA?{s:AA().s,a:AA().a}:(w.tshape||{});
-  const tsShow=()=>{$('tpSh').value=ts().s||'rect';$('tpTilt').value=ts().a||0;$('tpTiltV').textContent=(ts().a||0)+'°'};tsShow();
-  const tsSet=()=>{const sh=$('tpSh').value,a=+$('tpTilt').value;$('tpTiltV').textContent=a+'°';
-    if(actA){const Q=AA();if(sh==='rect')delete Q.s;else Q.s=sh;if(a)Q.a=a;else delete Q.a}else if(sh==='rect'&&!a)delete w.tshape;else w.tshape={s:sh,a};draw()};
+  const ts=()=>actA?{s:AA().s,a:AA().a,k:AA().k}:(w.tshape||{});
+  const tsShow=()=>{const t=ts(),kk=Math.round((t.k==null?.5:t.k)*100);$('tpSh').value=t.s||'rect';$('tpTilt').value=t.a||0;$('tpTiltV').textContent=(t.a||0)+'°';$('tpK').value=kk;$('tpKV').textContent=kk+'%';$('tpKL').hidden=!/^trap/.test(t.s||'')};tsShow();
+  const tsSet=()=>{const sh=$('tpSh').value,a=+$('tpTilt').value,k=+$('tpK').value/100;$('tpTiltV').textContent=a+'°';$('tpKV').textContent=Math.round(k*100)+'%';$('tpKL').hidden=!/^trap/.test(sh);
+    const kv=/^trap/.test(sh)?k:undefined;
+    if(actA){const Q=AA();if(sh==='rect')delete Q.s;else Q.s=sh;if(a)Q.a=a;else delete Q.a;if(kv!=null)Q.k=kv;else delete Q.k}else if(sh==='rect'&&!a)delete w.tshape;else w.tshape={s:sh,a,k:kv};draw()};
+  $('tpK').oninput=tsSet;
   /* רשימת האזורים: 1 = הראשי, ועוד אזורים */
   const azDraw=()=>{const box=$('tpAz'),n=1+(w.areas2||[]).length;box.innerHTML='';
     for(let k=0;k<n;k++){const b=document.createElement('button');b.type='button';b.className='btn sm'+(k===actA?' primary':'');b.textContent='אזור '+(k+1)+(k?'':' (ראשי)');b.onclick=()=>{actA=k;azDraw();tsShow();draw()};box.appendChild(b)}
