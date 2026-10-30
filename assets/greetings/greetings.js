@@ -291,16 +291,24 @@ function colorOf(c, tpl, colors){
 function fontStr(b, size){ return (b.bold ? 700 : 400) + ' ' + size + 'px "' + b.font + '", "Frank Ruhl Libre", serif'; }
 
 /* שבירת שורות לפי רוחב; wide = מילה אחת רחבה מהשורה */
+/* מילה ארוכה מהשורה (בלי רווחים): מפרקים אותה לחלקים שנכנסים בשורה */
+function splitWord(ctx, w, width){
+  if (ctx.measureText(w).width <= width) return [w];
+  var out = [], cur = '';
+  Array.from(w).forEach(function(ch){ if (cur && ctx.measureText(cur + ch).width > width) { out.push(cur); cur = ch; } else cur += ch; });
+  if (cur) out.push(cur); return out;
+}
 function wrap(ctx, b, text, width, size){
   ctx.font = fontStr(b, size);
   var lines = [], wide = false;
   String(text || '').split('\n').forEach(function(p){
     var words = p.split(/\s+/).filter(Boolean), line = '';
     if (!words.length) { lines.push(''); return; }
-    words.forEach(function(w){
-      var t = line ? line + ' ' + w : w;
-      if (ctx.measureText(t).width <= width || !line) line = t; else { lines.push(line); line = w; }
-      if (ctx.measureText(line).width > width) wide = true;
+    words.forEach(function(w0){
+      splitWord(ctx, w0, width).forEach(function(w){
+        var t = line ? line + ' ' + w : w;
+        if (ctx.measureText(t).width <= width || !line) line = t; else { lines.push(line); line = w; }
+      });
     });
     lines.push(line);
   });
@@ -314,10 +322,12 @@ function wrapAt(ctx, b, text, size, spanAt){
   String(text || '').split('\n').forEach(function(p){
     var words = p.split(/\s+/).filter(Boolean), line = '', bx = box();
     if (!words.length) { lines.push(''); boxes.push(bx); return; }
-    words.forEach(function(w){
-      var t = line ? line + ' ' + w : w;
-      if (ctx.measureText(t).width <= bx.w || !line) line = t; else { lines.push(line); boxes.push(bx); line = w; bx = box(); }
-      if (ctx.measureText(line).width > bx.w) wide = true;
+    words.forEach(function(w0){
+      splitWord(ctx, w0, bx.w).forEach(function(w){
+        var t = line ? line + ' ' + w : w;
+        if (ctx.measureText(t).width <= bx.w || !line) line = t; else { lines.push(line); boxes.push(bx); line = w; bx = box(); }
+        if (ctx.measureText(line).width > bx.w + 1) { var parts = splitWord(ctx, line, bx.w); while (parts.length > 1) { lines.push(parts.shift()); boxes.push(bx); bx = box(); } line = parts[0]; }
+      });
     });
     lines.push(line); boxes.push(bx);
   });
@@ -494,7 +504,7 @@ function layout1(ctx, A, blocks, state, z, k){
     });
     return bad;
   }
-  for (f = user; f >= user * 0.45; f -= 0.02) {
+  for (f = user; f >= user * 0.12; f -= (f > user * 0.45 ? 0.02 : 0.01)) {
     var bad = pass(f), o2 = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
     if ((A.wfn || A.cfn) && Math.abs(o2 - off) > 2) { off = o2; bad = pass(f); o2 = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2); }
     off = o2;
