@@ -480,7 +480,7 @@ function layout1(ctx, A, blocks, state, z, k){
     blocks.forEach(function(b, i){
       if (!b || b.hidden || b.abs) return;
       var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap, ar: k };
-      var y0 = A.y + off + it.top, S0 = span(y0, y0), bw = S0.r - S0.l; it.bl = S0.l;
+      var y0 = A.y + off + it.top + (+b.dy || 0), S0 = span(y0, y0), bw = S0.r - S0.l; it.bl = S0.l;
       if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); var S1 = span(y0, y0 + it.h); bw = S1.r - S1.l; it.bl = S1.l; }
       else if (b.type === 'photo') { it.pw = bw * (b.size || 0.4) * f; it.h = it.pw * photoRatio(b); }
       else {

@@ -79,7 +79,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=50"></script>
+<script src="/assets/greetings/greetings.js?v=51"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -313,7 +313,7 @@ function renderBlocks(){
     var gc = document.createElement('div'); gc.className = 'gapc'; gc.title = 'הזזת הפסקה';
     var LIM = tpl.area.w / 2;
     function nb(t, l, dx, dy, col, row){ var x = document.createElement('button'); x.type = 'button'; x.textContent = t; x.title = l; x.setAttribute('aria-label', l); x.style.gridColumn = col; x.style.gridRow = row;
-      x.onclick = function(){ if (b.g0 == null) b.g0 = b.gap || 0; if (dy) G.setVpos(b, G.vpos(b) + dy); if (dx) b.dx = Math.max(-LIM, Math.min(LIM, (b.dx || 0) + dx)); sel = i; renderBlocks(); changed(); };
+      x.onclick = function(){ if (b.g0 == null) b.g0 = b.gap || 0; if (dy) { b.dy = Math.max(-900, Math.min(900, (+b.dy || 0) + dy)); if (!b.dy) delete b.dy; } if (dx) b.dx = Math.max(-LIM, Math.min(LIM, (b.dx || 0) + dx)); sel = i; renderBlocks(); changed(); };
       gc.appendChild(x); }
     nb('▲', 'הזזה למעלה', 0, -2, 2, 1); nb('◀', 'הזזה שמאלה', -4, 0, 1, 2); nb('▶', 'הזזה ימינה', 4, 0, 3, 2); nb('▼', 'הזזה למטה', 0, 2, 2, 3);
     var pad = G.movePad(b, function(){ sel = i; renderBlocks(); changed(); }); pad.style.gridColumn = 2; pad.style.gridRow = 2; gc.appendChild(pad);
