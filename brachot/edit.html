@@ -51,6 +51,7 @@ main[data-step="1"] #s1,main[data-step="2"] #s2,main[data-step="3"] #s3{display:
 #selbox{position:absolute;border:2px solid #1f8a96;border-radius:6px;pointer-events:none;background:rgb(31 138 150 / .06)}
 #selbox.photo{pointer-events:auto;cursor:grab;touch-action:none;background:none}
 .hnd{position:absolute;top:-17px;left:50%;transform:translateX(-50%);pointer-events:auto;touch-action:none;cursor:ns-resize;font:inherit;font-size:14px;font-weight:800;border:0;border-radius:999px;background:#1f8a96;color:#fff;padding:3px 12px;white-space:nowrap}
+.inl.float{background:#fff;outline:2px solid #1f8a96;border-radius:10px;padding:6px 10px;box-shadow:0 6px 20px rgb(0 0 0 / .18);font:400 17px/1.5 Assistant,sans-serif!important;color:#14213d!important;text-align:right!important;overflow:auto}
 .inl{position:absolute;border:0;outline:2px dashed #1f8a96;background:rgb(255 255 255 / .82);color:#000;resize:none;overflow:hidden;padding:0;margin:0;direction:rtl;z-index:3}
 /* סרגל הכלים הצף */
 #tb{position:absolute;z-index:5;display:flex;flex-wrap:wrap;justify-content:center;white-space:nowrap;width:max-content;max-width:min(900px,calc(100vw - 40px));gap:4px;align-items:center;background:#16262b;color:#fff;border-radius:16px;padding:6px;box-shadow:0 12px 30px -8px rgb(0 0 0 / .45);}
@@ -201,7 +202,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .azr{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mute);margin-top:4px}.azb{font:inherit;font-weight:700;min-width:34px;min-height:30px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--sheet);cursor:pointer}.azb[aria-pressed=true]{background:var(--teal);color:#fff;border-color:var(--teal)}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=48"></script>
+<script src="/assets/greetings/greetings.js?v=49"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 <script src="/assets/greetings/mine.js?v=1"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
@@ -446,11 +447,13 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / D().W), selected: sel, noFrame: true, hintArea: sel != null && S.blocks[sel] ? G.areaOfBlock(tpl, S, S.blocks[sel]) : null, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; place(); }).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / D().W), selected: sel, noFrame: true, hintArea: sel != null && S.blocks[sel] ? G.areaOfBlock(tpl, S, S.blocks[sel]) : null, skip: editing && !shapedSel() ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; place(); }).catch(function(){});
   });
 }
 window.addEventListener('resize', draw);
 function item(i){ return (cv._items || []).find(function(it){ return it.i === i }); }
+/* שורה באזור בצורה או בשיפוע: עורכים בתיבה מתחת לשורה, והטקסט על הדף מתעדכן וזורם לפי הצורה */
+function shapedSel(){ var it = sel == null ? null : item(sel); return !!(it && (it.boxes || it.tilt)); }
 function k(){ return cv.getBoundingClientRect().width / D().W; }
 function boxOf(it){
   var x = it.x, w = it.w;
@@ -481,6 +484,10 @@ function placeInl(it, s){
     var t = $(a[0]); if (n === 1 && !cols) { t.hidden = true; return; }
     var w = cols ? it.width : it.w;
     t.hidden = false;
+    var fl = !!(it.boxes || it.tilt) && !cols; t.classList.toggle('float', fl);
+    if (fl) { var sw = $('stage').clientWidth, bw = Math.min(sw - 16, Math.max(280, it.w * s + 40)), bx = Math.max(8, Math.min(sw - bw - 8, (it.x + it.w / 2) * s - bw / 2));
+      t.style.left = bx + 'px'; t.style.top = ((it.y + it.h) * s + 14) + 'px'; t.style.width = bw + 'px'; t.style.height = '96px'; t.style.lineHeight = ''; t.style.font = '';
+      if (document.activeElement !== t) t.value = b[a[1]] || ''; return; }
     var extra = it.size * Math.max(0, b.lh - 1.2) * s;
     t.style.left = (a[2] * s - 4) + 'px'; t.style.top = (it.y * s - 2 - extra / 2) + 'px'; t.style.width = (w * s + 8) + 'px';
     t.style.font = (b.italic ? 'italic ' : '') + (b.bold ? 700 : 400) + ' ' + (it.size * s) + 'px "' + b.font + '", "Frank Ruhl Libre", serif';
