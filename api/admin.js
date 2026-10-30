@@ -185,20 +185,20 @@ module.exports = async (req, res) => {
       for (const k of KEYS) S[k] = JSON.stringify(await loadSetting(k) || {});
       const rx = /https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/library\/([^\s"'<>?\\]+)/g, all = new Set();
       KEYS.forEach(k => { for (const m of S[k].matchAll(rx)) all.add(m[0]); });
-      const skip = new Set((Array.isArray(b.skip) ? b.skip : []).slice(0, 1000)), list = [...all].filter(u => !skip.has(u)), take = b.dry ? [] : list.slice(0, Math.max(1, Math.min(6, +b.n || 3))), errors = [], bad = [];
+      const skip = new Set((Array.isArray(b.skip) ? b.skip : []).slice(0, 1000)), list = [...all].filter(u => !skip.has(u)), take = b.dry ? [] : list.slice(0, Math.max(1, Math.min(8, +b.n || 3))), errors = [], bad = [];
       let moved = 0;
-      for (const url of take) {
+      /* כמה קבצים במקביל (בלי העתקה מיותרת לזיכרון), והחלפת הכתובות בסוף */
+      const done = await Promise.all(take.map(async url => {
         try {
           const path = decodeURIComponent(url.split('/object/public/library/')[1]);
           const g = await fetch(url); if (!g.ok) throw new Error('הורדה ' + g.status);
-          const buf = Buffer.from(await g.arrayBuffer()), type = g.headers.get('content-type') || 'application/octet-stream';
-          const put = await fetch(R.presign('PUT', path, 900, null, M), { method: 'PUT', headers: { 'Content-Type': type }, body: buf });
+          const type = g.headers.get('content-type') || 'application/octet-stream', body = await g.arrayBuffer();
+          const put = await fetch(R.presign('PUT', path, 900, null, M), { method: 'PUT', headers: { 'Content-Type': type }, body });
           if (!put.ok) throw new Error('העלאה ' + put.status);
-          const nu = M.url + '/' + path.split('/').map(x => encodeURIComponent(x)).join('/');
-          KEYS.forEach(k => { S[k] = S[k].split(url).join(nu); });
-          moved++;
-        } catch (e) { errors.push(String(e.message || e).slice(0, 120)); bad.push(url); }
-      }
+          return [url, M.url + '/' + path.split('/').map(x => encodeURIComponent(x)).join('/')];
+        } catch (e) { errors.push(String(e.message || e).slice(0, 120)); bad.push(url); return null; }
+      }));
+      for (const r of done) if (r) { KEYS.forEach(k => { S[k] = S[k].split(r[0]).join(r[1]); }); moved++; }
       if (moved) for (const k of KEYS) await saveSetting(k, JSON.parse(S[k]));
       return json(res, 200, { total: list.length + skip.size, moved, remaining: list.length - moved - bad.length, failed: bad, errors });
     }

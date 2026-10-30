@@ -667,7 +667,7 @@ function mvInit(){
   const m=t=>{$('mvMsg').textContent=t};
   $('mvCount').onclick=()=>{m('בודק…');api({action:'mediamigrate',dry:true}).then(d=>m(d.total?'יש '+d.total+' קבצים ב־Supabase שאפשר להעביר.':'✓ אין תמונות ב־Supabase. הכל כבר ב־Cloudflare.')).catch(e=>m(e.message))};
   $('mvGo').onclick=async()=>{const b=$('mvGo');b.disabled=true;let done=0,skip=[],errs=[];
-    try{for(;;){const d=await api({action:'mediamigrate',n:2,skip});done+=d.moved;skip=skip.concat(d.failed||[]);errs=errs.concat(d.errors||[]);
+    try{for(;;){const d=await api({action:'mediamigrate',n:6,skip});done+=d.moved;skip=skip.concat(d.failed||[]);errs=errs.concat(d.errors||[]);
         m('הועברו '+done+(d.remaining>0?' · נשארו '+d.remaining:'')+(skip.length?' · '+skip.length+' נכשלו':''));
         if(d.remaining<=0||(!d.moved&&!(d.failed||[]).length))break}
       m('✓ הסתיים: הועברו '+done+' קבצים'+(skip.length?'. '+skip.length+' לא הועברו ('+errs.slice(0,2).join(' · ')+'), הם ממשיכים לעבוד מ־Supabase':'')+'. כדאי לרענן את הדף (Ctrl+F5).');
