@@ -1,5 +1,5 @@
 /* Worker קטן ב-Cloudflare שמפעיל פעם ביום את ריצת הלילה של האתר (תזכורות, גיבוי, ניקוי).
-   נדרש רק אם האתר עובר ל-Cloudflare Pages (ב-Vercel זה מוגדר ב-vercel.json).
+   נדרש רק אם האתר עובר ל-Cloudflare Pages (ב-Vercel זה היה מוגדר ב-vercel.json תחת "crons"; הוסר במעבר. לחזרה ל-Vercel: להחזיר {"path":"/api/cron-reminders","schedule":"0 4 * * *"}).
    הקמה: Workers & Pages → Create → Worker → מדביקים את הקוד → Deploy.
    Settings → Variables: CRON_SECRET (אותו ערך כמו באתר, מוצפן), SITE = https://www.myluach.org
    Settings → Triggers → Cron Triggers → Add: 0 4 * * *   (04:00 UTC, כלומר 06:00–07:00 בישראל) */
