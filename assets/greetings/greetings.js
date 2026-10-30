@@ -787,6 +787,7 @@ function readImg(file, max, cb){
   im.src = url;
 }
 function bgPanel(box, getS, changed, colorRow, tpl, edges){
+  var areaOpen = false; /* עיצוב שהמקום לטקסט נקבע בו בניהול: שינוי המקום רק אחרי לחיצה */
   function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
   function rng(label, min, max, val, fn){ var l = el('label', 'bgp-r', label), r = document.createElement('input'); r.type = 'range'; r.min = min; r.max = max; r.value = val; r.oninput = function(){ fn(+r.value); changed(); }; l.appendChild(r); return l; }
   function draw(){
@@ -809,14 +810,24 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
       box.appendChild(el('div', 'bgp-n', 'תמונה בגודל A4 (לפחות 1240×1754 פיקסלים להדפסה טובה).'));
       }
       box.appendChild(el('div', 'bgp-h', 'איפה יושב הטקסט'));
-      if (fixedA) box.appendChild(el('div', 'bgp-n', (tpl.areas2 || []).length ? 'המקומות לטקסט נקבעו בעיצוב. שינוי המרחקים כאן יהפוך אותם למקום אחד.' : 'המקום לטקסט נקבע בעיצוב. אפשר לשנות אותו כאן.'));
+      var lockA = fixedA && !areaOpen;
+      if (S.area && S.area.mine && (ty === 'frame' || tpl.areaSet)) { var rr = el('div', 'bgp-b'), rbt = el('button', 'pill', '↺ חזרה למקום הטקסט של העיצוב'); rbt.type = 'button'; rbt.onclick = function(){ delete S.area; areaOpen = false; changed(); draw(); }; rr.appendChild(rbt); box.appendChild(rr); }
+      if (lockA) {
+        box.appendChild(el('div', 'bgp-n', 'המקום לטקסט כבר מוכן לפי העיצוב, והטקסט נכנס לתוכו לבד.'));
+        var ur = el('div', 'bgp-b'), ub2 = el('button', 'pill', '✎ לשנות בעצמי את המקום של הטקסט'); ub2.type = 'button'; ub2.onclick = function(){ areaOpen = true; draw(); }; ur.appendChild(ub2); box.appendChild(ur);
+      } else {
+      if (fixedA && (tpl.areas2 || []).length) box.appendChild(el('div', 'bgp-n', 'שימו לב: שינוי המרחקים כאן יהפוך את כל המקומות לטקסט למקום אחד.'));
       [['t', 'מרחק מלמעלה'], ['b', 'מרחק מלמטה'], ['r', 'מרחק מימין'], ['l', 'מרחק משמאל']].forEach(function(x){ box.appendChild(rng(x[1], 0, 45, ar[x[0]] == null ? 13 : ar[x[0]], function(v){ ar[x[0]] = v; ar.mine = 1; S.area = ar; })); });
       var vt = document.createElement('input'); vt.type = 'checkbox'; vt.checked = ar.v === 'top'; vt.id = 'bgpV' + Math.random().toString(36).slice(2, 6);
       var vl = el('label', '', 'הטקסט מתחיל מלמעלה (במקום באמצע)'); vl.htmlFor = vt.id; var vw = el('div', 'bgp-t'); vw.append(vt, vl); box.appendChild(vw);
       vt.onchange = function(){ ar.v = vt.checked ? 'top' : 'center'; ar.mine = 1; S.area = ar; changed(); };
+      }
     }
     /* צורה ושיפוע של שטח הטקסט */
     var TS = S.tshape || (S.tshape = clone((tpl && tpl.tshape) || {}));
+    var shapeLock = (typeof lockA !== 'undefined' && lockA) || (typeOf(tpl) === 'design' && !tpl.noArea && !areaOpen && (tpl.tshape || (tpl.areas2 || []).length));
+    if (shapeLock) { if (typeOf(tpl) === 'design') { var dr = el('div', 'bgp-b'), db2 = el('button', 'pill', '✎ לשנות את הצורה של שטח הטקסט'); db2.type = 'button'; db2.onclick = function(){ areaOpen = true; draw(); }; dr.appendChild(db2); box.appendChild(dr); } }
+    else {
     box.appendChild(el('div', 'bgp-h', 'צורת שטח הטקסט'));
     var sr = el('div', 'bgp-b');
     TSHAPES.forEach(function(x){ var b = el('button', 'pill', x[1]); b.type = 'button'; b.setAttribute('aria-pressed', String((TS.s || 'rect') === x[0])); b.onclick = function(){ TS.s = x[0]; if (x[0] !== 'rect' && S.panel && !S.panel.on && !(S.ubg && S.ubg.src)) { S.panel.on = true; } changed(); draw(); }; sr.appendChild(b); });
@@ -827,6 +838,7 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
       tc.onchange = function(){ if (tc.checked) delete TS.tt; else TS.tt = false; changed(); }; }
     if (TS.s === 'trap' || TS.s === 'trapi') box.appendChild(rng('רוחב החלק הצר', 15, 95, Math.round((TS.k == null ? 0.5 : TS.k) * 100), function(v){ TS.k = v / 100; }));
     if (TS.a) { var zr = el('div', 'bgp-b'), zb = el('button', 'pill', 'ישר, בלי שיפוע'); zb.type = 'button'; zb.onclick = function(){ TS.a = 0; changed(); draw(); }; zr.appendChild(zb); box.appendChild(zr); }
+    }
     var P = S.panel || (S.panel = { on: false, color: '#ffffff', op: 0.85, r: 20, pad: 14 });
     var t = el('div', 'bgp-t'); var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!P.on; cb.id = 'bgpOn' + Math.random().toString(36).slice(2, 6);
     var lb = el('label', '', 'צבע לשטח הטקסט'); lb.htmlFor = cb.id; t.append(cb, lb); box.appendChild(t);
