@@ -304,7 +304,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 
 <div class="stage" id="stage">
   <div class="sheet"><canvas id="cv" aria-label="הדף" role="img"></canvas></div>
-  <div id="selbox" hidden><button class="hnd" type="button" id="hnd" title="גוררים למעלה או למטה כדי לשנות את הרווח">⇕ רווח</button></div>
+  <div id="selbox" hidden><button class="hnd" type="button" id="hnd" title="גוררים למעלה או למטה כדי להזיז את השורה">⇕ הזזה</button></div>
   <textarea class="inl" id="inl" hidden aria-label="עריכת הטקסט"></textarea>
   <textarea class="inl" id="inl2" hidden aria-label="עריכת הטור השני"></textarea>
   <div id="tb" hidden role="toolbar" aria-label="עיצוב השורה"></div>
@@ -534,7 +534,9 @@ function dragOn(el, onStart, onMove){
     el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
   });
 }
-dragOn($('hnd'), function(){ return G.vpos(S.blocks[sel]) }, function(g0, dx, dy){ G.setVpos(S.blocks[sel], Math.min(400, g0 + dy / k())); changed(); });
+/* הזזת שורה למעלה / למטה (גם בגרירת "⇕" וגם בחצים): השורה זזה בחופשיות, עד קצה הדף */
+function setDy(b, v){ var it0 = item(sel), cur = +b.dy || 0, lo = -900, hi = 900; if (it0) { var base = it0.y - cur; lo = 4 - base; hi = D().H - it0.h - 4 - base; } b.dy = Math.round(Math.max(lo, Math.min(hi, v))); if (!b.dy) delete b.dy; }
+dragOn($('hnd'), function(){ return +S.blocks[sel].dy || 0 }, function(d0, dx, dy){ setDy(S.blocks[sel], d0 + dy / k()); changed(); });
 dragOn($('selbox'), function(){ var b = S.blocks[sel]; if (b.g0 == null) b.g0 = b.gap || 0; return { ox: b.ox || 0, oy: b.oy || 0, w: boxOf(item(sel)).w * k(), dx: b.dx || 0, gap: b.gap || 0, dy: +b.dy || 0, ax: b.abs ? b.abs.x : 0, ay: b.abs ? b.abs.y : 0 } }, function(s0, dx, dy){
   var b = S.blocks[sel]; if (b.type !== 'photo') return;
   if (b.abs) { var dd = D(); b.abs.x = Math.round(Math.max(-b.abs.w / 2, Math.min(dd.W - b.abs.w / 2, s0.ax + dx / k()))); b.abs.y = Math.round(Math.max(-100, Math.min(dd.H - 40, s0.ay + dy / k()))); changed(); return; }
@@ -619,7 +621,7 @@ function renderTb(){
   var mvg = slot('הזזה'); mvg.classList.add('grp');
   var A = tpl.area, lim = A.w / 2;
   if (b.g0 == null) b.g0 = b.gap || 0;
-  function nudge(dx, dy){ if (b.abs) return function(){ b.abs.x += dx * 2; b.abs.y += dy * 2; changed(); }; return function(){ if (dy) { var it0 = item(sel), cur = +b.dy || 0, lo = -900, hi = 900; if (it0) { var base = it0.y - cur; lo = 4 - base; hi = D().H - it0.h - 4 - base; } b.dy = Math.round(Math.max(lo, Math.min(hi, cur + dy))); if (!b.dy) delete b.dy; } if (dx) b.dx = Math.max(-lim, Math.min(lim, (b.dx || 0) + dx)); changed(); renderTb(); }; }
+  function nudge(dx, dy){ if (b.abs) return function(){ b.abs.x += dx * 2; b.abs.y += dy * 2; changed(); }; return function(){ if (dy) setDy(b, (+b.dy || 0) + dy); if (dx) b.dx = Math.max(-lim, Math.min(lim, (b.dx || 0) + dx)); changed(); renderTb(); }; }
   tbBtn(mvg, '▶', 'הזזה ימינה', nudge(4, 0));
   tbBtn(mvg, '▲', 'הזזה למעלה', nudge(0, -4));
   if (!b.abs) mvg.appendChild(G.movePad(b, function(){ changed(); renderTb(); }));
