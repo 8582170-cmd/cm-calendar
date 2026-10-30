@@ -202,7 +202,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .azr{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mute);margin-top:4px}.azb{font:inherit;font-weight:700;min-width:34px;min-height:30px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--sheet);cursor:pointer}.azb[aria-pressed=true]{background:var(--teal);color:#fff;border-color:var(--teal)}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=53"></script>
+<script src="/assets/greetings/greetings.js?v=54"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 <script src="/assets/greetings/mine.js?v=1"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
@@ -534,8 +534,8 @@ function dragOn(el, onStart, onMove){
     el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
   });
 }
-/* הזזת שורה למעלה / למטה (גם בגרירת "⇕" וגם בחצים): השורה זזה בחופשיות, עד קצה הדף */
-function setDy(b, v){ var it0 = item(sel), cur = +b.dy || 0, lo = -900, hi = 900; if (it0) { var base = it0.y - cur; lo = 4 - base; hi = D().H - it0.h - 4 - base; } b.dy = Math.round(Math.max(lo, Math.min(hi, v))); if (!b.dy) delete b.dy; }
+/* הזזת שורה למעלה / למטה (גם בגרירת "⇕" וגם בחצים): בתוך אזור הטקסט שלה. למקום אחר בדף: "איפה בדף" */
+function setDy(b, v){ var it0 = item(sel), cur = +b.dy || 0, lo = -900, hi = 900; if (it0) { var base = it0.y - cur; lo = (it0.zy != null ? it0.zy : 4) - base; hi = (it0.zb != null ? it0.zb : D().H - 4) - it0.h - base; } b.dy = Math.round(Math.max(lo, Math.min(hi, v))); if (!b.dy) delete b.dy; }
 dragOn($('hnd'), function(){ return +S.blocks[sel].dy || 0 }, function(d0, dx, dy){ setDy(S.blocks[sel], d0 + dy / k()); changed(); });
 dragOn($('selbox'), function(){ var b = S.blocks[sel]; if (b.g0 == null) b.g0 = b.gap || 0; return { ox: b.ox || 0, oy: b.oy || 0, w: boxOf(item(sel)).w * k(), dx: b.dx || 0, gap: b.gap || 0, dy: +b.dy || 0, ax: b.abs ? b.abs.x : 0, ay: b.abs ? b.abs.y : 0 } }, function(s0, dx, dy){
   var b = S.blocks[sel]; if (b.type !== 'photo') return;

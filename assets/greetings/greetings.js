@@ -515,7 +515,7 @@ function layout1(ctx, A, blocks, state, z, k){
   /* שורה שהוזזה (dy): המיקום של כל השאר נקבע בלי ההזזה, ורק הרוחב של השורה מחושב לפי המקום החדש שלה */
   if ((A.wfn || A.cfn) && blocks.some(function(b){ return b && +b.dy; })) { useDy = true; pass(f); }
   var tl = z.sh.a && z.sh.tt !== false ? { cx: z.A.x + z.A.w / 2, cy: z.A.y + z.A.h / 2, a: z.sh.a * Math.PI / 180 } : null;
-  items.forEach(function(it){ it.y = A.y + off + it.top + (+it.b.dy || 0); if (+it.b.dy) it.y = Math.max(4, Math.min(H - it.h - 4, it.y)); /* שורה שהוזזה לא יוצאת מהדף */ it.w = it.bw || A.w; it.x = (it.bl != null ? it.bl : A.x + (A.w - it.w) / 2) + (it.b.dx || 0); it.tilt = tl; });
+  items.forEach(function(it){ it.y = A.y + off + it.top + (+it.b.dy || 0); it.zy = Math.max(4, z.A.y); it.zb = Math.min(H - 4, z.A.y + z.A.h); if (+it.b.dy) it.y = Math.max(it.zy, Math.min(it.zb - it.h, it.y)); /* שורה שהוזזה נשארת בתוך אזור הטקסט שלה */ it.w = it.bw || A.w; it.x = (it.bl != null ? it.bl : A.x + (A.w - it.w) / 2) + (it.b.dx || 0); it.tilt = tl; });
   return items;
 }
 
