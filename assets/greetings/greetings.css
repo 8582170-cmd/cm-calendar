@@ -104,3 +104,8 @@ footer{border-top:1px solid var(--line);padding-block:24px;color:var(--mute);fon
 .types button{font:inherit;font-weight:800;font-size:18px;min-height:50px;padding:8px 22px;border-radius:14px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer}
 .types button[aria-selected="true"]{border-color:var(--teal);background:var(--teal);color:var(--teal-ink)}
 .tdesc{margin:4px 0 6px;color:var(--mute);font-size:17px}
+
+/* העיצובים שלי */
+.mygr{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}.mygr h2{margin:0;font-size:24px}
+.card.my .sheet{display:flex;align-items:center;justify-content:center;background:#eef0f0}.card.my .sheet img{max-width:100%;max-height:100%;display:block;box-shadow:0 1px 6px rgb(0 0 0 / .18)}
+.my-b{display:flex;gap:8px;flex-wrap:wrap}.my-b .pill{font:inherit;font-size:14px;font-weight:700;min-height:36px;padding:4px 14px;border:1.5px solid #d5dada;border-radius:999px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;display:inline-flex;align-items:center}

@@ -9,9 +9,10 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&family=Suez+One&family=Bellefair&display=swap">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=6">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=44"></script>
+<script src="/assets/greetings/mine.js?v=1"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -32,6 +33,11 @@
       <h1>ברכה מעוצבת, מוכנה תוך דקות</h1>
       <p>בוחרים עיצוב, כותבים את השמות ואת הנוסח, משנים צבעים וגופנים כרצונכם, ומורידים קובץ להדפסה או תמונה לשליחה בוואטסאפ.</p>
     </div>
+    <section class="mygr" id="mygr" hidden aria-labelledby="mygrH">
+      <h2 id="mygrH">העיצובים שלי</h2>
+      <p class="tdesc">עיצובים ששמרתם בחשבון. פותחים, משנים רק מה שצריך (למשל השם), ומורידים.</p>
+      <div class="gal" id="mygrL"></div>
+    </section>
     <details class="mine" id="mine">
       <summary><span class="mi">✎</span><span><b>רוצים לראות את השמות שלכם?</b><small>כותבים פעם אחת, ורואים אותם בכל העיצובים</small></span></summary>
       <div class="mine-f" id="mineF"></div>
@@ -114,6 +120,25 @@ function list(){
   });
 }
 tabs(); chips(); mine(); list();
+/* העיצובים שלי (למי שמחובר) */
+function myList(){
+  if (!window.MyGreets) return;
+  MyGreets.user().then(function(u){ if (!u) return null; return MyGreets.list(); }).then(function(ix){
+    var box = document.getElementById('mygrL'), sec = document.getElementById('mygr'); if (!ix) return;
+    var ids = Object.keys(ix).sort(function(a, b){ return String(ix[b].updated).localeCompare(String(ix[a].updated)); });
+    sec.hidden = !ids.length; box.innerHTML = '';
+    ids.forEach(function(id){ var x = ix[id], a = document.createElement('div'); a.className = 'card my';
+      var href = '/brachot/edit.html?t=' + encodeURIComponent(x.tpl) + (x.v >= 0 ? '&v=' + x.v : '') + '&my=' + encodeURIComponent(id);
+      a.innerHTML = '<a class="sheet" href=""><img alt=""></a><h3></h3><span class="meta"></span><div class="my-b"><a class="pill" href="">פתיחה ועריכה</a><button type="button" class="pill">מחיקה</button></div>';
+      a.querySelectorAll('a').forEach(function(l){ l.href = href; });
+      var im = a.querySelector('img'); if (x.thumb) im.src = x.thumb; else im.remove();
+      a.querySelector('h3').textContent = x.title || 'עיצוב';
+      a.querySelector('.meta').textContent = 'נשמר ' + new Date(x.updated).toLocaleDateString('he-IL');
+      var del = a.querySelector('button'); del.onclick = function(){ if (!del.dataset.sure) { del.dataset.sure = 1; del.textContent = 'בטוח? ללחוץ שוב'; return; } MyGreets.remove(id).then(myList); };
+      box.appendChild(a); });
+  }).catch(function(){});
+}
+myList();
 });
 </script>
 </body>

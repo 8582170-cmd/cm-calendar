@@ -8,7 +8,7 @@
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&display=swap">
-<link rel="stylesheet" href="/assets/greetings/greetings.css?v=6">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
 <style>
 body{font-size:18px}
 /* שלבים */
@@ -203,6 +203,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=44"></script>
 <script src="/assets/pay.js?v=1" defer></script>
+<script src="/assets/greetings/mine.js?v=1"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -220,6 +221,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <span class="cloud" id="cloud" role="status"></span>
     <button class="pill" type="button" id="toClassic" title="המבנה הקודם: הדף בצד, והפסקאות ככרטיסים">⇄ עורך קלאסי</button>
+    <button class="pill" type="button" id="mySave" title="שומרים את כל הדף והטקסט בחשבון, ובפעם הבאה משנים רק מה שצריך">💾 שמירה בעיצובים שלי</button>
     <div class="steps" role="tablist" aria-label="שלבים">
       <button type="button" role="tab" data-go="1"><b>1</b>פרטים</button>
       <button type="button" role="tab" data-go="2"><b>2</b>עיצוב</button>
@@ -291,6 +293,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
         <p class="info" id="szInfo"></p>
         <div class="nextrow" style="justify-content:start"><button class="big-btn" type="button" id="dl">⬇ הורדה</button><button class="big-btn ghost" type="button" id="share" hidden>שליחה…</button></div>
         <p class="msg" id="msg" role="status"></p>
+        <div class="nextrow" style="justify-content:start"><button class="pill" type="button" id="mySave2">💾 שמירה בעיצובים שלי</button><span class="info" id="myMsg" role="status"></span></div>
         <div class="nextrow"><button class="pill" type="button" data-go="2">→ חזרה לעיצוב</button><button class="pill" type="button" id="resetAll">התחלה מחדש</button></div>
       </div>
       <div class="outpv"><canvas id="outPv" aria-label="תצוגה של הקובץ" role="img"></canvas></div>
@@ -330,15 +333,16 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 </dialog>
 
 <script>
-(function(){ try { var u = JSON.parse(localStorage.getItem('myluach-greet-ui') || '{}') || {}; if (u.classic && !/[?&](o|steps)=/.test(location.search)) location.replace('/brachot/edit-classic.html' + location.search); } catch (e) {} })();
+(function(){ try { var u = JSON.parse(localStorage.getItem('myluach-greet-ui') || '{}') || {}; if (u.classic && !/[?&](o|steps|my)=/.test(location.search)) location.replace('/brachot/edit-classic.html' + location.search); } catch (e) {} })();
 var Q0 = new URLSearchParams(location.search), OKEY = 'myluach-greet-ord-' + (Q0.get('t') || '') + '-' + (Q0.get('v') || '');
 var CRED = Q0.get('o') && Q0.get('k') ? { o: Q0.get('o'), k: Q0.get('k') } : null;
 if (!CRED) { try { CRED = JSON.parse(localStorage.getItem(OKEY) || 'null') } catch (e) {} }
 function gp(body){ return fetch('/api/pricing?c=_greetpay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok) throw Object.assign(new Error(j.error || r.status), { msg: j.message, code: r.status }); return j; }); }); }
 var REC0 = CRED ? gp(Object.assign({ action: 'get' }, CRED)).catch(function(e){ return { error: e }; }) : Promise.resolve(null);
-Promise.all([window.Greetings.load(), REC0]).then(function(R0){
+var MY0 = Q0.get('my') && window.MyGreets ? MyGreets.get(Q0.get('my')).catch(function(){ return null; }) : Promise.resolve(null);
+Promise.all([window.Greetings.load(), REC0, MY0]).then(function(R0){
 'use strict';
-var GD = R0[0] || {}, REC = R0[1];
+var GD = R0[0] || {}, REC = R0[1], MYREC = R0[2], MYID = MYREC ? Q0.get('my') : null;
 if (REC && REC.error) { if (!(Q0.get('o'))) { try { localStorage.removeItem(OKEY) } catch (e) {} REC = null; CRED = null; } }
 var G = window.Greetings, $ = function(id){ return document.getElementById(id) };
 var params = new URLSearchParams(location.search), tpl = G.get((REC && REC.tpl) || params.get('t') || '');
@@ -355,6 +359,8 @@ var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, narrow = ma
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null, fresh = true;
 try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area && (sv.area.mine || !(G.typeOf(tpl) === 'frame' || tpl.areaSet))) S.area = sv.area; if (sv.tshape) S.tshape = sv.tshape; if (sv.page) S.page = sv.page; if (sv.border) S.border = sv.border; if (sv.preset) S.preset = sv.preset; if (sv.selfText) S.selfText = true; fresh = false; } } catch (e) {}
 if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; S.panel = REC.state.panel; S.ubg = REC.state.ubg; S.page = REC.state.page; S.border = REC.state.border; if (REC.state.area && (REC.state.area.mine || !(G.typeOf(tpl) === 'frame' || tpl.areaSet))) S.area = REC.state.area; if (REC.state.tshape) S.tshape = REC.state.tshape; S.preset = REC.state.preset; if (REC.state.own) S.own = REC.state.own; fresh = false; }
+/* עיצוב שנשמר בחשבון ("העיצובים שלי"): נפתח בדיוק כמו שנשמר */
+if (MYREC && MYREC.state && Array.isArray(MYREC.state.blocks) && !(REC && REC.state)) { Object.keys(MYREC.state).forEach(function(k){ S[k] = MYREC.state[k]; }); fresh = false; }
 if (fresh) G.applyProfile(S.blocks, null, tpl.cat, tpl.kind);
 /* תשלום: מצב ההזמנה. free = עיצוב חינמי · unpaid · edit = שולם ובזמן השינויים · dl = רק הורדה · expired */
 var PAID = (tpl.price || 0) > 0, ORD = REC && !REC.error ? REC : null, SKEW = ORD ? Date.parse(ORD.now) - Date.now() : 0, PAYCFG = GD.pay || { editHours: 48, dlDays: 30 };
@@ -377,6 +383,28 @@ function flash(t){ $('msg').textContent = t; }
 
 /* ביטול וחזרה */
 var hist = [], redoS = [], last = JSON.stringify(S), lastT = 0;
+/* העיצובים שלי: שמירה בחשבון */
+function mySaveRun(asNew){
+  if (!window.MyGreets) return;
+  var m = $('myMsg'); if (m) m.textContent = 'שומר…';
+  MyGreets.user().then(function(u){
+    if (!u) { if (confirm('כדי לשמור בעיצובים שלי צריך להתחבר לחשבון באתר (חינם). לעבור לכניסה עכשיו? העיצוב יישמר גם בדפדפן.')) { save(); location.href = MyGreets.loginUrl(); } if (m) m.textContent = ''; return; }
+    var title = MYID && !asNew ? (MYREC.title || tpl.title) : prompt('שם לעיצוב (כדי למצוא אותו אחר כך):', (MYREC && MYREC.title) || tpl.title);
+    if (title == null) { if (m) m.textContent = ''; return; }
+    title = String(title).trim().slice(0, 60) || tpl.title;
+    var rec = { title: title, tpl: tpl.variantOf || tpl.id, v: tpl.variantOf ? tpl.variant : -1, state: JSON.parse(JSON.stringify(S)) };
+    return MyGreets.save(asNew ? null : MYID, rec, { title: title, tpl: rec.tpl, v: rec.v, kind: tpl.kind, thumb: MyGreets.thumb($('cv')) }).then(function(id){
+      MYID = id; MYREC = rec;
+      try { var q = new URLSearchParams(location.search); q.set('my', id); history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash); } catch (e) {}
+      if (m) m.textContent = '✓ נשמר בעיצובים שלי. בפעם הבאה פותחים אותו מעמוד הברכות ומשנים רק מה שצריך.';
+      if ($('mySave')) $('mySave').textContent = '✓ נשמר · שמירה שוב';
+      flash('✓ נשמר בעיצובים שלי');
+    });
+  }).catch(function(e){ if (m) m.textContent = e && e.login ? 'צריך להתחבר לחשבון.' : 'השמירה נכשלה. נסו שוב.'; });
+}
+if ($('mySave')) $('mySave').onclick = function(){ mySaveRun(false); };
+if ($('mySave2')) $('mySave2').onclick = function(){ mySaveRun(false); };
+if (MYID && $('mySave')) $('mySave').textContent = '💾 שמירת השינויים (' + (MYREC.title || 'העיצוב שלי') + ')';
 function changed(){
   var cur = JSON.stringify(S), now = Date.now();
   if (cur !== last) { if (now - lastT > 700) { hist.push(last); if (hist.length > 100) hist.shift(); redoS = []; } lastT = now; last = cur; }
