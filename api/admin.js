@@ -176,6 +176,32 @@ module.exports = async (req, res) => {
       }
       return json(res, 200, { presets: g.presets || [] });
     }
+    /* העברת התמונות שהועלו מ-Supabase ל-Cloudflare R2 (הדלי הציבורי), בכמה קבצים בכל פעם. הקבצים ב-Supabase נשארים כגיבוי */
+    if (req.method === 'POST' && b.action === 'mediamigrate') {
+      const R = require('./_r2'), M = R.media();
+      if (!M) return json(res, 400, { error: 'הדלי הציבורי ב-Cloudflare לא מוגדר: צריך ב-Vercel את R2_MEDIA_BUCKET ואת R2_MEDIA_URL (ואת R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET)' });
+      const { loadSetting, saveSetting } = require('./_lib');
+      const KEYS = ['greettpl', 'greetstickers', 'library'], S = {};
+      for (const k of KEYS) S[k] = JSON.stringify(await loadSetting(k) || {});
+      const rx = /https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/library\/([^\s"'<>?\\]+)/g, all = new Set();
+      KEYS.forEach(k => { for (const m of S[k].matchAll(rx)) all.add(m[0]); });
+      const skip = new Set((Array.isArray(b.skip) ? b.skip : []).slice(0, 1000)), list = [...all].filter(u => !skip.has(u)), take = b.dry ? [] : list.slice(0, Math.max(1, Math.min(6, +b.n || 3))), errors = [], bad = [];
+      let moved = 0;
+      for (const url of take) {
+        try {
+          const path = decodeURIComponent(url.split('/object/public/library/')[1]);
+          const g = await fetch(url); if (!g.ok) throw new Error('הורדה ' + g.status);
+          const buf = Buffer.from(await g.arrayBuffer()), type = g.headers.get('content-type') || 'application/octet-stream';
+          const put = await fetch(R.presign('PUT', path, 900, null, M), { method: 'PUT', headers: { 'Content-Type': type }, body: buf });
+          if (!put.ok) throw new Error('העלאה ' + put.status);
+          const nu = M.url + '/' + path.split('/').map(x => encodeURIComponent(x)).join('/');
+          KEYS.forEach(k => { S[k] = S[k].split(url).join(nu); });
+          moved++;
+        } catch (e) { errors.push(String(e.message || e).slice(0, 120)); bad.push(url); }
+      }
+      if (moved) for (const k of KEYS) await saveSetting(k, JSON.parse(S[k]));
+      return json(res, 200, { total: list.length + skip.size, moved, remaining: list.length - moved - bad.length, failed: bad, errors });
+    }
     /* מאגר התמונות ללקוחות */
     if (req.method === 'POST' && /^lib(get|upload|import|save|delete|media|cat)$/.test(b.action || '')) {
       try { const out = await require('./_lib_img').adminAction(b); return json(res, out.error ? 400 : 200, out); }

@@ -195,6 +195,11 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
     <div class="savebar"><button class="btn primary" type="button" id="prSave">שמירת הנוסחים</button><span id="prMsg" role="status"></span></div>
   </section>
 
+  <section aria-labelledby="mv-h">
+    <h2 id="mv-h">העברת התמונות ל־Cloudflare R2</h2>
+    <p class="sub">מעבירה את כל התמונות שהועלו ל־Supabase (רקעים, מסגרות, מדבקות ותמונות המאגר של הלוח) לדלי הציבורי ב־Cloudflare, ומעדכנת את הכתובות בכל העיצובים. הקבצים ב־Supabase נשארים כגיבוי (אפשר למחוק אותם אחר כך). עובד רק אחרי שהוגדרו ב־Vercel R2_MEDIA_BUCKET ו־R2_MEDIA_URL.</p>
+    <div class="actions"><button class="btn" type="button" id="mvCount">כמה תמונות יש ב־Supabase?</button><button class="btn primary" type="button" id="mvGo">העברת הכל ל־Cloudflare</button><span class="sub" id="mvMsg" role="status"></span></div>
+  </section>
   <section aria-labelledby="tp-h">
     <h2 id="tp-h">עיצובים ללקוחות (דפים מוכנים)</h2>
     <p class="sub">כאן מעלים רקע שייצרת (למשל ב־Firefly), מסמנים עליו בגרירה את אזור הטקסט, ובוחרים אירוע וסוג. אחרי שמירה העיצוב מופיע בגלריה ללקוחות ב־myluach.org/brachot.</p>
@@ -501,7 +506,7 @@ function tpInit(){
   $('tpSave').onclick=tpSaveAll;
   $('payH').oninput=()=>{TP.pay=TP.pay||{};TP.pay.editHours=+$('payH').value;tpMsg('ללחוץ "שמירה" בתחתית.')};
   $('payD').oninput=()=>{TP.pay=TP.pay||{};TP.pay.dlDays=+$('payD').value;tpMsg('ללחוץ "שמירה" בתחתית.')};
-  tpBatchInit();
+  tpBatchInit();try{mvInit()}catch(e){}
   $('tpSelAll').onclick=()=>{tpVisible().forEach(t=>TPSEL.add(t.id));tpRender()};$('tpSelNone').onclick=()=>{TPSEL.clear();tpRender()};
   Promise.all([GR.catalog(),api({action:'greettplget'})]).then(([_,d])=>{TP=d;TP.pay=TP.pay||{editHours:48,dlDays:30};$('payH').value=TP.pay.editHours;$('payD').value=TP.pay.dlDays;tpCats();tpRender()}).catch(e=>{$('tpList').innerHTML='<p class="msg">לא הצלחתי לטעון: '+esc(e.message)+'</p>'});
 }
@@ -657,6 +662,19 @@ function stInit(){
   api({action:'greetstickget'}).then(d=>{ST=d;stRender()}).catch(e=>{$('stList').innerHTML='<p class="msg">לא הצלחתי לטעון: '+esc(e.message)+'</p>'});
 }
 function stSave(n){stMsg('שומר…');api({action:'greetsticksave',...ST}).then(d=>{ST=d;stRender();stMsg((n!=null?'הועלו '+n+'. ':'')+'נשמר. הלקוחות יראו תוך כמה דקות.',true)}).catch(e=>stMsg('השמירה נכשלה: '+e.message))}
+/* העברת תמונות מ-Supabase ל-R2: כמה קבצים בכל קריאה, עד שנגמר */
+function mvInit(){
+  const m=t=>{$('mvMsg').textContent=t};
+  $('mvCount').onclick=()=>{m('בודק…');api({action:'mediamigrate',dry:true}).then(d=>m(d.total?'יש '+d.total+' קבצים ב־Supabase שאפשר להעביר.':'✓ אין תמונות ב־Supabase. הכל כבר ב־Cloudflare.')).catch(e=>m(e.message))};
+  $('mvGo').onclick=async()=>{const b=$('mvGo');b.disabled=true;let done=0,skip=[],errs=[];
+    try{for(;;){const d=await api({action:'mediamigrate',n:2,skip});done+=d.moved;skip=skip.concat(d.failed||[]);errs=errs.concat(d.errors||[]);
+        m('הועברו '+done+(d.remaining>0?' · נשארו '+d.remaining:'')+(skip.length?' · '+skip.length+' נכשלו':''));
+        if(d.remaining<=0||(!d.moved&&!(d.failed||[]).length))break}
+      m('✓ הסתיים: הועברו '+done+' קבצים'+(skip.length?'. '+skip.length+' לא הועברו ('+errs.slice(0,2).join(' · ')+'), הם ממשיכים לעבוד מ־Supabase':'')+'. כדאי לרענן את הדף (Ctrl+F5).');
+      api({action:'greettplget'}).then(d=>{TP=d;TP.pay=TP.pay||{editHours:48,dlDays:30};tpRender();tpCats()}).catch(()=>{});api({action:'greetstickget'}).then(d=>{ST=d;stRender()}).catch(()=>{});
+    }catch(e){m('נעצר: '+e.message+'. אפשר ללחוץ שוב, וזה ימשיך מאיפה שנעצר.')}
+    b.disabled=false};
+}
 function tpBatchInit(){
   $('tpBatch').onclick=()=>{$('tpBatchBox').hidden=false;$('tbC').innerHTML=TPCATS().map(c=>'<option value="'+esc(c[0])+'">'+esc(c[1])+'</option>').join('');$('tbC').value=$('tpFilter').value||'wedding'};
   $('tbX').onclick=()=>{$('tpBatchBox').hidden=true};
