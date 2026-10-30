@@ -6,7 +6,7 @@
   var sbP = null;
   function loadScript(src){ return new Promise(function(ok, bad){ var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); }); }
   function client(){
-    if (!sbP) sbP = (window.supabase ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js')).then(function(){
+    if (!sbP) sbP = (window.supabase ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js').catch(function(){ return loadScript('/cdn/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'); })).then(function(){
       return window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'myluach-auth' } });
     }).catch(function(){ return null; });
     return sbP;

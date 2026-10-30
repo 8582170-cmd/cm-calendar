@@ -1,8 +1,10 @@
-/* /cdn/...: ספריות ומודלים חיצוניים (גזירת דמויות, זיהוי פנים) מוגשים מהדומיין של האתר.
+/* /cdn/...: גיבוי לספריות ולמודלים חיצוניים (הלוח העברי, התחברות, אקסל, גזירת דמויות, זיהוי פנים) דרך הדומיין של האתר.
+   הדפדפן טוען קודם ישירות מהמקור, ורק אם זה נכשל (סינון וכו') פונה לכאן.
    כך הגולש פונה רק ל-myluach.org (חשוב למסננים כמו נטפרי ורימון), והשרת מביא את הקובץ מהמקור ושומר אותו במטמון של Cloudflare.
    /cdn/npm/<חבילה@גרסה>/...  ←  cdn.jsdelivr.net/npm/...   ·   /cdn/hf/<מודל>/...  ←  huggingface.co/...
    רק חבילות ומודלים מהרשימה, בגרסה קבועה. */
-const NPM = ['@vladmandic/face-api@1.7.15', '@mediapipe/selfie_segmentation@0.1.1675465747', '@huggingface/transformers@3.5.1'];
+const NPM = ['@vladmandic/face-api@1.7.15', '@mediapipe/selfie_segmentation@0.1.1675465747', '@huggingface/transformers@3.5.1',
+  '@hebcal/core@5.10.1', '@supabase/supabase-js@2.45.4', 'xlsx@0.18.5'];
 const HF = ['Xenova/modnet/'];
 export async function onRequest({ request, params, waitUntil }) {
   if (request.method === 'OPTIONS') return new Response(null, { headers: cors() });

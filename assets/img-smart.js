@@ -2,9 +2,9 @@
    הספריות נטענות רק כשמשתמשים בהן (מ-jsdelivr), והכל רץ בדפדפן: התמונות לא נשלחות לשום שרת. */
 (function(){
   'use strict';
-  /* קודם מהדומיין של האתר (/cdn, טוב למסננים כמו נטפרי), ואם לא זמין (למשל באתר הגיבוי) ישירות מ-jsdelivr ומ-Hugging Face */
+  /* קודם ישירות מ-jsdelivr ומ-Hugging Face, ואם נכשל (למשל חסימה של מסנן כמו נטפרי) דרך השרת של האתר (/cdn) */
   const JD='https://cdn.jsdelivr.net/npm/',OWN=/(^|\.)myluach\.(org|pages\.dev)$/.test(location.hostname)?location.origin+'/cdn/':'';
-  const SRC=OWN?[OWN+'npm/',JD]:[JD];
+  const SRC=OWN?[JD,OWN+'npm/']:[JD];
   async function tryEach(fn){let err;for(const b of SRC){try{return await fn(b)}catch(e){err=e;console.warn('smart-load',b,e)}}throw err}
   const FA_='@vladmandic/face-api@1.7.15/',SS_='@mediapipe/selfie_segmentation@0.1.1675465747/';
   /* גזירת דמות באיכות גבוהה: MODNet (רישיון Apache 2.0) דרך transformers.js. המודל (כ־25MB) נטען מ-Hugging Face בפעם הראשונה ונשמר בדפדפן */

@@ -30,7 +30,7 @@ function monthCut(months){const n=PLAN().months;return n<months.length&&months[n
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
 const stage=$('#stage');
 /* ספריית הלוח העברי לא נטענה: מנסים שוב לבד משרת אחר, ורק אם גם זה נכשל מציגים כפתור "נסו שוב" */
-if(!window.hebcal){const t=window.__hcTry=(window.__hcTry||0)+1,SRC=['https://cdn.jsdelivr.net/npm/@hebcal/core@5.10.1/dist/bundle.min.js','https://unpkg.com/@hebcal/core@5.10.1/dist/bundle.min.js'];
+if(!window.hebcal){const t=window.__hcTry=(window.__hcTry||0)+1,SRC=['https://cdn.jsdelivr.net/npm/@hebcal/core@5.10.1/dist/bundle.min.js','https://unpkg.com/@hebcal/core@5.10.1/dist/bundle.min.js','/cdn/npm/@hebcal/core@5.10.1/dist/bundle.min.js'];
   stage.querySelectorAll('.err').forEach(n=>n.remove());
   if(t<=SRC.length){stage.insertAdjacentHTML('beforeend','<div class="err hc-wait">טוען את הלוח…</div>');const x=document.createElement('script');x.src=SRC[t-1]+(t===1?'?r='+Date.now():'');
     x.onload=x.onerror=()=>{const me=[...document.scripts].find(z=>/assets\/app\.js/.test(z.src));const y=document.createElement('script');y.src=me?me.src.replace(/([?&])rt=\d+/,'')+(me.src.includes('?')?'&':'?')+'rt='+t:'assets/app.js';document.body.appendChild(y)};
@@ -4003,7 +4003,7 @@ function acctInit(){
       try{history.replaceState(null,'',window.location.pathname)}catch(e){}setTimeout(()=>{if(!user)loginModal()},600)}
     return true;
   };
-  if(!start())loadScript('https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js').then(start).catch(()=>{});
+  if(!start())loadScript('https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js').catch(()=>loadScript('/cdn/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js')).then(start).catch(()=>{});
 }
 
 /* ---------- גוגל: כניסה בלחיצה אחת (One Tap) ובחירת תמונות מ-Google Photos ---------- */
@@ -4646,7 +4646,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t.dataset.lof!=='on'|
 async function learnOwnRows(file){
   if(/\.(csv|txt)$/i.test(file.name)){const tx=await file.text();const sep=/\t/.test(tx)?'\t':(tx.split(';').length>tx.split(',').length?';':',');
     return tx.replace(/^\ufeff/,'').split(/\r?\n/).map(l=>{const out=[];let cur='',q=false;for(let i=0;i<l.length;i++){const c=l[i];if(c==='"'){if(q&&l[i+1]==='"'){cur+='"';i++}else q=!q}else if(c===sep&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out.map(x=>x.trim())}).filter(r=>r.some(Boolean))}
-  if(!window.XLSX)await new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=XLSX_URL;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
+  if(!window.XLSX)await loadScript(XLSX_URL).catch(()=>loadScript('/cdn/npm/xlsx@0.18.5/dist/xlsx.full.min.js'));
   const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]];
   return XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}).filter(r=>r.some(x=>String(x).trim()))}
 function loDate(v){
