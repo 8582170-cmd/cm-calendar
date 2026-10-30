@@ -477,7 +477,7 @@ function layout1(ctx, A, blocks, state, z, k){
   }
   off = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
   var tl = z.sh.a && z.sh.tt !== false ? { cx: z.A.x + z.A.w / 2, cy: z.A.y + z.A.h / 2, a: z.sh.a * Math.PI / 180 } : null;
-  items.forEach(function(it){ it.y = A.y + off + it.top; it.w = it.bw || A.w; it.x = (it.bl != null ? it.bl : A.x + (A.w - it.w) / 2) + (it.b.dx || 0); it.tilt = tl; });
+  items.forEach(function(it){ it.y = A.y + off + it.top + (+it.b.dy || 0); it.w = it.bw || A.w; it.x = (it.bl != null ? it.bl : A.x + (A.w - it.w) / 2) + (it.b.dx || 0); it.tilt = tl; });
   return items;
 }
 
@@ -728,16 +728,19 @@ function newText(tpl, after){
 function newDivider(){ return D({ gap: 10 }); }
 /* משטח מיקום קטן: קו אנכי ואופקי עם נקודה באמצע. נקודה כתומה מראה כמה השורה זזה מהמקום המקורי.
    לחיצה עליו מחזירה את השורה למקום המקורי */
+/* הזזה למעלה / למטה: קודם משנים את הרווח מעל השורה, וכשהוא נגמר (0) ממשיכים להזיז את השורה עצמה למעלה (dy שלילי) */
+function vpos(b){ return (b.gap || 0) + (+b.dy || 0); }
+function setVpos(b, v){ v = Math.max(-500, Math.min(500, Math.round(v))); if (v >= 0) { b.gap = v; delete b.dy; } else { b.gap = 0; b.dy = v; } }
 function movePad(b, onReset){
   if (b.g0 == null) b.g0 = b.gap || 0;
-  var K = 13 / 70, px = Math.max(-13, Math.min(13, (b.dx || 0) * K)), py = Math.max(-13, Math.min(13, ((b.gap || 0) - b.g0) * K)), moved = px || py;
+  var K = 13 / 70, px = Math.max(-13, Math.min(13, (b.dx || 0) * K)), py = Math.max(-13, Math.min(13, (vpos(b) - b.g0) * K)), moved = px || py;
   var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'mpad';
   bt.title = moved ? 'לחיצה מחזירה למקום המקורי' : 'במקום המקורי'; bt.setAttribute('aria-label', bt.title);
   bt.innerHTML = '<svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><path d="M18 3v30M3 18h30" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>' +
     (moved ? '<path d="M18 18L' + (18 + px) + ' ' + (18 + py) + '" stroke="#e07a2f" stroke-width="1.5" stroke-dasharray="2 2"/>' : '') +
     '<circle cx="18" cy="18" r="4" fill="#fff" stroke="currentColor" stroke-width="1.5"/>' +
     (moved ? '<circle cx="' + (18 + px) + '" cy="' + (18 + py) + '" r="4.2" fill="#e07a2f"/>' : '') + '</svg>';
-  bt.onclick = function(){ b.gap = b.g0; b.dx = 0; if (onReset) onReset(); };
+  bt.onclick = function(){ b.gap = b.g0; b.dx = 0; delete b.dy; if (onReset) onReset(); };
   return bt;
 }
 /* לוח "רקע ושטח הטקסט" (משותף לשני העורכים): צבע לשטח הטקסט, ותמונת רקע של הלקוח */
@@ -1088,5 +1091,5 @@ window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   subTitle: function(t){ return /^bg-/.test(t.cat || '') ? 'דף רקע · ' + (CATS.find(function(x){ return x[0] === t.cat }) || [0, ''])[1] : KINDS[t.kind] + ' ל' + ((CATS.find(function(x){ return x[0] === t.cat }) || [0, t.cat])[1]); },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, areaNames: areaNames, areaOfBlock: function(tpl, state, b){ return blockArea(areasOf(tpl, state), b); }, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, areaNames: areaNames, areaOfBlock: function(tpl, state, b){ return blockArea(areasOf(tpl, state), b); }, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, vpos: vpos, setVpos: setVpos, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

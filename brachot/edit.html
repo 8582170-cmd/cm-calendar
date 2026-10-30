@@ -201,7 +201,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .azr{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mute);margin-top:4px}.azb{font:inherit;font-weight:700;min-width:34px;min-height:30px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--sheet);cursor:pointer}.azb[aria-pressed=true]{background:var(--teal);color:#fff;border-color:var(--teal)}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=44"></script>
+<script src="/assets/greetings/greetings.js?v=45"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 <script src="/assets/greetings/mine.js?v=1"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
@@ -527,11 +527,11 @@ function dragOn(el, onStart, onMove){
     el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
   });
 }
-dragOn($('hnd'), function(){ return S.blocks[sel].gap || 0 }, function(g0, dx, dy){ S.blocks[sel].gap = Math.max(0, Math.min(400, Math.round(g0 + dy / k()))); changed(); });
-dragOn($('selbox'), function(){ var b = S.blocks[sel]; if (b.g0 == null) b.g0 = b.gap || 0; return { ox: b.ox || 0, oy: b.oy || 0, w: boxOf(item(sel)).w * k(), dx: b.dx || 0, gap: b.gap || 0, ax: b.abs ? b.abs.x : 0, ay: b.abs ? b.abs.y : 0 } }, function(s0, dx, dy){
+dragOn($('hnd'), function(){ return G.vpos(S.blocks[sel]) }, function(g0, dx, dy){ G.setVpos(S.blocks[sel], Math.min(400, g0 + dy / k())); changed(); });
+dragOn($('selbox'), function(){ var b = S.blocks[sel]; if (b.g0 == null) b.g0 = b.gap || 0; return { ox: b.ox || 0, oy: b.oy || 0, w: boxOf(item(sel)).w * k(), dx: b.dx || 0, gap: b.gap || 0, dy: +b.dy || 0, ax: b.abs ? b.abs.x : 0, ay: b.abs ? b.abs.y : 0 } }, function(s0, dx, dy){
   var b = S.blocks[sel]; if (b.type !== 'photo') return;
   if (b.abs) { var dd = D(); b.abs.x = Math.round(Math.max(-b.abs.w / 2, Math.min(dd.W - b.abs.w / 2, s0.ax + dx / k()))); b.abs.y = Math.round(Math.max(-100, Math.min(dd.H - 40, s0.ay + dy / k()))); changed(); return; }
-  if (b.shape === 'orig') { var lim = tpl.area.w / 2; b.dx = Math.max(-lim, Math.min(lim, Math.round(s0.dx + dx / k()))); b.gap = Math.max(0, Math.round(s0.gap + dy / k())); changed(); return; }
+  if (b.shape === 'orig') { var lim = tpl.area.w / 2; b.dx = Math.max(-lim, Math.min(lim, Math.round(s0.dx + dx / k()))); G.setVpos(b, (s0.gap || 0) + (+s0.dy || 0) + dy / k()); changed(); return; }
   b.ox = Math.max(-1, Math.min(1, s0.ox - 2 * dx / s0.w)); b.oy = Math.max(-1, Math.min(1, s0.oy - 2 * dy / s0.w)); changed();
 });
 
@@ -612,7 +612,7 @@ function renderTb(){
   var mvg = slot('הזזה'); mvg.classList.add('grp');
   var A = tpl.area, lim = A.w / 2;
   if (b.g0 == null) b.g0 = b.gap || 0;
-  function nudge(dx, dy){ if (b.abs) return function(){ b.abs.x += dx * 2; b.abs.y += dy * 2; changed(); }; return function(){ if (dy) b.gap = Math.max(0, (b.gap || 0) + dy); if (dx) b.dx = Math.max(-lim, Math.min(lim, (b.dx || 0) + dx)); changed(); renderTb(); }; }
+  function nudge(dx, dy){ if (b.abs) return function(){ b.abs.x += dx * 2; b.abs.y += dy * 2; changed(); }; return function(){ if (dy) G.setVpos(b, G.vpos(b) + dy); if (dx) b.dx = Math.max(-lim, Math.min(lim, (b.dx || 0) + dx)); changed(); renderTb(); }; }
   tbBtn(mvg, '▶', 'הזזה ימינה', nudge(4, 0));
   tbBtn(mvg, '▲', 'הזזה למעלה', nudge(0, -4));
   if (!b.abs) mvg.appendChild(G.movePad(b, function(){ changed(); renderTb(); }));
