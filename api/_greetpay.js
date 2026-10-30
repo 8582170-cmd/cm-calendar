@@ -58,7 +58,7 @@ function cleanState(s) {
   const TS = s.tshape && typeof s.tshape === 'object' ? s.tshape : null;
   if (TS) out.tshape = { s: ['rect', 'ellipse', 'arch', 'archb', 'trap', 'trapi', 'diamond', 'hex'].includes(TS.s) ? TS.s : 'rect', a: n(TS.a, -45, 45), k: n(TS.k, 0.15, 0.95), tt: TS.tt === false ? false : undefined };
   const AR = s.area && typeof s.area === 'object' ? s.area : null;
-  if (AR) out.area = { t: n(AR.t, 0, 60), b: n(AR.b, 0, 60), r: n(AR.r, 0, 60), l: n(AR.l, 0, 60), v: AR.v === 'top' ? 'top' : 'center' };
+  if (AR) out.area = { t: n(AR.t, 0, 60), b: n(AR.b, 0, 60), r: n(AR.r, 0, 60), l: n(AR.l, 0, 60), v: AR.v === 'top' ? 'top' : 'center', mine: AR.mine ? 1 : undefined };
   if (s.preset && typeof s.preset === 'object' && /^[\w-]{1,40}$/.test(String(s.preset.id || ''))) out.preset = { id: String(s.preset.id) };
   if (s.selfText) out.selfText = true;
   if (s.own && typeof s.own.src === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s.own.src)) out.own = { src: s.own.src };

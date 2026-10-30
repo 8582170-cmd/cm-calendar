@@ -79,7 +79,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .35)}
 .fp-i .n{font-size:12px;color:var(--mute);direction:ltr;flex:none}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=42"></script>
+<script src="/assets/greetings/greetings.js?v=44"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -193,7 +193,7 @@ $('sub').textContent = G.subTitle(tpl) + '. כותבים, משנים צבעים 
 var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; if (sv.page) S.page = sv.page; if (sv.border) S.border = sv.border; if (sv.preset) S.preset = sv.preset; } } catch (e) {}
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area && (sv.area.mine || !(G.typeOf(tpl) === 'frame' || tpl.areaSet))) S.area = sv.area; if (sv.tshape) S.tshape = sv.tshape; if (sv.page) S.page = sv.page; if (sv.border) S.border = sv.border; if (sv.preset) S.preset = sv.preset; } } catch (e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} }
 
 /* תצוגה */
@@ -203,7 +203,7 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.dims(tpl, S).W), selected: sel, hintArea: sel != null && S.blocks[sel] ? (S.blocks[sel].ar | 0) : null, watermark: 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; }).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / G.dims(tpl, S).W), selected: sel, hintArea: sel != null && S.blocks[sel] ? G.areaOfBlock(tpl, S, S.blocks[sel]) : null, watermark: 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; }).catch(function(){});
   });
 }
 function changed(){ save(); draw(); }
@@ -406,7 +406,7 @@ function renderBlocks(){
       var AN = tpl.noArea ? [] : G.areaNames(tpl, S);
       if (AN.length > 1) { var azL = document.createElement('label'); azL.appendChild(document.createTextNode('איפה בדף ')); var az = document.createElement('select');
         AN.forEach(function(nm, q){ var o = document.createElement('option'); o.value = q; o.textContent = nm; az.appendChild(o); });
-        az.value = String(Math.min(AN.length - 1, b.ar | 0)); az.onchange = function(){ if (+az.value) b.ar = +az.value; else delete b.ar; changed(); }; azL.appendChild(az); r1.appendChild(azL); }
+        az.value = String(G.areaOfBlock(tpl, S, b)); az.onchange = function(){ b.ar = +az.value; changed(); }; azL.appendChild(az); r1.appendChild(azL); }
       m2.appendChild(r1);
       var r2 = document.createElement('div'); r2.className = 'tbar'; actions(r2, b, i, true); m2.appendChild(r2);
       card.appendChild(m2);

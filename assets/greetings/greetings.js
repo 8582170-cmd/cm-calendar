@@ -324,7 +324,7 @@ function turnArea(tpl, state, A){
 /* כל אזורי הטקסט: [{ A, sh }]. הראשון = האזור הראשי; הנוספים סומנו בניהול (tpl.areas2), כל אחד עם צורה ושיפוע משלו */
 function areasOf(tpl, state){
   var out = [{ A: areaOf(tpl, state), sh: tshape(state, tpl) }];
-  if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', tt: x.tt !== false, a: Math.max(-45, Math.min(45, +x.a || 0)), k: x.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +x.k)) } }); });
+  if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ bsd: !!x.bsd, A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', tt: x.tt !== false, a: Math.max(-45, Math.min(45, +x.a || 0)), k: x.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +x.k)) } }); });
   return out;
 }
 /* שמות לאזורים ללקוח: שם שנקבע בניהול, אחרת לפי המקום בדף (ימין / שמאל / למעלה / למטה) */
@@ -430,9 +430,17 @@ function innerArea(A, sh){
   if (s === 'arch' || s === 'archb') { var r = Math.min(w / 2, h * 0.6), cut = r * 0.42; return { x: x + w * 0.04, y: s === 'arch' ? y + cut : y, w: w * 0.92, h: h - cut, valign: A.valign }; }
   return A;
 }
+/* באיזה אזור השורה: מה שהלקוח בחר, אחרת בס״ד לאזור שסומן לכך, אחרת הראשי */
+function blockArea(AR, b){ var bz = -1; AR.forEach(function(z, k){ if (z.bsd) bz = k; });
+  if (b && b.ar == null && bz > 0 && b.type === 'text' && /^\s*(בס[״"']?ד|ב[״"']ה|בעזרת ה|בעזהי"ת|בעזה"י)\s*$/.test(b.text || '')) return bz;
+  return Math.min(AR.length - 1, Math.max(0, (b && b.ar) | 0)); }
 function layout(ctx, tpl, state){
   var AR = areasOf(tpl, state), all = [];
-  AR.forEach(function(z, k){ all = all.concat(layout1(ctx, innerArea(z.A, z.sh), (state.blocks || []).map(function(b){ return Math.min(AR.length - 1, Math.max(0, b.ar | 0)) === k ? b : null; }), state, z, k)); });
+  /* אזור שסומן בניהול "לבס״ד": שורת בס״ד / ב״ה עוברת אליו לבד (אם הלקוח לא בחר מקום אחר), ממורכזת */
+  var bz = -1; AR.forEach(function(z, k){ if (z.bsd) bz = k; });
+  var where = function(b){ return blockArea(AR, b); };
+  AR.forEach(function(z, k){ var its = layout1(ctx, innerArea(z.A, z.sh), (state.blocks || []).map(function(b){ return where(b) === k ? b : null; }), state, z, k);
+    if (k === bz) its.forEach(function(it){ if (it.b.ar == null) it.al = 'center'; }); all = all.concat(its); });
   return all;
 }
 function layout1(ctx, A, blocks, state, z, k){
@@ -655,8 +663,8 @@ function render(canvas, tpl, state, opt){
       if (b.type === 'photo') { drawPhoto(ctx, it, photos[b.src], col); return; }
       ctx.font = fontStr(b, it.size); ctx.fillStyle = col;
       function col1(lines, x0, w){
-        ctx.textAlign = b.align;
-        var x = b.align === 'right' ? x0 + w : b.align === 'left' ? x0 : x0 + w / 2;
+        var al = it.al || b.align; ctx.textAlign = al;
+        var x = al === 'right' ? x0 + w : al === 'left' ? x0 : x0 + w / 2;
         lines.forEach(function(line, i){
           var yy = it.y + it.size * 0.95 + i * it.size * b.lh;
           if (!b.italic) { ctx.fillText(line, x, yy); return; }
@@ -747,8 +755,10 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
     var ty = tpl ? typeOf(tpl) : 'design';
     var marg = ty === 'own' || ty === 'bg' || ty === 'frame' || (ty === 'design' && tpl.noArea);
     if (marg) {
-      var O = S.own || {}, ar = S.area || (S.area = (ty === 'bg' && !tpl.areaSet) || ty === 'design' ? { t: 9, b: 9, r: 10, l: 10, v: 'center' } : ty === 'frame' || ty === 'bg' ? null : { t: 13, b: 13, r: 14, l: 14, v: 'center' });
-      if (!ar) { var A0 = areaOf(tpl, S), d0 = dims(tpl, S); ar = S.area = { t: Math.round(A0.y / d0.H * 100), b: Math.round((d0.H - A0.y - A0.h) / d0.H * 100), r: Math.round((d0.W - A0.x - A0.w) / d0.W * 100), l: Math.round(A0.x / d0.W * 100), v: A0.valign === 'top' ? 'top' : 'center' }; }
+      /* המרחקים נשמרים רק כשהלקוח משנה אותם (אחרת נשאר האזור שנקבע בעיצוב, כולל כמה אזורים) */
+      var O = S.own || {}, ar = S.area || ((ty === 'bg' && !tpl.areaSet) || ty === 'design' ? { t: 9, b: 9, r: 10, l: 10, v: 'center' } : ty === 'frame' || ty === 'bg' ? null : { t: 13, b: 13, r: 14, l: 14, v: 'center' });
+      var fixedA = !S.area && (ty === 'frame' || (ty === 'bg' && tpl.areaSet));
+      if (!ar) { var A0 = areaOf(tpl, S), d0 = dims(tpl, S); ar = { t: Math.round(A0.y / d0.H * 100), b: Math.round((d0.H - A0.y - A0.h) / d0.H * 100), r: Math.round((d0.W - A0.x - A0.w) / d0.W * 100), l: Math.round(A0.x / d0.W * 100), v: A0.valign === 'top' ? 'top' : 'center' }; }
     }
     if (marg) {
       if (ty === 'own') {
@@ -760,10 +770,11 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
       box.appendChild(el('div', 'bgp-n', 'תמונה בגודל A4 (לפחות 1240×1754 פיקסלים להדפסה טובה).'));
       }
       box.appendChild(el('div', 'bgp-h', 'איפה יושב הטקסט'));
-      [['t', 'מרחק מלמעלה'], ['b', 'מרחק מלמטה'], ['r', 'מרחק מימין'], ['l', 'מרחק משמאל']].forEach(function(x){ box.appendChild(rng(x[1], 0, 45, ar[x[0]] == null ? 13 : ar[x[0]], function(v){ ar[x[0]] = v; })); });
+      if (fixedA) box.appendChild(el('div', 'bgp-n', (tpl.areas2 || []).length ? 'המקומות לטקסט נקבעו בעיצוב. שינוי המרחקים כאן יהפוך אותם למקום אחד.' : 'המקום לטקסט נקבע בעיצוב. אפשר לשנות אותו כאן.'));
+      [['t', 'מרחק מלמעלה'], ['b', 'מרחק מלמטה'], ['r', 'מרחק מימין'], ['l', 'מרחק משמאל']].forEach(function(x){ box.appendChild(rng(x[1], 0, 45, ar[x[0]] == null ? 13 : ar[x[0]], function(v){ ar[x[0]] = v; ar.mine = 1; S.area = ar; })); });
       var vt = document.createElement('input'); vt.type = 'checkbox'; vt.checked = ar.v === 'top'; vt.id = 'bgpV' + Math.random().toString(36).slice(2, 6);
       var vl = el('label', '', 'הטקסט מתחיל מלמעלה (במקום באמצע)'); vl.htmlFor = vt.id; var vw = el('div', 'bgp-t'); vw.append(vt, vl); box.appendChild(vw);
-      vt.onchange = function(){ ar.v = vt.checked ? 'top' : 'center'; changed(); };
+      vt.onchange = function(){ ar.v = vt.checked ? 'top' : 'center'; ar.mine = 1; S.area = ar; changed(); };
     }
     /* צורה ושיפוע של שטח הטקסט */
     var TS = S.tshape || (S.tshape = clone((tpl && tpl.tshape) || {}));
@@ -1077,5 +1088,5 @@ window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   subTitle: function(t){ return /^bg-/.test(t.cat || '') ? 'דף רקע · ' + (CATS.find(function(x){ return x[0] === t.cat }) || [0, ''])[1] : KINDS[t.kind] + ' ל' + ((CATS.find(function(x){ return x[0] === t.cat }) || [0, t.cat])[1]); },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, areaNames: areaNames, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, areaNames: areaNames, areaOfBlock: function(tpl, state, b){ return blockArea(areasOf(tpl, state), b); }, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

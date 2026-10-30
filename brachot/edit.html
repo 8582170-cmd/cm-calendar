@@ -201,7 +201,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 .azr{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mute);margin-top:4px}.azb{font:inherit;font-weight:700;min-width:34px;min-height:30px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--sheet);cursor:pointer}.azb[aria-pressed=true]{background:var(--teal);color:#fff;border-color:var(--teal)}
 </style>
 <script src="/assets/a11y.js?v=1" defer></script>
-<script src="/assets/greetings/greetings.js?v=42"></script>
+<script src="/assets/greetings/greetings.js?v=44"></script>
 <script src="/assets/pay.js?v=1" defer></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
@@ -353,8 +353,8 @@ var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, narrow = ma
 
 /* מצב העיצוב + שמירה בדפדפן */
 var KEY = 'myluach-greet2-' + tpl.id + (tpl.variantOf ? '-v' + tpl.variant : ''), S = G.defaults(tpl), sel = null, fresh = true;
-try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area) S.area = sv.area; if (sv.page) S.page = sv.page; if (sv.border) S.border = sv.border; if (sv.preset) S.preset = sv.preset; if (sv.selfText) S.selfText = true; fresh = false; } } catch (e) {}
-if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; S.panel = REC.state.panel; S.ubg = REC.state.ubg; S.page = REC.state.page; S.border = REC.state.border; S.area = REC.state.area || S.area; S.preset = REC.state.preset; if (REC.state.own) S.own = REC.state.own; fresh = false; }
+try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && Array.isArray(sv.blocks)) { S.blocks = sv.blocks; Object.assign(S.colors, sv.colors || {}); S.scale = sv.scale || 1; if (sv.panel) S.panel = sv.panel; if (sv.ubg) S.ubg = sv.ubg; if (sv.own) S.own = sv.own; if (sv.area && (sv.area.mine || !(G.typeOf(tpl) === 'frame' || tpl.areaSet))) S.area = sv.area; if (sv.tshape) S.tshape = sv.tshape; if (sv.page) S.page = sv.page; if (sv.border) S.border = sv.border; if (sv.preset) S.preset = sv.preset; if (sv.selfText) S.selfText = true; fresh = false; } } catch (e) {}
+if (REC && REC.state && Array.isArray(REC.state.blocks)) { S.blocks = REC.state.blocks; Object.assign(S.colors, REC.state.colors || {}); S.scale = REC.state.scale || 1; S.panel = REC.state.panel; S.ubg = REC.state.ubg; S.page = REC.state.page; S.border = REC.state.border; if (REC.state.area && (REC.state.area.mine || !(G.typeOf(tpl) === 'frame' || tpl.areaSet))) S.area = REC.state.area; if (REC.state.tshape) S.tshape = REC.state.tshape; S.preset = REC.state.preset; if (REC.state.own) S.own = REC.state.own; fresh = false; }
 if (fresh) G.applyProfile(S.blocks, null, tpl.cat, tpl.kind);
 /* תשלום: מצב ההזמנה. free = עיצוב חינמי · unpaid · edit = שולם ובזמן השינויים · dl = רק הורדה · expired */
 var PAID = (tpl.price || 0) > 0, ORD = REC && !REC.error ? REC : null, SKEW = ORD ? Date.parse(ORD.now) - Date.now() : 0, PAYCFG = GD.pay || { editHours: 48, dlDays: 30 };
@@ -418,7 +418,7 @@ function draw(){
   requestAnimationFrame(function(){
     pending = false;
     var w = cv.parentNode.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-    G.render(cv, tpl, S, { scale: Math.max(0.5, w / D().W), selected: sel, noFrame: true, hintArea: sel != null && S.blocks[sel] ? (S.blocks[sel].ar | 0) : null, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; place(); }).catch(function(){});
+    G.render(cv, tpl, S, { scale: Math.max(0.5, w / D().W), selected: sel, noFrame: true, hintArea: sel != null && S.blocks[sel] ? G.areaOfBlock(tpl, S, S.blocks[sel]) : null, skip: editing ? sel : null, watermark: mode() === 'edit' || mode() === 'dl' ? null : 'edit' }).then(function(){ cv.parentNode.style.aspectRatio = cv.width + ' / ' + cv.height; place(); }).catch(function(){});
   });
 }
 window.addEventListener('resize', draw);
@@ -665,8 +665,8 @@ function renderFields(){
     /* כמה מקומות לטקסט בדף: לכל שורה בוחרים איפה בדף היא תופיע (ימין / שמאל / למעלה…) */
     var AN = tpl.noArea ? [] : G.areaNames(tpl, S);
     if (AN.length > 1) { var az = el('div', 'azr'); az.appendChild(el('span', '', 'איפה בדף:'));
-      AN.forEach(function(nm, q){ var bb = el('button', 'azb', nm); bb.type = 'button'; bb.setAttribute('aria-pressed', String(Math.min(AN.length - 1, b.ar | 0) === q)); bb.title = 'להעביר את השורה הזאת ל' + nm;
-        bb.onclick = function(){ if (q) b.ar = q; else delete b.ar; sel = i; changed(); renderFields(); }; az.appendChild(bb); });
+      AN.forEach(function(nm, q){ var bb = el('button', 'azb', nm); bb.type = 'button'; bb.setAttribute('aria-pressed', String(G.areaOfBlock(tpl, S, b) === q)); bb.title = 'להעביר את השורה הזאת ל' + nm;
+        bb.onclick = function(){ b.ar = q; sel = i; changed(); renderFields(); }; az.appendChild(bb); });
       f.appendChild(az); }
     box.appendChild(f);
   });
