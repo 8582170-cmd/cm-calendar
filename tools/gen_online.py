@@ -41,6 +41,7 @@ def page(path, title, desc, page, lang='he', alt=None):
     s = re.sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="' + html.escape(desc) + '">', s)
     s = re.sub(r'(href|src)="(cal\.css|cities\.js|cal\.js)(\?v=\w+)?"', lambda m: m.group(1) + '="' + base + m.group(2) + (m.group(3) or '') + '"', s)
     page = dict(page, static=True, base=base)
+    if depth: s = s.replace('href="./"', 'href="' + base + ('en/' if lang == 'en' else '') + '"')  # הלוגו: לדף הראשי של הלוח (ולא לתיקייה שאין בה דף)
     if alt: page['alt'] = '../' * depth + alt
     s = s.replace('<script>window.LC_PAGE=window.LC_PAGE||{};</script>', '<script>window.LC_PAGE=' + json.dumps(page, ensure_ascii=False) + ';</script>')
     if lang == 'en':
