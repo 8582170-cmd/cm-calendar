@@ -424,7 +424,7 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
 /* צורת שטח הטקסט: מלבן, אליפסה/עיגול, קשת למעלה, קשת למטה, מעוין. הטקסט נכנס למלבן שבתוך הצורה */
 var TSHAPES = [['rect', '▭ מלבן'], ['ellipse', '⬭ אליפסה / עיגול'], ['arch', '⌒ קשת למעלה'], ['archb', '⌣ קשת למטה'], ['trap', '⏶ צר למעלה, רחב למטה'], ['trapi', '⏷ רחב למעלה, צר למטה'], ['diamond', '◇ מעוין'], ['hex', '⬡ משושה']];
 /* צורה ושיפוע: מה שהלקוח בחר, אחרת מה שנקבע בניהול לעיצוב (tpl.tshape) */
-function tshape(state, tpl){ var t = (state && state.tshape) || (tpl && tpl.tshape) || {}; return { s: t.s || 'rect', tt: t.tt !== false, a: Math.max(-45, Math.min(45, +t.a || 0)), k: t.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +t.k)) }; }
+function tshape(state, tpl){ var st = state && state.tshape, t = (st && (st.s || st.a || st.tt === false)) ? st : ((tpl && tpl.tshape) || st || {}); return { s: t.s || 'rect', tt: t.tt !== false, a: Math.max(-45, Math.min(45, +t.a || 0)), k: t.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +t.k)) }; }
 /* האזור בשיפוע והטקסט ישר: נקודות הצורה (מסובבות), ולכל גובה מחשבים מאיפה עד איפה יש מקום */
 function shapePts(A, sh){
   var s = sh.s, x = A.x, y = A.y, w = A.w, h = A.h, cx = x + w / 2, cy = y + h / 2, P = [], i;
@@ -824,6 +824,7 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
       }
     }
     /* צורה ושיפוע של שטח הטקסט */
+    if (S.tshape && !(S.tshape.s || S.tshape.a || S.tshape.tt === false)) delete S.tshape;
     var TS = S.tshape || (S.tshape = clone((tpl && tpl.tshape) || {}));
     var shapeLock = (typeof lockA !== 'undefined' && lockA) || (typeOf(tpl) === 'design' && !tpl.noArea && !areaOpen && (tpl.tshape || (tpl.areas2 || []).length));
     if (shapeLock) { if (typeOf(tpl) === 'design') { var dr = el('div', 'bgp-b'), db2 = el('button', 'pill', '✎ לשנות את הצורה של שטח הטקסט'); db2.type = 'button'; db2.onclick = function(){ areaOpen = true; draw(); }; dr.appendChild(db2); box.appendChild(dr); } }
