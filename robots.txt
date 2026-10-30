@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
 Sitemap: https://www.myluach.org/sitemap.xml
+Sitemap: https://www.myluach.org/sitemap-pages.xml
