@@ -475,12 +475,13 @@ function layout1(ctx, A, blocks, state, z, k){
   /* wfn: רוחב השורה לפי הגובה (צורה שמשתנה: טרפז, אליפסה, מעוין). כל פסקה מקבלת את הרוחב הצר שבגובה שלה */
   /* מאיפה עד איפה יש מקום בין שני גבהים */
   function span(a, b){ if (A.cfn) return A.cfn(a, b); var cx = A.x + A.w / 2, ww = A.wfn ? Math.min(A.wfn(a), A.wfn(b)) : A.w; return { l: cx - ww / 2, r: cx + ww / 2 }; }
+  var useDy = false;
   function pass(f){
     items = []; total = 0; var bad = false;
     blocks.forEach(function(b, i){
       if (!b || b.hidden || b.abs) return;
       var gap = (b.gap || 0) * f, it = { i: i, b: b, top: total + gap, ar: k };
-      var y0 = A.y + off + it.top + (+b.dy || 0), S0 = span(y0, y0), bw = S0.r - S0.l; it.bl = S0.l;
+      var y0 = A.y + off + it.top + (useDy ? (+b.dy || 0) : 0), S0 = span(y0, y0), bw = S0.r - S0.l; it.bl = S0.l;
       if (b.type === 'divider') { it.h = 22 * Math.min(1, f + 0.2); var S1 = span(y0, y0 + it.h); bw = S1.r - S1.l; it.bl = S1.l; }
       else if (b.type === 'photo') { it.pw = bw * (b.size || 0.4) * f; it.h = it.pw * photoRatio(b); }
       else {
@@ -511,6 +512,8 @@ function layout1(ctx, A, blocks, state, z, k){
     if (!bad && total <= A.h) break;
   }
   off = A.valign === 'top' ? 0 : Math.max(0, (A.h - total) / 2);
+  /* שורה שהוזזה (dy): המיקום של כל השאר נקבע בלי ההזזה, ורק הרוחב של השורה מחושב לפי המקום החדש שלה */
+  if ((A.wfn || A.cfn) && blocks.some(function(b){ return b && +b.dy; })) { useDy = true; pass(f); }
   var tl = z.sh.a && z.sh.tt !== false ? { cx: z.A.x + z.A.w / 2, cy: z.A.y + z.A.h / 2, a: z.sh.a * Math.PI / 180 } : null;
   items.forEach(function(it){ it.y = A.y + off + it.top + (+it.b.dy || 0); it.w = it.bw || A.w; it.x = (it.bl != null ? it.bl : A.x + (A.w - it.w) / 2) + (it.b.dx || 0); it.tilt = tl; });
   return items;
