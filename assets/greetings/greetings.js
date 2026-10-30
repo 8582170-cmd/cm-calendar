@@ -306,6 +306,23 @@ function wrap(ctx, b, text, width, size){
   });
   return { lines: lines, wide: wide };
 }
+/* שבירת שורות לפי צורה: לכל שורה הרוחב שיש בגובה שלה (spanAt(i) => { l, r }) */
+function wrapAt(ctx, b, text, size, spanAt){
+  ctx.font = fontStr(b, size);
+  var lines = [], boxes = [], wide = false;
+  function box(){ var s = spanAt(lines.length); return { l: s.l, w: Math.max(20, s.r - s.l) }; }
+  String(text || '').split('\n').forEach(function(p){
+    var words = p.split(/\s+/).filter(Boolean), line = '', bx = box();
+    if (!words.length) { lines.push(''); boxes.push(bx); return; }
+    words.forEach(function(w){
+      var t = line ? line + ' ' + w : w;
+      if (ctx.measureText(t).width <= bx.w || !line) line = t; else { lines.push(line); boxes.push(bx); line = w; bx = box(); }
+      if (ctx.measureText(line).width > bx.w) wide = true;
+    });
+    lines.push(line); boxes.push(bx);
+  });
+  return { lines: lines, boxes: boxes, wide: wide };
+}
 
 /* פריסת כל הפסקאות באזור הטקסט. אם לא נכנס, מקטינים הכל באותו יחס */
 /* אזור הטקסט: בדף משלכם הלקוח קובע אותו (שוליים באחוזים) */
@@ -458,8 +475,16 @@ function layout1(ctx, A, blocks, state, z, k){
       else if (b.type === 'photo') { it.pw = bw * (b.size || 0.4) * f; it.h = it.pw * photoRatio(b); }
       else {
         var size = b.size * f, colGap = 24, wr = function(W0){ var width = b.cols ? (W0 - colGap) / 2 : W0; return { width: width, a: wrap(ctx, b, b.text, width, size), c: b.cols ? wrap(ctx, b, b.text2, width, size) : { lines: [], wide: false } }; };
-        var R = wr(bw), hh = function(R){ return (Math.max(R.a.lines.length, R.c.lines.length, 1) - 1) * size * b.lh + size * 1.2; };
-        if (A.wfn || A.cfn) { var S2 = span(y0, y0 + hh(R)), w2 = S2.r - S2.l; it.bl = S2.l; if (w2 < bw - 1) { bw = w2; R = wr(Math.max(20, bw)); } }
+        var R, hh = function(R){ return (Math.max(R.a.lines.length, R.c.lines.length, 1) - 1) * size * b.lh + size * 1.2; };
+        if ((A.wfn || A.cfn) && !b.cols) {
+          /* צורה: כל שורה נשברת לפי הרוחב שבגובה שלה, ויורדת שורה כשמגיעה לגבול */
+          var W2 = wrapAt(ctx, b, b.text, size, function(n){ var t = y0 + n * size * b.lh; return span(t, t + size * 1.2); });
+          R = { width: 0, a: { lines: W2.lines, wide: W2.wide }, c: { lines: [], wide: false } }; it.boxes = W2.boxes;
+          var L = Infinity, Rr = -Infinity; W2.boxes.forEach(function(q){ L = Math.min(L, q.l); Rr = Math.max(Rr, q.l + q.w); }); it.bl = L; bw = Rr - L; R.width = bw;
+        } else {
+          R = wr(bw);
+          if (A.wfn || A.cfn) { var S2 = span(y0, y0 + hh(R)), w2 = S2.r - S2.l; it.bl = S2.l; if (w2 < bw - 1) { bw = w2; R = wr(Math.max(20, bw)); } }
+        }
         if (R.a.wide || R.c.wide) bad = true;
         it.size = size; it.lines = R.a.lines; it.lines2 = R.c.lines; it.width = R.width; it.colGap = colGap;
         it.h = hh(R);
@@ -662,18 +687,19 @@ function render(canvas, tpl, state, opt){
       if (b.type === 'divider') { drawDivider(ctx, it, col); return; }
       if (b.type === 'photo') { drawPhoto(ctx, it, photos[b.src], col); return; }
       ctx.font = fontStr(b, it.size); ctx.fillStyle = col;
-      function col1(lines, x0, w){
+      function col1(lines, x0, w, boxes){
         var al = it.al || b.align; ctx.textAlign = al;
         var x = al === 'right' ? x0 + w : al === 'left' ? x0 : x0 + w / 2;
         lines.forEach(function(line, i){
           var yy = it.y + it.size * 0.95 + i * it.size * b.lh;
+          if (boxes && boxes[i]) { var bl = boxes[i].l + (b.dx || 0), bw2 = boxes[i].w; x = al === 'right' ? bl + bw2 : al === 'left' ? bl : bl + bw2 / 2; }
           if (!b.italic) { ctx.fillText(line, x, yy); return; }
           /* נטוי: הטיה של האותיות סביב קו הבסיס (גם לגופנים עבריים שאין להם גרסה נטויה) */
           ctx.save(); ctx.translate(x, yy); ctx.transform(1, 0, -0.21, 1, 0, 0); ctx.fillText(line, 0, 0); ctx.restore();
         });
       }
       if (b.cols) { col1(it.lines, it.x + it.w - it.width, it.width); col1(it.lines2, it.x, it.width); }
-      else col1(it.lines, it.x, it.w);
+      else col1(it.lines, it.x, it.w, it.boxes);
       }
     });
     if (opt.hintArea != null) { /* בעורך: מסמנים בעדינות את האזור של השורה שנבחרה */
