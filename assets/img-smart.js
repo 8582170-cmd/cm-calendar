@@ -2,20 +2,24 @@
    הספריות נטענות רק כשמשתמשים בהן (מ-jsdelivr), והכל רץ בדפדפן: התמונות לא נשלחות לשום שרת. */
 (function(){
   'use strict';
-  const FA='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/';
-  const SS='https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/';
+  /* קודם מהדומיין של האתר (/cdn, טוב למסננים כמו נטפרי), ואם לא זמין (למשל באתר הגיבוי) ישירות מ-jsdelivr ומ-Hugging Face */
+  const JD='https://cdn.jsdelivr.net/npm/',OWN=/(^|\.)myluach\.(org|pages\.dev)$/.test(location.hostname)?location.origin+'/cdn/':'';
+  const SRC=OWN?[OWN+'npm/',JD]:[JD];
+  async function tryEach(fn){let err;for(const b of SRC){try{return await fn(b)}catch(e){err=e;console.warn('smart-load',b,e)}}throw err}
+  const FA_='@vladmandic/face-api@1.7.15/',SS_='@mediapipe/selfie_segmentation@0.1.1675465747/';
   /* גזירת דמות באיכות גבוהה: MODNet (רישיון Apache 2.0) דרך transformers.js. המודל (כ־25MB) נטען מ-Hugging Face בפעם הראשונה ונשמר בדפדפן */
-  const TF='https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
+  const TF_='@huggingface/transformers@3.5.1';
   let faP=null,ssP=null;
 
   /* --- זיהוי פנים --- */
   function loadFaceApi(){
     if(faP)return faP;
     faP=(async()=>{
-      const fa=await import(FA+'dist/face-api.esm.js');
-      await fa.nets.tinyFaceDetector.loadFromUri(FA+'model/');
-      try{await fa.nets.faceLandmark68TinyNet.loadFromUri(FA+'model/')}catch(e){}
-      return fa;
+      return tryEach(async B=>{const FA=B+FA_;
+        const fa=await import(FA+'dist/face-api.esm.js');
+        await fa.nets.tinyFaceDetector.loadFromUri(FA+'model/');
+        try{await fa.nets.faceLandmark68TinyNet.loadFromUri(FA+'model/')}catch(e){}
+        return fa});
     })();
     faP.catch(()=>{faP=null});
     return faP;
@@ -82,10 +86,10 @@
   /* --- חיתוך אדם מהרקע (בינה מלאכותית, MediaPipe) --- */
   function loadSS(){
     if(ssP)return ssP;
-    ssP=new Promise((res,rej)=>{
+    ssP=tryEach(B=>{const SS=B+SS_;return new Promise((res,rej)=>{
       if(window.SelfieSegmentation)return res();
-      const s=document.createElement('script');s.src=SS+'selfie_segmentation.js';s.crossOrigin='anonymous';s.onload=()=>res();s.onerror=()=>rej(new Error('ss-load'));document.head.appendChild(s);
-    }).then(async()=>{const ss=new window.SelfieSegmentation({locateFile:f=>SS+f});ss.setOptions({modelSelection:0});await ss.initialize();return ss});
+      const s=document.createElement('script');s.src=SS+'selfie_segmentation.js';s.crossOrigin='anonymous';s.onload=()=>res();s.onerror=()=>{s.remove();rej(new Error('ss-load'))};document.head.appendChild(s);
+    }).then(async()=>{const ss=new window.SelfieSegmentation({locateFile:f=>SS+f});ss.setOptions({modelSelection:0});await ss.initialize();return ss})});
     ssP.catch(()=>{ssP=null});
     return ssP;
   }
@@ -114,11 +118,12 @@
   let mnP=null;
   function loadModnet(){
     if(mnP)return mnP;
-    mnP=(async()=>{const T=await import(TF);T.env.allowLocalModels=false;
+    mnP=tryEach(async B=>{const own=B!==JD,T=await import(B+TF_);T.env.allowLocalModels=false;
+      if(own){T.env.remoteHost=OWN+'hf/';try{T.env.backends.onnx.wasm.wasmPaths=B+TF_+'/dist/'}catch(e){}}
       let model;const gpu='gpu' in navigator;
       try{model=await T.AutoModel.from_pretrained('Xenova/modnet',{dtype:'fp32',device:gpu?'webgpu':'wasm'})}
       catch(e){if(!gpu)throw e;model=await T.AutoModel.from_pretrained('Xenova/modnet',{dtype:'fp32',device:'wasm'})}
-      const proc=await T.AutoProcessor.from_pretrained('Xenova/modnet');return {T,model,proc}})();
+      const proc=await T.AutoProcessor.from_pretrained('Xenova/modnet');return {T,model,proc}});
     mnP.catch(()=>{mnP=null});
     return mnP;
   }
