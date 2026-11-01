@@ -661,7 +661,8 @@ function render(canvas, tpl, state, opt){
       ctx.translate(cw / 2, ch / 2); if (q) ctx.rotate(q * Math.PI / 2); ctx.scale(PG.fx ? -1 : 1, PG.fy ? -1 : 1);
       var bw = rot ? ch : cw, bh = rot ? cw : ch, kk = Math.max(bw / im.width, bh / im.height);
       /* התאמת תמונה שהיחס שלה שונה מהדף (למשל ריבוע): cover = ממלא וחותך, contain = כל התמונה ומילוי מטושטש מסביב, containc = כל התמונה ומסביב צבע הדף, stretch = מתיחה */
-      var fit = im === img ? tpl.fit : null;
+      var fit = PG.fit ? (PG.fit === 'cover' ? null : PG.fit) : (im === img ? tpl.fit : null);
+      tpl._imgAR = rot ? im.height / im.width : im.width / im.height;
       if (fit === 'stretch') { ctx.drawImage(im, -bw / 2, -bh / 2, bw, bh); ctx.restore(); return; }
       if (fit === 'contain' || fit === 'containc') {
         if (fit === 'contain') { var tc = document.createElement('canvas'), tw = 28, th = Math.max(1, Math.round(28 * im.height / im.width)); tc.width = tw; tc.height = th; tc.getContext('2d').drawImage(im, 0, 0, tw, th);
@@ -1027,13 +1028,23 @@ function pagePanel(box, getS, changed, tpl, colorRow){
         btn('⟳ סיבוב 90°', false, function(){ G.rot = (q0 + 1) % 4; G.land = !L; }));
       box.appendChild(o);
     }
+    /* תמונה שהיחס שלה שונה מהדף (למשל ריבוע): חותכים שוליים, לבן מסביב, או מתיחה. ברירת מחדל: מה שנקבע לעיצוב */
+    var pr = isLand(tpl, S) ? 1123 / 794 : 794 / 1123;
+    if (!tpl._imgAR && !tpl._arLoad) { var src0 = (tpl.bg && (tpl.bg.thumb || tpl.bg.img)) || (S.own && S.own.src); if (src0) { tpl._arLoad = 1; var im0 = new Image(); im0.crossOrigin = 'anonymous'; im0.onload = function(){ if (!tpl._imgAR) tpl._imgAR = (tpl.rot || 0) % 2 ? im0.height / im0.width : im0.width / im0.height; tpl._arLoad = 0; draw(); }; im0.onerror = function(){ tpl._arLoad = 0; }; im0.src = src0; } }
+    if ((tpl._imgAR && Math.abs(tpl._imgAR / pr - 1) > 0.03) || G.fit) {
+      var cur = G.fit || tpl.fit || 'cover';
+      box.appendChild(el('div', 'bgp-h', 'התמונה בדף'));
+      var fr = el('div', 'bgp-b');
+      [['cover', '✂ ממלא את הדף, חותך שוליים'], ['containc', '▭ כל התמונה, ולבן מסביב'], ['stretch', '↕ כל התמונה, מתוחה לכל הדף']].concat(tpl.fit === 'contain' ? [['contain', '🌫 כל התמונה, ומסביב מטושטש']] : []).forEach(function(x){ fr.appendChild(btn(x[1], cur === x[0], function(){ G.fit = x[0]; })); });
+      box.appendChild(fr);
+    }
     var f = el('div', 'bgp-b'); f.append(btn('⇋ היפוך ימין־שמאל', G.fx, function(){ G.fx = !G.fx; }), btn('⇵ היפוך למעלה־למטה', G.fy, function(){ G.fy = !G.fy; })); box.appendChild(f);
     box.appendChild(rng('שקיפות הרקע', 5, 100, Math.round((G.op == null ? 1 : G.op) * 100), function(v){ G.op = v / 100; }));
     box.appendChild(rng('בהירות', 40, 160, G.br == null ? 100 : G.br, function(v){ G.br = v; }));
     box.appendChild(rng('עוצמת הצבעים', 0, 200, G.sat == null ? 100 : G.sat, function(v){ G.sat = v; }));
     box.appendChild(rng('שינוי גוון', -180, 180, G.hue || 0, function(v){ G.hue = v; }));
     if ((G.op != null && G.op < 1) || G.color) { box.appendChild(el('div', 'bgp-h', 'צבע מתחת לרקע')); box.appendChild(colorRow(G.color || '#ffffff', function(c, live){ if (/^#/.test(c)) G.color = c; changed(); if (!live) draw(); })); }
-    if (G.fx || G.fy || G.land != null || G.rot || G.color || (G.op != null && G.op !== 1) || (G.br != null && G.br !== 100) || (G.sat != null && G.sat !== 100) || G.hue) {
+    if (G.fit || G.fx || G.fy || G.land != null || G.rot || G.color || (G.op != null && G.op !== 1) || (G.br != null && G.br !== 100) || (G.sat != null && G.sat !== 100) || G.hue) {
       var rs = el('div', 'bgp-b'); rs.appendChild(btn('איפוס הגדרות הדף', false, function(){ S.page = {}; })); box.appendChild(rs);
     }
   }
