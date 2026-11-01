@@ -660,6 +660,14 @@ function render(canvas, tpl, state, opt){
       ctx.globalAlpha = PG.op == null ? 1 : Math.max(0.05, Math.min(1, PG.op));
       ctx.translate(cw / 2, ch / 2); if (q) ctx.rotate(q * Math.PI / 2); ctx.scale(PG.fx ? -1 : 1, PG.fy ? -1 : 1);
       var bw = rot ? ch : cw, bh = rot ? cw : ch, kk = Math.max(bw / im.width, bh / im.height);
+      /* התאמת תמונה שהיחס שלה שונה מהדף (למשל ריבוע): cover = ממלא וחותך, contain = כל התמונה ומילוי מטושטש מסביב, containc = כל התמונה ומסביב צבע הדף, stretch = מתיחה */
+      var fit = im === img ? tpl.fit : null;
+      if (fit === 'stretch') { ctx.drawImage(im, -bw / 2, -bh / 2, bw, bh); ctx.restore(); return; }
+      if (fit === 'contain' || fit === 'containc') {
+        if (fit === 'contain') { var tc = document.createElement('canvas'), tw = 28, th = Math.max(1, Math.round(28 * im.height / im.width)); tc.width = tw; tc.height = th; tc.getContext('2d').drawImage(im, 0, 0, tw, th);
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(tc, -im.width * kk / 2, -im.height * kk / 2, im.width * kk, im.height * kk); }
+        kk = Math.min(bw / im.width, bh / im.height);
+      }
       ctx.drawImage(im, -im.width * kk / 2, -im.height * kk / 2, im.width * kk, im.height * kk);
       ctx.restore();
     }
