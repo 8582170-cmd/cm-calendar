@@ -423,6 +423,8 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
 }
 /* צורת שטח הטקסט: מלבן, אליפסה/עיגול, קשת למעלה, קשת למטה, מעוין. הטקסט נכנס למלבן שבתוך הצורה */
 var TSHAPES = [['rect', '▭ מלבן'], ['ellipse', '⬭ אליפסה / עיגול'], ['arch', '⌒ קשת למעלה'], ['archb', '⌣ קשת למטה'], ['trap', '⏶ צר למעלה, רחב למטה'], ['trapi', '⏷ רחב למעלה, צר למטה'], ['diamond', '◇ מעוין'], ['hex', '⬡ משושה'], ['free', '✎ צורה חופשית (לב ועוד)']];
+/* ברירת מחדל לתמונה שהיחס שלה שונה מהדף: הבדל קטן (עד 12%) = מתיחה (לא רואים), הבדל גדול (ריבוע, לרוחב) = כל התמונה ולבן מסביב */
+function autoFit(ar, pr){ var d = Math.abs(ar / pr - 1); return d <= 0.03 ? 'cover' : d <= 0.12 ? 'stretch' : 'containc'; }
 /* צורה חופשית: נקודות [u, v, חדה] יחסית לתיבת האזור (0..1). הקו עובר דרך הנקודות בעיגול, ובנקודה "חדה" נוצרת פינה */
 var HEART = [[0.5, 0.2, 1], [0.66, 0.03], [0.88, 0.04], [1, 0.25], [0.93, 0.5], [0.73, 0.74], [0.5, 1, 1], [0.27, 0.74], [0.07, 0.5], [0, 0.25], [0.12, 0.04], [0.34, 0.03]];
 function cleanPts(p){ if (!Array.isArray(p) || p.length < 3) return null; return p.slice(0, 32).map(function(q){ q = q || []; var f = function(v){ v = +v; return isFinite(v) ? Math.round(Math.max(-0.1, Math.min(1.1, v)) * 1000) / 1000 : 0.5; }; return q[2] ? [f(q[0]), f(q[1]), 1] : [f(q[0]), f(q[1])]; }); }
@@ -661,8 +663,8 @@ function render(canvas, tpl, state, opt){
       ctx.translate(cw / 2, ch / 2); if (q) ctx.rotate(q * Math.PI / 2); ctx.scale(PG.fx ? -1 : 1, PG.fy ? -1 : 1);
       var bw = rot ? ch : cw, bh = rot ? cw : ch, kk = Math.max(bw / im.width, bh / im.height);
       /* התאמת תמונה שהיחס שלה שונה מהדף (למשל ריבוע): cover = ממלא וחותך, contain = כל התמונה ומילוי מטושטש מסביב, containc = כל התמונה ומסביב צבע הדף, stretch = מתיחה */
-      var fit = PG.fit ? (PG.fit === 'cover' ? null : PG.fit) : (im === img ? tpl.fit : null);
       tpl._imgAR = rot ? im.height / im.width : im.width / im.height;
+      var fit = PG.fit || (im === img ? tpl.fit : null) || autoFit(tpl._imgAR, bw / bh);
       if (fit === 'stretch') { ctx.drawImage(im, -bw / 2, -bh / 2, bw, bh); ctx.restore(); return; }
       if (fit === 'contain' || fit === 'containc') {
         if (fit === 'contain') { var tc = document.createElement('canvas'), tw = 28, th = Math.max(1, Math.round(28 * im.height / im.width)); tc.width = tw; tc.height = th; tc.getContext('2d').drawImage(im, 0, 0, tw, th);
@@ -1032,7 +1034,7 @@ function pagePanel(box, getS, changed, tpl, colorRow){
     var pr = isLand(tpl, S) ? 1123 / 794 : 794 / 1123;
     if (!tpl._imgAR && !tpl._arLoad) { var src0 = (tpl.bg && (tpl.bg.thumb || tpl.bg.img)) || (S.own && S.own.src); if (src0) { tpl._arLoad = 1; var im0 = new Image(); im0.crossOrigin = 'anonymous'; im0.onload = function(){ if (!tpl._imgAR) tpl._imgAR = (tpl.rot || 0) % 2 ? im0.height / im0.width : im0.width / im0.height; tpl._arLoad = 0; draw(); }; im0.onerror = function(){ tpl._arLoad = 0; }; im0.src = src0; } }
     if ((tpl._imgAR && Math.abs(tpl._imgAR / pr - 1) > 0.03) || G.fit) {
-      var cur = G.fit || tpl.fit || 'cover';
+      var cur = G.fit || tpl.fit || autoFit(tpl._imgAR, pr);
       box.appendChild(el('div', 'bgp-h', 'התמונה בדף'));
       var fr = el('div', 'bgp-b');
       [['cover', '✂ ממלא את הדף, חותך שוליים'], ['containc', '▭ כל התמונה, ולבן מסביב'], ['stretch', '↕ כל התמונה, מתוחה לכל הדף']].concat(tpl.fit === 'contain' ? [['contain', '🌫 כל התמונה, ומסביב מטושטש']] : []).forEach(function(x){ fr.appendChild(btn(x[1], cur === x[0], function(){ G.fit = x[0]; })); });
