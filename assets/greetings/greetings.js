@@ -10,9 +10,11 @@ var PW = 794, PH = 1123, W = PW, H = PH;
 var TYPES = [['design', 'דפים מעוצבים'], ['bg', 'דפי רקע'], ['frame', 'מסגרות'], ['own', 'דף משלכם']];
 function typeOf(t){ return t.own ? 'own' : (t.type === 'bg' || t.type === 'frame') ? t.type : 'design'; }
 function free(t){ return typeOf(t) !== 'design'; } /* דף שהטקסט שלו נבחר בנפרד, ואפשר לסובב אותו */
+/* אפשר לסובב / לשנות לאורך-לרוחב: דף רקע, מסגרת, דף משלכם, וגם דף מעוצב שסומן בניהול "בלי אזור" */
+function turnable(t){ return free(t) || !!(t && t.noArea); }
 /* כיוון הדף: עיצוב שהועלה לרוחב (tpl.land, או תמונת רקע רחבה) נפתח לרוחב. בדף רקע / מסגרת / דף משלכם הלקוח יכול לסובב */
 function natLand(tpl){ return !!(tpl && (tpl.land || (tpl.land == null && free(tpl) && tpl._imgLand))); }
-function isLand(tpl, state){ var G = (state && state.page) || {}; return free(tpl) && G.land != null ? !!G.land : natLand(tpl); }
+function isLand(tpl, state){ var G = (state && state.page) || {}; return turnable(tpl) && G.land != null ? !!G.land : natLand(tpl); }
 function dims(tpl, state){ var land = isLand(tpl, state); return land ? { W: PH, H: PW, land: true } : { W: PW, H: PH, land: false }; }
 function useDims(tpl, state){ var d = dims(tpl, state); W = d.W; H = d.H; return d; }
 
@@ -337,7 +339,7 @@ function wrapAt(ctx, b, text, size, spanAt){
 /* פריסת כל הפסקאות באזור הטקסט. אם לא נכנס, מקטינים הכל באותו יחס */
 /* אזור הטקסט: בדף משלכם הלקוח קובע אותו (שוליים באחוזים) */
 /* כמה רבעי סיבוב מסתובב הרקע (0-3). בלי הגדרה: מסובבים רק אם כיוון התמונה שונה מכיוון הדף */
-function quarter(tpl, state){ var G = (state && state.page) || {}; if (G.rot != null) return ((G.rot % 4) + 4) % 4; return isLand(tpl, state) !== natImg(tpl) ? 1 : 0; }
+function quarter(tpl, state){ var G = (state && state.page) || {}; if (G.rot != null) return ((G.rot % 4) + 4) % 4; if (!free(tpl)) return 0; return isLand(tpl, state) !== natImg(tpl) ? 1 : 0; }
 function natImg(tpl){ return tpl._imgLand != null ? !!tpl._imgLand : natLand(tpl); }
 /* מסובב אזור שסומן בניהול לפי הסיבוב שהלקוח הוסיף */
 function turnArea(tpl, state, A){
@@ -655,7 +657,7 @@ function render(canvas, tpl, state, opt){
     ctx.fillStyle = /^#[0-9a-f]{6}$/i.test(PG.color || '') ? PG.color : '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     /* הרקע עם הגדרות הדף: שקיפות, בהירות, רוויה, גוון, היפוך. תמונה לאורך בדף לרוחב מסתובבת */
     function pageImg(im){
-      var cw = canvas.width, ch = canvas.height, q0 = free(tpl) ? quarter(tpl, state) : 0, q = (q0 + (im === img ? trot : 0)) % 4, rot = q % 2 === 1;
+      var cw = canvas.width, ch = canvas.height, q0 = turnable(tpl) ? quarter(tpl, state) : 0, q = (q0 + (im === img ? trot : 0)) % 4, rot = q % 2 === 1;
       ctx.save();
       var f = []; if (PG.br != null && PG.br !== 100) f.push('brightness(' + PG.br + '%)'); if (PG.sat != null && PG.sat !== 100) f.push('saturate(' + PG.sat + '%)'); if (PG.hue) f.push('hue-rotate(' + PG.hue + 'deg)');
       if (f.length) ctx.filter = f.join(' ');
@@ -1022,7 +1024,7 @@ function pagePanel(box, getS, changed, tpl, colorRow){
   function btn(t, on, fn){ var b = el('button', 'pill', t); b.type = 'button'; b.setAttribute('aria-pressed', String(!!on)); b.onclick = function(){ fn(); changed(); draw(); }; return b; }
   function draw(){
     var S = getS(), G = S.page || (S.page = {}); box.innerHTML = '';
-    if (free(tpl)) {
+    if (turnable(tpl)) {
       var L = isLand(tpl, S), q0 = quarter(tpl, S);
       /* לאורך / לרוחב: הרקע מסתובב 90° יחד עם הדף. סיבוב: כל לחיצה עוד 90° */
       var o = el('div', 'bgp-b');
