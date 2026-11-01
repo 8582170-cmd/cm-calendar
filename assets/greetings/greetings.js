@@ -351,7 +351,7 @@ function turnArea(tpl, state, A){
 /* כל אזורי הטקסט: [{ A, sh }]. הראשון = האזור הראשי; הנוספים סומנו בניהול (tpl.areas2), כל אחד עם צורה ושיפוע משלו */
 function areasOf(tpl, state){
   var out = [{ A: areaOf(tpl, state), sh: tshape(state, tpl) }];
-  if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ bsd: !!x.bsd, A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', tt: x.tt !== false, a: Math.max(-45, Math.min(45, +x.a || 0)), k: x.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +x.k)) } }); });
+  if (!tpl.noArea && !(state && state.area)) (tpl.areas2 || []).forEach(function(x){ if (x && x.w > 10 && x.h > 10) out.push({ bsd: !!x.bsd, A: turnArea(tpl, state, x), sh: { s: x.s || 'rect', tt: x.tt !== false, a: Math.max(-45, Math.min(45, +x.a || 0)), k: x.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +x.k)), p: x.s === 'free' ? (cleanPts(x.p) || HEART) : undefined } }); });
   return out;
 }
 /* שמות לאזורים ללקוח: שם שנקבע בניהול, אחרת לפי המקום בדף (ימין / שמאל / למעלה / למטה) */
@@ -422,13 +422,24 @@ function panelEdges(cv, tpl, getS, changed){ var _u = function(){ useDims(tpl, g
   return { toggle: function(v){ on = v == null ? !on : v; box.hidden = !on; place(); return on; }, place: place, get on(){ return on; } };
 }
 /* צורת שטח הטקסט: מלבן, אליפסה/עיגול, קשת למעלה, קשת למטה, מעוין. הטקסט נכנס למלבן שבתוך הצורה */
-var TSHAPES = [['rect', '▭ מלבן'], ['ellipse', '⬭ אליפסה / עיגול'], ['arch', '⌒ קשת למעלה'], ['archb', '⌣ קשת למטה'], ['trap', '⏶ צר למעלה, רחב למטה'], ['trapi', '⏷ רחב למעלה, צר למטה'], ['diamond', '◇ מעוין'], ['hex', '⬡ משושה']];
+var TSHAPES = [['rect', '▭ מלבן'], ['ellipse', '⬭ אליפסה / עיגול'], ['arch', '⌒ קשת למעלה'], ['archb', '⌣ קשת למטה'], ['trap', '⏶ צר למעלה, רחב למטה'], ['trapi', '⏷ רחב למעלה, צר למטה'], ['diamond', '◇ מעוין'], ['hex', '⬡ משושה'], ['free', '✎ צורה חופשית (לב ועוד)']];
+/* צורה חופשית: נקודות [u, v, חדה] יחסית לתיבת האזור (0..1). הקו עובר דרך הנקודות בעיגול, ובנקודה "חדה" נוצרת פינה */
+var HEART = [[0.5, 0.2, 1], [0.66, 0.03], [0.88, 0.04], [1, 0.25], [0.93, 0.5], [0.73, 0.74], [0.5, 1, 1], [0.27, 0.74], [0.07, 0.5], [0, 0.25], [0.12, 0.04], [0.34, 0.03]];
+function cleanPts(p){ if (!Array.isArray(p) || p.length < 3) return null; return p.slice(0, 32).map(function(q){ q = q || []; var f = function(v){ v = +v; return isFinite(v) ? Math.round(Math.max(-0.1, Math.min(1.1, v)) * 1000) / 1000 : 0.5; }; return q[2] ? [f(q[0]), f(q[1]), 1] : [f(q[0]), f(q[1])]; }); }
+function freeCurve(p, n){ p = cleanPts(p) || HEART; n = n || 10; var N = p.length, out = [], i, j;
+  var tan = function(i){ var a = p[(i - 1 + N) % N], b = p[(i + 1) % N]; return p[i][2] ? [0, 0] : [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2]; };
+  for (i = 0; i < N; i++) { var P0 = p[i], P1 = p[(i + 1) % N], T0 = tan(i), T1 = tan((i + 1) % N);
+    for (j = 0; j < n; j++) { var t = j / n, t2 = t * t, t3 = t2 * t, h1 = 2 * t3 - 3 * t2 + 1, h2 = -2 * t3 + 3 * t2, h3 = t3 - 2 * t2 + t, h4 = t3 - t2;
+      out.push([h1 * P0[0] + h2 * P1[0] + h3 * T0[0] + h4 * T1[0], h1 * P0[1] + h2 * P1[1] + h3 * T0[1] + h4 * T1[1]]); } }
+  return out; }
 /* צורה ושיפוע: מה שהלקוח בחר, אחרת מה שנקבע בניהול לעיצוב (tpl.tshape) */
-function tshape(state, tpl){ var st = state && state.tshape, t = (st && (st.s || st.a || st.tt === false)) ? st : ((tpl && tpl.tshape) || st || {}); return { s: t.s || 'rect', tt: t.tt !== false, a: Math.max(-45, Math.min(45, +t.a || 0)), k: t.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +t.k)) }; }
+function tshape(state, tpl){ var st = state && state.tshape, t = (st && (st.s || st.a || st.tt === false)) ? st : ((tpl && tpl.tshape) || st || {}); var o = { s: t.s || 'rect', tt: t.tt !== false, a: Math.max(-45, Math.min(45, +t.a || 0)), k: t.k == null ? 0.5 : Math.max(0.15, Math.min(0.95, +t.k)) };
+  if (o.s === 'free') o.p = cleanPts(t.p) || cleanPts(tpl && tpl.tshape && tpl.tshape.p) || HEART; return o; }
 /* האזור בשיפוע והטקסט ישר: נקודות הצורה (מסובבות), ולכל גובה מחשבים מאיפה עד איפה יש מקום */
 function shapePts(A, sh){
   var s = sh.s, x = A.x, y = A.y, w = A.w, h = A.h, cx = x + w / 2, cy = y + h / 2, P = [], i;
-  if (s === 'ellipse') for (i = 0; i < 48; i++) P.push([cx + w / 2 * Math.cos(i / 48 * 2 * Math.PI), cy + h / 2 * Math.sin(i / 48 * 2 * Math.PI)]);
+  if (s === 'free') P = freeCurve(sh.p, 12).map(function(q){ return [x + q[0] * w, y + q[1] * h]; });
+  else if (s === 'ellipse') for (i = 0; i < 48; i++) P.push([cx + w / 2 * Math.cos(i / 48 * 2 * Math.PI), cy + h / 2 * Math.sin(i / 48 * 2 * Math.PI)]);
   else if (s === 'diamond') P = [[cx, y], [x + w, cy], [cx, y + h], [x, cy]];
   else if (s === 'hex') { var hx = w * 0.22; P = [[x + hx, y], [x + w - hx, y], [x + w, cy], [x + w - hx, y + h], [x + hx, y + h], [x, cy]]; }
   else if (s === 'trap' || s === 'trapi') { var nw = w * sh.k / 2; P = s === 'trap' ? [[cx - nw, y], [cx + nw, y], [x + w, y + h], [x, y + h]] : [[x, y], [x + w, y], [cx + nw, y + h], [cx - nw, y + h]]; }
@@ -437,17 +448,21 @@ function shapePts(A, sh){
     else { P.push([x, y]); P.push([x + w, y]); for (i = 0; i <= 16; i++) P.push([cx + w / 2 * Math.cos(i / 16 * Math.PI), y + h - r + r * Math.sin(i / 16 * Math.PI)]); } }
   else P = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
   var a = sh.a * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
-  return P.map(function(p){ var dx = (p[0] - cx) * 0.9, dy = (p[1] - cy) * 0.9; return [cx + dx * c - dy * sn, cy + dx * sn + dy * c]; });
+  var kk = s === 'free' ? 0.94 : 0.9;
+  return P.map(function(p){ var dx = (p[0] - cx) * kk, dy = (p[1] - cy) * kk; return [cx + dx * c - dy * sn, cy + dx * sn + dy * c]; });
 }
 function uprightArea(A, sh){
   var P = shapePts(A, sh), xs = P.map(function(p){ return p[0] }), ys = P.map(function(p){ return p[1] });
   var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
-  function chord(yy){ var l = Infinity, r = -Infinity; for (var i = 0; i < P.length; i++) { var p = P[i], q = P[(i + 1) % P.length]; if ((p[1] - yy) * (q[1] - yy) > 0 || p[1] === q[1]) continue; var xx = p[0] + (q[0] - p[0]) * (yy - p[1]) / (q[1] - p[1]); if (xx < l) l = xx; if (xx > r) r = xx; } return l <= r ? [l, r] : null; }
+  /* בגובה מסוים: החלק הרחב ביותר שבתוך הצורה (בלב: מתחת לשקע זה כל הרוחב, מעליו אחת הכיפות) */
+  function chord(yy){ var X = []; for (var i = 0; i < P.length; i++) { var p = P[i], q = P[(i + 1) % P.length]; if (!((p[1] <= yy && yy < q[1]) || (q[1] <= yy && yy < p[1]))) continue; X.push(p[0] + (q[0] - p[0]) * (yy - p[1]) / (q[1] - p[1])); }
+    X.sort(function(m, n){ return m - n; }); var best = null; for (var j = 0; j + 1 < X.length; j += 2) if (!best || X[j + 1] - X[j] > best[1] - best[0]) best = [X[j], X[j + 1]]; return best; }
   return { x: x0, y: y0 + 2, w: x1 - x0, h: y1 - y0 - 4, valign: A.valign, cfn: function(a, b){ var L = -Infinity, R = Infinity, ok = false; [a, (a + b) / 2, b].forEach(function(yy){ var c = chord(yy); if (c) { ok = true; L = Math.max(L, c[0]); R = Math.min(R, c[1]); } else { L = Infinity; } }); return ok && L < R ? { l: L, r: R } : { l: (x0 + x1) / 2 - 10, r: (x0 + x1) / 2 + 10 }; } };
 }
 function innerArea(A, sh){
   var s = sh.s, w = A.w, h = A.h, x = A.x, y = A.y;
   if (sh.a && sh.tt === false) return uprightArea(A, sh);
+  if (s === 'free') return uprightArea(A, { s: 'free', p: sh.p, a: 0 });
   /* רוחב השורה בכל גובה, לצורות שהרוחב שלהן משתנה */
   var cy = y + h / 2, tt = function(yy){ return Math.max(0, Math.min(1, (yy - y) / h)); };
   if (s === 'ellipse') return { x: x + w * 0.04, y: y + h * 0.1, w: w * 0.92, h: h * 0.8, valign: A.valign, wfn: function(yy){ var d = (yy - cy) / (h / 2); return w * 0.9 * Math.sqrt(Math.max(0.04, 1 - d * d)); } };
@@ -605,7 +620,8 @@ function drawDivider(ctx, it, col){
    מחזיר את ה-canvas; ב-canvas._items נשמרים מיקומי הפסקאות (לזיהוי לחיצה) */
 /* צורת אזור: מלבן מעוגל, אליפסה, קשת, מעוין, משושה */
 function zonePath(ctx, px, py, pw, ph, SH, pr, prb){ var pcx = px + pw / 2, pcy = py + ph / 2; ctx.beginPath();
-      if (SH.s === 'ellipse') { ctx.ellipse(pcx, pcy, pw / 2, ph / 2, 0, 0, Math.PI * 2); }
+      if (SH.s === 'free') { freeCurve(SH.p, 12).forEach(function(q, i){ ctx[i ? 'lineTo' : 'moveTo'](px + q[0] * pw, py + q[1] * ph); }); }
+      else if (SH.s === 'ellipse') { ctx.ellipse(pcx, pcy, pw / 2, ph / 2, 0, 0, Math.PI * 2); }
       else if (SH.s === 'trap' || SH.s === 'trapi') { var nw = pw * (SH.k == null ? 0.5 : SH.k) / 2;
         if (SH.s === 'trap') { ctx.moveTo(pcx - nw, py); ctx.lineTo(pcx + nw, py); ctx.lineTo(px + pw, py + ph); ctx.lineTo(px, py + ph); }
         else { ctx.moveTo(px, py); ctx.lineTo(px + pw, py); ctx.lineTo(pcx + nw, py + ph); ctx.lineTo(pcx - nw, py + ph); } }
@@ -834,7 +850,7 @@ function bgPanel(box, getS, changed, colorRow, tpl, edges){
     else {
     box.appendChild(el('div', 'bgp-h', 'צורת שטח הטקסט'));
     var sr = el('div', 'bgp-b');
-    TSHAPES.forEach(function(x){ var b = el('button', 'pill', x[1]); b.type = 'button'; b.setAttribute('aria-pressed', String((TS.s || 'rect') === x[0])); b.onclick = function(){ TS.s = x[0]; if (x[0] !== 'rect' && S.panel && !S.panel.on && !(S.ubg && S.ubg.src)) { S.panel.on = true; } changed(); draw(); }; sr.appendChild(b); });
+    TSHAPES.forEach(function(x){ if (x[0] === 'free' && !(TS.p && TS.p.length)) return; var b = el('button', 'pill', x[1]); b.type = 'button'; b.setAttribute('aria-pressed', String((TS.s || 'rect') === x[0])); b.onclick = function(){ TS.s = x[0]; if (x[0] !== 'rect' && S.panel && !S.panel.on && !(S.ubg && S.ubg.src)) { S.panel.on = true; } changed(); draw(); }; sr.appendChild(b); });
     box.appendChild(sr);
     box.appendChild(rng('שיפוע (מעלות)', -45, 45, TS.a || 0, function(v){ TS.a = Math.abs(v) < 2 ? 0 : v; }));
     { var tq = el('div', 'bgp-t'), tc = document.createElement('input'); tc.type = 'checkbox'; tc.checked = TS.tt !== false; tc.id = 'bgpTT' + Math.random().toString(36).slice(2, 6);
@@ -1143,5 +1159,5 @@ window.Greetings = { W: W, H: H, CATS: CATS, KINDS: KINDS, TEMPLATES: TEMPLATES,
   catName: function(id){ var c = CATS.find(function(x){ return x[0] === id }); return c ? c[1] : id; },
   subTitle: function(t){ return /^bg-/.test(t.cat || '') ? 'דף רקע · ' + (CATS.find(function(x){ return x[0] === t.cat }) || [0, ''])[1] : KINDS[t.kind] + ' ל' + ((CATS.find(function(x){ return x[0] === t.cat }) || [0, t.cat])[1]); },
   get: function(id){ return TEMPLATES.find(function(t){ return t.id === id }); },
-  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, areaNames: areaNames, areaOfBlock: function(tpl, state, b){ return blockArea(areasOf(tpl, state), b); }, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, vpos: vpos, setVpos: setVpos, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
+  render: render, load: load, starter: starter, variant: variant, cards: cards, hiddenCat: function(id){ return !!HIDDEN_CATS[id]; }, hit: hit, defaults: defaults, TYPES: TYPES, typeOf: typeOf, isLand: isLand, TSHAPES: TSHAPES, HEART: HEART, freeCurve: freeCurve, cleanPts: cleanPts, areaNames: areaNames, areaOfBlock: function(tpl, state, b){ return blockArea(areasOf(tpl, state), b); }, isFree: free, dims: dims, blankBlocks: blankBlocks, presetBlocks: presetBlocks, pagePanel: pagePanel, borderPanel: borderPanel, BORDERS: BORDERS, presets: function(){ return PRESETS; }, newText: newText, newDivider: newDivider, newPhoto: newPhoto, newSticker: newSticker, movePad: movePad, vpos: vpos, setVpos: setVpos, bgPanel: bgPanel, panelEdges: panelEdges, SHAPES: SHAPES, PERSONAL: PERSONAL, fieldsFor: fieldsFor, FIELDS_DEF: FIELDS_DEF, profile: profile, saveProfile: saveProfile, applyProfile: applyProfile, colorOf: colorOf, fontsReady: fontsReady };
 })();

@@ -118,6 +118,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .tp-pv .ar i{position:absolute;width:14px;height:14px;background:#fff;border:2px solid #d6336c;border-radius:50%;touch-action:none}
 .tp-pv .ar i[data-h=nw]{top:-8px;right:-8px;cursor:nesw-resize}.tp-pv .ar i[data-h=ne]{top:-8px;left:-8px;cursor:nwse-resize}.tp-pv .ar i[data-h=sw]{bottom:-8px;right:-8px;cursor:nwse-resize}.tp-pv .ar i[data-h=se]{bottom:-8px;left:-8px;cursor:nesw-resize}
 .tp-pv .ar i[data-h=n]{top:-8px;left:50%;margin-left:-7px;cursor:ns-resize}.tp-pv .ar i[data-h=s]{bottom:-8px;left:50%;margin-left:-7px;cursor:ns-resize}.tp-pv .ar i[data-h=e]{left:-8px;top:50%;margin-top:-7px;cursor:ew-resize}.tp-pv .ar i[data-h=w]{right:-8px;top:50%;margin-top:-7px;cursor:ew-resize}
+.tp-pv .ar.free{border-style:dashed;border-color:rgb(214 51 108 / .55)}.tp-pv .ar svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.tp-pv .ar svg path{fill:rgb(214 51 108 / .07);stroke:#d6336c;stroke-width:2.5;vector-effect:non-scaling-stroke}.tp-pv .ar b.fp{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;background:#d6336c;border:2px solid #fff;border-radius:50%;cursor:grab;touch-action:none;z-index:2;box-shadow:0 1px 3px rgb(0 0 0 / .4)}.tp-pv .ar b.fp.sharp{border-radius:2px;transform:rotate(45deg)}.tp-pv .ar b.fp.sel{background:#1c64d8}
 .tp-pv .azo{position:absolute;z-index:2;cursor:pointer;border:1px dashed rgb(0 0 0 / .35)}.tp-pv .azo:hover{background:rgb(214 51 108 / .08)}
 .tp-f{display:flex;flex-direction:column;gap:12px;min-width:0}
 .tp-f .fields{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -133,7 +134,7 @@ code{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:isolate}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<script src="/assets/greetings/greetings.js?v=54"></script>
+<script src="/assets/greetings/greetings.js?v=55"></script>
 </head>
 <body>
 <div class="wrap" id="app">
@@ -705,7 +706,7 @@ function tpOpen(t){
    '<label>סוג הדף<select id="tpY"><option value="design">דף מעוצב (שטח לטקסט + נוסח מוכן)</option><option value="bg">דף רקע (כותבים על כל הדף, בלי נוסח)</option><option value="frame">מסגרת (הטקסט בתוך המסגרת, בלי נוסח)</option></select></label><label>סוג<select id="tpK"><option value="greeting">ברכה</option><option value="invite">הזמנה</option></select></label><label>מחיר (0 = חינם)<input id="tpP" type="number" min="0"></label>'+
    '<label>צבע הטקסט הראשי<input id="tpM" type="color" value="#14213d"></label><label>צבע להדגשות ולקישוטים<input id="tpA" type="color" value="#8a6a22"></label>'+
    '<label>גופן לכותרות<select id="tpFH"></select></label><label>גופן לטקסט<select id="tpFB"></select></label>'+
-   '<div style="grid-column:1/-1"><b style="font-size:14px">אזורי טקסט</b> <span class="sub">אפשר כמה אזורים בדף (למשל שני צדדים). בוחרים אזור, גוררים אותו על התמונה, ונותנים לו צורה ושיפוע.</span><div class="actions" id="tpAz" style="margin-top:4px"></div><label id="tpAzNL" style="display:none;flex-direction:row;gap:8px;align-items:center;margin-top:6px">שם האזור ללקוח<input id="tpAzN" placeholder="ריק = לפי המקום בדף (ימין, שמאל, למעלה…)" style="flex:1"></label><label id="tpBsdL" style="display:none;flex-direction:row;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" id="tpBsd" style="width:auto"> שורת בס״ד / ב״ה עוברת לאזור הזה לבד, באמצע</label><div id="tpAzB"></div></div><label>צורת אזור הטקסט<select id="tpSh"></select></label><label>שיפוע אזור הטקסט: <span id="tpTiltV">0°</span><input type="range" id="tpTilt" min="-45" max="45" step="1" value="0"></label><label style="display:flex;flex-direction:row;gap:6px;align-items:center"><input type="checkbox" id="tpTT" checked style="width:auto"> גם הטקסט בשיפוע (בלי סימון: רק האזור משופע, והטקסט ישר)</label><label id="tpKL" hidden>רוחב החלק הצר: <span id="tpKV">50%</span><input type="range" id="tpK" min="15" max="95" step="1" value="50"></label><label>אזור טקסט<select id="tpNA"><option value="0">באזור שמסמנים בגרירה</option><option value="1">בלי אזור: כותבים על כל הדף</option></select></label><label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><div><b style="font-size:14px">סיבוב הרקע</b><div class="actions" style="margin-top:4px"><button class="btn sm" type="button" data-rot="3">⟲ 90° שמאלה</button><button class="btn sm" type="button" data-rot="1">⟳ 90° ימינה</button><button class="btn sm" type="button" data-rot="2">↻ 180°</button></div></div><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
+   '<div style="grid-column:1/-1"><b style="font-size:14px">אזורי טקסט</b> <span class="sub">אפשר כמה אזורים בדף (למשל שני צדדים). בוחרים אזור, גוררים אותו על התמונה, ונותנים לו צורה ושיפוע.</span><div class="actions" id="tpAz" style="margin-top:4px"></div><label id="tpAzNL" style="display:none;flex-direction:row;gap:8px;align-items:center;margin-top:6px">שם האזור ללקוח<input id="tpAzN" placeholder="ריק = לפי המקום בדף (ימין, שמאל, למעלה…)" style="flex:1"></label><label id="tpBsdL" style="display:none;flex-direction:row;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" id="tpBsd" style="width:auto"> שורת בס״ד / ב״ה עוברת לאזור הזה לבד, באמצע</label><div id="tpAzB"></div></div><label>צורת אזור הטקסט<select id="tpSh"></select></label><label>שיפוע אזור הטקסט: <span id="tpTiltV">0°</span><input type="range" id="tpTilt" min="-45" max="45" step="1" value="0"></label><label style="display:flex;flex-direction:row;gap:6px;align-items:center"><input type="checkbox" id="tpTT" checked style="width:auto"> גם הטקסט בשיפוע (בלי סימון: רק האזור משופע, והטקסט ישר)</label><label id="tpKL" hidden>רוחב החלק הצר: <span id="tpKV">50%</span><input type="range" id="tpKn" min="15" max="95" step="1" value="50"></label><div id="tpFP" hidden style="grid-column:1/-1;background:#fff5f8;border:1px solid #f3c1d3;border-radius:10px;padding:8px 10px"><b style="font-size:14px">עריכת הצורה החופשית</b> <span class="sub">גוררים את הנקודות הוורודות שעל הקו. לחיצה כפולה על נקודה: פינה חדה ⇄ מעוגלת. נקודה שנבחרה מסומנת בכחול.</span><div class="actions" style="margin-top:6px"><button class="btn sm" type="button" data-fp="add">+ נקודה (אחרי הנבחרת)</button><button class="btn sm" type="button" data-fp="del">מחיקת הנקודה</button><button class="btn sm" type="button" data-fp="sharp">פינה חדה / מעוגלת</button><button class="btn sm" type="button" data-fp="flip">היפוך ימין⇄שמאל</button><button class="btn sm" type="button" data-fp="heart">♡ לב</button><button class="btn sm" type="button" data-fp="oval">⬭ אליפסה</button><button class="btn sm" type="button" data-fp="cloud">☁ ענן</button></div></div><label>אזור טקסט<select id="tpNA"><option value="0">באזור שמסמנים בגרירה</option><option value="1">בלי אזור: כותבים על כל הדף</option></select></label><label>כיוון הדף<select id="tpL"><option value="0">▯ לאורך</option><option value="1">▭ לרוחב</option></select></label><div><b style="font-size:14px">סיבוב הרקע</b><div class="actions" style="margin-top:4px"><button class="btn sm" type="button" data-rot="3">⟲ 90° שמאלה</button><button class="btn sm" type="button" data-rot="1">⟳ 90° ימינה</button><button class="btn sm" type="button" data-rot="2">↻ 180°</button></div></div><label>מיקום הטקסט בתוך האזור<select id="tpV"><option value="center">ממורכז לגובה</option><option value="top">צמוד למעלה</option></select></label>'+
    '<label>מבנה התחלתי<select id="tpS"><option value="greeting">ברכה (כותרת, שם, לרגל, ברכה, חתימה)</option><option value="invite">הזמנה (חתן וכלה, מועד, הורים)</option></select></label></div>'+
    '<div class="actions"><button class="btn" type="button" id="tpApply">החלת הצבעים והגופנים על הטקסט</button></div>'+
    '<p class="sub">ללקוח יהיה אפשר לשנות הכל בעורך: טקסט, גופנים, צבעים, להוסיף ולמחוק פסקאות.</p>'+
@@ -733,14 +734,40 @@ function tpOpen(t){
   ed.querySelectorAll('[data-rot]').forEach(b=>b.onclick=()=>{const k=+b.dataset.rot;w.rot=((w.rot||0)+k)%4;if(!w.rot)delete w.rot;if(k%2)setLand(!w.land);else draw();$('tpUpMsg').textContent='הרקע סובב. נשמר אחרי "עדכון" ו"שמירה".'+(k%2?' כדאי לסמן מחדש את אזור הטקסט.':'')});
   /* צורה ושיפוע לאזור הטקסט: גוררים מלבן כרגיל, והצורה נכנסת לתוכו. בתצוגה: ורוד = הצורה, טורקיז = המקום שבו הטקסט נכנס */
   $('tpSh').innerHTML=GR.TSHAPES.map(x=>'<option value="'+x[0]+'">'+esc(x[1])+'</option>').join('');
-  const ts=()=>actA?{s:AA().s,a:AA().a,k:AA().k,tt:AA().tt}:(w.tshape||{});
-  const tsShow=()=>{const t=ts(),kk=Math.round((t.k==null?.5:t.k)*100);$('tpSh').value=t.s||'rect';$('tpTilt').value=t.a||0;$('tpTiltV').textContent=(t.a||0)+'°';$('tpK').value=kk;$('tpKV').textContent=kk+'%';$('tpKL').style.display=/^trap/.test(t.s||'')?'':'none';$('tpTT').checked=t.tt!==false};tsShow();
-  const tsSet=()=>{const sh=$('tpSh').value,a=+$('tpTilt').value,k=+$('tpK').value/100;$('tpTiltV').textContent=a+'°';$('tpKV').textContent=Math.round(k*100)+'%';$('tpKL').style.display=/^trap/.test(sh)?'':'none';
+  const ts=()=>actA?{s:AA().s,a:AA().a,k:AA().k,tt:AA().tt,p:AA().p}:(w.tshape||{});
+  const tsShow=()=>{const t=ts(),kk=Math.round((t.k==null?.5:t.k)*100);$('tpSh').value=t.s||'rect';$('tpTilt').value=t.a||0;$('tpTiltV').textContent=(t.a||0)+'°';$('tpKn').value=kk;$('tpKV').textContent=kk+'%';$('tpKL').style.display=/^trap/.test(t.s||'')?'':'none';$('tpTT').checked=t.tt!==false;$('tpFP').hidden=t.s!=='free';fpDraw()};
+  const tsSet=()=>{const sh=$('tpSh').value,a=+$('tpTilt').value,k=+$('tpKn').value/100;$('tpTiltV').textContent=a+'°';$('tpKV').textContent=Math.round(k*100)+'%';$('tpKL').style.display=/^trap/.test(sh)?'':'none';
     const kv=/^trap/.test(sh)?k:undefined;
     const tt=$('tpTT').checked?undefined:false;
-    if(actA){const Q=AA();if(sh==='rect')delete Q.s;else Q.s=sh;if(a)Q.a=a;else delete Q.a;if(kv!=null)Q.k=kv;else delete Q.k;if(tt===false)Q.tt=false;else delete Q.tt}else if(sh==='rect'&&!a)delete w.tshape;else w.tshape={s:sh,a,k:kv,tt};draw()};
+    const pv0=ts().p,pp=sh==='free'?(pv0&&pv0.length>2?pv0:JSON.parse(JSON.stringify(GR.HEART))):undefined;
+    if(actA){const Q=AA();if(sh==='rect')delete Q.s;else Q.s=sh;if(a)Q.a=a;else delete Q.a;if(kv!=null)Q.k=kv;else delete Q.k;if(tt===false)Q.tt=false;else delete Q.tt;if(pp)Q.p=pp;else delete Q.p}else if(sh==='rect'&&!a)delete w.tshape;else{w.tshape={s:sh,a,k:kv,tt};if(pp)w.tshape.p=pp}
+    $('tpFP').hidden=sh!=='free';fpDraw();draw()};
+  /* צורה חופשית: נקודות על הקו בתוך המסגרת הוורודה (יחסית למסגרת, 0..1) */
+  let fpSel=0,fpSt=null;
+  const fpP=()=>{const t=ts();return t.s==='free'?t.p:null};
+  function fpDraw(){ar.querySelectorAll('.fp,svg').forEach(x=>x.remove());const P=fpP();ar.classList.toggle('free',!!P);if(!P)return;
+    const C=GR.freeCurve(P,12),d='M'+C.map(q=>(q[0]*100).toFixed(2)+' '+(q[1]*100).toFixed(2)).join('L')+'Z';
+    ar.insertAdjacentHTML('beforeend','<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="'+d+'"/></svg>');
+    if(fpSel>=P.length)fpSel=P.length-1;
+    P.forEach((q,i)=>{const b=document.createElement('b');b.className='fp'+(q[2]?' sharp':'')+(i===fpSel?' sel':'');b.dataset.pt=i;b.style.left=(q[0]*100)+'%';b.style.top=(q[1]*100)+'%';b.title='נקודה '+(i+1)+(q[2]?' (פינה חדה)':'');
+      b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();fpSel=i;fpSt={i};b.setPointerCapture(e.pointerId);ar.querySelectorAll('.fp').forEach(x=>x.classList.toggle('sel',x===b))};
+      b.onpointermove=e=>{if(!fpSt)return;const Q=AA(),p=toPage(e),a=tiltOf()*Math.PI/180,c=Math.cos(a),sn=Math.sin(a),dx=p.x-(Q.x+Q.w/2),dy=p.y-(Q.y+Q.h/2);
+        const u=(dx*c+dy*sn)/Q.w+.5,v=(-dx*sn+dy*c)/Q.h+.5,R=x=>Math.round(Math.max(-.1,Math.min(1.1,x))*1000)/1000;P[i][0]=R(u);P[i][1]=R(v);
+        b.style.left=(P[i][0]*100)+'%';b.style.top=(P[i][1]*100)+'%';const C2=GR.freeCurve(P,12);ar.querySelector('svg path').setAttribute('d','M'+C2.map(q=>(q[0]*100).toFixed(2)+' '+(q[1]*100).toFixed(2)).join('L')+'Z')};
+      b.onpointerup=()=>{if(fpSt){fpSt=null;w.areaSet=true;draw()}};
+      b.ondblclick=e=>{e.stopPropagation();if(P[i][2])P[i].length=2;else P[i][2]=1;fpDraw();draw()};
+      ar.appendChild(b)})}
+  const FPS={heart:()=>GR.HEART,oval:()=>Array.from({length:10},(_,i)=>[.5+.5*Math.cos(i/10*2*Math.PI),.5+.5*Math.sin(i/10*2*Math.PI)]),
+    cloud:()=>Array.from({length:16},(_,i)=>{const t=i/16*2*Math.PI,r=i%2?.4:.5;return[.5+r*Math.cos(t),.5+r*Math.sin(t)]})};
+  ed.querySelectorAll('[data-fp]').forEach(btn=>btn.onclick=()=>{const P=fpP();if(!P)return;const k=btn.dataset.fp;
+    if(FPS[k]){P.splice(0,P.length,...JSON.parse(JSON.stringify(FPS[k]())).map(q=>q.map(x=>typeof x==='number'?Math.round(x*1000)/1000:x)));fpSel=0}
+    else if(k==='add'){if(P.length>=32){tpMsg('אפשר עד 32 נקודות.');return}const a=P[fpSel],b=P[(fpSel+1)%P.length];P.splice(fpSel+1,0,[Math.round((a[0]+b[0])/2*1000)/1000,Math.round((a[1]+b[1])/2*1000)/1000]);fpSel++}
+    else if(k==='del'){if(P.length<=3){tpMsg('צריך לפחות 3 נקודות.');return}P.splice(fpSel,1);fpSel=Math.max(0,fpSel-1)}
+    else if(k==='sharp'){const q=P[fpSel];if(q[2])q.length=2;else q[2]=1}
+    else if(k==='flip'){P.forEach(q=>q[0]=Math.round((1-q[0])*1000)/1000);P.reverse()}
+    fpDraw();draw()});
   $('tpTT').onchange=tsSet;
-  $('tpK').oninput=tsSet;
+  $('tpKn').oninput=tsSet;
   /* רשימת האזורים: 1 = הראשי, ועוד אזורים */
   const azDraw=()=>{const box=$('tpAz'),n=1+(w.areas2||[]).length;box.innerHTML='';
     $('tpAzNL').style.display=n>1?'flex':'none';$('tpAzN').value=(actA?AA().name:w.areaName)||'';
@@ -758,7 +785,7 @@ function tpOpen(t){
         r.innerHTML='<select style="width:auto">'+Array.from({length:n},(_,k)=>'<option value="'+k+'">אזור '+(k+1)+'</option>').join('')+'</select><span></span>';
         const sl=r.querySelector('select');sl.value=String(Math.min(n-1,b.ar|0));r.querySelector('span').textContent=b.type==='divider'?'— קו מפריד —':String(b.text||'').split('\n')[0].slice(0,40)||'(שורה ריקה)';
         sl.onchange=()=>{if(+sl.value)b.ar=+sl.value;else delete b.ar;draw()};bb.appendChild(r)})}};
-  azDraw();
+  azDraw();tsShow();
   $('tpSh').onchange=tsSet;$('tpTilt').oninput=tsSet;
   $('tpNA').value=w.noArea?'1':'0';$('tpNA').onchange=()=>{if($('tpNA').value==='1')w.noArea=true;else delete w.noArea;draw()};
   /* עיצוב ישן שהועלה לרוחב: מזהים לפי התמונה */
@@ -766,7 +793,7 @@ function tpOpen(t){
   /* אזור הטקסט: מזיזים בגרירה, מגדילים ומקטינים בעיגולים שבצדדים ובפינות, או גוררים מלבן חדש על מקום ריק */
   const pct=(Q)=>'left:'+(Q.x/DW()*100)+'%;top:'+(Q.y/DH()*100)+'%;width:'+(Q.w/DW()*100)+'%;height:'+(Q.h/DH()*100)+'%';
   const tiltOf=()=>+(ts().a||0);
-  function placeAr(){const Q=AA();ar.style.cssText=pct(Q)+';transform:rotate('+tiltOf()+'deg)';ar.hidden=!!w.noArea;
+  function placeAr(){const Q=AA();ar.style.cssText=pct(Q)+';transform:rotate('+tiltOf()+'deg)';ar.hidden=!!w.noArea;if(!fpSt)fpDraw();
     pv.querySelectorAll('.azo').forEach(x=>x.remove());if(w.noArea)return;
     const all=[w.area].concat(w.areas2||[]);all.forEach((A,k)=>{if(k===actA)return;const o=document.createElement('div');o.className='azo';o.style.cssText=pct(A);o.title='אזור '+(k+1)+': לחיצה לבחירה';
       o.onpointerdown=e=>{e.stopPropagation();actA=k;azDraw();tsShow();draw()};pv.appendChild(o)})}

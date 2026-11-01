@@ -56,7 +56,8 @@ function cleanState(s) {
   const BD = s.border && typeof s.border === 'object' ? s.border : null;
   if (BD && /^[a-z]{2,20}$/.test(String(BD.style || ''))) out.border = { style: BD.style, color: /^([a-z]{3,12}|#[0-9a-f]{6})$/i.test(String(BD.color || '')) ? BD.color : 'gold', s: n(BD.s, 0.2, 4), m: n(BD.m, 0, 200), op: n(BD.op, 0.05, 1) };
   const TS = s.tshape && typeof s.tshape === 'object' ? s.tshape : null;
-  if (TS) out.tshape = { s: ['rect', 'ellipse', 'arch', 'archb', 'trap', 'trapi', 'diamond', 'hex'].includes(TS.s) ? TS.s : 'rect', a: n(TS.a, -45, 45), k: n(TS.k, 0.15, 0.95), tt: TS.tt === false ? false : undefined };
+  const fpts = p => { if (!Array.isArray(p) || p.length < 3) return undefined; return p.slice(0, 32).map(q => { q = Array.isArray(q) ? q : []; const f = v => { v = Number(v); return isFinite(v) ? Math.round(Math.max(-0.1, Math.min(1.1, v)) * 1000) / 1000 : 0.5; }; return q[2] ? [f(q[0]), f(q[1]), 1] : [f(q[0]), f(q[1])]; }); };
+  if (TS) out.tshape = { s: ['rect', 'ellipse', 'arch', 'archb', 'trap', 'trapi', 'diamond', 'hex', 'free'].includes(TS.s) ? TS.s : 'rect', p: TS.s === 'free' ? fpts(TS.p) : undefined, a: n(TS.a, -45, 45), k: n(TS.k, 0.15, 0.95), tt: TS.tt === false ? false : undefined };
   const AR = s.area && typeof s.area === 'object' ? s.area : null;
   if (AR) out.area = { t: n(AR.t, 0, 60), b: n(AR.b, 0, 60), r: n(AR.r, 0, 60), l: n(AR.l, 0, 60), v: AR.v === 'top' ? 'top' : 'center', mine: AR.mine ? 1 : undefined };
   if (s.preset && typeof s.preset === 'object' && /^[\w-]{1,40}$/.test(String(s.preset.id || ''))) out.preset = { id: String(s.preset.id) };
