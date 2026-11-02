@@ -53,8 +53,8 @@ async function sendMail(m, kind, only) {
   }
   for (const k of order) {
     const fn = PROVIDERS[k]; if (!fn) continue;
-    try { const used = await fn(m); if (used) { logMail(used, kind, true, m); return used; } }
-    catch (e) { errs.push(e.message); console.error('mail fail', k, e.message); logMail(k, kind, false, m, e.message); }
+    try { const used = await fn(m); if (used) { await logMail(used, kind, true, m); return used; } }
+    catch (e) { errs.push(e.message); console.error('mail fail', k, e.message); await logMail(k, kind, false, m, e.message); }
   }
   throw new Error('no mail provider succeeded: ' + (errs.join(' | ') || 'none configured'));
 }
