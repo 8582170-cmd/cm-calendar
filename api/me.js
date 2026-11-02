@@ -15,8 +15,8 @@ module.exports = async (req, res) => {
     await loadConfig(); /* כדי שמסלולים שנוצרו בניהול יוכרו */
     /* משתמש חדש (אין לו עדיין רשומה): מייל ברוכים הבאים, פעם אחת */
     let isNew = false; try { const pr = await db('profiles?user_id=eq.' + user.id + '&select=user_id'); isNew = !(pr && pr.length); } catch (e) {}
-    await upsertProfile(user);
-    if (isNew && user.email) welcome(user.email).catch(e => console.error('welcome', e.message));
+    await upsertProfile(user, null, req);
+    if (isNew && user.email) await welcome(user.email).catch(e => console.error('welcome', e.message));
     const b = readBody(req);
     const claim = (Array.isArray(b.claim) ? b.claim : String(b.claim || '').split(',')).filter(x => /^[0-9a-f]{24}$/.test(x)).slice(0, 20);
     for (const id of claim) {

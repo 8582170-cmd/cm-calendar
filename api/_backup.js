@@ -3,11 +3,11 @@
 'use strict';
 const { env, db } = require('./_lib');
 const TABLES = [
-  ['orders', 'created_at,id,plan,amount,status,email,coupon,paid_at,user_id', 'created_at.desc'],
-  ['profiles', 'user_id,email,phone,phone_verified_at,created_at,updated_at', 'created_at.desc'],
-  ['downloads', 'created_at,email,kind,plan,cal,view,size,pages,page,snap,user_id', 'created_at.desc'],
-  ['reminders', 'id,email,name,rule,notice,lang,status,last_sent,created_at', 'id.desc'],
-  ['voice_reminders', 'id,user_id,phone,name,rule,notice,status,last_sent,created_at', 'id.desc'],
+  ['orders', 'created_at,id,plan,amount,status,email,coupon,paid_at,user_id,ip,ip_geo', 'created_at.desc'],
+  ['profiles', 'user_id,email,phone,phone_verified_at,created_at,updated_at,ip,ip_geo', 'created_at.desc'],
+  ['downloads', 'created_at,email,kind,plan,cal,view,size,pages,page,snap,user_id,ip,ip_geo', 'created_at.desc'],
+  ['reminders', 'id,email,name,rule,notice,lang,status,last_sent,created_at,ip,ip_geo', 'id.desc'],
+  ['voice_reminders', 'id,user_id,phone,name,rule,notice,status,last_sent,created_at,ip,ip_geo', 'id.desc'],
   ['appointments', 'id,user_id,email,date,start_t,end_t,title,place,note,color,notify,last_sent,created_at', 'id.desc'],
   ['free_lite', 'user_id,email,used_at', 'used_at.desc'],
   ['settings', 'key,value,updated_at', 'key.asc']
@@ -16,8 +16,11 @@ const ready = () => !!(env('SHEETS_BACKUP_URL') && env('SHEETS_BACKUP_TOKEN'));
 async function run() {
   if (!ready()) return { skipped: 'not configured' };
   const tables = {};
-  for (const [name, cols, order] of TABLES) {
-    try { const rows = await db(name + '?select=' + cols + '&order=' + order + '&limit=20000'); tables[name] = { cols: cols.split(','), rows: (rows || []).map(r => cols.split(',').map(c => r[c] == null ? '' : typeof r[c] === 'object' ? JSON.stringify(r[c]) : r[c])) }; }
+  for (let [name, cols, order] of TABLES) {
+    try { let cl = cols, rows;
+      try { rows = await db(name + '?select=' + cl + '&order=' + order + '&limit=20000'); }
+      catch (e) { if (!/ip/.test(cols) || !/ip|42703|PGRST/.test(e.message)) throw e; cl = cols.replace(',ip,ip_geo', ''); rows = await db(name + '?select=' + cl + '&order=' + order + '&limit=20000'); }
+      cols = cl; tables[name] = { cols: cols.split(','), rows: (rows || []).map(r => cols.split(',').map(c => r[c] == null ? '' : typeof r[c] === 'object' ? JSON.stringify(r[c]) : r[c])) }; }
     catch (e) { tables[name] = { error: /does not exist|42P01|PGRST205/.test(e.message) ? 'missing' : String(e.message).slice(0, 120) }; }
   }
   const r = await fetch(env('SHEETS_BACKUP_URL'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: env('SHEETS_BACKUP_TOKEN'), at: new Date().toISOString(), tables }), redirect: 'follow' });

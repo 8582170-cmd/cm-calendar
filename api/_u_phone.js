@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
         await db('phone_codes?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ tries: r.tries + 1 }) });
         return json(res, 400, { error: 'code' });
       }
-      await upsertProfile(user, { phone: r.phone, phone_verified_at: new Date().toISOString() });
+      await upsertProfile(user, { phone: r.phone, phone_verified_at: new Date().toISOString() }, req);
       return json(res, 200, { ok: true, phone: r.phone });
     }
     json(res, 400, { error: 'action' });

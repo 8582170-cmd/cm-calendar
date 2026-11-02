@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     const mine = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&select=id');
     const MAX = +(await cfg()).max || 50;
     if ((mine || []).length >= MAX) return json(res, 429, { error: 'max', max: MAX });
-    const row = await db('voice_reminders', { method: 'POST', body: JSON.stringify({ user_id: user.id, phone: ph, name, rule: clean, notice }) });
+    const row = await db('voice_reminders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ user_id: user.id, phone: ph, name, rule: clean, notice }) });
     json(res, 200, { id: row && row[0] && row[0].id });
   } catch (e) { console.error('voice-rem', e); json(res, 500, { error: 'server error' }); }
 };

@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) email = null;
   let snap = null; try { snap = await saveSnap(b.snap); } catch (e) {}
   try {
-    await db('downloads', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
+    await db('downloads', { meta: require('./_lib').reqMeta(req), method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
       user_id: user ? user.id : null, email: email ? email.toLowerCase() : null, kind,
       plan: info ? info.plan : s(b.plan, 20), cal: (info && /^[hg]\d{4}$/.test(String(b.yr || '')) ? b.yr + ' · ' : '') + (s(b.cal, 110) || ''), view: s(b.view, 20), size: s(b.size, 30),
       pages: Math.max(0, Math.min(999, parseInt(b.pages, 10) || 0)) || null, snap, page: (s(b.page, 20) || 'app') + (b.kind === 'browser' ? (b.wm ? ' · עם סימן מים' : ' · בלי סימן מים') : '') }) });

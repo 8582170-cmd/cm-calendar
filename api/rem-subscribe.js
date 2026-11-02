@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
     if ((mine || []).filter(r => r.status !== 'off').length >= 100) return json(res, 429, { error: 'too many' });
     const confirmed = true;
     const token = crypto.randomBytes(16).toString('hex');
-    await db('reminders', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, name, rule: cleanRule, notice, lang: b.lang === 'en' ? 'en' : 'he', status: confirmed ? 'active' : 'pending', token }) });
+    await db('reminders', { meta: require('./_lib').reqMeta(req), method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, name, rule: cleanRule, notice, lang: b.lang === 'en' ? 'en' : 'he', status: confirmed ? 'active' : 'pending', token }) });
     if (!confirmed) {
       const recent = (mine || []).find(r => r.status === 'pending' && Date.now() - new Date(r.created_at) < 10 * 60000);
       if (!recent) {

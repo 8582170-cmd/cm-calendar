@@ -114,7 +114,7 @@ module.exports = async (req, res) => {
         /* חינם (קופון או הנחה של 100%): ההזמנה נפתחת מיד */
         const id = crypto.randomBytes(12).toString('hex');
         const o = { id, plan, amount: 0, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: coupon ? coupon.code : null };
-        await db('orders', { method: 'POST', body: JSON.stringify(o) });
+        await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify(o) });
         await require('./_paid').markPaid(o, {}, info.why === 'coupon' ? 'קופון ' + (coupon && coupon.code) : 'הנחה של 100%');
         return json(res, 200, { id, amount: 0, free: true, plan, base: info.base, off: 100, why: info.why, coupon: coupon ? coupon.code : null });
       }
@@ -133,12 +133,12 @@ module.exports = async (req, res) => {
 
     if (prov === 'sumit') {
       const charge = isDon ? amount : (Number(env('SUMIT_TEST_AMOUNT')) || amount);
-      await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
+      await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
       return json(res, 200, { id, amount: charge, provider: 'sumit', provs, sumit: require('./_sumit').pub(), email: email || '', ...extra });
     }
     if (prov === 'paypal') {
       const charge = isDon ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);
-      await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
+      await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
       const ppid = await require('./_paypal').create(charge, id, desc + ' · ' + id.slice(0, 8), email);
       await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ txn: ppid }) });
       return json(res, 200, { id, amount: charge, provider: 'paypal', provs, ppid, ...extra });
@@ -146,7 +146,7 @@ module.exports = async (req, res) => {
 
     const mosad = env('NEDARIM_MOSAD'), apiValid = env('NEDARIM_API_VALID');
     const charge = isDon ? amount : (Number(env('NEDARIM_TEST_AMOUNT')) || amount);
-    await db('orders', { method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
+    await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
     const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
     /* כל 19 השדות חייבים להישלח, גם ריקים (לפי התיעוד של נדרים פלוס). שם, טלפון ומייל ממלא הדפדפן. */
     const tx = {

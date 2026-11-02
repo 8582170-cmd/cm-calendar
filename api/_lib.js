@@ -94,7 +94,23 @@ function priceFor(plan) { const r = finalPrice(publicPricing({}), plan); return 
 
 function env(k) { return String(process.env[k] || '').trim(); }
 
+/* כתובת ה-IP של הגולש ומיקום משוער (מדינה · עיר), לשמירה בהזמנות, הורדות, תזכורות והתחברות. נמחק אחרי שנה (במשימת הלילה) */
+function reqMeta(req) {
+  const H = (req && req.headers) || {};
+  const ip = String(H['cf-connecting-ip'] || H['x-real-ip'] || H['x-forwarded-for'] || '').split(',')[0].trim().slice(0, 45);
+  if (!ip) return null;
+  let city = String(H['x-vercel-ip-city'] || ''); try { city = decodeURIComponent(city); } catch (e) {}
+  return { ip, ip_geo: [String(H['x-vercel-ip-country'] || ''), city].filter(Boolean).join(' · ').slice(0, 80) || null };
+}
+/* opts.meta: מוסיף את ip/ip_geo לרשומה. אם העמודות עוד לא נוספו במסד הנתונים, שומרים בלעדיהן */
 async function db(path, opts = {}) {
+  if (opts.meta && opts.body && /^(POST|PATCH)$/.test(opts.method || '')) {
+    const { meta, ...rest } = opts;
+    try { const o = JSON.parse(rest.body); if (o && typeof o === 'object' && !Array.isArray(o)) return await db(path, { ...rest, body: JSON.stringify({ ...o, ...meta }) }); }
+    catch (e) { if (!/ip_geo|'ip'|"ip"|PGRST204|column/i.test(e.message)) throw e; }
+    return db(path, rest);
+  }
+  if (opts.meta !== undefined) { const { meta, ...rest } = opts; opts = rest; }
   const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) throw new Error('missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
   const r = await fetch(url + '/rest/v1/' + path, {
@@ -161,8 +177,8 @@ async function planInfo(user, cd) {
   return { plan: best.plan, since: best.paid_at, limit, used, left: used == null ? null : Math.max(0, limit - used) };
 }
 /* רישום המשתמש במאגר (מייל, ובהמשך טלפון) */
-async function upsertProfile(user, extra) {
-  try { await db('profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: user.id, email: user.email, updated_at: new Date().toISOString(), ...(extra || {}) }) }); } catch (e) { console.error('profile', e.message); }
+async function upsertProfile(user, extra, req) {
+  try { await db('profiles', { meta: req ? reqMeta(req) : null, method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: user.id, email: user.email, updated_at: new Date().toISOString(), ...(extra || {}) }) }); } catch (e) { console.error('profile', e.message); }
 }
 
 function json(res, code, obj) {
@@ -172,4 +188,4 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-module.exports = { cdUsable, loadSetting, saveSetting, bestPlan, planInfo, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
+module.exports = { reqMeta, cdUsable, loadSetting, saveSetting, bestPlan, planInfo, upsertProfile, getUser, PLAN_NAMES, PAID, LP, priceFor, loadConfig, publicPricing, checkCoupon, finalPrice, today, env, db, readBody, json };
