@@ -223,6 +223,14 @@ module.exports = async (req, res) => {
       return json(res, 200, { data: all.pages[page] || null });
     }
     /* IndexNow: מודיע לבינג (ולמנועים נוספים) על כל דפי האתר מתוך מפת האתר */
+    /* הרצה ידנית של משימת הלילה (תזכורות, גיבוי, ניקוי). בשבת ובחג המשימה עוצרת מעצמה */
+    if (req.method === 'POST' && b.action === 'cronrun') {
+      const { env: E } = require('./_lib'), out = { code: 0, body: '' };
+      const fake = { statusCode: 200, setHeader() {}, end(t) { out.code = this.statusCode; out.body = String(t || ''); } };
+      await require('./cron-reminders')({ method: 'GET', query: {}, headers: { authorization: 'Bearer ' + (E('CRON_SECRET') || '') } }, fake);
+      let r; try { r = JSON.parse(out.body); } catch (e) { r = { raw: out.body.slice(0, 300) }; }
+      return json(res, 200, { code: out.code, result: r });
+    }
     /* הודעות לגולשים: מוצגות בראש הדפים שנבחרו (דף הבית, הבונים, הלוח המקוון, הברכות) */
     if (req.method === 'POST' && (b.action === 'msgget' || b.action === 'msgsave')) {
       const { loadSetting, saveSetting } = require('./_lib');
