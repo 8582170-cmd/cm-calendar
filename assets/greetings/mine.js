@@ -36,6 +36,18 @@
   }
   /* תמונה קטנה של העיצוב לרשימה */
   function thumb(canvas){ try { var k = 380 / Math.max(canvas.width, canvas.height), c = document.createElement('canvas'); c.width = Math.round(canvas.width * k); c.height = Math.round(canvas.height * k); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.72); } catch (e) { return ''; } }
+  /* שינוי שם ושכפול של עיצוב שמור */
+  function rename(id, title){ return ctx().then(function(c){ return readJson(c.sb, ipath(c.u)).then(function(ix){ ix = ix || {}; if (!ix[id]) return; ix[id].title = String(title || '').slice(0, 80); return writeJson(c.sb, ipath(c.u), ix); }); }); }
+  function duplicate(id){ return Promise.all([get(id), list()]).then(function(a){ var rec = a[0], m = a[1][id]; if (!rec) throw new Error('missing'); var meta = Object.assign({}, m || {}, { title: ((m && m.title) || 'עיצוב') + ' (עותק)' }); return save(null, rec, meta); }); }
+  /* הפרטים האישיים (שמות, חתימה...) נשמרים גם בחשבון, כדי שיופיעו בכל מחשב וטלפון */
+  function profileGet(){ return ctx().then(function(c){ return readJson(c.sb, c.u.id + '/greet/profile.json'); }); }
+  function profileSave(p){ return ctx().then(function(c){ return writeJson(c.sb, c.u.id + '/greet/profile.json', p || {}); }); }
+  /* ממלאים בדפדפן שדות ריקים ממה ששמור בחשבון */
+  function profileSync(G){ return user().then(function(u){ if (!u || !G) return null; return profileGet().then(function(acc){ if (!acc) return null; var loc = G.profile(), ch = false; Object.keys(acc).forEach(function(k){ if (acc[k] && !String(loc[k] || '').trim()) { loc[k] = acc[k]; ch = true; } }); if (ch) G.saveProfile(loc); return ch ? loc : null; }); }).catch(function(){ return null; }); }
+  /* הרכישות: ברכות והזמנות ששולמו, עם הקישור האישי */
+  function purchases(){ return client().then(function(sb){ if (!sb) throw new Error('login'); return sb.auth.getSession(); }).then(function(r){ var s = r && r.data && r.data.session; if (!s) throw Object.assign(new Error('login'), { login: true });
+    return fetch('/api/pricing?c=_greetpay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + s.access_token }, body: JSON.stringify({ action: 'mine' }) }).then(function(x){ return x.json().then(function(j){ if (!x.ok) throw new Error(j.error || x.status); return j; }); }); }); }
+  function signOut(){ return client().then(function(sb){ return sb && sb.auth.signOut(); }); }
   function loginUrl(){ return '/app.html#login&back=' + encodeURIComponent(location.pathname + location.search + location.hash); }
-  window.MyGreets = { user: user, list: list, get: get, save: save, remove: remove, thumb: thumb, loginUrl: loginUrl };
+  window.MyGreets = { user: user, list: list, get: get, save: save, remove: remove, rename: rename, duplicate: duplicate, profileGet: profileGet, profileSave: profileSave, profileSync: profileSync, purchases: purchases, signOut: signOut, thumb: thumb, loginUrl: loginUrl };
 })();

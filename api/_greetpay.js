@@ -133,6 +133,22 @@ module.exports = async (req, res) => {
   try {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' });
     const b = readBody(req), id = String(b.o || '');
+    /* האזור האישי: כל הברכות וההזמנות שהמשתמש המחובר קנה (לפי החשבון או המייל שלו), עם הקישור האישי לכל אחת */
+    if (b.action === 'mine') {
+      const user = await require('./_lib').getUser(req);
+      if (!user) return json(res, 401, { error: 'login' });
+      const em = String(user.email || '').toLowerCase(), enc = encodeURIComponent;
+      const rows = await db('orders?select=id,amount,status,created_at,paid_at&plan=eq.greet&status=in.(paid,refunded)&or=(user_id.eq.' + user.id + (em ? ',email.eq.' + enc(em) : '') + ')&order=created_at.desc&limit=100').catch(() => []);
+      const now = Date.now();
+      const list = await Promise.all((rows || []).map(async o => {
+        const rec = await get(o.id).catch(() => null);
+        const x = { id: o.id, no: String(o.id).slice(0, 8), amount: +o.amount || 0, status: o.status, at: o.paid_at || o.created_at, title: (rec && rec.title) || 'ברכה / הזמנה', tpl: rec ? rec.tpl : '', v: rec ? rec.v : -1,
+          editUntil: rec && rec.editUntil || null, dlUntil: rec && rec.dlUntil || null };
+        if (rec && rec.paidAt && o.status === 'paid' && (!rec.dlUntil || now <= Date.parse(rec.dlUntil))) x.link = '/brachot/edit.html?o=' + o.id + '&k=' + token(o.id);
+        return x;
+      }));
+      return json(res, 200, { now: new Date(now).toISOString(), list });
+    }
     if (!okId(id)) return json(res, 400, { error: 'id' });
     const now = Date.now();
     /* מיד אחרי תשלום: הדפדפן שקנה מקבל את המפתח (רק בשעתיים הראשונות אחרי התשלום) */

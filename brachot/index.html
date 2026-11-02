@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
-<script src="/assets/greetings/mine.js?v=2"></script>
+<script src="/assets/greetings/mine.js?v=3"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -21,6 +21,7 @@
     <a class="logo" href="/"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
     <nav class="nav-links" aria-label="ניווט ראשי">
       <a href="/brachot/" aria-current="page">ברכות והזמנות</a>
+      <a href="/brachot/my.html">👤 האזור האישי</a>
       <a href="/gallery.html">לוחות שנה</a>
       <a href="/online/">לוח שנה אונליין</a>
       <a class="btn btn-primary" href="/app.html">לבנות לוח</a>
@@ -35,13 +36,13 @@
     </div>
     <section class="mygr" id="mygr" hidden aria-labelledby="mygrH">
       <h2 id="mygrH">העיצובים שלי</h2>
-      <p class="tdesc">עיצובים ששמרתם בחשבון. פותחים, משנים רק מה שצריך (למשל השם), ומורידים.</p>
+      <p class="tdesc">עיצובים ששמרתם בחשבון. פותחים, משנים רק מה שצריך (למשל השם), ומורידים. <a href="/brachot/my.html">לאזור האישי</a> (שכפול, שינוי שם, רכישות).</p>
       <div class="gal" id="mygrL"></div>
     </section>
     <details class="mine" id="mine">
       <summary><span class="mi">✎</span><span><b>רוצים לראות את השמות שלכם?</b><small>כותבים פעם אחת, ורואים אותם בכל העיצובים</small></span></summary>
       <div class="mine-f" id="mineF"></div>
-      <p class="mine-n">נשמר רק אצלכם בדפדפן. <button type="button" id="mineClr">ניקוי</button></p>
+      <p class="mine-n"><span id="mineWhere">נשמר בדפדפן. <a href="/brachot/my.html#me">נכנסים לחשבון</a> כדי שיישמר גם בטלפון ובמחשב אחר.</span> <button type="button" id="mineClr">ניקוי</button></p>
     </details>
     <div class="types" id="types" role="tablist" aria-label="סוג הדף"></div>
     <p class="tdesc" id="tdesc"></p>
@@ -95,12 +96,12 @@ function mine(){
     var s = document.createElement('span'); s.textContent = f[1];
     var t = document.createElement(f[0] === 'details' ? 'textarea' : 'input'); if (t.tagName === 'INPUT') t.type = 'text'; else t.rows = 2;
     t.value = prof[f[0]] || '';
-    t.oninput = function(){ prof[f[0]] = t.value; G.saveProfile(prof); clearTimeout(tmr); tmr = setTimeout(list, 350); };
+    t.oninput = function(){ prof[f[0]] = t.value; G.saveProfile(prof); clearTimeout(tmr); tmr = setTimeout(function(){ list(); if (LOGGED && window.MyGreets) MyGreets.profileSave(prof).catch(function(){}); }, 350); };
     w.append(s, t); mf.appendChild(w);
   });
 }
 if (Object.keys(prof).some(function(k){ return String(prof[k] || '').trim() })) document.getElementById('mine').open = true;
-document.getElementById('mineClr').onclick = function(){ prof = {}; G.saveProfile(prof); mf.querySelectorAll('input,textarea').forEach(function(x){ x.value = '' }); list(); };
+document.getElementById('mineClr').onclick = function(){ prof = {}; G.saveProfile(prof); if (LOGGED && window.MyGreets) MyGreets.profileSave(prof).catch(function(){}); mf.querySelectorAll('input,textarea').forEach(function(x){ x.value = '' }); list(); };
 function list(){
   gal.innerHTML = '';
   var items = ALL.filter(function(x){ return x.type === ctype && (x.type === 'own' || !G.hiddenCat(x.cat)) && (cur === 'all' || x.cat === cur) });
@@ -119,7 +120,12 @@ function list(){
     G.render(cv, t, st, { scale: Math.min(1.5, w / G.W), thumb: true, watermark: 'faint' }).then(function(){ if (cv.width > cv.height) cv.parentNode.classList.add('wide'); }).catch(function(){});
   });
 }
+var LOGGED = false;
 tabs(); chips(); mine(); list();
+/* מחוברים: הפרטים נשמרים גם בחשבון, ושדות ריקים מתמלאים ממה ששמור בו */
+if (window.MyGreets) MyGreets.user().then(function(u){ if (!u) return; LOGGED = true;
+  document.getElementById('mineWhere').textContent = 'נשמר בחשבון שלכם, ומופיע בכל מחשב וטלפון.';
+  return MyGreets.profileSync(G).then(function(p){ if (p) { prof = p; mine(); list(); document.getElementById('mine').open = true; } }); }).catch(function(){});
 /* העיצובים שלי (למי שמחובר) */
 function myList(){
   if (!window.MyGreets) return;

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>האזור האישי · ברכות והזמנות | MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
+<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/greetings/greetings.js?v=59"></script>
+<script src="/assets/greetings/mine.js?v=3"></script>
+<style>
+.acc-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 14px}
+.acc-h h1{font-size:clamp(30px,4vw,42px);font-weight:900}
+.acc-h .who{color:var(--mute);font-size:16px}
+.acc-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.acc-tabs button{font:inherit;font-weight:800;font-size:17px;min-height:46px;padding:6px 18px;border-radius:12px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer}
+.acc-tabs button[aria-selected="true"]{border-color:var(--teal);background:var(--teal);color:var(--teal-ink)}
+.acc-card{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.acc-card h2{font-size:22px}
+.acc-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.acc-list li{background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.acc-list b{font-size:18px;display:block}.acc-list small{display:block;color:var(--mute);font-size:15px}
+.acc-btns{display:flex;gap:8px;flex-wrap:wrap}
+.acc-btn{font:inherit;font-size:15px;font-weight:700;min-height:40px;padding:6px 16px;border:1.5px solid var(--line);border-radius:999px;background:var(--sheet);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.acc-btn.pri{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.ok{color:#1d7a3a;font-weight:700}.bad{color:#b3261e;font-weight:700}
+.my-t{font:inherit;font-size:17px;font-weight:800;border:1px dashed transparent;border-radius:6px;padding:2px 4px;background:none;color:var(--ink);width:100%}
+.my-t:hover,.my-t:focus{border-color:var(--line);outline:none;background:var(--paper)}
+.empty{color:var(--mute);font-size:17px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <a class="logo" href="/"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
+    <nav class="nav-links" aria-label="ניווט ראשי">
+      <a href="/brachot/">ברכות והזמנות</a>
+      <a href="/brachot/my.html" aria-current="page">👤 האזור האישי</a>
+      <a href="/gallery.html">לוחות שנה</a>
+    </nav>
+  </header>
+  <main id="main">
+    <div class="acc-h"><div><h1>האזור האישי</h1><div class="who" id="who"></div></div><div class="acc-btns" id="topB"></div></div>
+    <div id="body"><p class="empty">טוען…</p></div>
+  </main>
+</div>
+<script>
+(function(){
+'use strict';
+var G = window.Greetings, M = window.MyGreets, $ = function(id){ return document.getElementById(id); }, body = $('body');
+var TABS = [['designs', '🎨 העיצובים שלי'], ['buys', '🧾 הרכישות שלי'], ['me', '✎ הפרטים שלי'], ['help', 'עזרה']];
+var tab = (/^#(\w+)/.exec(location.hash) || [])[1]; if (!TABS.some(function(t){ return t[0] === tab; })) tab = 'designs';
+function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+function dt(d){ try { return new Date(d).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: 'numeric' }); } catch (e) { return ''; } }
+function dtt(d){ try { return new Date(d).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function money(a){ return (+a ? (+a).toLocaleString('he-IL') + ' ₪' : 'בחינם'); }
+
+M.user().then(function(u){
+  if (!u) {
+    body.innerHTML = '';
+    var c = el('div', 'acc-card'); c.appendChild(el('h2', '', 'נכנסים לחשבון'));
+    c.appendChild(el('p', 'note', 'באזור האישי שומרים עיצובים ופותחים אותם שוב, רואים את הברכות וההזמנות שקניתם ומורידים אותן שוב, ושומרים את השמות והחתימה שלכם לכל העיצובים. זה אותו חשבון של האתר (גם של בונה הלוחות).'));
+    var r = el('div', 'acc-btns'), a = el('a', 'acc-btn pri', 'כניסה / הרשמה'); a.href = M.loginUrl(); r.appendChild(a); c.appendChild(r); body.appendChild(c);
+    return;
+  }
+  $('who').textContent = u.email;
+  var cal = el('a', 'acc-btn', '📅 האזור האישי של הלוחות'); cal.href = '/app.html'; cal.title = 'המסלול, הלוחות, ההורדות והתזכורות';
+  var out = el('button', 'acc-btn', 'יציאה'); out.type = 'button'; out.onclick = function(){ M.signOut().then(function(){ location.reload(); }); };
+  $('topB').append(cal, out);
+  var tb = el('div', 'acc-tabs'); tb.setAttribute('role', 'tablist');
+  TABS.forEach(function(t){ var b = el('button', '', t[1]); b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.t = t[0]; b.onclick = function(){ show(t[0]); }; tb.appendChild(b); });
+  var pane = el('div'); pane.setAttribute('role', 'tabpanel');
+  body.innerHTML = ''; body.append(tb, pane);
+  function show(k){ tab = k; try { history.replaceState(null, '', '#' + k); } catch (e) {}
+    tb.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.t === k)); });
+    pane.innerHTML = '<p class="empty">טוען…</p>';
+    ({ designs: designs, buys: buys, me: me, help: help })[k](pane); }
+  show(tab);
+}).catch(function(){ body.innerHTML = '<p class="bad">לא הצלחנו לטעון. בדקו את החיבור ונסו שוב.</p>'; });
+
+/* העיצובים ששמרו בחשבון */
+function designs(pane){
+  M.list().then(function(ix){
+    pane.innerHTML = '';
+    var ids = Object.keys(ix).sort(function(a, b){ return String(ix[b].updated).localeCompare(String(ix[a].updated)); });
+    if (!ids.length) { var c = el('div', 'acc-card'); c.appendChild(el('p', 'empty', 'עוד לא שמרתם עיצובים. בעורך לוחצים "💾 שמירה בעיצובים שלי", והעיצוב נשמר כאן: פותחים אותו שוב ומשנים רק מה שצריך, למשל את השם.')); var a = el('a', 'acc-btn pri', 'לבחירת עיצוב'); a.href = '/brachot/'; c.appendChild(a); pane.appendChild(c); return; }
+    var g = el('div', 'gal'); pane.appendChild(g);
+    ids.forEach(function(id){ var x = ix[id], a = el('div', 'card my');
+      var href = '/brachot/edit.html?t=' + encodeURIComponent(x.tpl) + (x.v >= 0 ? '&v=' + x.v : '') + '&my=' + encodeURIComponent(id);
+      var sh = el('a', 'sheet'); sh.href = href; if (x.thumb) { var im = el('img'); im.alt = ''; im.src = x.thumb; sh.appendChild(im); } a.appendChild(sh);
+      var t = el('input', 'my-t'); t.value = x.title || 'עיצוב'; t.setAttribute('aria-label', 'שם העיצוב (אפשר לשנות)'); t.title = 'לחיצה לשינוי השם';
+      t.onchange = function(){ var v = t.value.trim(); if (!v) { t.value = x.title || 'עיצוב'; return; } M.rename(id, v).then(function(){ x.title = v; }); };
+      a.appendChild(t);
+      a.appendChild(el('span', 'meta', (x.kind === 'invite' ? 'הזמנה' : 'ברכה') + ' · נשמר ' + dt(x.updated)));
+      var bb = el('div', 'my-b'), op = el('a', 'pill', 'פתיחה ועריכה'); op.href = href;
+      var cp = el('button', 'pill', 'שכפול'); cp.type = 'button'; cp.title = 'עותק נוסף, למשל לאותה ברכה עם שם אחר';
+      cp.onclick = function(){ cp.disabled = true; cp.textContent = 'משכפל…'; M.duplicate(id).then(function(){ designs(pane); }).catch(function(){ cp.textContent = 'שגיאה'; }); };
+      var del = el('button', 'pill', 'מחיקה'); del.type = 'button';
+      del.onclick = function(){ if (!del.dataset.sure) { del.dataset.sure = 1; del.textContent = 'בטוח? ללחוץ שוב'; return; } del.disabled = true; M.remove(id).then(function(){ designs(pane); }); };
+      bb.append(op, cp, del); a.appendChild(bb); g.appendChild(a); });
+  }).catch(function(){ pane.innerHTML = '<p class="bad">לא הצלחנו לטעון את העיצובים.</p>'; });
+}
+
+/* ברכות והזמנות שנקנו: פתיחה מחדש, הורדה, אישור תשלום */
+function buys(pane){
+  M.purchases().then(function(j){
+    pane.innerHTML = ''; var L = j.list || [], now = Date.parse(j.now) || Date.now();
+    if (!L.length) { var c = el('div', 'acc-card'); c.appendChild(el('p', 'empty', 'עוד לא נמצאו רכישות של ברכות או הזמנות בחשבון הזה.')); c.appendChild(el('p', 'note', 'שילמתם עם כתובת מייל אחרת? הקישור לעיצוב נשלח למייל ששילמתם בו. אפשר גם להתחבר עם הכתובת הזו.')); pane.appendChild(c); return; }
+    var ul = el('ul', 'acc-list'); pane.appendChild(ul);
+    L.forEach(function(o){ var li = el('li'), s = el('span');
+      s.appendChild(el('b', '', o.title + ' · ' + money(o.amount)));
+      s.appendChild(el('small', '', dt(o.at) + ' · הזמנה ' + o.no));
+      var st = el('small'), ed = o.editUntil && now <= Date.parse(o.editUntil), dl = o.dlUntil && now <= Date.parse(o.dlUntil);
+      if (o.status === 'refunded') { st.className = 'bad'; st.textContent = 'בוצע החזר'; }
+      else if (ed) { st.className = 'ok'; st.textContent = 'אפשר לשנות עד ' + dtt(o.editUntil) + ', ולהוריד עד ' + dtt(o.dlUntil); }
+      else if (dl) { st.textContent = 'זמן העריכה הסתיים. אפשר להוריד עד ' + dtt(o.dlUntil); }
+      else st.textContent = 'תוקף ההורדה הסתיים';
+      s.appendChild(st); li.appendChild(s);
+      var bb = el('div', 'acc-btns');
+      if (o.link) { var a = el('a', 'acc-btn pri', ed ? 'פתיחה ועריכה' : 'פתיחה והורדה'); a.href = o.link + (ed ? '' : '#download'); bb.appendChild(a); }
+      if (o.status === 'paid') { var cf = el('button', 'acc-btn', 'אישור תשלום'); cf.type = 'button'; cf.onclick = function(){ conf(o); }; bb.appendChild(cf); }
+      li.appendChild(bb); ul.appendChild(li); });
+    pane.appendChild(el('p', 'note', 'אחרי שתוקף ההורדה מסתיים: אם שמרתם את העיצוב ב"העיצובים שלי", אפשר לפתוח אותו משם ולקנות שוב. שאלה על הזמנה? כתבו ל־contact@myluach.org'));
+  }).catch(function(){ pane.innerHTML = '<p class="bad">לא הצלחנו לטעון את הרכישות. נסו שוב בעוד רגע.</p>'; });
+}
+function conf(o){
+  var w = window.open('', '_blank'); if (!w) return;
+  var esc = function(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  w.document.write('<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>אישור תשלום ' + esc(o.no) + ' · MyLuach</title><style>body{font:16px/1.7 Arial,sans-serif;color:#1a232c;max-width:640px;margin:40px auto;padding:0 20px}h1{font-size:24px;margin:0 0 4px}table{width:100%;border-collapse:collapse;margin:20px 0}td{padding:8px 10px;border-bottom:1px solid #dde}td:first-child{color:#5c686c;width:40%}.n{color:#5c686c;font-size:14px}@media print{button{display:none}}</style></head><body>' +
+    '<h1>אישור תשלום</h1><div class="n">MyLuach · www.myluach.org · contact@myluach.org</div><table>' +
+    [['מספר הזמנה', o.no], ['תאריך', dt(o.at)], ['מוצר', 'ברכה / הזמנה מעוצבת: ' + o.title], ['סכום', money(o.amount)], ['סטטוס', 'שולם'], ['לקוח', $('who').textContent]].map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') +
+    '</table><p class="n">זהו אישור על ביצוע ההזמנה באתר, ואינו מהווה חשבונית מס. קבלה רשמית נשלחת מחברת הסליקה, או לפי בקשה.</p><button onclick="print()">הדפסה / שמירה כ־PDF</button></body></html>');
+  w.document.close();
+}
+
+/* הפרטים שממלאים פעם אחת: נשמרים בחשבון ובדפדפן, ומופיעים בכל העיצובים */
+function me(pane){
+  Promise.all([M.profileGet().catch(function(){ return null; })]).then(function(r){
+    var P = Object.assign({}, G.profile(), r[0] || {}), tmr = null;
+    pane.innerHTML = ''; var c = el('div', 'acc-card'); pane.appendChild(c);
+    c.appendChild(el('h2', '', 'השמות והפרטים שלי'));
+    c.appendChild(el('p', 'note', 'כותבים פעם אחת, והם מופיעים לבד בכל העיצובים (בגלריה ובעורך), גם במחשב או בטלפון אחר כשנכנסים לחשבון.'));
+    var f = el('div', 'mine-f'); f.style.padding = '0'; c.appendChild(f);
+    var msg = el('p', 'note'); msg.setAttribute('role', 'status');
+    var save = function(){ G.saveProfile(P); msg.textContent = 'שומר…'; M.profileSave(P).then(function(){ msg.textContent = '✓ נשמר בחשבון'; }).catch(function(){ msg.textContent = 'נשמר בדפדפן. השמירה בחשבון לא הצליחה, ננסה שוב בשינוי הבא.'; }); };
+    G.PERSONAL.forEach(function(x){ var w = el('label', 'mf'), s = el('span', '', x[1]), t = el(x[0] === 'details' ? 'textarea' : 'input'); if (t.tagName === 'INPUT') t.type = 'text'; else t.rows = 2;
+      t.value = P[x[0]] || ''; t.oninput = function(){ P[x[0]] = t.value; clearTimeout(tmr); tmr = setTimeout(save, 700); }; w.append(s, t); f.appendChild(w); });
+    var row = el('div', 'acc-btns'), clr = el('button', 'acc-btn', 'ניקוי הכול'); clr.type = 'button';
+    clr.onclick = function(){ if (!clr.dataset.sure) { clr.dataset.sure = 1; clr.textContent = 'בטוח? ללחוץ שוב'; return; } P = {}; f.querySelectorAll('input,textarea').forEach(function(x){ x.value = ''; }); save(); delete clr.dataset.sure; clr.textContent = 'ניקוי הכול'; };
+    row.appendChild(clr); c.append(row, msg);
+    if (r[0] == null && Object.keys(P).length) save();
+  });
+}
+function help(pane){
+  pane.innerHTML = '<div class="acc-card"><h2>עזרה</h2><ul class="note" style="margin:0;padding-inline-start:20px;font-size:16px">' +
+    '<li><b>שמירה:</b> בעורך לוחצים "💾 שמירה בעיצובים שלי". העיצוב נשמר עם כל הטקסטים, הצבעים והתמונות.</li>' +
+    '<li><b>עיצוב בתשלום:</b> אחרי התשלום אפשר לשנות את הטקסט כמה שעות, ולהוריד שוב גם אחר כך. הקישור נמצא כאן ב"הרכישות שלי", וגם במייל.</li>' +
+    '<li><b>אותו עיצוב לכמה אנשים:</b> ב"העיצובים שלי" לוחצים "שכפול", ומשנים בעותק רק את השם.</li>' +
+    '<li><a href="/terms" target="_blank" rel="noopener">תנאי השימוש, ביטולים והחזרים</a> · <a href="/privacy" target="_blank" rel="noopener">מדיניות הפרטיות</a></li>' +
+    '<li>שאלה או בעיה: <a href="mailto:contact@myluach.org">contact@myluach.org</a></li></ul></div>';
+}
+})();
+</script>
+</body>
+</html>

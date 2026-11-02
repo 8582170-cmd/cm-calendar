@@ -204,7 +204,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
 <script src="/assets/pay.js?v=1" defer></script>
-<script src="/assets/greetings/mine.js?v=2"></script>
+<script src="/assets/greetings/mine.js?v=3"></script>
 <script src="/assets/sitemsg.js?v=1" defer></script>
 </head>
 <body>
@@ -213,6 +213,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
     <a class="logo" href="/"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a>
     <nav class="nav-links" aria-label="ניווט ראשי">
       <a href="/brachot/">כל העיצובים</a>
+      <a href="/brachot/my.html">👤 האזור האישי</a>
       <a class="btn btn-primary" href="/app.html">לבנות לוח</a>
     </nav>
   </header>
@@ -672,7 +673,10 @@ function catNow(){ var pc = S.preset && G.presets().find(function(p){ return p.i
 function catLabels(){ var c = catNow(), pk = S.preset && G.presets().find(function(p){ return p.id === S.preset.id }); if (c) G.fieldsFor(c, (pk && pk.kind !== 'all' && pk.kind) || tpl.kind).forEach(function(f){ LABELS[f[0]] = f[1]; }); }
 catLabels();
 function personal(kk){ return G.PERSONAL.some(function(x){ return x[0] === kk }); }
-function remember(b){ if (!$('remember').checked || !personal(b.k)) return; var p = G.profile(); p[b.k] = b.text; G.saveProfile(p); }
+var remT = null;
+function remember(b){ if (!$('remember').checked || !personal(b.k)) return; var p = G.profile(); p[b.k] = b.text; G.saveProfile(p);
+  /* מחוברים: גם בחשבון (אחרי הפסקה קצרה בהקלדה) */
+  clearTimeout(remT); remT = setTimeout(function(){ if (window.MyGreets) MyGreets.user().then(function(u){ if (u) MyGreets.profileSave(G.profile()); }).catch(function(){}); }, 1500); }
 function autoRows(t){ t.rows = Math.min(7, Math.max(1, t.value.split('\n').length)); }
 function renderFields(){
   var box = $('fields'); box.innerHTML = ''; var n = 0;
