@@ -10,10 +10,11 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' });
   try {
     const b = readBody(req);
-    /* תזכורות במייל רק למשתמשים רשומים: המייל הוא של החשבון, ולכן לא צריך מייל אישור */
-    const user = await getUser(req);
-    if (!user || !user.email) return json(res, 401, { error: 'login' });
-    const email = user.email.slice(0, 200);
+    /* משתמש מחובר שמבקש למייל של החשבון: מופעל מיד. גולש לא מחובר, או מייל אחר: נשלח קודם מייל אישור
+       (כל תזכורת חדשה כזאת דורשת אישור) */
+    const user = await getUser(req).catch(() => null);
+    const email = String(b.email || (user && user.email) || '').trim().toLowerCase().slice(0, 200);
+    const own = !!(user && user.email && user.email.toLowerCase() === email);
     const name = String(b.name || '').trim().slice(0, 120);
     const rule = b.rule || {};
     const notice = (Array.isArray(b.notice) ? b.notice : [1]).map(Number).filter(n => [0, 1, 2, 3, 7, 14, 30].includes(n)).slice(0, 4);
@@ -34,7 +35,11 @@ module.exports = async (req, res) => {
     /* הגבלות נגד ניצול */
     const mine = await db('reminders?email=eq.' + encodeURIComponent(email) + '&select=status,created_at&order=created_at.desc&limit=200');
     if ((mine || []).filter(r => r.status !== 'off').length >= 100) return json(res, 429, { error: 'too many' });
-    const confirmed = true;
+    const confirmed = own;
+    if (!confirmed) { /* נגד שליחת מיילי אישור בהמוניהם מאותו מחשב */
+      const ip = (require('./_lib').reqMeta(req) || {}).ip;
+      if (ip) { try { const n = await db('reminders?select=id&status=eq.pending&ip=eq.' + encodeURIComponent(ip) + '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 3600e3).toISOString()) + '&limit=20'); if ((n || []).length >= 8) return json(res, 429, { error: 'too many' }); } catch (e) {} }
+    }
     const token = crypto.randomBytes(16).toString('hex');
     await db('reminders', { meta: require('./_lib').reqMeta(req), method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, name, rule: cleanRule, notice, lang: b.lang === 'en' ? 'en' : 'he', status: confirmed ? 'active' : 'pending', token }) });
     if (!confirmed) {
@@ -42,11 +47,11 @@ module.exports = async (req, res) => {
       if (!recent) {
         const url = site + '/api/rem-confirm?t=' + token;
         await sendMail({ to: email, subject: 'אישור תזכורות במייל מ־MyLuach',
-          html: frame({ title: 'לאשר תזכורות במייל?', body: 'ביקשתם לקבל במייל הזה תזכורת: <b>' + escH(name) + '</b>.<br>לחצו כדי לאשר. אחרי האישור, תזכורות נוספות שתוסיפו יופעלו מיד.', button: 'לאישור התזכורות', url, foot: 'אם לא ביקשתם, אפשר להתעלם מהמייל הזה ולא יישלח אליכם דבר.' }),
+          html: frame({ title: 'לאשר תזכורות במייל?', body: 'ביקשתם לקבל במייל הזה תזכורת: <b>' + escH(name) + '</b>.<br>לחצו כדי לאשר. אם לא ביקשתם, אפשר להתעלם מהמייל הזה, ולא יישלח אליכם כלום.', button: 'לאישור התזכורות', url, foot: 'אם לא ביקשתם, אפשר להתעלם מהמייל הזה ולא יישלח אליכם דבר.' }),
           text: 'לאישור תזכורות במייל מ־MyLuach: ' + url }, 'confirm');
       }
     }
-    json(res, 200, { token, status: confirmed ? 'active' : 'pending' });
+    json(res, 200, { token, email, status: confirmed ? 'active' : 'pending' });
   } catch (e) {
     console.error('rem-subscribe', e);
     json(res, 500, { error: 'server error' });
