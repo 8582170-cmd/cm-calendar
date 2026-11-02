@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ספירה לאחור · MyLuach</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="ספירה לאחור לאירוע המשפחתי, מ־MyLuach.">
+<meta property="og:title" content="ספירה לאחור">
+<meta property="og:description" content="כמה ימים נשארו? לחצו לצפייה בספירה.">
+<meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+:root{--on-acc:#fff;--acc:#1e5a63;--bg:#f6f4ef;--card:#fff;--ink:#1a232c;--mute:#5d6873;--line:#e2ddd2}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#15191d;--card:#1d2328;--ink:#eef1f3;--mute:#a7b1ba;--line:#2e363d}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:var(--bg);color:var(--ink);font:17px/1.6 Assistant,Arial,sans-serif}
+.card{width:100%;max-width:520px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:34px 26px 26px;text-align:center;box-shadow:0 10px 40px rgb(0 0 0 / .07)}
+.goal{font-size:46px;line-height:1}
+h1{margin:10px 0 2px;font:400 clamp(24px,6vw,32px)/1.25 'Secular One',Assistant,sans-serif;color:var(--acc);overflow-wrap:anywhere}
+.date{color:var(--mute);font-size:15.5px}
+.num{font:400 clamp(72px,24vw,128px)/1 'Secular One',Assistant,sans-serif;color:var(--acc);margin:22px 0 0;font-variant-numeric:tabular-nums}
+.lbl{font-size:22px;font-weight:700;margin-top:4px}
+.sub{color:var(--mute);margin-top:6px;font-size:15px}
+.cta{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);font-size:15px;color:var(--mute)}
+.cta a{display:inline-block;margin-top:8px;background:var(--acc);color:var(--on-acc);text-decoration:none;font-weight:700;padding:10px 20px;border-radius:12px}
+.cta a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.bad{color:var(--mute)}
+</style>
+</head>
+<body>
+<main class="card" id="c" aria-live="polite">
+  <p class="bad">טוען…</p>
+</main>
+<script>
+(function(){
+  'use strict';
+  var P=new URLSearchParams(location.search),t=(P.get('t')||'').slice(0,90),d=P.get('d')||'',s=P.get('s')||'classic';
+  var ST={classic:['#1e5a63','🎉'],bride:['#a8646f','💍'],barmitzvah:['#1f3a5f','📜'],batmitzvah:['#b8487a','🌸'],kids:['#e0663a','🎈'],baby:['#5b8db8','🍼'],elegant:['#2a2622','✨'],nature:['#3f7a4f','🌿'],trip:['#1d8a96','✈️']};
+  var st=ST[s]||ST.classic,c=document.getElementById('c');
+  function esc(x){return String(x).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]})}
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  if(!m){c.innerHTML='<p class="bad">הקישור לא תקין.</p><div class="cta"><a href="/countdown">ליצירת ספירה לאחור</a></div>';return}
+  document.documentElement.style.setProperty('--acc',st[0]);
+  if(matchMedia('(prefers-color-scheme: dark)').matches&&/^#(1|2)/.test(st[0])){document.documentElement.style.setProperty('--acc','#8fc3cb');document.documentElement.style.setProperty('--on-acc','#0f1a1d')}
+  var to=new Date(+m[1],+m[2]-1,+m[3],12);
+  function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'],r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
+  var heb='';try{var P2=new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(to),g=function(k){return (P2.find(function(x){return x.type===k})||{}).value||''};
+    heb=gem(+g('day'))+' '+g('month').replace(/^ב/,'')+' '+gem(+g('year')%1000)}catch(e){}
+  var greg=to.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  function draw(){
+    var now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12),n=Math.round((to-t0)/864e5);
+    var big=n>1?String(n):n===1?'מחר!':n===0?'היום!':'',lbl=n>1?'ימים נשארו':n<0?'':'',sub='';
+    if(n<0){big=st[1];lbl='האירוע היה לפני '+(-n===1?'יום':-n===2?'יומיים':-n+' ימים');}
+    else if(n>=14){var w=Math.floor(n/7),r=n%7;sub='כלומר '+(w===2?'שבועיים':w+' שבועות')+(r?' ו־'+(r===1?'יום':r===2?'יומיים':r+' ימים'):'');}
+    c.innerHTML='<div class="goal" aria-hidden="true">'+st[1]+'</div><h1>'+esc(t||'ספירה לאחור')+'</h1><div class="date">'+esc(greg)+(heb?' · '+esc(heb):'')+'</div>'+
+      '<div class="num">'+esc(big)+'</div>'+(lbl?'<div class="lbl">'+esc(lbl)+'</div>':'')+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+
+      '<div class="cta">גם אתם סופרים לאירוע?<br><a href="/countdown">בונים לוח ספירה לאחור להדפסה</a></div>';
+    document.title=(n>1?'עוד '+n+' ימים · ':n===1?'מחר! · ':n===0?'היום! · ':'')+(t||'ספירה לאחור')+' · MyLuach';
+  }
+  draw();setInterval(draw,60000);
+})();
+</script>
+</body>
+</html>

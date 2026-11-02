@@ -64,6 +64,10 @@
   {
    "source": "/sitemap-pages.xml",
    "destination": "/api/pricing?pg=_sitemap"
+  },
+  {
+   "source": "/cd",
+   "destination": "/cd.html"
   }
  ],
  "redirects": [

@@ -197,6 +197,8 @@ input[type=text],input[type=date],select{font:inherit;width:100%;padding:9px 11p
     $('#title').textContent=(INFO.owner?INFO.owner+' מזמינים אתכם':'הוזמנתם')+' להוסיף ללוח: '+INFO.title;
     $('#lead').textContent='מוסיפים ימי הולדת, ימי נישואין, אירועים ותמונות של המשפחה, והם ייכנסו ללוח השנה'+(INFO.auto?'.':' אחרי שבעל הלוח יאשר אותם.')+' לא צריך להירשם.';
     $('#evAuto').textContent=INFO.auto?'':', אחרי שבעל הלוח יאשר';
+    if(INFO.cal==='cd'){$('#evCard').hidden=true;$('#title').textContent=(INFO.owner?INFO.owner+' מזמינים אתכם':'הוזמנתם')+' לשלוח תמונות לספירה: '+INFO.title;
+      $('#lead').textContent='שולחים תמונות, והן ייכנסו ללוח הספירה לאחור'+(INFO.auto?'.':' אחרי שבעל הלוח יאשר אותן.');}
     if(INFO.photosLeft<=0){$('#phHint').textContent='אי אפשר לשלוח עוד תמונות ללוח הזה.';$('#phPick').disabled=true}
     document.title='מוסיפים ללוח: '+INFO.title+' · MyLuach';
     drawEv();show('app');

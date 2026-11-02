@@ -859,7 +859,24 @@ i.cd-chk{position:absolute;bottom:calc(var(--u)*.8);inset-inline-start:calc(var(
 .fld{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:14px}
 .fld input{font:inherit;font-weight:400;padding:8px 10px;border:1px solid var(--line,#ccd);border-radius:8px;background:var(--bg,#fff);color:inherit}
 .hint.small{font-size:12.5px}
-.modal.acct-modal{max-width:560px}
+.modal.acct-modal{max-width:640px;width:100%}
+.ac-tabs{display:flex;flex-wrap:wrap;gap:2px 4px;border-bottom:1px solid var(--line,#dde);margin:4px 0 12px;padding-bottom:0}
+.ac-tab{flex:none;background:none;border:0;border-bottom:3px solid transparent;padding:7px 9px;font:inherit;font-size:14.5px;color:var(--mute,#5d6873);cursor:pointer;white-space:nowrap;border-radius:8px 8px 0 0}
+.ac-tab:hover{color:var(--ink,#1a232c);background:rgb(0 0 0 / .04)}
+.ac-tab[aria-selected="true"]{color:var(--accent,#1e5a63);border-bottom-color:var(--accent,#1e5a63);font-weight:700}
+.ac-tab:focus-visible{outline:2px solid var(--accent,#1e5a63);outline-offset:-2px}
+#acBody{min-height:180px}
+.ac-card{border:1px solid var(--line,#dde);border-radius:12px;padding:12px 14px;margin:0 0 10px}
+.ac-card.ac-danger{border-color:color-mix(in srgb,var(--danger,#b3261e) 35%,transparent)}
+.ac-plan{display:flex;align-items:center;gap:8px;font-size:17px}
+.ac-badge{background:#e7f4ea;color:#225b32;border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:700}
+.ac-dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:10px 0}
+.ac-dl dt{color:var(--mute,#5d6873)}.ac-dl dd{margin:0}
+.ac-bar{height:7px;border-radius:9px;background:var(--line,#dde);margin-top:5px;overflow:hidden;max-width:260px}
+.ac-bar>span{display:block;height:100%;background:var(--accent,#1e5a63);border-radius:9px}
+.ac-trust{list-style:none;padding:0;margin:8px 0 10px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--mute,#5d6873)}
+.ac-list li>span>small+small{margin-top:1px}
+@media (max-width:560px){.ac-dl{grid-template-columns:1fr}.ac-dl dt{font-size:13px;margin-top:4px}.ac-list li{flex-wrap:wrap}}
 .ac-h{margin:6px 0 0;font-size:15px}
 .ac-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .ac-list li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line,#dde);border-radius:10px}

@@ -3645,7 +3645,7 @@ function buyPlan(planId){
   const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח.</p>'+
     '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label><label class="pay-coupon">קוד קופון<span><input type="text" id="payCoupon" dir="ltr" autocomplete="off" spellcheck="false"><button class="btn" type="button" id="payCouponGo">החלה</button></span><small id="payCouponMsg"></small></label></div>'+
     '<div id="payChoose" class="pay-choose" role="radiogroup" aria-label="דרך תשלום" hidden></div><p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" data-src="https://www.matara.pro/nedarimplus/iframe?language=he" hidden></iframe><div id="ppBox" class="pp-box" hidden></div>'+
-    '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>');
+    '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>'+acTrust());
   m.querySelector('.modal').classList.add('pay-modal');
   /* פרטי בעל הכרטיס מוצגים רק בנדרים פלוס (בפייפל ממלאים אצלם). הקופון תמיד */
   m.querySelectorAll('.pay-who>label:not(.pay-coupon)').forEach(x=>x.hidden=true);
@@ -3945,26 +3945,112 @@ function newPasswordModal(){
     const {error}=await sb.auth.updateUser({password:pw});go.disabled=false;if(error)return msg(authErr(error),1);m.remove();modal('<h3>הסיסמה נשמרה</h3><p class="hint">מעכשיו אפשר להיכנס עם המייל והסיסמה.</p><div class="row"><button class="btn primary" type="button" data-close>מעולה</button></div>')};
   setTimeout(()=>m.querySelector('#npPass').focus(),50);
 }
-async function accountModal(){
-  const m=modal('<h3>החשבון שלי</h3><p class="hint" dir="auto">'+esc(user.email)+'</p><div id="acBody"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" id="acOut">יציאה מהחשבון</button><button class="btn" type="button" data-close>סגירה</button></div>');
-  m.querySelector('.modal').classList.add('acct-modal');
-  m.querySelector('#acOut').onclick=async()=>{if(cloudDirty)await cloudSave();await sb.auth.signOut();m.remove()};
+async function acctCals(m,body){
   const ix=await readIndex(),ids=Object.keys(ix).filter(k=>!k.startsWith('__')).sort((a,b)=>(ix[b].updated||'').localeCompare(ix[a].updated||''));
   const plan=acctInfo&&acctInfo.plan?LP.byId(acctInfo.plan).name:null;
-  const body=m.querySelector('#acBody');if(!body)return;
-  body.innerHTML='<p><b>מסלול:</b> '+(plan?esc(plan):'ניסיון (לא נמצאה רכישה בחשבון)')+'</p>'+
-    '<h4 class="ac-h">הלוחות שלי</h4>'+(ids.length?'<ul class="ac-list">'+ids.map(id=>'<li'+(id===state.s.cloudId?' class="cur"':'')+'><span><b>'+esc(ix[id].name||'לוח')+'</b><small>'+(id===state.s.cloudId?'פתוח עכשיו · ':'')+'עודכן '+new Date(ix[id].updated).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</small></span>'+(id===state.s.cloudId?'':'<button class="btn" type="button" data-open="'+id+'">פתיחה</button>')+'<button class="btn danger-ghost" type="button" data-delc="'+id+'">מחיקה</button></li>').join('')+'</ul>':'<p class="hint">עוד אין לוחות שמורים בחשבון.</p>')+
+  body.innerHTML=(ids.length?'<ul class="ac-list">'+ids.map(id=>'<li'+(id===state.s.cloudId?' class="cur"':'')+'><span><b>'+esc(ix[id].name||'לוח')+'</b><small>'+(id===state.s.cloudId?'פתוח עכשיו · ':'')+'עודכן '+new Date(ix[id].updated).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</small></span>'+(id===state.s.cloudId?'':'<button class="btn" type="button" data-open="'+id+'">פתיחה</button>')+'<button class="btn danger-ghost" type="button" data-delc="'+id+'">מחיקה</button></li>').join('')+'</ul>':'<p class="hint">עוד אין לוחות שמורים בחשבון.</p>')+
     '<div class="row"><button class="btn" type="button" id="acSaveNew">'+(state.s.cloudId&&ix[state.s.cloudId]?'לשמור עותק כלוח נפרד':'לשמור את הלוח הנוכחי בחשבון')+'</button><button class="btn" type="button" id="acNew">לוח חדש ריק</button></div>'+
     '<div class="row"><button class="btn" type="button" id="acFeed">📅 הלוח שלי ביומן גוגל / בטלפון</button></div>'+
     '<label class="fld">שם הלוח הנוכחי<input type="text" id="acName" maxlength="60" value="'+esc(state.s.calName||'')+'" placeholder="'+esc(calTitle())+'"></label>';
   body.querySelector('#acFeed').onclick=()=>{m.remove();feedModal()};
   body.querySelector('#acName').onchange=e=>{state.s.calName=e.target.value.trim();save()};
-  body.querySelector('#acSaveNew').onclick=async()=>{if(state.s.cloudId&&ix[state.s.cloudId]){delete state.s.cloudId;state.s.calName=(state.s.calName||calTitle())+' (עותק)'}await cloudSave();m.remove();accountModal()};
+  body.querySelector('#acSaveNew').onclick=async()=>{if(state.s.cloudId&&ix[state.s.cloudId]){delete state.s.cloudId;state.s.calName=(state.s.calName||calTitle())+' (עותק)'}await cloudSave();m.remove();accountModal('cals')};
   body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}if(CDMODE)Object.assign(state.s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',zmanimMode:'none',cover:false});monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
   body.addEventListener('click',async e=>{
     const o=e.target.closest('[data-open]');if(o){o.disabled=true;o.textContent='פותח…';if(cloudDirty)await cloudSave();try{await cloudOpen(o.dataset.open);m.remove()}catch(err){o.textContent='שגיאה';}return}
-    const d=e.target.closest('[data-delc]');if(d){if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}d.disabled=true;await cloudDelete(d.dataset.delc);m.remove();accountModal()}
+    const d=e.target.closest('[data-delc]');if(d){if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}d.disabled=true;await cloudDelete(d.dataset.delc);m.remove();accountModal('cals')}
   });
+}
+
+/* ---------- האזור האישי: לשוניות ---------- */
+const AC_TABS=[['plan','המסלול שלי'],['cals','הלוחות שלי'],['orders','הזמנות וקבלות'],['dls','ההורדות שלי'],['rems','התזכורות שלי'],['help','עזרה'],['priv','פרטיות']];
+let acctData=null;
+async function acctApi(action,extra){const h=await authHeaders();const r=await fetch('/api/user?fn=account',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({action,...(extra||{})})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||r.status),{code:r.status});return j}
+const acDate=d=>{try{return new Date(d).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'numeric'})}catch(e){return ''}};
+const acMoney=a=>(+a?(+a).toLocaleString('he-IL')+' ₪':'בחינם');
+function acCal(c){c=String(c||'');const m=/^([hg])(\d{4}) · (.*)$/.exec(c);return m?(m[3]||'לוח')+' · '+(m[1]==='h'?gemYear(+m[2]):m[2]):(c||'לוח')}
+function acRule(r){r=r||{};try{if(r.rec==='once')return 'פעם אחת · '+acDate(r.date);if(r.rec==='greg')return 'כל שנה · '+r.d+'/'+r.m;
+  const t=new HDate(r.d,r.rec==='monthly'?7:r.m,5787).renderGematriya().split(' ');return r.rec==='monthly'?'כל חודש · '+t[0]:'כל שנה · '+t.slice(0,-1).join(' ')}catch(e){return ''}}
+const acNotice=n=>(n||[]).map(x=>x===0?'באותו יום':x===1?'יום לפני':x===7?'שבוע לפני':x+' ימים לפני').join(', ');
+async function accountModal(tab){
+  tab=tab||'plan';
+  const m=modal('<h3>האזור האישי</h3><p class="hint" dir="auto">'+esc(user.email)+'</p><div class="ac-tabs" role="tablist" aria-label="האזור האישי">'+AC_TABS.map(([k,l])=>'<button type="button" role="tab" class="ac-tab" data-actab="'+k+'" aria-selected="'+(k===tab)+'">'+l+'</button>').join('')+'</div><div id="acBody" role="tabpanel"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" id="acOut">יציאה מהחשבון</button><button class="btn" type="button" data-close>סגירה</button></div>');
+  m.querySelector('.modal').classList.add('acct-modal');
+  m.querySelector('#acOut').onclick=async()=>{if(cloudDirty)await cloudSave();await sb.auth.signOut();m.remove()};
+  const body=m.querySelector('#acBody');
+  const show=async k=>{tab=k;m.querySelectorAll('[data-actab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.actab===k)));
+    const pane=document.createElement('div');pane.innerHTML='<p class="hint">טוען…</p>';body.replaceChildren(pane);
+    if(k==='cals')return acctCals(m,pane);
+    if(k==='help')return acctHelp(pane);
+    if(!acctData||k==='plan'){try{acctData=await acctApi('get')}catch(e){body.innerHTML='<p class="hint msg-bad">לא הצלחנו לטעון את הפרטים. בדקו את החיבור ונסו שוב.</p>';return}}
+    if(tab!==k||!pane.isConnected)return;
+    ({plan:acctPlan,orders:acctOrders,dls:acctDls,rems:acctRems,priv:acctPriv})[k](pane,m)};
+  m.querySelector('.ac-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-actab]');if(b)show(b.dataset.actab)});
+  m.querySelector('.ac-tabs').addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;const L=[...m.querySelectorAll('[data-actab]')],i=L.findIndex(b=>b.dataset.actab===tab),n=L[(i+(e.key==='ArrowLeft'?1:-1)+L.length)%L.length];n.focus();show(n.dataset.actab)});
+  body.addEventListener('click',e=>{const g=e.target.closest('[data-acgo]');if(g)show(g.dataset.acgo)});
+  show(tab);
+}
+function acctPlan(body){
+  const D=acctData,P=CDMODE?(D.cdPlan||D.plan):D.plan,O=(D.orders||[]).filter(o=>o.status==='paid'&&o.plan!=='donation'&&o.plan!=='greet');
+  if(!P){body.innerHTML='<div class="ac-card"><b>מסלול חינמי</b><p class="hint">עוד לא נמצאה רכישה בחשבון הזה. אפשר לבנות ולשמור לוחות בלי הגבלה, ולשדרג רק כשרוצים להוריד ולהדפיס.</p>'+
+    (O.length?'':'<p class="hint">שילמתם עם כתובת מייל אחרת? התחברו עם הכתובת שבה שילמתם, או <button class="linkbtn" type="button" data-acgo="help">כתבו לנו</button> ונעביר את הרכישה לחשבון הזה.</p>')+
+    '<div class="row"><button class="btn primary" type="button" id="acUp">למסלולים</button></div></div>'+acTrust();
+    body.querySelector('#acUp').onclick=()=>{body.closest('.modal-back').remove();openUpgrade()};return}
+  const pct=P.limit?Math.round(100*(P.used||0)/P.limit):0,yr=P.year?(P.year.heb?gemYear(P.year.y):P.year.y):null;
+  body.innerHTML='<div class="ac-card"><div class="ac-plan"><span class="ac-badge">✓ פעיל</span><b>מסלול '+esc(P.name)+'</b></div>'+
+    '<dl class="ac-dl"><dt>נרכש ב־</dt><dd>'+acDate(P.since)+'</dd>'+
+    (P.limit?'<dt>הורדות</dt><dd>נוצלו '+(P.used||0)+' מתוך '+P.limit+' · <b>נשארו '+(P.left==null?'?':P.left)+'</b><div class="ac-bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+P.limit+'" aria-valuenow="'+(P.used||0)+'"><span style="width:'+pct+'%"></span></div></dd>':'')+
+    '<dt>שנת הלוח</dt><dd>'+(yr?'ההדפסות במסלול הזה הן ללוח של '+esc(String(yr)):'עוד לא הודפס לוח. השנה של הלוח הראשון שתדפיסו תיקבע למסלול.')+'</dd></dl>'+
+    '<p class="hint">💡 הדפסה חוזרת של אותו לוח בתוך 30 דקות (למשל אם המדפסת נתקעה) לא נספרת כהורדה נוספת.</p>'+
+    '<div class="row"><button class="btn" type="button" data-acgo="orders">ההזמנות והקבלות</button><button class="btn" type="button" data-acgo="dls">ההורדות שלי</button></div></div>';
+}
+function acTrust(){return '<ul class="ac-trust"><li>🔒 התשלום מתבצע בטופס מאובטח של חברת הסליקה. פרטי הכרטיס לא עוברים דרכנו ולא נשמרים אצלנו.</li><li>✓ המסלול נפתח מיד אחרי התשלום, וקבלה נשלחת למייל.</li><li>↩ אפשר לבטל ולקבל החזר מלא תוך 14 יום, כל עוד לא הורד קובץ. <a href="/terms#cancel" target="_blank" rel="noopener">התנאים</a></li></ul>'}
+function acctOrders(body){
+  const L=acctData.orders||[];
+  body.innerHTML=(L.length?'<ul class="ac-list">'+L.map((o,i)=>'<li><span><b>'+esc(o.name)+' · '+acMoney(o.amount)+'</b><small>'+acDate(o.at)+' · הזמנה '+esc(o.no)+(o.via?' · '+esc(o.via):'')+(o.coupon?' · קופון '+esc(o.coupon):'')+'</small><small>'+(o.status==='refunded'?'<span class="msg-bad">בוצע החזר</span>':'<span class="msg-ok">✓ שולם</span>')+(o.receipt?' · קבלה רשמית נשלחה למייל מחברת הסליקה':'')+'</small></span><button class="btn" type="button" data-conf="'+i+'">אישור להדפסה</button></li>').join('')+'</ul>':'<p class="hint">עוד אין הזמנות בחשבון הזה.</p>')+
+    '<p class="hint">צריכים קבלה רשמית, או חשבונית על שם עסק? <button class="linkbtn" type="button" data-acgo="help">כתבו לנו</button>, ונשלח בהקדם.</p>';
+  body.querySelectorAll('[data-conf]').forEach(b=>b.onclick=()=>acConfirm(L[+b.dataset.conf]));
+}
+function acConfirm(o){
+  const w=window.open('','_blank');if(!w)return;
+  w.document.write('<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>אישור תשלום '+esc(o.no)+' · MyLuach</title><style>body{font:16px/1.7 Arial,sans-serif;color:#1a232c;max-width:640px;margin:40px auto;padding:0 20px}h1{font-size:24px;margin:0 0 4px}table{width:100%;border-collapse:collapse;margin:20px 0}td{padding:8px 10px;border-bottom:1px solid #dde}td:first-child{color:#5d6873;width:38%}.n{font-size:13px;color:#5d6873}button{font:inherit;padding:8px 16px;margin-top:10px}@media print{button{display:none}}</style></head><body>'+
+    '<h1>אישור תשלום</h1><div class="n">MyLuach · www.myluach.org · contact@myluach.org</div><table>'+
+    [['מספר הזמנה',o.no],['תאריך',acDate(o.at)],['מוצר',o.plan==='donation'?'תרומה':'מסלול '+o.name],['סכום',acMoney(o.amount)],['אמצעי תשלום',o.via||'—'],['סטטוס',o.status==='refunded'?'בוצע החזר':'שולם'],['לקוח',user.email]].concat(o.coupon?[['קופון',o.coupon]]:[]).map(([a,b])=>'<tr><td>'+esc(a)+'</td><td>'+esc(String(b))+'</td></tr>').join('')+
+    '</table><p class="n">זהו אישור על ביצוע ההזמנה באתר, ואינו מהווה חשבונית מס. קבלה רשמית נשלחת מחברת הסליקה, או לפי בקשה.</p><button onclick="print()">הדפסה / שמירה כ־PDF</button></body></html>');
+  w.document.close();
+}
+function acctDls(body){
+  const D=acctData,P=CDMODE?(D.cdPlan||D.plan):D.plan,L=D.downloads||[];
+  const K={paid:'הורדה במסלול',reprint:'הדפסה חוזרת (לא נספרה)',lite:'לוח חינמי',sample:'חודש לדוגמה',countdown:'ספירה לאחור',browser:'הדפסה מהדפדפן'};
+  body.innerHTML=(P&&P.limit?'<p class="ac-card"><b>נשארו לכם '+(P.left==null?'?':P.left)+' הורדות</b> מתוך '+P.limit+' במסלול '+esc(P.name)+'.</p>':'')+
+    (L.length?'<ul class="ac-list">'+L.map(d=>'<li><span><b>'+esc(acCal(d.cal))+'</b><small>'+acDate(d.at)+' · '+esc(K[d.kind]||d.kind)+(d.pages?' · '+d.pages+' עמודים':'')+(d.size?' · '+esc(d.size):'')+'</small></span></li>').join('')+'</ul>':'<p class="hint">עוד לא הורדתם לוחות מהחשבון הזה.</p>')+
+    '<p class="hint">רוצים להוריד שוב לוח? פותחים אותו מ<button class="linkbtn" type="button" data-acgo="cals">הלוחות שלי</button>, ולוחצים "הורדה והדפסה". הלוחות נשמרים בחשבון, כך שאי אפשר לאבד אותם.</p>';
+}
+function acctRems(body){
+  const R=acctData.reminders||[],V=acctData.voice||[];
+  const row=(n,sub,attr)=>'<li><span><b>'+esc(n)+'</b><small>'+sub+'</small></span><button class="btn danger-ghost" type="button" '+attr+'>הפסקה</button></li>';
+  body.innerHTML='<h4 class="ac-h">📧 תזכורות במייל</h4>'+(R.length?'<ul class="ac-list">'+R.map(r=>row(r.name,esc(acRule(r.rule))+' · '+esc(acNotice(r.notice))+(r.status==='pending'?' · <span class="msg-bad">ממתינה לאישור במייל</span>':''),'data-roff="'+esc(r.token)+'"')).join('')+'</ul>':'<p class="hint">אין תזכורות במייל.</p>')+
+    '<h4 class="ac-h">📞 תזכורות בשיחה לטלפון</h4>'+(V.length?'<ul class="ac-list">'+V.map(v=>row(v.name,esc(acRule(v.rule))+' · '+esc(acNotice(v.notice))+(v.phone?' · <span dir="ltr">'+esc(v.phone)+'</span>':''),'data-voff="'+v.id+'"')).join('')+'</ul>':'<p class="hint">אין תזכורות טלפוניות.</p>')+
+    '<p class="hint">מוסיפים ועורכים תזכורות ב<a href="/online/#reminders" target="_blank" rel="noopener">לוח המקוון</a>. בכל מייל תזכורת יש גם קישור להפסקה.</p>';
+  body.onclick=async e=>{const b=e.target.closest('[data-roff],[data-voff]');if(!b)return;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח?';return}b.disabled=true;
+    try{if(b.dataset.roff){await acctApi('remoff',{token:b.dataset.roff});acctData.reminders=R.filter(r=>r.token!==b.dataset.roff)}else{await acctApi('voiceoff',{id:+b.dataset.voff});acctData.voice=V.filter(v=>v.id!==+b.dataset.voff)}acctRems(body)}
+    catch(err){b.disabled=false;b.textContent='שגיאה, נסו שוב'}};
+}
+function acctHelp(body){
+  body.innerHTML='<ul class="ac-trust"><li>📄 <a href="/terms" target="_blank" rel="noopener">תנאי השימוש, ביטולים והחזרים</a></li><li>🔒 <a href="/privacy" target="_blank" rel="noopener">מדיניות הפרטיות</a></li><li>✉️ <a href="mailto:contact@myluach.org">contact@myluach.org</a></li></ul><div id="acHelpF"></div>';
+  if(window.MyLuachFeedback)MyLuachFeedback.contact(body.querySelector('#acHelpF'),{page:'account',email:user.email,open:true});
+}
+function acctPriv(body,m){
+  body.innerHTML='<div class="ac-card"><b>להוריד את הנתונים שלי</b><p class="hint">קובץ עם כל מה שנשמר עליכם: פרטי החשבון, ההזמנות, ההורדות והתזכורות.</p><div class="row"><button class="btn" type="button" id="acExp">הורדת הנתונים</button></div></div>'+
+    '<div class="ac-card ac-danger"><b>מחיקת החשבון</b><p class="hint">נמחקים: הלוחות השמורים והתמונות שבהם, התזכורות, ופרטי החשבון. אי אפשר לבטל את המחיקה. רשומות התשלום נשמרות, כפי שהחוק מחייב לצורכי הנהלת חשבונות, אבל בלי שיוך לחשבון.</p>'+
+    '<label class="fld">כדי לאשר, כתבו את כתובת המייל של החשבון<input type="email" id="acDelE" dir="ltr" autocomplete="off"></label><div class="row"><button class="btn danger" type="button" id="acDel">מחיקת החשבון לצמיתות</button></div><p class="hint" id="acDelM" role="status"></p></div>'+
+    '<p class="hint"><a href="/privacy" target="_blank" rel="noopener">מדיניות הפרטיות</a></p>';
+  body.querySelector('#acExp').onclick=async e=>{const b=e.target;b.disabled=true;b.textContent='מכינים…';try{const j=await acctApi('export');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(j,null,2)],{type:'application/json'}));a.download='myluach-my-data.json';document.body.appendChild(a);a.click();a.remove();b.textContent='✓ הורד'}catch(err){b.textContent='שגיאה, נסו שוב'}b.disabled=false};
+  body.querySelector('#acDel').onclick=async e=>{const v=body.querySelector('#acDelE').value.trim().toLowerCase(),M=body.querySelector('#acDelM');
+    if(v!==String(user.email||'').toLowerCase()){M.textContent='הכתובת לא תואמת לחשבון.';M.className='hint msg-bad';return}
+    const b=e.target;b.disabled=true;M.className='hint';M.textContent='מוחקים…';
+    try{await acctApi('delete',{confirm:v});try{await sb.auth.signOut()}catch(x){}m.remove();modal('<h3>החשבון נמחק</h3><p class="hint">כל הנתונים שלכם נמחקו. תודה שהייתם איתנו.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>')}
+    catch(err){b.disabled=false;M.className='hint msg-bad';M.textContent='המחיקה לא הצליחה. נסו שוב, או כתבו לנו.'}};
 }
 async function onSignedIn(first){
   if(SNAPVIEW)return;
@@ -3975,7 +4061,7 @@ async function onSignedIn(first){
   if(!ids.length){cloudSave();return}
   /* יש לוחות בחשבון ולוח לא שמור בדפדפן: שואלים */
   const m=modal('<h3>ברוכים השבים!</h3><p class="hint">בחשבון שלכם יש '+ids.length+' לוחות שמורים. לפתוח אחד מהם, או לשמור בחשבון גם את הלוח שפתוח עכשיו?</p><div class="row"><button class="btn primary" type="button" id="wbList">ללוחות שלי</button><button class="btn" type="button" id="wbKeep">לשמור גם את הלוח הנוכחי</button></div>');
-  m.querySelector('#wbList').onclick=()=>{m.remove();accountModal()};
+  m.querySelector('#wbList').onclick=()=>{m.remove();accountModal('cals')};
   m.querySelector('#wbKeep').onclick=()=>{m.remove();cloudSave()};
 }
 function acctInit(){
@@ -4833,7 +4919,7 @@ async function shareAccept(items){
   return {ev,ph,full,n:ok.length};
 }
 async function shareCheck(){
-  if(!user||!state.s.shareId||CDMODE||SNAPVIEW)return;
+  if(!user||!state.s.shareId||SNAPVIEW)return;
   try{SHARE=await shareApi({action:'get',sid:state.s.shareId})}catch(e){return}
   if(!SHARE.share){delete state.s.shareId;save();SHARE=null;return}
   if(SHARE.items.length&&SHARE.share.auto){const r=await shareAccept(SHARE.items);if(r.n){trayNote('נוסף מהמשפחה: '+gotTxt(r));shareToast('נוסף ללוח מהמשפחה: '+gotTxt(r))}}
@@ -4846,24 +4932,32 @@ function itemHTML(it){const d=it.data||{};const K={birthday:'יום הולדת',
   else{const mo=(SHARE.share.months||[]).find(x=>x.k===d.month);what='<b>תמונה'+(mo?' ל'+esc(mo.t):'')+'</b>'+(d.note?'<span>'+esc(d.note)+'</span>':'')}
   return '<li class="sh-it" data-sid="'+it.id+'">'+(it.url?'<img src="'+esc(it.url)+'" alt="" loading="lazy">':'<span class="sh-ic">'+(it.kind==='event'?'🎂':'📷')+'</span>')+
     '<div class="sh-t">'+what+'<small>מאת '+esc(it.who||'')+'</small></div><button type="button" class="btn" data-acc="'+it.id+'">הוספה</button><button type="button" class="btn sh-no" data-rej="'+it.id+'" aria-label="לא להוסיף">✕</button></li>'}
+/* ספירה לאחור: קישור לצפייה בלבד (בלי הרשמה), שמציג כמה ימים נשארו */
+function cdViewLink(){const s=state.s,q=new URLSearchParams({t:(s.cdTitle||calTitle()||'').slice(0,90),d:cdCfg().to,s:s.cdStyle||'classic'});return window.location.origin+'/cd?'+q}
+function cdViewHTML(){const l=cdViewLink(),n=cdN(dateFromIso(cdCfg().to),dateFromIso(iso(new Date()))),t=state.s.cdTitle||'האירוע';
+  const msg=(n>1?'עוד '+n+' ימים: ':'')+t+' 🎉 '+l;
+  return '<div class="ac-card cd-view"><b>👀 קישור לצפייה בספירה</b><p class="hint">מי שפותח את הקישור רואה כמה ימים נשארו ל"'+esc(t)+'", מתעדכן כל יום. בלי הרשמה, ובלי אפשרות לערוך.</p>'+
+    '<div class="sh-link"><input type="text" id="cdvUrl" readonly value="'+esc(l)+'" aria-label="קישור לצפייה" dir="ltr"><button class="btn primary" type="button" id="cdvCopy">העתקה</button><a class="btn sh-wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">וואטסאפ</a><a class="btn" target="_blank" rel="noopener" href="'+esc(l)+'">תצוגה</a></div></div>'}
+function cdViewWire(m){const b=m.querySelector('#cdvCopy');if(b)b.onclick=()=>{const i=m.querySelector('#cdvUrl');i.select();try{navigator.clipboard.writeText(i.value)}catch(e){document.execCommand('copy')}b.textContent='הועתק ✓'}}
 async function shareModal(){
-  if(CDMODE)return;
+  if(CDMODE&&!user){const m=modal('<h3>שיתוף הספירה</h3>'+cdViewHTML()+'<div class="ac-card"><b>🏠 המשפחה מוסיפה תמונות</b><p class="hint">שולחים קישור, וכל המשפחה שולחת תמונות לספירה, בלי הרשמה. כדי לקבל את התמונות לחשבון שלכם צריך להיכנס (בחינם).</p><div class="row"><button class="btn" type="button" id="cdvLogin">כניסה / הרשמה</button></div></div><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+    m.querySelector('.modal').classList.add('wide');cdViewWire(m);m.querySelector('#cdvLogin').onclick=()=>{m.remove();sb?loginModal('כדי לקבל תמונות מהמשפחה צריך להיכנס לחשבון (בחינם).'):0};return}
   if(!sb){modal('<h3>השיתוף לא זמין כרגע</h3><p class="hint">לא הצלחנו לטעון את מערכת הכניסה. בדקו את החיבור לאינטרנט ורעננו את הדף.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
   if(!user){loginModal('כדי לשתף את הלוח עם המשפחה צריך להיכנס לחשבון (בחינם). הלוח יישמר בחשבון, והתוספות של המשפחה יגיעו אליו.');return}
-  const m=modal('<h3>שיתוף עם המשפחה<small>שולחים קישור, וכל אחד מוסיף ימי הולדת, אירועים ותמונות, בלי הרשמה</small></h3><div id="shBody"><p class="hint">טוען…</p></div>');
-  m.querySelector('.modal').classList.add('wide');
+  const m=modal(CDMODE?'<h3>שיתוף הספירה</h3>'+cdViewHTML()+'<h4 class="sh-h">🏠 המשפחה מוסיפה תמונות<small> · שולחים קישור, וכל אחד שולח תמונות לספירה, בלי הרשמה</small></h4><div id="shBody"><p class="hint">טוען…</p></div>':'<h3>שיתוף עם המשפחה<small>שולחים קישור, וכל אחד מוסיף ימי הולדת, אירועים ותמונות, בלי הרשמה</small></h3><div id="shBody"><p class="hint">טוען…</p></div>');
+  m.querySelector('.modal').classList.add('wide');if(CDMODE)cdViewWire(m);
   const body=m.querySelector('#shBody'),q=x=>m.querySelector(x);
   const fail=e=>{body.innerHTML='<p class="msg-bad">'+(e&&e.code==='setup'?'השיתוף עוד לא הופעל באתר (חסרות טבלאות במסד הנתונים).':'לא הצלחנו להתחבר. נסו שוב בעוד רגע.')+'</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>'};
-  const intro=()=>{body.innerHTML='<ol class="fast-steps"><li>יוצרים קישור ושולחים אותו בוואטסאפ או במייל.</li><li>כל מי שמקבל אותו מוסיף ימי הולדת, ימי נישואין, אירועים ותמונות, ובוחר לאיזה חודש.</li><li>התוספות מגיעות ללוח שלכם: אתם מאשרים כל אחת, או שהן נכנסות לבד.</li></ol>'+
+  const intro=()=>{body.innerHTML='<ol class="fast-steps"><li>יוצרים קישור ושולחים אותו בוואטסאפ או במייל.</li><li>'+(CDMODE?'כל מי שמקבל אותו שולח תמונות, ויכול לבחור לאיזה עמוד בספירה.':'כל מי שמקבל אותו מוסיף ימי הולדת, ימי נישואין, אירועים ותמונות, ובוחר לאיזה חודש.')+'</li><li>התוספות מגיעות ללוח שלכם: אתם מאשרים כל אחת, או שהן נכנסות לבד.</li></ol>'+
       '<label class="fld"><span>השם שלכם, כפי שיופיע בהזמנה</span><input type="text" id="shOwner" maxlength="40" placeholder="למשל: משפחת כהן"></label>'+
       '<label class="chk"><input type="checkbox" id="shAuto"> להכניס את התוספות ללוח בלי אישור שלי</label>'+
       '<div class="row"><button class="btn primary" type="button" id="shCreate">יצירת קישור לשיתוף</button><button class="btn" type="button" data-close>ביטול</button></div>';
     q('#shCreate').onclick=async()=>{const b=q('#shCreate');b.disabled=true;b.textContent='יוצר…';
       try{if(!state.s.cloudId)await cloudSave().catch(()=>{});
-        SHARE=await shareApi({action:'create',title:calTitle(),owner:q('#shOwner').value.trim(),auto:q('#shAuto').checked,months:shareMonths(),cal:state.s.calType});
+        SHARE=await shareApi({action:'create',title:CDMODE?(state.s.cdTitle||calTitle()):calTitle(),owner:q('#shOwner').value.trim(),auto:q('#shAuto').checked,months:shareMonths(),cal:CDMODE?'cd':state.s.calType});
         state.s.shareId=SHARE.share.id;save();draw()}catch(e){fail(e)}}};
   const draw=()=>{const s=SHARE.share,link=shareLink(s),items=SHARE.items||[],used=SHARE.used||{photos:0};
-    const msg=(s.owner?s.owner+' מזמינים אתכם':'הוזמנתם')+' להוסיף ימי הולדת, אירועים ותמונות ללוח השנה שלנו: '+link;
+    const msg=(s.owner?s.owner+' מזמינים אתכם':'הוזמנתם')+(CDMODE?' לשלוח תמונות לספירה לאחור שלנו: ':' להוסיף ימי הולדת, אירועים ותמונות ללוח השנה שלנו: ')+link;
     body.innerHTML='<div class="sh-link"><input type="text" id="shUrl" readonly value="'+esc(link)+'" aria-label="הקישור לשיתוף" dir="ltr"><button class="btn primary" type="button" id="shCopy">העתקה</button>'+
       '<a class="btn sh-wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">וואטסאפ</a><a class="btn" href="mailto:?subject='+encodeURIComponent('מוסיפים ללוח השנה המשפחתי')+'&body='+encodeURIComponent(msg)+'">מייל</a></div>'+
       '<label class="chk"><input type="checkbox" id="shAuto"'+(s.auto?' checked':'')+'> להכניס תוספות ללוח בלי אישור שלי</label>'+
@@ -4890,7 +4984,7 @@ async function shareModal(){
     else intro();
   }catch(e){fail(e)}
 }
-$('#shareBtn').onclick=shareModal;
+$('#shareBtn').onclick=shareModal;if(CDMODE){const b=$('#shareBtn');b.title='קישור לצפייה בספירה, והמשפחה שולחת תמונות';b.firstChild.textContent='🔗 שיתוף הספירה'}
 /* כפתור "טקסט על הדף": עובר לעיצוב החופשי ומוסיף תיבת כיתוב לעמוד שרואים */
 function fxQuickAdd(kind,key){const s=state.s,on=fxOn();if(!on){if(s.uiMode==='wizard'){if(+s.step!==7)goStep(7,!!key)}else{s.fxOn=true;save();applyMode()}}
   setTimeout(()=>{try{fxBoxAdd(kind,key)}catch(e){}},on?0:350)}
@@ -5361,7 +5455,7 @@ window.addEventListener('resize',()=>{if(ZK&&innerWidth>900)sxZoom(null)});
     if(q.get('d'))s.cdDate=q.get('d');if(q.get('f'))s.cdFrom=q.get('f');if(q.get('t'))s.cdTitle=q.get('t');if(q.get('st'))s.cdStyle=q.get('st');if(q.get('l'))s.cdLayout=q.get('l');if(q.get('u'))s.cdUnit=q.get('u');
     save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   /* הגעה מהלוח המקוון: #city-ID&hy-שנה */
-  if(window.location.hash==='#share'&&!CDMODE){try{history.replaceState(null,'',window.location.pathname+window.location.search)}catch(e){}setTimeout(()=>{try{shareModal()}catch(e){}},1500)}
+  if(window.location.hash==='#share'){try{history.replaceState(null,'',window.location.pathname+window.location.search)}catch(e){}setTimeout(()=>{try{shareModal()}catch(e){}},1500)}
   {const m=/^#city-([a-z]+)(?:&hy-(\d{4}))?$/.exec(window.location.hash||'');if(m){const c=CITIES.find(x=>x.id===m[1]);const s=state.s;if(c){s.city=c.id;s.il=c.il;s.candleMins=c.candle}if(m[2]){s.calType='heb';s.hebYear=+m[2];s.hebStart=7}save();try{history.replaceState(null,'',window.location.pathname)}catch(e){}}}
   {const m=/^#preset-([a-z]+)$/.exec(window.location.hash||'');const P={
     scholar:{layout:'full',theme:'ink',accent:'#7a1f3d',size:'wall',orient:'landscape',view:'month',yzHist:true,yzMode:'all',place:{yz:'page',learn:'col'},learn:{daf:true,nach:true,box:true},zmanimMode:'custom',

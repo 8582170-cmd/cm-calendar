@@ -106,7 +106,8 @@
         '<input class="mlfb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" data-f="hp">' +
         '<div class="mlfb-row"><button type="button" class="mlfb-go mlfb-send">' + T.send + '</button><span class="mlfb-msg" aria-live="polite"></span></div>';
       var q = function (s) { return el.querySelector(s); };
-      q('[data-f=name]').focus();
+      if (o.email) q('[data-f=email]').value = o.email;
+      if (!o.open) q('[data-f=name]').focus();
       q('.mlfb-send').onclick = function () {
         var text = q('[data-f=text]').value.trim(), em = q('[data-f=email]').value.trim(), ph = q('[data-f=phone]').value.trim(), msg = q('.mlfb-msg');
         var bad = function (t, f) { msg.className = 'mlfb-msg bad'; msg.textContent = t; if (f) { q('[data-f=' + f + ']').setAttribute('aria-invalid', 'true'); q('[data-f=' + f + ']').focus(); } };
@@ -120,6 +121,7 @@
           .catch(function () { b.disabled = false; msg.className = 'mlfb-msg bad'; msg.textContent = T.err; });
       };
     };
+    if (o.open) el.querySelector('.mlfb-open').click();
     return el;
   }
   /* משובים שבעל האתר בחר להציג (בדף הניהול). אם אין, החלק נשאר מוסתר */

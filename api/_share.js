@@ -54,7 +54,7 @@ async function owner(req, res) {
     const mine = async id => { id = sid(id); if (!id) return null; const r = await db('shares?select=*&id=eq.' + id + '&user_id=eq.' + user.id); return r && r[0] || null; };
     if (a === 'create') {
       const id = crypto.randomBytes(9).toString('base64url');
-      const row = { id, user_id: user.id, owner_email: user.email || null, title: str(b.title, 80) || 'הלוח שלנו', owner_name: str(b.owner, 40), months: months(b.months), cal: b.cal === 'greg' ? 'greg' : 'heb', auto: !!b.auto, active: true };
+      const row = { id, user_id: user.id, owner_email: user.email || null, title: str(b.title, 80) || 'הלוח שלנו', owner_name: str(b.owner, 40), months: months(b.months), cal: b.cal === 'greg' ? 'greg' : b.cal === 'cd' ? 'cd' : 'heb', auto: !!b.auto, active: true };
       const r = await db('shares', { method: 'POST', body: JSON.stringify(row) });
       return json(res, 200, { share: pubShare(r[0] || row), items: [], limit: await photoLimit(row) });
     }
