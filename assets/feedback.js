@@ -13,7 +13,8 @@
     send: 'Send', sending: 'Sending…', thanks: 'Thank you! We read every response.', err: 'Could not send. Please try again.',
     need: 'Choose a rating or write a few words.', later: 'Not now',
     ctitle: 'We are happy to stay in touch and help', csub: 'A question, a request, a problem with an order or a calendar? Write to us and we will get back to you.',
-    copen: 'Write to us', name: 'Name', contact: 'Phone or email', msg: 'How can we help?', cneed: 'Write a message and how to reach you.',
+    copen: 'Write to us', name: 'Name', cmail: 'Email', cphone: 'Phone (optional)', msg: 'How can we help?', cneed: 'Please write a message.',
+    bmail: 'Please enter a valid email address.', bphone: 'The phone number is not valid. Fix it or leave the field empty.',
     cthanks: 'Thank you! Your message was received and we will get back to you soon.', stars: ' stars'
   } : {
     title: 'איך היה לבנות את הלוח?', sub: 'כמה שניות, וזה עוזר לנו מאוד לשפר.',
@@ -22,7 +23,8 @@
     send: 'שליחה', sending: 'שולחים…', thanks: 'תודה רבה! אנחנו קוראים כל תגובה.', err: 'השליחה לא הצליחה. נסו שוב.',
     need: 'בחרו דירוג או כתבו כמה מילים.', later: 'לא עכשיו',
     ctitle: 'נשמח להיות בקשר ולתת שירות', csub: 'שאלה, בקשה, בעיה בהזמנה או בלוח? כתבו לנו ונחזור אליכם.',
-    copen: 'לכתוב לנו', name: 'שם', contact: 'טלפון או מייל', msg: 'במה נוכל לעזור?', cneed: 'כתבו הודעה ואיך לחזור אליכם.',
+    copen: 'לכתוב לנו', name: 'שם', cmail: 'מייל', cphone: 'טלפון (לא חובה)', msg: 'במה נוכל לעזור?', cneed: 'כתבו את ההודעה.',
+    bmail: 'כתבו כתובת מייל תקינה.', bphone: 'מספר הטלפון לא תקין. תקנו אותו או השאירו את השדה ריק.',
     cthanks: 'תודה! הפנייה התקבלה ונחזור אליכם בהקדם.', stars: ' כוכבים'
   };
   var css = '.mlfb{background:var(--panel,#fff);border:1px solid var(--line,#d3dae0);border-radius:14px;padding:16px 18px;color:var(--ink,#1a232c);font-family:inherit;text-align:start}' +
@@ -89,22 +91,30 @@
     ls('ml-fb-later', String(now));
     setTimeout(function () { open(Object.assign({ title: EN ? 'Your calendar is ready! How was it?' : 'הלוח מוכן! איך היה?' }, o || {})); }, 1200);
   }
+  /* מייל: x@y.zz · טלפון: ישראלי (0X…, 9–10 ספרות, או 972…) או בינלאומי עם + (8–15 ספרות) */
+  function okMail(v) { return /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(v) && v.length <= 120; }
+  function okPhone(v) { var d = String(v).replace(/[\s\-().]/g, ''); return /^0\d{8,9}$/.test(d) || /^(\+|00)?972\d{8,9}$/.test(d) || /^(\+|00)[1-9]\d{7,14}$/.test(d); }
   function contact(el, o) {
     addCss(); o = o || {};
     el.classList.add('mlfb', 'mlfb-c');
     el.innerHTML = '<h3>' + T.ctitle + '</h3><p class="mlfb-sub">' + T.csub + '</p><div class="mlfb-row"><button type="button" class="mlfb-go mlfb-open">' + T.copen + '</button></div>';
     el.querySelector('.mlfb-open').onclick = function () {
       el.innerHTML = '<h3>' + T.ctitle + '</h3><p class="mlfb-sub">' + T.csub + '</p>' +
-        '<div class="mlfb-two"><label>' + T.name + '<input maxlength="80" data-f="name" autocomplete="name"></label><label>' + T.contact + '<input maxlength="120" data-f="contact" autocomplete="email"></label></div>' +
+        '<label>' + T.name + '<input maxlength="80" data-f="name" autocomplete="name"></label>' +
+        '<div class="mlfb-two"><label>' + T.cmail + ' <b aria-hidden="true">*</b><input type="email" maxlength="120" data-f="email" dir="ltr" autocomplete="email" required aria-required="true"></label><label>' + T.cphone + '<input type="tel" maxlength="30" data-f="phone" dir="ltr" autocomplete="tel" inputmode="tel"></label></div>' +
         '<label>' + T.msg + '<textarea rows="4" maxlength="2000" data-f="text"></textarea></label>' +
         '<input class="mlfb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" data-f="hp">' +
         '<div class="mlfb-row"><button type="button" class="mlfb-go mlfb-send">' + T.send + '</button><span class="mlfb-msg" aria-live="polite"></span></div>';
       var q = function (s) { return el.querySelector(s); };
       q('[data-f=name]').focus();
       q('.mlfb-send').onclick = function () {
-        var text = q('[data-f=text]').value.trim(), c = q('[data-f=contact]').value.trim(), msg = q('.mlfb-msg');
-        if (text.length < 3 || c.length < 5) { msg.className = 'mlfb-msg bad'; msg.textContent = T.cneed; return; }
-        var em = /@/.test(c) ? c : '', ph = em ? '' : c, b = q('.mlfb-send'); b.disabled = true; msg.className = 'mlfb-msg'; msg.textContent = T.sending;
+        var text = q('[data-f=text]').value.trim(), em = q('[data-f=email]').value.trim(), ph = q('[data-f=phone]').value.trim(), msg = q('.mlfb-msg');
+        var bad = function (t, f) { msg.className = 'mlfb-msg bad'; msg.textContent = t; if (f) { q('[data-f=' + f + ']').setAttribute('aria-invalid', 'true'); q('[data-f=' + f + ']').focus(); } };
+        ['email', 'phone', 'text'].forEach(function (f) { q('[data-f=' + f + ']').removeAttribute('aria-invalid'); });
+        if (!okMail(em)) return bad(T.bmail, 'email');
+        if (ph && !okPhone(ph)) return bad(T.bphone, 'phone');
+        if (text.length < 3) return bad(T.cneed, 'text');
+        var b = q('.mlfb-send'); b.disabled = true; msg.className = 'mlfb-msg'; msg.textContent = T.sending;
         post({ kind: 'contact', name: q('[data-f=name]').value.trim(), email: em, phone: ph, text: text, hp: q('[data-f=hp]').value, page: o.page || location.pathname, plan: plan() })
           .then(function () { el.innerHTML = '<h3>' + T.ctitle + '</h3><div class="mlfb-ok">' + T.cthanks + '</div>'; })
           .catch(function () { b.disabled = false; msg.className = 'mlfb-msg bad'; msg.textContent = T.err; });

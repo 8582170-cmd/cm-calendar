@@ -63,7 +63,8 @@ module.exports = async (req, res) => {
     const kind = b.kind === 'contact' ? 'contact' : 'feedback', R = {};
     for (const k of ['opt', 'design', 'ease']) { const v = parseInt((b.r || {})[k], 10); if (v >= 1 && v <= 5) R[k] = v; }
     const it = { t: new Date().toISOString(), kind, r: R, text: cl(b.text, 2000), name: cl(b.name, 80), email: cl(b.email, 120), phone: cl(b.phone, 30), page: cl(b.page, 60), plan: cl(b.plan, 20) };
-    if (kind === 'contact' && (it.text.length < 3 || !(it.email || it.phone))) return json(res, 400, { error: 'bad' });
+    const okMail = v => /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(v), okPhone = v => { const d = v.replace(/[\s\-().]/g, ''); return /^0\d{8,9}$/.test(d) || /^(\+|00)?972\d{8,9}$/.test(d) || /^(\+|00)[1-9]\d{7,14}$/.test(d); };
+    if (kind === 'contact' && (it.text.length < 3 || !okMail(it.email) || (it.phone && !okPhone(it.phone)))) return json(res, 400, { error: 'bad' });
     if (kind === 'feedback' && !Object.keys(R).length && it.text.length < 2) return json(res, 400, { error: 'bad' });
     try { const L = (await loadSetting('feedback')) || []; await saveSetting('feedback', [it].concat(Array.isArray(L) ? L : []).slice(0, 500)); } catch (e) { console.error('feedback save', e.message); }
     const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');
