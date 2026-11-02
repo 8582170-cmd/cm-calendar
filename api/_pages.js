@@ -126,7 +126,10 @@ async function handle(req, res) {
   if (q === '_list') return json(res, 200, { items: L.filter(x => x.published && x.kind !== 'page' && !isTorah(x)).map(({ slug, title, desc, cat, date, tags }) => ({ slug, title, desc, cat, date, tags: tags || [] })).sort((a, b) => String(b.date).localeCompare(String(a.date))), cats: Object.fromEntries(Object.entries(CATS).filter(([k]) => !TORAH[k])) });
   if (q === '_sitemap') {
     res.statusCode = 200; res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    return res.end('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + (on ? '  <url><loc>' + SITE + '/torah/</loc></url>\n' : '') + L.filter(x => x.published).map(x => `  <url><loc>${SITE}/p/${x.slug}</loc>${x.mod || x.date ? '<lastmod>' + (x.mod || x.date).slice(0, 10) + '</lastmod>' : ''}</url>`).join('\n') + '\n</urlset>\n');
+    /* גוגל דורש לפחות כתובת אחת במפה, גם כשעוד אין דפים שפורסמו: מוסיפים את דף המאמרים */
+    const U = (on ? ['  <url><loc>' + SITE + '/torah/</loc></url>'] : []).concat(L.filter(x => x.published).map(x => `  <url><loc>${SITE}/p/${x.slug}</loc>${x.mod || x.date ? '<lastmod>' + (x.mod || x.date).slice(0, 10) + '</lastmod>' : ''}</url>`));
+    if (!U.length) U.push('  <url><loc>' + SITE + '/articles/</loc></url>');
+    return res.end('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + U.join('\n') + '\n</urlset>\n');
   }
   const p = ALL.find(x => x.slug === q);
   const preview = p && !p.published && (req.query || {}).preview === p.token;
