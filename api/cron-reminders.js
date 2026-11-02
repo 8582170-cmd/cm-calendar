@@ -93,14 +93,6 @@ module.exports = async (req, res) => {
     /* גיבוי לגוגל שיטס (אם הוגדר) */
     let backup = null; try { backup = await require('./_backup').run(); } catch (e) { backup = { error: String(e.message).slice(0, 120) }; console.error('backup', e.message); }
     /* ניקוי דוגמיות הורדה ישנות */
-    /* כתובות IP נשמרות שנה, ואז נמחקות (שאר הרשומה נשארת) */
-    try {
-      const { db: D, loadSetting: LS, saveSetting: SS } = require('./_lib'), old = new Date(Date.now() - 365 * 864e5).toISOString();
-      for (const [t, c] of [['orders', 'created_at'], ['downloads', 'created_at'], ['reminders', 'created_at'], ['voice_reminders', 'created_at'], ['profiles', 'updated_at']])
-        await D(t + '?ip=not.is.null&' + c + '=lt.' + encodeURIComponent(old), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ ip: null, ip_geo: null }) }).catch(() => {});
-      const F = await LS('feedback');
-      if (Array.isArray(F) && F.some(x => x.ip && x.t < old)) await SS('feedback', F.map(x => x.ip && x.t < old ? (({ ip, geo, ...r }) => r)(x) : x));
-    } catch (e) { console.error('ip cleanup', e.message); }
     let cleaned = 0; try { const cfg = await require('./_lib').loadConfig(); cleaned = await require('./_usage').cleanSamples(cfg.sampleKeepDays == null ? 365 : +cfg.sampleKeepDays); } catch (e) { console.error('clean samples', e.message); }
     try { await require('./_share').clean(); } catch (e) { console.error('clean shares', e.message); }
     /* התראה במייל כש-R2 מגיע ל-80% מה-10GB החינמיים (פעם בחודש לכל היותר). הכתובת: ALERT_EMAIL ב-Vercel */

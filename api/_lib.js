@@ -94,7 +94,7 @@ function priceFor(plan) { const r = finalPrice(publicPricing({}), plan); return 
 
 function env(k) { return String(process.env[k] || '').trim(); }
 
-/* כתובת ה-IP של הגולש ומיקום משוער (מדינה · עיר), לשמירה בהזמנות, הורדות, תזכורות והתחברות. נמחק אחרי שנה (במשימת הלילה) */
+/* כתובת ה-IP של הגולש ומיקום משוער (מדינה · עיר), לשמירה בהזמנות, הורדות, תזכורות והתחברות */
 function reqMeta(req) {
   const H = (req && req.headers) || {};
   const ip = String(H['cf-connecting-ip'] || H['x-real-ip'] || H['x-forwarded-for'] || '').split(',')[0].trim().slice(0, 45);
