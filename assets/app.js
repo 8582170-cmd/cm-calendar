@@ -4004,7 +4004,7 @@ function acctPlan(body){
     '<p class="hint">💡 הדפסה חוזרת של אותו לוח בתוך 30 דקות (למשל אם המדפסת נתקעה) לא נספרת כהורדה נוספת.</p>'+
     '<div class="row"><button class="btn" type="button" data-acgo="orders">ההזמנות והקבלות</button><button class="btn" type="button" data-acgo="dls">ההורדות שלי</button></div></div>';
 }
-function acTrust(){return '<ul class="ac-trust"><li>🔒 התשלום מתבצע בטופס מאובטח של חברת הסליקה. פרטי הכרטיס לא עוברים דרכנו ולא נשמרים אצלנו.</li><li>✓ המסלול נפתח מיד אחרי התשלום, וקבלה נשלחת למייל.</li><li>↩ אפשר לבטל ולקבל החזר מלא תוך 14 יום, כל עוד לא הורד קובץ. <a href="/terms#cancel" target="_blank" rel="noopener">התנאים</a></li></ul>'}
+function acTrust(){return '<ul class="ac-trust"><li>🔒 התשלום מתבצע בטופס מאובטח של חברת הסליקה. פרטי הכרטיס לא עוברים דרכנו ולא נשמרים אצלנו.</li><li>✓ המסלול נפתח מיד אחרי התשלום, וקבלה נשלחת למייל.</li></ul>'}
 function acctOrders(body){
   const L=acctData.orders||[];
   body.innerHTML=(L.length?'<ul class="ac-list">'+L.map((o,i)=>'<li><span><b>'+esc(o.name)+' · '+acMoney(o.amount)+'</b><small>'+acDate(o.at)+' · הזמנה '+esc(o.no)+(o.via?' · '+esc(o.via):'')+(o.coupon?' · קופון '+esc(o.coupon):'')+'</small><small>'+(o.status==='refunded'?'<span class="msg-bad">בוצע החזר</span>':'<span class="msg-ok">✓ שולם</span>')+(o.receipt?' · קבלה רשמית נשלחה למייל מחברת הסליקה':'')+'</small></span><button class="btn" type="button" data-conf="'+i+'">אישור להדפסה</button></li>').join('')+'</ul>':'<p class="hint">עוד אין הזמנות בחשבון הזה.</p>')+
