@@ -165,7 +165,9 @@ h2.sec{font:400 clamp(19px,4.6vw,24px)/1.3 var(--tfont);color:var(--acc);margin:
     var pu=String(o.p||''),photo=/^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(pu)||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(pu)?'<img class="ph ph-'+(['rect','wide'].indexOf(o.ps)>=0?o.ps:'circle')+'" src="'+esc(pu)+'" alt="">':'';
     var wl='<div class="when">'+esc(when)+'</div>',head=photo+'<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
     var credit=(wp==='bottom'?'<div class="when" style="margin-top:8px">'+esc(when)+'</div>':'')+'<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
+    var noClock=!!slug&&o.clk===0;
     function draw(){
+      if(noClock){c.innerHTML=head+credit;clearInterval(iv);return}
       var left=to-Date.now();
       if(left<=0){c.innerHTML=head+'<div class="done">'+L.done+'</div>'+credit;clearInterval(iv);return}
       var P2=parts(left);
