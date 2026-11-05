@@ -6,4 +6,5 @@ tar --exclude=./dist --exclude=./api --exclude=./functions --exclude=./tools --e
     --exclude=./.git --exclude='./.vercel*' --exclude=./vercel.json --exclude=./wrangler.toml --exclude='*.py' --exclude=./README.md \
     -cf - . | tar -xf - -C dist
 echo "built: $(find dist -type f | wc -l) files"
+node tools/cf_seo.mjs dist || true
 node tools/cf_clean_urls.mjs dist

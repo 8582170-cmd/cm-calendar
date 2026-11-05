@@ -10,6 +10,8 @@ export default {
     const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }).formatToParts(new Date(event.scheduledTime));
     const g = t => (p.find(x => x.type === t) || {}).value;
     if (g('weekday') === 'Sat' || YT.includes(g('year').slice(2) + g('month') + g('day'))) return console.log('shabbat/yom tov: skipped');
+    /* פעם בשבוע (ראשון): בנייה מחדש של האתר, כדי שזמני השבת בכותרות של דפי הערים יתעדכנו. DEPLOY_HOOK = כתובת ה-Deploy hook של Pages */
+    if (g('weekday') === 'Sun' && env.DEPLOY_HOOK) ctx.waitUntil(fetch(env.DEPLOY_HOOK, { method: 'POST' }).then(r => console.log('deploy hook', r.status)));
     ctx.waitUntil(fetch((env.SITE || 'https://www.myluach.org') + '/api/cron-reminders', { headers: { Authorization: 'Bearer ' + env.CRON_SECRET } })
       .then(r => r.text()).then(t => console.log('cron', t.slice(0, 300))));
   },
