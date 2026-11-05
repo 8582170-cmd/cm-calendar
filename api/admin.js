@@ -297,7 +297,11 @@ module.exports = async (req, res) => {
         db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo,ua&' + or + '&order=created_at.desc&limit=60').catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo&' + or + '&order=created_at.desc&limit=60')).catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&' + or + '&order=created_at.desc&limit=60')).catch(() => [])]);
       let plan = null, cd = null; if (uid) { try { plan = await planInfo({ id: uid, email: em }, false); } catch (e) {} try { cd = await planInfo({ id: uid, email: em }, true); } catch (e) {} }
       const B = (await loadSetting('dlbonus')) || {};
-      return json(res, 200, { email: em, profile: p, orders: orders || [], downloads: dls || [], plan, cd, bonus: B[em] || { n: 0, log: [] } });
+      /* הלוחות השמורים בחשבון (מתוך קובץ האינדקס): שם, מתי נשמר לאחרונה, גודל */
+      let cals = null;
+      if (uid) { try { const key = env('SUPABASE_SERVICE_ROLE_KEY'), r = await fetch(env('SUPABASE_URL').replace(/\/$/, '') + '/storage/v1/object/calendars/' + uid + '/index.json', { headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }) } });
+        if (r.ok) { const ix = await r.json(); cals = Object.keys(ix).filter(k => !k.startsWith('__')).map(k => ({ id: k, name: ix[k].name, updated: ix[k].updated, size: ix[k].size, store: ix[k].store || 'supabase' })).sort((a, b2) => String(b2.updated).localeCompare(String(a.updated))); } else cals = []; } catch (e) { cals = null; } }
+      return json(res, 200, { email: em, profile: p, orders: orders || [], downloads: dls || [], plan, cd, cals, bonus: B[em] || { n: 0, log: [] } });
     }
     /* הודעות לגולשים: מוצגות בראש הדפים שנבחרו (דף הבית, הבונים, הלוח המקוון, הברכות) */
     if (req.method === 'POST' && (b.action === 'msgget' || b.action === 'msgsave')) {
