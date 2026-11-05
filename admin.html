@@ -258,9 +258,11 @@ function actSection(){const d=D.dl,sum=o=>Object.values(o||{}).reduce((a,b)=>a+b
 /* פתיחת דוגמית בבונה (חלון חדש, קריאה בלבד) */
 /* קובץ שחזור מהעותק של ההורדה: אותו מבנה כמו "שמירת גיבוי" בבונה */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-snapfile]');if(!b)return;const t=b.textContent;b.disabled=true;b.textContent='מכין…';
-  api({action:'snapget',path:b.dataset.snapfile}).then(r=>{const st=r.snap||{};const info=st._snap||{};delete st._snap;
+  api({action:'snapget',path:b.dataset.snapfile}).then(r=>{let st=r.snap||{};const info=st._snap||{};delete st._snap;
+    /* בלי התמונות (בעותק הן באיכות נמוכה): בטעינה ללוח של הלקוח נשארות התמונות המקוריות שלו */
+    const noImg=v=>typeof v==='string'?(/^data:image\//.test(v)?null:v):Array.isArray(v)?v.map(noImg):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,noImg(x)])):v;st=noImg(st);
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(st)],{type:'application/json'}));a.download='myluach-restore-'+(b.dataset.snapdt||'')+'.json';document.body.appendChild(a);a.click();a.remove();
-    b.textContent=info.img?'✓ הורד (עם תמונות באיכות נמוכה)':'✓ הורד (בלי תמונות)';}).catch(err=>{b.textContent=t;alert(err.message||'שגיאה')}).finally(()=>{b.disabled=false})});
+    b.textContent='✓ הורד (אירועים וטקסטים, בלי תמונות)';}).catch(err=>{b.textContent=t;alert(err.message||'שגיאה')}).finally(()=>{b.disabled=false})});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-snap]');if(!b)return;
   const w=window.open((b.dataset.cd?'/countdown.html':'/app.html')+'#snapview','_blank');if(!w){alert('הדפדפן חסם את החלון. אפשרו חלונות קופצים לדף הזה.');return}
   let st=null,ready=false;const send=()=>{if(st&&ready)w.postMessage({type:'snap',state:st},location.origin)};
