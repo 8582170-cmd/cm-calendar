@@ -54,6 +54,7 @@ textarea{width:100%;font:13px/1.45 ui-monospace,Consolas,monospace;direction:ltr
 .slug input{border:0;margin:0;border-radius:0;padding-inline-start:0;min-width:0}
 .st{font-size:14px;min-height:1.6em;margin:4px 0 0}
 .st.ok{color:#2e7d4f}.st.no{color:#b3412e}
+.chk{display:flex;gap:16px;flex-wrap:wrap;margin:-2px 0 12px;font-size:15px}.chk label{display:flex;gap:6px;align-items:center;margin:0;font-weight:400}.chk input{width:auto;margin:0}
 .mine{font-size:14px;margin-top:8px}.mine a{margin-inline-end:10px}
 footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
 footer a{color:var(--mute)}
@@ -75,6 +76,8 @@ summary{cursor:pointer;font-weight:700}
     <label>שם האירוע (הכותרת)<input id="t" maxlength="90" placeholder="למשל: החתונה של שירה ויוסי"></label>
     <div class="two"><label>תאריך<input type="date" id="d" required></label><label>שעה (לא חובה)<input type="time" id="h"></label></div>
     <label>איך להציג<select id="u"><option value="d">ימים, שעות, דקות ושניות</option><option value="w">שבועות, ימים, שעות…</option><option value="m">חודשים, ימים, שעות…</option></select></label>
+    <div class="two"><label>תאריך היעד<select id="wp"><option value="top">למעלה, מתחת לכותרת</option><option value="bottom">למטה, מתחת לשעון</option><option value="none">לא להציג</option></select></label><label>סוג התאריך<select id="wd"><option value="g">לועזי</option><option value="h">עברי</option><option value="b">עברי ולועזי</option></select></label></div>
+    <div class="chk"><label><input type="checkbox" id="ww" checked>יום בשבוע</label><label><input type="checkbox" id="wt" checked>שעת היעד</label><label><input type="checkbox" id="sec" checked>שניות בספירה</label></div>
     <div class="two"><label>פריסה<select id="l"><option value="row">הכול בשורה אחת</option><option value="stack">ימים למעלה, שעון מתחת</option></select></label><label>מסגרת<select id="fr"><option value="0">לפי העיצוב</option><option value="1">מסגרת לכל מספר</option><option value="2">מסגרת אחת מסביב</option></select></label></div>
     <div style="font-weight:600;font-size:15px">עיצוב</div>
     <div class="ths" id="ths" role="group" aria-label="עיצוב"></div>
@@ -138,13 +141,26 @@ summary{cursor:pointer;font-weight:700}
   var Q=new URLSearchParams(location.search);
   /* מילוי מראש מקישור (למשל מבונה לוח הספירה): ?t=…&d=YYYY-MM-DD&h=HH:MM */
   try{if(Q.get('t'))$('t').value=Q.get('t').slice(0,90);if(/^\d{4}-\d{2}-\d{2}$/.test(Q.get('d')||''))$('d').value=Q.get('d');if(/^\d{1,2}:\d{2}$/.test(Q.get('h')||''))$('h').value=Q.get('h').padStart(5,'0')}catch(e){}
+  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה */
+  function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];n%=1000;var r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
+  function whenText(ms,tz,EN,o,hasTime){
+    var F=function(loc,op){op.timeZone=tz;try{return new Intl.DateTimeFormat(loc,op)}catch(e){delete op.timeZone;return new Intl.DateTimeFormat(loc,op)}},d=new Date(ms),out=[];
+    var greg=F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
+    if(o.wd==='h'||o.wd==='b'){try{var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(d).forEach(function(x){p[x.type]=x.value});
+      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year)}catch(e){}}
+    var date=o.wd==='h'?(heb||greg):o.wd==='b'&&heb?greg+' · '+heb:greg;
+    if(o.ww!=='0')out.push(F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
+    out.push(date);
+    var s=out.join(', ');
+    if(hasTime&&o.wt!=='0')s+=(EN?' · ':' · בשעה ')+F('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
+    return s}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   /* הספירות שנשמרו מהדפדפן הזה (כתובת + קוד עריכה) */
   function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
   function remember(s,tok){try{var o=store();o[s]=tok;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
   function showMine(){var o=store(),k=Object.keys(o);$('mine').hidden=!k.length;$('mine').innerHTML='הספירות שלי: '+k.map(function(s){return '<a href="?s='+s+'">'+s+'</a>'}).join('')}
-  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value}}
-  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);
+  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1'}}
+  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);if(c.wp!=='top')p.set('wp',c.wp);if(c.wd!=='g')p.set('wd',c.wd);if(c.ww==='0')p.set('ww','0');if(c.wt==='0')p.set('wt','0');if(c.ns==='1')p.set('ns','1');
     Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
   /* מצב הכתובת: saved = נשמרה (והשמירה תואמת להגדרות הנוכחיות) */
   var saved=null,savedCfg='',chk,slugState='';
@@ -180,25 +196,28 @@ summary{cursor:pointer;font-weight:700}
     $('oEmb').value='<iframe src="'+emb+'" width="'+(sz[0]==='100%'?'100%':sz[0])+'" height="'+sz[1]+'" style="border:0;max-width:100%" title="'+title+'" loading="lazy"></iframe>';
     $('dirty').hidden=!dirty;
     var fg=$('c').value.slice(1),bg=$('b').value.slice(1),lb=custom?'5d6873':T()[4];
-    var base=SITE+'/api/pricing?c=_cdimg&d='+$('d').value+($('h').value?'&h='+encodeURIComponent($('h').value):'')+'&u='+$('u').value+'&fg='+fg+'&bg='+bg+($('z').value!=='Asia/Jerusalem'?'&z='+encodeURIComponent($('z').value):'')+($('fr').value!=='0'?'&fr='+$('fr').value:'');
+    var base=SITE+'/api/pricing?c=_cdimg&d='+$('d').value+($('h').value?'&h='+encodeURIComponent($('h').value):'')+'&u='+$('u').value+'&fg='+fg+'&bg='+bg+($('z').value!=='Asia/Jerusalem'?'&z='+encodeURIComponent($('z').value):'')+($('fr').value!=='0'?'&fr='+$('fr').value:'')+($('sec').checked?'':'&ns=1');
     var en=$('lang').value==='en',lab=en?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds'}:{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות'};
-    var dateU=($('u').value==='m'?['months']:$('u').value==='w'?['weeks']:[]).concat(['days']),clockU=['hours','minutes','seconds'];
+    var dateU=($('u').value==='m'?['months']:$('u').value==='w'?['weeks']:[]).concat(['days']),clockU=['hours','minutes'].concat($('sec').checked?['seconds']:[]),anim=$('sec').checked?'&a=1':'';
     var td='font-family:Arial,sans-serif;font-size:13px;color:#'+lb+';text-align:center';
     var labels=function(us,w){return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="'+w+'" align="center" style="max-width:100%;direction:ltr;'+td+'"><tr>'+us.map(function(u){return '<td>'+lab[u]+'</td>'}).join('')+'</tr></table>'};
     var head=$('t').value.trim()?'<tr><td style="padding:12px 8px 2px;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#'+fg+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+title+'</td></tr>':'';
+    var wtxt='',wp=$('wp').value;if(wp!=='none'){var dd=/^(\d{4})-(\d{2})-(\d{2})$/.exec($('d').value),hh=/^(\d{1,2}):(\d{2})$/.exec($('h').value)||[0,12,0];
+      var ms=Date.UTC(+dd[1],+dd[2]-1,+dd[3],+hh[1],+hh[2]);try{var f=new Intl.DateTimeFormat('en-US',{timeZone:$('z').value,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),pp={};f.formatToParts(new Date(ms)).forEach(function(x){pp[x.type]=x.value});ms-=Date.UTC(+pp.year,+pp.month-1,+pp.day,+pp.hour%24,+pp.minute)-ms}catch(e){}
+      wtxt='<tr><td style="padding:'+(wp==='top'?'2px 8px 6px':'8px 8px 0')+';font-family:Arial,sans-serif;font-size:14px;color:#'+lb+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+esc(whenText(ms,$('z').value,en,cfg(),!!$('h').value))+'</td></tr>'}
     var body;
     if($('l').value==='stack'){
       body='<tr><td align="center" style="padding-top:8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="direction:ltr"><tr>'+dateU.map(function(u,i){return '<td align="center" style="padding:0 6px;'+td+'"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=top&g='+i+'" alt="" height="84" style="display:block;height:84px;width:auto;border:0"></a>'+lab[u]+'</td>'}).join('')+'</tr></table></td></tr>'+
-        '<tr><td align="center" style="padding-top:10px"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=clock&a=1" alt="'+title+'" width="300" style="display:block;max-width:100%;height:auto;border:0"></a>'+labels(clockU,300)+'</td></tr>';
+        '<tr><td align="center" style="padding-top:10px"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=clock'+anim+'" alt="'+title+'" width="'+($('sec').checked?300:210)+'" style="display:block;max-width:100%;height:auto;border:0"></a>'+labels(clockU,$('sec').checked?300:210)+'</td></tr>';
     }else{
-      body='<tr><td align="center"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&a=1" alt="'+title+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a></td></tr><tr><td>'+labels(dateU.concat(clockU),'100%')+'</td></tr>';
+      body='<tr><td align="center"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+anim+'" alt="'+title+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a></td></tr><tr><td>'+labels(dateU.concat(clockU),'100%')+'</td></tr>';
     }
-    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+head+body+
+    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+head+(wp==='top'?wtxt:'')+body+(wp==='bottom'?wtxt:'')+
       '<tr><td style="padding:6px 0 6px;text-align:center;font-family:Arial,sans-serif;font-size:9px;line-height:1"><a href="'+SITE+'/timer" target="_blank" style="color:#'+lb+';text-decoration:none">myluach.org</a></td></tr></table>';
     $('oMail').value=mail;$('oMailPrev').innerHTML=mail.split(SITE+'/api/').join('/api/');
     $('out').hidden=false;
   }
-  ['t','d','h','u','lang','z','sz','l','fr'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
+  ['t','d','h','u','lang','z','sz','l','fr','wp','wd','ww','wt','sec'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
   ['c','b'].forEach(function(i){$(i).addEventListener('input',function(){custom=true;upd()})});
   /* העתקה "מעוצבת": מדביקים בגוף המייל ומקבלים את התמונה עצמה ולא את הקוד */
   $('cpMail').addEventListener('click',function(){var b=this,html=$('oMail').value,done=function(ok){b.textContent=ok?'הועתק ✓ עכשיו מדביקים במייל':'לא הצליח. סמנו את התצוגה למעלה והעתיקו';setTimeout(function(){b.textContent='העתקה למייל'},2500)};
@@ -209,7 +228,7 @@ summary{cursor:pointer;font-weight:700}
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
   var es=(Q.get('s')||'').toLowerCase();
   if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
-    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';
     setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
     $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('הכתובת הזו שלכם. אפשר לשנות ולעדכן.','ok')}else check();go()})}
 })();

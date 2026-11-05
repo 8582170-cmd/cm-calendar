@@ -65,6 +65,19 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
     digital:{acc:'#39e888',card:'#0b0f0c',box:'#111a14',ink:'#d9f5e3',mute:'#7fa58d',bline:'#1f3327',nf:"Orbitron,monospace",tf:"Orbitron,'Secular One',sans-serif"},
     minimal:{acc:'#172126',card:'#ffffff',box:'#ffffff',ink:'#172126',mute:'#6b7679',bline:'#dde2df',nf:"Assistant,sans-serif",tf:"Assistant,sans-serif"}
   };
+  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה */
+  function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];n%=1000;var r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
+  function whenText(ms,tz,EN,o,hasTime){
+    var F=function(loc,op){op.timeZone=tz;try{return new Intl.DateTimeFormat(loc,op)}catch(e){delete op.timeZone;return new Intl.DateTimeFormat(loc,op)}},d=new Date(ms),out=[];
+    var greg=F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
+    if(o.wd==='h'||o.wd==='b'){try{var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(d).forEach(function(x){p[x.type]=x.value});
+      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year)}catch(e){}}
+    var date=o.wd==='h'?(heb||greg):o.wd==='b'&&heb?greg+' · '+heb:greg;
+    if(o.ww!=='0')out.push(F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
+    out.push(date);
+    var s=out.join(', ');
+    if(hasTime&&o.wt!=='0')s+=(EN?' · ':' · בשעה ')+F('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
+    return s}
   var c=document.getElementById('c');
   function esc(x){return String(x).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]})}
   var Q=new URLSearchParams(location.search),slug=(/^\/t\/([a-z0-9-]{3,40})\/?$/.exec(location.pathname)||[])[1];
@@ -86,12 +99,12 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
         var off=function(ms){var p={};f.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms};
         var u=guess-off(guess);return guess-off(u)}catch(e){return guess}}
     var to=target();
-    var when=new Date(to).toLocaleString(EN?'en-US':'he-IL',{timeZone:tz,weekday:'long',day:'numeric',month:'long',year:'numeric',hour:t?'2-digit':undefined,minute:t?'2-digit':undefined});
+    var when=whenText(to,tz,EN,{wd:o.wd,ww:String(o.ww==null?'1':o.ww),wt:String(o.wt==null?'1':o.wt)},!!t),wp=o.wp==='bottom'||o.wp==='none'?o.wp:'top',noSec=String(o.ns)==='1';
     function parts(ms){var s=Math.max(0,Math.floor(ms/1000)),out=[],days=Math.floor(s/86400);s-=days*86400;
       if(unit==='m'&&days>=28){var now=new Date(),end=new Date(now.getTime()+ms),mo=0,add=function(k){var x=new Date(now);x.setMonth(x.getMonth()+k);return x};
         while(add(mo+1)<=end)mo++;var rest=Math.floor((end-add(mo))/1000);days=Math.floor(rest/86400);s=rest-days*86400;out.push(['months',mo])}
       else if(unit==='w'&&days>=7){out.push(['weeks',Math.floor(days/7)]);days%=7}
-      out.push(['days',days],['hours',Math.floor(s/3600)],['minutes',Math.floor(s/60)%60],['seconds',s%60]);return out}
+      out.push(['days',days],['hours',Math.floor(s/3600)],['minutes',Math.floor(s/60)%60]);if(!noSec)out.push(['seconds',s%60]);return out}
     var stack=o.l==='stack',fr=o.fr==='1'||o.fr===1?1:o.fr==='2'||o.fr===2?2:0;
     if(stack)document.body.classList.add('stack');if(fr)document.body.classList.add('fr'+fr);
     var DK={months:1,weeks:1,days:1};
@@ -99,8 +112,8 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
     function layout(P2){if(!stack)return '<div class="clock">'+P2.map(cell).join('')+'</div>';
       var top=P2.filter(function(p){return DK[p[0]]}),clk=P2.filter(function(p){return !DK[p[0]]});
       return '<div class="top">'+top.map(cell).join('')+'</div><div class="clock">'+clk.map(cell).join('<div class="sep" aria-hidden="true">:</div>')+'</div>'}
-    var head='<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1><div class="when">'+esc(when)+'</div>',built=false,iv;
-    var credit='<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
+    var wl='<div class="when">'+esc(when)+'</div>',head='<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
+    var credit=(wp==='bottom'?'<div class="when" style="margin-top:8px">'+esc(when)+'</div>':'')+'<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
     function draw(){
       var left=to-Date.now();
       if(left<=0){c.innerHTML=head+'<div class="done">'+L.done+'</div>'+credit;clearInterval(iv);return}
@@ -112,7 +125,7 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
     iv=setInterval(draw,1000);draw();
   }
   if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){start(j.cfg||{})}).catch(function(){start({})})}
-  else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr')});
+  else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr'),wp:Q.get('wp'),wd:Q.get('wd'),ww:Q.get('ww'),wt:Q.get('wt'),ns:Q.get('ns')});
 })();
 </script>
 </body>
