@@ -99,11 +99,13 @@ module.exports = async (req, res) => {
       /* לקוח חוזר: מי שכבר שילם על מסלול בעבר */
       let renew = null;
       const R = cfg.renew || {};
-      if (R.on && +R.percent > 0 && (user || email)) {
+      /* האחוז לפי המסלול שקונים עכשיו (אם הוגדר), ואחרת האחוז הכללי */
+      const rPct = R.plans && R.plans[plan] != null ? +R.plans[plan] : +R.percent;
+      if (R.on && rPct > 0 && (user || email)) {
         try {
           const or = 'or=(' + [user ? 'user_id.eq.' + user.id : '', email ? 'email.eq.' + encodeURIComponent(email) : ''].filter(Boolean).join(',') + ')';
           const prev = await db('orders?select=id&status=eq.paid&plan=in.(' + PAID.join(',') + ')&' + or + '&limit=1');
-          if (prev && prev.length) renew = { percent: Math.min(100, +R.percent), why: 'renew' };
+          if (prev && prev.length) renew = { percent: Math.min(100, rPct), why: 'renew' };
         } catch (e) {}
       }
       if ((cfg.off || []).indexOf(plan) >= 0) return json(res, 400, { error: 'off', message: 'המסלול הזה לא נמכר כרגע' });

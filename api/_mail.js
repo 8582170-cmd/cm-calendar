@@ -70,7 +70,8 @@ function logMail(provider, kind, ok, m, err) {
 function frame({ title, body, button, url, foot }) {
   const btn = button && url ? '<p style="margin:0 0 22px"><a href="' + url + '" style="display:inline-block;background:#1f5c63;color:#ffffff;text-decoration:none;font-weight:bold;font-size:16px;padding:12px 26px;border-radius:10px">' + button + '</a></p>' : '';
   return '<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;background:#f6f7f4;padding:24px 12px"><div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #dde2df;border-radius:14px;padding:28px 24px;text-align:right">' +
-    '<div style="font-size:24px;font-weight:bold;color:#1f5c63;margin-bottom:18px;direction:ltr;text-align:right">MyLuach</div>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px auto;direction:ltr"><tr><td style="vertical-align:middle;padding-right:8px"><span style="font-size:24px;font-weight:bold;color:#1f5c63;font-family:Arial,Helvetica,sans-serif">MyLuach</span></td>' +
+    '<td style="vertical-align:middle"><img src="https://www.myluach.org/assets/icon-180.png" width="36" height="36" alt="" style="display:block;border:0;border-radius:8px"></td></tr></table>' +
     '<h1 style="font-size:20px;color:#172126;margin:0 0 10px">' + title + '</h1><div style="font-size:16px;line-height:1.6;color:#3c474b;margin:0 0 22px">' + body + '</div>' + btn +
     (foot ? '<p style="font-size:13px;line-height:1.6;color:#6b7679;margin:0">' + foot + '</p>' : '') +
     '</div><p style="text-align:center;font-size:12px;color:#8a9497;margin:14px 0 0">MyLuach · לוח שנה עברי־לועזי · myluach.org</p></div>';
@@ -80,4 +81,11 @@ const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&a
 function configured() {
   return { resend: !!env('RESEND_API_KEY'), brevo: !!env('BREVO_API_KEY'), mailjet: !!(env('MAILJET_API_KEY') && env('MAILJET_SECRET_KEY')) };
 }
-module.exports = { sendMail, frame, escH, configured };
+/* טקסט רגיל שכותבים בדף הניהול: שורות, **מודגש**, וקישורים (כתובת מלאה או [טקסט](כתובת)) */
+function textToHtml(t) {
+  return escH(String(t || '').slice(0, 20000))
+    .replace(/\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#1f5c63">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" style="color:#1f5c63">$2</a>')
+    .replace(/\*\*([^*\n]{1,200})\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+}
+module.exports = { sendMail, frame, escH, configured, textToHtml };

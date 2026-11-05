@@ -8,6 +8,8 @@ async function saveSnap(snap) {
   const body = JSON.stringify(snap); if (body.length > 4000000) return null;
   const rate = (await loadConfig()).sampleRate; if (Math.random() * 100 >= (rate == null ? 100 : +rate)) return null;
   const path = new Date().toISOString().slice(0, 7) + '/' + crypto.randomBytes(12).toString('hex') + '.json';
+  /* מהיום: ל-Cloudflare R2 (הדלי הפרטי), בנתיב samples/... . בהורדות נשמר "r2/<חודש>/<קובץ>" */
+  try { const R2 = require('./_r2'); if (R2.on()) { const r = await fetch(R2.presign('PUT', 'samples/' + path, 600), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body }); if (r.ok) return 'r2/' + path; } } catch (e) { console.error('r2 sample', e.message); }
   const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');
   const r = await fetch(url + '/storage/v1/object/samples/' + path, { method: 'POST', headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }), 'Content-Type': 'application/json' }, body });
   return r.ok ? path : null;

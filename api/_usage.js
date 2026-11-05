@@ -32,7 +32,7 @@ async function usage() {
       const m = /\/(\d+)/.exec(r.headers.get('content-range') || ''); out.tables[t] = r.ok && m ? +m[1] : null; } catch (e) { out.tables[t] = null; }
   }
   const R2 = require('./_r2');
-  if (R2.on()) { try { const C = await R2.list('cal/'), I = await R2.list('img/'); out.r2 = { cal: { files: C.length, bytes: C.reduce((a, f) => a + f.size, 0) }, img: { files: I.length, bytes: I.reduce((a, f) => a + f.size, 0) } }; } catch (e) { out.r2 = { error: String(e.message || e).slice(0, 120) }; } }
+  if (R2.on()) { try { const C = await R2.list('cal/'), I = await R2.list('img/'), SM = await R2.list('samples/').catch(() => []); out.r2samples = { files: SM.length, bytes: SM.reduce((a, f) => a + f.size, 0) }; out.r2 = { cal: { files: C.length, bytes: C.reduce((a, f) => a + f.size, 0) }, img: { files: I.length, bytes: I.reduce((a, f) => a + f.size, 0) } }; } catch (e) { out.r2 = { error: String(e.message || e).slice(0, 120) }; } }
   try { const r = await fetch(base() + '/rest/v1/rpc/myluach_db_size', { method: 'POST', headers: H(), body: '{}' }); if (r.ok) out.db = +(await r.json()); } catch (e) {}
   return out;
 }
@@ -51,7 +51,19 @@ async function cleanSamples(keepDays) {
     }
     try { await db('downloads?snap=like.' + encodeURIComponent(m + '/*'), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ snap: null }) }); } catch (e) {}
   }
+  n += await r2Samples(cut, false).then(x => x.deleted).catch(() => 0);
   return n;
+}
+/* דוגמיות ב-R2 (samples/YYYY-MM/...): ספירה/מחיקה של מה שלפני החודש cut ('9999' = הכל) */
+async function r2Samples(cut, dry) {
+  const R2 = require('./_r2'); if (!R2.on()) return { files: 0, bytes: 0, deleted: 0 };
+  const F = (await R2.list('samples/')).filter(f => (f.key.split('/')[1] || '') < cut);
+  const out = { files: F.length, bytes: F.reduce((a, f) => a + f.size, 0), deleted: 0 };
+  if (dry || !F.length) return out;
+  await R2.pool(F, 16, async f => { if (await R2.del(f.key)) out.deleted++; });
+  const months = [...new Set(F.map(f => f.key.split('/')[1]))];
+  for (const m of months) { try { await db('downloads?snap=like.' + encodeURIComponent('r2/' + m + '/*'), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ snap: null }) }); } catch (e) {} }
+  return out;
 }
 /* מחיקה ידנית מדף הניהול.
    samples: דוגמיות הורדה ישנות מ-days ימים (0 = כולן).
@@ -61,6 +73,7 @@ async function cleanSamples(keepDays) {
 async function purge(bucket, days, dry) {
   days = Math.max(0, parseInt(days, 10) || 0);
   if (bucket === 'calendars' && days < 30) throw new Error('בלוחות של משתמשים אפשר למחוק רק מה שלא עודכן לפחות 30 יום');
+  if (bucket === 'library') return purgeLibrary(dry);
   if (!['samples', 'calendars'].includes(bucket)) throw new Error('bucket');
   const cut = days ? Date.now() - days * 864e5 : Infinity;
   const F = (await walk(bucket, '', [], 50000)).filter(f => {
@@ -83,6 +96,22 @@ async function purge(bucket, days, dry) {
     }
   }
   if (bucket === 'calendars') await fixIndex(F.map(f => f.path));
+  if (bucket === 'samples') { const r = await r2Samples(days ? new Date(cut).toISOString().slice(0, 7) : '9999', false); out.files += r.files; out.bytes += r.bytes; out.deleted += r.deleted; }
+  return out;
+}
+/* מאגר התמונות ב-Supabase: מוחקים רק קבצים שכבר לא מופיעים באף הגדרה של האתר (כלומר שהועברו ל-R2).
+   קובץ שעדיין מופיע איפשהו (רקע, מדבקה, מאמר, תמונה במאגר) לא נמחק */
+async function purgeLibrary(dry) {
+  const rows = await db('settings?select=value&limit=1000'), all = JSON.stringify(rows || []);
+  const F = (await walk('library', '', [], 50000)).filter(f => !all.includes('/library/' + f.path) && !all.includes('/library/' + encodeURI(f.path)));
+  const out = { files: F.length, bytes: F.reduce((a, f) => a + f.size, 0), deleted: 0 };
+  if (dry || !F.length) return out;
+  for (let i = 0; i < F.length; i += 500) {
+    const part = F.slice(i, i + 500).map(f => f.path);
+    const r = await fetch(base() + '/storage/v1/object/library', { method: 'DELETE', headers: H(), body: JSON.stringify({ prefixes: part }) });
+    if (!r.ok) throw new Error('delete ' + r.status);
+    out.deleted += part.length;
+  }
   return out;
 }
 /* מוחקים מהאינדקס של כל משתמש את הלוחות שנמחקו (paths: <user>/<id>.json) */

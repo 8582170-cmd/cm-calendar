@@ -4,6 +4,8 @@ const { env, loadSetting, saveSetting } = require('./_lib');
 const CATS = ['nature', 'holy', 'mikdash', 'chagim', 'shabbat', 'tzadikim', 'bg'];
 const base = () => env('SUPABASE_URL').replace(/\/$/, '');
 async function put(path, buf, type) {
+  /* מהיום: ל-Cloudflare R2 (הדלי הציבורי), ורק אם הוא לא מוגדר ל-Supabase */
+  try { const R = require('./_r2').mediaPut(path); if (R) { const r = await fetch(R.upload, { method: 'PUT', headers: { 'Content-Type': type }, body: buf }); if (r.ok) return R.url; } } catch (e) { console.error('r2 lib put', e.message); }
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   const r = await fetch(base() + '/storage/v1/object/library/' + path, { method: 'POST',
     headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }), 'Content-Type': type, 'x-upsert': 'true', 'Cache-Control': 'max-age=31536000' }, body: buf });
@@ -85,7 +87,7 @@ async function adminAction(b) {
   }
   if (b.action === 'libdelete') {
     const it = L.items.find(x => String(x.id) === String(b.id)); if (!it) return { error: 'id' };
-    if (it.path) await remove(it.path);
+    if (it.path) { try { const R = require('./_r2'), M = R.media(); if (M && String(it.url || '').startsWith(M.url + '/')) await fetch(R.presign('DELETE', it.path, 300, null, M), { method: 'DELETE' }); } catch (e) {} await remove(it.path); }
     L.items = L.items.filter(x => x !== it); await saveSetting('library', L); return { ok: true };
   }
   return { error: 'action' };

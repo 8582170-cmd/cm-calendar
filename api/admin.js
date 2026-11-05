@@ -59,7 +59,7 @@ function clean(c) {
     tagline: String(x.tagline || '').slice(0, 80), bullets: (Array.isArray(x.bullets) ? x.bullets : String(x.bullets || '').split('\n')).map(t => String(t).trim().slice(0, 90)).filter(Boolean).slice(0, 8),
     cd: !!x.cd, on: !!x.on
   }));
-  { const r = c.renew || {}; out.renew = { on: !!r.on, percent: num(r.percent, 0, 100) || 0 }; }
+  { const r = c.renew || {}, P = {}; Object.entries(r.plans || {}).forEach(([k, v]) => { if (/^[\w-]{1,30}$/.test(k) && v !== '' && v != null) P[k] = num(v, 0, 100) || 0; }); out.renew = { on: !!r.on, percent: num(r.percent, 0, 100) || 0, plans: P }; }
   out.sampleImgRate = Math.max(0, Math.min(100, parseInt(c.sampleImgRate == null ? 20 : c.sampleImgRate, 10) || 0));
   { const sh = c.shabbat || {}; out.shabbat = { on: sh.on !== false, yt: sh.yt !== false, before: Math.max(0, Math.min(120, parseInt(sh.before, 10) || 0)), after: Math.max(0, Math.min(120, parseInt(sh.after, 10) || 0)), deg: Math.max(3, Math.min(20, parseFloat(sh.deg) || 8.5)) }; }
   out.sampleKeepDays = Math.max(0, Math.min(3650, parseInt(c.sampleKeepDays == null ? 365 : c.sampleKeepDays, 10) || 0));
@@ -238,6 +238,18 @@ module.exports = async (req, res) => {
       let r; try { r = JSON.parse(out.body); } catch (e) { r = { raw: out.body.slice(0, 300) }; }
       return json(res, 200, { code: out.code, result: r });
     }
+    /* שליחת מייל מעוצב מדף הניהול (גם תשובה לפנייה). preview = רק להציג איך ייראה */
+    if (req.method === 'POST' && b.action === 'mailcompose') {
+      const { sendMail, frame, escH, textToHtml } = require('./_mail');
+      const to = String(b.to || '').trim(), subject = String(b.subject || '').trim().slice(0, 200), title = String(b.title || subject).trim().slice(0, 200);
+      const url = /^https:\/\/[^\s"'<>]+$/.test(String(b.url || '').trim()) ? String(b.url).trim() : '', button = url ? String(b.button || 'לפרטים').slice(0, 60) : '';
+      const html = frame({ title: escH(title), body: textToHtml(b.body), button: button ? escH(button) : null, url, foot: b.foot ? textToHtml(b.foot) : 'אפשר פשוט לענות למייל הזה.' });
+      if (b.preview) return json(res, 200, { html });
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return json(res, 400, { error: 'כתובת מייל לא תקינה' });
+      if (!subject || String(b.body || '').trim().length < 2) return json(res, 400, { error: 'חסרים נושא או תוכן' });
+      try { const via = await sendMail({ to, subject, html, text: title + '\n\n' + String(b.body || ''), replyTo: env('MAIL_REPLY_TO') || env('OWNER_EMAIL') || undefined }, 'manual'); return json(res, 200, { ok: true, via }); }
+      catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); }
+    }
     /* אבטחה: כתובות IP חסומות וניסיונות כניסה שגויים */
     if (req.method === 'POST' && /^sec(get|block|unblock|clear)$/.test(b.action || '')) {
       const { loadSetting } = require('./_lib'), ip = String(b.ip || '').trim().slice(0, 45);
@@ -305,12 +317,15 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'indexnow') {
       const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org';
       let urls = [];
-      try { const sm = await (await fetch('https://' + host + '/sitemap.xml')).text(); urls = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]); } catch (e) {}
+      try { const sm = await (await fetch('https://' + host + '/sitemap.xml')).text(); urls = sm.split('<loc>').slice(1).map(x => x.slice(0, x.indexOf('<'))); } catch (e) {}
       try { urls = urls.concat(await require('./_pages').publicUrls()); } catch (e) {}
       if (!urls.length) urls = ['https://' + host + '/'];
-      const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
-      return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length });
+      try {
+        const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
+        const t = r.ok || r.status === 202 ? '' : (await r.text().catch(() => '')).slice(0, 200);
+        return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length, ...(t ? { error: 'IndexNow ' + r.status + ': ' + t } : {}) });
+      } catch (e) { return json(res, 502, { error: 'IndexNow: ' + String(e.message || e).slice(0, 200) }); }
     }
     /* מאגר דברי הימים: שמירה אחרי ייבוא אקסל */
     if (req.method === 'POST' && b.action === 'yzsave') { try { const out = await require('./_yzadmin').save(b); return json(res, out.error ? (out.error === 'notoken' ? 200 : 400) : 200, out); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); } }
@@ -349,9 +364,9 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'usage') { try { return json(res, 200, await require('./_usage').usage()); } catch (e) { return json(res, 500, { error: String(e.message || e).slice(0, 200) }); } }
     /* דוגמית של לוח שהורד: התוכן המלא (בלי תמונות), לפתיחה בבונה לקריאה בלבד */
     if (req.method === 'POST' && b.action === 'snapget') {
-      const p = String(b.path || ''); if (!/^[0-9]{4}-[0-9]{2}\/[a-z0-9]{8,40}\.json$/.test(p)) return json(res, 400, { error: 'path' });
+      const p0 = String(b.path || ''), inR2 = p0.startsWith('r2/'), p = inR2 ? p0.slice(3) : p0; if (!/^[0-9]{4}-[0-9]{2}\/[a-z0-9]{8,40}\.json$/.test(p)) return json(res, 400, { error: 'path' });
       const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');
-      const r = await fetch(url + '/storage/v1/object/samples/' + p, { headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }) } });
+      const r = inR2 ? await fetch(require('./_r2').presign('GET', 'samples/' + p, 300)) : await fetch(url + '/storage/v1/object/samples/' + p, { headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }) } });
       if (!r.ok) return json(res, 404, { error: 'הדוגמית לא נמצאה' });
       return json(res, 200, { snap: JSON.parse(await r.text()) });
     }
