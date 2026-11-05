@@ -104,7 +104,7 @@ summary{cursor:pointer;font-weight:700}
     <div class="two"><label>פריסה<select id="l"><option value="row">הכול בשורה אחת</option><option value="stack">ימים למעלה, שעון מתחת</option></select></label><label>מסגרת<select id="fr"><option value="0">לפי העיצוב</option><option value="1">מסגרת לכל מספר</option><option value="2">מסגרת אחת מסביב</option></select></label></div>
     </div>
     <div id="gDesign">
-    <div style="font-weight:600;font-size:15px">עיצוב</div>
+    <div style="font-weight:600;font-size:15px" id="dsgL">עיצוב</div>
     <div class="ths" id="ths" role="group" aria-label="עיצוב"></div>
     <div class="two"><label>צבע<input type="color" id="c" value="#1e5a63"></label><label>רקע<input type="color" id="b" value="#ffffff"></label></div>
     </div>
@@ -318,6 +318,9 @@ summary{cursor:pointer;font-weight:700}
     $('clk').addEventListener('change',upd);
     $('pvbox').insertAdjacentHTML('afterbegin','<p class="mute" id="pvNote" style="margin:6px 8px;font-size:14px">כאן תופיע התצוגה של דף ההזמנה, אחרי שבוחרים כתובת ושומרים.</p>');
     cd.appendChild($('sec').closest('label'));
+    /* בהזמנה העיצוב הוא של כל הדף: צבעים וגופנים (לא שעון) */
+    $('dsgL').innerHTML='עיצוב הדף <span class="mute" style="font-weight:400;font-size:13.5px">· הצבעים והגופנים של דף ההזמנה והכפתורים</span>';
+    document.querySelectorAll('#ths .th b').forEach(function(x){x.textContent='מזל טוב';x.style.fontFamily='inherit';x.style.letterSpacing='0'});
     var col=$('pvbox').parentNode;col.style.position='sticky';col.style.top='10px';$('pv').style.height='85vh';$('out').hidden=true}
   function invPv(){var s=slugVal(),ok=saved&&saved===s,key=s+'|'+savedCfg.length+'|'+(OWN?1:0);$('pvNote').hidden=ok;$('pv').hidden=!ok;$('out').hidden=true;if(!ok||$('pv').dataset.k===key)return;$('pv').dataset.k=key;$('pv').src='/t/'+s+'?pv='+Date.now()}
   function ownPost(body){var s=slugVal();body.slug=s;body.token=store()[s];return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return [r.status,j]})})}
