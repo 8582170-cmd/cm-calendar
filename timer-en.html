@@ -62,6 +62,11 @@ textarea{width:100%;font:13px/1.45 ui-monospace,Consolas,monospace;direction:ltr
 .st{font-size:14px;min-height:1.6em;margin:4px 0 0}
 .st.ok{color:#2e7d4f}.st.no{color:#b3412e}
 .chk{display:flex;gap:16px;flex-wrap:wrap;margin:-2px 0 12px;font-size:15px}.chk label{display:flex;gap:6px;align-items:center;margin:0;font-weight:400}.chk input{width:auto;margin:0}
+.inv{margin-top:14px;border:1px dashed var(--line);border-radius:12px;padding:8px 12px}.inv>summary{font-weight:700;cursor:pointer;padding:4px 0}
+.inv textarea{width:100%;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical;direction:inherit}
+.plist{display:grid;gap:6px;margin-top:8px}.plist div{display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:6px}.plist b{flex:1;min-width:120px}
+.own{margin-top:10px}.own table{width:100%;border-collapse:collapse;font-size:14px}.own th,.own td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:start;vertical-align:top}.own .sum{font-weight:700}
+.btn.sm{font-size:13px;padding:3px 9px}
 .mine{font-size:14px;margin-top:8px}.mine a{margin-inline-end:10px}
 footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
 footer a{color:var(--mute)}
@@ -102,6 +107,23 @@ summary{cursor:pointer;font-weight:700}
     <p class="st" id="st" aria-live="polite">Letters, digits and hyphens.</p>
     <div class="row"><button class="btn pri" type="button" id="save" disabled>Save and get the address</button></div>
     <div class="mine" id="mine" hidden></div>
+    <details class="inv" id="invD"><summary>📨 Event invitation page: RSVP, reminders and blessings</summary>
+      <p class="mute" style="font-size:14.5px;margin:4px 0 10px">The event link becomes an invitation page: the invitation, the clock, venue details with Waze, add-to-calendar, RSVP, reminder sign-up and a blessings wall. Works with a saved address, and is saved with it.</p>
+      <label for="ibtn">Invitation image (optional)</label>
+      <div class="row" style="margin:4px 0 4px"><input type="file" id="if" accept="image/*" hidden><button class="btn" type="button" id="ibtn">Upload invitation</button><button class="btn" type="button" id="irm" hidden>Remove</button></div>
+      <p class="st" id="ist" aria-live="polite" style="margin:0 0 10px"></p>
+      <label>Invitation text (optional)<textarea id="it" rows="4" maxlength="1500" placeholder="We are delighted to invite you…"></textarea></label>
+      <div class="two"><label>Venue name<input id="venue" maxlength="120" placeholder="Hall…"></label><label>Address (for Waze and maps)<input id="addr" maxlength="200" placeholder="Street, city"></label></div>
+      <div class="two"><label>Reception time<input type="time" id="tr"></label><label>What happens at the target time<input id="tl" maxlength="40" placeholder="Ceremony"></label></div>
+      <div class="chk"><label><input type="checkbox" id="rv" checked>RSVP</label><label><input type="checkbox" id="rm" checked>Reminder sign-up</label><label><input type="checkbox" id="wl" checked>Blessings wall</label><label><input type="checkbox" id="tp">Psalms division</label></div>
+      <label id="tptL" hidden>In whose merit? (shown above the division)<input id="tpt" maxlength="120" placeholder="In the merit of the bride and groom"></label>
+      <h3 style="font-size:16px;margin:10px 0 4px">Personal invitations</h3>
+      <label>Personal line ({name} is replaced by each guest’s name)<input id="pt" maxlength="300" placeholder="Dear {name}, we would be delighted to celebrate with you!"></label>
+      <label>Guest names (one per line)<textarea id="names" rows="3" placeholder="The Cohen family&#10;David and Sarah Levi"></textarea></label>
+      <div class="row"><button class="btn" type="button" id="mkLinks">Create personal links</button></div>
+      <div class="plist" id="plist"></div>
+      <div class="own" id="ownBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">RSVPs and blessings</h3><div class="row"><button class="btn" type="button" id="ownLoad">Show / refresh</button><button class="btn" type="button" id="ownCsv" hidden>Download for Excel (CSV)</button><button class="btn" type="button" id="ownBook" hidden>📖 Printable book of blessings</button><a class="btn" id="ownOpen" target="_blank" rel="noopener">Open the invitation page</a></div><div id="ownOut"></div></div>
+    </details>
   </form>
   <div>
     <div class="box" style="padding:8px" id="pvbox"><iframe id="pv" title="Countdown preview"></iframe></div>
@@ -155,6 +177,55 @@ summary{cursor:pointer;font-weight:700}
       pstat('Uploading…');fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({img:data})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
         if(a[0]===200&&a[1].url){setPhoto(a[1].url);pstat('Photo added ✓','ok')}else pstat(a[0]===429?'Too many photos were uploaded in the last hour. Please try again later.':'Upload failed. Try another photo.','no')}).catch(function(){pstat('Upload failed. Check your connection.','no')})};
     im.onerror=function(){pstat('Could not read the photo. Try a JPG or PNG file.','no')};im.src=url});
+  /* הזמנה: תמונה גדולה יותר (עד 1600 פיקסלים) */
+  var invImg='';function istat(m,c){$('ist').textContent=m;$('ist').className='st'+(c?' '+c:'')}
+  function setInv(u){invImg=u||'';$('irm').hidden=!invImg;$('ibtn').textContent=invImg?'Change invitation':'Upload invitation';upd()}
+  $('ibtn').addEventListener('click',function(){$('if').click()});$('irm').addEventListener('click',function(){setInv('');istat('')});
+  $('if').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;if(!/^image\//.test(f.type)){istat('Please choose an image file (JPG or PNG).','no');return}
+    istat('Preparing the photo…');var im=new Image(),url=URL.createObjectURL(f);
+    im.onload=function(){URL.revokeObjectURL(url);var k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+      var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);var q=.88,data=cv.toDataURL('image/jpeg',q);while(data.length>1180000&&q>.4){q-=.12;data=cv.toDataURL('image/jpeg',q)}
+      istat('Uploading…');fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({img:data,big:1})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+        if(a[0]===200&&a[1].url){setInv(a[1].url);istat('Invitation added ✓ don’t forget to save','ok')}else istat(a[0]===429?'Too many photos were uploaded in the last hour. Please try again later.':'Upload failed. Try another photo.','no')}).catch(function(){istat('Upload failed. Check your connection.','no')})};
+    im.onerror=function(){istat('Could not read the photo. Try a JPG or PNG file.','no')};im.src=url});
+  /* קישור אישי לכל מוזמן: ?to=<שם>, עם כפתור WhatsApp */
+  $('mkLinks').addEventListener('click',function(){var s=slugVal();if(!saved||saved!==s){$('plist').innerHTML='<p class="st no">First save an event address (above), then create links.</p>';return}
+    var N=$('names').value.split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,500),pt=$('pt').value.trim()||'Dear {name}, we would be delighted to celebrate with you!';
+    $('plist').innerHTML=N.length?N.map(function(n,i){var u=SITE+'/t/'+s+'?to='+encodeURIComponent(n),msg=pt.replace(/\{(שם|name)\}/g,n)+'\n'+($('t').value.trim()?$('t').value.trim()+'\n':'')+u;
+      return '<div><b>'+esc(n)+'</b><a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">WhatsApp</a><button class="btn sm" type="button" data-cpl="'+esc(u)+'">Copy link</button></div>'}).join(''):'<p class="st no">Enter at least one name.</p>'});
+  $('plist').addEventListener('click',function(e){var b=e.target.closest('[data-cpl]');if(!b)return;try{navigator.clipboard.writeText(b.dataset.cpl)}catch(er){}b.textContent='Copied ✓'});
+  /* RSVPs and blessings (לבעל האירוע, עם קוד העריכה מהדפדפן הזה) */
+  var OWN=null;
+  function ownUI(){var s=slugVal(),mine=!!(saved&&saved===s&&store()[s]);$('ownBox').hidden=!mine;if(mine)$('ownOpen').href='/t/'+s}
+  $('ownLoad').addEventListener('click',function(){var s=slugVal(),O=$('ownOut');O.textContent='Loading…';
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({act:'owner',slug:s,token:store()[s]})}).then(function(r){return r.json()}).then(function(j){
+      if(j.setup){O.innerHTML='<p class="st no">RSVPs and blessings are not enabled on the site yet.</p>';return}
+      if(j.error){O.innerHTML='<p class="st no">Could not load. You can manage only from the browser where the address was saved.</p>';return}
+      OWN=j;var R=j.rsvp||[],W=j.wall||[],yes=R.filter(function(r){return r.status==='yes'}),sum=function(k){return yes.reduce(function(a,r){return a+(+r[k]||0)},0)},dt=function(x){return new Date(x).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})},ST={yes:'Coming',no:'Not coming',maybe:'Maybe'};
+      O.innerHTML='<p class="sum">Coming: '+yes.length+' replies · '+sum('adults')+' adults, '+sum('kids')+' children · Not coming: '+R.filter(function(r){return r.status==='no'}).length+' · Maybe: '+R.filter(function(r){return r.status==='maybe'}).length+'</p>'+
+        (R.length?'<div style="overflow:auto"><table><thead><tr><th>Name</th><th>Reply</th><th>Adults</th><th>Children</th><th>Phone</th><th>Note</th><th>When</th><th></th></tr></thead><tbody>'+R.map(function(r){return '<tr><td>'+esc(r.name)+'</td><td>'+ST[r.status]+'</td><td>'+(r.adults||0)+'</td><td>'+(r.kids||0)+'</td><td dir="ltr">'+esc(r.phone||'')+'</td><td>'+esc(r.note||'')+'</td><td>'+dt(r.created_at)+'</td><td><button class="btn sm" type="button" data-rdel="'+r.id+'">Delete</button></td></tr>'}).join('')+'</tbody></table></div>':'<p class="mute">No RSVPs yet.</p>')+
+        '<h4 style="margin:12px 0 4px">Blessings ('+W.length+')</h4>'+(W.length?W.map(function(w){return '<div style="border-bottom:1px solid var(--line);padding:6px 0"><div style="white-space:pre-line">'+esc(w.text)+'</div><small class="mute">'+esc(w.name)+' · '+dt(w.created_at)+' · '+(w.public?'visible to all':'only you')+(w.hidden?' · hidden':'')+'</small> '+(w.public?'<button class="btn sm" type="button" data-whide="'+w.id+'" data-h="'+(w.hidden?0:1)+'">'+(w.hidden?'Show':'Hide')+'</button> ':'')+'<button class="btn sm" type="button" data-wdel="'+w.id+'">Delete</button></div>'}).join(''):'<p class="mute">No blessings yet.</p>');
+      var TT=j.teh||[];if(TT.length){var byR={};TT.forEach(function(x){(byR[x.round]=byR[x.round]||[]).push(x)});
+        O.insertAdjacentHTML('beforeend','<h4 style="margin:12px 0 4px">Psalms division</h4>'+Object.keys(byR).map(function(r){var L=byR[r];return '<p><b>Round '+r+':</b> taken '+L.length+' of 150'+(L.length>=150?' ✓ complete':'')+'</p><details><summary>Who took what</summary><div style="font-size:14px;columns:2">'+L.map(function(x){return x.chapter+' · '+esc(x.name)}).join('<br>')+'</div></details>'}).join(''))}
+      $('ownCsv').hidden=!R.length;$('ownBook').hidden=!W.filter(function(w){return !w.hidden}).length}).catch(function(){O.innerHTML='<p class="st no">Could not load. Check your connection.</p>'})});
+  $('ownOut').addEventListener('click',function(e){var b=e.target.closest('[data-rdel],[data-wdel],[data-whide]');if(!b)return;var s=slugVal(),body={slug:s,token:store()[s]};
+    if(b.dataset.rdel){if(!confirm('Delete this RSVP?'))return;body.act='rdel';body.id=b.dataset.rdel}else if(b.dataset.wdel){if(!confirm('Delete this blessing?'))return;body.act='wdel';body.id=b.dataset.wdel}else{body.act='whide';body.id=b.dataset.whide;body.hidden=b.dataset.h==='1'}
+    b.disabled=true;fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(){$('ownLoad').click()})});
+  /* ספר ברכות להדפסה: כל הברכות שלא הוסתרו (גם הPrivacy, כי הספר הוא שלכם) */
+  $('ownBook').addEventListener('click',function(){if(!OWN)return;var W=(OWN.wall||[]).filter(function(w){return !w.hidden}).slice().reverse(),t=T(),fg='#'+(custom?$('c').value.slice(1):t[2]),bg='#'+(custom?$('b').value.slice(1):t[3]),title=$('t').value.trim()||'Book of Blessings',en=$('lang').value==='en';
+    var dd=$('d').value?new Date($('d').value+'T12:00:00').toLocaleDateString(en?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}):'';
+    var h='<!doctype html><html lang="'+(en?'en':'he')+'" dir="'+(en?'ltr':'rtl')+'"><head><meta charset="utf-8"><title>'+esc(title)+'</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&family=Secular+One&display=swap"><style>'+
+      '@page{size:A4;margin:14mm}*{box-sizing:border-box}body{margin:0;font:13pt/1.6 Assistant,Arial,sans-serif;color:#222}'+
+      '.cover{height:262mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:3px double '+fg+';border-radius:6mm;background:'+bg+';break-after:page}'+
+      '.cover h1{font:400 34pt/1.2 "Secular One",sans-serif;color:'+fg+';margin:0 10mm 6mm}.cover .d{font-size:15pt;color:#555}.cover .k{font:400 22pt "Secular One",sans-serif;color:'+fg+';margin-bottom:8mm}'+(invImg?'.cover img{max-width:70%;max-height:120mm;border-radius:4mm;margin-bottom:8mm}':'')+
+      '.g{columns:2;column-gap:8mm}.w{break-inside:avoid;border:1.5px solid '+fg+';border-radius:4mm;padding:5mm 6mm;margin:0 0 6mm;background:#fff}.w p{margin:0;white-space:pre-line}.w b{display:block;margin-top:3mm;color:'+fg+'}'+
+      '.ft{text-align:center;font-size:8pt;color:#999;margin-top:6mm}@media screen{body{background:#eee}.pg{max-width:210mm;margin:10px auto;background:#fff;padding:14mm}}</style></head><body><div class="pg">'+
+      '<div class="cover">'+(invImg?'<img src="'+esc(invImg)+'" alt="">':'')+'<div class="k">'+(en?'Book of Blessings':'Book of Blessings')+'</div><h1>'+esc(title)+'</h1><div class="d">'+esc(dd)+'</div></div>'+
+      '<div class="g">'+W.map(function(w){return '<div class="w"><p>'+esc(w.text)+'</p><b>'+esc(w.name)+'</b></div>'}).join('')+'</div><div class="ft">myluach.org</div></div><script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>';
+    var x=window.open('','_blank');if(!x){alert('The browser blocked the window. Allow pop-ups for this page.');return}x.document.open();x.document.write(h);x.document.close()});
+  $('ownCsv').addEventListener('click',function(){if(!OWN)return;var R=OWN.rsvp||[],q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'},ST={yes:'Coming',no:'Not coming',maybe:'Maybe'};
+    var csv='\ufeff'+['Name','Reply','Adults','Children','Phone','Note','When'].map(q).join(',')+'\n'+R.map(function(r){return [r.name,ST[r.status],r.adults,r.kids,r.phone,r.note,new Date(r.created_at).toLocaleString('he-IL')].map(q).join(',')}).join('\n');
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='rsvp-'+slugVal()+'.csv';document.body.appendChild(a);a.click();a.remove()});
   $('ths').innerHTML=TH.map(function(x){return '<button type="button" class="th" data-th="'+x[0]+'" style="--th-f:#'+x[2]+';--th-b:#'+x[3]+'" aria-pressed="false"><b>12:34</b>'+x[1]+'</button>'}).join('');
   function T(){return TH.filter(function(x){return x[0]===th})[0]||TH[0]}
   function setTheme(k,keep){th=k;document.querySelectorAll('.th').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.th===k)});if(!keep){custom=false;$('c').value='#'+T()[2];$('b').value='#'+T()[3]}upd()}
@@ -199,7 +270,7 @@ summary{cursor:pointer;font-weight:700}
   function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
   function remember(s,tok){try{var o=store();o[s]=tok;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
   function showMine(){var o=store(),k=Object.keys(o);$('mine').hidden=!k.length;$('mine').innerHTML='My countdowns: '+k.map(function(s){return '<a href="?s='+s+'">'+s+'</a>'}).join('')}
-  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,wh:$('wh').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1',p:photo,ps:$('ps').value}}
+  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,wh:$('wh').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1',p:photo,ps:$('ps').value,inv:invImg,it:$('it').value.trim(),pt:$('pt').value.trim(),venue:$('venue').value.trim(),addr:$('addr').value.trim(),tr:$('tr').value,tl:$('tl').value.trim(),rv:$('rv').checked?1:0,rm:$('rm').checked?1:0,wl:$('wl').checked?1:0,tp:$('tp').checked?1:0,tpt:$('tpt').value.trim()}}
   function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);if(c.wp!=='top')p.set('wp',c.wp);if(c.wd!=='g'){p.set('wd',c.wd);if(c.wh!=='s')p.set('wh',c.wh)}if(c.ww==='0')p.set('ww','0');if(c.wt==='0')p.set('wt','0');if(c.ns==='1')p.set('ns','1');if(c.p){p.set('p',c.p);if(c.ps!=='circle')p.set('ps',c.ps)}
     Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
   /* מצב הכתובת: saved = נשמרה (והשמירה תואמת להגדרות הנוכחיות) */
@@ -207,7 +278,7 @@ summary{cursor:pointer;font-weight:700}
   function slugVal(){return $('slug').value.trim().toLowerCase()}
   function valid(s){return /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/.test(s)}
   function st(msg,cls){$('st').textContent=msg;$('st').className='st'+(cls?' '+cls:'')}
-  function slugUI(){var s=slugVal(),mineTok=store()[s],dirty=saved===s&&JSON.stringify(cfg())!==savedCfg;
+  function slugUI(){try{ownUI()}catch(e){}var s=slugVal(),mineTok=store()[s],dirty=saved===s&&JSON.stringify(cfg())!==savedCfg;
     $('save').disabled=!(valid(s)&&(slugState==='free'||mineTok))||(saved===s&&!dirty);
     $('save').textContent=mineTok?(dirty||saved!==s?'Update countdown':'Saved ✓'):'Save and get the address'}
   function check(){clearTimeout(chk);var s=slugVal();slugState='';
@@ -224,7 +295,7 @@ summary{cursor:pointer;font-weight:700}
       else st('Saving failed. Please try again in a moment.','no');slugUI()}).catch(function(){st('Saving failed. Check your connection and try again.','no');slugUI()})});
   var tm;function upd(){clearTimeout(tm);tm=setTimeout(go,250)}
   function go(){
-    slugUI();$('whL').hidden=$('wd').value==='g'||!$('h').value;
+    slugUI();$('tptL').hidden=!$('tp').checked;$('whL').hidden=$('wd').value==='g'||!$('h').value;
     if(!/^\d{4}-\d{2}-\d{2}$/.test($('d').value)){$('out').hidden=true;return}
     var s=slugVal(),useSlug=saved&&saved===s,dirty=useSlug&&JSON.stringify(cfg())!==savedCfg;
     var link=useSlug?SITE+'/t/'+s:SITE+'/t?'+params(),emb=useSlug?SITE+'/t/'+s+'?e=1':SITE+'/t?'+params({e:'1'});
@@ -259,7 +330,7 @@ summary{cursor:pointer;font-weight:700}
     $('oMail').value=mail;$('oMailPrev').innerHTML=mail.split(SITE+'/api/').join('/api/');
     $('out').hidden=false;
   }
-  ['t','d','h','u','lang','z','sz','l','fr','wp','wd','wh','ww','wt','sec'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
+  ['t','d','h','u','lang','z','sz','l','fr','wp','wd','wh','ww','wt','sec','it','pt','venue','addr','tr','tl','rv','rm','wl','tp','tpt'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
   ['c','b'].forEach(function(i){$(i).addEventListener('input',function(){custom=true;upd()})});
   /* העתקה "מעוצבת": מדביקים בגוף המייל ומקבלים את התמונה עצמה ולא את הקוד */
   $('cpMail').addEventListener('click',function(){var b=this,html=$('oMail').value,done=function(ok){b.textContent=ok?'Copied ✓ now paste it into your email':'Failed. Select the preview above and copy it';setTimeout(function(){b.textContent='Copy for email'},2500)};
@@ -270,7 +341,7 @@ summary{cursor:pointer;font-weight:700}
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
   var es=(Q.get('s')||'').toLowerCase();
   if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
-    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');setInv(c.inv||'');['it','pt','venue','addr','tr','tl'].forEach(function(k){$(k).value=c[k]||''});['rv','rm','wl','tp'].forEach(function(k){$(k).checked=!!c[k]});$('tpt').value=c.tpt||'';if(c.inv||c.it||c.venue||c.addr||c.rv||c.wl)$('invD').open=true;
     setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
     $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('This address is yours. You can change and update it.','ok')}else check();go()})}
 })();

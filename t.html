@@ -15,6 +15,7 @@
 <style>
 :root{--acc:#1e5a63;--bg:#f6f4ef;--card:#ffffff;--ink:#1a232c;--mute:#5d6873;--line:#e2ddd2;--box:#f3f6f6;--bline:transparent;--nfont:Orbitron,'Courier New',monospace;--tfont:'Secular One',Assistant,sans-serif}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0}
 body{min-height:100vh;display:grid;place-items:center;padding:20px 12px;background:var(--bg);color:var(--ink);font:16px/1.5 Assistant,Arial,sans-serif}
 body.embed{min-height:0;padding:4px;background:transparent}
@@ -44,6 +45,35 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
 .ph-rect{width:clamp(110px,34vw,190px);height:clamp(84px,24vw,140px);border-radius:14px}
 .ph-wide{width:100%;height:clamp(110px,30vw,220px);border-radius:12px;border:0}
 body.embed .ph-wide{height:clamp(90px,26vw,170px)}
+/* דף הזמנה */
+body.inv{display:block}
+#pg{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.invimg{display:block;width:100%;height:auto;border-radius:16px;border:1px solid var(--line)}
+.box2{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
+.to{font:400 clamp(20px,5vw,28px)/1.35 var(--tfont);color:var(--acc);margin:0}
+.it{white-space:pre-line;margin:6px 0 0;font-size:17px}
+.det{display:grid;gap:4px;font-size:16px}.det b{color:var(--acc)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+.bt{font:inherit;font-weight:700;font-size:15px;border:1.5px solid var(--acc);color:var(--acc);background:transparent;border-radius:999px;padding:7px 16px;cursor:pointer;text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.bt.pri{background:var(--acc);color:var(--card)}
+.bt:focus-visible,.fm input:focus-visible,.fm textarea:focus-visible,.fm select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.fm{display:grid;gap:10px;text-align:start;max-width:520px;margin:12px auto 0}
+.fm label{display:grid;gap:4px;font-weight:600;font-size:15px}
+.fm input,.fm textarea,.fm select{font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+.fm .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fm .opts{display:flex;flex-wrap:wrap;gap:6px 14px;font-weight:400}.fm .opts label{display:inline-flex;gap:6px;align-items:center;font-weight:400}.fm .opts input{width:auto}
+.msg{font-weight:600;color:var(--acc);min-height:1.4em;margin:6px 0 0}
+.msg.no{color:#b3412e}
+.wall{display:grid;gap:10px;text-align:start}
+.wish{background:var(--box);border-radius:14px;padding:12px 14px}
+.wish p{margin:0;white-space:pre-line}.wish b{display:block;color:var(--acc);margin-top:6px;font-size:14.5px}
+h2.sec{font:400 clamp(19px,4.6vw,24px)/1.3 var(--tfont);color:var(--acc);margin:0 0 8px}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:5px;margin:10px 0;direction:rtl}
+.tgrid button{font:inherit;font-size:14px;padding:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
+.tgrid button[aria-pressed="true"]{background:var(--acc);color:var(--card);border-color:var(--acc)}
+.tgrid button:disabled{background:var(--box);color:var(--mute);cursor:default;text-decoration:line-through}
+.tgrid button.mine{outline:2px solid var(--acc)}
+.tbar{height:10px;border-radius:99px;background:var(--box);overflow:hidden;margin:6px auto;max-width:420px}.tbar i{display:block;height:100%;background:var(--acc)}
 /* מסגרות */
 .fr1 .u{background:transparent;border:2px solid var(--acc)}
 .fr2 .clock,.fr2 .top{border:2px solid var(--acc);border-radius:16px;padding:8px 6px}
@@ -144,6 +174,84 @@ body.embed .ph-wide{height:clamp(90px,26vw,170px)}
     }
     document.title=(title||(EN?'Countdown':'ספירה לאחור'))+' · MyLuach';
     iv=setInterval(draw,1000);draw();
+    if(slug&&!document.body.classList.contains('embed'))invite(o,to,!!t,EN,title||(EN?'Countdown':'ספירה לאחור'));
+  }
+
+  /* ---------- דף הזמנה (רק בכתובת שמורה, לא בהטמעה) ---------- */
+  function invite(o,to,hasTime,EN,title){
+    var on=o.inv||o.it||o.venue||o.addr||o.rv||o.rm||o.wl||o.tp;if(!on)return;
+    var T=EN?{to:'Dear {name}, we would be delighted to celebrate with you!',venue:'Venue',rec:'Reception',main:'Ceremony',waze:'Waze',maps:'Google Maps',gcal:'Add to Google Calendar',ics:'Apple / Outlook calendar',rsvp:'RSVP',rem:'Remind me',wish:'Write a blessing',
+        nm:'Your name',st:'Will you attend?',yes:'Yes, I\'ll be there',no:'Sorry, can\'t make it',maybe:'Maybe',ad:'Adults',kd:'Children',ph:'Phone (optional)',nt:'Note (optional)',send:'Send',thx:'Thank you! Your reply was received.',
+        em:'Email',days:'When to remind you?',d0:'On the day',d1:'A day before',d2:'2 days before',d3:'3 days before',d7:'A week before',d14:'Two weeks before',remok:'Done! You will get a reminder by email.',rempend:'Almost done: we sent you an email to confirm the reminder.',
+        wt:'Your blessing',who:'Who can see it?',all:'Everyone',host:'Only the hosts',wok:'Thank you! Your blessing was received.',wall:'Blessings',err:'Something went wrong. Please try again.',rate:'Too many attempts. Please try again later.',done:'You already replied. You can send again to update.',teh:'Psalms (Tehillim) division',tsub:'Pick chapters to read before the event',tprog:'{n} of 150 chapters taken',tround:'Round {r}',tpick:'Choose up to 10 chapters, then enter your name',ttake:'Take these chapters',tgot:'Thank you! Your chapters:',tread:'Read online',tremq:'Want a reminder to read them?',ttaken:'Those chapters were just taken. Please choose others.'}
+      :{to:'לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!',venue:'המקום',rec:'קבלת פנים',main:'חופה',waze:'וייז',maps:'גוגל מפות',gcal:'הוספה ליומן גוגל',ics:'יומן אפל / אאוטלוק',rsvp:'אישור הגעה',rem:'תזכורת לאירוע',wish:'כתיבת ברכה',
+        nm:'שם',st:'האם תגיעו?',yes:'כן, נגיע',no:'לצערנו לא נוכל',maybe:'עוד לא בטוח',ad:'מבוגרים',kd:'ילדים',ph:'טלפון (לא חובה)',nt:'הערה (לא חובה)',send:'שליחה',thx:'תודה! אישור ההגעה התקבל.',
+        em:'מייל',days:'מתי להזכיר?',d0:'ביום האירוע',d1:'יום לפני',d2:'יומיים לפני',d3:'3 ימים לפני',d7:'שבוע לפני',d14:'שבועיים לפני',remok:'נרשמתם! התזכורת תגיע במייל.',rempend:'כמעט סיימנו: שלחנו מייל לאישור התזכורת.',
+        wt:'הברכה',who:'מי יראה את הברכה?',all:'כולם',host:'רק בעלי השמחה',wok:'תודה! הברכה התקבלה.',wall:'ברכות',err:'משהו השתבש. נסו שוב.',rate:'יותר מדי ניסיונות. נסו שוב מאוחר יותר.',done:'כבר שלחתם אישור. אפשר לשלוח שוב כדי לעדכן.',teh:'חלוקת ספר תהילים',tsub:'בוחרים פרקים לקרוא לקראת השמחה',tprog:'נלקחו {n} מתוך 150 פרקים',tround:'סבב {r}',tpick:'בחרו עד 10 פרקים, וכתבו את שמכם',ttake:'אני לוקח/ת את הפרקים',tgot:'תודה! הפרקים שלך:',tread:'לקריאה באתר ספריא',tremq:'רוצים תזכורת לקרוא?',ttaken:'הפרקים האלה נלקחו הרגע. בחרו פרקים אחרים.'};
+    var page=document.createElement('div');page.id='pg';c.parentNode.insertBefore(page,c);document.body.classList.add('inv');
+    var ok=function(u){return /^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(u||'')||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(u||'')};
+    var tn=(Q.get('to')||'').replace(/[<>]/g,'').trim().slice(0,60),pt=String(o.pt||'')||T.to;
+    var h='';
+    if(ok(o.inv))h+='<img class="invimg" src="'+esc(o.inv)+'" alt="'+esc(title)+'">';
+    if(tn||o.it)h+='<div class="box2">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+'</div>';
+    page.insertAdjacentHTML('beforeend',h);page.appendChild(c);
+    var url=location.origin+'/t/'+slug,fmt=function(ms){return new Date(ms).toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'')},d8=function(x){return x.replace(/-/g,'')};
+    var nextDay=function(x){var q=new Date(x+'T12:00:00Z');q.setUTCDate(q.getUTCDate()+1);return q.toISOString().slice(0,10)};
+    var dates=hasTime?fmt(to)+'/'+fmt(to+3*3600e3):d8(o.d)+'/'+d8(nextDay(o.d)),loc=[o.venue,o.addr].filter(Boolean).join(', ');
+    var gcal='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+dates+'&details='+encodeURIComponent(url)+(loc?'&location='+encodeURIComponent(loc):'');
+    var det='<div class="box2"><div class="det">'+(o.venue?'<div><b>'+T.venue+':</b> '+esc(o.venue)+'</div>':'')+(o.addr?'<div>'+esc(o.addr)+'</div>':'')+
+      (o.tr?'<div><b>'+T.rec+':</b> '+esc(o.tr)+'</div>':'')+(hasTime&&(o.tr||o.tl)?'<div><b>'+esc(o.tl||T.main)+':</b> '+esc(o.h)+'</div>':'')+'</div><div class="btns">'+
+      (o.addr?'<a class="bt" target="_blank" rel="noopener" href="https://waze.com/ul?q='+encodeURIComponent(o.addr)+'&navigate=yes">🚗 '+T.waze+'</a><a class="bt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(loc)+'">📍 '+T.maps+'</a>':'')+
+      '<a class="bt" target="_blank" rel="noopener" href="'+gcal+'">📅 '+T.gcal+'</a><button class="bt" type="button" id="icsB">🗓 '+T.ics+'</button></div></div>';
+    var act='<div class="box2"><div class="btns">'+(o.rv?'<button class="bt pri" type="button" data-p="rsvp">✅ '+T.rsvp+'</button>':'')+(o.rm?'<button class="bt" type="button" data-p="rem">🔔 '+T.rem+'</button>':'')+(o.wl?'<button class="bt" type="button" data-p="wish">✍️ '+T.wish+'</button>':'')+'</div>'+
+      (o.rv?'<form class="fm" id="f-rsvp" hidden><label>'+T.nm+'<input name="name" required maxlength="80" value="'+esc(tn)+'" autocomplete="name"></label><div class="opts" role="radiogroup" aria-label="'+T.st+'"><label><input type="radio" name="status" value="yes" checked>'+T.yes+'</label><label><input type="radio" name="status" value="no">'+T.no+'</label><label><input type="radio" name="status" value="maybe">'+T.maybe+'</label></div>'+
+        '<div class="row2" data-cnt><label>'+T.ad+'<input name="adults" type="number" min="1" max="50" value="1" inputmode="numeric"></label><label>'+T.kd+'<input name="kids" type="number" min="0" max="50" value="0" inputmode="numeric"></label></div><label>'+T.ph+'<input name="phone" type="tel" maxlength="30" autocomplete="tel" dir="ltr"></label><label>'+T.nt+'<textarea name="note" rows="2" maxlength="300"></textarea></label><button class="bt pri" type="submit">'+T.send+'</button><p class="msg" aria-live="polite"></p></form>':'')+
+      (o.rm?'<form class="fm" id="f-rem" hidden><label>'+T.em+'<input name="email" type="email" required maxlength="200" autocomplete="email" dir="ltr"></label><div><b>'+T.days+'</b><div class="opts">'+[[0,'d0'],[1,'d1'],[2,'d2'],[3,'d3'],[7,'d7'],[14,'d14']].map(function(x){return '<label><input type="checkbox" name="n" value="'+x[0]+'"'+(x[0]===1?' checked':'')+'>'+T[x[1]]+'</label>'}).join('')+'</div></div><button class="bt pri" type="submit">'+T.send+'</button><p class="msg" aria-live="polite"></p></form>':'')+
+      (o.wl?'<form class="fm" id="f-wish" hidden><label>'+T.nm+'<input name="name" required maxlength="80" value="'+esc(tn)+'" autocomplete="name"></label><label>'+T.wt+'<textarea name="text" rows="4" required maxlength="1000"></textarea></label><div><b>'+T.who+'</b><div class="opts"><label><input type="radio" name="pub" value="1" checked>'+T.all+'</label><label><input type="radio" name="pub" value="0">'+T.host+'</label></div></div><button class="bt pri" type="submit">'+T.send+'</button><p class="msg" aria-live="polite"></p></form>':'')+'</div>';
+    var teh=o.tp?'<div class="box2" id="tehBox"><h2 class="sec">📖 '+T.teh+'</h2><div>'+esc(o.tpt||T.tsub)+'</div><div class="tbar"><i id="tBar" style="width:0"></i></div><div class="mute" id="tProg"></div>'+
+      '<p style="margin:8px 0 0">'+T.tpick+'</p><div class="tgrid" id="tGrid"></div><form class="fm" id="f-teh"><label>'+T.nm+'<input name="name" required maxlength="80" value="'+esc(tn)+'" autocomplete="name"></label><button class="bt pri" type="submit">'+T.ttake+'</button><p class="msg" aria-live="polite"></p></form><div id="tMine"></div></div>':'';
+    page.insertAdjacentHTML('beforeend',det+(o.rv||o.rm||o.wl?act:'')+teh+(o.wl?'<div class="box2" id="wallBox" hidden><h2 class="sec">'+T.wall+'</h2><div class="wall" id="wall"></div></div>':''));
+    page.addEventListener('click',function(e){var b=e.target.closest('[data-p]');if(!b)return;['rsvp','rem','wish'].forEach(function(k){var f=document.getElementById('f-'+k);if(f)f.hidden=k!==b.dataset.p?true:!f.hidden});var f=document.getElementById('f-'+b.dataset.p);if(f&&!f.hidden){var i=f.querySelector('input:not([type=radio]):not([type=checkbox]),textarea');if(i&&!i.value)i.focus()}});
+    document.getElementById('icsB').onclick=function(){var dt=hasTime?'DTSTART:'+fmt(to)+'\r\nDTEND:'+fmt(to+3*3600e3):'DTSTART;VALUE=DATE:'+d8(o.d)+'\r\nDTEND;VALUE=DATE:'+d8(nextDay(o.d));
+      var ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MyLuach//Event//HE\r\nBEGIN:VEVENT\r\nUID:'+slug+'@myluach.org\r\nDTSTAMP:'+fmt(Date.now())+'\r\n'+dt+'\r\nSUMMARY:'+title.replace(/[,;\\]/g,' ')+'\r\nLOCATION:'+loc.replace(/[,;\\]/g,' ')+'\r\nURL:'+url+'\r\nDESCRIPTION:'+url+'\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n';
+      var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download=slug+'.ics';document.body.appendChild(a);a.click();a.remove()};
+    var post=function(body){return fetch('/api/pricing?c=_timer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return [r.status,j]})})};
+    var LS={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+    var fr=document.getElementById('f-rsvp');
+    if(fr){var cnt=fr.querySelector('[data-cnt]');fr.addEventListener('change',function(){cnt.hidden=fr.elements['status'].value==='no'});
+      if(LS.get('rsvp-'+slug)){fr.querySelector('.msg').textContent=T.done}
+      fr.onsubmit=function(e){e.preventDefault();var M=fr.querySelector('.msg'),B=fr.querySelector('[type=submit]');B.disabled=true;
+        post({act:'rsvp',slug:slug,name:fr.elements['name'].value,status:fr.elements['status'].value,adults:fr.elements['adults'].value,kids:fr.elements['kids'].value,phone:fr.elements['phone'].value,note:fr.elements['note'].value}).then(function(a){B.disabled=false;
+          if(a[0]===200){M.className='msg';M.textContent=T.thx;LS.set('rsvp-'+slug,'1')}else{M.className='msg no';M.textContent=a[0]===429?T.rate:T.err}}).catch(function(){B.disabled=false;M.className='msg no';M.textContent=T.err})}}
+    var fm=document.getElementById('f-rem');
+    if(fm)fm.onsubmit=function(e){e.preventDefault();var M=fm.querySelector('.msg'),B=fm.querySelector('[type=submit]'),N=[].slice.call(fm.querySelectorAll('[name=n]:checked')).map(function(x){return +x.value});if(!N.length)N=[1];B.disabled=true;
+      fetch('/api/rem-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:fm.elements['email'].value,name:title,rule:{rec:'once',date:o.d,url:'/t/'+slug},notice:N.slice(0,4),lang:EN?'en':'he'})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){B.disabled=false;
+        if(a[0]===200){M.className='msg';M.textContent=a[1].status==='active'?T.remok:T.rempend}else{M.className='msg no';M.textContent=a[0]===429?T.rate:T.err}}).catch(function(){B.disabled=false;M.className='msg no';M.textContent=T.err})};
+
+    /* חלוקת תהילים */
+    if(o.tp){var picked=[],TS=null,mineK='teh-'+slug,mine=function(){try{return JSON.parse(localStorage.getItem(mineK)||'[]')}catch(e){return []}};
+      var hn=function(n){return EN?String(n):gem(n).replace(/[״׳]/g,'')};
+      function tDraw(){var tk={};(TS.taken||[]).forEach(function(x){tk[x.c]=x.n});var n=Object.keys(tk).length,M=mine().filter(function(x){return x.r===TS.round}).map(function(x){return x.c});
+        document.getElementById('tBar').style.width=(n/150*100)+'%';document.getElementById('tProg').textContent=T.tprog.replace('{n}',n)+(TS.round>1?' · '+T.tround.replace('{r}',TS.round):'');
+        var h='';for(var i=1;i<=150;i++)h+='<button type="button" data-ch="'+i+'"'+(tk[i]?' disabled title="'+esc(tk[i])+'"':'')+(M.indexOf(i)>=0?' class="mine"':'')+' aria-pressed="'+(picked.indexOf(i)>=0)+'">'+hn(i)+'</button>';
+        document.getElementById('tGrid').innerHTML=h}
+      function tLoad(){fetch('/api/pricing?c=_timer&teh=1&s='+slug).then(function(r){return r.json()}).then(function(j){TS=j;picked=picked.filter(function(c){return !(j.taken||[]).some(function(x){return x.c===c})});tDraw()}).catch(function(){})}
+      document.getElementById('tGrid').addEventListener('click',function(e){var b=e.target.closest('[data-ch]');if(!b||b.disabled)return;var c=+b.dataset.ch,i=picked.indexOf(c);if(i>=0)picked.splice(i,1);else if(picked.length<10)picked.push(c);b.setAttribute('aria-pressed',picked.indexOf(c)>=0)});
+      var ft=document.getElementById('f-teh');ft.onsubmit=function(e){e.preventDefault();var M=ft.querySelector('.msg'),B=ft.querySelector('[type=submit]');if(!picked.length){M.className='msg no';M.textContent=T.tpick;return}B.disabled=true;
+        post({act:'teh',slug:slug,name:ft.elements['name'].value,chapters:picked}).then(function(a){B.disabled=false;
+          if(a[0]===200){var got=a[1].got||[],L=mine();got.forEach(function(c){L.push({c:c,r:a[1].round})});try{localStorage.setItem(mineK,JSON.stringify(L))}catch(er){}picked=[];TS=a[1].state;tDraw();M.className='msg';M.textContent='';
+            var lst=got.map(hn).join(', '),rd=got.map(function(c){return '<a class="bt" target="_blank" rel="noopener" href="https://www.sefaria.org/Psalms.'+c+'?lang=he">'+hn(c)+'</a>'}).join('');
+            document.getElementById('tMine').innerHTML='<p class="msg">'+T.tgot+' '+lst+'</p><div class="btns">'+rd+'</div>'+(o.rm?'<p style="margin:10px 0 0"><b>'+T.tremq+'</b></p><form class="fm" id="f-trem"><label>'+T.em+'<input name="email" type="email" required maxlength="200" dir="ltr" autocomplete="email"></label><div class="opts">'+[[1,'d1'],[3,'d3'],[7,'d7']].map(function(x){return '<label><input type="checkbox" name="n" value="'+x[0]+'"'+(x[0]===1?' checked':'')+'>'+T[x[1]]+'</label>'}).join('')+'</div><button class="bt pri" type="submit">'+T.send+'</button><p class="msg" aria-live="polite"></p></form>':'');
+            var fr2=document.getElementById('f-trem');if(fr2)fr2.onsubmit=function(ev){ev.preventDefault();var M2=fr2.querySelector('.msg'),N=[].slice.call(fr2.querySelectorAll('[name=n]:checked')).map(function(x){return +x.value});if(!N.length)N=[1];
+              fetch('/api/rem-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:fr2.elements['email'].value,name:(EN?'Psalms ':'תהילים פרקים ')+lst+' · '+title,rule:{rec:'once',date:o.d,url:'/t/'+slug},notice:N,lang:EN?'en':'he'})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a2){M2.className=a2[0]===200?'msg':'msg no';M2.textContent=a2[0]===200?(a2[1].status==='active'?T.remok:T.rempend):(a2[0]===429?T.rate:T.err)}).catch(function(){M2.className='msg no';M2.textContent=T.err})}}
+          else if(a[0]===409){TS=a[1].state||TS;picked=[];tDraw();M.className='msg no';M.textContent=T.ttaken}else{M.className='msg no';M.textContent=a[0]===429?T.rate:T.err}}).catch(function(){B.disabled=false;M.className='msg no';M.textContent=T.err})};
+      tLoad()}
+    var fw=document.getElementById('f-wish');
+    function loadWall(){fetch('/api/pricing?c=_timer&wall=1&s='+slug).then(function(r){return r.json()}).then(function(j){var L=j.wall||[],box=document.getElementById('wallBox');if(!box)return;box.hidden=!L.length;
+      document.getElementById('wall').innerHTML=L.map(function(w){return '<div class="wish"><p>'+esc(w.text)+'</p><b>'+esc(w.name)+'</b></div>'}).join('')}).catch(function(){})}
+    if(fw){loadWall();fw.onsubmit=function(e){e.preventDefault();var M=fw.querySelector('.msg'),B=fw.querySelector('[type=submit]');B.disabled=true;
+      post({act:'wish',slug:slug,name:fw.elements['name'].value,text:fw.elements['text'].value,pub:fw.elements['pub'].value==='1'}).then(function(a){B.disabled=false;
+        if(a[0]===200){M.className='msg';M.textContent=T.wok;fw.elements['text'].value='';loadWall()}else{M.className='msg no';M.textContent=a[0]===429?T.rate:T.err}}).catch(function(){B.disabled=false;M.className='msg no';M.textContent=T.err})}}
   }
   if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){start(j.cfg||{})}).catch(function(){start({})})}
   else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr'),wp:Q.get('wp'),wd:Q.get('wd'),ww:Q.get('ww'),wt:Q.get('wt'),ns:Q.get('ns'),p:Q.get('p'),ps:Q.get('ps'),wh:Q.get('wh')});

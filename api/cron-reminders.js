@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
         const subject = 'תזכורת: ' + r.name + ' ' + when(hitN);
         try {
           await sendMail({ to: r.email, subject,
-            html: frame({ title: escH(r.name), body: '<b>' + when(hitN) + '</b>, יום ' + WD[day.getDay()] + '<br>' + escH(heb) + ' · ' + gStr, button: 'ללוח השנה', url: site + '/online/', foot: 'קיבלתם את המייל כי ביקשתם תזכורת בלוח השנה של MyLuach. <a href="' + off + '" style="color:#6b7679">להפסקת התזכורת</a>' }),
+            html: frame({ title: escH(r.name), body: '<b>' + when(hitN) + '</b>, יום ' + WD[day.getDay()] + '<br>' + escH(heb) + ' · ' + gStr, button: r.rule && r.rule.url ? 'לדף האירוע' : 'ללוח השנה', url: site + (r.rule && r.rule.url ? r.rule.url : '/online/'), foot: 'קיבלתם את המייל כי ביקשתם תזכורת בלוח השנה של MyLuach. <a href="' + off + '" style="color:#6b7679">להפסקת התזכורת</a>' }),
             text: r.name + ' ' + when(hitN) + ' (' + heb + ', ' + gStr + ').\nלהפסקת התזכורת: ' + off,
             headers: { 'List-Unsubscribe': '<' + off + '>' } }, 'reminder');
           await db('reminders?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_sent: tIso }) });

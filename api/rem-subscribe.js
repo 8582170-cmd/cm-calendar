@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
     const notice = (Array.isArray(b.notice) ? b.notice : [1]).map(Number).filter(n => [0, 1, 2, 3, 7, 14, 30].includes(n)).slice(0, 4);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'email' });
     if (!name || !okRule(rule) || !notice.length) return json(res, 400, { error: 'bad reminder' });
-    const cleanRule = { rec: rule.rec, d: +rule.d || null, m: +rule.m || null, date: rule.rec === 'once' ? rule.date : null };
+    const cleanRule = { rec: rule.rec, d: +rule.d || null, m: +rule.m || null, date: rule.rec === 'once' ? rule.date : null, ...(/^\/t\/[a-z0-9-]{3,40}$/.test(String(rule.url || '')) ? { url: rule.url } : {}) };
     const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
 
     /* עדכון תזכורת קיימת (עם האסימון שלה) */
