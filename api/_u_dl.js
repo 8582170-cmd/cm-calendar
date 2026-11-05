@@ -14,10 +14,14 @@ async function saveSnap(snap) {
 }
 const KINDS = ['paid', 'lite', 'sample', 'countdown', 'browser'];
 const REPRINT = 30 * 60 * 1000; /* הדפסה חוזרת תוך 30 דקות (תקלה במדפסת) לא נספרת */
-const GRACE = 24 * 3600 * 1000; /* 24 שעות מההדפסה הראשונה של לוח (לפי המזהה שלו בחשבון): אפשר לתקן ולהדפיס שוב בלי שייספר */
-const FIXES = 3, SIMILAR = 0.6; /* עד 3 תיקונים, ורק אם רוב הלוח נשאר כמו שהיה (ולא לוח אחר לגמרי, למשל למשפחה אחרת) */
+/* תיקונים אחרי ההדפסה הראשונה של לוח, לפי המסלול: כמה מהלוח מותר לשנות (ביחס להדפסה הראשונה), ובמשך כמה זמן. בלי הגבלה על מספר התיקונים.
+   מעבר לזה (למשל לוח למשפחה אחרת) נספר כהורדה חדשה */
+const FIX = { basic: { chg: 0.4, ms: 24 * 3600e3 }, family: { chg: 0.5, ms: 24 * 3600e3 }, full: { chg: 0.7, ms: 7 * 24 * 3600e3 },
+  cdbasic: { chg: 0.4, ms: 24 * 3600e3 }, cdfull: { chg: 0.5, ms: 24 * 3600e3 } };
+const fixRule = plan => FIX[plan] || FIX.basic;
 const partsOf = v => String(v || '').split(',').filter(x => /^[0-9a-f]{10}$/.test(x));
-function similar(a, b) { const A = new Set(partsOf(a)), B = new Set(partsOf(b)); if (!A.size || !B.size) return 0; let n = 0; A.forEach(x => { if (B.has(x)) n++; }); return n / (A.size + B.size - n); }
+/* כמה מהלוח השתנה: חלקים שהוחלפו, נמחקו או נוספו, ביחס לגודל הלוח */
+function changed(a, b) { const A = new Set(partsOf(a)), B = new Set(partsOf(b)); if (!A.size || !B.size) return 1; let n = 0; A.forEach(x => { if (B.has(x)) n++; }); return Math.max(A.size - n, B.size - n) / Math.max(A.size, B.size); }
 /* גרסה שכבר הודפסה (אותה "טביעת אצבע" של התוכן): אפשר להדפיס שוב בלי הגבלה, עד חודש אחרי סוף השנה של הלוח */
 async function yearEnd(yr) {
   const m = /^([hg])(\d{4})$/.exec(String(yr || '')); if (!m) return null;
@@ -25,7 +29,7 @@ async function yearEnd(yr) {
   try { const { HDate } = await import('./_hdate/index.js'); const d = new HDate(1, 7, +m[2] + 1).greg(); return new Date(d.getTime() + 30 * 864e5); } catch (e) { return null; }
 }
 /* האם ההדפסה הזאת חינם: {free, why: 'quick' | 'grace' | 'same'} */
-async function freeReprint(user, b) {
+async function freeReprint(user, b, plan) {
   const cid = /^[\w-]{6,64}$/.test(String(b.cid || '')) ? String(b.cid) : '', vh = /^[0-9a-f]{64}$/.test(String(b.vh || '')) ? String(b.vh) : '';
   let rows = [];
   try { rows = await db('downloads?select=created_at,kind,cid,vh,parts,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&order=created_at.desc&limit=200') || []; }
@@ -36,10 +40,12 @@ async function freeReprint(user, b) {
     const mine = rows.filter(r => r.cid === cid);
     const first = mine.length ? mine[mine.length - 1] : null;
     if (vh && mine.some(r => r.vh === vh)) { const end = await yearEnd(b.yr); if (!end || now < end.getTime()) return { free: true, why: 'same' }; }
-    /* תיקון בתוך 24 שעות מההדפסה הראשונה של הלוח: רק אם רוב התוכן זהה, ועד 3 פעמים */
-    if (first && now - new Date(first.created_at) < GRACE && b.parts && first.parts && similar(b.parts, first.parts) >= SIMILAR) {
-      const fixes = mine.filter(r => r.kind === 'reprint' && r.parts && r.parts !== first.parts && new Date(r.created_at) > new Date(first.created_at)).length;
-      if (fixes < FIXES) return { free: true, why: 'grace', fixesLeft: FIXES - fixes - 1, until: new Date(new Date(first.created_at).getTime() + GRACE).toISOString() };
+    /* תיקון בזמן התיקונים של המסלול: רק אם השינוי מההדפסה הראשונה לא גדול מהמותר */
+    const R = fixRule(plan);
+    if (first && now - new Date(first.created_at) < R.ms && b.parts && first.parts) {
+      const chg = changed(first.parts, b.parts);
+      if (chg <= R.chg) return { free: true, why: 'grace', chg: Math.round(chg * 100), max: Math.round(R.chg * 100), until: new Date(new Date(first.created_at).getTime() + R.ms).toISOString() };
+      return { free: false, why: 'toomuch', chg: Math.round(chg * 100), max: Math.round(R.chg * 100) };
     }
   }
   return { free: false };
@@ -57,9 +63,9 @@ module.exports = async (req, res) => {
     try { info = await planInfo(user, String(b.page || '') === 'countdown'); } catch (e) { return json(res, 503, { error: 'unavailable' }); }
     if (!info.plan) return json(res, 403, { error: 'plan' });
     if (info.used != null) {
-      const fr = await freeReprint(user, b);
+      const fr = await freeReprint(user, b, info.plan);
       /* בדיקה בלבד (לפני ההדפסה, כדי להציג ללקוח אם היא חינם) */
-      if (b.dry) return json(res, 200, { free: fr.free, why: fr.why || null, until: fr.until || null, fixesLeft: fr.fixesLeft == null ? null : fr.fixesLeft, left: info.left, limit: info.limit });
+      if (b.dry) return json(res, 200, { free: fr.free, why: fr.why || null, until: fr.until || null, chg: fr.chg == null ? null : fr.chg, max: fr.max == null ? null : fr.max, left: info.left, limit: info.limit });
       if (fr.free) kind = 'reprint';
       else if (info.left <= 0) return json(res, 409, { error: 'used', limit: info.limit, plan: info.plan });
       /* הדפסות של מסלול אחד: רק לאותה שנה (לפי הלוח הראשון שהודפס מאז הרכישה) */
