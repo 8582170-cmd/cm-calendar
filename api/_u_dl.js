@@ -21,7 +21,7 @@ const FIX = { basic: { chg: 0.4, ms: 24 * 3600e3 }, family: { chg: 0.5, ms: 24 *
 const fixRule = plan => FIX[plan] || FIX.basic;
 const partsOf = v => String(v || '').split(',').filter(x => /^[0-9a-f]{10}$/.test(x));
 /* כמה מהלוח השתנה: חלקים שהוחלפו, נמחקו או נוספו, ביחס לגודל הלוח */
-function changed(a, b) { const A = new Set(partsOf(a)), B = new Set(partsOf(b)); if (!A.size || !B.size) return 1; let n = 0; A.forEach(x => { if (B.has(x)) n++; }); return Math.max(A.size - n, B.size - n) / Math.max(A.size, B.size); }
+function changed(a, b) { const A = new Set(partsOf(a)), B = new Set(partsOf(b)); if (!A.size && !B.size) return 0; if (!A.size || !B.size) return 1; let n = 0; A.forEach(x => { if (B.has(x)) n++; }); return Math.max(A.size - n, B.size - n) / Math.max(A.size, B.size); }
 /* גרסה שכבר הודפסה (אותה "טביעת אצבע" של התוכן): אפשר להדפיס שוב בלי הגבלה, עד חודש אחרי סוף השנה של הלוח */
 async function yearEnd(yr) {
   const m = /^([hg])(\d{4})$/.exec(String(yr || '')); if (!m) return null;
