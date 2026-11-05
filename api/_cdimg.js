@@ -144,7 +144,10 @@ function png({ W, H, px }, fg, bg) {
 const okHex = v => /^[0-9a-f]{6}$/i.test(String(v || '')) ? String(v).toLowerCase() : null;
 /* part: all = הכול בשורה אחת, top = רק החודשים/שבועות/ימים (g = איזה מהם), clock = רק שעות:דקות:שניות. a=1 = מונפש (GIF) */
 const DATE_K = ['months', 'weeks', 'days'];
-function pick(all, part, g) {
+function pick(all, part, g, unit) {
+  /* במייל התוויות קבועות, ולכן החודשים/השבועות תמיד מופיעים (גם כשהם 0) */
+  if (unit === 'm' && all[0].k !== 'months') all = [{ v: 0, k: 'months' }].concat(all);
+  if (unit === 'w' && all[0].k !== 'weeks') all = [{ v: 0, k: 'weeks' }].concat(all);
   if (part === 'clock') return all.filter(x => !DATE_K.includes(x.k));
   if (part === 'top') { const t = all.filter(x => DATE_K.includes(x.k)); return g != null && t[g] ? [t[g]] : t; }
   return all;
@@ -155,7 +158,7 @@ module.exports = async (req, res) => {
   const part = ['top', 'clock'].includes(q.part) ? q.part : 'all', g = /^[0-2]$/.test(String(q.g || '')) ? +q.g : null;
   const opt = { fr: ['1', '2'].includes(String(q.fr)) ? +q.fr : 0, colons: part !== 'top' };
   const fg = okHex(q.fg) || '1e5a63', bg = okHex(q.bg) || 'ffffff', now = Date.now();
-  const at = i => pick(parts(to == null ? 0 : to - now - i * 1000, unit, tz), part, g);
+  const at = i => pick(parts(to == null ? 0 : to - now - i * 1000, unit, tz), part, g, unit);
   let img, type;
   if (String(q.a) === '1' && part !== 'top' && to != null && to - now > 0) {
     img = gif(anim(at, k, opt), fg, bg); type = 'image/gif';
