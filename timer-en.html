@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Countdown Timer to Any Date · Free Event Countdown Clock for Websites and Email | MyLuach</title>
+<meta name="description" content="How many days are left? Create a free countdown timer to a wedding, bar mitzvah, bat mitzvah, birth or any date: days, hours, minutes and seconds, with a photo, the Hebrew date and a choice of designs. Share a link, embed it on your website, or add an animated timer to your email.">
+<link rel="canonical" href="https://www.myluach.org/timer-en">
+<link rel="alternate" hreflang="he" href="https://www.myluach.org/timer">
+<link rel="alternate" hreflang="en" href="https://www.myluach.org/timer-en">
+<link rel="alternate" hreflang="x-default" href="https://www.myluach.org/timer">
+<meta property="og:title" content="Countdown Timer to Any Event · MyLuach">
+<meta property="og:url" content="https://www.myluach.org/timer-en">
+<meta property="og:type" content="website"><meta property="og:locale" content="en_US">
+<meta property="og:description" content="A countdown clock for any date: share it, embed it on a website, or add it to an email. Free.">
+<meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@900&display=swap">
+<style>
+:root{--paper:#f6f7f4;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--card:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.7 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:900px;margin-inline:auto;padding-bottom:48px}
+a{color:var(--teal)}
+.nav{display:flex;justify-content:space-between;align-items:center;padding-block:20px;border-bottom:1px solid var(--line)}
+.logo{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:26px;color:var(--ink);text-decoration:none;display:inline-flex;gap:10px;align-items:center;direction:ltr}
+.nl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.lsw{border:1px solid var(--line);border-radius:999px;padding:2px 12px;text-decoration:none;font-weight:600;font-size:15px}
+.logo-img{display:inline-block;vertical-align:middle;flex:none;margin-inline-end:8px}
+h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(28px,5vw,38px);line-height:1.15;margin:28px 0 6px}
+h2{font-size:21px;margin:30px 0 6px}
+p,li{max-width:70ch}
+.mute{color:var(--mute)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;margin-top:18px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 10px}
+input,select{display:block;width:100%;margin-top:4px;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+input[type=color]{height:42px;padding:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+iframe{width:100%;border:0;display:block;height:240px;border-radius:14px}
+.out{margin-top:14px}
+.out h3{font-size:16px;margin:12px 0 4px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+textarea{width:100%;font:13px/1.45 ui-monospace,Consolas,monospace;direction:ltr;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.mailprev{margin-top:6px;max-width:100%;overflow:hidden}
+.mailprev img{max-width:100%;height:auto}
+.mailprev>table{width:100%!important}
+.grid>*{min-width:0}
+.ths{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0 12px}
+.th{font:inherit;font-size:13px;font-weight:600;border:2px solid var(--line);border-radius:10px;padding:6px 2px 4px;cursor:pointer;background:var(--th-b);color:var(--th-f);line-height:1.2}
+.th b{display:block;font:800 17px/1.1 ui-monospace,Consolas,monospace;letter-spacing:.05em}
+.th[aria-pressed="true"]{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal)}
+.slug{display:flex;align-items:stretch;direction:ltr;border:1px solid var(--line);border-radius:10px;background:var(--paper);overflow:hidden;margin-top:4px}
+.slug span{padding:8px 4px 8px 10px;color:var(--mute);font-size:14.5px;white-space:nowrap;align-self:center}
+.slug input{border:0;margin:0;border-radius:0;padding-inline-start:0;min-width:0}
+.st{font-size:14px;min-height:1.6em;margin:4px 0 0}
+.st.ok{color:#2e7d4f}.st.no{color:#b3412e}
+.chk{display:flex;gap:16px;flex-wrap:wrap;margin:-2px 0 12px;font-size:15px}.chk label{display:flex;gap:6px;align-items:center;margin:0;font-weight:400}.chk input{width:auto;margin:0}
+.mine{font-size:14px;margin-top:8px}.mine a{margin-inline-end:10px}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:var(--mute)}
+details{border-bottom:1px solid var(--line);padding:8px 0}
+summary{cursor:pointer;font-weight:700}
+</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Countdown Timer · MyLuach", "url": "https://www.myluach.org/timer-en", "description": "A free countdown clock for any date, with a photo, the Hebrew date, a share link, website embed code and an animated email timer.", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any", "inLanguage": "en", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I add the countdown to my website?", "acceptedAnswer": {"@type": "Answer", "text": "Fill in the details, copy the \"Embed on a website\" code and paste it into your site editor where you want the clock to appear (WordPress: a \"Custom HTML\" block; Wix: \"Embed code\"). The clock updates every second."}}, {"@type": "Question", "name": "Can I put a countdown in an email?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click \"Copy for email\" and paste it into the body of the email. The email clock is an animated image: the seconds tick for a minute, and it is created again with the current time every time the email is opened. Clicking it opens the live countdown. (Outlook for desktop shows a still image.)"}}, {"@type": "Question", "name": "How do I change a countdown I saved?", "acceptedAnswer": {"@type": "Answer", "text": "On the same computer or phone where you saved it, open this page again, pick the countdown under \"My countdowns\", make your changes and click \"Update countdown\". The link and the embedded clock update automatically."}}, {"@type": "Question", "name": "Is it free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, completely. No sign-up and no limits."}}, {"@type": "Question", "name": "What happens when the date arrives?", "acceptedAnswer": {"@type": "Answer", "text": "The clock shows \"The time has come!\" instead of the numbers."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "MyLuach", "item": "https://www.myluach.org/en"}, {"@type": "ListItem", "position": 2, "name": "Countdown timer", "item": "https://www.myluach.org/timer-en"}]}</script>
+<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/cms.js?v=1" defer></script>
+</head>
+<body><div class="wrap">
+<header class="nav"><a class="logo" href="en.html"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><nav class="nl"><a href="countdown-en.html">Printable countdown</a><a class="lsw" href="timer.html" hreflang="he" lang="he">עברית</a></nav></header>
+<main>
+<h1>Countdown Timer to Your Event</h1>
+<p class="mute">A digital clock that counts down to your date: a wedding, a bar mitzvah, a birth, a vacation or any goal. Free, no sign-up. Share it with a link, embed it on your website, or add it to an email.</p>
+
+<div class="grid">
+  <form class="box" id="f" onsubmit="return false">
+    <label>Event name (title)<input id="t" maxlength="90" placeholder="e.g. Sarah & David’s Wedding"></label>
+    <label for="pbtn">Photo (optional)</label>
+    <div class="row" style="margin:4px 0 4px"><input type="file" id="pf" accept="image/*" hidden><button class="btn" type="button" id="pbtn">Choose photo</button><select id="ps" style="width:auto;margin:0" aria-label="Photo shape"><option value="circle">Round</option><option value="rect">Rectangle</option><option value="wide">Wide (banner)</option></select><button class="btn" type="button" id="prm" hidden>Remove</button></div>
+    <p class="st" id="pst" aria-live="polite" style="margin:0 0 10px"></p>
+    <div class="two"><label>Date<input type="date" id="d" required></label><label>Time (optional)<input type="time" id="h"></label></div>
+    <label>Show as<select id="u"><option value="d">Days, hours, minutes, seconds</option><option value="w">Weeks, days, hours…</option><option value="m">Months, days, hours…</option></select></label>
+    <div class="two"><label>Target date<select id="wp"><option value="top">Top, under the title</option><option value="bottom">Bottom, under the clock</option><option value="none">Hide</option></select></label><label>Date type<select id="wd"><option value="g">Gregorian</option><option value="h">Hebrew</option><option value="b">Hebrew and Gregorian</option></select></label></div>
+    <label id="whL">Hebrew date for an evening event<select id="wh"><option value="s">By sunset (after sunset: the next Hebrew day)</option><option value="o">"Eve of" (e.g. Eve of 14 Nisan)</option><option value="c">By the civil date, ignoring sunset</option></select></label>
+    <div class="chk"><label><input type="checkbox" id="ww" checked>Weekday</label><label><input type="checkbox" id="wt" checked>Target time</label><label><input type="checkbox" id="sec" checked>Seconds</label></div>
+    <div class="two"><label>Layout<select id="l"><option value="row">All in one row</option><option value="stack">Days on top, clock below</option></select></label><label>Frame<select id="fr"><option value="0">As in the design</option><option value="1">Frame each number</option><option value="2">One frame around</option></select></label></div>
+    <div style="font-weight:600;font-size:15px">Design</div>
+    <div class="ths" id="ths" role="group" aria-label="Design"></div>
+    <div class="two"><label>Color<input type="color" id="c" value="#1e5a63"></label><label>Background<input type="color" id="b" value="#ffffff"></label></div>
+    <div class="two"><label>Size on website<select id="sz"><option value="full">Full width</option><option value="l">Large (800×300)</option><option value="m">Medium (560×240)</option><option value="s">Small (360×210)</option></select></label><label>Language<select id="lang"><option value="he">עברית</option><option value="en" selected>English</option></select></label></div>
+    <label>Time zone<select id="z"></select></label>
+    <label for="slug">Event address (optional)</label>
+    <div class="slug"><span>myluach.org/t/</span><input id="slug" maxlength="40" placeholder="shira-yossi" autocomplete="off" spellcheck="false" aria-describedby="st"></div>
+    <p class="st" id="st" aria-live="polite">Letters, digits and hyphens.</p>
+    <div class="row"><button class="btn pri" type="button" id="save" disabled>Save and get the address</button></div>
+    <div class="mine" id="mine" hidden></div>
+  </form>
+  <div>
+    <div class="box" style="padding:8px" id="pvbox"><iframe id="pv" title="Countdown preview"></iframe></div>
+    <div class="out" id="out" hidden>
+      <p class="st no" id="dirty" hidden>Some changes are not saved to the address yet. Click "Update countdown" so the link shows them.</p>
+      <h3>🔗 Share link</h3>
+      <div class="row"><input id="oLink" readonly dir="ltr" style="flex:1;min-width:200px;margin:0"><button class="btn pri" type="button" data-copy="oLink">Copy</button><a class="btn" id="oWa" target="_blank" rel="noopener">WhatsApp</a></div>
+      <h3>🌐 Embed on a website</h3>
+      <textarea id="oEmb" rows="3" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oEmb">Copy code</button></div>
+      <h3>✉️ For email or newsletter</h3>
+      <p class="mute" style="font-size:14.5px;margin:0 0 4px">An image that updates every time the email is opened (the seconds tick for a minute, and each new open shows the current time). Click "Copy for email" and paste (Ctrl+V) straight into the body of your email, in Gmail, Outlook or any mail app.</p>
+      <div class="mailprev" id="oMailPrev"></div>
+      <div class="row"><button class="btn pri" type="button" id="cpMail">Copy for email</button></div>
+      <details style="border:0;padding:4px 0"><summary style="font-weight:600;font-size:14.5px">HTML code (for an HTML editor or mailing software)</summary>
+      <textarea id="oMail" rows="4" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oMail">Copy code</button></div></details>
+    </div>
+  </div>
+</div>
+
+<h2>Printable countdown</h2>
+<p>Want a countdown calendar for the fridge too, with a photo and a line for each day? <a href="countdown-en.html">make a printable countdown calendar</a> for a wedding, a bar mitzvah, a birth and more.</p>
+
+<h2>FAQ</h2>
+<details><summary>How do I add the countdown to my website?</summary><p>Fill in the details, copy the "Embed on a website" code and paste it into your site editor where you want the clock to appear (WordPress: a "Custom HTML" block; Wix: "Embed code"). The clock updates every second.</p></details>
+<details><summary>Can I put a countdown in an email?</summary><p>Yes. Click "Copy for email" and paste it into the body of the email. The email clock is an animated image: the seconds tick for a minute, and it is created again with the current time every time the email is opened. Clicking it opens the live countdown. (Outlook for desktop shows a still image.)</p></details>
+<details><summary>How do I change a countdown I saved?</summary><p>On the same computer or phone where you saved it, open this page again, pick the countdown under "My countdowns", make your changes and click "Update countdown". The link and the embedded clock update automatically.</p></details>
+<details><summary>Is it free?</summary><p>Yes, completely. No sign-up and no limits.</p></details>
+<details><summary>What happens when the date arrives?</summary><p>The clock shows "The time has come!" instead of the numbers.</p></details>
+</main>
+<footer><span>© 2026 MyLuach</span><a href="en.html">Home</a><a href="countdown-en.html">Printable countdown</a><a href="online/en/">Online Jewish calendar</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></footer>
+</div>
+<script>
+(function(){
+  'use strict';
+  var $=function(i){return document.getElementById(i)},SITE='https://www.myluach.org',API='/api/pricing?c=_timer';
+  /* העיצובים (זהים לדף הצפייה t.html). fg/bg = צבעי התמונה למייל, lab = צבע התוויות במייל */
+  var TH=[['classic','Classic','1e5a63','ffffff','5d6873'],['wedding','Wedding','a8646f','fff8f6','8b6b70'],['barmitzvah','Bar mitzvah','1f3a5f','f7f8fb','5a6a82'],['batmitzvah','Bat mitzvah','b8487a','fff7fb','8f6177'],
+           ['kids','Kids','e0663a','fffaf2','7a6252'],['elegant','Elegant','c9a227','1d1a17','b8ae9c'],['digital','Digital','39e888','0b0f0c','7fa58d'],['minimal','Minimal','172126','ffffff','6b7679']];
+  var SZ={full:['100%',260],l:[800,300],m:[560,240],s:[360,210]};
+  var th='classic',custom=false,photo='';
+  /* תמונה: מקטינים בדפדפן (עד 900 פיקסלים), ממירים ל-JPEG ומעלים */
+  function pstat(m,c){$('pst').textContent=m;$('pst').className='st'+(c?' '+c:'')}
+  function setPhoto(u){photo=u||'';$('prm').hidden=!photo;$('pbtn').textContent=photo?'Change photo':'Choose photo';upd()}
+  $('pbtn').addEventListener('click',function(){$('pf').click()});
+  $('prm').addEventListener('click',function(){setPhoto('');pstat('')});
+  $('ps').addEventListener('change',function(){upd()});
+  $('pf').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;if(!/^image\//.test(f.type)){pstat('Please choose an image file.','no');return}
+    pstat('Preparing the photo…');var im=new Image(),url=URL.createObjectURL(f);
+    im.onload=function(){URL.revokeObjectURL(url);var k=Math.min(1,900/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+      var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);var q=.85,data=cv.toDataURL('image/jpeg',q);while(data.length>520000&&q>.4){q-=.15;data=cv.toDataURL('image/jpeg',q)}
+      pstat('Uploading…');fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({img:data})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+        if(a[0]===200&&a[1].url){setPhoto(a[1].url);pstat('Photo added ✓','ok')}else pstat(a[0]===429?'Too many photos were uploaded in the last hour. Please try again later.':'Upload failed. Try another photo.','no')}).catch(function(){pstat('Upload failed. Check your connection.','no')})};
+    im.onerror=function(){pstat('Could not read the photo. Try a JPG or PNG file.','no')};im.src=url});
+  $('ths').innerHTML=TH.map(function(x){return '<button type="button" class="th" data-th="'+x[0]+'" style="--th-f:#'+x[2]+';--th-b:#'+x[3]+'" aria-pressed="false"><b>12:34</b>'+x[1]+'</button>'}).join('');
+  function T(){return TH.filter(function(x){return x[0]===th})[0]||TH[0]}
+  function setTheme(k,keep){th=k;document.querySelectorAll('.th').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.th===k)});if(!keep){custom=false;$('c').value='#'+T()[2];$('b').value='#'+T()[3]}upd()}
+  $('ths').addEventListener('click',function(e){var b=e.target.closest('.th');if(b)setTheme(b.dataset.th)});
+  var Z=[['Asia/Jerusalem','Israel'],['America/New_York','New York'],['America/Chicago','Chicago'],['America/Los_Angeles','Los Angeles'],['Europe/London','London'],['Europe/Paris','Paris / Europe'],['Europe/Moscow','Moscow'],['Australia/Sydney','Sydney'],['America/Sao_Paulo','São Paulo'],['Africa/Johannesburg','Johannesburg']];
+  $('z').innerHTML=Z.map(function(z){return '<option value="'+z[0]+'">'+z[1]+'</option>'}).join('');
+  function addZ(v){if(v&&!Z.some(function(z){return z[0]===v})&&!$('z').querySelector('option[value="'+v+'"]'))$('z').insertAdjacentHTML('beforeend','<option value="'+v+'">'+v+'</option>')}
+  try{var mine=Intl.DateTimeFormat().resolvedOptions().timeZone;addZ(mine);if(mine)$('z').value=mine}catch(e){}
+  var d0=new Date(Date.now()+30*864e5);$('d').value=d0.toISOString().slice(0,10);
+  var Q=new URLSearchParams(location.search);
+  /* מילוי מראש מקישור (למשל מבונה לוח הספירה): ?t=…&d=YYYY-MM-DD&h=HH:MM */
+  try{if(Q.get('t'))$('t').value=Q.get('t').slice(0,90);if(/^\d{4}-\d{2}-\d{2}$/.test(Q.get('d')||''))$('d').value=Q.get('d');if(/^\d{1,2}:\d{2}$/.test(Q.get('h')||''))$('h').value=Q.get('h').padStart(5,'0')}catch(e){}
+  /* שקיעה (נוסחת NOAA המקוצרת), בשעות מקומיות. המיקום לפי אזור הזמן שנבחר (העיר הראשית שלו) */
+  var LL={'Asia/Jerusalem':[31.778,35.235],'America/New_York':[40.71,-74.0],'America/Chicago':[41.88,-87.63],'America/Los_Angeles':[34.05,-118.24],'Europe/London':[51.51,-0.13],'Europe/Paris':[48.86,2.35],'Europe/Moscow':[55.76,37.62],'Australia/Sydney':[-33.87,151.21],'America/Sao_Paulo':[-23.55,-46.63],'Africa/Johannesburg':[-26.2,28.05],'Europe/Kiev':[50.45,30.52],'Europe/Kyiv':[50.45,30.52],'America/Toronto':[43.65,-79.38],'America/Montreal':[45.5,-73.57],'Europe/Antwerp':[51.22,4.4],'Europe/Brussels':[50.85,4.35],'Europe/Zurich':[47.37,8.54],'America/Argentina/Buenos_Aires':[-34.6,-58.38],'America/Mexico_City':[19.43,-99.13],'Europe/Berlin':[52.52,13.4],'Europe/Rome':[41.9,12.5],'Europe/Amsterdam':[52.37,4.9],'Europe/Vienna':[48.21,16.37]};
+  function sunsetLocal(y,m,d,tz,offH){var c=LL[tz]||[32,offH*15],lat=c[0],lng=c[1],R=Math.PI/180;
+    var N=Math.round((Date.UTC(y,m-1,d)-Date.UTC(y,0,0))/864e5),lh=lng/15,t=N+(18-lh)/24,M=.9856*t-3.289;
+    var L=(M+1.916*Math.sin(M*R)+.02*Math.sin(2*M*R)+282.634+720)%360,RA=(Math.atan(.91764*Math.tan(L*R))/R+720)%360;
+    RA=(RA+Math.floor(L/90)*90-Math.floor(RA/90)*90)/15;var sd=.39782*Math.sin(L*R),cd=Math.cos(Math.asin(sd));
+    var ch=(Math.cos(90.833*R)-sd*Math.sin(lat*R))/(cd*Math.cos(lat*R));if(ch>1||ch<-1)return null;
+    var H=Math.acos(ch)/R/15,T=H+RA-.06571*t-6.622;return ((T-lh+offH)%24+48)%24}
+  function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];n%=1000;var r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
+  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = Weekday, wt = שעה,
+     wh = התאריך העברי לאירוע בערב: s לפי השקיעה (ברירת מחדל), o "אור ל־", c לפי התאריך הלועזי בלבד */
+  function whenText(ms,tz,EN,o,hasTime,dStr,hStr){
+    var F=function(loc,op){op.timeZone=tz;try{return new Intl.DateTimeFormat(loc,op)}catch(e){delete op.timeZone;return new Intl.DateTimeFormat(loc,op)}},d=new Date(ms),out=[];
+    var greg=F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
+    if(o.wd==='h'||o.wd==='b'){try{
+      var after=false,dm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(dStr||''),hm=/^(\d{1,2}):(\d{2})$/.exec(hStr||'');
+      if(o.wh!=='c'&&dm&&hm){var p0={};F('en-US',{hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).forEach(function(x){p0[x.type]=x.value});
+        var offH=(Date.UTC(+p0.year,+p0.month-1,+p0.day,+p0.hour%24,+p0.minute)-ms)/36e5,ss=sunsetLocal(+dm[1],+dm[2],+dm[3],tz,offH);after=ss!=null&&(+hm[1]+hm[2]/60)>=ss}
+      var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(new Date(ms+(after?864e5:0))).forEach(function(x){p[x.type]=x.value});
+      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year);
+      if(after&&o.wh==='o')heb=(EN?'Eve of ':'אור ל')+heb}catch(e){}}
+    var date=o.wd==='h'?(heb||greg):o.wd==='b'&&heb?greg+' · '+heb:greg;
+    if(o.ww!=='0')out.push(F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
+    out.push(date);
+    var s=out.join(', ');
+    if(hasTime&&o.wt!=='0')s+=(EN?' · ':' · בשעה ')+F('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
+    return s}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  /* הספירות שנשמרו מהדפדפן הזה (כתובת + קוד עריכה) */
+  function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
+  function remember(s,tok){try{var o=store();o[s]=tok;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
+  function showMine(){var o=store(),k=Object.keys(o);$('mine').hidden=!k.length;$('mine').innerHTML='My countdowns: '+k.map(function(s){return '<a href="?s='+s+'">'+s+'</a>'}).join('')}
+  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,wh:$('wh').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1',p:photo,ps:$('ps').value}}
+  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);if(c.wp!=='top')p.set('wp',c.wp);if(c.wd!=='g'){p.set('wd',c.wd);if(c.wh!=='s')p.set('wh',c.wh)}if(c.ww==='0')p.set('ww','0');if(c.wt==='0')p.set('wt','0');if(c.ns==='1')p.set('ns','1');if(c.p){p.set('p',c.p);if(c.ps!=='circle')p.set('ps',c.ps)}
+    Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
+  /* מצב הכתובת: saved = נשמרה (והשמירה תואמת להגדרות הנוכחיות) */
+  var saved=null,savedCfg='',chk,slugState='';
+  function slugVal(){return $('slug').value.trim().toLowerCase()}
+  function valid(s){return /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/.test(s)}
+  function st(msg,cls){$('st').textContent=msg;$('st').className='st'+(cls?' '+cls:'')}
+  function slugUI(){var s=slugVal(),mineTok=store()[s],dirty=saved===s&&JSON.stringify(cfg())!==savedCfg;
+    $('save').disabled=!(valid(s)&&(slugState==='free'||mineTok))||(saved===s&&!dirty);
+    $('save').textContent=mineTok?(dirty||saved!==s?'Update countdown':'Saved ✓'):'Save and get the address'}
+  function check(){clearTimeout(chk);var s=slugVal();slugState='';
+    if(!s){st('Letters, digits and hyphens.');slugUI();go();return}
+    if(!valid(s)){st('3–40 characters: lowercase letters, digits and hyphens (not at the start or end).','no');slugUI();go();return}
+    if(store()[s]){st('This address is yours. You can update it.','ok');slugUI();go();return}
+    st('Checking…');chk=setTimeout(function(){fetch(API+'&check=1&s='+s).then(function(r){return r.json()}).then(function(j){if(slugVal()!==s)return;slugState=j.free?'free':'taken';
+      j.free?st('The address is available ✓','ok'):st('That address is taken. Try another (for example, add the year).','no');slugUI()}).catch(function(){st('Could not check right now. Please try again.','no')})},400);slugUI();go()}
+  $('slug').addEventListener('input',function(){var v=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/--+/g,'-');if(v!==this.value)this.value=v;check()});
+  $('save').addEventListener('click',function(){var s=slugVal(),b=this;if(!valid(s))return;b.disabled=true;b.textContent='Saving…';
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:s,cfg:cfg(),token:store()[s]||undefined})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+      if(a[0]===200&&a[1].ok){remember(s,a[1].token);saved=s;savedCfg=JSON.stringify(cfg());st(a[1].updated?'Countdown updated ✓':'Saved! Your address: myluach.org/t/'+s,'ok');showMine();go()}
+      else if(a[0]===409){slugState='taken';st('That address was just taken. Try another.','no')}
+      else st('Saving failed. Please try again in a moment.','no');slugUI()}).catch(function(){st('Saving failed. Check your connection and try again.','no');slugUI()})});
+  var tm;function upd(){clearTimeout(tm);tm=setTimeout(go,250)}
+  function go(){
+    slugUI();$('whL').hidden=$('wd').value==='g'||!$('h').value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test($('d').value)){$('out').hidden=true;return}
+    var s=slugVal(),useSlug=saved&&saved===s,dirty=useSlug&&JSON.stringify(cfg())!==savedCfg;
+    var link=useSlug?SITE+'/t/'+s:SITE+'/t?'+params(),emb=useSlug?SITE+'/t/'+s+'?e=1':SITE+'/t?'+params({e:'1'});
+    $('pv').src='/t?'+params({e:'1'});
+    var sz=(SZ[$('sz').value]||SZ.full).slice();if($('l').value==='stack')sz[1]+=$('sz').value==='s'?110:140;if(photo)sz[1]+=$('ps').value==='wide'?($('sz').value==='s'?110:180):($('sz').value==='s'?100:140);$('pv').style.height=sz[1]+'px';$('pv').style.maxWidth=sz[0]==='100%'?'':sz[0]+'px';$('pv').style.marginInline='auto';
+    $('oLink').value=link;
+    $('oWa').href='https://wa.me/?text='+encodeURIComponent(($('t').value.trim()||'Countdown')+' ⏳ '+link);
+    var title=esc($('t').value.trim()||'Countdown');
+    $('oEmb').value='<iframe src="'+emb+'" width="'+(sz[0]==='100%'?'100%':sz[0])+'" height="'+sz[1]+'" style="border:0;max-width:100%" title="'+title+'" loading="lazy"></iframe>';
+    $('dirty').hidden=!dirty;
+    var fg=$('c').value.slice(1),bg=$('b').value.slice(1),lb=custom?'5d6873':T()[4];
+    var base=SITE+'/api/pricing?c=_cdimg&d='+$('d').value+($('h').value?'&h='+encodeURIComponent($('h').value):'')+'&u='+$('u').value+'&fg='+fg+'&bg='+bg+($('z').value!=='Asia/Jerusalem'?'&z='+encodeURIComponent($('z').value):'')+($('fr').value!=='0'?'&fr='+$('fr').value:'')+($('sec').checked?'':'&ns=1');
+    var en=$('lang').value==='en',lab=en?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds'}:{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות'};
+    var dateU=($('u').value==='m'?['months']:$('u').value==='w'?['weeks']:[]).concat(['days']),clockU=['hours','minutes'].concat($('sec').checked?['seconds']:[]),anim=$('sec').checked?'&a=1':'';
+    var td='font-family:Arial,sans-serif;font-size:13px;color:#'+lb+';text-align:center';
+    var labels=function(us,w){return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="'+w+'" align="center" style="max-width:100%;direction:ltr;'+td+'"><tr>'+us.map(function(u){return '<td>'+lab[u]+'</td>'}).join('')+'</tr></table>'};
+    var head=$('t').value.trim()?'<tr><td style="padding:12px 8px 2px;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#'+fg+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+title+'</td></tr>':'';
+    var wtxt='',wp=$('wp').value;if(wp!=='none'){var dd=/^(\d{4})-(\d{2})-(\d{2})$/.exec($('d').value),hh=/^(\d{1,2}):(\d{2})$/.exec($('h').value)||[0,12,0];
+      var ms=Date.UTC(+dd[1],+dd[2]-1,+dd[3],+hh[1],+hh[2]);try{var f=new Intl.DateTimeFormat('en-US',{timeZone:$('z').value,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),pp={};f.formatToParts(new Date(ms)).forEach(function(x){pp[x.type]=x.value});ms-=Date.UTC(+pp.year,+pp.month-1,+pp.day,+pp.hour%24,+pp.minute)-ms}catch(e){}
+      wtxt='<tr><td style="padding:'+(wp==='top'?'2px 8px 6px':'8px 8px 0')+';font-family:Arial,sans-serif;font-size:14px;color:#'+lb+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+esc(whenText(ms,$('z').value,en,cfg(),!!$('h').value,$('d').value,$('h').value))+'</td></tr>'}
+    var body;
+    if($('l').value==='stack'){
+      body='<tr><td align="center" style="padding-top:8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="direction:ltr"><tr>'+dateU.map(function(u,i){return '<td align="center" style="padding:0 6px;'+td+'"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=top&g='+i+'" alt="" height="84" style="display:block;height:84px;width:auto;border:0"></a>'+lab[u]+'</td>'}).join('')+'</tr></table></td></tr>'+
+        '<tr><td align="center" style="padding-top:10px"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=clock'+anim+'" alt="'+title+'" width="'+($('sec').checked?300:210)+'" style="display:block;max-width:100%;height:auto;border:0"></a>'+labels(clockU,$('sec').checked?300:210)+'</td></tr>';
+    }else{
+      body='<tr><td align="center"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+anim+'" alt="'+title+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a></td></tr><tr><td>'+labels(dateU.concat(clockU),'100%')+'</td></tr>';
+    }
+    var pr='';if(photo){var ps=$('ps').value;pr=ps==='wide'?'<tr><td><img src="'+photo+'" alt="" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:12px 12px 0 0"></td></tr>':
+      '<tr><td align="center" style="padding-top:14px"><img src="'+photo+'" alt="" width="'+(ps==='rect'?160:120)+'" height="120" style="display:block;width:'+(ps==='rect'?160:120)+'px;height:120px;object-fit:cover;border:3px solid #'+fg+';border-radius:'+(ps==='rect'?'12px':'50%')+'"></td></tr>'}
+    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+pr+head+(wp==='top'?wtxt:'')+body+(wp==='bottom'?wtxt:'')+
+      '<tr><td style="padding:6px 0 6px;text-align:center;font-family:Arial,sans-serif;font-size:9px;line-height:1"><a href="'+SITE+'/timer" target="_blank" style="color:#'+lb+';text-decoration:none">myluach.org</a></td></tr></table>';
+    $('oMail').value=mail;$('oMailPrev').innerHTML=mail.split(SITE+'/api/').join('/api/');
+    $('out').hidden=false;
+  }
+  ['t','d','h','u','lang','z','sz','l','fr','wp','wd','wh','ww','wt','sec'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
+  ['c','b'].forEach(function(i){$(i).addEventListener('input',function(){custom=true;upd()})});
+  /* העתקה "מעוצבת": מדביקים בגוף המייל ומקבלים את התמונה עצמה ולא את הקוד */
+  $('cpMail').addEventListener('click',function(){var b=this,html=$('oMail').value,done=function(ok){b.textContent=ok?'Copied ✓ now paste it into your email':'Failed. Select the preview above and copy it';setTimeout(function(){b.textContent='Copy for email'},2500)};
+    var fallback=function(){var el=$('oMailPrev'),r=document.createRange();el.querySelectorAll('img').forEach(function(i){i.src=i.src});r.selectNodeContents(el);var sel=getSelection();sel.removeAllRanges();sel.addRange(r);var ok=false;try{ok=document.execCommand('copy')}catch(e){}sel.removeAllRanges();done(ok)};
+    try{if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([$('oLink').value],{type:'text/plain'})})]).then(function(){done(true)},fallback)}else fallback()}catch(e){fallback()}});
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var x=$(b.dataset.copy);x.select();try{navigator.clipboard.writeText(x.value)}catch(er){document.execCommand('copy')}var o=b.textContent;b.textContent='Copied ✓';setTimeout(function(){b.textContent=o},1500)});
+  showMine();setTheme('classic');
+  /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
+  var es=(Q.get('s')||'').toLowerCase();
+  if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');
+    setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
+    $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('This address is yours. You can change and update it.','ok')}else check();go()})}
+})();
+</script>
+</body>
+</html>

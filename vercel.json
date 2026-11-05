@@ -78,6 +78,10 @@
    "destination": "/timer.html"
   },
   {
+   "source": "/timer-en",
+   "destination": "/timer-en.html"
+  },
+  {
    "source": "/t/:slug",
    "destination": "/t.html"
   }

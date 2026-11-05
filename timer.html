@@ -6,6 +6,9 @@
 <title>ספירה לאחור לאירוע · שעון ספירה לאחור לחתונה ולבר מצווה, בחינם | MyLuach</title>
 <meta name="description" content="כמה ימים נשארו? יוצרים שעון ספירה לאחור לחתונה, לבר מצווה, לבת מצווה, ללידה או לכל תאריך: ימים, שעות, דקות ושניות, עם תמונה, תאריך עברי ועיצוב לבחירה. בחינם, עם קישור לשיתוף, קוד להטמעה באתר וטיימר למייל.">
 <link rel="canonical" href="https://www.myluach.org/timer">
+<link rel="alternate" hreflang="he" href="https://www.myluach.org/timer">
+<link rel="alternate" hreflang="en" href="https://www.myluach.org/timer-en">
+<link rel="alternate" hreflang="x-default" href="https://www.myluach.org/timer">
 <meta property="og:title" content="שעון ספירה לאחור לאירוע · MyLuach">
 <meta property="og:url" content="https://www.myluach.org/timer">
 <meta property="og:type" content="website"><meta property="og:locale" content="he_IL">
@@ -18,11 +21,13 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}}
 :root[data-theme="dark"]{--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.7 "Assistant",Arial,sans-serif;padding-inline:16px}
 .wrap{max-width:900px;margin-inline:auto;padding-bottom:48px}
 a{color:var(--teal)}
 .nav{display:flex;justify-content:space-between;align-items:center;padding-block:20px;border-bottom:1px solid var(--line)}
 .logo{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:26px;color:var(--ink);text-decoration:none;display:inline-flex;gap:10px;align-items:center;direction:ltr}
+.nl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.lsw{border:1px solid var(--line);border-radius:999px;padding:2px 12px;text-decoration:none;font-weight:600;font-size:15px}
 .logo-img{display:inline-block;vertical-align:middle;flex:none;margin-inline-end:8px}
 h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(28px,5vw,38px);line-height:1.15;margin:28px 0 6px}
 h2{font-size:21px;margin:30px 0 6px}
@@ -70,7 +75,7 @@ summary{cursor:pointer;font-weight:700}
 <script src="/assets/cms.js?v=1" defer></script>
 </head>
 <body><div class="wrap">
-<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><a href="countdown.html">לוח ספירה להדפסה</a></header>
+<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><nav class="nl"><a href="countdown.html">לוח ספירה להדפסה</a><a class="lsw" href="timer-en.html" hreflang="en" lang="en">English</a></nav></header>
 <main>
 <h1>שעון ספירה לאחור לאירוע</h1>
 <p class="mute">שעון דיגיטלי שסופר לאחור עד התאריך שלכם: חתונה, בר מצווה, לידה, חופשה או כל יעד. בחינם, בלי הרשמה. אפשר לשתף בקישור, להטמיע באתר, או להוסיף למייל.</p>
