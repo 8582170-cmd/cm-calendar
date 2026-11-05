@@ -14,7 +14,29 @@ async function saveSnap(snap) {
 }
 const KINDS = ['paid', 'lite', 'sample', 'countdown', 'browser'];
 const REPRINT = 30 * 60 * 1000; /* הדפסה חוזרת תוך 30 דקות (תקלה במדפסת) לא נספרת */
-const SAMECAL = 24 * 3600 * 1000; /* ואותו לוח בדיוק תוך 24 שעות (למשל אם השמירה כ-PDF לא הצליחה) גם לא נספר */
+const GRACE = 24 * 3600 * 1000; /* 24 שעות מההדפסה הראשונה של לוח (לפי המזהה שלו בחשבון): אפשר לתקן ולהדפיס שוב בלי שייספר */
+/* גרסה שכבר הודפסה (אותה "טביעת אצבע" של התוכן): אפשר להדפיס שוב בלי הגבלה, עד חודש אחרי סוף השנה של הלוח */
+async function yearEnd(yr) {
+  const m = /^([hg])(\d{4})$/.exec(String(yr || '')); if (!m) return null;
+  if (m[1] === 'g') return new Date(Date.UTC(+m[2] + 1, 0, 31));
+  try { const { HDate } = await import('./_hdate/index.js'); const d = new HDate(1, 7, +m[2] + 1).greg(); return new Date(d.getTime() + 30 * 864e5); } catch (e) { return null; }
+}
+/* האם ההדפסה הזאת חינם: {free, why: 'quick' | 'grace' | 'same'} */
+async function freeReprint(user, b) {
+  const cid = /^[\w-]{6,64}$/.test(String(b.cid || '')) ? String(b.cid) : '', vh = /^[0-9a-f]{64}$/.test(String(b.vh || '')) ? String(b.vh) : '';
+  let rows = [];
+  try { rows = await db('downloads?select=created_at,cid,vh,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&order=created_at.desc&limit=200') || []; }
+  catch (e) { try { rows = await db('downloads?select=created_at,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&order=created_at.desc&limit=1') || []; } catch (x) {} }
+  const now = Date.now();
+  if (rows[0] && now - new Date(rows[0].created_at) < REPRINT) return { free: true, why: 'quick' };
+  if (cid) {
+    const mine = rows.filter(r => r.cid === cid);
+    const first = mine.length ? mine[mine.length - 1] : null;
+    if (first && now - new Date(first.created_at) < GRACE) return { free: true, why: 'grace', until: new Date(new Date(first.created_at).getTime() + GRACE).toISOString() };
+    if (vh && mine.some(r => r.vh === vh)) { const end = await yearEnd(b.yr); if (!end || now < end.getTime()) return { free: true, why: 'same' }; }
+  }
+  return { free: false };
+}
 const s = (v, n) => v == null || v === '' ? null : String(v).slice(0, n);
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
@@ -28,11 +50,10 @@ module.exports = async (req, res) => {
     try { info = await planInfo(user, String(b.page || '') === 'countdown'); } catch (e) { return json(res, 503, { error: 'unavailable' }); }
     if (!info.plan) return json(res, 403, { error: 'plan' });
     if (info.used != null) {
-      let recent = false;
-      const calKey = (/^[hg]\d{4}$/.test(String(b.yr || '')) ? b.yr + ' · ' : '') + (s(b.cal, 110) || '');
-      try { const r = await db('downloads?select=created_at,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - SAMECAL).toISOString()) + '&order=created_at.desc&limit=20');
-        recent = (r || []).some((x, i) => (i === 0 && Date.now() - new Date(x.created_at) < REPRINT) || (calKey && x.cal === calKey)); } catch (e) {}
-      if (recent) kind = 'reprint';
+      const fr = await freeReprint(user, b);
+      /* בדיקה בלבד (לפני ההדפסה, כדי להציג ללקוח אם היא חינם) */
+      if (b.dry) return json(res, 200, { free: fr.free, why: fr.why || null, until: fr.until || null, left: info.left, limit: info.limit });
+      if (fr.free) kind = 'reprint';
       else if (info.left <= 0) return json(res, 409, { error: 'used', limit: info.limit, plan: info.plan });
       /* הדפסות של מסלול אחד: רק לאותה שנה (לפי הלוח הראשון שהודפס מאז הרכישה) */
       const yr = /^[hg]\d{4}$/.test(String(b.yr || '')) ? String(b.yr) : '';
@@ -49,7 +70,8 @@ module.exports = async (req, res) => {
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) email = null;
   let snap = null; try { snap = await saveSnap(b.snap); } catch (e) {}
   try {
-    await db('downloads', { meta: require('./_lib').reqMeta(req), method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
+    const cid = /^[\w-]{6,64}$/.test(String(b.cid || '')) ? String(b.cid) : null, vh = /^[0-9a-f]{64}$/.test(String(b.vh || '')) ? String(b.vh) : null;
+    await db('downloads', { meta: { ...(require('./_lib').reqMeta(req) || {}), ...(cid ? { cid } : {}), ...(vh ? { vh } : {}) }, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
       user_id: user ? user.id : null, email: email ? email.toLowerCase() : null, kind,
       plan: info ? info.plan : s(b.plan, 20), cal: (info && /^[hg]\d{4}$/.test(String(b.yr || '')) ? b.yr + ' · ' : '') + (s(b.cal, 110) || ''), view: s(b.view, 20), size: s(b.size, 30),
       pages: Math.max(0, Math.min(999, parseInt(b.pages, 10) || 0)) || null, snap, page: (s(b.page, 20) || 'app') + (b.kind === 'browser' ? (b.wm ? ' · עם סימן מים' : ' · בלי סימן מים') : '') }) });

@@ -4001,7 +4001,7 @@ function acctPlan(body){
     '<dl class="ac-dl"><dt>נרכש ב־</dt><dd>'+acDate(P.since)+'</dd>'+
     (P.limit?'<dt>הורדות</dt><dd>נוצלו '+(P.used||0)+' מתוך '+P.limit+' · <b>נשארו '+(P.left==null?'?':P.left)+'</b><div class="ac-bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+P.limit+'" aria-valuenow="'+(P.used||0)+'"><span style="width:'+pct+'%"></span></div></dd>':'')+
     '<dt>שנת הלוח</dt><dd>'+(yr?'ההדפסות במסלול הזה הן ללוח של '+esc(String(yr)):'עוד לא הודפס לוח. השנה של הלוח הראשון שתדפיסו תיקבע למסלול.')+'</dd></dl>'+
-    '<p class="hint">💡 הדפסה חוזרת של אותו לוח בתוך 30 דקות (למשל אם המדפסת נתקעה) לא נספרת כהורדה נוספת.</p>'+
+    '<p class="hint">💡 אחרי שמדפיסים לוח, יש 24 שעות לתקן אותו ולהדפיס שוב בלי שתיספר הורדה. ואת הגרסה האחרונה שהדפסתם אפשר להדפיס שוב בחינם, בכל זמן, עד סוף השנה של הלוח.</p>'+
     '<div class="row"><button class="btn" type="button" data-acgo="orders">ההזמנות והקבלות</button><button class="btn" type="button" data-acgo="dls">ההורדות שלי</button></div></div>';
 }
 function acTrust(){return '<ul class="ac-trust"><li>🔒 התשלום מתבצע בטופס מאובטח של חברת הסליקה. פרטי הכרטיס לא עוברים דרכנו ולא נשמרים אצלנו.</li><li>✓ המסלול נפתח מיד אחרי התשלום, וקבלה נשלחת למייל.</li><li>בתשלום אתם מאשרים את <a href="/terms" target="_blank" rel="noopener">תנאי השימוש</a>, כולל מדיניות הביטול.</li></ul>'}
@@ -4021,10 +4021,10 @@ function acConfirm(o){
 }
 function acctDls(body){
   const D=acctData,P=CDMODE?(D.cdPlan||D.plan):D.plan,L=D.downloads||[];
-  const K={paid:'הורדה במסלול',reprint:'הדפסה חוזרת (לא נספרה)',lite:'לוח חינמי',sample:'חודש לדוגמה',countdown:'ספירה לאחור',browser:'הדפסה מהדפדפן'};
+  const K={paid:'הורדה במסלול',reprint:'הדפסה חוזרת (חינם)',lite:'לוח חינמי',sample:'חודש לדוגמה',countdown:'ספירה לאחור',browser:'הדפסה מהדפדפן'};
   body.innerHTML=(P&&P.limit?'<p class="ac-card"><b>נשארו לכם '+(P.left==null?'?':P.left)+' הורדות</b> מתוך '+P.limit+' במסלול '+esc(P.name)+'.</p>':'')+
     (L.length?'<ul class="ac-list">'+L.map(d=>'<li><span><b>'+esc(acCal(d.cal))+'</b><small>'+acDate(d.at)+' · '+esc(K[d.kind]||d.kind)+(d.pages?' · '+d.pages+' עמודים':'')+(d.size?' · '+esc(d.size):'')+'</small></span></li>').join('')+'</ul>':'<p class="hint">עוד לא הורדתם לוחות מהחשבון הזה.</p>')+
-    '<p class="hint">רוצים להוריד שוב לוח? פותחים אותו מ<button class="linkbtn" type="button" data-acgo="cals">הלוחות שלי</button>, ולוחצים "הורדה והדפסה". הלוחות נשמרים בחשבון, כך שאי אפשר לאבד אותם.</p>';
+    '<p class="hint">רוצים להוריד שוב לוח? פותחים אותו מ<button class="linkbtn" type="button" data-acgo="cals">הלוחות שלי</button>, ולוחצים "הורדה והדפסה". גרסה שכבר הדפסתם יורדת שוב בחינם, עד סוף השנה של הלוח.</p>';
 }
 function acctRems(body){
   const R=acctData.reminders||[],V=acctData.voice||[];
@@ -4154,7 +4154,11 @@ function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.set
 (function(){let o=null;try{o=JSON.parse(localStorage.getItem(ORDER_KEY)||'null')}catch(e){}
   if(!o||o.paid||!o.id||Date.now()-o.at>7*864e5)return;
   fetch('/api/order?id='+o.id).then(r=>r.json()).then(x=>{if(x.status==='paid')activatePlan(x.plan,o.id)}).catch(()=>{})})();
-function doPrint(){
+/* "טביעת אצבע" של תוכן הלוח (בלי הגדרות תצוגה ומצב העבודה): גרסה שכבר הודפסה אפשר להדפיס שוב בחינם */
+async function verHash(){try{const st=structuredClone(state),UI=['uiMode','step','wizardDone','cloudId','shareId','calName'];UI.forEach(k=>{if(st.s)delete st.s[k]});
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(st)));return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return ''}}
+const dlPage=()=>CDMODE?'countdown':/simple/.test(window.location.pathname)?'simple':'app';
+async function doPrint(){
   const P=PLAN();
   if(AUTH.ready&&!AUTH.user){loginModal('כדי להוריד או להדפיס, נכנסים לחשבון. ההרשמה חינם, וכל מה שבניתם נשמר.');return}
   if(P.freeCd){const m=modal('<h3>להדפיס את לוח הספירה?</h3><p class="hint">לוח ספירה לאחור של עד '+FREE_CD+' ימים מורידים ומדפיסים בחינם. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>ביטול</button></div>');m.querySelector('#dlGo').onclick=()=>{m.remove();logDl('countdown');setTimeout(ourPrint,50)};return}
@@ -4163,12 +4167,17 @@ function doPrint(){
     const m=modal('<h3>להדפיס בחינם?</h3><p class="hint">בהדפסה החינמית מופיע הלוגו של MyLuach. אפשר להדפיס או לשמור כ־PDF.</p><div class="row"><button class="btn primary" type="button" id="fpGo">הדפסה בחינם</button><button class="btn" type="button" id="fpUp">למסלולים</button></div>');
     m.querySelector('#fpGo').onclick=()=>{m.remove();render();try{logDl('browser',{wm:1})}catch(e){}setTimeout(ourPrint,80)};m.querySelector('#fpUp').onclick=()=>{m.remove();openUpgrade('download')};return}
   if(!P.downloads){openUpgrade('download');return}
-  const left=LP.downloadsLeft();
-  if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
-  const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות (נשארו לכם '+left+'). כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><ul class="hint dl-tips"><li>💾 <b>כדי לשמור קובץ במחשב:</b> בחלון שייפתח, בשדה "יעד" (או "מדפסת") בוחרים <b>"שמירה כ־PDF"</b>, ולוחצים "שמירה".</li><li>🔁 לא הצליח? אפשר להדפיס שוב את אותו לוח בתוך 24 שעות, בלי שתיספר הורדה נוספת.</li></ul><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
+  /* בודקים מול השרת אם ההדפסה הזאת חינם (תיקון בתוך 24 שעות, או גרסה שכבר הודפסה) */
+  let fr=null;const vh=await verHash();
+  if(user){if(!state.s.cloudId){try{await cloudSave()}catch(e){}}
+    try{const h=await authHeaders();const r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',dry:1,yr:calYearKey(),cid:state.s.cloudId||'',vh,page:dlPage()})});if(r.ok)fr=await r.json()}catch(e){}}
+  const left=fr&&fr.left!=null?fr.left:LP.downloadsLeft(),free=!!(fr&&fr.free);
+  if(fr&&fr.left!=null){try{localStorage.setItem('luchenu-downloads',String(P.downloads-fr.left))}catch(e){}syncPlanUI()}
+  if(!free&&left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
+  const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">'+(free?(fr.why==='same'?'<b class="msg-ok">✓ את הגרסה הזאת כבר הדפסתם, ולכן ההדפסה חינם.</b> אותה גרסה אפשר להדפיס שוב בכל זמן, עד סוף השנה של הלוח.':'<b class="msg-ok">✓ ההדפסה הזאת חינם.</b> '+(fr.why==='grace'&&fr.until?'עד '+new Date(fr.until).toLocaleString('he-IL',{weekday:'long',hour:'2-digit',minute:'2-digit'})+' אפשר לתקן את הלוח ולהדפיס שוב בלי שתיספר הורדה.':'הדפסה חוזרת זמן קצר אחרי הקודמת לא נספרת.')):'הדפסה או שמירה כ־PDF משתמשת באחת מההורדות (נשארו לכם '+left+'). כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.')+'</p><ul class="hint dl-tips"><li>💾 <b>כדי לשמור קובץ במחשב:</b> בחלון שייפתח, בשדה "יעד" (או "מדפסת") בוחרים <b>"שמירה כ־PDF"</b>, ולוחצים "שמירה".</li>'+(free?'':'<li>🔁 אחרי ההדפסה, יש לכם 24 שעות לתקן את הלוח ולהדפיס שוב בלי שתיספר הורדה. ואת הגרסה האחרונה שהדפסתם אפשר להדפיס שוב בחינם עד סוף השנה של הלוח.</li>')+'</ul><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=async()=>{const b=m.querySelector('#dlGo');b.disabled=true;b.textContent='בודקים…';
     let r={status:0},j={};
-    try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',yr:calYearKey(),snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:CDMODE?'countdown':/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
+    try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',yr:calYearKey(),cid:state.s.cloudId||'',vh,snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:CDMODE?'countdown':/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
     if(r.status===401){m.remove();loginModal('צריך להתחבר מחדש כדי להדפיס.');return}
     if(r.status===403){m.remove();await refreshAccount();modal('<h3>לא נמצא תשלום בחשבון</h3><p class="hint">לא מצאנו מסלול ששולם בחשבון '+esc((user&&user.email)||'')+'. אם שילמתם עם כתובת מייל אחרת, התחברו איתה. אם שילמתם עכשיו, נסו שוב בעוד דקה.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
     if(r.status===409&&j.error==='year'){m.remove();const Y=j.year||'',yt=Y[0]==='h'?'שנת '+gemYear(+Y.slice(1)):'שנת '+Y.slice(1);
