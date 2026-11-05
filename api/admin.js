@@ -231,6 +231,27 @@ module.exports = async (req, res) => {
       let r; try { r = JSON.parse(out.body); } catch (e) { r = { raw: out.body.slice(0, 300) }; }
       return json(res, 200, { code: out.code, result: r });
     }
+    /* לקוח: חיפוש לפי מייל (הזמנות, הורדות, מצב המסלול), והוספת הורדות */
+    if (req.method === 'POST' && (b.action === 'custget' || b.action === 'custbonus')) {
+      const { loadSetting, saveSetting, planInfo } = require('./_lib');
+      const em = String(b.email || '').trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return json(res, 400, { error: 'כתובת מייל לא תקינה' });
+      if (b.action === 'custbonus') {
+        const n = parseInt(b.n, 10); if (!n || Math.abs(n) > 50) return json(res, 400, { error: 'מספר לא תקין' });
+        const B = (await loadSetting('dlbonus')) || {}, e = B[em] || { n: 0, log: [] };
+        e.n = (+e.n || 0) + n; e.log = [{ t: new Date().toISOString(), n, note: String(b.note || '').slice(0, 200) }].concat(e.log || []).slice(0, 50);
+        B[em] = e; await saveSetting('dlbonus', B);
+      }
+      const prof = await db('profiles?select=user_id,email,phone,created_at,updated_at,ip,ip_geo&email=eq.' + encodeURIComponent(em) + '&limit=1').catch(() => db('profiles?select=user_id,email,phone,created_at,updated_at&email=eq.' + encodeURIComponent(em) + '&limit=1').catch(() => []));
+      const p = (prof || [])[0] || null, uid = p && p.user_id;
+      const or = 'or=(' + (uid ? 'user_id.eq.' + uid + ',' : '') + 'email.eq.' + encodeURIComponent(em) + ')';
+      const [orders, dls] = await Promise.all([
+        db('orders?select=id,plan,amount,status,coupon,created_at,paid_at&' + or + '&order=created_at.desc&limit=50').catch(() => []),
+        db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&' + or + '&order=created_at.desc&limit=60').catch(() => [])]);
+      let plan = null, cd = null; if (uid) { try { plan = await planInfo({ id: uid, email: em }, false); } catch (e) {} try { cd = await planInfo({ id: uid, email: em }, true); } catch (e) {} }
+      const B = (await loadSetting('dlbonus')) || {};
+      return json(res, 200, { email: em, profile: p, orders: orders || [], downloads: dls || [], plan, cd, bonus: B[em] || { n: 0, log: [] } });
+    }
     /* הודעות לגולשים: מוצגות בראש הדפים שנבחרו (דף הבית, הבונים, הלוח המקוון, הברכות) */
     if (req.method === 'POST' && (b.action === 'msgget' || b.action === 'msgsave')) {
       const { loadSetting, saveSetting } = require('./_lib');

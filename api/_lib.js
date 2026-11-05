@@ -171,10 +171,12 @@ async function planInfo(user, cd) {
   const cdOnly = id => !!(LP.PLANS.find(p => p.id === id) || {}).cd;
   let best = null; (rows || []).forEach(o => { if (PAID.indexOf(o.plan) >= 0 && (cd ? cdUsable(o) : !cdOnly(o.plan)) && (!best || rank(o.plan) >= rank(best.plan))) best = o; });
   if (!best) return { plan: null, limit: 0, used: 0, left: 0 };
-  const limit = (LP.PLANS.find(p => p.id === best.plan) || {}).downloads || 0;
+  /* הורדות נוספות שבעל האתר הוסיף ללקוח בדף הניהול (settings → dlbonus, לפי מייל) */
+  let bonus = 0; try { const B = (await loadSetting('dlbonus')) || {}, e = B[String(user.email || '').toLowerCase()]; bonus = e ? (+e.n || 0) : 0; } catch (e) {}
+  const limit = Math.max(0, ((LP.PLANS.find(p => p.id === best.plan) || {}).downloads || 0) + bonus);
   let used = null;
   try { const d = await db('downloads?select=id&kind=eq.paid&user_id=eq.' + user.id + '&created_at=gte.' + encodeURIComponent(best.paid_at) + '&limit=1000'); used = (d || []).length; } catch (e) { used = null; }
-  return { plan: best.plan, since: best.paid_at, limit, used, left: used == null ? null : Math.max(0, limit - used) };
+  return { plan: best.plan, since: best.paid_at, limit, bonus, used, left: used == null ? null : Math.max(0, limit - used) };
 }
 /* רישום המשתמש במאגר (מייל, ובהמשך טלפון) */
 async function upsertProfile(user, extra, req) {

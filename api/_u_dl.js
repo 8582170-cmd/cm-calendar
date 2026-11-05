@@ -14,6 +14,7 @@ async function saveSnap(snap) {
 }
 const KINDS = ['paid', 'lite', 'sample', 'countdown', 'browser'];
 const REPRINT = 30 * 60 * 1000; /* הדפסה חוזרת תוך 30 דקות (תקלה במדפסת) לא נספרת */
+const SAMECAL = 24 * 3600 * 1000; /* ואותו לוח בדיוק תוך 24 שעות (למשל אם השמירה כ-PDF לא הצליחה) גם לא נספר */
 const s = (v, n) => v == null || v === '' ? null : String(v).slice(0, n);
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
@@ -28,7 +29,9 @@ module.exports = async (req, res) => {
     if (!info.plan) return json(res, 403, { error: 'plan' });
     if (info.used != null) {
       let recent = false;
-      try { const r = await db('downloads?select=created_at&kind=eq.paid&user_id=eq.' + user.id + '&order=created_at.desc&limit=1'); recent = r && r[0] && Date.now() - new Date(r[0].created_at) < REPRINT; } catch (e) {}
+      const calKey = (/^[hg]\d{4}$/.test(String(b.yr || '')) ? b.yr + ' · ' : '') + (s(b.cal, 110) || '');
+      try { const r = await db('downloads?select=created_at,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - SAMECAL).toISOString()) + '&order=created_at.desc&limit=20');
+        recent = (r || []).some((x, i) => (i === 0 && Date.now() - new Date(x.created_at) < REPRINT) || (calKey && x.cal === calKey)); } catch (e) {}
       if (recent) kind = 'reprint';
       else if (info.left <= 0) return json(res, 409, { error: 'used', limit: info.limit, plan: info.plan });
       /* הדפסות של מסלול אחד: רק לאותה שנה (לפי הלוח הראשון שהודפס מאז הרכישה) */

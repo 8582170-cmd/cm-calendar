@@ -3887,7 +3887,7 @@ async function refreshAccount(){
   try{const h=await authHeaders();const r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({claim,cd:CDMODE})});if(!r.ok)return;acctInfo=await r.json();
     const sp=(CDMODE?acctInfo.cdPlan:acctInfo.plan)||'free',was=LP.current().id;
     if(sp!==was)LP.setCurrent(sp);
-    if(acctInfo.dl&&acctInfo.dl.used!=null){try{localStorage.setItem('luchenu-downloads',String(acctInfo.dl.used))}catch(e){}}
+    if(acctInfo.dl&&acctInfo.dl.left!=null){try{localStorage.setItem('luchenu-downloads',String(LP.current().downloads-acctInfo.dl.left))}catch(e){}}
     if(sp!==was||acctInfo.dl){syncPlanUI();render()}
   }catch(e){}
 }
@@ -4165,7 +4165,7 @@ function doPrint(){
   if(!P.downloads){openUpgrade('download');return}
   const left=LP.downloadsLeft();
   if(left<=0){const m=modal('<h3>נגמרו ההורדות</h3><p class="hint">השתמשתם בכל '+P.downloads+' ההורדות של המסלול. אפשר לעבור למסלול עם יותר הורדות.</p>'+planCards('full')+'<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');m.querySelector('.modal').classList.add('upgrade');m.addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;m.remove();buyPlan(b.dataset.pick)});return}
-  const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות. נשארו לכם '+left+' מתוך '+P.downloads+'. כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
+  const m=modal('<h3>להדפיס את הלוח?</h3><p class="hint">הדפסה או שמירה כ־PDF משתמשת באחת מההורדות (נשארו לכם '+left+'). כדאי לבדוק בתצוגה המקדימה שהכל מוכן לפני כן.</p><ul class="hint dl-tips"><li>💾 <b>כדי לשמור קובץ במחשב:</b> בחלון שייפתח, בשדה "יעד" (או "מדפסת") בוחרים <b>"שמירה כ־PDF"</b>, ולוחצים "שמירה".</li><li>🔁 לא הצליח? אפשר להדפיס שוב את אותו לוח בתוך 24 שעות, בלי שתיספר הורדה נוספת.</li></ul><div class="row"><button class="btn primary" type="button" id="dlGo">להדפיס עכשיו</button><button class="btn" type="button" data-close>עוד לא</button></div>');
   m.querySelector('#dlGo').onclick=async()=>{const b=m.querySelector('#dlGo');b.disabled=true;b.textContent='בודקים…';
     let r={status:0},j={};
     try{const snP=snapOf();const h=await authHeaders();const sn=await snP;const s=state.s;r=await fetch('/api/user?fn=dl',{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify({kind:'paid',yr:calYearKey(),snap:sn,cal:(($('#stageTitle')||{}).textContent||'').slice(0,120),view:s.view||'month',size:s.size==='custom'?'custom':s.size,pages:RS.count,page:CDMODE?'countdown':/simple/.test(window.location.pathname)?'simple':'app'})});j=await r.json().catch(()=>({}))}catch(e){}
@@ -4173,8 +4173,8 @@ function doPrint(){
     if(r.status===403){m.remove();await refreshAccount();modal('<h3>לא נמצא תשלום בחשבון</h3><p class="hint">לא מצאנו מסלול ששולם בחשבון '+esc((user&&user.email)||'')+'. אם שילמתם עם כתובת מייל אחרת, התחברו איתה. אם שילמתם עכשיו, נסו שוב בעוד דקה.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
     if(r.status===409&&j.error==='year'){m.remove();const Y=j.year||'',yt=Y[0]==='h'?'שנת '+gemYear(+Y.slice(1)):'שנת '+Y.slice(1);
       modal('<h3>ההדפסות במסלול הן ללוח של '+esc(yt)+'</h3><p class="hint">המסלול כולל כמה הדפסות של אותו לוח, למשל אחרי תיקונים, אבל רק לשנה שכבר הודפסה ('+esc(yt)+'). כדי להדפיס לוח לשנה אחרת צריך לרכוש מסלול חדש.</p><div class="row"><button class="btn primary" type="button" id="yrBuy">לרכישת מסלול לשנה הזאת</button><button class="btn" type="button" data-close>סגירה</button></div>').querySelector('#yrBuy').onclick=e=>{e.target.closest('.modal-back').remove();openUpgrade('download')};return}
-    if(r.status===409){m.remove();try{localStorage.setItem('luchenu-downloads',String(j.limit||P.downloads))}catch(e){}syncPlanUI();doPrint();return}
-    if(r.ok&&j.left!=null){try{localStorage.setItem('luchenu-downloads',String(Math.max(0,(j.limit||P.downloads)-j.left)))}catch(e){}}else if(!j.reprint)LP.useDownload();
+    if(r.status===409){m.remove();try{localStorage.setItem('luchenu-downloads',String(P.downloads))}catch(e){}syncPlanUI();doPrint();return}
+    if(r.ok&&j.left!=null){try{localStorage.setItem('luchenu-downloads',String(P.downloads-j.left))}catch(e){}}else if(!j.reprint)LP.useDownload();
     m.remove();syncPlanUI();setTimeout(ourPrint,50)};
 }
 /* ---------- לוח חינמי לשנה: גרסה מוגבלת, בלי סימן מים, פעם אחת לכל משתמש ---------- */
