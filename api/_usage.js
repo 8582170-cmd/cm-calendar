@@ -102,7 +102,12 @@ async function purge(bucket, days, dry) {
 /* מאגר התמונות ב-Supabase: מוחקים רק קבצים שכבר לא מופיעים באף הגדרה של האתר (כלומר שהועברו ל-R2).
    קובץ שעדיין מופיע איפשהו (רקע, מדבקה, מאמר, תמונה במאגר) לא נמחק */
 async function purgeLibrary(dry) {
-  const rows = await db('settings?select=value&limit=1000'), all = JSON.stringify(rows || []);
+  const rows = await db('settings?select=value&limit=1000');
+  /* גם עיצובי ברכות שלקוחות שמרו או קנו (דלי shared) עלולים להפנות לתמונה מהמאגר: קבצים כאלה לא נמחקים */
+  let shared = '';
+  try { const S = await walk('shared', '', [], 5000); for (let i = 0; i < S.length; i += 20) { const part = await Promise.all(S.slice(i, i + 20).map(f => fetch(base() + '/storage/v1/object/shared/' + f.path, { headers: H() }).then(r => r.ok ? r.text() : '').catch(() => ''))); shared += part.join('\n'); } }
+  catch (e) { throw new Error('לא הצלחנו לבדוק את עיצובי הברכות של הלקוחות, ולכן לא מוחקים כלום: ' + e.message); }
+  const all = JSON.stringify(rows || []) + shared;
   const F = (await walk('library', '', [], 50000)).filter(f => !all.includes('/library/' + f.path) && !all.includes('/library/' + encodeURI(f.path)));
   const out = { files: F.length, bytes: F.reduce((a, f) => a + f.size, 0), deleted: 0 };
   if (dry || !F.length) return out;

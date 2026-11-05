@@ -189,8 +189,16 @@ module.exports = async (req, res) => {
       const R = require('./_r2'), M = R.media();
       if (!M) return json(res, 400, { error: 'הדלי הציבורי ב-Cloudflare לא מוגדר: צריך ב-Vercel את R2_MEDIA_BUCKET ואת R2_MEDIA_URL (ואת R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET)' });
       const { loadSetting, saveSetting } = require('./_lib');
-      const KEYS = ['greettpl', 'greetstickers', 'library'], S = {};
-      for (const k of KEYS) S[k] = JSON.stringify(await loadSetting(k) || {});
+      /* כל ההגדרות שמופיעה בהן תמונה מהמאגר ב-Supabase (רקעים, מדבקות, מאגר, מאמרים, טקסטים ועוד) */
+      const S = {}; for (const r of (await db('settings?select=key,value&limit=1000')) || []) { const t = JSON.stringify(r.value || {}); if (t.includes('/storage/v1/object/public/library/')) S[r.key] = t; }
+      /* וגם עיצובי ברכות של לקוחות (דלי shared ב-Supabase) */
+      const sbu = env('SUPABASE_URL').replace(/\/$/, ''), sk = env('SUPABASE_SERVICE_ROLE_KEY'), SH = { apikey: sk, ...(sk.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + sk }) };
+      try {
+        const walkShared = async (prefix, out) => { for (let off = 0; ; off += 1000) { const r = await fetch(sbu + '/storage/v1/object/list/shared', { method: 'POST', headers: { ...SH, 'Content-Type': 'application/json' }, body: JSON.stringify({ prefix, limit: 1000, offset: off }) }); const L = r.ok ? await r.json() : [];
+          for (const x of L) { const p = (prefix ? prefix + '/' : '') + x.name; if (x.id) out.push(p); else await walkShared(p, out); } if (L.length < 1000) return out; } };
+        for (const p of await walkShared('', [])) { const t = await fetch(sbu + '/storage/v1/object/shared/' + p, { headers: SH }).then(r => r.ok ? r.text() : ''); if (t.includes('/storage/v1/object/public/library/')) S['shared:' + p] = t; }
+      } catch (e) { console.error('migrate shared', e.message); }
+      const KEYS = Object.keys(S);
       const rx = /https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/library\/([^\s"'<>?\\]+)/g, all = new Set();
       KEYS.forEach(k => { for (const m of S[k].matchAll(rx)) all.add(m[0]); });
       const skip = new Set((Array.isArray(b.skip) ? b.skip : []).slice(0, 1000)), list = [...all].filter(u => !skip.has(u)), take = b.dry ? [] : list.slice(0, Math.max(1, Math.min(8, +b.n || 3))), errors = [], bad = [];
@@ -199,7 +207,10 @@ module.exports = async (req, res) => {
       const done = await Promise.all(take.map(async url => {
         try {
           const path = decodeURIComponent(url.split('/object/public/library/')[1]);
-          const g = await fetch(url); if (!g.ok) throw new Error('הורדה ' + g.status);
+          const dest = M.url + '/' + path.split('/').map(x => encodeURIComponent(x)).join('/');
+          const g = await fetch(url);
+          /* הקובץ כבר נמחק מ-Supabase אבל קיים ב-Cloudflare (הועבר קודם): רק מעדכנים את הכתובת */
+          if (!g.ok) { const h = await fetch(R.presign('HEAD', path, 300, null, M), { method: 'HEAD' }).catch(() => null); if (h && h.ok) return [url, dest]; throw new Error('הורדה ' + g.status); }
           const type = g.headers.get('content-type') || 'application/octet-stream', body = await g.arrayBuffer();
           const put = await fetch(R.presign('PUT', path, 900, null, M), { method: 'PUT', headers: { 'Content-Type': type }, body });
           if (!put.ok) throw new Error('העלאה ' + put.status);
@@ -207,7 +218,10 @@ module.exports = async (req, res) => {
         } catch (e) { errors.push(String(e.message || e).slice(0, 120)); bad.push(url); return null; }
       }));
       for (const r of done) if (r) { KEYS.forEach(k => { S[k] = S[k].split(r[0]).join(r[1]); }); moved++; }
-      if (moved) for (const k of KEYS) await saveSetting(k, JSON.parse(S[k]));
+      if (moved) for (const k of KEYS) {
+        if (k.startsWith('shared:')) await fetch(sbu + '/storage/v1/object/shared/' + k.slice(7), { method: 'POST', headers: { ...SH, 'Content-Type': 'application/json', 'x-upsert': 'true' }, body: S[k] });
+        else await saveSetting(k, JSON.parse(S[k]));
+      }
       return json(res, 200, { total: list.length + skip.size, moved, remaining: list.length - moved - bad.length, failed: bad, errors });
     }
     /* מאגר התמונות ללקוחות */
