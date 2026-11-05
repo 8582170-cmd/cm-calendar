@@ -44,7 +44,11 @@ function clean(c) {
     /* דף הזמנה */
     inv: okImg(c.inv) ? c.inv : '', it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
     tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
-    gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40)
+    gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
+    /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
+    nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
+    qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 3).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 8).map(v => str(v, 30).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
+    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0
   };
 }
 async function get(s) {
@@ -83,9 +87,9 @@ function sunsetH(y, m, d, tz) { const c = LLs[tz] || LLs['Asia/Jerusalem'], lat 
   RA = (RA + Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90) / 15; const sd = .39782 * Math.sin(L * R), cd = Math.cos(Math.asin(sd)), ch = (Math.cos(90.833 * R) - sd * Math.sin(lat * R)) / (cd * Math.cos(lat * R));
   if (ch > 1 || ch < -1) return null; const Hh = Math.acos(ch) / R / 15, T = Hh + RA - .06571 * t - 6.622; return ((T - lh + off) % 24 + 48) % 24; }
 const H = v => String(v == null ? '' : v).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-function inviteMail(slug, cur, r, site) {
+function inviteMail(slug, cur, r, site, mode) {
   const c = cur.cfg || {}, th = THC[c.th] || THC.classic, acc = /^[0-9a-f]{6}$/i.test(c.c || '') ? c.c : th[0], bg = /^[0-9a-f]{6}$/i.test(c.b || '') ? c.b : th[1], dark = c.th === 'elegant' || c.th === 'digital';
-  const ink = dark ? 'f3efe6' : '1a232c', mute = dark ? 'b8ae9c' : '5d6873', EN = c.lang === 'en', page = site + '/t/' + slug + (r.name ? '?to=' + encodeURIComponent(r.name) : '');
+  const ink = dark ? 'f3efe6' : '1a232c', mute = dark ? 'b8ae9c' : '5d6873', EN = c.lang === 'en', page = site + '/t/' + slug + '?' + (r.name ? 'to=' + encodeURIComponent(r.name) + '&' : '') + 'r=' + r.token;
   const title = c.t || (EN ? 'You are invited' : 'הזמנה');
   let when = c.d; try { const d = new Date(c.d + 'T12:00:00Z'); when = (c.ww !== '0' ? new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { weekday: 'long', timeZone: 'UTC' }).format(d) + ', ' : '') + new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d);
     if (c.wd === 'h' || c.wd === 'b') { const [y, mo, da] = c.d.split('-').map(Number), hm = /^(\d{1,2}):(\d{2})$/.exec(c.h || ''), ss = hm && c.wh !== 'c' ? sunsetH(y, mo, da, c.z || 'Asia/Jerusalem') : null, after = ss != null && (+hm[1] + hm[2] / 60) >= ss;
@@ -103,15 +107,17 @@ function inviteMail(slug, cur, r, site) {
   let h = '<!doctype html><html dir="' + dir + '"><body style="margin:0;padding:0;background:#f4f2ee"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:16px 8px">' +
     '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#' + bg + ';border-radius:16px;overflow:hidden;direction:' + dir + ';font-family:Arial,sans-serif;color:#' + ink + '">';
   if (/^https:\/\//.test(c.inv || '')) h += '<tr><td><a href="' + H(page) + '" target="_blank"><img src="' + H(c.inv) + '" width="600" alt="' + H(title) + '" style="display:block;width:100%;height:auto;border:0"></a></td></tr>';
-  if (greet) h += row('<div style="font-size:21px;font-weight:bold;color:#' + acc + '">' + H(greet) + '</div>');
-  if (cur.mail && cur.mail.note) h += row('<div style="font-size:16px;white-space:pre-line">' + H(cur.mail.note) + '</div>');
-  if (c.it) h += row('<div style="font-size:16px;white-space:pre-line">' + H(c.it) + '</div>');
+  const MH = { nr: EN ? 'We haven’t heard from you yet. Will you join us? Please reply with one click.' : 'עוד לא קיבלנו ממך אישור הגעה. נשמח לדעת אם תגיעו, בלחיצה אחת.', dr: EN ? 'Today is the day! Looking forward to seeing you.' : 'היום זה קורה! מחכים לראותכם.', ty: c.tyt || (EN ? 'Thank you for celebrating with us!' : 'תודה רבה שהשתתפתם בשמחתנו!') };
+  if (mode && MH[mode]) h += row('<div style="font-size:19px;font-weight:bold;color:#' + acc + ';white-space:pre-line">' + H(MH[mode]) + '</div>');
+  if (greet && mode !== 'ty') h += row('<div style="font-size:21px;font-weight:bold;color:#' + acc + '">' + H(greet) + '</div>');
+  if (cur.mail && cur.mail.note && !mode) h += row('<div style="font-size:16px;white-space:pre-line">' + H(cur.mail.note) + '</div>');
+  if (c.it && !mode) h += row('<div style="font-size:16px;white-space:pre-line">' + H(c.it) + '</div>');
   h += row('<div style="font-size:22px;font-weight:bold;color:#' + acc + '">' + H(title) + '</div><div style="font-size:14px;color:#' + mute + ';margin-top:4px">' + H(when) + '</div>');
   const U = (c.u === 'm' ? ['months'] : c.u === 'w' ? ['weeks'] : []).concat(['days', 'hours', 'minutes', 'seconds']), UL = EN ? { months: 'months', weeks: 'weeks', days: 'days', hours: 'hours', minutes: 'minutes', seconds: 'seconds' } : { months: 'חודשים', weeks: 'שבועות', days: 'ימים', hours: 'שעות', minutes: 'דקות', seconds: 'שניות' };
-  h += row('<a href="' + H(page) + '" target="_blank"><img src="' + H(img) + '" width="420" alt="" style="display:block;margin:0 auto;max-width:100%;height:auto;border:0"></a><table role="presentation" width="420" align="center" cellpadding="0" cellspacing="0" style="max-width:100%;direction:ltr;font-size:13px;color:#' + mute + ';text-align:center"><tr>' + U.map(k => '<td>' + UL[k] + '</td>').join('') + '</tr></table>');
+  if (mode !== 'ty') h += row('<a href="' + H(page) + '" target="_blank"><img src="' + H(img) + '" width="420" alt="" style="display:block;margin:0 auto;max-width:100%;height:auto;border:0"></a><table role="presentation" width="420" align="center" cellpadding="0" cellspacing="0" style="max-width:100%;direction:ltr;font-size:13px;color:#' + mute + ';text-align:center"><tr>' + U.map(k => '<td>' + UL[k] + '</td>').join('') + '</tr></table>');
   if (loc || c.tr) h += row('<div style="font-size:15px">' + (c.venue ? '<b style="color:#' + acc + '">' + H(c.venue) + '</b><br>' : '') + (c.addr ? H(c.addr) + '<br>' : '') + (c.tr ? L.rec + ': ' + H(c.tr) + (c.h ? ' · ' + H(c.tl || (EN ? 'Ceremony' : 'חופה')) + ': ' + H(c.h) : '') : '') + '</div>' +
     (c.addr ? '<div style="margin-top:6px">' + btn('https://waze.com/ul?q=' + encodeURIComponent(c.addr) + '&navigate=yes', L.waze) + btn('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc), L.maps) + '</div>' : ''));
-  h += row((c.rv ? btn(page + (page.includes('?') ? '&' : '?') + 'go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + (c.wl ? btn(page + (page.includes('?') ? '&' : '?') + 'go=wish', L.wish) : '') + btn(page + (page.includes('?') ? '&' : '?') + 'go=cal', L.cal) + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
+  h += row((mode === 'ty' ? btn(page, L.open, true) + (c.gal ? btn(page + '&go=gal', EN ? '📷 Share your photos' : '📷 להעלאת תמונות מהאירוע') : '') : (c.rv && mode !== 'dr' ? btn(page + '&go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + btn(page + '&go=cal', L.cal)) + (c.wl ? btn(page + '&go=wish', L.wish) : '') + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
   h += '<tr><td style="padding:14px 18px 16px;text-align:center;font-size:11px;color:#' + mute + '"><a href="' + H(unsub) + '" style="color:#' + mute + '">' + L.un + '</a> · <a href="' + site + '/invite" style="color:#' + mute + ';text-decoration:none">myluach.org</a></td></tr></table></td></tr></table></body></html>';
   const text = (greet ? greet + '\n\n' : '') + title + '\n' + when + (loc ? '\n' + loc : '') + '\n\n' + page + '\n\n' + L.un + ': ' + unsub;
   return { html: h, text, unsub };
@@ -144,12 +150,43 @@ async function unsub(req, res, tok) {
   res.statusCode = 200; res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.end('<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>הוסרתם מהרשימה</title><body style="font-family:Arial,sans-serif;text-align:center;padding:40px 16px;background:#f6f4ef"><h1 style="color:#1e5a63">הוסרתם מהרשימה ✓</h1><p>לא יישלחו אליכם עוד הזמנות לאירוע הזה.</p><p style="font-size:12px;color:#888">myluach.org</p></body></html>');
 }
+/* מיילים אוטומטיים לפי בחירת בעל האירוע: תזכורת למי שלא ענה (nr ימים לפני), ביום האירוע למי שאישר, ותודה אחרי האירוע.
+   cover = הימים שהריצה של היום מכסה (היום, ושבת/חג שאחריו). כל נמען מקבל כל סוג פעם אחת (nr_at/dr_at/ty_at) */
+async function autoMails(cover, max) {
+  const idx = (await require('./_lib').loadSetting('evpaid').catch(() => null)) || {}, { addD, iso, todayIL } = require('./_rem'), today = todayIL(), out = { nr: 0, dr: 0, ty: 0 };
+  const covered = cover.map(k => iso(addD(today, k))), site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+  const { sendMail } = require('./_mail'); let budget = max;
+  for (const s of Object.keys(idx)) {
+    if (budget <= 0) break;
+    const cur = await get(s).catch(() => null); if (!cur || !cur.paid) continue; const c = cur.cfg || {}; if (!/^\d{4}-\d{2}-\d{2}$/.test(c.d || '')) continue;
+    const [y, m, d] = c.d.split('-').map(Number), ev = new Date(y, m - 1, d, 12), dd = n => iso(addD(ev, n));
+    const jobs = [];
+    if (c.nr && c.rv && covered.includes(dd(-c.nr))) jobs.push('nr');
+    if (c.dr && covered.includes(dd(0))) jobs.push('dr');
+    if (c.ty && (covered.includes(dd(1)) || (iso(today) > dd(1) && iso(today) <= dd(4)))) jobs.push('ty');
+    if (!jobs.length) continue;
+    const R = await db('timer_recip?slug=eq.' + s + '&status=eq.sent&select=id,name,email,token,nr_at,dr_at,ty_at&limit=10000').catch(() => []);
+    const ans = await db('timer_rsvp?slug=eq.' + s + '&rtok=not.is.null&select=rtok,status&limit=10000').catch(() => []), A = {}; (ans || []).forEach(x => { A[x.rtok] = x.status; });
+    let room = (+cur.paid.emails || 0) - R.length;
+    for (const job of jobs) {
+      const who = R.filter(r => !r[job + '_at'] && (job === 'nr' ? !A[r.token] : A[r.token] === 'yes'));
+      const done = [];
+      for (const r of who) { if (budget <= 0 || room <= 0) break; const mm = inviteMail(s, cur, r, site, job);
+        const subj = { nr: (c.lang === 'en' ? 'Reminder: please RSVP · ' : 'תזכורת: נשמח לאישור הגעה · '), dr: (c.lang === 'en' ? 'Today! ' : 'היום! '), ty: (c.lang === 'en' ? 'Thank you · ' : 'תודה · ') }[job] + (c.t || '');
+        try { await sendMail({ to: r.email, subject: subj, html: mm.html, text: mm.text, replyTo: cur.paid.email || undefined, headers: { 'List-Unsubscribe': '<' + mm.unsub + '>' } }, 'invite-' + job); done.push(r.id); budget--; room--; out[job]++; }
+        catch (e) { if (/no mail provider/.test(e.message)) { budget = 0; break; } } }
+      if (done.length) await db('timer_recip?id=in.(' + done.join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ [job + '_at']: new Date().toISOString() }) });
+    }
+  }
+  return out;
+}
 /* המשימה היומית: ממשיכה שליחות שנעצרו (למשל כשהגענו למגבלה היומית של ספקי המייל) */
 async function cronSend(max) {
   const Q = await db('timer_recip?status=eq.queued&select=slug&limit=2000').catch(() => []); const S = [...new Set((Q || []).map(x => x.slug))]; let sent = 0;
   for (const s of S) { if (sent >= max) break; const cur = await get(s).catch(() => null); if (!cur || !cur.paid) continue; const r = await sendBatch(s, cur, Math.min(40, max - sent)); sent += r.sent || 0; if (r.stop === 'limit') break; }
   return { sent };
 }
+async function galList(s) { const R2 = require('./_r2'), M = R2.media(); if (!M) return []; const L = await R2.list('timers/gal/' + s + '/', 1000, M); return L.map(x => ({ key: x.key, url: M.url + '/' + x.key })).reverse(); }
 async function guest(req, res, b) {
   const s = str(b.slug, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
   const cur = await get(s); if (!cur) return json(res, 404, { error: 'not found' });
@@ -162,8 +199,26 @@ async function guest(req, res, b) {
       const name = clean1(b.name, 80); if (!name) return json(res, 400, { error: 'name' });
       if (await recent('timer_rsvp', s, meta.ip) >= 15) return json(res, 429, { error: 'rate' });
       const st = ['yes', 'no', 'maybe'].includes(b.status) ? b.status : 'yes', n = v => Math.max(0, Math.min(50, parseInt(v, 10) || 0));
-      await db('timer_rsvp', { meta, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ slug: s, name, phone: clean1(b.phone, 30), status: st, adults: st === 'no' ? 0 : n(b.adults) || 1, kids: st === 'no' ? 0 : n(b.kids), note: clean1(b.note, 300) }) });
+      const rtok = /^[0-9a-f]{24}$/.test(String(b.r || '')) ? String(b.r) : null, ans = (Array.isArray(b.ans) ? b.ans : []).slice(0, 3).map(v => clean1(v, 100));
+      const row = { slug: s, name, phone: clean1(b.phone, 30), status: st, adults: st === 'no' ? 0 : n(b.adults) || 1, kids: st === 'no' ? 0 : n(b.kids), note: clean1(b.note, 300), rtok, ans: ans.length ? ans : null };
+      /* מי שהגיע מקישור אישי: עדכון של התשובה הקודמת שלו, לא שורה חדשה */
+      const prev = rtok ? await db('timer_rsvp?slug=eq.' + s + '&rtok=eq.' + rtok + '&select=id&limit=1').catch(() => []) : [];
+      if (prev && prev[0]) await db('timer_rsvp?id=eq.' + prev[0].id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+      else await db('timer_rsvp', { meta, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) }).catch(async e => { if (/rtok|ans|column/.test(e.message)) { delete row.rtok; delete row.ans; await db('timer_rsvp', { meta, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) }); } else throw e; });
       return json(res, 200, { ok: true });
+    }
+    if (b.act === 'gal') {
+      if (!c.gal) return json(res, 403, { error: 'off' });
+      const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.img || '')); if (!m) return json(res, 400, { error: 'type' });
+      const buf = Buffer.from(m[1], 'base64'); if (buf.length > 900000 || !(buf[0] === 0xFF && buf[1] === 0xD8)) return json(res, 400, { error: 'size' });
+      const R2 = require('./_r2'); if (!R2.media()) return json(res, 503, { error: 'storage' });
+      const ip = (meta.ip || 'x').replace(/[^0-9a-f.:]/gi, '').replace(/:/g, '_'), hr = new Date().toISOString().slice(0, 13).replace(/\D/g, ''), rk = 'timers/rl/' + hr + '/g-' + ip + '.json';
+      let n = 0; try { const r = await fetch(R2.presign('GET', rk, 60)); if (r.ok) n = (await r.json()).n || 0; } catch (e) {}
+      if (n >= 30) return json(res, 429, { error: 'rate' });
+      const P = R2.mediaPut('timers/gal/' + s + '/' + Date.now() + '-' + crypto.randomBytes(6).toString('hex') + '.jpg');
+      const r = await fetch(P.upload, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: buf }); if (!r.ok) throw new Error('r2 ' + r.status);
+      try { await fetch(R2.presign('PUT', rk, 60), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: n + 1 }) }); } catch (e) {}
+      return json(res, 200, { ok: true, url: P.url });
     }
     if (b.act === 'wish') {
       if (!c.wl) return json(res, 403, { error: 'off' });
@@ -188,24 +243,29 @@ async function guest(req, res, b) {
     if (b.act === 'owner') {
       const [t, r, w] = await Promise.all([db('timer_teh?slug=eq.' + s + '&select=round,chapter,name,created_at&order=round.asc,chapter.asc&limit=3000').catch(() => null),db('timer_rsvp?slug=eq.' + s + '&select=id,name,phone,status,adults,kids,note,created_at&order=created_at.desc&limit=2000').catch(() => null),
         db('timer_wall?slug=eq.' + s + '&select=id,name,text,public,hidden,created_at&order=created_at.desc&limit=1000').catch(() => null)]);
-      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null);
+      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
+      const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=2000').catch(() => null);
+      const EP = await require('./_eventpay').prices().catch(() => ({}));
       const sent = (R || []).filter(x => x.status === 'sent').length;
-      return json(res, 200, { rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed }, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     if (b.act === 'radd') {
-      const L = (Array.isArray(b.list) ? b.list : []).slice(0, 10000).map(x => ({ name: clean1(x && x.name, 80), email: str(x && x.email, 200).trim().toLowerCase() })).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x.email));
+      const ph = v => { v = String(v || '').replace(/[^\d+]/g, ''); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); return /^0(5\d{8}|[2-9]\d{7})$/.test(v) ? v : ''; };
+      const L = (Array.isArray(b.list) ? b.list : []).slice(0, 10000).map(x => ({ name: clean1(x && x.name, 80), email: str(x && x.email, 200).trim().toLowerCase(), grp: clean1(x && x.grp, 40), cnt: Math.max(0, Math.min(99, parseInt(x && x.cnt, 10) || 0)), phone: ph(x && x.phone) }))
+        .map(x => ({ ...x, email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x.email) ? x.email : (x.phone ? 'sms-' + x.phone + '@phone.invalid' : '') })).filter(x => x.email);
       if (!L.length) return json(res, 400, { error: 'empty' });
       const have = await db('timer_recip?slug=eq.' + s + '&select=email&limit=10000').catch(() => []), H = new Set((have || []).map(x => x.email));
       if (H.size + L.length > 10000) return json(res, 400, { error: 'max' });
-      const add = []; L.forEach(x => { if (!H.has(x.email)) { H.add(x.email); add.push({ slug: s, name: x.name, email: x.email, token: crypto.randomBytes(12).toString('hex'), status: 'new' }); } });
+      const add = []; L.forEach(x => { if (!H.has(x.email)) { H.add(x.email); add.push({ slug: s, name: x.name, email: x.email, token: crypto.randomBytes(12).toString('hex'), status: 'new', ...(x.grp ? { grp: x.grp } : {}), ...(x.cnt ? { cnt: x.cnt } : {}), ...(x.phone ? { phone: x.phone } : {}) }); } });
       for (let i = 0; i < add.length; i += 500) await db('timer_recip', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(add.slice(i, i + 500)) });
       return json(res, 200, { ok: true, added: add.length, skipped: L.length - add.length });
     }
     /* שליחה: מסמנים נמענים לשליחה (לפי היתרה), ושומרים את נושא המייל */
     if (b.act === 'send') {
       if (!cur.paid) return json(res, 402, { error: 'unpaid' });
-      const R = await db('timer_recip?slug=eq.' + s + '&select=id,status&limit=10000');
+      const R = (await db('timer_recip?slug=eq.' + s + '&select=id,status,email&limit=10000')).filter(x => !/@phone\.invalid$/.test(x.email));
       const sent = R.filter(x => x.status === 'sent').length, left = Math.max(0, (+cur.paid.emails || 0) - sent - R.filter(x => x.status === 'queued').length);
       const ids = Array.isArray(b.ids) && b.ids.length ? new Set(b.ids.map(Number)) : null;
       const pick = R.filter(x => (x.status === 'new' || x.status === 'fail' || (b.again && x.status === 'sent')) && (!ids || ids.has(x.id))).slice(0, left).map(x => x.id);
@@ -222,6 +282,33 @@ async function guest(req, res, b) {
       await T_put_mail(s, cur, { ...(cur.mail || {}), at: null }); return json(res, 200, { ok: true });
     }
     if (b.act === 'mailpreview') { const m = inviteMail(s, cur, { name: str(b.name, 80) || 'משפחת ישראלי', token: '0'.repeat(24) }, (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '')); return json(res, 200, { html: m.html }); }
+    /* הושבה: שולחנות (בקובץ האירוע) ושיבוץ לכל אישור הגעה */
+    if (b.act === 'tables') { const T = (Array.isArray(b.tables) ? b.tables : []).slice(0, 200).map((x, i) => ({ id: str(x && x.id, 12).replace(/[^\w-]/g, '') || 't' + i, n: clean1(x && x.n, 40) || String(i + 1), c: Math.max(1, Math.min(50, parseInt(x && x.c, 10) || 10)) })); await put(s, { ...cur, seat: { tables: T } }); return json(res, 200, { ok: true, tables: T }); }
+    if (b.act === 'seatset') { const id = parseInt(b.id, 10); if (!id) return json(res, 400, { error: 'id' }); await db('timer_rsvp?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ seat: str(b.seat, 12) || null }) }); return json(res, 200, { ok: true }); }
+    if (b.act === 'galdel') { const k = str(b.key, 200); if (!k.startsWith('timers/gal/' + s + '/')) return json(res, 400, { error: 'key' }); const R2 = require('./_r2'), M = R2.media(); await fetch(R2.presign('DELETE', k, 120, null, M), { method: 'DELETE' }); return json(res, 200, { ok: true }); }
+    /* מתנות באשראי: בקשה להעברת הכסף לבעל האירוע (מייל למנהל האתר) */
+    if (b.act === 'payout') {
+      const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&payout=eq.open&select=id,net&limit=2000'); if (!G.length) return json(res, 400, { error: 'none' });
+      const sum = G.reduce((a, x) => a + (+x.net || 0), 0);
+      await db('timer_gift?id=in.(' + G.map(x => x.id).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ payout: 'requested' }) });
+      const to = require('./_lib').env('OWNER_EMAIL'); if (to) { const { sendMail, frame, escH } = require('./_mail'); await sendMail({ to, subject: 'בקשת העברת מתנות: ' + s + ' · ' + sum.toFixed(2) + ' ₪', html: frame({ title: 'בקשה להעברת מתנות', body: 'אירוע: <b>' + escH(s) + '</b><br>' + G.length + ' מתנות · לתשלום לבעל האירוע: <b>' + sum.toFixed(2) + ' ₪</b><br>מייל בעל האירוע: ' + escH((cur.paid && cur.paid.email) || '') + '<br>פרטי חשבון: ' + escH(clean1(b.bank, 300)) }) }, 'owner').catch(() => {}); }
+      return json(res, 200, { ok: true, sum });
+    }
+    /* SMS (רק בארץ, אם הופעל בניהול): שליחה לנמענים עם טלפון, ביתרת ה-SMS של האירוע */
+    if (b.act === 'smsnext') {
+      const EP = await require('./_eventpay').prices(); if (!EP.smsOn || !require('./_sms').ready()) return json(res, 403, { error: 'sms off' });
+      if (!cur.paid) return json(res, 402, { error: 'unpaid' }); if (await holyAt(Date.now())) return json(res, 200, { stop: 'shabbat', sent: 0 });
+      const used = (await db('timer_recip?slug=eq.' + s + '&sms_at=not.is.null&select=id&limit=20000')).length; let room = (+cur.paid.sms || 0) - used;
+      if (room <= 0) return json(res, 200, { stop: 'quota', sent: 0 });
+      const Q = await db('timer_recip?slug=eq.' + s + '&phone=not.is.null&sms_at=is.null&status=neq.unsub&select=id,name,phone,token&order=id.asc&limit=20');
+      const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, ''), ok = []; let failed = 0;
+      for (const r of Q) { if (room <= 0) break; const link = site + '/t/' + s + '?to=' + encodeURIComponent(r.name || '') + '&r=' + r.token;
+        const txt = (r.name ? (c.lang === 'en' ? 'Dear ' : 'לכבוד ') + r.name + ', ' : '') + (c.t || '') + ' – ' + (c.lang === 'en' ? 'invitation and RSVP: ' : 'הזמנה ואישור הגעה: ') + link;
+        try { await require('./_sms').send(r.phone, txt); ok.push(r.id); room--; } catch (e) { failed++; await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ sms_err: String(e.message).slice(0, 120) }) }).catch(() => {}); } }
+      if (ok.length) await db('timer_recip?id=in.(' + ok.join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ sms_at: new Date().toISOString(), sms_err: null }) });
+      const left = (await db('timer_recip?slug=eq.' + s + '&phone=not.is.null&sms_at=is.null&status=neq.unsub&select=id&limit=20000')).length;
+      return json(res, 200, { sent: ok.length, failed, left, done: !left || !Q.length });
+    }
     if (b.act === 'sendnext') { const r = await sendBatch(s, cur, 15); return json(res, 200, r); }
     const id = parseInt(b.id, 10); if (!id) return json(res, 400, { error: 'id' });
     if (b.act === 'whide') { await db('timer_wall?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ hidden: !!b.hidden }) }); return json(res, 200, { ok: true }); }
@@ -237,19 +324,21 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' && q.unsub) return unsub(req, res, str(q.unsub, 40));
     /* שליחה מתוזמנת: ה-Worker קורא לזה כל שעה (עם CRON_SECRET) */
     if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' }); return json(res, 200, await cronSend(120)); }
-    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS }); }
+    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, sms: E.SMS, smsOn: P.smsOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
       /* קיר הברכות הציבורי */
       /* חלוקת תהילים: הסבב הנוכחי ומי לקח כל פרק */
       if (q.teh) { res.setHeader('Cache-Control', 'no-store'); return json(res, 200, await tehState(s)); }
+      if (q.gal) { const cur = await get(s); if (!cur || !cur.paid || !(cur.cfg || {}).gal) return json(res, 200, { gal: [] }); res.setHeader('Cache-Control', 'no-store'); return json(res, 200, { gal: (await galList(s).catch(() => [])).map(x => x.url) }); }
       if (q.wall) { const L = await db('timer_wall?slug=eq.' + s + '&public=is.true&hidden=is.false&select=id,name,text,created_at&order=created_at.desc&limit=300').catch(() => []);
         res.setHeader('Cache-Control', 'no-store'); return json(res, 200, { wall: L || [] }); }
       const o = RESERVED.has(s) ? { reserved: true } : await get(s);
       if (q.check) return json(res, 200, { free: !o });
       if (!o || o.reserved) return json(res, 404, { error: 'not found' });
       res.setHeader('Cache-Control', 'public, max-age=60');
-      return json(res, 200, { cfg: o.cfg, paid: !!o.paid });
+      let gcOn = false; if (o.paid && o.cfg && o.cfg.gc) { try { gcOn = !!(await require('./_eventpay').prices()).giftOn; } catch (e) {} }
+      return json(res, 200, { cfg: o.cfg, paid: !!o.paid, gcOn });
     }
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });
     const b = readBody(req) || {};
@@ -263,6 +352,7 @@ module.exports = async (req, res) => {
       const tok = str(b.token, 64);
       if (!tok || tok.length !== cur.token.length || !crypto.timingSafeEqual(Buffer.from(tok), Buffer.from(cur.token))) return json(res, 409, { error: 'taken' });
       await put(s, { ...cur, cfg, updated: new Date().toISOString() });
+      if (cur.paid) await require('./_eventpay').index(s, cfg.d).catch(() => {});
       return json(res, 200, { ok: true, slug: s, token: tok, updated: true });
     }
     const token = crypto.randomBytes(16).toString('hex');
@@ -273,3 +363,4 @@ module.exports = async (req, res) => {
 
 module.exports.get = get; module.exports.put = put; module.exports.own = own;
 module.exports.cronSend = cronSend; module.exports.inviteMail = inviteMail;
+module.exports.autoMails = autoMails;

@@ -6,7 +6,7 @@ const { db, env, readBody, json, getUser, planInfo, loadConfig, LP, PLAN_NAMES }
 const enc = encodeURIComponent;
 const safe = p => p.catch(e => { console.error('account', e.message); return null; });
 const via = c => { c = c || {}; return c.sumit ? 'כרטיס אשראי (SUMIT)' : c.paypal ? 'PayPal' : c.TransactionId || c.TransactionID || c.Mosad || c.MosadNumber ? 'כרטיס אשראי (נדרים פלוס)' : ''; };
-const planName = id => id === 'donation' ? 'תרומה' : id === 'greet' ? 'ברכה / הזמנה מעוצבת' : id === 'event' ? 'דף הזמנה לאירוע' : (PLAN_NAMES[id] || (LP.PLANS.find(p => p.id === id) || {}).name || id);
+const planName = id => id === 'donation' ? 'תרומה' : id === 'greet' ? 'ברכה / הזמנה מעוצבת' : id === 'event' ? 'דף הזמנה לאירוע' : id === 'gift' ? 'מתנה לאירוע' : (PLAN_NAMES[id] || (LP.PLANS.find(p => p.id === id) || {}).name || id);
 
 /* הלוח הראשון שהודפס במסגרת המסלול (ההדפסות של מסלול חלות על שנה אחת) */
 async function lockedYear(user, since) {

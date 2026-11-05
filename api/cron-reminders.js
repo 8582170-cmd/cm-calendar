@@ -49,6 +49,8 @@ module.exports = async (req, res) => {
     }
     /* הזמנות לאירוע במייל שעוד בתור (למשל אחרי שהגענו למגבלה היומית של ספקי המייל) */
     try { const inv = await require('./_timer').cronSend(150); if (inv.sent) console.log('invites sent', inv.sent); } catch (e) { console.error('invite queue', e.message); }
+    /* דפי הזמנה: תזכורת למי שלא ענה, ביום האירוע, ותודה אחרי (לפי מה שבעל האירוע בחר) */
+    try { const am = await require('./_timer').autoMails(days, 300); console.log('event auto mails', JSON.stringify(am)); } catch (e) { console.error('event auto', e.message); }
     /* תזכורות קוליות בטלפון (אם ימות המשיח מוגדר) */
     let vsent = 0, vfailed = 0;
     if (await voice.ready()) {

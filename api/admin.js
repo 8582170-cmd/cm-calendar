@@ -308,8 +308,19 @@ module.exports = async (req, res) => {
     /* דף הזמנה לאירוע בתשלום: מחירים */
     if (req.method === 'POST' && (b.action === 'evpget' || b.action === 'evpset')) {
       const { loadSetting, saveSetting } = require('./_lib'), E = require('./_eventpay');
-      if (b.action === 'evpset') { const P = {}; Object.keys(E.DEF).forEach(k => { const v = Number((b.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; }); await saveSetting('eventpay', { on: b.on !== false, prices: P }); }
-      const x = await E.prices(); return json(res, 200, { on: x.on, prices: x.prices, tiers: E.TIERS });
+      if (b.action === 'evpset') { const P = {}; Object.keys(E.DEF).forEach(k => { const v = Number((b.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; });
+        await saveSetting('eventpay', { on: b.on === true, prices: P, smsOn: b.smsOn === true, giftOn: b.giftOn === true, giftPct: +b.giftPct || 0, giftFixed: +b.giftFixed || 0, giftMin: +b.giftMin || 18, giftMax: +b.giftMax || 5000 }); }
+      const x = await E.prices(); return json(res, 200, { ...x, tiers: E.TIERS, sms: E.SMS, smsReady: require('./_sms').ready() });
+    }
+    /* מתנות באשראי: דוח לפי אירוע, וסימון שהכסף הועבר לבעל האירוע */
+    if (req.method === 'POST' && (b.action === 'giftlist' || b.action === 'giftdone')) {
+      if (b.action === 'giftdone') { const sl = String(b.slug || '').toLowerCase(); if (!/^[a-z0-9-]{3,40}$/.test(sl)) return json(res, 400, { error: 'slug' }); await db('timer_gift?slug=eq.' + sl + '&status=eq.paid&payout=in.(open,requested)', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ payout: 'done' }) }); }
+      const L = await db('timer_gift?status=eq.paid&select=slug,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=5000').catch(() => null);
+      if (L === null) return json(res, 200, { setup: true, events: [] });
+      const by = {}; L.forEach(g => { const e = by[g.slug] = by[g.slug] || { slug: g.slug, n: 0, amount: 0, fee: 0, owed: 0, paidOut: 0, requested: false, last: g.paid_at }; e.n++; e.amount += +g.amount; e.fee += +g.fee; if (g.payout === 'done') e.paidOut += +g.net; else { e.owed += +g.net; if (g.payout === 'requested') e.requested = true; } });
+      return json(res, 200, { events: Object.values(by) });
+    }
+    if (req.method === 'POST' && b.action === 'smstest') { try { await require('./_sms').send(String(b.phone || ''), 'בדיקת SMS מ-MyLuach ✓'); return json(res, 200, { ok: true }); } catch (e) { return json(res, 200, { ok: false, error: String(e.message).slice(0, 200) }); }
     }
     /* הודעות לגולשים: מוצגות בראש הדפים שנבחרו (דף הבית, הבונים, הלוח המקוון, הברכות) */
     if (req.method === 'POST' && (b.action === 'msgget' || b.action === 'msgsave')) {
