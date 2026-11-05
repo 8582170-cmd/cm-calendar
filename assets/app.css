@@ -1730,3 +1730,6 @@ body.file-drag .sx-drop-hint{display:block}
 }
 @media (max-width:900px) and (max-height:520px) and (orientation:landscape){body.sx .sx-zout:not([hidden]){bottom:58px;left:auto;right:12px;transform:none}}
 @media print{.sheet-wrap .page{zoom:1!important}.sx-zb,.sx-zout{display:none!important}}
+
+.save-cloud.dirty{border-color:#c77c1a;background:#fff6e8}
+.save-cloud.ok{border-color:#2e7d4f;color:#2e7d4f}

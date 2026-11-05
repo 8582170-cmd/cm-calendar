@@ -83,6 +83,22 @@ async function owner(req, res) {
       if (!ID.test(String(b.id || ''))) return json(res, 400, { error: 'id' });
       return json(res, 200, { on: true, cal: presign('GET', calKey(b.id), 900) });
     }
+    /* גרסאות שהורדו: עותק מלא של הלוח (עם התמונות, בלי כפילויות) בכל הורדה בתשלום. נשמרות 10 האחרונות לכל משתמש */
+    if (op === 'snap' || op === 'snaps' || op === 'snapopen') {
+      const ixKey = 'cal/' + u + '/snaps/index.json', snapKey = k => 'cal/' + u + '/snaps/' + k + '.json';
+      let ix = []; try { const r = await fetch(presign('GET', ixKey, 120)); if (r.ok) ix = await r.json(); } catch (e) {} if (!Array.isArray(ix)) ix = [];
+      if (op === 'snaps') return json(res, 200, { on: true, snaps: ix });
+      if (op === 'snapopen') { const k = String(b.k || ''); if (!/^\d{10,14}$/.test(k) || !ix.some(x => x.k === k)) return json(res, 404, { error: 'nf' }); return json(res, 200, { on: true, cal: presign('GET', snapKey(k), 900) }); }
+      const vh = String(b.vh || '').slice(0, 64);
+      if (vh && ix[0] && ix[0].vh === vh) return json(res, 200, { on: true, same: true });
+      const k = String(Date.now()), have = await pool(hashes, 16, h => exists(imgKey(h)).catch(() => false));
+      const put = {}; hashes.forEach((h, i) => { if (!have[i]) put[h] = presign('PUT', imgKey(h), 1800); });
+      ix.unshift({ k, at: new Date().toISOString(), name: String(b.name || '').slice(0, 120), pages: Math.max(0, Math.min(999, parseInt(b.pages, 10) || 0)), cid: ID.test(String(b.cid || '')) ? b.cid : '', vh, page: String(b.page || '').slice(0, 20) });
+      const drop = ix.slice(10); ix = ix.slice(0, 10);
+      await pool(drop, 4, x => del(snapKey(x.k)).catch(() => false));
+      await fetch(presign('PUT', ixKey, 120), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ix) });
+      return json(res, 200, { on: true, cal: presign('PUT', snapKey(k), 1800), put, k });
+    }
     if (op === 'imgs') { const get = {}; hashes.forEach(h => { get[h] = presign('GET', imgKey(h), 900); }); return json(res, 200, { get }); }
     if (op === 'del') {
       if (!ID.test(String(b.id || ''))) return json(res, 400, { error: 'id' });

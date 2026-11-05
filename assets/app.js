@@ -227,7 +227,7 @@ function idbSet(k,v){return new Promise(res=>{if(!db)return res(false);try{const
 let saveT=null;
 function save(){if(LITE||SNAPVIEW)return;
   $('#saveState').textContent='שומר…';clearTimeout(saveT);
-  saveT=setTimeout(async()=>{const ok=await idbSet(SKEY,state);$('#saveState').textContent=ok?'נשמר בדפדפן הזה':'לא ניתן לשמור בדפדפן הזה. השתמשו ב"שמירת גיבוי".';cloudQueue()},400);
+  saveT=setTimeout(async()=>{state.s._mt=Date.now();const ok=await idbSet(SKEY,state);$('#saveState').textContent=ok?'נשמר בדפדפן הזה':'לא ניתן לשמור בדפדפן הזה. השתמשו ב"שמירת גיבוי".';cloudQueue()},400);
 }
 
 let framed=false;try{framed=window.self!==window.top}catch(e){framed=true}
@@ -3395,9 +3395,13 @@ $('#exportBtn').onclick=()=>{
   const ta=m.querySelector('#bk');ta.value=json;
   m.querySelector('#bkCopy').onclick=async ev=>{try{await navigator.clipboard.writeText(json);ev.target.textContent='הועתק'}catch(err){ta.focus();ta.select();ev.target.textContent='סמנו והעתיקו ידנית'}};
 };
+$('#histBtn')&&($('#histBtn').onclick=()=>histModal());
 $('#importBtn').onclick=()=>{
   const m=modal('<h3>שחזור מגיבוי</h3><p class="hint">בחרו קובץ גיבוי או הדביקו את טקסט הגיבוי. הנתונים הנוכחיים יוחלפו.</p><div class="row"><button class="btn" type="button" id="imFile">בחירת קובץ</button></div><textarea id="imText" placeholder="הדביקו כאן"></textarea><p class="hint" id="imMsg"></p><div class="row"><button class="btn primary" type="button" id="imGo">שחזור</button><button class="btn" type="button" data-close>ביטול</button></div>');
-  const apply=txt=>{try{state=merge(DEFAULT,JSON.parse(txt));save();syncUI();render();m.remove()}catch(err){m.querySelector('#imMsg').innerHTML='<span class="msg-bad">הטקסט אינו גיבוי תקין של MyLuach.</span>'}};
+  const apply=async txt=>{try{const nb=JSON.parse(txt);if(!nb||typeof nb!=='object'||!nb.s)throw 0;await histPush('לפני שחזור מגיבוי');
+    /* קובץ שחזור בלי תמונות (למשל מעותק של הורדה): תמונה שחסרה בו נשארת מהלוח הנוכחי */
+    const fill=(a,c)=>{if(a==null)return typeof c==='string'&&/^data:image\//.test(c)?c:a;if(Array.isArray(a))return a.map((x,i)=>fill(x,Array.isArray(c)?c[i]:undefined));if(typeof a==='object'){const o={};for(const k in a)o[k]=fill(a[k],c&&typeof c==='object'?c[k]:undefined);return o}return a};
+    state=merge(DEFAULT,fill(nb,state));monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()}catch(err){m.querySelector('#imMsg').innerHTML='<span class="msg-bad">הטקסט אינו גיבוי תקין של MyLuach.</span>'}};
   m.querySelector('#imGo').onclick=()=>apply(m.querySelector('#imText').value);
   m.querySelector('#imFile').onclick=()=>{const f=$('#fileJson');f.value='';f.onchange=()=>{const r=new FileReader();r.onload=()=>apply(r.result);if(f.files[0])r.readAsText(f.files[0])};f.click()};
 };
@@ -3405,7 +3409,7 @@ function bindReset(){
   $('#resetRow').innerHTML='<button class="btn small danger" type="button" id="resetBtn">איפוס הכל</button>';
   $('#resetBtn').onclick=()=>{
     $('#resetRow').innerHTML='<span class="hint">למחוק את כל התמונות, האירועים וההגדרות?</span><button class="btn small danger" type="button" id="resetYes">כן, למחוק</button><button class="btn small" type="button" id="resetNo">ביטול</button>';
-    $('#resetYes').onclick=()=>{state=structuredClone(DEFAULT);state.events=[];if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}save();bindReset();syncUI();render()};
+    $('#resetYes').onclick=async()=>{await histPush('לפני איפוס');state=structuredClone(DEFAULT);state.events=[];if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}save();bindReset();syncUI();render()};
     $('#resetNo').onclick=bindReset;
   };
 }
@@ -3556,7 +3560,7 @@ $('#welcomeRestore').onclick=()=>{goMode('adv');const d=$('#importBtn').closest(
 $('#finishBtn').onclick=()=>{state.s.wizardDone=true;goMode('home')};
 $('#homeEdit').onclick=()=>goMode('wizard',1);
 $('#homeAdv').onclick=()=>goMode('adv');
-$('#homeNext').onclick=()=>{const s=state.s;if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;s.rangeFrom='';s.rangeTo='';save();syncUI();render();window.scrollTo({top:0,behavior:'smooth'})};
+$('#homeNext').onclick=async()=>{await toNextYear();window.scrollTo({top:0,behavior:'smooth'})};
 $('#bulkBtn2').onclick=openImageOrganizer;
 $('#swatches2').innerHTML=ACCENTS.map(a=>'<button type="button" class="sw" style="background:'+a+'" data-acc="'+a+'" aria-label="צבע '+a+'"></button>').join('');
 $('#swatches2').addEventListener('click',e=>{const b=e.target.closest('.sw');if(b)set('accent',b.dataset.acc)});
@@ -3830,8 +3834,8 @@ async function r2Save(id){
   await poolRun(Object.keys(put),4,async h=>{const blob=await (await fetch(imgs[h])).blob();const r=await fetch(put[h],{method:'PUT',headers:{'Content-Type':blob.type||'image/jpeg'},body:blob});if(!r.ok)throw new Error('img '+r.status);R2HAVE.add(h)});
   const r=await fetch(sv.cal,{method:'PUT',headers:{'Content-Type':'application/json'},body});if(!r.ok)throw new Error('cal '+r.status);
   const bytes=body.length+all.reduce((a,h)=>a+Math.round(imgs[h].length*.75),0);return {bytes,n:all.length}}
-async function r2Load(id){
-  const o=await r2Api('open',{id});const r=await fetch(o.cal);if(!r.ok)throw new Error('cal '+r.status);const raw=JSON.parse(await r.text());
+async function r2Load(id,url){
+  const o=url?{cal:url}:await r2Api('open',{id});const r=await fetch(o.cal);if(!r.ok)throw new Error('cal '+r.status);const raw=JSON.parse(await r.text());
   const need=new Set();const scan=v=>{if(typeof v==='string'){if(v.startsWith('r2img:'))need.add(v.slice(6))}else if(Array.isArray(v))v.forEach(scan);else if(v&&typeof v==='object')for(const k in v)scan(v[k])};scan(raw);
   const H=[...need],data={};
   for(let i=0;i<H.length;i+=300){const g=(await r2Api('imgs',{imgs:H.slice(i,i+300)})).get||{};
@@ -3839,7 +3843,40 @@ async function r2Load(id){
   const fill=v=>{if(typeof v==='string')return v.startsWith('r2img:')?(data[v.slice(6)]||null):v;if(Array.isArray(v))return v.map(fill);if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=fill(v[k]);return o}return v};
   Object.entries(data).forEach(([h,d])=>R2HASH.set(d,h));
   return fill(raw)}
-function cloudQueue(){if(!user||SNAPVIEW)return;cloudDirty=true;clearTimeout(cloudT);cloudT=setTimeout(cloudSave,6000)}
+/* ---------- גרסאות קודמות ---------- */
+/* בדפדפן: לפני כל פעולה שמחליפה את הלוח (פתיחת לוח מהחשבון, לוח חדש, שחזור, איפוס) שומרים את הלוח הנוכחי. 3 האחרונות */
+const HKEY='hist-'+SKEY;
+function hasContent(st){try{return !!(st&&((st.events&&st.events.length)||/data:image\//.test(JSON.stringify(st))))}catch(e){return false}}
+async function histPush(reason){try{if(!hasContent(state))return;const L=(await idbGet(HKEY))||[];const cur=JSON.stringify(verState());
+  if(L[0]&&L[0].h===cur.length+':'+cur.slice(-200))return;
+  L.unshift({at:Date.now(),name:calTitle(),reason,h:cur.length+':'+cur.slice(-200),st:structuredClone(state)});await idbSet(HKEY,L.slice(0,3))}catch(e){console.warn('hist',e)}}
+async function histModal(){const L=(await idbGet(HKEY))||[];
+  const m=modal('<h3>גרסאות קודמות בדפדפן הזה</h3><p class="hint">לפני כל פעולה שמחליפה את הלוח (פתיחת לוח מהחשבון, לוח חדש, שחזור מגיבוי או איפוס) שמרנו כאן את הלוח שהיה פתוח. נשמרות 3 הגרסאות האחרונות.</p>'+
+    (L.length?'<ul class="ac-list">'+L.map((x,i)=>'<li><span><b>'+esc(x.name||'לוח')+'</b><small>'+new Date(x.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+' · '+esc(x.reason||'')+'</small></span><button class="btn" type="button" data-hist="'+i+'">שחזור</button></li>').join('')+'</ul>':'<p class="hint">אין עדיין גרסאות קודמות.</p>')+
+    '<div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');
+  m.addEventListener('click',async e=>{const b=e.target.closest('[data-hist]');if(!b)return;const x=L[+b.dataset.hist];if(!x)return;await histPush('לפני שחזור גרסה קודמת');
+    state=merge(DEFAULT,x.st);monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove();modal('<h3>הלוח שוחזר ✓</h3><p class="hint">הגרסה מ־'+new Date(x.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+' נפתחה. הגרסה שהייתה פתוחה לפני כן נשמרה ב"גרסאות קודמות".</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>')})}
+/* בחשבון: עותק מלא של הלוח בכל הורדה בתשלום (ב-R2, תמונות בלי כפילויות). 10 האחרונות */
+async function dlSnapSave(){if(!user||!(await r2On()))return;
+  const vh=await verHash(),{body,imgs}=await r2Pack(state),all=Object.keys(imgs);
+  const sv=await r2Api('snap',{imgs:all.slice(0,400),vh,name:calTitle(),pages:RS.count,cid:state.s.cloudId||'',page:CDMODE?'countdown':SIMPLE?'simple':'app'});if(!sv.on||sv.same)return;
+  await poolRun(Object.keys(sv.put||{}),4,async h=>{const blob=await (await fetch(imgs[h])).blob();const r=await fetch(sv.put[h],{method:'PUT',headers:{'Content-Type':blob.type||'image/jpeg'},body:blob});if(r.ok)R2HAVE.add(h)});
+  await fetch(sv.cal,{method:'PUT',headers:{'Content-Type':'application/json'},body})}
+async function dlSnapOpen(k){const o=await r2Api('snapopen',{k});const raw=await r2Load(null,o.cal);await histPush('לפני פתיחת גרסה שהורדה');
+  const loaded=merge(DEFAULT,raw);const isCd=loaded.s.view==='countdown';
+  if(isCd!==CDMODE){await idbSet(isCd?'state-cd':'state',loaded);window.location.href=isCd?PGN('countdown.html'):'app.html';return}
+  state=loaded;monthsCache=buildMonths();await idbSet(SKEY,state);syncUI();applyMode();render();cloudQueue()}
+/* כפתור "שמירה בחשבון": מראה אם הלוח שמור בשרת */
+function saveBtnUI(st){const b=$('#saveCloudBtn');if(!b)return;b.classList.toggle('dirty',st==='dirty');b.classList.toggle('ok',st==='ok');
+  b.textContent=st==='busy'?'💾 שומר…':st==='ok'?'✓ נשמר בחשבון':'💾 שמירה בחשבון'}
+async function saveCloudClick(){
+  if(!sb){modal('<h3>השמירה בחשבון לא זמינה כרגע</h3><p class="hint">לא הצלחנו לטעון את מערכת הכניסה. בדקו את החיבור לאינטרנט ורעננו את הדף. בינתיים הלוח שמור בדפדפן הזה.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
+  if(!user){loginModal('כדי לשמור את הלוח בשרת צריך להיכנס לחשבון (בחינם). אחרי הכניסה הלוח יישמר בחשבון, ותוכלו לפתוח אותו מכל מחשב ובשנים הבאות.');return}
+  saveBtnUI('busy');cloudDirty=true;await cloudSave();
+  if(cloudDirty){saveBtnUI('dirty');modal('<h3>השמירה בחשבון לא הצליחה</h3><p class="hint">הלוח שמור בדפדפן הזה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>')}
+  else{saveBtnUI('ok');shareToast('הלוח נשמר בחשבון ✓ אפשר לפתוח אותו מ"הלוחות שלי" בכל מחשב')}}
+if($('#saveCloudBtn'))$('#saveCloudBtn').onclick=saveCloudClick;
+function cloudQueue(){if(!SNAPVIEW)saveBtnUI('dirty');if(!user||SNAPVIEW)return;cloudDirty=true;clearTimeout(cloudT);cloudT=setTimeout(cloudSave,6000)}
 async function cloudSave(){
   if(!user||cloudBusy)return;cloudBusy=true;cloudDirty=false;
   try{
@@ -3850,11 +3887,11 @@ async function cloudSave(){
     else{const body=JSON.stringify(state);
       const {error}=await sb.storage.from('calendars').upload(cloudPath(id),new Blob([body],{type:'application/json'}),{upsert:true,contentType:'application/json'});
       if(error)throw error;size=body.length}
-    const ix=await readIndex();const was=ix[id]&&ix[id].store;ix[id]={name:calTitle(),updated:new Date().toISOString(),size,...(store?{store}:{})};await writeIndex(ix);
+    const ix=await readIndex();const was=ix[id]&&ix[id].store;ix[id]={name:calTitle()+(state.s.calName&&!CDMODE&&!/\d|[א-ת]״[א-ת]/.test(state.s.calName)?' · '+(state.s.calType==='greg'?state.s.gregYear:gemYear(state.s.hebYear)):''),updated:new Date().toISOString(),size,...(store?{store}:{})};await writeIndex(ix);
     /* הלוח עבר ל-R2: מוחקים את העותק הישן ב-Supabase */
     if(store==='r2'&&was!=='r2')sb.storage.from('calendars').remove([cloudPath(id)]).catch(()=>{});
     if(ix.__feed&&ix.__feed.cal===id)feedSync(false).catch(()=>{});
-    const el=$('#saveState');if(el){el.textContent='נשמר בחשבון ובדפדפן הזה';el.title=store==='r2'?'R2':'S'}
+    if(!cloudDirty)saveBtnUI('ok');const el=$('#saveState');if(el){el.textContent='נשמר בחשבון ובדפדפן הזה';el.title=store==='r2'?'R2':'S'}
   }catch(e){console.warn('cloud save',e);const el=$('#saveState');if(el)el.textContent='נשמר בדפדפן הזה (השמירה בחשבון נכשלה, ננסה שוב)';cloudDirty=true}
   cloudBusy=false;if(cloudDirty){clearTimeout(cloudT);cloudT=setTimeout(cloudSave,15000)}
 }
@@ -3897,6 +3934,15 @@ async function cloudOpen(id){
   if(ix[id]&&ix[id].store==='r2')raw=await r2Load(id);
   else{const {data,error}=await sb.storage.from('calendars').download(cloudPath(id));if(error||!data)throw error||new Error('no data');raw=JSON.parse(await data.text())}
   const loaded=merge(DEFAULT,raw);loaded.s.cloudId=id;
+  /* בדפדפן יש גרסה חדשה יותר של אותו לוח (למשל עבדו בלי חיבור לחשבון)? שואלים לפני שמחליפים */
+  const strip=st=>{const c=structuredClone(st);['uiMode','step','wizardDone','cloudId','shareId','_mt'].forEach(k=>{if(c.s)delete c.s[k]});return JSON.stringify(c)};
+  const differs=hasContent(state)&&strip(state)!==strip(loaded);
+  if(differs&&state.s.cloudId===id&&state.s._mt&&ix[id]&&ix[id].updated&&state.s._mt>Date.parse(ix[id].updated)+30000){
+    const keep=await new Promise(res=>{const q=modal('<h3>בדפדפן יש גרסה חדשה יותר</h3><p class="hint">הלוח "'+esc(calTitle())+'" נערך בדפדפן הזה ב־'+new Date(state.s._mt).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+', והגרסה בחשבון נשמרה לפני כן ('+new Date(ix[id].updated).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+').</p><div class="row"><button class="btn primary" type="button" id="kpLocal">להשאיר את הגרסה החדשה ולשמור אותה בחשבון</button><button class="btn" type="button" id="kpCloud">לפתוח את הגרסה מהחשבון</button></div>');
+      q.querySelector('#kpLocal').onclick=()=>{q.remove();res(true)};q.querySelector('#kpCloud').onclick=()=>{q.remove();res(false)}});
+    if(keep){cloudDirty=true;await cloudSave();return}
+  }
+  if(differs)await histPush('לפני פתיחת לוח מהחשבון');
   const isCd=loaded.s.view==='countdown';
   if(isCd!==CDMODE){await idbSet(isCd?'state-cd':'state',loaded);window.location.href=isCd?PGN('countdown.html'):'app.html';return}
   state=loaded;monthsCache=buildMonths();await idbSet(SKEY,state);syncUI();applyMode();render();
@@ -3969,13 +4015,14 @@ async function acctCals(m,body){
   const ix=await readIndex(),ids=Object.keys(ix).filter(k=>!k.startsWith('__')).sort((a,b)=>(ix[b].updated||'').localeCompare(ix[a].updated||''));
   const plan=acctInfo&&acctInfo.plan?LP.byId(acctInfo.plan).name:null;
   body.innerHTML=(ids.length?'<ul class="ac-list">'+ids.map(id=>'<li'+(id===state.s.cloudId?' class="cur"':'')+'><span><b>'+esc(ix[id].name||'לוח')+'</b><small>'+(id===state.s.cloudId?'פתוח עכשיו · ':'')+'עודכן '+new Date(ix[id].updated).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+'</small></span>'+(id===state.s.cloudId?'':'<button class="btn" type="button" data-open="'+id+'">פתיחה</button>')+'<button class="btn danger-ghost" type="button" data-delc="'+id+'">מחיקה</button></li>').join('')+'</ul>':'<p class="hint">עוד אין לוחות שמורים בחשבון.</p>')+
-    '<div class="row"><button class="btn" type="button" id="acSaveNew">'+(state.s.cloudId&&ix[state.s.cloudId]?'לשמור עותק כלוח נפרד':'לשמור את הלוח הנוכחי בחשבון')+'</button><button class="btn" type="button" id="acNew">לוח חדש ריק</button></div>'+
+    '<div class="row"><button class="btn" type="button" id="acNextY">📅 לוח לשנה הבאה עם כל האירועים והתמונות</button></div><div class="row"><button class="btn" type="button" id="acSaveNew">'+(state.s.cloudId&&ix[state.s.cloudId]?'לשמור עותק כלוח נפרד':'לשמור את הלוח הנוכחי בחשבון')+'</button><button class="btn" type="button" id="acNew">לוח חדש ריק</button></div>'+
     '<div class="row"><button class="btn" type="button" id="acFeed">📅 הלוח שלי ביומן גוגל / בטלפון</button></div>'+
     '<label class="fld">שם הלוח הנוכחי<input type="text" id="acName" maxlength="60" value="'+esc(state.s.calName||'')+'" placeholder="'+esc(calTitle())+'"></label>';
   body.querySelector('#acFeed').onclick=()=>{m.remove();feedModal()};
+  body.querySelector('#acNextY').onclick=async()=>{m.remove();await toNextYear()};
   body.querySelector('#acName').onchange=e=>{state.s.calName=e.target.value.trim();save()};
   body.querySelector('#acSaveNew').onclick=async()=>{if(state.s.cloudId&&ix[state.s.cloudId]){delete state.s.cloudId;state.s.calName=(state.s.calName||calTitle())+' (עותק)'}await cloudSave();m.remove();accountModal('cals')};
-  body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();state=structuredClone(DEFAULT);state.s.uiMode='wizard';if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}if(CDMODE)Object.assign(state.s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',zmanimMode:'none',cover:false});monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
+  body.querySelector('#acNew').onclick=async()=>{if(cloudDirty)await cloudSave();await histPush('לפני לוח חדש');state=structuredClone(DEFAULT);state.s.uiMode='wizard';if(SIMPLE){state.s.cover=false;state.s.pageBg='month'}if(CDMODE)Object.assign(state.s,{view:'countdown',layout:'full',theme:'block',accent:'#a3462b',size:'a4',zmanimMode:'none',cover:false});monthsCache=buildMonths();save();syncUI();applyMode();render();m.remove()};
   body.addEventListener('click',async e=>{
     const o=e.target.closest('[data-open]');if(o){o.disabled=true;o.textContent='פותח…';if(cloudDirty)await cloudSave();try{await cloudOpen(o.dataset.open);m.remove()}catch(err){o.textContent='שגיאה';}return}
     const d=e.target.closest('[data-delc]');if(d){if(!d.dataset.sure){d.dataset.sure=1;d.textContent='בטוח?';return}d.disabled=true;await cloudDelete(d.dataset.delc);m.remove();accountModal('cals')}
@@ -4039,12 +4086,18 @@ function acConfirm(o){
     '</table><p class="n">זהו אישור על ביצוע ההזמנה באתר, ואינו מהווה חשבונית מס. קבלה רשמית נשלחת מחברת הסליקה, או לפי בקשה.</p><button onclick="print()">הדפסה / שמירה כ־PDF</button></body></html>');
   w.document.close();
 }
-function acctDls(body){
+function acctDls(body,m){
   const D=acctData,P=CDMODE?(D.cdPlan||D.plan):D.plan,L=D.downloads||[];
   const K={paid:'הורדה במסלול',reprint:'הדפסה חוזרת (חינם)',lite:'לוח חינמי',sample:'חודש לדוגמה',countdown:'ספירה לאחור',browser:'הדפסה מהדפדפן'};
   body.innerHTML=(P&&P.limit?'<p class="ac-card"><b>נשארו לכם '+(P.left==null?'?':P.left)+' הורדות</b> מתוך '+P.limit+' במסלול '+esc(P.name)+'.</p>':'')+
     (L.length?'<ul class="ac-list">'+L.map(d=>'<li><span><b>'+esc(acCal(d.cal))+'</b><small>'+acDate(d.at)+' · '+esc(K[d.kind]||d.kind)+(d.pages?' · '+d.pages+' עמודים':'')+(d.size?' · '+esc(d.size):'')+'</small></span></li>').join('')+'</ul>':'<p class="hint">עוד לא הורדתם לוחות מהחשבון הזה.</p>')+
-    '<p class="hint">רוצים להוריד שוב לוח? פותחים אותו מ<button class="linkbtn" type="button" data-acgo="cals">הלוחות שלי</button>, ולוחצים "הורדה והדפסה". גרסה שכבר הדפסתם יורדת שוב בחינם, עד סוף השנה של הלוח.</p>';
+    '<p class="hint">רוצים להוריד שוב לוח? פותחים אותו מ<button class="linkbtn" type="button" data-acgo="cals">הלוחות שלי</button>, ולוחצים "הורדה והדפסה". גרסה שכבר הדפסתם יורדת שוב בחינם, עד סוף השנה של הלוח.</p>'+
+    '<h4 class="sh-h">הגרסאות שהורדו<small> · עותק של הלוח בדיוק כמו שהורד (10 האחרונות)</small></h4><div id="acSnaps"><p class="hint">טוען…</p></div>';
+  const box=body.querySelector('#acSnaps');
+  r2On().then(on=>on?r2Api('snaps'):{snaps:[]}).then(j=>{const S=j.snaps||[];if(!box.isConnected)return;
+    box.innerHTML=S.length?'<ul class="ac-list">'+S.map(x=>'<li><span><b>'+esc(x.name||'לוח')+'</b><small>הורד '+acDate(x.at)+(x.pages?' · '+x.pages+' עמודים':'')+'</small></span><button class="btn" type="button" data-snapk="'+esc(x.k)+'">פתיחת הגרסה הזאת</button></li>').join('')+'</ul><p class="hint">הלוח שפתוח עכשיו יישמר ב"גרסאות קודמות" (בגיבוי ושחזור), כך שאפשר לחזור אליו.</p>':'<p class="hint">עוד אין גרסאות שמורות. מעכשיו, בכל הורדה נשמר כאן עותק.</p>';
+    box.onclick=async e=>{const b=e.target.closest('[data-snapk]');if(!b)return;b.disabled=true;b.textContent='פותח…';try{await dlSnapOpen(b.dataset.snapk);if(m)m.remove()}catch(err){b.textContent='שגיאה';console.warn(err)}}})
+   .catch(()=>{if(box.isConnected)box.innerHTML='<p class="hint">לא הצלחנו לטעון את הגרסאות.</p>'});
 }
 function acctRems(body){
   const R=acctData.reminders||[],V=acctData.voice||[];
@@ -4176,7 +4229,7 @@ function activatePlan(planId,orderId){LP.setCurrent(planId);try{localStorage.set
   fetch('/api/order?id='+o.id).then(r=>r.json()).then(x=>{if(x.status==='paid')activatePlan(x.plan,o.id)}).catch(()=>{})})();
 /* "טביעת אצבע" של תוכן הלוח (בלי הגדרות תצוגה ומצב העבודה): גרסה שכבר הודפסה אפשר להדפיס שוב בחינם */
 const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))].map(x=>x.toString(16).padStart(2,'0')).join('');
-function verState(){const st=structuredClone(state);['uiMode','step','wizardDone','cloudId','shareId','calName'].forEach(k=>{if(st.s)delete st.s[k]});return st}
+function verState(){const st=structuredClone(state);['uiMode','step','wizardDone','cloudId','shareId','calName','_mt'].forEach(k=>{if(st.s)delete st.s[k]});return st}
 async function verHash(){try{return await sha(JSON.stringify(verState()))}catch(e){return ''}}
 /* טביעת אצבע לכל חלק בנפרד (כל אירוע, כל תמונה, ההגדרות…): כך השרת יודע אם זה תיקון קטן או לוח אחר לגמרי */
 async function verParts(){try{const st=verState(),L=[],empty=v=>v==null||v===''||(typeof v==='object'&&!Object.keys(v).length);
@@ -4214,7 +4267,9 @@ async function doPrint(){
       modal('<h3>ההדפסות במסלול הן ללוח של '+esc(yt)+'</h3><p class="hint">המסלול כולל כמה הדפסות של אותו לוח, למשל אחרי תיקונים, אבל רק לשנה שכבר הודפסה ('+esc(yt)+'). כדי להדפיס לוח לשנה אחרת צריך לרכוש מסלול חדש.</p><div class="row"><button class="btn primary" type="button" id="yrBuy">לרכישת מסלול לשנה הזאת</button><button class="btn" type="button" data-close>סגירה</button></div>').querySelector('#yrBuy').onclick=e=>{e.target.closest('.modal-back').remove();openUpgrade('download')};return}
     if(r.status===409){m.remove();try{localStorage.setItem('luchenu-downloads',String(P.downloads))}catch(e){}syncPlanUI();doPrint();return}
     if(r.ok&&j.left!=null){try{localStorage.setItem('luchenu-downloads',String(P.downloads-j.left))}catch(e){}}else if(!j.reprint)LP.useDownload();
-    m.remove();syncPlanUI();setTimeout(ourPrint,50)};
+    m.remove();syncPlanUI();setTimeout(ourPrint,50);
+    /* אחרי הורדה: שומרים את הלוח בחשבון, ועותק של הגרסה שהורדה */
+    if(r.ok&&user){setTimeout(()=>{cloudDirty=true;cloudSave().catch(()=>{});dlSnapSave().catch(e=>console.warn('dl snap',e))},4000)}};
 }
 /* ---------- לוח חינמי לשנה: גרסה מוגבלת, בלי סימן מים, פעם אחת לכל משתמש ---------- */
 const LITE_LIM={events:25,photos:10,zmanim:3};
@@ -5289,12 +5344,19 @@ function sxOnboard(){const ans={who:'family',hang:'wall',nusach:'ashkenaz'};let 
     else if(ans.who==='shul'){s.noTimes=false}
     save();syncUI();render();done()}}
 
+/* לוח לשנה הבאה: אותם אירועים, תמונות ועיצוב. הלוח של השנה הקודמת נשאר שמור בחשבון כלוח נפרד (ובגרסאות הקודמות בדפדפן) */
+async function toNextYear(){const s=state.s,nx=s.calType==='heb'?hebYearStr(+s.hebYear+1):String(+s.gregYear+1);
+  await histPush('הלוח של השנה הקודמת');
+  if(user&&s.cloudId){cloudDirty=true;await cloudSave().catch(()=>{});delete s.cloudId;delete s.shareId}
+  if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;s.rangeFrom='';s.rangeTo='';s.startDate='';s.endDate='';
+  save();syncUI();render();if(user)cloudQueue();
+  shareToast('הלוח עבר ל־'+nx+' עם כל האירועים והתמונות'+(user?'. הלוח של השנה הקודמת נשאר ב"הלוחות שלי"':''))}
 /* לוח של שנה שעברה: הצעה להמשיך ממנו לשנה הבאה */
 function sxNextYear(){const old=$('#sxYear');if(old)old.remove();if(uiMode()==='home')return;const M=monthsCache||[];if(!M.length)return;const last=M.at(-1).days.at(-1);if(!last||last>=new Date())return;
   const s=state.s,cur=s.calType==='heb'?hebYearStr(+s.hebYear):String(s.gregYear),nx=s.calType==='heb'?hebYearStr(+s.hebYear+1):String(+s.gregYear+1);
   const b=el('div','notice sx-year no-print','<span>הלוח הזה הוא של <b>'+esc(cur)+'</b>, שכבר הסתיימה. להמשיך ממנו ל־'+esc(nx)+'? כל התאריכים, הזמנים והעיצוב יישארו, ונשאר רק להחליף תמונות.</span><span class="row"><button type="button" class="btn primary small" id="sxYGo">כן, ללוח '+esc(nx)+'</button><button type="button" class="btn small" id="sxYNo">לא עכשיו</button></span>');b.id='sxYear';
   stage.prepend(b);b.querySelector('#sxYNo').onclick=()=>b.remove();
-  b.querySelector('#sxYGo').onclick=()=>{if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;s.rangeFrom='';s.rangeTo='';s.startDate='';s.endDate='';save();syncUI();render();b.remove();shareToast('הלוח עבר ל־'+nx)}}
+  b.querySelector('#sxYGo').onclick=async()=>{b.remove();await toNextYear()}}
 
 /* תאריך עברי ליד כל שדה תאריך, ובחירה מלוח עברי */
 function sxDates(root){(root||document).querySelectorAll('.side input[type=date],.modal input[type=date]').forEach(inp=>{if(inp.dataset.sxd)return;inp.dataset.sxd='1';
