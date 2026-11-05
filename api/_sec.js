@@ -2,6 +2,13 @@
    הנתונים נשמרים בהגדרות (settings): secfails = ניסיונות כניסה שגויים לפי IP, ipblock = כתובות חסומות. */
 'use strict';
 const { loadSetting, saveSetting, env } = require('./_lib');
+const crypto = require('node:crypto');
+const SITE = () => (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+/* קישור חתום לשחרור חסימה מתוך המייל (תקף 7 ימים) */
+const sign = (ip, exp) => crypto.createHmac('sha256', env('CRON_SECRET') || env('ADMIN_PASSWORD') || 'x').update('unblock|' + ip + '|' + exp).digest('hex').slice(0, 32);
+function unblockLink(ip) { const exp = Date.now() + 7 * 24 * 3600e3; return SITE() + '/api/pricing?c=_unblock&ip=' + encodeURIComponent(ip) + '&e=' + exp + '&s=' + sign(ip, exp); }
+function checkLink(q) { const ip = String(q.ip || ''), exp = +q.e || 0, s = String(q.s || ''); if (!ip || !exp || Date.now() > exp || s.length !== 32) return null;
+  const good = sign(ip, exp); return crypto.timingSafeEqual(Buffer.from(good), Buffer.from(s)) ? ip : null; }
 
 /* דפדפן · מערכת הפעלה · סוג מכשיר, מתוך User-Agent */
 function uaInfo(ua) {
@@ -48,7 +55,7 @@ async function loginResult(req, ok) {
     s.lvl = (s.lvl || 0) + 1; s.n = 0; s.until = now + LOCKS[Math.min(s.lvl, LOCKS.length) - 1]; locked = { until: s.until, level: s.lvl };
     /* מהנעילה השלישית: חסימה מלאה של הכתובת ליום, והודעה במייל */
     if (s.lvl >= 3) await block(ip, 'ניסיונות כניסה חוזרים לניהול עם סיסמה שגויה (' + s.total + ')', 24 * 3600e3, true);
-    if (s.lvl >= 2) await notify('נעילת כניסה לניהול', 'כתובת ' + ip + ' ננעלה אחרי ' + s.total + ' ניסיונות כניסה שגויים (שלב ' + s.lvl + ').');
+    if (s.lvl >= 2) await notify('נעילת כניסה לניהול', 'כתובת ' + ip + ' ננעלה אחרי ' + s.total + ' ניסיונות כניסה שגויים (שלב ' + s.lvl + '). אם זה אתה, אפשר לשחרר בכפתור.', ip);
   }
   F[ip] = s;
   /* ניקוי רשומות ישנות */
@@ -63,14 +70,25 @@ async function block(ip, reason, ms, auto) {
   const B = (await loadSetting('ipblock')) || {};
   B[ip] = { t: new Date().toISOString(), until: ms ? Date.now() + ms : null, reason: String(reason || '').slice(0, 200), auto: !!auto };
   await saveSetting('ipblock', B);
-  if (auto) await notify('כתובת IP נחסמה אוטומטית', 'הכתובת ' + ip + ' נחסמה: ' + reason + '. אפשר לפתוח אותה בדף הניהול, באזור "אבטחה".');
+  if (auto) await notify('כתובת IP נחסמה אוטומטית', 'הכתובת ' + ip + ' נחסמה: ' + reason + '. אם זו טעות (למשל זה אתה), לוחצים על הכפתור כדי לשחרר. אפשר גם בדף הניהול, באזור "אבטחה".', ip);
 }
 async function unblock(ip) { const B = (await loadSetting('ipblock')) || {}; delete B[ip]; await saveSetting('ipblock', B); }
 async function clearFails(ip) { const F = (await loadSetting('secfails')) || {}; delete F[ip]; await saveSetting('secfails', F); }
 
-function notify(subject, text) {
+function notify(subject, text, ip) {
   const to = env('OWNER_EMAIL') || env('ALERT_EMAIL'); if (!to) return;
-  try { const { sendMail, frame, escH } = require('./_mail'); return sendMail({ to, subject: '🔒 ' + subject, html: frame({ title: escH(subject), body: escH(text) }), text }, 'security').catch(() => {}); } catch (e) {}
+  const url = ip ? unblockLink(ip) : null;
+  try { const { sendMail, frame, escH } = require('./_mail'); return sendMail({ to, subject: '🔒 ' + subject, html: frame({ title: escH(subject), body: escH(text), ...(url ? { button: 'לשחרור החסימה של ' + escH(ip), url } : {}), foot: url ? 'הקישור תקף 7 ימים.' : '' }), text: text + (url ? '\n\nלשחרור: ' + url : '') }, 'security').catch(() => {}); } catch (e) {}
+}
+/* דף השחרור מהקישור במייל: קודם מציגים כפתור (כדי שסורקי קישורים במייל לא ישחררו לבד), ורק בלחיצה משחררים */
+async function unblockPage(req, res) {
+  const q = req.query || {}, ip = checkLink(q), esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const page = (t, body) => { res.statusCode = 200; res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Robots-Tag', 'noindex');
+    res.end('<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + t + ' · MyLuach</title><style>body{margin:0;font:17px/1.6 Arial,sans-serif;background:#f4f6f7;color:#1a232c;display:grid;place-items:center;min-height:100vh;padding:16px}.c{background:#fff;border:1px solid #dde3e6;border-radius:16px;padding:28px;max-width:440px;text-align:center}button{font:inherit;font-weight:700;background:#1e5a63;color:#fff;border:0;border-radius:10px;padding:10px 22px;cursor:pointer}</style></head><body><div class="c"><h1 style="font-size:22px;margin:0 0 8px">' + t + '</h1>' + body + '</div></body></html>'); };
+  if (!ip) return page('הקישור לא תקין', '<p>ייתכן שעברו יותר מ־7 ימים. אפשר לשחרר בדף הניהול, באזור "אבטחה".</p>');
+  if (req.method !== 'POST') return page('לשחרר את החסימה?', '<p>הכתובת <b dir="ltr">' + esc(ip) + '</b> תשוחרר, וגם ניסיונות הכניסה השגויים שלה יאופסו.</p><form method="post"><button type="submit">כן, לשחרר</button></form>');
+  await unblock(ip); await clearFails(ip);
+  return page('✓ החסימה שוחררה', '<p>הכתובת <b dir="ltr">' + esc(ip) + '</b> יכולה שוב להשתמש באתר ולהיכנס לניהול.</p>');
 }
 
-module.exports = { uaInfo, ipOf, loginLocked, loginResult, block, unblock, clearFails, LOCKS };
+module.exports = { uaInfo, ipOf, loginLocked, loginResult, block, unblock, clearFails, unblockPage, unblockLink, LOCKS };
