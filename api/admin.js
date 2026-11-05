@@ -329,19 +329,50 @@ module.exports = async (req, res) => {
       }
       return json(res, 200, { items: L });
     }
+    /* שליחת דפים למנועי החיפוש, רק כמה שאפשר היום:
+       בינג מגביל שליחות (מכסה יומית ב-Bing Webmaster, ו-IndexNow עונה 429 כשנשלחים יותר מדי). לכן שומרים מתי נשלח כל דף,
+       ובכל לחיצה שולחים קודם דפים חשובים שלא נשלחו לאחרונה, אחר כך דפים שמעולם לא נשלחו, ואחר כך את הוותיקים ביותר.
+       אם יש BING_API_KEY (מ-Bing Webmaster: הגדרות > גישה ל-API), בודקים את המכסה שנשארה ושולחים בדיוק כמה שמותר. */
     if (req.method === 'POST' && b.action === 'indexnow') {
-      const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org';
+      const { loadSetting, saveSetting } = require('./_lib');
+      const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org', SITE = 'https://' + host;
       let urls = [];
-      try { const smr = globalThis.__ASSETS ? await globalThis.__ASSETS.fetch('https://' + host + '/sitemap.xml') : await fetch('https://' + host + '/sitemap.xml'); const sm = await smr.text(); urls = sm.split('<loc>').slice(1).map(x => x.slice(0, x.indexOf('<'))); } catch (e) {}
+      try { const smr = globalThis.__ASSETS ? await globalThis.__ASSETS.fetch(SITE + '/sitemap.xml') : await fetch(SITE + '/sitemap.xml'); const sm = await smr.text(); urls = sm.split('<loc>').slice(1).map(x => x.slice(0, x.indexOf('<'))); } catch (e) {}
       try { urls = urls.concat(await require('./_pages').publicUrls()); } catch (e) {}
-      if (!urls.length) urls = ['https://' + host + '/'];
+      if (!urls.length) urls = [SITE + '/'];
+      urls = [...new Set(urls.map(u => u.replace(/\.html$/, '').replace(/\/index$/, '/')))];
+      const today = new Date().toISOString().slice(0, 10), ago = d => d ? (Date.parse(today) - Date.parse(d)) / 864e5 : 1e9;
+      let sent = {}; try { sent = (await loadSetting('indexsent')) || {}; } catch (e) {}
+      const k = u => u.replace(SITE, '') || '/';
+      /* דפים חשובים: נשלחים שוב אם עברו 7 ימים. שאר הדפים: פעם ב-30 יום */
+      const PRI = ['/', '/timer', '/timer-en', '/app', '/simple', '/countdown', '/online/', '/en', '/pricing', '/gallery'];
+      const pri = urls.filter(u => PRI.includes(k(u)) && ago(sent[k(u)]) >= 7).sort((x, y) => PRI.indexOf(k(x)) - PRI.indexOf(k(y)));
+      const fresh = urls.filter(u => !pri.includes(u) && !sent[k(u)]);
+      const old = urls.filter(u => !pri.includes(u) && sent[k(u)] && ago(sent[k(u)]) >= 30).sort((x, y) => (sent[k(x)] < sent[k(y)] ? -1 : 1));
+      const queue = pri.concat(fresh, old), extra = (Array.isArray(b.urls) ? b.urls : []).filter(u => typeof u === 'string' && u.startsWith(SITE + '/')).slice(0, 20);
+      const want = [...new Set(extra.concat(queue))];
+      const out = { queue: want.length, total: urls.length };
+      /* המכסה של בינג (אם יש מפתח API) */
+      const BK = env('BING_API_KEY'); let limit = Math.max(1, Math.min(+b.max || 100, 500));
+      if (BK) {
+        try { const q = await (await fetch('https://ssl.bing.com/webmaster/api.svc/json/GetUrlSubmissionQuota?siteUrl=' + encodeURIComponent(SITE + '/') + '&apikey=' + BK, { signal: AbortSignal.timeout(15000) })).json();
+          out.quota = q && q.d ? q.d.DailyQuota : null; out.monthly = q && q.d ? q.d.MonthlyQuota : null; if (out.quota != null) limit = Math.min(limit, out.quota); } catch (e) { out.quotaErr = String(e.message || e).slice(0, 120); }
+      }
+      const batch = want.slice(0, limit); out.count = batch.length; out.left = want.length - batch.length;
+      if (!batch.length) return json(res, 200, { ok: true, ...out, nothing: true });
+      let okAny = false;
+      if (BK && out.quota) {
+        try { const r = await fetch('https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlBatch?apikey=' + BK, { method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json; charset=utf-8' }, body: JSON.stringify({ siteUrl: SITE + '/', urlList: batch }) });
+          out.bing = r.status; if (r.ok) okAny = true; else out.bingErr = (await r.text().catch(() => '')).slice(0, 200); } catch (e) { out.bingErr = String(e.message || e).slice(0, 120); }
+      }
       try {
         const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
-        const t = r.ok || r.status === 202 ? '' : (await r.text().catch(() => '')).slice(0, 200);
-        /* תמיד 200: Cloudflare מחליף תשובות 502 בדף שגיאה משלו, ואז לא רואים מה בינג ענה */
-        return json(res, 200, { ok: r.ok || r.status === 202, status: r.status, count: urls.length, ...(t || !(r.ok || r.status === 202) ? { error: 'IndexNow ' + r.status + (t ? ': ' + t : '') } : {}) });
-      } catch (e) { return json(res, 200, { ok: false, error: 'IndexNow: ' + String(e.message || e).slice(0, 200) }); }
+          body: JSON.stringify({ host, key: KEY, keyLocation: SITE + '/' + KEY + '.txt', urlList: batch }) });
+        out.status = r.status; if (r.ok || r.status === 202) okAny = true; else out.error = 'IndexNow ' + r.status + ': ' + (await r.text().catch(() => '')).slice(0, 200);
+      } catch (e) { out.error = 'IndexNow: ' + String(e.message || e).slice(0, 200); }
+      if (okAny) { batch.forEach(u => { sent[k(u)] = today; }); try { await saveSetting('indexsent', sent); } catch (e) {} }
+      /* תמיד 200: Cloudflare מחליף תשובות 502 בדף שגיאה משלו, ואז לא רואים מה בינג ענה */
+      return json(res, 200, { ok: okAny, ...out });
     }
     /* מאגר דברי הימים: שמירה אחרי ייבוא אקסל */
     if (req.method === 'POST' && b.action === 'yzsave') { try { const out = await require('./_yzadmin').save(b); return json(res, out.error ? (out.error === 'notoken' ? 200 : 400) : 200, out); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); } }
