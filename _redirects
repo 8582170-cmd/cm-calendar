@@ -1,3 +1,4 @@
 # הפניות ל-Cloudflare Pages (המקבילה של "redirects" ב-vercel.json)
 /brachot.html /brachot/ 301
 /online.html /online/ 301
+/t/* /t 200

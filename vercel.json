@@ -76,6 +76,10 @@
   {
    "source": "/timer",
    "destination": "/timer.html"
+  },
+  {
+   "source": "/t/:slug",
+   "destination": "/t.html"
   }
  ],
  "redirects": [

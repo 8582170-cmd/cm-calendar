@@ -11,25 +11,29 @@
 <meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Orbitron:wght@600;800&family=Secular+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=Orbitron:wght@600;800&family=Rubik:wght@600;800&family=Secular+One&family=Suez+One&display=swap" rel="stylesheet">
 <style>
-:root{--acc:#1e5a63;--bg:#f6f4ef;--card:#ffffff;--ink:#1a232c;--mute:#5d6873;--line:#e2ddd2;--box:#f3f6f6}
+:root{--acc:#1e5a63;--bg:#f6f4ef;--card:#ffffff;--ink:#1a232c;--mute:#5d6873;--line:#e2ddd2;--box:#f3f6f6;--bline:transparent;--nfont:Orbitron,'Courier New',monospace;--tfont:'Secular One',Assistant,sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{min-height:100vh;display:grid;place-items:center;padding:20px 12px;background:var(--bg);color:var(--ink);font:16px/1.5 Assistant,Arial,sans-serif}
-body.embed{min-height:0;padding:6px;background:transparent}
-.card{width:100%;max-width:640px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 18px 18px;text-align:center}
-body.embed .card{border-radius:14px;padding:16px 10px 10px}
-h1{margin:0 0 2px;font:400 clamp(20px,5vw,30px)/1.25 'Secular One',Assistant,sans-serif;color:var(--acc);overflow-wrap:anywhere}
-.when{color:var(--mute);font-size:14.5px}
-.clock{display:flex;justify-content:center;gap:clamp(4px,1.6vw,14px);margin:18px 0 6px;direction:ltr;flex-wrap:nowrap}
-.u{min-width:0;flex:1 1 0;max-width:120px;background:var(--box);border-radius:12px;padding:10px 2px 8px}
-.n{font:800 clamp(20px,7vw,54px)/1 Orbitron,'Courier New',monospace;color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+body.embed{min-height:0;padding:4px;background:transparent}
+.card{width:100%;max-width:820px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 16px 12px;text-align:center}
+body.embed .card{border-radius:14px;padding:14px 10px 8px}
+h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--acc);overflow-wrap:anywhere}
+.when{color:var(--mute);font-size:clamp(12.5px,3.4vw,15px)}
+.clock{display:flex;justify-content:center;gap:clamp(4px,1.6vw,14px);margin:16px 0 4px;direction:ltr;flex-wrap:nowrap}
+.u{min-width:0;flex:1 1 0;max-width:130px;background:var(--box);border:1px solid var(--bline);border-radius:12px;padding:10px 2px 8px}
+.n{font:800 clamp(20px,7vw,56px)/1 var(--nfont);color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .l{font-size:clamp(11px,3vw,14px);color:var(--mute);margin-top:6px;direction:rtl}
-.done{font:400 clamp(26px,7vw,40px)/1.3 'Secular One',Assistant,sans-serif;color:var(--acc);margin:18px 0}
-.cr{margin-top:10px;font-size:12.5px;color:var(--mute)}
-.cr a{color:inherit}
+.done{font:400 clamp(24px,7vw,40px)/1.3 var(--tfont);color:var(--acc);margin:16px 0}
+.cr{margin-top:8px;font-size:10px;line-height:1;opacity:.75;direction:ltr}
+.cr a{color:var(--mute);text-decoration:none}
 .bad{color:var(--mute)}
+/* עיצובים */
+.th-wedding .u{border-radius:999px 999px 14px 14px}
+.th-digital .n{text-shadow:0 0 12px color-mix(in srgb,var(--acc) 60%,transparent)}
+.th-kids .u:nth-child(4n+1){background:#ffe3d3}.th-kids .u:nth-child(4n+2){background:#fff1c7}.th-kids .u:nth-child(4n+3){background:#dff3e4}.th-kids .u:nth-child(4n+4){background:#dcecff}
 </style>
 </head>
 <body>
@@ -37,42 +41,58 @@ h1{margin:0 0 2px;font:400 clamp(20px,5vw,30px)/1.25 'Secular One',Assistant,san
 <script>
 (function(){
   'use strict';
-  var P=new URLSearchParams(location.search),q=function(k){return P.get(k)||''};
-  var EN=q('lang')==='en',title=q('t').slice(0,90),d=q('d'),hm=q('h')||'00:00',tz=/^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(q('z'))?q('z'):'Asia/Jerusalem',unit=['d','w','m'].indexOf(q('u'))>=0?q('u'):'d';
-  var hex=function(v){return /^[0-9a-f]{6}$/i.test(v)?'#'+v:null},root=document.documentElement.style;
-  if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr'}
-  if(q('e')==='1')document.body.classList.add('embed');
-  if(hex(q('c')))root.setProperty('--acc',hex(q('c')));
-  if(q('b')==='none'){root.setProperty('--card','transparent');root.setProperty('--line','transparent');root.setProperty('--bg','transparent')}else if(hex(q('b'))){root.setProperty('--card',hex(q('b')));root.setProperty('--bg',hex(q('b')))}
+  /* עיצובים מוכנים: צבע ראשי, רקע הכרטיס, רקע התאים, טקסט, טקסט משני, מסגרת התאים, גופן המספרים, גופן הכותרת */
+  var TH={
+    classic:{acc:'#1e5a63',card:'#ffffff',box:'#eef4f4',ink:'#1a232c',mute:'#5d6873',bline:'transparent',nf:"Orbitron,monospace",tf:"'Secular One',sans-serif"},
+    wedding:{acc:'#a8646f',card:'#fff8f6',box:'#f8e8e5',ink:'#4a2b30',mute:'#8b6b70',bline:'#e9c9c3',nf:"Bellefair,serif",tf:"Bellefair,serif"},
+    barmitzvah:{acc:'#1f3a5f',card:'#f7f8fb',box:'#e6ecf5',ink:'#16253b',mute:'#5a6a82',bline:'#c9a227',nf:"'Suez One',serif",tf:"'Suez One',serif"},
+    batmitzvah:{acc:'#b8487a',card:'#fff7fb',box:'#fbe3ef',ink:'#4a1f33',mute:'#8f6177',bline:'#f0c3d8',nf:"'Secular One',sans-serif",tf:"'Secular One',sans-serif"},
+    kids:{acc:'#e0663a',card:'#fffaf2',box:'#ffe3d3',ink:'#3b2a20',mute:'#7a6252',bline:'transparent',nf:"Rubik,sans-serif",tf:"Rubik,sans-serif"},
+    elegant:{acc:'#c9a227',card:'#1d1a17',box:'#2a2622',ink:'#f3efe6',mute:'#b8ae9c',bline:'#4a4135',nf:"Bellefair,serif",tf:"Bellefair,serif"},
+    digital:{acc:'#39e888',card:'#0b0f0c',box:'#111a14',ink:'#d9f5e3',mute:'#7fa58d',bline:'#1f3327',nf:"Orbitron,monospace",tf:"Orbitron,'Secular One',sans-serif"},
+    minimal:{acc:'#172126',card:'#ffffff',box:'#ffffff',ink:'#172126',mute:'#6b7679',bline:'#dde2df',nf:"Assistant,sans-serif",tf:"Assistant,sans-serif"}
+  };
   var c=document.getElementById('c');
   function esc(x){return String(x).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]})}
-  var L=EN?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds',done:'🎉 The time has come!',bad:'This link is not valid.',make:'Make your own countdown',by:'Countdown by'}
-         :{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות',done:'🎉 הגיע הזמן!',bad:'הקישור לא תקין.',make:'ליצירת ספירה לאחור משלכם',by:'ספירה לאחור מאת'};
-  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d),t=/^(\d{1,2}):(\d{2})$/.exec(hm);
-  if(!m){c.innerHTML='<p class="bad">'+L.bad+'</p><div class="cr"><a href="/timer" target="_top">'+L.make+'</a></div>';return}
-  /* זמן היעד לפי אזור הזמן שנבחר */
-  function target(){var guess=Date.UTC(+m[1],+m[2]-1,+m[3],t?+t[1]:0,t?+t[2]:0);
-    try{var f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      var off=function(ms){var p={};f.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms};
-      var u=guess-off(guess);return guess-off(u)}catch(e){return guess}}
-  var to=target();
-  var when=new Date(to).toLocaleString(EN?'en-US':'he-IL',{timeZone:tz,weekday:'long',day:'numeric',month:'long',year:'numeric',hour:t?'2-digit':undefined,minute:t?'2-digit':undefined});
-  function parts(ms){var s=Math.max(0,Math.floor(ms/1000)),out=[],days=Math.floor(s/86400);s-=days*86400;
-    if(unit==='m'&&days>=28){var now=new Date(),end=new Date(now.getTime()+ms),mo=0,add=function(k){var x=new Date(now);x.setMonth(x.getMonth()+k);return x};
-      while(add(mo+1)<=end)mo++;var rest=Math.floor((end-add(mo))/1000);days=Math.floor(rest/86400);s=rest-days*86400;out.push(['months',mo])}
-    else if(unit==='w'&&days>=7){out.push(['weeks',Math.floor(days/7)]);days%=7}
-    out.push(['days',days],['hours',Math.floor(s/3600)],['minutes',Math.floor(s/60)%60],['seconds',s%60]);return out}
-  var head='<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1><div class="when">'+esc(when)+'</div>',built=false;
-  function draw(){
-    var left=to-Date.now();
-    if(left<=0){c.innerHTML=head+'<div class="done">'+L.done+'</div>'+credit();built=false;clearInterval(iv);return}
-    var P2=parts(left);
-    if(!built||c.querySelectorAll('.u').length!==P2.length){c.innerHTML=head+'<div class="clock">'+P2.map(function(p){return '<div class="u"><div class="n" data-k="'+p[0]+'"></div><div class="l">'+L[p[0]]+'</div></div>'}).join('')+'</div>'+credit();built=true}
-    P2.forEach(function(p){var e=c.querySelector('[data-k="'+p[0]+'"]');if(e)e.textContent=String(p[1]).padStart(2,'0')});
+  var Q=new URLSearchParams(location.search),slug=(/^\/t\/([a-z0-9-]{3,40})\/?$/.exec(location.pathname)||[])[1];
+  if(Q.get('e')==='1')document.body.classList.add('embed');
+  function start(o){
+    var EN=o.lang==='en',title=String(o.t||'').slice(0,90),d=o.d||'',hm=o.h||'',tz=/^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(o.z||'')?o.z:'Asia/Jerusalem',unit=['d','w','m'].indexOf(o.u)>=0?o.u:'d';
+    var th=TH[o.th]||TH.classic,R=document.documentElement.style,hex=function(v){return /^[0-9a-f]{6}$/i.test(v||'')?'#'+v:null};
+    document.body.classList.add('th-'+(TH[o.th]?o.th:'classic'));
+    R.setProperty('--acc',hex(o.c)||th.acc);R.setProperty('--card',th.card);R.setProperty('--box',th.box);R.setProperty('--ink',th.ink);R.setProperty('--mute',th.mute);R.setProperty('--bline',th.bline);R.setProperty('--nfont',th.nf);R.setProperty('--tfont',th.tf);
+    R.setProperty('--bg',document.body.classList.contains('embed')?'transparent':th.card);R.setProperty('--line',th.bline==='transparent'?'#e2ddd2':th.bline);
+    if(o.b==='none'){R.setProperty('--card','transparent');R.setProperty('--line','transparent')}else if(hex(o.b)){R.setProperty('--card',hex(o.b));if(!document.body.classList.contains('embed'))R.setProperty('--bg',hex(o.b))}
+    if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr'}
+    var L=EN?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds',done:'🎉 The time has come!',bad:'This countdown was not found.',make:'Make your own countdown'}
+           :{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות',done:'🎉 הגיע הזמן!',bad:'הספירה לא נמצאה.',make:'ליצירת ספירה לאחור משלכם'};
+    var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d),t=/^(\d{1,2}):(\d{2})$/.exec(hm);
+    if(!m){c.innerHTML='<p class="bad">'+L.bad+'</p><div class="cr"><a href="https://www.myluach.org/timer" target="_top">'+L.make+'</a></div>';return}
+    function target(){var guess=Date.UTC(+m[1],+m[2]-1,+m[3],t?+t[1]:0,t?+t[2]:0);
+      try{var f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        var off=function(ms){var p={};f.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms};
+        var u=guess-off(guess);return guess-off(u)}catch(e){return guess}}
+    var to=target();
+    var when=new Date(to).toLocaleString(EN?'en-US':'he-IL',{timeZone:tz,weekday:'long',day:'numeric',month:'long',year:'numeric',hour:t?'2-digit':undefined,minute:t?'2-digit':undefined});
+    function parts(ms){var s=Math.max(0,Math.floor(ms/1000)),out=[],days=Math.floor(s/86400);s-=days*86400;
+      if(unit==='m'&&days>=28){var now=new Date(),end=new Date(now.getTime()+ms),mo=0,add=function(k){var x=new Date(now);x.setMonth(x.getMonth()+k);return x};
+        while(add(mo+1)<=end)mo++;var rest=Math.floor((end-add(mo))/1000);days=Math.floor(rest/86400);s=rest-days*86400;out.push(['months',mo])}
+      else if(unit==='w'&&days>=7){out.push(['weeks',Math.floor(days/7)]);days%=7}
+      out.push(['days',days],['hours',Math.floor(s/3600)],['minutes',Math.floor(s/60)%60],['seconds',s%60]);return out}
+    var head='<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1><div class="when">'+esc(when)+'</div>',built=false,iv;
+    var credit='<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
+    function draw(){
+      var left=to-Date.now();
+      if(left<=0){c.innerHTML=head+'<div class="done">'+L.done+'</div>'+credit;clearInterval(iv);return}
+      var P2=parts(left);
+      if(!built||c.querySelectorAll('.u').length!==P2.length){c.innerHTML=head+'<div class="clock">'+P2.map(function(p){return '<div class="u"><div class="n" data-k="'+p[0]+'"></div><div class="l">'+L[p[0]]+'</div></div>'}).join('')+'</div>'+credit;built=true}
+      P2.forEach(function(p){var e=c.querySelector('[data-k="'+p[0]+'"]');if(e)e.textContent=String(p[1]).padStart(2,'0')});
+    }
     document.title=(title||(EN?'Countdown':'ספירה לאחור'))+' · MyLuach';
+    iv=setInterval(draw,1000);draw();
   }
-  function credit(){return '<div class="cr">'+L.by+' <a href="https://www.myluach.org/timer" target="_blank" rel="noopener">MyLuach</a></div>'}
-  var iv=setInterval(draw,1000);draw();
+  if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){start(Object.assign({},j.cfg||{},Q.get('e')?{}:{}))}).catch(function(){start({})})}
+  else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang')});
 })();
 </script>
 </body>
