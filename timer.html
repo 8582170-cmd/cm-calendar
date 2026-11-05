@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ספירה לאחור מקוונת לאירוע · טיימר עם שעון דיגיטלי, להטמעה באתר ובמייל | MyLuach</title>
+<meta name="description" content="יוצרים ספירה לאחור לחתונה, לבר מצווה, ללידה או לכל תאריך: ימים, שבועות או חודשים, ושעות, דקות ושניות בשעון דיגיטלי. בחינם, עם קישור לשיתוף, קוד להטמעה באתר ותמונה מתעדכנת למייל.">
+<link rel="canonical" href="https://www.myluach.org/timer">
+<meta property="og:title" content="ספירה לאחור מקוונת לאירוע · MyLuach">
+<meta property="og:description" content="שעון ספירה לאחור לכל תאריך: לשיתוף, להטמעה באתר ולמייל. בחינם.">
+<meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@900&display=swap">
+<style>
+:root{--paper:#f6f7f4;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--card:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.7 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:900px;margin-inline:auto;padding-bottom:48px}
+a{color:var(--teal)}
+.nav{display:flex;justify-content:space-between;align-items:center;padding-block:20px;border-bottom:1px solid var(--line)}
+.logo{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:26px;color:var(--ink);text-decoration:none;display:inline-flex;gap:10px;align-items:center;direction:ltr}
+.logo-img{display:inline-block;vertical-align:middle;flex:none;margin-inline-end:8px}
+h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(28px,5vw,38px);line-height:1.15;margin:28px 0 6px}
+h2{font-size:21px;margin:30px 0 6px}
+p,li{max-width:70ch}
+.mute{color:var(--mute)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;margin-top:18px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 10px}
+input,select{display:block;width:100%;margin-top:4px;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+input[type=color]{height:42px;padding:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+iframe{width:100%;border:0;display:block;height:240px;border-radius:14px}
+.out{margin-top:14px}
+.out h3{font-size:16px;margin:12px 0 4px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+textarea{width:100%;font:13px/1.45 ui-monospace,Consolas,monospace;direction:ltr;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.mailprev{margin-top:6px;max-width:100%;overflow:hidden}
+.mailprev img{max-width:100%;height:auto}
+.mailprev table{width:100%!important}
+.grid>*{min-width:0}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:var(--mute)}
+details{border-bottom:1px solid var(--line);padding:8px 0}
+summary{cursor:pointer;font-weight:700}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ספירה לאחור מקוונת · MyLuach","url":"https://www.myluach.org/timer","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","inLanguage":"he","offers":{"@type":"Offer","price":"0","priceCurrency":"ILS"}}</script>
+<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/cms.js?v=1" defer></script>
+</head>
+<body><div class="wrap">
+<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><a href="countdown.html">לוח ספירה להדפסה</a></header>
+<main>
+<h1>ספירה לאחור מקוונת לאירוע</h1>
+<p class="mute">שעון דיגיטלי שסופר לאחור עד התאריך שלכם: חתונה, בר מצווה, לידה, חופשה או כל יעד. בחינם, בלי הרשמה. אפשר לשתף בקישור, להטמיע באתר, או להוסיף למייל.</p>
+
+<div class="grid">
+  <form class="box" id="f" onsubmit="return false">
+    <label>למה סופרים?<input id="t" maxlength="90" placeholder="למשל: החתונה של שירה ויוסי"></label>
+    <div class="two"><label>תאריך<input type="date" id="d" required></label><label>שעה (לא חובה)<input type="time" id="h"></label></div>
+    <label>איך להציג<select id="u"><option value="d">ימים, שעות, דקות ושניות</option><option value="w">שבועות, ימים, שעות…</option><option value="m">חודשים, ימים, שעות…</option></select></label>
+    <div class="two"><label>צבע<input type="color" id="c" value="#1f5c63"></label><label>רקע<input type="color" id="b" value="#ffffff"></label></div>
+    <div class="two"><label>שפה<select id="lang"><option value="he">עברית</option><option value="en">English</option></select></label><label>אזור זמן<select id="z"></select></label></div>
+  </form>
+  <div>
+    <div class="box" style="padding:8px"><iframe id="pv" title="תצוגה מקדימה של הספירה"></iframe></div>
+    <div class="out" id="out" hidden>
+      <h3>🔗 קישור לשיתוף</h3>
+      <div class="row"><input id="oLink" readonly dir="ltr" style="flex:1;min-width:200px;margin:0"><button class="btn pri" type="button" data-copy="oLink">העתקה</button><a class="btn" id="oWa" target="_blank" rel="noopener">וואטסאפ</a></div>
+      <h3>🌐 להטמעה באתר</h3>
+      <textarea id="oEmb" rows="3" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oEmb">העתקת הקוד</button></div>
+      <h3>✉️ למייל או לניוזלטר</h3>
+      <p class="mute" style="font-size:14.5px;margin:0 0 4px">תמונה שמתעדכנת בכל פתיחה של המייל (מייל לא יכול להריץ שעון חי). מדביקים את הקוד בעורך ה־HTML של המייל.</p>
+      <div class="mailprev" id="oMailPrev"></div>
+      <textarea id="oMail" rows="4" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oMail">העתקת הקוד</button></div>
+    </div>
+  </div>
+</div>
+
+<h2>ספירה לאחור להדפסה</h2>
+<p>רוצים גם לוח ספירה לאחור על המקרר, עם תמונה ומשפט לכל יום? <a href="countdown.html">בונים לוח ספירה לאחור להדפסה</a>, לחתונה, לבר מצווה, ללידה ועוד.</p>
+
+<h2>שאלות נפוצות</h2>
+<details><summary>איך מוסיפים את הספירה לאתר?</summary><p>ממלאים את הפרטים, מעתיקים את "הקוד להטמעה באתר" ומדביקים אותו בעורך האתר, במקום שבו רוצים שהשעון יופיע (בוורדפרס: בלוק "HTML מותאם אישית"; בוויקס: "הטמעת קוד"). השעון מתעדכן כל שנייה.</p></details>
+<details><summary>אפשר להכניס ספירה לאחור למייל?</summary><p>כן. מייל לא מריץ שעון חי, ולכן הקוד למייל הוא תמונה שנוצרת מחדש בכל פעם שפותחים את המייל, ומראה את הזמן שנשאר באותו רגע. לחיצה על התמונה פותחת את הספירה החיה.</p></details>
+<details><summary>זה בחינם?</summary><p>כן, לגמרי, בלי הרשמה ובלי הגבלה.</p></details>
+<details><summary>מה קורה כשמגיע התאריך?</summary><p>השעון מראה "הגיע הזמן!" במקום המספרים.</p></details>
+</main>
+<footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="countdown.html">לוח ספירה להדפסה</a><a href="online/">הלוח המקוון</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a></footer>
+</div>
+<script>
+(function(){
+  'use strict';
+  var $=function(i){return document.getElementById(i)},SITE='https://www.myluach.org';
+  var Z=[['Asia/Jerusalem','ישראל'],['America/New_York','ניו יורק'],['America/Chicago','שיקגו'],['America/Los_Angeles','לוס אנג׳לס'],['Europe/London','לונדון'],['Europe/Paris','פריז / אירופה'],['Europe/Moscow','מוסקבה'],['Australia/Sydney','סידני'],['America/Sao_Paulo','סאו פאולו'],['Africa/Johannesburg','יוהנסבורג']];
+  $('z').innerHTML=Z.map(function(z){return '<option value="'+z[0]+'">'+z[1]+'</option>'}).join('');
+  try{var mine=Intl.DateTimeFormat().resolvedOptions().timeZone;if(mine&&!Z.some(function(z){return z[0]===mine})){$('z').insertAdjacentHTML('beforeend','<option value="'+mine+'">'+mine+'</option>')}if(mine)$('z').value=mine}catch(e){}
+  var d0=new Date(Date.now()+30*864e5);$('d').value=d0.toISOString().slice(0,10);
+  /* מילוי מראש מקישור (למשל מבונה לוח הספירה): ?t=…&d=YYYY-MM-DD&h=HH:MM */
+  try{var Q=new URLSearchParams(location.search);if(Q.get('t'))$('t').value=Q.get('t').slice(0,90);if(/^\d{4}-\d{2}-\d{2}$/.test(Q.get('d')||''))$('d').value=Q.get('d');if(/^\d{1,2}:\d{2}$/.test(Q.get('h')||''))$('h').value=Q.get('h').padStart(5,'0')}catch(e){}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function params(extra){var p=new URLSearchParams();var t=$('t').value.trim();if(t)p.set('t',t);p.set('d',$('d').value);if($('h').value)p.set('h',$('h').value);
+    p.set('u',$('u').value);p.set('c',$('c').value.slice(1));p.set('b',$('b').value.slice(1));if($('z').value!=='Asia/Jerusalem')p.set('z',$('z').value);if($('lang').value==='en')p.set('lang','en');
+    Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
+  var tm;function upd(){clearTimeout(tm);tm=setTimeout(go,250)}
+  function go(){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test($('d').value)){$('out').hidden=true;return}
+    var link=SITE+'/t?'+params(),emb=SITE+'/t?'+params({e:'1'});
+    $('pv').src='/t?'+params({e:'1'});
+    $('oLink').value=link;
+    $('oWa').href='https://wa.me/?text='+encodeURIComponent(($('t').value.trim()||'ספירה לאחור')+' ⏳ '+link);
+    $('oEmb').value='<iframe src="'+emb+'" width="100%" height="260" style="border:0;max-width:640px" title="'+esc($('t').value.trim()||'ספירה לאחור')+'" loading="lazy"></iframe>';
+    var img=SITE+'/api/pricing?c=_cdimg&d='+$('d').value+($('h').value?'&h='+encodeURIComponent($('h').value):'')+'&u='+$('u').value+'&fg='+$('c').value.slice(1)+'&bg='+$('b').value.slice(1)+($('z').value!=='Asia/Jerusalem'?'&z='+encodeURIComponent($('z').value):'');
+    var en=$('lang').value==='en',lab=en?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds'}:{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות'};
+    var units=($('u').value==='m'?['months']:$('u').value==='w'?['weeks']:[]).concat(['days','hours','minutes','seconds']);
+    var mail='<a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+img+'" alt="'+esc($('t').value.trim()||(en?'Countdown':'ספירה לאחור'))+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a>'+
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;direction:ltr;font-family:Arial,sans-serif;font-size:13px;color:#5d6873;text-align:center"><tr>'+units.map(function(u){return '<td>'+lab[u]+'</td>'}).join('')+'</tr></table>';
+    $('oMail').value=mail;$('oMailPrev').innerHTML=mail.replace(SITE+'/api/','/api/');
+    $('out').hidden=false;
+  }
+  ['t','d','h','u','c','b','lang','z'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var x=$(b.dataset.copy);x.select();try{navigator.clipboard.writeText(x.value)}catch(er){document.execCommand('copy')}var o=b.textContent;b.textContent='הועתק ✓';setTimeout(function(){b.textContent=o},1500)});
+  go();
+})();
+</script>
+</body>
+</html>

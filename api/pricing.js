@@ -55,6 +55,7 @@ module.exports = async (req, res) => {
   }
   /* משוב על בניית הלוח, וטופס פנייה מהדף הראשי: נשמר לדף הניהול ונשלח במייל לבעל האתר */
   if (cp === '_unblock') return require('./_sec').unblockPage(req, res);
+  if (cp === '_cdimg') return require('./_cdimg')(req, res);
   if (cp === '_contact') {
     res.setHeader('Cache-Control', 'private, no-store');
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });

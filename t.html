@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ספירה לאחור · MyLuach</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="ספירה לאחור חיה לאירוע: ימים, שעות, דקות ושניות. מ־MyLuach.">
+<meta property="og:title" content="ספירה לאחור">
+<meta property="og:description" content="כמה זמן נשאר? לחצו לצפייה בספירה.">
+<meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Orbitron:wght@600;800&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+:root{--acc:#1e5a63;--bg:#f6f4ef;--card:#ffffff;--ink:#1a232c;--mute:#5d6873;--line:#e2ddd2;--box:#f3f6f6}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;display:grid;place-items:center;padding:20px 12px;background:var(--bg);color:var(--ink);font:16px/1.5 Assistant,Arial,sans-serif}
+body.embed{min-height:0;padding:6px;background:transparent}
+.card{width:100%;max-width:640px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 18px 18px;text-align:center}
+body.embed .card{border-radius:14px;padding:16px 10px 10px}
+h1{margin:0 0 2px;font:400 clamp(20px,5vw,30px)/1.25 'Secular One',Assistant,sans-serif;color:var(--acc);overflow-wrap:anywhere}
+.when{color:var(--mute);font-size:14.5px}
+.clock{display:flex;justify-content:center;gap:clamp(4px,1.6vw,14px);margin:18px 0 6px;direction:ltr;flex-wrap:nowrap}
+.u{min-width:0;flex:1 1 0;max-width:120px;background:var(--box);border-radius:12px;padding:10px 2px 8px}
+.n{font:800 clamp(20px,7vw,54px)/1 Orbitron,'Courier New',monospace;color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.l{font-size:clamp(11px,3vw,14px);color:var(--mute);margin-top:6px;direction:rtl}
+.done{font:400 clamp(26px,7vw,40px)/1.3 'Secular One',Assistant,sans-serif;color:var(--acc);margin:18px 0}
+.cr{margin-top:10px;font-size:12.5px;color:var(--mute)}
+.cr a{color:inherit}
+.bad{color:var(--mute)}
+</style>
+</head>
+<body>
+<main class="card" id="c" aria-live="off"><p class="bad">טוען…</p></main>
+<script>
+(function(){
+  'use strict';
+  var P=new URLSearchParams(location.search),q=function(k){return P.get(k)||''};
+  var EN=q('lang')==='en',title=q('t').slice(0,90),d=q('d'),hm=q('h')||'00:00',tz=/^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(q('z'))?q('z'):'Asia/Jerusalem',unit=['d','w','m'].indexOf(q('u'))>=0?q('u'):'d';
+  var hex=function(v){return /^[0-9a-f]{6}$/i.test(v)?'#'+v:null},root=document.documentElement.style;
+  if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr'}
+  if(q('e')==='1')document.body.classList.add('embed');
+  if(hex(q('c')))root.setProperty('--acc',hex(q('c')));
+  if(q('b')==='none'){root.setProperty('--card','transparent');root.setProperty('--line','transparent');root.setProperty('--bg','transparent')}else if(hex(q('b'))){root.setProperty('--card',hex(q('b')));root.setProperty('--bg',hex(q('b')))}
+  var c=document.getElementById('c');
+  function esc(x){return String(x).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]})}
+  var L=EN?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds',done:'🎉 The time has come!',bad:'This link is not valid.',make:'Make your own countdown',by:'Countdown by'}
+         :{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות',done:'🎉 הגיע הזמן!',bad:'הקישור לא תקין.',make:'ליצירת ספירה לאחור משלכם',by:'ספירה לאחור מאת'};
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d),t=/^(\d{1,2}):(\d{2})$/.exec(hm);
+  if(!m){c.innerHTML='<p class="bad">'+L.bad+'</p><div class="cr"><a href="/timer" target="_top">'+L.make+'</a></div>';return}
+  /* זמן היעד לפי אזור הזמן שנבחר */
+  function target(){var guess=Date.UTC(+m[1],+m[2]-1,+m[3],t?+t[1]:0,t?+t[2]:0);
+    try{var f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      var off=function(ms){var p={};f.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms};
+      var u=guess-off(guess);return guess-off(u)}catch(e){return guess}}
+  var to=target();
+  var when=new Date(to).toLocaleString(EN?'en-US':'he-IL',{timeZone:tz,weekday:'long',day:'numeric',month:'long',year:'numeric',hour:t?'2-digit':undefined,minute:t?'2-digit':undefined});
+  function parts(ms){var s=Math.max(0,Math.floor(ms/1000)),out=[],days=Math.floor(s/86400);s-=days*86400;
+    if(unit==='m'&&days>=28){var now=new Date(),end=new Date(now.getTime()+ms),mo=0,add=function(k){var x=new Date(now);x.setMonth(x.getMonth()+k);return x};
+      while(add(mo+1)<=end)mo++;var rest=Math.floor((end-add(mo))/1000);days=Math.floor(rest/86400);s=rest-days*86400;out.push(['months',mo])}
+    else if(unit==='w'&&days>=7){out.push(['weeks',Math.floor(days/7)]);days%=7}
+    out.push(['days',days],['hours',Math.floor(s/3600)],['minutes',Math.floor(s/60)%60],['seconds',s%60]);return out}
+  var head='<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1><div class="when">'+esc(when)+'</div>',built=false;
+  function draw(){
+    var left=to-Date.now();
+    if(left<=0){c.innerHTML=head+'<div class="done">'+L.done+'</div>'+credit();built=false;clearInterval(iv);return}
+    var P2=parts(left);
+    if(!built||c.querySelectorAll('.u').length!==P2.length){c.innerHTML=head+'<div class="clock">'+P2.map(function(p){return '<div class="u"><div class="n" data-k="'+p[0]+'"></div><div class="l">'+L[p[0]]+'</div></div>'}).join('')+'</div>'+credit();built=true}
+    P2.forEach(function(p){var e=c.querySelector('[data-k="'+p[0]+'"]');if(e)e.textContent=String(p[1]).padStart(2,'0')});
+    document.title=(title||(EN?'Countdown':'ספירה לאחור'))+' · MyLuach';
+  }
+  function credit(){return '<div class="cr">'+L.by+' <a href="https://www.myluach.org/timer" target="_blank" rel="noopener">MyLuach</a></div>'}
+  var iv=setInterval(draw,1000);draw();
+})();
+</script>
+</body>
+</html>

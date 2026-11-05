@@ -68,6 +68,14 @@
   {
    "source": "/cd",
    "destination": "/cd.html"
+  },
+  {
+   "source": "/t",
+   "destination": "/t.html"
+  },
+  {
+   "source": "/timer",
+   "destination": "/timer.html"
   }
  ],
  "redirects": [
