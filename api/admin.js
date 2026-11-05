@@ -294,7 +294,7 @@ module.exports = async (req, res) => {
       const or = 'or=(' + (uid ? 'user_id.eq.' + uid + ',' : '') + 'email.eq.' + encodeURIComponent(em) + ')';
       const [orders, dls] = await Promise.all([
         db('orders?select=id,plan,amount,status,coupon,created_at,paid_at,ip,ip_geo,ua&' + or + '&order=created_at.desc&limit=50').catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at,ip,ip_geo&' + or + '&order=created_at.desc&limit=50')).catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at&' + or + '&order=created_at.desc&limit=50')).catch(() => []),
-        db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo,ua&' + or + '&order=created_at.desc&limit=60').catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo&' + or + '&order=created_at.desc&limit=60')).catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&' + or + '&order=created_at.desc&limit=60')).catch(() => [])]);
+        db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo,ua,snap&' + or + '&order=created_at.desc&limit=60').catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo&' + or + '&order=created_at.desc&limit=60')).catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&' + or + '&order=created_at.desc&limit=60')).catch(() => [])]);
       let plan = null, cd = null; if (uid) { try { plan = await planInfo({ id: uid, email: em }, false); } catch (e) {} try { cd = await planInfo({ id: uid, email: em }, true); } catch (e) {} }
       const B = (await loadSetting('dlbonus')) || {};
       /* הלוחות השמורים בחשבון (מתוך קובץ האינדקס): שם, מתי נשמר לאחרונה, גודל */
