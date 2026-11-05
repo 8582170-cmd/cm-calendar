@@ -407,10 +407,15 @@ module.exports = async (req, res) => {
       }
       const lim = b.all ? 5000 : 50, off = Math.max(0, parseInt(b.offset, 10) || 0);
       const q = String(b.q || '').trim().replace(/[(),*]/g, ' ').slice(0, 80);
-      let path = b.name + '?select=' + t.cols + (t.pk && t.cols.split(',').indexOf(t.pk) < 0 ? ',' + t.pk : '') + '&order=' + t.order + '&limit=' + (lim + 1) + '&offset=' + off;
-      if (q) path += '&or=(' + t.search.map(c => c + '.ilike.*' + encodeURIComponent(q) + '*').join(',') + ')';
-      try { const rows = await db(path); return json(res, 200, { rows: (rows || []).slice(0, lim), more: (rows || []).length > lim, cols: t.cols.split(','), pk: t.pk || null }); }
-      catch (e) { return json(res, 200, { rows: [], cols: t.cols.split(','), error: /does not exist|42P01|PGRST205/.test(e.message) ? 'הטבלה עוד לא נוצרה ב-Supabase' : String(e.message).slice(0, 200) }); }
+      /* בטבלאות שנשמרים בהן IP ומכשיר: מוסיפים את העמודות (ואם עוד לא נוספו במסד הנתונים, בלעדיהן) */
+      const withIp = ['profiles', 'reminders', 'voice_reminders', 'orders', 'downloads'].includes(b.name);
+      const build = cols => { let p = b.name + '?select=' + cols + (t.pk && cols.split(',').indexOf(t.pk) < 0 ? ',' + t.pk : '') + '&order=' + t.order + '&limit=' + (lim + 1) + '&offset=' + off;
+        if (q) p += '&or=(' + t.search.map(c => c + '.ilike.*' + encodeURIComponent(q) + '*').join(',') + ')'; return p; };
+      const tries = withIp ? [t.cols + ',ip,ip_geo,ua', t.cols + ',ip,ip_geo', t.cols] : [t.cols];
+      for (let i = 0; i < tries.length; i++) {
+        try { const rows = await db(build(tries[i])); return json(res, 200, { rows: (rows || []).slice(0, lim), more: (rows || []).length > lim, cols: tries[i].split(','), pk: t.pk || null }); }
+        catch (e) { if (i < tries.length - 1 && /column|42703|PGRST204/i.test(e.message)) continue; return json(res, 200, { rows: [], cols: t.cols.split(','), error: /does not exist|42P01|PGRST205/.test(e.message) ? 'הטבלה עוד לא נוצרה ב-Supabase' : String(e.message).slice(0, 200) }); }
+      }
     }
     /* הגדרות תזכורות קוליות (ימות המשיח). הטוקן לא חוזר לדפדפן במלואו */
     if (req.method === 'POST' && ['voiceget', 'voicesave', 'voicetest'].includes(b.action)) {
