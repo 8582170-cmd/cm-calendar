@@ -47,6 +47,8 @@ module.exports = async (req, res) => {
       }
       if (rows.length < 1000) break;
     }
+    /* הזמנות לאירוע במייל שעוד בתור (למשל אחרי שהגענו למגבלה היומית של ספקי המייל) */
+    try { const inv = await require('./_timer').cronSend(150); if (inv.sent) console.log('invites sent', inv.sent); } catch (e) { console.error('invite queue', e.message); }
     /* תזכורות קוליות בטלפון (אם ימות המשיח מוגדר) */
     let vsent = 0, vfailed = 0;
     if (await voice.ready()) {

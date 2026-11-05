@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
       if (o.status !== 'pending') return json(res, 400, { error: 'state', message: 'ההזמנה כבר לא פתוחה לתשלום. סגרו את החלון ונסו שוב.' });
       const name = String(b.name || '').trim().slice(0, 80), email = (o.email || String(b.email || '').trim().toLowerCase()).slice(0, 200);
       if (!o.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { o.email = email; await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ email }) }); }
-      const c = await require('./_sumit').charge({ token, amount: +o.amount, name, email: o.email, ref: id, desc: o.plan === 'donation' ? 'MyLuach · תרומה' : o.plan === 'greet' ? 'MyLuach · ברכה / הזמנה מעוצבת' : 'MyLuach · מסלול ' + PLAN_NAMES[o.plan] });
+      const c = await require('./_sumit').charge({ token, amount: +o.amount, name, email: o.email, ref: id, desc: o.plan === 'donation' ? 'MyLuach · תרומה' : o.plan === 'greet' ? 'MyLuach · ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'MyLuach · דף הזמנה לאירוע' : 'MyLuach · מסלול ' + PLAN_NAMES[o.plan] });
       if (!c.ok && c.system) { console.error('sumit system error', JSON.stringify(c.raw)); return json(res, 503, { error: 'provider', fallback: true, message: 'מערכת התשלום לא זמינה כרגע. עוברים לדרך תשלום אחרת…' }); }
       if (!c.ok) { await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ callback: { sumit: c.raw } }) }); return json(res, 402, { error: 'payment', message: c.message ? 'התשלום לא אושר: ' + c.message : 'התשלום לא אושר. בדקו את פרטי הכרטיס ונסו שוב.' }); }
       await require('./_paid').markPaid(o, { txn: String(c.paymentId || ''), callback: { sumit: c.raw } }, 'SUMIT');
@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
     const isDon = plan === 'donation';
     const user = await getUser(req);
     const email = (String(b.email || '').trim() || (user ? user.email : '')).toLowerCase().slice(0, 200);
-    let amount, coupon = null, info = null, greet = null;
+    let amount, coupon = null, info = null, greet = null, ev = null;
     if (isDon) {
       /* תרומה: הסכום נבחר על ידי התורם (1–100,000 ₪, עד 2 ספרות אחרי הנקודה) */
       amount = Math.round(Number(b.amount) * 100) / 100;
@@ -91,6 +91,12 @@ module.exports = async (req, res) => {
       greet = await require('./_greetpay').prepare(b);
       if (greet.error) return json(res, 400, { error: 'greet', message: greet.error });
       amount = greet.amount; info = { amount, base: amount, off: 0, why: '' };
+    } else if (plan === 'event') {
+      /* דף הזמנה לאירוע (וחבילות מיילים): המחיר מהניהול */
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'email', message: 'נא למלא כתובת מייל. לשם יישלח אישור הרכישה.' });
+      ev = await require('./_eventpay').prepare(b);
+      if (ev.error) return json(res, 400, { error: 'event', message: ev.error });
+      amount = ev.amount; info = { amount, base: amount, off: 0, why: '' };
     } else {
       if (b.coupon) {
         coupon = await checkCoupon(cfg, b.coupon, plan);
@@ -130,7 +136,8 @@ module.exports = async (req, res) => {
     if (!prov) return json(res, 503, { error: 'payments not configured', message: MSG.config });
     const id = crypto.randomBytes(12).toString('hex');
     if (greet) await require('./_greetpay').create(id, email, greet);
-    const desc = isDon ? 'MyLuach · תרומה' : greet ? 'MyLuach · ' + greet.title : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
+    if (ev) await require('./_eventpay').create(id, email, ev);
+    const desc = isDon ? 'MyLuach · תרומה' : greet ? 'MyLuach · ' + greet.title : ev ? 'MyLuach · ' + ev.title : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
     const extra = { base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', min: !!(info && info.min), coupon: coupon ? coupon.code : null };
 
     if (prov === 'sumit') {

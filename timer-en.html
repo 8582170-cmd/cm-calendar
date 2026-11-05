@@ -126,6 +126,16 @@ summary{cursor:pointer;font-weight:700}
       <div class="row"><button class="btn" type="button" id="mkLinks">Create personal links</button></div>
       <div class="plist" id="plist"></div>
       <div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="save2">Save the invitation page</button><span class="st" id="st2"></span></div>
+      <div class="own" id="payBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">הפעלת דף ההזמנה</h3><div id="payOut"><p class="mute">טוען…</p></div></div>
+      <div class="own" id="rcBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">שליחת ההזמנה במייל</h3>
+        <p class="mute" style="font-size:14px;margin:0 0 6px">מוסיפים נמענים: שורה לכל אחד, שם ופסיק ומייל (למשל: משפחת כהן, cohen@gmail.com). אפשר גם להדביק עמודות מאקסל.</p>
+        <textarea id="rcIn" rows="4" dir="auto" placeholder="משפחת כהן, cohen@gmail.com&#10;דוד לוי, david@walla.co.il"></textarea>
+        <div class="row" style="margin-top:6px"><button class="btn" type="button" id="rcAdd">הוספה לרשימה</button><input type="file" id="rcFile" accept=".csv,.txt" hidden><button class="btn" type="button" id="rcCsv">ייבוא מקובץ CSV</button><span class="st" id="rcMsg"></span></div>
+        <div id="rcList" style="margin-top:8px"></div>
+        <div id="rcSend" hidden><label style="margin-top:10px">נושא המייל<input id="rcSubj" maxlength="140"></label><label>שורה אישית מכם (לא חובה)<textarea id="rcNote" rows="2" maxlength="600"></textarea></label>
+        <div class="row"><button class="btn" type="button" id="rcPrev">תצוגה מקדימה של המייל</button><button class="btn pri" type="button" id="rcGo">שליחה לכל מי שעוד לא קיבל</button></div><p class="st" id="rcProg" aria-live="polite"></p>
+        <iframe id="rcFrame" title="תצוגה מקדימה של המייל" hidden style="height:620px;border:1px solid var(--line);margin-top:8px;background:#fff"></iframe></div>
+      </div>
       <div class="own" id="ownBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">RSVPs and blessings</h3><div class="row"><button class="btn" type="button" id="ownLoad">Show / refresh</button><button class="btn" type="button" id="ownCsv" hidden>Download for Excel (CSV)</button><button class="btn" type="button" id="ownBook" hidden>📖 Printable book of blessings</button><a class="btn" id="ownOpen" target="_blank" rel="noopener">Open the invitation page</a></div><div id="ownOut"></div></div>
     </details>
   </form>
@@ -206,7 +216,7 @@ summary{cursor:pointer;font-weight:700}
   /* RSVPs and blessings (לבעל האירוע, עם קוד העריכה מהדפדפן הזה) */
   var OWN=null;
   if($('save2'))$('save2').addEventListener('click',function(){var s=slugVal();if(!valid(s)){$('st2').textContent='First choose an event address (above).';$('st2').className='st no';$('slug').focus();return}$('st2').textContent='';if($('save').disabled&&saved===s){$('st2').textContent='Saved ✓';$('st2').className='st ok';return}$('save').click();setTimeout(function(){$('st2').textContent=$('st').textContent;$('st2').className=$('st').className},900)});
-  function ownUI(){var sv=slugVal();if($('invLink'))$('invLink').href='invite'+(saved&&saved===sv?'?s='+sv:'');var s=slugVal(),mine=!!(saved&&saved===s&&store()[s]);$('ownBox').hidden=!mine;if(mine)$('ownOpen').href='/t/'+s}
+  function ownUI(){var sv=slugVal(),mineX=!!(saved&&saved===sv&&store()[sv]);if($('payBox')){$('payBox').hidden=!(mineX&&PG==='invite');$('rcBox').hidden=!(mineX&&PG==='invite');if(mineX&&PG==='invite'&&!ownUI.did){ownUI.did=1;setTimeout(function(){$('ownLoad').click()},100)}}if($('invLink'))$('invLink').href='invite'+(saved&&saved===sv?'?s='+sv:'');var s=slugVal(),mine=!!(saved&&saved===s&&store()[s]);$('ownBox').hidden=!mine;if(mine)$('ownOpen').href='/t/'+s}
   $('ownLoad').addEventListener('click',function(){var s=slugVal(),O=$('ownOut');O.textContent='Loading…';
     fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({act:'owner',slug:s,token:store()[s]})}).then(function(r){return r.json()}).then(function(j){
       if(j.setup){O.innerHTML='<p class="st no">RSVPs and blessings are not enabled on the site yet.</p>';return}
@@ -217,7 +227,40 @@ summary{cursor:pointer;font-weight:700}
         '<h4 style="margin:12px 0 4px">Blessings ('+W.length+')</h4>'+(W.length?W.map(function(w){return '<div style="border-bottom:1px solid var(--line);padding:6px 0"><div style="white-space:pre-line">'+esc(w.text)+'</div><small class="mute">'+esc(w.name)+' · '+dt(w.created_at)+' · '+(w.public?'visible to all':'only you')+(w.hidden?' · hidden':'')+'</small> '+(w.public?'<button class="btn sm" type="button" data-whide="'+w.id+'" data-h="'+(w.hidden?0:1)+'">'+(w.hidden?'Show':'Hide')+'</button> ':'')+'<button class="btn sm" type="button" data-wdel="'+w.id+'">Delete</button></div>'}).join(''):'<p class="mute">No blessings yet.</p>');
       var TT=j.teh||[];if(TT.length){var byR={};TT.forEach(function(x){(byR[x.round]=byR[x.round]||[]).push(x)});
         O.insertAdjacentHTML('beforeend','<h4 style="margin:12px 0 4px">Psalms division</h4>'+Object.keys(byR).map(function(r){var L=byR[r];return '<p><b>Round '+r+':</b> taken '+L.length+' of 150'+(L.length>=150?' ✓ complete':'')+'</p><details><summary>Who took what</summary><div style="font-size:14px;columns:2">'+L.map(function(x){return x.chapter+' · '+esc(x.name)}).join('<br>')+'</div></details>'}).join(''))}
+      if(PG==='invite'){payDraw();rcDraw()}
       $('ownCsv').hidden=!R.length;$('ownBook').hidden=!W.filter(function(w){return !w.hidden}).length}).catch(function(){O.innerHTML='<p class="st no">Could not load. Check your connection.</p>'})});
+  /* ---------- הפעלה ותשלום, ונמענים ---------- */
+  var PRICES=null;function loadPrices(){return PRICES?Promise.resolve(PRICES):fetch(API+'&prices=1').then(function(r){return r.json()}).then(function(j){PRICES=j;return j})}
+  var TIERL={base:'דף הזמנה, בלי שליחת מיילים',e100:'עד 100 מיילים',e250:'עד 250 מיילים',e400:'עד 400 מיילים',e600:'עד 600 מיילים',e1000:'עד 1,000 מיילים',e2500:'עד 2,500 מיילים',e10000:'עד 10,000 מיילים'};
+  function payDraw(){var O=$('payOut');if(!OWN){O.innerHTML='';return}loadPrices().then(function(P){var pd=OWN.paid,pr=P.prices||{};
+    var opts=(P.tiers||[]).filter(function(t){return !pd||t[0]!=='base'}).map(function(t){var price=pd?Math.max(1,pr[t[0]]-pr.base):pr[t[0]];return '<option value="'+t[0]+'">'+(pd?'תוספת '+t[1]+' מיילים':TIERL[t[0]])+' · '+price+' ₪</option>'}).join('');
+    O.innerHTML=(pd?'<p class="st ok">✓ דף ההזמנה פעיל לאורחים. מיילים: נשלחו '+pd.sent+' מתוך '+pd.emails+'.</p>':'<p>דף ההזמנה מוכן, אבל רק אתם רואים אותו. כדי שהאורחים יראו אותו (ואישורי ההגעה, הברכות והתהילים יעבדו), מפעילים אותו בתשלום חד־פעמי:</p>')+
+      (P.on===false?'<p class="st no">הרכישה סגורה כרגע.</p>':'<div class="row"><select id="payTier" style="width:auto;margin:0">'+opts+'</select><button class="btn pri" type="button" id="payGo">'+(pd?'הוספת מיילים':'הפעלה ותשלום')+'</button></div>');
+    var g=$('payGo');if(g)g.onclick=function(){if(!window.MLPay){alert('טוען את מערכת התשלום, נסו שוב בעוד רגע');return}var s=slugVal(),t=$('payTier').value;
+      MLPay.open({title:pd?'תוספת מיילים':'הפעלת דף ההזמנה',sub:$('payTier').selectedOptions[0].textContent,mailNote:'לשם יישלח אישור הרכישה',body:{plan:'event',slug:s,tier:t,token:store()[s]},onPaid:function(){setTimeout(function(){$('ownLoad').click()},1500)}})}})}
+  function rcDraw(){var R=(OWN&&OWN.recip)||[],box=$('rcList'),ST={new:'לא נשלח',queued:'בתור',sent:'נשלח ✓',fail:'נכשל',unsub:'ביקש Remove'};
+    if(OWN&&OWN.rsetup){box.innerHTML='<p class="st no">רשימת הנמענים עוד לא הופעלה באתר (חסרה טבלה במסד הנתונים).</p>';return}
+    var c=function(k){return R.filter(function(r){return r.status===k}).length};
+    box.innerHTML=R.length?'<p class="sum">'+R.length+' נמענים · נשלחו '+c('sent')+' · ממתינים '+(c('new')+c('fail')+c('queued'))+(c('unsub')?' · ביקשו Remove '+c('unsub'):'')+'</p><details><summary>הרשימה</summary><div style="max-height:260px;overflow:auto"><table><tbody>'+R.map(function(r){return '<tr><td>'+esc(r.name||'')+'</td><td dir="ltr">'+esc(r.email)+'</td><td>'+ST[r.status]+'</td><td>'+(r.status==='sent'?'':'<button class="btn sm" type="button" data-rrm="'+r.id+'">Remove</button>')+'</td></tr>'}).join('')+'</tbody></table></div></details>':'<p class="mute">עוד אין נמענים.</p>';
+    $('rcSend').hidden=!R.length;if(!$('rcSubj').value)$('rcSubj').value=(OWN.mail&&OWN.mail.subject)||('הזמנה: '+($('t').value.trim()||'האירוע'));if(!$('rcNote').value&&OWN.mail)$('rcNote').value=OWN.mail.note||''}
+  function ownPost(body){var s=slugVal();body.slug=s;body.token=store()[s];return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return [r.status,j]})})}
+  function parseRc(txt){return txt.split(/\r?\n/).map(function(l){var m=l.match(/[^\s,;<>"']+@[^\s,;<>"']+\.[^\s,;<>"']+/);if(!m)return null;var n=l.replace(m[0],'').replace(/[<>"]/g,'').replace(/[,;\t]+/g,' ').trim();return {name:n,email:m[0]}}).filter(Boolean)}
+  function rcAdd(L){var M=$('rcMsg');if(!L.length){M.textContent='לא נמצאו כתובות מייל.';M.className='st no';return}M.textContent='מוסיף…';M.className='st';
+    ownPost({act:'radd',list:L}).then(function(a){if(a[0]===200){M.textContent='נוספו '+a[1].added+(a[1].skipped?' ('+a[1].skipped+' כבר היו ברשימה)':'');M.className='st ok';$('rcIn').value='';$('ownLoad').click()}else{M.textContent=a[1].error==='max'?'אפשר עד 10,000 נמענים.':'ההוספה לא הצליחה.';M.className='st no'}})}
+  $('rcAdd').addEventListener('click',function(){rcAdd(parseRc($('rcIn').value))});
+  $('rcCsv').addEventListener('click',function(){$('rcFile').click()});
+  $('rcFile').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;var r=new FileReader();r.onload=function(){rcAdd(parseRc(String(r.result)))};r.readAsText(f)});
+  $('rcList').addEventListener('click',function(e){var b=e.target.closest('[data-rrm]');if(!b)return;b.disabled=true;ownPost({act:'rrm',id:b.dataset.rrm}).then(function(){$('ownLoad').click()})});
+  $('rcPrev').addEventListener('click',function(){var R=(OWN&&OWN.recip)||[];ownPost({act:'mailpreview',name:(R[0]&&R[0].name)||''}).then(function(a){if(a[1].html){$('rcFrame').hidden=false;$('rcFrame').srcdoc=a[1].html}})});
+  $('rcGo').addEventListener('click',function(){var P=$('rcProg'),B=this;if(!OWN||!OWN.paid){P.textContent='קודם מפעילים את דף ההזמנה עם חבילת מיילים.';P.className='st no';return}
+    if(!confirm('לשלוח את ההזמנה לכל מי שעוד לא קיבל?'))return;B.disabled=true;P.className='st';P.textContent='מכין…';
+    ownPost({act:'send',subject:$('rcSubj').value,note:$('rcNote').value}).then(function(a){if(a[0]!==200){P.textContent=a[1].error==='unpaid'?'קודם מפעילים את דף ההזמנה.':'השליחה לא התחילה.';P.className='st no';B.disabled=false;return}
+      if(!a[1].queued){P.textContent=a[1].left===0?'נגמרו המיילים בחבילה. אפשר להוסיף מיילים למעלה.':'אין למי לשלוח: כולם כבר קיבלו.';B.disabled=false;return}
+      var total=a[1].queued,done=0;(function next(){ownPost({act:'sendnext'}).then(function(x){var j=x[1];done+=j.sent||0;P.textContent='נשלחו '+done+' מתוך '+total+'…';
+        if(j.stop==='limit'){P.textContent='נשלחו '+done+' מתוך '+total+'. הגענו למגבלת השליחה היומית, והשאר יישלח אוטומטית בימים הקרובים.';B.disabled=false;$('ownLoad').click();return}
+        if(j.stop==='quota'){P.textContent='נשלחו '+done+'. נגמרו המיילים בחבילה.';B.disabled=false;$('ownLoad').click();return}
+        if(j.done||x[0]!==200){P.textContent=x[0]===200?'✓ נשלחו '+done+' הזמנות'+(j.failed?' ('+j.failed+' נכשלו)':''):'השליחה נעצרה. אפשר ללחוץ שוב כדי להמשיך.';P.className=x[0]===200?'st ok':'st no';B.disabled=false;$('ownLoad').click();return}
+        next()}).catch(function(){P.textContent='השליחה נעצרה (חיבור). אפשר ללחוץ שוב כדי להמשיך.';P.className='st no';B.disabled=false})})()})});
   $('ownOut').addEventListener('click',function(e){var b=e.target.closest('[data-rdel],[data-wdel],[data-whide]');if(!b)return;var s=slugVal(),body={slug:s,token:store()[s]};
     if(b.dataset.rdel){if(!confirm('Delete this RSVP?'))return;body.act='rdel';body.id=b.dataset.rdel}else if(b.dataset.wdel){if(!confirm('Delete this blessing?'))return;body.act='wdel';body.id=b.dataset.wdel}else{body.act='whide';body.id=b.dataset.whide;body.hidden=b.dataset.h==='1'}
     b.disabled=true;fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(){$('ownLoad').click()})});

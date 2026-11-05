@@ -42,3 +42,21 @@ alter table public.timer_teh enable row level security;
 alter table public.timer_rsvp enable row level security;
 alter table public.timer_wall enable row level security;
 notify pgrst, 'reload schema';
+
+-- דף הזמנה בתשלום: רשימת נמענים לשליחת ההזמנה במייל
+create table if not exists public.timer_recip (
+  id bigserial primary key,
+  slug text not null,
+  name text,
+  email text not null,
+  token text,
+  status text default 'new',   -- new / queued / sent / fail / unsub
+  err text,
+  sent_at timestamptz,
+  created_at timestamptz default now(),
+  unique (slug, email)
+);
+create index if not exists timer_recip_slug on public.timer_recip(slug, status);
+create index if not exists timer_recip_token on public.timer_recip(token);
+alter table public.timer_recip enable row level security;
+notify pgrst, 'reload schema';

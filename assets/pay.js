@@ -26,7 +26,7 @@ function open(opt){
   var saved = {}; try { saved = JSON.parse(localStorage.getItem('myluach-buyer') || '{}') || {} } catch (e) {}
   var back = document.createElement('div'); back.className = 'mlp-back';
   back.innerHTML = '<div class="mlp" role="dialog" aria-modal="true" aria-label="תשלום"><h3></h3><p class="hint" id="mlpSub"></p>' +
-    '<div class="who"><label>מייל <small style="font-weight:400">(לשם יישלח הקישור לעיצוב)</small><input type="email" id="mlpMail" dir="ltr" autocomplete="email"></label>' +
+    '<div class="who"><label>מייל <small style="font-weight:400">(' + esc(opt.mailNote || 'לשם יישלח הקישור לעיצוב') + ')</small><input type="email" id="mlpMail" dir="ltr" autocomplete="email"></label>' +
     '<label data-ned>שם מלא<input type="text" id="mlpName" autocomplete="name"></label><label data-ned>טלפון<input type="tel" id="mlpPhone" dir="ltr" autocomplete="tel"></label>' +
     '<label data-ned>תעודת זהות של בעל הכרטיס <small style="font-weight:400">(לכרטיס ישראלי)</small><input type="text" id="mlpZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label></div>' +
     '<div class="choose" id="mlpChoose" role="radiogroup" aria-label="דרך תשלום" hidden></div><p class="hint" id="mlpMsg"></p>' +

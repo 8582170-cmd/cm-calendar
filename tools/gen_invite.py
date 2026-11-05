@@ -35,5 +35,6 @@ faq = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@t
 crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "MyLuach", "item": "https://www.myluach.org/"}, {"@type": "ListItem", "position": 2, "name": "הזמנה דיגיטלית לאירוע", "item": "https://www.myluach.org/invite"}]}
 lds = re.findall(r'<script type="application/ld\+json">.*?</script>\n', s, flags=re.S)
 s = s.replace(''.join(lds), ''.join('<script type="application/ld+json">' + json.dumps(o, ensure_ascii=False) + '</script>\n' for o in (app, faq, crumbs)))
+i = s.rindex('</body>'); s = s[:i] + '<script src="/assets/pay.js?v=2" defer></script>\n' + s[i:]
 open(os.path.join(ROOT, 'invite.html'), 'w', encoding='utf-8').write(s)
 print('invite.html written')

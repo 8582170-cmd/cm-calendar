@@ -303,6 +303,12 @@ module.exports = async (req, res) => {
         if (r.ok) { const ix = await r.json(); cals = Object.keys(ix).filter(k => !k.startsWith('__')).map(k => ({ id: k, name: ix[k].name, updated: ix[k].updated, size: ix[k].size, store: ix[k].store || 'supabase' })).sort((a, b2) => String(b2.updated).localeCompare(String(a.updated))); } else cals = []; } catch (e) { cals = null; } }
       return json(res, 200, { email: em, profile: p, orders: orders || [], downloads: dls || [], plan, cd, cals, bonus: B[em] || { n: 0, log: [] } });
     }
+    /* דף הזמנה לאירוע בתשלום: מחירים */
+    if (req.method === 'POST' && (b.action === 'evpget' || b.action === 'evpset')) {
+      const { loadSetting, saveSetting } = require('./_lib'), E = require('./_eventpay');
+      if (b.action === 'evpset') { const P = {}; Object.keys(E.DEF).forEach(k => { const v = Number((b.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; }); await saveSetting('eventpay', { on: b.on !== false, prices: P }); }
+      const x = await E.prices(); return json(res, 200, { on: x.on, prices: x.prices, tiers: E.TIERS });
+    }
     /* הודעות לגולשים: מוצגות בראש הדפים שנבחרו (דף הבית, הבונים, הלוח המקוון, הברכות) */
     if (req.method === 'POST' && (b.action === 'msgget' || b.action === 'msgsave')) {
       const { loadSetting, saveSetting } = require('./_lib');
