@@ -74,6 +74,9 @@ h2.sec{font:400 clamp(19px,4.6vw,24px)/1.3 var(--tfont);color:var(--acc);margin:
 .tgrid button:disabled{background:var(--box);color:var(--mute);cursor:default;text-decoration:line-through}
 .tgrid button.mine{outline:2px solid var(--acc)}
 .tbar{height:10px;border-radius:99px;background:var(--box);overflow:hidden;margin:6px auto;max-width:420px}.tbar i{display:block;height:100%;background:var(--acc)}
+#bgw{position:fixed;inset:0;z-index:-1;overflow:hidden}#bgw img,#bgw video{width:100%;height:100%;object-fit:cover;display:block}#bgw i{position:absolute;inset:0;background:#000}
+body.hasbg{background:transparent}
+.mus{position:fixed;bottom:14px;inset-inline-start:14px;z-index:5;border-radius:999px;border:0;background:var(--acc);color:var(--card);font:inherit;font-weight:700;padding:10px 16px;cursor:pointer;box-shadow:0 6px 18px rgb(0 0 0 / .25)}
 /* מסגרות */
 .fr1 .u{background:transparent;border:2px solid var(--acc)}
 .fr2 .clock,.fr2 .top{border:2px solid var(--acc);border-radius:16px;padding:8px 6px}
@@ -194,6 +197,16 @@ h2.sec{font:400 clamp(19px,4.6vw,24px)/1.3 var(--tfont);color:var(--acc);margin:
         em:'מייל',days:'מתי להזכיר?',d0:'ביום האירוע',d1:'יום לפני',d2:'יומיים לפני',d3:'3 ימים לפני',d7:'שבוע לפני',d14:'שבועיים לפני',remok:'נרשמתם! התזכורת תגיע במייל.',rempend:'כמעט סיימנו: שלחנו מייל לאישור התזכורת.',
         wt:'הברכה',who:'מי יראה את הברכה?',all:'כולם',host:'רק בעלי השמחה',wok:'תודה! הברכה התקבלה.',wall:'ברכות',err:'משהו השתבש. נסו שוב.',rate:'יותר מדי ניסיונות. נסו שוב מאוחר יותר.',done:'כבר שלחתם אישור. אפשר לשלוח שוב כדי לעדכן.',gal:'תמונות מהאירוע',gup:'הוספת תמונות',gok:'תודה! התמונה נוספה.',cg:'מתנה באשראי',cga:'סכום (₪)',cgm:'ברכה (לא חובה)',cgp:'המשך לתשלום',cgok:'תודה! המתנה התקבלה.',teh:'חלוקת ספר תהילים',tsub:'בוחרים פרקים לקרוא לקראת השמחה',tprog:'נלקחו {n} מתוך 150 פרקים',tround:'סבב {r}',tpick:'בחרו עד 10 פרקים, וכתבו את שמכם',ttake:'אני לוקח/ת את הפרקים',tgot:'תודה! הפרקים שלך:',tread:'לקריאה באתר ספריא',tremq:'רוצים תזכורת לקרוא?',ttaken:'הפרקים האלה נלקחו הרגע. בחרו פרקים אחרים.'};
     var page=document.createElement('div');page.id='pg';c.parentNode.insertBefore(page,c);document.body.classList.add('inv');
+    /* רקע (תמונה או סרטון) ומוזיקה */
+    var okM=function(u){return /^https:\/\/[a-z0-9.-]+\/timers\/(media|img)\/[0-9]{6}\/[a-f0-9]{24}\.(mp4|webm|mp3|m4a|jpg)$/.test(u||'')};
+    if(okM(o.bgv)||okM(o.bgi)){var bw=document.createElement('div');bw.id='bgw';bw.setAttribute('aria-hidden','true');
+      bw.innerHTML=(okM(o.bgv)?'<video autoplay muted loop playsinline'+(okM(o.bgi)?' poster="'+esc(o.bgi)+'"':'')+' src="'+esc(o.bgv)+'"></video>':'<img src="'+esc(o.bgi)+'" alt="">')+'<i style="opacity:'+((+o.bgo||0)/100)+'"></i>';
+      document.body.prepend(bw);document.body.classList.add('hasbg');document.documentElement.style.setProperty('--bg','transparent')}
+    if(okM(o.mus)){var au=new Audio(o.mus);au.loop=true;var mb=document.createElement('button');mb.type='button';mb.className='mus';mb.textContent=EN?'🎵 Play music':'🎵 הפעלת מוזיקה';
+      var tg=function(){if(au.paused){au.play().then(function(){mb.textContent=EN?'⏸ Music':'⏸ מוזיקה'}).catch(function(){})}else{au.pause();mb.textContent=EN?'🎵 Play music':'🎵 הפעלת מוזיקה'}};
+      mb.onclick=function(e){e.stopPropagation();tg()};document.body.appendChild(mb);
+      /* נגיעה ראשונה בדף מפעילה את המוזיקה (דפדפנים לא מאפשרים לנגן לפני כן) */
+      var first=function(e){document.removeEventListener('pointerdown',first);if(e.target!==mb&&au.paused)tg()};document.addEventListener('pointerdown',first)}
     if(!PAID)page.insertAdjacentHTML('beforeend','<div class="box2" style="border:2px dashed var(--acc)"><b>'+(EN?'Preview: only you can see this page. Guests will see it after the invitation page is activated.':'תצוגה מקדימה: רק אתם רואים את הדף. האורחים יראו אותו אחרי הפעלת דף ההזמנה.')+'</b> <a href="/invite?s='+slug+'">'+(EN?'Activate':'להפעלה')+'</a></div>');
     var ok=function(u){return /^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(u||'')||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(u||'')};
     var tn=(Q.get('to')||'').replace(/[<>]/g,'').trim().slice(0,60),pt=String(o.pt||'')||T.to;

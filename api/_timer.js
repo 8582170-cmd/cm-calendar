@@ -32,6 +32,18 @@ async function upload(req, res, b) {
   try { await fetch(R2.presign('PUT', rk, 60), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: n + 1 }) }); } catch (e) {}
   return json(res, 200, { ok: true, url: P.url });
 }
+/* סרטון ומוזיקה לדף ההזמנה: מהדלי הציבורי שלנו בלבד */
+function okMedia(u, kind) { u = String(u || ''); const M = (() => { try { return require('./_r2').media(); } catch (e) { return null; } })();
+  return u.length < 300 && new RegExp('/timers/media/[0-9]{6}/[a-f0-9]{24}\\.(' + (kind === 'video' ? 'mp4|webm' : 'mp3|m4a') + ')$').test(u) && (u.startsWith('https://media.myluach.org/') || !!(M && u.startsWith(M.url + '/'))); }
+/* העלאה ישירה מהדפדפן ל-R2 (קובץ גדול): השרת רק נותן כתובת העלאה חתומה. רק למשתמש רשום */
+async function mediaUp(req, res, b) {
+  const R2 = require('./_r2'); if (!R2.media()) return json(res, 503, { error: 'storage' });
+  const user = await require('./_lib').getUser(req).catch(() => null); if (!user) return json(res, 401, { error: 'login' });
+  const T = { 'video/mp4': ['mp4', 'video', 20e6], 'video/webm': ['webm', 'video', 20e6], 'audio/mpeg': ['mp3', 'audio', 10e6], 'audio/mp4': ['m4a', 'audio', 10e6], 'audio/x-m4a': ['m4a', 'audio', 10e6], 'audio/aac': ['m4a', 'audio', 10e6] }[String(b.type || '')];
+  if (!T) return json(res, 400, { error: 'type' }); if (!(+b.size > 0) || +b.size > T[2]) return json(res, 413, { error: 'size', max: T[2] });
+  const path = 'timers/media/' + new Date().toISOString().slice(0, 7).replace('-', '') + '/' + crypto.randomBytes(12).toString('hex') + '.' + T[0];
+  const P = R2.mediaPut(path); return json(res, 200, { put: P.upload, url: P.url, ctype: b.type });
+}
 function clean(c) {
   c = c || {};
   return {
@@ -48,7 +60,8 @@ function clean(c) {
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
     qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 3).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 8).map(v => str(v, 30).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
-    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, clk: c.clk === 0 || c.clk === '0' ? 0 : 1
+    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
+    bgi: okImg(c.bgi) ? c.bgi : '', bgv: okMedia(c.bgv, 'video') ? c.bgv : '', mus: okMedia(c.mus, 'audio') ? c.mus : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
   };
 }
 async function get(s) {
@@ -343,6 +356,7 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });
     const b = readBody(req) || {};
     if (b.img) return upload(req, res, b);
+    if (b.mup) return mediaUp(req, res, b);
     if (b.act) return guest(req, res, b);
     const s = str(b.slug, 40).toLowerCase();
     if (!SLUG.test(s) || RESERVED.has(s)) return json(res, 400, { error: 'slug' });
