@@ -75,6 +75,7 @@ summary{cursor:pointer;font-weight:700}
     <label>שם האירוע (הכותרת)<input id="t" maxlength="90" placeholder="למשל: החתונה של שירה ויוסי"></label>
     <div class="two"><label>תאריך<input type="date" id="d" required></label><label>שעה (לא חובה)<input type="time" id="h"></label></div>
     <label>איך להציג<select id="u"><option value="d">ימים, שעות, דקות ושניות</option><option value="w">שבועות, ימים, שעות…</option><option value="m">חודשים, ימים, שעות…</option></select></label>
+    <div class="two"><label>פריסה<select id="l"><option value="row">הכול בשורה אחת</option><option value="stack">ימים למעלה, שעון מתחת</option></select></label><label>מסגרת<select id="fr"><option value="0">לפי העיצוב</option><option value="1">מסגרת לכל מספר</option><option value="2">מסגרת אחת מסביב</option></select></label></div>
     <div style="font-weight:600;font-size:15px">עיצוב</div>
     <div class="ths" id="ths" role="group" aria-label="עיצוב"></div>
     <div class="two"><label>צבע<input type="color" id="c" value="#1e5a63"></label><label>רקע<input type="color" id="b" value="#ffffff"></label></div>
@@ -95,7 +96,7 @@ summary{cursor:pointer;font-weight:700}
       <h3>🌐 להטמעה באתר</h3>
       <textarea id="oEmb" rows="3" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oEmb">העתקת הקוד</button></div>
       <h3>✉️ למייל או לניוזלטר</h3>
-      <p class="mute" style="font-size:14.5px;margin:0 0 4px">תמונה שמתעדכנת בכל פתיחה של המייל (מייל לא יכול להריץ שעון חי). לוחצים "העתקה למייל" ומדביקים (Ctrl+V) ישר בגוף המייל, בג׳ימייל, באאוטלוק או בכל תוכנת דואר.</p>
+      <p class="mute" style="font-size:14.5px;margin:0 0 4px">תמונה שמתעדכנת בכל פתיחה של המייל (השניות זזות במשך דקה, ובכל פתיחה מחדש מתעדכן הזמן). לוחצים "העתקה למייל" ומדביקים (Ctrl+V) ישר בגוף המייל, בג׳ימייל, באאוטלוק או בכל תוכנת דואר.</p>
       <div class="mailprev" id="oMailPrev"></div>
       <div class="row"><button class="btn pri" type="button" id="cpMail">העתקה למייל</button></div>
       <details style="border:0;padding:4px 0"><summary style="font-weight:600;font-size:14.5px">קוד HTML (לעורך HTML או לתוכנת דיוור)</summary>
@@ -109,7 +110,7 @@ summary{cursor:pointer;font-weight:700}
 
 <h2>שאלות נפוצות</h2>
 <details><summary>איך מוסיפים את הספירה לאתר?</summary><p>ממלאים את הפרטים, מעתיקים את "הקוד להטמעה באתר" ומדביקים אותו בעורך האתר, במקום שבו רוצים שהשעון יופיע (בוורדפרס: בלוק "HTML מותאם אישית"; בוויקס: "הטמעת קוד"). השעון מתעדכן כל שנייה.</p></details>
-<details><summary>אפשר להכניס ספירה לאחור למייל?</summary><p>כן. מייל לא מריץ שעון חי, ולכן הקוד למייל הוא תמונה שנוצרת מחדש בכל פעם שפותחים את המייל, ומראה את הזמן שנשאר באותו רגע. לחיצה על התמונה פותחת את הספירה החיה.</p></details>
+<details><summary>אפשר להכניס ספירה לאחור למייל?</summary><p>כן. לוחצים "העתקה למייל" ומדביקים בגוף המייל. השעון במייל הוא תמונה מונפשת: השניות זזות במשך דקה, ובכל פתיחה של המייל היא נוצרת מחדש עם הזמן המעודכן. לחיצה עליה פותחת את הספירה החיה. (באאוטלוק למחשב רואים תמונה קבועה, בלי תזוזה.)</p></details>
 <details><summary>איך משנים ספירה ששמרתי?</summary><p>מאותו מחשב או טלפון שבו שמרתם, נכנסים שוב לדף הזה ובוחרים את הספירה תחת "הספירות שלי", משנים ולוחצים "עדכון הספירה". הקישור והקוד באתר מתעדכנים מעצמם.</p></details>
 <details><summary>זה בחינם?</summary><p>כן, לגמרי, בלי הרשמה ובלי הגבלה.</p></details>
 <details><summary>מה קורה כשמגיע התאריך?</summary><p>השעון מראה "הגיע הזמן!" במקום המספרים.</p></details>
@@ -142,8 +143,8 @@ summary{cursor:pointer;font-weight:700}
   function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
   function remember(s,tok){try{var o=store();o[s]=tok;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
   function showMine(){var o=store(),k=Object.keys(o);$('mine').hidden=!k.length;$('mine').innerHTML='הספירות שלי: '+k.map(function(s){return '<a href="?s='+s+'">'+s+'</a>'}).join('')}
-  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value}}
-  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');
+  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value}}
+  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);
     Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
   /* מצב הכתובת: saved = נשמרה (והשמירה תואמת להגדרות הנוכחיות) */
   var saved=null,savedCfg='',chk,slugState='';
@@ -172,25 +173,32 @@ summary{cursor:pointer;font-weight:700}
     var s=slugVal(),useSlug=saved&&saved===s,dirty=useSlug&&JSON.stringify(cfg())!==savedCfg;
     var link=useSlug?SITE+'/t/'+s:SITE+'/t?'+params(),emb=useSlug?SITE+'/t/'+s+'?e=1':SITE+'/t?'+params({e:'1'});
     $('pv').src='/t?'+params({e:'1'});
-    var sz=SZ[$('sz').value]||SZ.full;$('pv').style.height=sz[1]+'px';$('pv').style.maxWidth=sz[0]==='100%'?'':sz[0]+'px';$('pv').style.marginInline='auto';
+    var sz=(SZ[$('sz').value]||SZ.full).slice();if($('l').value==='stack')sz[1]+=$('sz').value==='s'?110:140;$('pv').style.height=sz[1]+'px';$('pv').style.maxWidth=sz[0]==='100%'?'':sz[0]+'px';$('pv').style.marginInline='auto';
     $('oLink').value=link;
     $('oWa').href='https://wa.me/?text='+encodeURIComponent(($('t').value.trim()||'ספירה לאחור')+' ⏳ '+link);
     var title=esc($('t').value.trim()||'ספירה לאחור');
     $('oEmb').value='<iframe src="'+emb+'" width="'+(sz[0]==='100%'?'100%':sz[0])+'" height="'+sz[1]+'" style="border:0;max-width:100%" title="'+title+'" loading="lazy"></iframe>';
     $('dirty').hidden=!dirty;
     var fg=$('c').value.slice(1),bg=$('b').value.slice(1),lb=custom?'5d6873':T()[4];
-    var img=SITE+'/api/pricing?c=_cdimg&d='+$('d').value+($('h').value?'&h='+encodeURIComponent($('h').value):'')+'&u='+$('u').value+'&fg='+fg+'&bg='+bg+($('z').value!=='Asia/Jerusalem'?'&z='+encodeURIComponent($('z').value):'');
+    var base=SITE+'/api/pricing?c=_cdimg&d='+$('d').value+($('h').value?'&h='+encodeURIComponent($('h').value):'')+'&u='+$('u').value+'&fg='+fg+'&bg='+bg+($('z').value!=='Asia/Jerusalem'?'&z='+encodeURIComponent($('z').value):'')+($('fr').value!=='0'?'&fr='+$('fr').value:'');
     var en=$('lang').value==='en',lab=en?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds'}:{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות'};
-    var units=($('u').value==='m'?['months']:$('u').value==='w'?['weeks']:[]).concat(['days','hours','minutes','seconds']);
+    var dateU=($('u').value==='m'?['months']:$('u').value==='w'?['weeks']:[]).concat(['days']),clockU=['hours','minutes','seconds'];
+    var td='font-family:Arial,sans-serif;font-size:13px;color:#'+lb+';text-align:center';
+    var labels=function(us,w){return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="'+w+'" align="center" style="max-width:100%;direction:ltr;'+td+'"><tr>'+us.map(function(u){return '<td>'+lab[u]+'</td>'}).join('')+'</tr></table>'};
     var head=$('t').value.trim()?'<tr><td style="padding:12px 8px 2px;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#'+fg+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+title+'</td></tr>':'';
-    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+head+
-      '<tr><td align="center"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+img+'" alt="'+title+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a></td></tr>'+
-      '<tr><td><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="direction:ltr;font-family:Arial,sans-serif;font-size:13px;color:#'+lb+';text-align:center"><tr>'+units.map(function(u){return '<td>'+lab[u]+'</td>'}).join('')+'</tr></table></td></tr>'+
+    var body;
+    if($('l').value==='stack'){
+      body='<tr><td align="center" style="padding-top:8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="direction:ltr"><tr>'+dateU.map(function(u,i){return '<td align="center" style="padding:0 6px;'+td+'"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=top&g='+i+'" alt="" height="84" style="display:block;height:84px;width:auto;border:0"></a>'+lab[u]+'</td>'}).join('')+'</tr></table></td></tr>'+
+        '<tr><td align="center" style="padding-top:10px"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=clock&a=1" alt="'+title+'" width="300" style="display:block;max-width:100%;height:auto;border:0"></a>'+labels(clockU,300)+'</td></tr>';
+    }else{
+      body='<tr><td align="center"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&a=1" alt="'+title+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a></td></tr><tr><td>'+labels(dateU.concat(clockU),'100%')+'</td></tr>';
+    }
+    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+head+body+
       '<tr><td style="padding:6px 0 6px;text-align:center;font-family:Arial,sans-serif;font-size:9px;line-height:1"><a href="'+SITE+'/timer" target="_blank" style="color:#'+lb+';text-decoration:none">myluach.org</a></td></tr></table>';
-    $('oMail').value=mail;$('oMailPrev').innerHTML=mail.replace(SITE+'/api/','/api/');
+    $('oMail').value=mail;$('oMailPrev').innerHTML=mail.split(SITE+'/api/').join('/api/');
     $('out').hidden=false;
   }
-  ['t','d','h','u','lang','z','sz'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
+  ['t','d','h','u','lang','z','sz','l','fr'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
   ['c','b'].forEach(function(i){$(i).addEventListener('input',function(){custom=true;upd()})});
   /* העתקה "מעוצבת": מדביקים בגוף המייל ומקבלים את התמונה עצמה ולא את הקוד */
   $('cpMail').addEventListener('click',function(){var b=this,html=$('oMail').value,done=function(ok){b.textContent=ok?'הועתק ✓ עכשיו מדביקים במייל':'לא הצליח. סמנו את התצוגה למעלה והעתיקו';setTimeout(function(){b.textContent='העתקה למייל'},2500)};
@@ -201,7 +209,7 @@ summary{cursor:pointer;font-weight:700}
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
   var es=(Q.get('s')||'').toLowerCase();
   if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
-    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';
     setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
     $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('הכתובת הזו שלכם. אפשר לשנות ולעדכן.','ok')}else check();go()})}
 })();

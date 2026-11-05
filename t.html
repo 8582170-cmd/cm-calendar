@@ -30,6 +30,19 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
 .cr{margin-top:8px;font-size:10px;line-height:1;opacity:.75;direction:ltr}
 .cr a{color:var(--mute);text-decoration:none}
 .bad{color:var(--mute)}
+/* פריסה: ימים למעלה ושעון מתחת */
+.top{display:flex;justify-content:center;gap:clamp(6px,2vw,16px);margin:14px 0 6px;direction:ltr}
+.top .u{max-width:190px;padding:12px 6px 10px}
+.top .n{font-size:clamp(34px,13vw,92px)}
+.stack .clock{margin-top:8px;gap:0;align-items:flex-start;max-width:520px;margin-inline:auto}
+.stack .clock .n{font-size:clamp(20px,7vw,46px)}
+.sep{font:800 clamp(20px,7vw,46px)/1 var(--nfont);color:var(--acc);padding:10px 2px 0;flex:none}
+.stack .clock .u{max-width:120px}
+/* מסגרות */
+.fr1 .u{background:transparent;border:2px solid var(--acc)}
+.fr2 .clock,.fr2 .top{border:2px solid var(--acc);border-radius:16px;padding:8px 6px}
+.fr2 .u{background:transparent;border-color:transparent}
+.fr2.stack .clock{margin-top:10px}
 /* עיצובים */
 .th-wedding .u{border-radius:999px 999px 14px 14px}
 .th-digital .n{text-shadow:0 0 12px color-mix(in srgb,var(--acc) 60%,transparent)}
@@ -79,20 +92,27 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
         while(add(mo+1)<=end)mo++;var rest=Math.floor((end-add(mo))/1000);days=Math.floor(rest/86400);s=rest-days*86400;out.push(['months',mo])}
       else if(unit==='w'&&days>=7){out.push(['weeks',Math.floor(days/7)]);days%=7}
       out.push(['days',days],['hours',Math.floor(s/3600)],['minutes',Math.floor(s/60)%60],['seconds',s%60]);return out}
+    var stack=o.l==='stack',fr=o.fr==='1'||o.fr===1?1:o.fr==='2'||o.fr===2?2:0;
+    if(stack)document.body.classList.add('stack');if(fr)document.body.classList.add('fr'+fr);
+    var DK={months:1,weeks:1,days:1};
+    function cell(p){return '<div class="u"><div class="n" data-k="'+p[0]+'"></div><div class="l">'+L[p[0]]+'</div></div>'}
+    function layout(P2){if(!stack)return '<div class="clock">'+P2.map(cell).join('')+'</div>';
+      var top=P2.filter(function(p){return DK[p[0]]}),clk=P2.filter(function(p){return !DK[p[0]]});
+      return '<div class="top">'+top.map(cell).join('')+'</div><div class="clock">'+clk.map(cell).join('<div class="sep" aria-hidden="true">:</div>')+'</div>'}
     var head='<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1><div class="when">'+esc(when)+'</div>',built=false,iv;
     var credit='<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
     function draw(){
       var left=to-Date.now();
       if(left<=0){c.innerHTML=head+'<div class="done">'+L.done+'</div>'+credit;clearInterval(iv);return}
       var P2=parts(left);
-      if(!built||c.querySelectorAll('.u').length!==P2.length){c.innerHTML=head+'<div class="clock">'+P2.map(function(p){return '<div class="u"><div class="n" data-k="'+p[0]+'"></div><div class="l">'+L[p[0]]+'</div></div>'}).join('')+'</div>'+credit;built=true}
+      if(!built||c.querySelectorAll('.u').length!==P2.length){c.innerHTML=head+layout(P2)+credit;built=true}
       P2.forEach(function(p){var e=c.querySelector('[data-k="'+p[0]+'"]');if(e)e.textContent=String(p[1]).padStart(2,'0')});
     }
     document.title=(title||(EN?'Countdown':'ספירה לאחור'))+' · MyLuach';
     iv=setInterval(draw,1000);draw();
   }
-  if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){start(Object.assign({},j.cfg||{},Q.get('e')?{}:{}))}).catch(function(){start({})})}
-  else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang')});
+  if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){start(j.cfg||{})}).catch(function(){start({})})}
+  else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr')});
 })();
 </script>
 </body>
