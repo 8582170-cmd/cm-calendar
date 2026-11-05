@@ -72,11 +72,18 @@ function clean(c) {
 }
 
 module.exports = async (req, res) => {
-  const b = readBody(req);
+  const b = readBody(req), SEC = require('./_sec');
+  /* הגבלת ניסיונות: אחרי 5 סיסמאות שגויות מאותה כתובת, נעילה ל-5 דקות, אחר כך 15, שעה, 4 שעות, יום */
+  const lock = await SEC.loginLocked(req).catch(() => null);
+  if (lock) return json(res, 429, { error: 'locked', until: lock.until, level: lock.level });
   if (!okPass(req.headers['x-admin-password'] || b.password)) {
     await new Promise(r => setTimeout(r, 800));
-    return json(res, env('ADMIN_PASSWORD') ? 401 : 503, { error: env('ADMIN_PASSWORD') ? 'wrong password' : 'ADMIN_PASSWORD not set' });
+    if (!env('ADMIN_PASSWORD')) return json(res, 503, { error: 'ADMIN_PASSWORD not set' });
+    const nl = await SEC.loginResult(req, false).catch(() => null);
+    if (nl) return json(res, 429, { error: 'locked', until: nl.until, level: nl.level });
+    return json(res, 401, { error: 'wrong password' });
   }
+  await SEC.loginResult(req, true).catch(() => {});
   try {
     if (req.method === 'POST' && b.action === 'save') {
       const value = clean(b.config || {});
@@ -231,6 +238,19 @@ module.exports = async (req, res) => {
       let r; try { r = JSON.parse(out.body); } catch (e) { r = { raw: out.body.slice(0, 300) }; }
       return json(res, 200, { code: out.code, result: r });
     }
+    /* אבטחה: כתובות IP חסומות וניסיונות כניסה שגויים */
+    if (req.method === 'POST' && /^sec(get|block|unblock|clear)$/.test(b.action || '')) {
+      const { loadSetting } = require('./_lib'), ip = String(b.ip || '').trim().slice(0, 45);
+      const okIp = /^[0-9a-f:.]{3,45}$/i.test(ip);
+      if (b.action === 'secblock') { if (!okIp) return json(res, 400, { error: 'כתובת IP לא תקינה' }); if (ip === SEC.ipOf(req)) return json(res, 400, { error: 'זו הכתובת שלכם. אי אפשר לחסום אותה.' });
+        const h = +b.hours || 0; await SEC.block(ip, String(b.reason || 'נחסם ידנית').slice(0, 200), h > 0 ? h * 3600e3 : 0, false); }
+      if (b.action === 'secunblock' && okIp) await SEC.unblock(ip);
+      if (b.action === 'secclear' && okIp) await SEC.clearFails(ip);
+      const B = (await loadSetting('ipblock')) || {}, F = (await loadSetting('secfails')) || {}, now = Date.now();
+      return json(res, 200, { me: SEC.ipOf(req),
+        blocks: Object.entries(B).map(([ip, v]) => ({ ip, ...v, active: !v.until || now < v.until })).sort((a, b) => String(b.t).localeCompare(String(a.t))),
+        fails: Object.entries(F).map(([ip, v]) => ({ ip, total: v.total || 0, level: v.lvl || 0, at: v.at, until: v.until && now < v.until ? v.until : null })).sort((a, b) => (b.at || 0) - (a.at || 0)) });
+    }
     /* לקוח: חיפוש לפי מייל (הזמנות, הורדות, מצב המסלול), והוספת הורדות */
     if (req.method === 'POST' && (b.action === 'custget' || b.action === 'custbonus')) {
       const { loadSetting, saveSetting, planInfo } = require('./_lib');
@@ -246,8 +266,8 @@ module.exports = async (req, res) => {
       const p = (prof || [])[0] || null, uid = p && p.user_id;
       const or = 'or=(' + (uid ? 'user_id.eq.' + uid + ',' : '') + 'email.eq.' + encodeURIComponent(em) + ')';
       const [orders, dls] = await Promise.all([
-        db('orders?select=id,plan,amount,status,coupon,created_at,paid_at&' + or + '&order=created_at.desc&limit=50').catch(() => []),
-        db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&' + or + '&order=created_at.desc&limit=60').catch(() => [])]);
+        db('orders?select=id,plan,amount,status,coupon,created_at,paid_at,ip,ip_geo,ua&' + or + '&order=created_at.desc&limit=50').catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at,ip,ip_geo&' + or + '&order=created_at.desc&limit=50')).catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at&' + or + '&order=created_at.desc&limit=50')).catch(() => []),
+        db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo,ua&' + or + '&order=created_at.desc&limit=60').catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo&' + or + '&order=created_at.desc&limit=60')).catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&' + or + '&order=created_at.desc&limit=60')).catch(() => [])]);
       let plan = null, cd = null; if (uid) { try { plan = await planInfo({ id: uid, email: em }, false); } catch (e) {} try { cd = await planInfo({ id: uid, email: em }, true); } catch (e) {} }
       const B = (await loadSetting('dlbonus')) || {};
       return json(res, 200, { email: em, profile: p, orders: orders || [], downloads: dls || [], plan, cd, bonus: B[em] || { n: 0, log: [] } });

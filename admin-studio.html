@@ -296,11 +296,11 @@ const $=id=>document.getElementById(id),app=$('app');
 let PW='';try{PW=sessionStorage.getItem('myluach-admin')||''}catch(e){}
 function check(){
   return fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':PW},body:JSON.stringify({action:'contentget',page:'studio'})})
-    .then(r=>{if(!r.ok)throw Object.assign(new Error('auth'),{code:r.status});});
+    .then(r=>{if(!r.ok)return r.json().catch(()=>({})).then(j=>{throw Object.assign(new Error('auth'),{code:r.status,j})});});
 }
 function login(){
   check().then(()=>{try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}start()})
-    .catch(e=>{$('lmsg').textContent=e.code===401?'סיסמה שגויה':e.code===503?'לא הוגדרה סיסמת ניהול בשרת':'שגיאה בכניסה, נסו שוב';try{sessionStorage.removeItem('myluach-admin')}catch(x){}});
+    .catch(e=>{$('lmsg').textContent=e.code===429?'יותר מדי ניסיונות שגויים. אפשר לנסות שוב '+(e.j&&e.j.until?'בשעה '+new Date(e.j.until).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}):'מאוחר יותר')+'.':e.code===401?'סיסמה שגויה':e.code===503?'לא הוגדרה סיסמת ניהול בשרת':'שגיאה בכניסה, נסו שוב';try{sessionStorage.removeItem('myluach-admin')}catch(x){}});
 }
 $('login').addEventListener('submit',e=>{e.preventDefault();PW=$('pw').value;login()});
 if(PW)login();

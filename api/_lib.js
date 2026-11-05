@@ -100,15 +100,20 @@ function reqMeta(req) {
   const ip = String(H['cf-connecting-ip'] || H['x-real-ip'] || H['x-forwarded-for'] || '').split(',')[0].trim().slice(0, 45);
   if (!ip) return null;
   let city = String(H['x-vercel-ip-city'] || ''); try { city = decodeURIComponent(city); } catch (e) {}
-  return { ip, ip_geo: [String(H['x-vercel-ip-country'] || ''), city].filter(Boolean).join(' · ').slice(0, 80) || null };
+  let ua = null; try { ua = require('./_sec').uaInfo(H['user-agent']); } catch (e) {}
+  return { ip, ip_geo: [String(H['x-vercel-ip-country'] || ''), city].filter(Boolean).join(' · ').slice(0, 80) || null, ...(ua ? { ua } : {}) };
 }
 /* opts.meta: מוסיף את ip/ip_geo לרשומה. אם העמודות עוד לא נוספו במסד הנתונים, שומרים בלעדיהן */
 async function db(path, opts = {}) {
   if (opts.meta && opts.body && /^(POST|PATCH)$/.test(opts.method || '')) {
-    const { meta, ...rest } = opts;
-    try { const o = JSON.parse(rest.body); if (o && typeof o === 'object' && !Array.isArray(o)) return await db(path, { ...rest, body: JSON.stringify({ ...o, ...meta }) }); }
-    catch (e) { if (!/ip_geo|'ip'|"ip"|PGRST204|column/i.test(e.message)) throw e; }
-    return db(path, rest);
+    const { meta, ...rest } = opts; let o = null; try { o = JSON.parse(rest.body); } catch (e) {}
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return db(path, rest);
+    /* אם חסרות עמודות במסד הנתונים: מנסים שוב עם פחות שדות (קודם רק IP, ואז בלי כלום) */
+    const tries = [meta, meta.ip ? { ip: meta.ip, ip_geo: meta.ip_geo } : null, {}].filter(Boolean);
+    for (let i = 0; i < tries.length; i++) {
+      try { return await db(path, { ...rest, body: JSON.stringify({ ...o, ...tries[i] }) }); }
+      catch (e) { if (i === tries.length - 1 || !/PGRST204|column|schema cache/i.test(e.message)) throw e; }
+    }
   }
   if (opts.meta !== undefined) { const { meta, ...rest } = opts; opts = rest; }
   const url = env('SUPABASE_URL').replace(/\/$/, ''), key = env('SUPABASE_SERVICE_ROLE_KEY');
