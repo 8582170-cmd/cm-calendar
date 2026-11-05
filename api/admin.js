@@ -351,11 +351,12 @@ module.exports = async (req, res) => {
       const old = urls.filter(u => !pri.includes(u) && sent[k(u)] && ago(sent[k(u)]) >= 30).sort((x, y) => (sent[k(x)] < sent[k(y)] ? -1 : 1));
       const queue = pri.concat(fresh, old), extra = (Array.isArray(b.urls) ? b.urls : []).filter(u => typeof u === 'string' && u.startsWith(SITE + '/')).slice(0, 20);
       const want = [...new Set(extra.concat(queue))];
-      const out = { queue: want.length, total: urls.length };
+      const BK = env('BING_API_KEY'), out = { queue: want.length, total: urls.length, hasKey: !!BK };
       /* המכסה של בינג (אם יש מפתח API) */
-      const BK = env('BING_API_KEY'); let limit = Math.max(1, Math.min(+b.max || 100, 500));
+      let limit = Math.max(1, Math.min(+b.max || 100, 500));
       if (BK) {
         try { const q = await (await fetch('https://ssl.bing.com/webmaster/api.svc/json/GetUrlSubmissionQuota?siteUrl=' + encodeURIComponent(SITE + '/') + '&apikey=' + BK, { signal: AbortSignal.timeout(15000) })).json();
+          if (q && q.ErrorCode) out.quotaErr = (q.Message || ('ErrorCode ' + q.ErrorCode)).slice(0, 160);
           out.quota = q && q.d ? q.d.DailyQuota : null; out.monthly = q && q.d ? q.d.MonthlyQuota : null; if (out.quota != null) limit = Math.min(limit, out.quota); } catch (e) { out.quotaErr = String(e.message || e).slice(0, 120); }
       }
       const batch = want.slice(0, limit); out.count = batch.length; out.left = want.length - batch.length;
@@ -363,7 +364,7 @@ module.exports = async (req, res) => {
       let okAny = false;
       if (BK && out.quota) {
         try { const r = await fetch('https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlBatch?apikey=' + BK, { method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json; charset=utf-8' }, body: JSON.stringify({ siteUrl: SITE + '/', urlList: batch }) });
-          out.bing = r.status; if (r.ok) okAny = true; else out.bingErr = (await r.text().catch(() => '')).slice(0, 200); } catch (e) { out.bingErr = String(e.message || e).slice(0, 120); }
+          out.bing = r.status; const tx = await r.text().catch(() => ''); if (r.ok && !/ErrorCode/i.test(tx)) okAny = true; else { out.bing = r.ok ? 400 : r.status; out.bingErr = tx.slice(0, 200); } } catch (e) { out.bingErr = String(e.message || e).slice(0, 120); }
       }
       try {
         const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json; charset=utf-8' },

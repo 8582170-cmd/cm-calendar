@@ -586,10 +586,16 @@ function bind(){
     o.querySelectorAll('[data-mtreset]').forEach(b=>b.onclick=()=>{b.closest('.mt-k').querySelectorAll('[data-f]').forEach(i=>i.value='');prev()});
   }).catch(e=>{o.textContent=e.message})};
   if($('#inNow'))$('#inNow').onclick=()=>{$('#inMsg').textContent='שולח…';api({action:'indexnow',max:+$('#inMax').value||100}).then(r=>{
-    const q=r.quota!=null?' · נשארו היום בבינג: '+Math.max(0,r.quota-(r.bing===200?r.count:0)):'';
-    if(r.nothing){$('#inMsg').textContent='✅ אין מה לשלוח: כל '+r.total+' הדפים נשלחו לאחרונה'+q;return}
-    $('#inMsg').textContent=r.ok===false?'❌ '+(r.error||r.bingErr||'השליחה נכשלה')+(r.status===403?' (בינג לא מצא את קובץ המפתח באתר)':r.status===422?' (חלק מהכתובות לא שייכות לאתר)':r.status===429?' (יותר מדי שליחות היום. נסו מחר, אפשר גם עם פחות דפים)':''):
-      '✅ נשלחו '+r.count+' דפים'+(r.status===202?' (התקבלו, ייבדקו בקרוב)':'')+' · נשארו לשליחה בפעם הבאה: '+r.left+' מתוך '+r.total+q}).catch(e=>{$('#inMsg').textContent='❌ '+e.message})};
+    const L=[];
+    /* בינג (שליחת כתובות עם מכסה): מופיע רק אם הוגדר BING_API_KEY */
+    if(!r.hasKey)L.push('🔑 מפתח API של בינג: לא מוגדר (BING_API_KEY)');
+    else{L.push(r.quota!=null?'🔑 מכסה בבינג היום לפני השליחה: '+r.quota:'🔑 בדיקת המכסה בבינג נכשלה: '+(r.quotaErr||'אין תשובה'));
+      if(r.bing)L.push(r.bing===200?'✅ בינג (שליחת כתובות): נשלחו '+r.count:'❌ בינג (שליחת כתובות): '+r.bing+' '+(r.bingErr||''))}
+    if(r.nothing)L.push('✅ אין מה לשלוח: כל '+r.total+' הדפים נשלחו לאחרונה');
+    else if(r.status)L.push(r.status===200||r.status===202?'✅ IndexNow: נשלחו '+r.count:'❌ IndexNow: '+(r.status===429?'יותר מדי שליחות לאחרונה (חסום זמנית, נסו מחר)':r.status===403?'בינג לא מצא את קובץ המפתח באתר':r.status===422?'חלק מהכתובות לא שייכות לאתר':(r.error||r.status)));
+    else if(r.error)L.push('❌ '+r.error);
+    if(!r.nothing)L.push((r.ok?'נשארו לשליחה בפעם הבאה: ':'לא סומן כנשלח. נשארו לשליחה: ')+(r.ok?r.left:r.queue)+' מתוך '+r.total);
+    $('#inMsg').innerHTML=L.map(x=>'<div>'+x.replace(/</g,'&lt;')+'</div>').join('')}).catch(e=>{$('#inMsg').textContent='❌ '+e.message})};
   if($('#cmsP')){$('#cmsP').value=CMS.page;$('#cmsP').onchange=e=>{CMS.page=e.target.value;cmsOpen()};
     $('#cmsSave').onclick=()=>{$('#cmsMsg').textContent='שומר…';$('#cmsF').contentWindow.postMessage({type:'cms-collect'},location.origin)};
     $('#cmsReset').onclick=e=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח? כל השינויים בדף יימחקו';return}api({action:'contentreset',page:CMS.page}).then(()=>{b.dataset.sure='';b.textContent='החזרת הדף למקור';cmsOpen()})};cmsOpen()}
