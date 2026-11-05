@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-pg="invite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>הזמנה דיגיטלית לאירוע עם אישורי הגעה · לחתונה ולבר מצווה, בחינם | MyLuach</title>
+<meta name="description" content="דף הזמנה דיגיטלי לחתונה, לבר מצווה ולכל שמחה: ההזמנה, שעון ספירה לאחור, מיקום עם וייז, הוספה ליומן, אישורי הגעה, תזכורות לאורחים, קיר ברכות וחלוקת תהילים. קישור אישי לכל מוזמן לוואטסאפ. בחינם.">
+<link rel="canonical" href="https://www.myluach.org/invite">
+<meta property="og:title" content="הזמנה דיגיטלית לאירוע · MyLuach">
+<meta property="og:url" content="https://www.myluach.org/invite">
+<meta property="og:type" content="website"><meta property="og:locale" content="he_IL">
+<meta property="og:description" content="הזמנה, שעון ספירה, וייז, אישורי הגעה, ברכות ותהילים. בחינם.">
+<meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@900&display=swap">
+<style>
+:root{--paper:#f6f7f4;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--card:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--card:#161f22;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.7 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:900px;margin-inline:auto;padding-bottom:48px}
+a{color:var(--teal)}
+.nav{display:flex;justify-content:space-between;align-items:center;padding-block:20px;border-bottom:1px solid var(--line)}
+.logo{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:26px;color:var(--ink);text-decoration:none;display:inline-flex;gap:10px;align-items:center;direction:ltr}
+.nl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.lsw{border:1px solid var(--line);border-radius:999px;padding:2px 12px;text-decoration:none;font-weight:600;font-size:15px}
+.logo-img{display:inline-block;vertical-align:middle;flex:none;margin-inline-end:8px}
+h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(28px,5vw,38px);line-height:1.15;margin:28px 0 6px}
+h2{font-size:21px;margin:30px 0 6px}
+p,li{max-width:70ch}
+.mute{color:var(--mute)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;margin-top:18px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 10px}
+input,select{display:block;width:100%;margin-top:4px;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+input[type=color]{height:42px;padding:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+iframe{width:100%;border:0;display:block;height:240px;border-radius:14px}
+.out{margin-top:14px}
+.out h3{font-size:16px;margin:12px 0 4px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+textarea{width:100%;font:13px/1.45 ui-monospace,Consolas,monospace;direction:ltr;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.mailprev{margin-top:6px;max-width:100%;overflow:hidden}
+.mailprev img{max-width:100%;height:auto}
+.mailprev>table{width:100%!important}
+.grid>*{min-width:0}
+.ths{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0 12px}
+.th{font:inherit;font-size:13px;font-weight:600;border:2px solid var(--line);border-radius:10px;padding:6px 2px 4px;cursor:pointer;background:var(--th-b);color:var(--th-f);line-height:1.2}
+.th b{display:block;font:800 17px/1.1 ui-monospace,Consolas,monospace;letter-spacing:.05em}
+.th[aria-pressed="true"]{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal)}
+.slug{display:flex;align-items:stretch;direction:ltr;border:1px solid var(--line);border-radius:10px;background:var(--paper);overflow:hidden;margin-top:4px}
+.slug span{padding:8px 4px 8px 10px;color:var(--mute);font-size:14.5px;white-space:nowrap;align-self:center}
+.slug input{border:0;margin:0;border-radius:0;padding-inline-start:0;min-width:0}
+.st{font-size:14px;min-height:1.6em;margin:4px 0 0}
+.st.ok{color:#2e7d4f}.st.no{color:#b3412e}
+.chk{display:flex;gap:16px;flex-wrap:wrap;margin:-2px 0 12px;font-size:15px}.chk label{display:flex;gap:6px;align-items:center;margin:0;font-weight:400}.chk input{width:auto;margin:0}
+.inv{margin-top:14px;border:1px dashed var(--line);border-radius:12px;padding:8px 12px}.inv>summary{font-weight:700;cursor:pointer;padding:4px 0}
+.inv textarea{width:100%;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical;direction:inherit}
+.plist{display:grid;gap:6px;margin-top:8px}.plist div{display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:6px}.plist b{flex:1;min-width:120px}
+.own{margin-top:10px}.own table{width:100%;border-collapse:collapse;font-size:14px}.own th,.own td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:start;vertical-align:top}.own .sum{font-weight:700}
+.btn.sm{font-size:13px;padding:3px 9px}
+.mine{font-size:14px;margin-top:8px}.mine a{margin-inline-end:10px}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:var(--mute)}
+details{border-bottom:1px solid var(--line);padding:8px 0}
+summary{cursor:pointer;font-weight:700}
+</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "הזמנה דיגיטלית לאירוע · MyLuach", "url": "https://www.myluach.org/invite", "description": "דף הזמנה לאירוע עם שעון ספירה, וייז, אישורי הגעה, תזכורות, ברכות וחלוקת תהילים.", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any", "inLanguage": "he", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "ILS"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "איך שולחים את ההזמנה?", "acceptedAnswer": {"@type": "Answer", "text": "אחרי השמירה כותבים את שמות המוזמנים, ולוחצים \"יצירת קישורים אישיים\". לכל מוזמן נוצר קישור עם השם שלו וכפתור וואטסאפ, וההודעה יוצאת מהטלפון שלכם."}}, {"@type": "Question", "name": "איך רואים מי אישר הגעה?", "acceptedAnswer": {"@type": "Answer", "text": "בחלק \"אישורי הגעה וברכות\" רואים סיכום של כמה מגיעים, מבוגרים וילדים, ואת הרשימה המלאה. אפשר גם להוריד אותה לאקסל. הניהול עובד מהדפדפן שבו נשמרה הכתובת."}}, {"@type": "Question", "name": "מי רואה את הברכות?", "acceptedAnswer": {"@type": "Answer", "text": "מי שכותב ברכה בוחר אם כולם יראו אותה בקיר הברכות, או רק בעלי השמחה. אתם יכולים להסתיר או למחוק כל ברכה, ולהדפיס את כולן כספר ברכות."}}, {"@type": "Question", "name": "איך עובדת חלוקת התהילים?", "acceptedAnswer": {"@type": "Answer", "text": "כל אורח בוחר פרקים מתוך 150 פרקי התהילים, כותב את שמו, ויכול להירשם לתזכורת במייל. פרק שנלקח מסומן, וכשכל הספר נלקח מתחיל סבב חדש."}}, {"@type": "Question", "name": "ואיך מקבלים מתנות?", "acceptedAnswer": {"@type": "Answer", "text": "מדביקים קישור תשלום משלכם, כמו ביט, PayBox או דף תשלום, ובדף ההזמנה יופיע כפתור \"מתנה\". הכסף עובר ישר אליכם."}}, {"@type": "Question", "name": "זה בחינם?", "acceptedAnswer": {"@type": "Answer", "text": "כן. רק להעלאת תמונה צריך חשבון באתר, גם הוא בחינם."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "MyLuach", "item": "https://www.myluach.org/"}, {"@type": "ListItem", "position": 2, "name": "הזמנה דיגיטלית לאירוע", "item": "https://www.myluach.org/invite"}]}</script>
+<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/cms.js?v=1" defer></script>
+</head>
+<body><div class="wrap">
+<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><nav class="nl"><a href="timer">שעון ספירה פשוט</a><a href="countdown.html">לוח ספירה להדפסה</a></nav></header>
+<main>
+<h1>הזמנה דיגיטלית לאירוע</h1>
+<p class="mute">דף אחד לכל השמחה: ההזמנה, שעון שסופר לאחור, המקום עם וייז וגוגל מפות, הוספה ליומן, אישורי הגעה, תזכורות לאורחים, קיר ברכות, חלוקת תהילים וקישור למתנה. שולחים לכל מוזמן קישור אישי בוואטסאפ. בחינם.</p><p class="mute" style="font-size:15px"><b>איך מתחילים:</b> 1. ממלאים את שם האירוע, התאריך והעיצוב. 2. בוחרים כתובת לאירוע. 3. ממלאים את דף ההזמנה ושומרים.</p>
+
+<div class="grid">
+  <form class="box" id="f" onsubmit="return false">
+    <label>שם האירוע (הכותרת)<input id="t" maxlength="90" placeholder="למשל: החתונה של שירה ויוסי"></label>
+    <label for="pbtn">תמונה (לא חובה)</label>
+    <div class="row" style="margin:4px 0 4px"><input type="file" id="pf" accept="image/*" hidden><button class="btn" type="button" id="pbtn">בחירת תמונה</button><select id="ps" style="width:auto;margin:0" aria-label="צורת התמונה"><option value="circle">עגולה</option><option value="rect">מלבן</option><option value="wide">רחבה (באנר)</option></select><button class="btn" type="button" id="prm" hidden>הסרה</button></div>
+    <p class="st" id="pst" aria-live="polite" style="margin:0 0 10px"></p>
+    <div class="two"><label>תאריך<input type="date" id="d" required></label><label>שעה (לא חובה)<input type="time" id="h"></label></div>
+    <label>איך להציג<select id="u"><option value="d">ימים, שעות, דקות ושניות</option><option value="w">שבועות, ימים, שעות…</option><option value="m">חודשים, ימים, שעות…</option></select></label>
+    <div class="two"><label>תאריך היעד<select id="wp"><option value="top">למעלה, מתחת לכותרת</option><option value="bottom">למטה, מתחת לשעון</option><option value="none">לא להציג</option></select></label><label>סוג התאריך<select id="wd"><option value="g">לועזי</option><option value="h">עברי</option><option value="b">עברי ולועזי</option></select></label></div>
+    <label id="whL">תאריך עברי לאירוע בערב<select id="wh"><option value="s">לפי השקיעה (אחרי השקיעה: היום העברי הבא)</option><option value="o">"אור ל־" (למשל: אור לי״ד בניסן)</option><option value="c">לפי התאריך הלועזי, בלי שקיעה</option></select></label>
+    <div class="chk"><label><input type="checkbox" id="ww" checked>יום בשבוע</label><label><input type="checkbox" id="wt" checked>שעת היעד</label><label><input type="checkbox" id="sec" checked>שניות בספירה</label></div>
+    <div class="two"><label>פריסה<select id="l"><option value="row">הכול בשורה אחת</option><option value="stack">ימים למעלה, שעון מתחת</option></select></label><label>מסגרת<select id="fr"><option value="0">לפי העיצוב</option><option value="1">מסגרת לכל מספר</option><option value="2">מסגרת אחת מסביב</option></select></label></div>
+    <div style="font-weight:600;font-size:15px">עיצוב</div>
+    <div class="ths" id="ths" role="group" aria-label="עיצוב"></div>
+    <div class="two"><label>צבע<input type="color" id="c" value="#1e5a63"></label><label>רקע<input type="color" id="b" value="#ffffff"></label></div>
+    <div class="two"><label>גודל באתר<select id="sz"><option value="full">רוחב מלא</option><option value="l">גדול (800×300)</option><option value="m">בינוני (560×240)</option><option value="s">קטן (360×210)</option></select></label><label>שפה<select id="lang"><option value="he">עברית</option><option value="en">English</option></select></label></div>
+    <label>אזור זמן<select id="z"></select></label>
+    <label for="slug">כתובת לאירוע (חובה לדף ההזמנה)</label>
+    <div class="slug"><span>myluach.org/t/</span><input id="slug" maxlength="40" placeholder="shira-yossi" autocomplete="off" spellcheck="false" aria-describedby="st"></div>
+    <p class="st" id="st" aria-live="polite">אותיות באנגלית, ספרות ומקף.</p>
+    <div class="row"><button class="btn pri" type="button" id="save" disabled>שמירה וקבלת כתובת</button></div>
+    <div class="mine" id="mine" hidden></div>
+    <p class="mute" id="invPromo" style="font-size:14.5px;margin:12px 0 0">📨 חדש: <a href="invite" id="invLink">דף הזמנה לאירוע</a>, עם אישורי הגעה, תזכורות לאורחים, קיר ברכות וחלוקת תהילים. בחינם.</p>
+    <details class="inv" id="invD"><summary>📨 דף ההזמנה</summary>
+      <p class="mute" style="font-size:14.5px;margin:4px 0 10px">הקישור של האירוע הופך לדף הזמנה: ההזמנה, השעון, פרטי המקום עם וייז, הוספה ליומן, אישור הגעה, הרשמה לתזכורת וקיר ברכות. עובד עם כתובת שמורה, ונשמר יחד איתה.</p>
+      <label for="ibtn">תמונת ההזמנה (לא חובה)</label>
+      <div class="row" style="margin:4px 0 4px"><input type="file" id="if" accept="image/*" hidden><button class="btn" type="button" id="ibtn">העלאת הזמנה</button><button class="btn" type="button" id="irm" hidden>הסרה</button></div>
+      <p class="st" id="ist" aria-live="polite" style="margin:0 0 10px"></p>
+      <label>נוסח ההזמנה (לא חובה)<textarea id="it" rows="4" maxlength="1500" placeholder="בשעה טובה ומוצלחת, אנו שמחים להזמינכם…"></textarea></label>
+      <div class="two"><label>שם המקום<input id="venue" maxlength="120" placeholder="אולמי…"></label><label>כתובת (לוויז ולמפות)<input id="addr" maxlength="200" placeholder="רחוב, עיר"></label></div>
+      <div class="two"><label>שעת קבלת פנים<input type="time" id="tr"></label><label>מה קורה בשעת היעד<input id="tl" maxlength="40" placeholder="חופה"></label></div>
+      <div class="chk"><label><input type="checkbox" id="rv" checked>אישור הגעה</label><label><input type="checkbox" id="rm" checked>הרשמה לתזכורת</label><label><input type="checkbox" id="wl" checked>קיר ברכות</label><label><input type="checkbox" id="tp">חלוקת תהילים</label></div>
+      <label id="tptL" hidden>לזכות מי? (יופיע מעל החלוקה)<input id="tpt" maxlength="120" placeholder="לזכות החתן והכלה, להצלחתם ולבניין בית נאמן"></label>
+      <div class="two"><label>קישור למתנה / תרומה (לא חובה)<input id="gift" type="url" maxlength="300" dir="ltr" placeholder="https://… (ביט, PayBox, דף תשלום)"></label><label>שם הכפתור<input id="gl" maxlength="40" placeholder="מתנה לזוג"></label></div>
+      <p class="mute" style="font-size:13.5px;margin:-4px 0 8px">הכסף עובר ישר אליכם, דרך הקישור שלכם. אנחנו לא נוגעים בו.</p>
+      <h3 style="font-size:16px;margin:10px 0 4px">הזמנות אישיות</h3>
+      <label>נוסח אישי ({שם} יוחלף בשם של כל מוזמן)<input id="pt" maxlength="300" placeholder="לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!"></label>
+      <label>שמות המוזמנים (שורה לכל אחד)<textarea id="names" rows="3" placeholder="משפחת כהן&#10;דוד ושרה לוי"></textarea></label>
+      <div class="row"><button class="btn" type="button" id="mkLinks">יצירת קישורים אישיים</button></div>
+      <div class="plist" id="plist"></div>
+      <div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="save2">שמירת דף ההזמנה</button><span class="st" id="st2"></span></div>
+      <div class="own" id="ownBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">אישורי הגעה וברכות</h3><div class="row"><button class="btn" type="button" id="ownLoad">הצגה ורענון</button><button class="btn" type="button" id="ownCsv" hidden>הורדה לאקסל (CSV)</button><button class="btn" type="button" id="ownBook" hidden>📖 ספר ברכות להדפסה</button><a class="btn" id="ownOpen" target="_blank" rel="noopener">פתיחת דף ההזמנה</a></div><div id="ownOut"></div></div>
+    </details>
+  </form>
+  <div>
+    <div class="box" style="padding:8px" id="pvbox"><iframe id="pv" title="תצוגה מקדימה של הספירה"></iframe></div>
+    <div class="out" id="out" hidden>
+      <p class="st no" id="dirty" hidden>יש שינויים שעוד לא נשמרו בכתובת. לחצו "עדכון הספירה" כדי שהקישור יציג אותם.</p>
+      <h3>🔗 קישור לשיתוף</h3>
+      <div class="row"><input id="oLink" readonly dir="ltr" style="flex:1;min-width:200px;margin:0"><button class="btn pri" type="button" data-copy="oLink">העתקה</button><a class="btn" id="oWa" target="_blank" rel="noopener">וואטסאפ</a></div>
+      <h3>🌐 להטמעה באתר</h3>
+      <textarea id="oEmb" rows="3" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oEmb">העתקת הקוד</button></div>
+      <h3>✉️ למייל או לניוזלטר</h3>
+      <p class="mute" style="font-size:14.5px;margin:0 0 4px">תמונה שמתעדכנת בכל פתיחה של המייל (השניות זזות במשך דקה, ובכל פתיחה מחדש מתעדכן הזמן). לוחצים "העתקה למייל" ומדביקים (Ctrl+V) ישר בגוף המייל, בג׳ימייל, באאוטלוק או בכל תוכנת דואר.</p>
+      <div class="mailprev" id="oMailPrev"></div>
+      <div class="row"><button class="btn pri" type="button" id="cpMail">העתקה למייל</button></div>
+      <details style="border:0;padding:4px 0"><summary style="font-weight:600;font-size:14.5px">קוד HTML (לעורך HTML או לתוכנת דיוור)</summary>
+      <textarea id="oMail" rows="4" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oMail">העתקת הקוד</button></div></details>
+    </div>
+  </div>
+</div>
+
+<h2>ספירה לאחור להדפסה</h2>
+<p>רוצים גם לוח ספירה לאחור על המקרר, עם תמונה ומשפט לכל יום? <a href="countdown.html">בונים לוח ספירה לאחור להדפסה</a>, לחתונה, לבר מצווה, ללידה ועוד.</p>
+
+<h2>שאלות נפוצות</h2>
+<details><summary>איך שולחים את ההזמנה?</summary><p>אחרי השמירה כותבים את שמות המוזמנים, ולוחצים "יצירת קישורים אישיים". לכל מוזמן נוצר קישור עם השם שלו וכפתור וואטסאפ, וההודעה יוצאת מהטלפון שלכם.</p></details>
+<details><summary>איך רואים מי אישר הגעה?</summary><p>בחלק "אישורי הגעה וברכות" רואים סיכום של כמה מגיעים, מבוגרים וילדים, ואת הרשימה המלאה. אפשר גם להוריד אותה לאקסל. הניהול עובד מהדפדפן שבו נשמרה הכתובת.</p></details>
+<details><summary>מי רואה את הברכות?</summary><p>מי שכותב ברכה בוחר אם כולם יראו אותה בקיר הברכות, או רק בעלי השמחה. אתם יכולים להסתיר או למחוק כל ברכה, ולהדפיס את כולן כספר ברכות.</p></details>
+<details><summary>איך עובדת חלוקת התהילים?</summary><p>כל אורח בוחר פרקים מתוך 150 פרקי התהילים, כותב את שמו, ויכול להירשם לתזכורת במייל. פרק שנלקח מסומן, וכשכל הספר נלקח מתחיל סבב חדש.</p></details>
+<details><summary>ואיך מקבלים מתנות?</summary><p>מדביקים קישור תשלום משלכם, כמו ביט, PayBox או דף תשלום, ובדף ההזמנה יופיע כפתור "מתנה". הכסף עובר ישר אליכם.</p></details>
+<details><summary>זה בחינם?</summary><p>כן. רק להעלאת תמונה צריך חשבון באתר, גם הוא בחינם.</p></details>
+</main>
+<footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="countdown.html">לוח ספירה להדפסה</a><a href="online/">הלוח המקוון</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a></footer>
+</div>
+<script>
+(function(){
+  'use strict';
+  var $=function(i){return document.getElementById(i)},SITE='https://www.myluach.org',API='/api/pricing?c=_timer';
+  /* העיצובים (זהים לדף הצפייה t.html). fg/bg = צבעי התמונה למייל, lab = צבע התוויות במייל */
+  var TH=[['classic','קלאסי','1e5a63','ffffff','5d6873'],['wedding','חתונה','a8646f','fff8f6','8b6b70'],['barmitzvah','בר מצווה','1f3a5f','f7f8fb','5a6a82'],['batmitzvah','בת מצווה','b8487a','fff7fb','8f6177'],
+           ['kids','ילדים','e0663a','fffaf2','7a6252'],['elegant','אלגנטי','c9a227','1d1a17','b8ae9c'],['digital','דיגיטלי','39e888','0b0f0c','7fa58d'],['minimal','מינימלי','172126','ffffff','6b7679']];
+  var SZ={full:['100%',260],l:[800,300],m:[560,240],s:[360,210]};
+  var PG=document.documentElement.dataset.pg||'timer';
+  /* העלאת תמונות: רק למשתמש רשום. החיבור הוא של האתר (אותו חשבון כמו בבונה הלוח) */
+  function authTok(){try{var j=JSON.parse(localStorage.getItem('myluach-auth')||'null');if(j&&j.access_token&&(!j.expires_at||j.expires_at*1000>Date.now()+60000))return j.access_token}catch(e){}return ''}
+  function loginLink(){return '/app.html#login&back='+encodeURIComponent(location.pathname+location.search)}
+  function needLogin(stat){stat('כדי להעלות תמונה צריך להתחבר לחשבון (בחינם).','no');var el=stat===pstat?$('pst'):$('ist');el.insertAdjacentHTML('beforeend',' <a href="'+loginLink()+'">כניסה / הרשמה</a>')}
+  var th='classic',custom=false,photo='';
+  /* תמונה: מקטינים בדפדפן (עד 900 פיקסלים), ממירים ל-JPEG ומעלים */
+  function pstat(m,c){$('pst').textContent=m;$('pst').className='st'+(c?' '+c:'')}
+  function setPhoto(u){photo=u||'';$('prm').hidden=!photo;$('pbtn').textContent=photo?'החלפת תמונה':'בחירת תמונה';upd()}
+  $('pbtn').addEventListener('click',function(){if(!authTok()){needLogin(pstat);return}$('pf').click()});
+  $('prm').addEventListener('click',function(){setPhoto('');pstat('')});
+  $('ps').addEventListener('change',function(){upd()});
+  $('pf').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;if(!/^image\//.test(f.type)){pstat('אפשר לבחור רק קובץ תמונה.','no');return}
+    pstat('מכין את התמונה…');var im=new Image(),url=URL.createObjectURL(f);
+    im.onload=function(){URL.revokeObjectURL(url);var k=Math.min(1,900/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+      var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);var q=.85,data=cv.toDataURL('image/jpeg',q);while(data.length>520000&&q>.4){q-=.15;data=cv.toDataURL('image/jpeg',q)}
+      pstat('מעלה…');fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+authTok()},body:JSON.stringify({img:data})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+        if(a[0]===200&&a[1].url){setPhoto(a[1].url);pstat('התמונה נוספה ✓','ok')}else if(a[0]===401)needLogin(pstat);else pstat(a[0]===429?'הועלו יותר מדי תמונות בשעה האחרונה. נסו שוב מאוחר יותר.':'ההעלאה לא הצליחה. נסו תמונה אחרת.','no')}).catch(function(){pstat('ההעלאה לא הצליחה. בדקו את החיבור.','no')})};
+    im.onerror=function(){pstat('לא הצלחנו לקרוא את התמונה. נסו קובץ JPG או PNG.','no')};im.src=url});
+  /* הזמנה: תמונה גדולה יותר (עד 1600 פיקסלים) */
+  var invImg='';function istat(m,c){$('ist').textContent=m;$('ist').className='st'+(c?' '+c:'')}
+  function setInv(u){invImg=u||'';$('irm').hidden=!invImg;$('ibtn').textContent=invImg?'החלפת ההזמנה':'העלאת הזמנה';upd()}
+  $('ibtn').addEventListener('click',function(){if(!authTok()){needLogin(istat);return}$('if').click()});$('irm').addEventListener('click',function(){setInv('');istat('')});
+  $('if').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;if(!/^image\//.test(f.type)){istat('אפשר לבחור רק קובץ תמונה (JPG או PNG).','no');return}
+    istat('מכין את התמונה…');var im=new Image(),url=URL.createObjectURL(f);
+    im.onload=function(){URL.revokeObjectURL(url);var k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+      var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);var q=.88,data=cv.toDataURL('image/jpeg',q);while(data.length>1180000&&q>.4){q-=.12;data=cv.toDataURL('image/jpeg',q)}
+      istat('מעלה…');fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+authTok()},body:JSON.stringify({img:data,big:1})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+        if(a[0]===200&&a[1].url){setInv(a[1].url);istat('ההזמנה נוספה ✓ אל תשכחו לשמור','ok')}else if(a[0]===401)needLogin(istat);else istat(a[0]===429?'הועלו יותר מדי תמונות בשעה האחרונה. נסו שוב מאוחר יותר.':'ההעלאה לא הצליחה. נסו תמונה אחרת.','no')}).catch(function(){istat('ההעלאה לא הצליחה. בדקו את החיבור.','no')})};
+    im.onerror=function(){istat('לא הצלחנו לקרוא את התמונה. נסו קובץ JPG או PNG.','no')};im.src=url});
+  /* קישור אישי לכל מוזמן: ?to=<שם>, עם כפתור וואטסאפ */
+  $('mkLinks').addEventListener('click',function(){var s=slugVal();if(!saved||saved!==s){$('plist').innerHTML='<p class="st no">קודם שומרים כתובת לאירוע (למעלה), ואז יוצרים קישורים.</p>';return}
+    var N=$('names').value.split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,500),pt=$('pt').value.trim()||'לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!';
+    $('plist').innerHTML=N.length?N.map(function(n,i){var u=SITE+'/t/'+s+'?to='+encodeURIComponent(n),msg=pt.replace(/\{(שם|name)\}/g,n)+'\n'+($('t').value.trim()?$('t').value.trim()+'\n':'')+u;
+      return '<div><b>'+esc(n)+'</b><a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">וואטסאפ</a><button class="btn sm" type="button" data-cpl="'+esc(u)+'">העתקת קישור</button></div>'}).join(''):'<p class="st no">כתבו לפחות שם אחד.</p>'});
+  $('plist').addEventListener('click',function(e){var b=e.target.closest('[data-cpl]');if(!b)return;try{navigator.clipboard.writeText(b.dataset.cpl)}catch(er){}b.textContent='הועתק ✓'});
+  /* אישורי הגעה וברכות (לבעל האירוע, עם קוד העריכה מהדפדפן הזה) */
+  var OWN=null;
+  if($('save2'))$('save2').addEventListener('click',function(){var s=slugVal();if(!valid(s)){$('st2').textContent='קודם בוחרים כתובת לאירוע (למעלה).';$('st2').className='st no';$('slug').focus();return}$('st2').textContent='';if($('save').disabled&&saved===s){$('st2').textContent='נשמר ✓';$('st2').className='st ok';return}$('save').click();setTimeout(function(){$('st2').textContent=$('st').textContent;$('st2').className=$('st').className},900)});
+  function ownUI(){var sv=slugVal();if($('invLink'))$('invLink').href='invite'+(saved&&saved===sv?'?s='+sv:'');var s=slugVal(),mine=!!(saved&&saved===s&&store()[s]);$('ownBox').hidden=!mine;if(mine)$('ownOpen').href='/t/'+s}
+  $('ownLoad').addEventListener('click',function(){var s=slugVal(),O=$('ownOut');O.textContent='טוען…';
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({act:'owner',slug:s,token:store()[s]})}).then(function(r){return r.json()}).then(function(j){
+      if(j.setup){O.innerHTML='<p class="st no">אישורי הגעה וברכות עוד לא הופעלו באתר (חסרות טבלאות במסד הנתונים).</p>';return}
+      if(j.error){O.innerHTML='<p class="st no">לא הצלחנו לטעון. אפשר לנהל רק מהדפדפן שבו נשמרה הכתובת.</p>';return}
+      OWN=j;var R=j.rsvp||[],W=j.wall||[],yes=R.filter(function(r){return r.status==='yes'}),sum=function(k){return yes.reduce(function(a,r){return a+(+r[k]||0)},0)},dt=function(x){return new Date(x).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})},ST={yes:'מגיעים',no:'לא מגיעים',maybe:'אולי'};
+      O.innerHTML='<p class="sum">מגיעים: '+yes.length+' אישורים · '+sum('adults')+' מבוגרים, '+sum('kids')+' ילדים · לא מגיעים: '+R.filter(function(r){return r.status==='no'}).length+' · אולי: '+R.filter(function(r){return r.status==='maybe'}).length+'</p>'+
+        (R.length?'<div style="overflow:auto"><table><thead><tr><th>שם</th><th>תשובה</th><th>מבוגרים</th><th>ילדים</th><th>טלפון</th><th>הערה</th><th>מתי</th><th></th></tr></thead><tbody>'+R.map(function(r){return '<tr><td>'+esc(r.name)+'</td><td>'+ST[r.status]+'</td><td>'+(r.adults||0)+'</td><td>'+(r.kids||0)+'</td><td dir="ltr">'+esc(r.phone||'')+'</td><td>'+esc(r.note||'')+'</td><td>'+dt(r.created_at)+'</td><td><button class="btn sm" type="button" data-rdel="'+r.id+'">מחיקה</button></td></tr>'}).join('')+'</tbody></table></div>':'<p class="mute">עוד אין אישורי הגעה.</p>')+
+        '<h4 style="margin:12px 0 4px">ברכות ('+W.length+')</h4>'+(W.length?W.map(function(w){return '<div style="border-bottom:1px solid var(--line);padding:6px 0"><div style="white-space:pre-line">'+esc(w.text)+'</div><small class="mute">'+esc(w.name)+' · '+dt(w.created_at)+' · '+(w.public?'גלויה לכולם':'רק לכם')+(w.hidden?' · מוסתרת':'')+'</small> '+(w.public?'<button class="btn sm" type="button" data-whide="'+w.id+'" data-h="'+(w.hidden?0:1)+'">'+(w.hidden?'להציג':'להסתיר')+'</button> ':'')+'<button class="btn sm" type="button" data-wdel="'+w.id+'">מחיקה</button></div>'}).join(''):'<p class="mute">עוד אין ברכות.</p>');
+      var TT=j.teh||[];if(TT.length){var byR={};TT.forEach(function(x){(byR[x.round]=byR[x.round]||[]).push(x)});
+        O.insertAdjacentHTML('beforeend','<h4 style="margin:12px 0 4px">חלוקת תהילים</h4>'+Object.keys(byR).map(function(r){var L=byR[r];return '<p><b>סבב '+r+':</b> נלקחו '+L.length+' מתוך 150'+(L.length>=150?' ✓ הושלם':'')+'</p><details><summary>מי לקח מה</summary><div style="font-size:14px;columns:2">'+L.map(function(x){return x.chapter+' · '+esc(x.name)}).join('<br>')+'</div></details>'}).join(''))}
+      $('ownCsv').hidden=!R.length;$('ownBook').hidden=!W.filter(function(w){return !w.hidden}).length}).catch(function(){O.innerHTML='<p class="st no">לא הצלחנו לטעון. בדקו את החיבור.</p>'})});
+  $('ownOut').addEventListener('click',function(e){var b=e.target.closest('[data-rdel],[data-wdel],[data-whide]');if(!b)return;var s=slugVal(),body={slug:s,token:store()[s]};
+    if(b.dataset.rdel){if(!confirm('למחוק את אישור ההגעה?'))return;body.act='rdel';body.id=b.dataset.rdel}else if(b.dataset.wdel){if(!confirm('למחוק את הברכה?'))return;body.act='wdel';body.id=b.dataset.wdel}else{body.act='whide';body.id=b.dataset.whide;body.hidden=b.dataset.h==='1'}
+    b.disabled=true;fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(){$('ownLoad').click()})});
+  /* ספר ברכות להדפסה: כל הברכות שלא הוסתרו (גם הפרטיות, כי הספר הוא שלכם) */
+  $('ownBook').addEventListener('click',function(){if(!OWN)return;var W=(OWN.wall||[]).filter(function(w){return !w.hidden}).slice().reverse(),t=T(),fg='#'+(custom?$('c').value.slice(1):t[2]),bg='#'+(custom?$('b').value.slice(1):t[3]),title=$('t').value.trim()||'ספר ברכות',en=$('lang').value==='en';
+    var dd=$('d').value?new Date($('d').value+'T12:00:00').toLocaleDateString(en?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}):'';
+    var h='<!doctype html><html lang="'+(en?'en':'he')+'" dir="'+(en?'ltr':'rtl')+'"><head><meta charset="utf-8"><title>'+esc(title)+'</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&family=Secular+One&display=swap"><style>'+
+      '@page{size:A4;margin:14mm}*{box-sizing:border-box}body{margin:0;font:13pt/1.6 Assistant,Arial,sans-serif;color:#222}'+
+      '.cover{height:262mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:3px double '+fg+';border-radius:6mm;background:'+bg+';break-after:page}'+
+      '.cover h1{font:400 34pt/1.2 "Secular One",sans-serif;color:'+fg+';margin:0 10mm 6mm}.cover .d{font-size:15pt;color:#555}.cover .k{font:400 22pt "Secular One",sans-serif;color:'+fg+';margin-bottom:8mm}'+(invImg?'.cover img{max-width:70%;max-height:120mm;border-radius:4mm;margin-bottom:8mm}':'')+
+      '.g{columns:2;column-gap:8mm}.w{break-inside:avoid;border:1.5px solid '+fg+';border-radius:4mm;padding:5mm 6mm;margin:0 0 6mm;background:#fff}.w p{margin:0;white-space:pre-line}.w b{display:block;margin-top:3mm;color:'+fg+'}'+
+      '.ft{text-align:center;font-size:8pt;color:#999;margin-top:6mm}@media screen{body{background:#eee}.pg{max-width:210mm;margin:10px auto;background:#fff;padding:14mm}}</style></head><body><div class="pg">'+
+      '<div class="cover">'+(invImg?'<img src="'+esc(invImg)+'" alt="">':'')+'<div class="k">'+(en?'Book of Blessings':'ספר ברכות')+'</div><h1>'+esc(title)+'</h1><div class="d">'+esc(dd)+'</div></div>'+
+      '<div class="g">'+W.map(function(w){return '<div class="w"><p>'+esc(w.text)+'</p><b>'+esc(w.name)+'</b></div>'}).join('')+'</div><div class="ft">myluach.org</div></div><script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>';
+    var x=window.open('','_blank');if(!x){alert('הדפדפן חסם את החלון. אפשרו חלונות קופצים לדף הזה.');return}x.document.open();x.document.write(h);x.document.close()});
+  $('ownCsv').addEventListener('click',function(){if(!OWN)return;var R=OWN.rsvp||[],q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'},ST={yes:'מגיעים',no:'לא מגיעים',maybe:'אולי'};
+    var csv='\ufeff'+['שם','תשובה','מבוגרים','ילדים','טלפון','הערה','מתי'].map(q).join(',')+'\n'+R.map(function(r){return [r.name,ST[r.status],r.adults,r.kids,r.phone,r.note,new Date(r.created_at).toLocaleString('he-IL')].map(q).join(',')}).join('\n');
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='rsvp-'+slugVal()+'.csv';document.body.appendChild(a);a.click();a.remove()});
+  $('ths').innerHTML=TH.map(function(x){return '<button type="button" class="th" data-th="'+x[0]+'" style="--th-f:#'+x[2]+';--th-b:#'+x[3]+'" aria-pressed="false"><b>12:34</b>'+x[1]+'</button>'}).join('');
+  function T(){return TH.filter(function(x){return x[0]===th})[0]||TH[0]}
+  function setTheme(k,keep){th=k;document.querySelectorAll('.th').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.th===k)});if(!keep){custom=false;$('c').value='#'+T()[2];$('b').value='#'+T()[3]}upd()}
+  $('ths').addEventListener('click',function(e){var b=e.target.closest('.th');if(b)setTheme(b.dataset.th)});
+  var Z=[['Asia/Jerusalem','ישראל'],['America/New_York','ניו יורק'],['America/Chicago','שיקגו'],['America/Los_Angeles','לוס אנג׳לס'],['Europe/London','לונדון'],['Europe/Paris','פריז / אירופה'],['Europe/Moscow','מוסקבה'],['Australia/Sydney','סידני'],['America/Sao_Paulo','סאו פאולו'],['Africa/Johannesburg','יוהנסבורג']];
+  $('z').innerHTML=Z.map(function(z){return '<option value="'+z[0]+'">'+z[1]+'</option>'}).join('');
+  function addZ(v){if(v&&!Z.some(function(z){return z[0]===v})&&!$('z').querySelector('option[value="'+v+'"]'))$('z').insertAdjacentHTML('beforeend','<option value="'+v+'">'+v+'</option>')}
+  try{var mine=Intl.DateTimeFormat().resolvedOptions().timeZone;addZ(mine);if(mine)$('z').value=mine}catch(e){}
+  var d0=new Date(Date.now()+30*864e5);$('d').value=d0.toISOString().slice(0,10);
+  var Q=new URLSearchParams(location.search);
+  /* מילוי מראש מקישור (למשל מבונה לוח הספירה): ?t=…&d=YYYY-MM-DD&h=HH:MM */
+  try{if(Q.get('t'))$('t').value=Q.get('t').slice(0,90);if(/^\d{4}-\d{2}-\d{2}$/.test(Q.get('d')||''))$('d').value=Q.get('d');if(/^\d{1,2}:\d{2}$/.test(Q.get('h')||''))$('h').value=Q.get('h').padStart(5,'0')}catch(e){}
+  /* שקיעה (נוסחת NOAA המקוצרת), בשעות מקומיות. המיקום לפי אזור הזמן שנבחר (העיר הראשית שלו) */
+  var LL={'Asia/Jerusalem':[31.778,35.235],'America/New_York':[40.71,-74.0],'America/Chicago':[41.88,-87.63],'America/Los_Angeles':[34.05,-118.24],'Europe/London':[51.51,-0.13],'Europe/Paris':[48.86,2.35],'Europe/Moscow':[55.76,37.62],'Australia/Sydney':[-33.87,151.21],'America/Sao_Paulo':[-23.55,-46.63],'Africa/Johannesburg':[-26.2,28.05],'Europe/Kiev':[50.45,30.52],'Europe/Kyiv':[50.45,30.52],'America/Toronto':[43.65,-79.38],'America/Montreal':[45.5,-73.57],'Europe/Antwerp':[51.22,4.4],'Europe/Brussels':[50.85,4.35],'Europe/Zurich':[47.37,8.54],'America/Argentina/Buenos_Aires':[-34.6,-58.38],'America/Mexico_City':[19.43,-99.13],'Europe/Berlin':[52.52,13.4],'Europe/Rome':[41.9,12.5],'Europe/Amsterdam':[52.37,4.9],'Europe/Vienna':[48.21,16.37]};
+  function sunsetLocal(y,m,d,tz,offH){var c=LL[tz]||[32,offH*15],lat=c[0],lng=c[1],R=Math.PI/180;
+    var N=Math.round((Date.UTC(y,m-1,d)-Date.UTC(y,0,0))/864e5),lh=lng/15,t=N+(18-lh)/24,M=.9856*t-3.289;
+    var L=(M+1.916*Math.sin(M*R)+.02*Math.sin(2*M*R)+282.634+720)%360,RA=(Math.atan(.91764*Math.tan(L*R))/R+720)%360;
+    RA=(RA+Math.floor(L/90)*90-Math.floor(RA/90)*90)/15;var sd=.39782*Math.sin(L*R),cd=Math.cos(Math.asin(sd));
+    var ch=(Math.cos(90.833*R)-sd*Math.sin(lat*R))/(cd*Math.cos(lat*R));if(ch>1||ch<-1)return null;
+    var H=Math.acos(ch)/R/15,T=H+RA-.06571*t-6.622;return ((T-lh+offH)%24+48)%24}
+  function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];n%=1000;var r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
+  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה,
+     wh = התאריך העברי לאירוע בערב: s לפי השקיעה (ברירת מחדל), o "אור ל־", c לפי התאריך הלועזי בלבד */
+  function whenText(ms,tz,EN,o,hasTime,dStr,hStr){
+    var F=function(loc,op){op.timeZone=tz;try{return new Intl.DateTimeFormat(loc,op)}catch(e){delete op.timeZone;return new Intl.DateTimeFormat(loc,op)}},d=new Date(ms),out=[];
+    var greg=F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
+    if(o.wd==='h'||o.wd==='b'){try{
+      var after=false,dm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(dStr||''),hm=/^(\d{1,2}):(\d{2})$/.exec(hStr||'');
+      if(o.wh!=='c'&&dm&&hm){var p0={};F('en-US',{hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).forEach(function(x){p0[x.type]=x.value});
+        var offH=(Date.UTC(+p0.year,+p0.month-1,+p0.day,+p0.hour%24,+p0.minute)-ms)/36e5,ss=sunsetLocal(+dm[1],+dm[2],+dm[3],tz,offH);after=ss!=null&&(+hm[1]+hm[2]/60)>=ss}
+      var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(new Date(ms+(after?864e5:0))).forEach(function(x){p[x.type]=x.value});
+      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year);
+      if(after&&o.wh==='o')heb=(EN?'Eve of ':'אור ל')+heb}catch(e){}}
+    var date=o.wd==='h'?(heb||greg):o.wd==='b'&&heb?greg+' · '+heb:greg;
+    if(o.ww!=='0')out.push(F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
+    out.push(date);
+    var s=out.join(', ');
+    if(hasTime&&o.wt!=='0')s+=(EN?' · ':' · בשעה ')+F('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
+    return s}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  /* הספירות שנשמרו מהדפדפן הזה (כתובת + קוד עריכה) */
+  function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
+  function remember(s,tok){try{var o=store();o[s]=tok;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
+  function showMine(){var o=store(),k=Object.keys(o);$('mine').hidden=!k.length;$('mine').innerHTML='הספירות שלי: '+k.map(function(s){return '<a href="?s='+s+'">'+s+'</a>'}).join('')}
+  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,wh:$('wh').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1',p:photo,ps:$('ps').value,inv:invImg,it:$('it').value.trim(),pt:$('pt').value.trim(),venue:$('venue').value.trim(),addr:$('addr').value.trim(),tr:$('tr').value,tl:$('tl').value.trim(),rv:$('rv').checked?1:0,rm:$('rm').checked?1:0,wl:$('wl').checked?1:0,tp:$('tp').checked?1:0,tpt:$('tpt').value.trim(),gift:/^https:\/\//.test($('gift').value.trim())?$('gift').value.trim():'',gl:$('gl').value.trim()}}
+  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);if(c.wp!=='top')p.set('wp',c.wp);if(c.wd!=='g'){p.set('wd',c.wd);if(c.wh!=='s')p.set('wh',c.wh)}if(c.ww==='0')p.set('ww','0');if(c.wt==='0')p.set('wt','0');if(c.ns==='1')p.set('ns','1');if(c.p){p.set('p',c.p);if(c.ps!=='circle')p.set('ps',c.ps)}
+    Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
+  /* מצב הכתובת: saved = נשמרה (והשמירה תואמת להגדרות הנוכחיות) */
+  var saved=null,savedCfg='',chk,slugState='';
+  function slugVal(){return $('slug').value.trim().toLowerCase()}
+  function valid(s){return /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/.test(s)}
+  function st(msg,cls){$('st').textContent=msg;$('st').className='st'+(cls?' '+cls:'')}
+  function slugUI(){try{ownUI()}catch(e){}var s=slugVal(),mineTok=store()[s],dirty=saved===s&&JSON.stringify(cfg())!==savedCfg;
+    $('save').disabled=!(valid(s)&&(slugState==='free'||mineTok))||(saved===s&&!dirty);
+    $('save').textContent=mineTok?(dirty||saved!==s?'עדכון הספירה':'נשמר ✓'):'שמירה וקבלת כתובת'}
+  function check(){clearTimeout(chk);var s=slugVal();slugState='';
+    if(!s){st('אותיות באנגלית, ספרות ומקף.');slugUI();go();return}
+    if(!valid(s)){st('3–40 תווים: אותיות באנגלית קטנות, ספרות ומקף (לא בהתחלה ולא בסוף).','no');slugUI();go();return}
+    if(store()[s]){st('הכתובת הזו שלכם. אפשר לעדכן.','ok');slugUI();go();return}
+    st('בודק…');chk=setTimeout(function(){fetch(API+'&check=1&s='+s).then(function(r){return r.json()}).then(function(j){if(slugVal()!==s)return;slugState=j.free?'free':'taken';
+      j.free?st('הכתובת פנויה ✓','ok'):st('הכתובת תפוסה. נסו שם אחר (למשל עם השנה).','no');slugUI()}).catch(function(){st('לא הצלחנו לבדוק כרגע. נסו שוב.','no')})},400);slugUI();go()}
+  $('slug').addEventListener('input',function(){var v=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/--+/g,'-');if(v!==this.value)this.value=v;check()});
+  $('save').addEventListener('click',function(){var s=slugVal(),b=this;if(!valid(s))return;b.disabled=true;b.textContent='שומר…';
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:s,cfg:cfg(),token:store()[s]||undefined})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+      if(a[0]===200&&a[1].ok){remember(s,a[1].token);saved=s;savedCfg=JSON.stringify(cfg());st(a[1].updated?'הספירה עודכנה ✓':'נשמר! הכתובת שלכם: myluach.org/t/'+s,'ok');showMine();go()}
+      else if(a[0]===409){slugState='taken';st('הכתובת כבר נתפסה. נסו שם אחר.','no')}
+      else st('השמירה לא הצליחה. נסו שוב בעוד רגע.','no');slugUI()}).catch(function(){st('השמירה לא הצליחה. בדקו את החיבור ונסו שוב.','no');slugUI()})});
+  var tm;function upd(){clearTimeout(tm);tm=setTimeout(go,250)}
+  function go(){
+    slugUI();$('tptL').hidden=!$('tp').checked;$('whL').hidden=$('wd').value==='g'||!$('h').value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test($('d').value)){$('out').hidden=true;return}
+    var s=slugVal(),useSlug=saved&&saved===s,dirty=useSlug&&JSON.stringify(cfg())!==savedCfg;
+    var link=useSlug?SITE+'/t/'+s:SITE+'/t?'+params(),emb=useSlug?SITE+'/t/'+s+'?e=1':SITE+'/t?'+params({e:'1'});
+    $('pv').src='/t?'+params({e:'1'});
+    var sz=(SZ[$('sz').value]||SZ.full).slice();if($('l').value==='stack')sz[1]+=$('sz').value==='s'?110:140;if(photo)sz[1]+=$('ps').value==='wide'?($('sz').value==='s'?110:180):($('sz').value==='s'?100:140);$('pv').style.height=sz[1]+'px';$('pv').style.maxWidth=sz[0]==='100%'?'':sz[0]+'px';$('pv').style.marginInline='auto';
+    $('oLink').value=link;
+    $('oWa').href='https://wa.me/?text='+encodeURIComponent(($('t').value.trim()||'ספירה לאחור')+' ⏳ '+link);
+    var title=esc($('t').value.trim()||'ספירה לאחור');
+    $('oEmb').value='<iframe src="'+emb+'" width="'+(sz[0]==='100%'?'100%':sz[0])+'" height="'+sz[1]+'" style="border:0;max-width:100%" title="'+title+'" loading="lazy"></iframe>';
+    $('dirty').hidden=!dirty;
+    var fg=$('c').value.slice(1),bg=$('b').value.slice(1),lb=custom?'5d6873':T()[4];
+    var base=SITE+'/api/pricing?c=_cdimg&d='+$('d').value+($('h').value?'&h='+encodeURIComponent($('h').value):'')+'&u='+$('u').value+'&fg='+fg+'&bg='+bg+($('z').value!=='Asia/Jerusalem'?'&z='+encodeURIComponent($('z').value):'')+($('fr').value!=='0'?'&fr='+$('fr').value:'')+($('sec').checked?'':'&ns=1');
+    var en=$('lang').value==='en',lab=en?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds'}:{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות'};
+    var dateU=($('u').value==='m'?['months']:$('u').value==='w'?['weeks']:[]).concat(['days']),clockU=['hours','minutes'].concat($('sec').checked?['seconds']:[]),anim=$('sec').checked?'&a=1':'';
+    var td='font-family:Arial,sans-serif;font-size:13px;color:#'+lb+';text-align:center';
+    var labels=function(us,w){return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="'+w+'" align="center" style="max-width:100%;direction:ltr;'+td+'"><tr>'+us.map(function(u){return '<td>'+lab[u]+'</td>'}).join('')+'</tr></table>'};
+    var head=$('t').value.trim()?'<tr><td style="padding:12px 8px 2px;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#'+fg+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+title+'</td></tr>':'';
+    var wtxt='',wp=$('wp').value;if(wp!=='none'){var dd=/^(\d{4})-(\d{2})-(\d{2})$/.exec($('d').value),hh=/^(\d{1,2}):(\d{2})$/.exec($('h').value)||[0,12,0];
+      var ms=Date.UTC(+dd[1],+dd[2]-1,+dd[3],+hh[1],+hh[2]);try{var f=new Intl.DateTimeFormat('en-US',{timeZone:$('z').value,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),pp={};f.formatToParts(new Date(ms)).forEach(function(x){pp[x.type]=x.value});ms-=Date.UTC(+pp.year,+pp.month-1,+pp.day,+pp.hour%24,+pp.minute)-ms}catch(e){}
+      wtxt='<tr><td style="padding:'+(wp==='top'?'2px 8px 6px':'8px 8px 0')+';font-family:Arial,sans-serif;font-size:14px;color:#'+lb+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+esc(whenText(ms,$('z').value,en,cfg(),!!$('h').value,$('d').value,$('h').value))+'</td></tr>'}
+    var body;
+    if($('l').value==='stack'){
+      body='<tr><td align="center" style="padding-top:8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="direction:ltr"><tr>'+dateU.map(function(u,i){return '<td align="center" style="padding:0 6px;'+td+'"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=top&g='+i+'" alt="" height="84" style="display:block;height:84px;width:auto;border:0"></a>'+lab[u]+'</td>'}).join('')+'</tr></table></td></tr>'+
+        '<tr><td align="center" style="padding-top:10px"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=clock'+anim+'" alt="'+title+'" width="'+($('sec').checked?300:210)+'" style="display:block;max-width:100%;height:auto;border:0"></a>'+labels(clockU,$('sec').checked?300:210)+'</td></tr>';
+    }else{
+      body='<tr><td align="center"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+anim+'" alt="'+title+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a></td></tr><tr><td>'+labels(dateU.concat(clockU),'100%')+'</td></tr>';
+    }
+    var pr='';if(photo){var ps=$('ps').value;pr=ps==='wide'?'<tr><td><img src="'+photo+'" alt="" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:12px 12px 0 0"></td></tr>':
+      '<tr><td align="center" style="padding-top:14px"><img src="'+photo+'" alt="" width="'+(ps==='rect'?160:120)+'" height="120" style="display:block;width:'+(ps==='rect'?160:120)+'px;height:120px;object-fit:cover;border:3px solid #'+fg+';border-radius:'+(ps==='rect'?'12px':'50%')+'"></td></tr>'}
+    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+pr+head+(wp==='top'?wtxt:'')+body+(wp==='bottom'?wtxt:'')+
+      '<tr><td style="padding:6px 0 6px;text-align:center;font-family:Arial,sans-serif;font-size:9px;line-height:1"><a href="'+SITE+'/timer" target="_blank" style="color:#'+lb+';text-decoration:none">myluach.org</a></td></tr></table>';
+    $('oMail').value=mail;$('oMailPrev').innerHTML=mail.split(SITE+'/api/').join('/api/');
+    $('out').hidden=false;
+  }
+  ['t','d','h','u','lang','z','sz','l','fr','wp','wd','wh','ww','wt','sec','it','pt','venue','addr','tr','tl','rv','rm','wl','tp','tpt','gift','gl'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
+  ['c','b'].forEach(function(i){$(i).addEventListener('input',function(){custom=true;upd()})});
+  /* העתקה "מעוצבת": מדביקים בגוף המייל ומקבלים את התמונה עצמה ולא את הקוד */
+  $('cpMail').addEventListener('click',function(){var b=this,html=$('oMail').value,done=function(ok){b.textContent=ok?'הועתק ✓ עכשיו מדביקים במייל':'לא הצליח. סמנו את התצוגה למעלה והעתיקו';setTimeout(function(){b.textContent='העתקה למייל'},2500)};
+    var fallback=function(){var el=$('oMailPrev'),r=document.createRange();el.querySelectorAll('img').forEach(function(i){i.src=i.src});r.selectNodeContents(el);var sel=getSelection();sel.removeAllRanges();sel.addRange(r);var ok=false;try{ok=document.execCommand('copy')}catch(e){}sel.removeAllRanges();done(ok)};
+    try{if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([$('oLink').value],{type:'text/plain'})})]).then(function(){done(true)},fallback)}else fallback()}catch(e){fallback()}});
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var x=$(b.dataset.copy);x.select();try{navigator.clipboard.writeText(x.value)}catch(er){document.execCommand('copy')}var o=b.textContent;b.textContent='הועתק ✓';setTimeout(function(){b.textContent=o},1500)});
+  /* בדף השעון: בלי דף ההזמנה (הוא בדף נפרד). ספירה שמורה עם דף הזמנה נשמרת עם כל ההגדרות שלה */
+  if(PG==='timer'){$('invD').hidden=true;['rv','rm','wl'].forEach(function(k){$(k).checked=false})}else{$('invPromo').hidden=true;$('invD').open=true}
+  showMine();setTheme('classic');
+  /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
+  var es=(Q.get('s')||'').toLowerCase();
+  if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');setInv(c.inv||'');['it','pt','venue','addr','tr','tl'].forEach(function(k){$(k).value=c[k]||''});['rv','rm','wl','tp'].forEach(function(k){$(k).checked=!!c[k]});$('tpt').value=c.tpt||'';$('gift').value=c.gift||'';$('gl').value=c.gl||'';if(c.inv||c.it||c.venue||c.addr||c.rv||c.wl)$('invD').open=true;
+    setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
+    $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('הכתובת הזו שלכם. אפשר לשנות ולעדכן.','ok')}else check();go()})}
+})();
+</script>
+</body>
+</html>

@@ -9,7 +9,7 @@ src = open(os.path.join(ROOT, 'timer.html'), encoding='utf-8').read()
 
 # החלפות במבנה הדף (לפני התרגום)
 STRUCT = [
-    ('<html lang="he" dir="rtl">', '<html lang="en" dir="ltr">'),
+    ('<html lang="he" dir="rtl" data-pg="timer">', '<html lang="en" dir="ltr" data-pg="timer">'),
     ('<link rel="canonical" href="https://www.myluach.org/timer">', '<link rel="canonical" href="https://www.myluach.org/timer-en">'),
     ('<meta property="og:url" content="https://www.myluach.org/timer">', '<meta property="og:url" content="https://www.myluach.org/timer-en">'),
     ('<meta property="og:locale" content="he_IL">', '<meta property="og:locale" content="en_US">'),
@@ -105,6 +105,12 @@ T = [
     # דף הזמנה
     ('📨 דף הזמנה לאירוע: אישור הגעה, תזכורות וברכות', '📨 Event invitation page: RSVP, reminders and blessings'),
     ('הקישור של האירוע הופך לדף הזמנה: ההזמנה, השעון, פרטי המקום עם וייז, הוספה ליומן, אישור הגעה, הרשמה לתזכורת וקיר ברכות. עובד עם כתובת שמורה, ונשמר יחד איתה.', 'The event link becomes an invitation page: the invitation, the clock, venue details with Waze, add-to-calendar, RSVP, reminder sign-up and a blessings wall. Works with a saved address, and is saved with it.'),
+    ('📨 חדש: ', '📨 New: '), ('דף הזמנה לאירוע</a>, עם אישורי הגעה, תזכורות לאורחים, קיר ברכות וחלוקת תהילים. בחינם.', 'Event invitation page</a> with RSVP, guest reminders, a blessings wall and Psalms division. Free. (Hebrew)'),
+    ('כן, לגמרי ובלי הגבלה. רק להעלאת תמונה צריך חשבון באתר, גם הוא בחינם.', 'Yes, completely and without limits. Only uploading a photo needs a free account on the site.'),
+    ('כדי להעלות תמונה צריך להתחבר לחשבון (בחינם).', 'To upload a photo, please sign in (free).'), ('כניסה / הרשמה', 'Sign in / Sign up'),
+    ('קישור למתנה / תרומה (לא חובה)', 'Gift / donation link (optional)'), ('https://… (ביט, PayBox, דף תשלום)', 'https://… (payment page)'), ('שם הכפתור', 'Button label'), ('מתנה לזוג', 'Gift for the couple'),
+    ('הכסף עובר ישר אליכם, דרך הקישור שלכם. אנחנו לא נוגעים בו.', 'The money goes straight to you through your own link. We never touch it.'),
+    ('שמירת דף ההזמנה', 'Save the invitation page'), ('קודם בוחרים כתובת לאירוע (למעלה).', 'First choose an event address (above).'),
     ('תמונת ההזמנה (לא חובה)', 'Invitation image (optional)'), ('העלאת הזמנה', 'Upload invitation'), ('החלפת ההזמנה', 'Change invitation'),
     ('נוסח ההזמנה (לא חובה)', 'Invitation text (optional)'), ('בשעה טובה ומוצלחת, אנו שמחים להזמינכם…', 'We are delighted to invite you…'),
     ('שם המקום', 'Venue name'), ('אולמי…', 'Hall…'), ('כתובת (לוויז ולמפות)', 'Address (for Waze and maps)'), ('רחוב, עיר', 'Street, city'),

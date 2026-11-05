@@ -78,6 +78,10 @@
    "destination": "/timer.html"
   },
   {
+   "source": "/invite",
+   "destination": "/invite.html"
+  },
+  {
    "source": "/timer-en",
    "destination": "/timer-en.html"
   },
