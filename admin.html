@@ -593,7 +593,7 @@ function bind(){
         if(r.ok||r.status===202){ok=true;how='✅ נשלחו '+q.urls.length+' דפים, ובינג אישר ('+r.status+')'}else if(r.status===429){M.textContent='❌ בינג חוסם גם מהמחשב שלכם (429). נסו מחר.';B.disabled=false;return}else how='בינג ענה '+r.status+'. ';}catch(e){}
       if(!ok){for(let i=0;i<q.urls.length;i++){M.textContent='שולח מהדפדפן… '+(i+1)+' / '+q.urls.length;try{await fetch('https://www.bing.com/indexnow?url='+encodeURIComponent(q.urls[i])+'&key='+q.key,{mode:'no-cors'})}catch(e){}await new Promise(r=>setTimeout(r,300))}
         how=(how||'')+'✅ נשלחו '+q.urls.length+' דפים מהדפדפן, דף אחר דף (הדפדפן לא מקבל אישור מבינג, אז כדאי לבדוק מחר ב-Bing Webmaster שהדפים נסרקו)';ok=true}
-      const m=await api({action:'indexmark',urls:q.urls});M.innerHTML='<div>'+how+'</div><div>נשארו לשליחה בפעם הבאה: '+m.left+' מתוך '+m.total+'</div>'}
+      const m=await api({action:'indexmark',urls:q.urls});M.innerHTML='<div>'+how+'</div><div>נשארו לשליחה בפעם הבאה: '+m.left+' מתוך '+m.total+'</div><details><summary>אילו דפים נשלחו ('+q.urls.length+')</summary><div dir="ltr" style="font-size:13px;max-height:220px;overflow:auto">'+q.urls.map(u=>u.replace('https://www.myluach.org','').replace(/</g,'&lt;')||'/').join('<br>')+'</div></details>'}
     catch(e){M.textContent='❌ '+e.message}B.disabled=false};
   if($('#inNow'))$('#inNow').onclick=()=>{$('#inMsg').textContent='שולח…';api({action:'indexnow',max:+$('#inMax').value||100}).then(r=>{
     const L=[];
