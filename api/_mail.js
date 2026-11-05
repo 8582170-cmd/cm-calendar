@@ -34,11 +34,15 @@ const PROVIDERS = { resend: viaResend, brevo: viaBrevo, mailjet: viaMailjet };
 /* מכסה יומית חינמית של כל ספק (אפשר לשנות במשתני סביבה MAIL_CAP_RESEND וכו'). ספק שהגיע למכסה היום מדולג מראש */
 const CAPS = { resend: 100, brevo: 300, mailjet: 200 };
 const cap = k => +env('MAIL_CAP_' + k.toUpperCase()) || CAPS[k];
+/* מגבלה לשעה (Mailjet מגביל כרגע ל-30 מיילים בשעה). אפשר לשנות במשתנה MAIL_HOURLY_MAILJET, או 0 לביטול */
+const HOURLY = { mailjet: 30 };
+const hourCap = k => { const v = env('MAIL_HOURLY_' + k.toUpperCase()); return v !== '' && v != null && !isNaN(+v) ? +v : (HOURLY[k] || 0); };
 async function sentToday() {
   try {
-    const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
-    const rows = await db('email_log?select=provider&ok=eq.true&created_at=gte.' + day + 'T00:00:00%2B03:00&limit=5000');
-    const n = {}; (rows || []).forEach(r => { n[r.provider] = (n[r.provider] || 0) + 1; }); return n;
+    const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }), hr = Date.now() - 3600e3;
+    const rows = await db('email_log?select=provider,created_at&ok=eq.true&created_at=gte.' + day + 'T00:00:00%2B03:00&limit=5000');
+    const n = {}, h = {}; (rows || []).forEach(r => { n[r.provider] = (n[r.provider] || 0) + 1; if (Date.parse(r.created_at) > hr) h[r.provider] = (h[r.provider] || 0) + 1; });
+    Object.defineProperty(n, 'hour', { value: h, enumerable: false }); return n;
   } catch (e) { return {}; }
 }
 /* only: לשלוח דרך ספק אחד בלבד (לבדיקה מדף הניהול).
@@ -48,7 +52,7 @@ async function sendMail(m, kind, only) {
   let order = only ? [only] : ['resend', 'brevo', 'mailjet'];
   if (!only) {
     const n = await sentToday();
-    const free = order.filter(k => (n[k] || 0) < cap(k));
+    const H = n.hour || {}, free = order.filter(k => (n[k] || 0) < cap(k) && (!hourCap(k) || (H[k] || 0) < hourCap(k)));
     order = free.concat(order.filter(k => free.indexOf(k) < 0));
   }
   for (const k of order) {
