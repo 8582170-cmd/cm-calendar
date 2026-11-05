@@ -339,8 +339,9 @@ module.exports = async (req, res) => {
         const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
         const t = r.ok || r.status === 202 ? '' : (await r.text().catch(() => '')).slice(0, 200);
-        return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length, ...(t ? { error: 'IndexNow ' + r.status + ': ' + t } : {}) });
-      } catch (e) { return json(res, 502, { error: 'IndexNow: ' + String(e.message || e).slice(0, 200) }); }
+        /* תמיד 200: Cloudflare מחליף תשובות 502 בדף שגיאה משלו, ואז לא רואים מה בינג ענה */
+        return json(res, 200, { ok: r.ok || r.status === 202, status: r.status, count: urls.length, ...(t || !(r.ok || r.status === 202) ? { error: 'IndexNow ' + r.status + (t ? ': ' + t : '') } : {}) });
+      } catch (e) { return json(res, 200, { ok: false, error: 'IndexNow: ' + String(e.message || e).slice(0, 200) }); }
     }
     /* מאגר דברי הימים: שמירה אחרי ייבוא אקסל */
     if (req.method === 'POST' && b.action === 'yzsave') { try { const out = await require('./_yzadmin').save(b); return json(res, out.error ? (out.error === 'notoken' ? 200 : 400) : 200, out); } catch (e) { return json(res, 502, { error: String(e.message || e).slice(0, 300) }); } }

@@ -47,5 +47,7 @@ export async function run(handler, context, extraQuery) {
   await Promise.race([finished, p.then(() => new Promise(r => setTimeout(r, 0)))]);
   await p.catch(e => { if (!out.chunks.length) { out.status = 500; out.chunks.push(JSON.stringify({ error: 'server error' })); } console.error(e); });
   const body2 = out.chunks.length === 1 ? out.chunks[0] : out.chunks.map(c => typeof c === 'string' ? c : new TextDecoder().decode(c)).join('');
-  return new Response(request.method === 'HEAD' ? null : body2, { status: out.status, headers: out.headers });
+  /* Cloudflare מחליף תשובות 502/504 בדף שגיאה משלו (ואז ההודעה האמיתית לא מגיעה לדפדפן): שולחים 500 עם אותו תוכן */
+  const st = out.status === 502 || out.status === 504 ? 500 : out.status;
+  return new Response(request.method === 'HEAD' ? null : body2, { status: st, headers: out.headers });
 }
