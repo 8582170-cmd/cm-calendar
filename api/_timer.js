@@ -39,10 +39,15 @@ function okMedia(u, kind) { u = String(u || ''); const M = (() => { try { return
 async function mediaUp(req, res, b) {
   const R2 = require('./_r2'); if (!R2.media()) return json(res, 503, { error: 'storage' });
   const user = await require('./_lib').getUser(req).catch(() => null); if (!user) return json(res, 401, { error: 'login' });
+  /* סרטון ומוזיקה: רק לבעל אירוע שמור. אם האירוע לא שולם תוך שבוע, הקובץ נמחק (במשימה היומית) */
+  const sl = str(b.slug, 40).toLowerCase(), cur = SLUG.test(sl) ? await get(sl).catch(() => null) : null;
+  if (!cur || !own(cur, b.token)) return json(res, 403, { error: 'owner' });
   const T = { 'video/mp4': ['mp4', 'video', 20e6], 'video/webm': ['webm', 'video', 20e6], 'audio/mpeg': ['mp3', 'audio', 10e6], 'audio/mp4': ['m4a', 'audio', 10e6], 'audio/x-m4a': ['m4a', 'audio', 10e6], 'audio/aac': ['m4a', 'audio', 10e6] }[String(b.type || '')];
   if (!T) return json(res, 400, { error: 'type' }); if (!(+b.size > 0) || +b.size > T[2]) return json(res, 413, { error: 'size', max: T[2] });
   const path = 'timers/media/' + new Date().toISOString().slice(0, 7).replace('-', '') + '/' + crypto.randomBytes(12).toString('hex') + '.' + T[0];
-  const P = R2.mediaPut(path); return json(res, 200, { put: P.upload, url: P.url, ctype: b.type });
+  const P = R2.mediaPut(path);
+  if (!cur.paid) { try { const { loadSetting, saveSetting } = require('./_lib'), M = (await loadSetting('mediapend')) || {}; M[path] = { s: sl, at: Date.now() }; await saveSetting('mediapend', M); } catch (e) { console.error('mediapend', e.message); } }
+  return json(res, 200, { put: P.upload, url: P.url, ctype: b.type });
 }
 function clean(c) {
   c = c || {};
@@ -192,6 +197,21 @@ async function autoMails(cover, max) {
     }
   }
   return out;
+}
+/* מחיקת סרטונים ומוזיקה של אירועים שלא שולמו תוך שבוע מההעלאה */
+async function cleanMedia() {
+  const { loadSetting, saveSetting } = require('./_lib'), M = (await loadSetting('mediapend').catch(() => null)) || {}, R2 = require('./_r2'), MB = R2.media(); if (!MB) return { deleted: 0 };
+  let del = 0, kept = 0, changed = false;
+  for (const path of Object.keys(M)) {
+    const x = M[path]; if (Date.now() - x.at < 7 * 864e5) continue;
+    const cur = await get(x.s).catch(() => null);
+    if (cur && cur.paid) { delete M[path]; changed = true; kept++; continue; }
+    try { await fetch(R2.presign('DELETE', path, 120, null, MB), { method: 'DELETE' }); del++; } catch (e) { continue; }
+    if (cur && cur.cfg) { const u = MB.url + '/' + path, c = { ...cur.cfg }; let ch = false; ['bgv', 'mus'].forEach(k => { if (c[k] === u) { c[k] = ''; ch = true; } }); if (ch) await put(x.s, { ...cur, cfg: c }).catch(() => {}); }
+    delete M[path]; changed = true;
+  }
+  if (changed) await saveSetting('mediapend', M);
+  return { deleted: del, kept };
 }
 /* המשימה היומית: ממשיכה שליחות שנעצרו (למשל כשהגענו למגבלה היומית של ספקי המייל) */
 async function cronSend(max) {
@@ -377,4 +397,4 @@ module.exports = async (req, res) => {
 
 module.exports.get = get; module.exports.put = put; module.exports.own = own;
 module.exports.cronSend = cronSend; module.exports.inviteMail = inviteMail;
-module.exports.autoMails = autoMails;
+module.exports.autoMails = autoMails; module.exports.cleanMedia = cleanMedia;
