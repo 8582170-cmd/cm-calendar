@@ -333,7 +333,7 @@ module.exports = async (req, res) => {
        בינג מגביל שליחות (מכסה יומית ב-Bing Webmaster, ו-IndexNow עונה 429 כשנשלחים יותר מדי). לכן שומרים מתי נשלח כל דף,
        ובכל לחיצה שולחים קודם דפים חשובים שלא נשלחו לאחרונה, אחר כך דפים שמעולם לא נשלחו, ואחר כך את הוותיקים ביותר.
        אם יש BING_API_KEY (מ-Bing Webmaster: הגדרות > גישה ל-API), בודקים את המכסה שנשארה ושולחים בדיוק כמה שמותר. */
-    if (req.method === 'POST' && b.action === 'indexnow') {
+    if (req.method === 'POST' && (b.action === 'indexnow' || b.action === 'indexqueue' || b.action === 'indexmark')) {
       const { loadSetting, saveSetting } = require('./_lib');
       const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org', SITE = 'https://' + host;
       let urls = [];
@@ -351,6 +351,10 @@ module.exports = async (req, res) => {
       const old = urls.filter(u => !pri.includes(u) && sent[k(u)] && ago(sent[k(u)]) >= 30).sort((x, y) => (sent[k(x)] < sent[k(y)] ? -1 : 1));
       const queue = pri.concat(fresh, old), extra = (Array.isArray(b.urls) ? b.urls : []).filter(u => typeof u === 'string' && u.startsWith(SITE + '/')).slice(0, 20);
       const want = [...new Set(extra.concat(queue))];
+      /* שליחה מהדפדפן של המנהל (כשבינג חוסם את השרתים של Cloudflare): הדפדפן מקבל את הרשימה, שולח בעצמו, ומסמן כאן מה נשלח */
+      if (b.action === 'indexqueue') { const L = want.slice(0, Math.max(1, Math.min(+b.max || 50, 200))); return json(res, 200, { ok: true, urls: L, key: KEY, keyLocation: SITE + '/' + KEY + '.txt', host, total: urls.length, queue: want.length }); }
+      if (b.action === 'indexmark') { const L = (Array.isArray(b.urls) ? b.urls : []).filter(u => typeof u === 'string' && u.startsWith(SITE + '/')).slice(0, 500);
+        L.forEach(u => { sent[k(u)] = today; }); try { await saveSetting('indexsent', sent); } catch (e) {} return json(res, 200, { ok: true, marked: L.length, left: want.filter(u => !L.includes(u)).length, total: urls.length }); }
       const BK = env('BING_API_KEY'), out = { queue: want.length, total: urls.length, hasKey: !!BK };
       /* המכסה של בינג (אם יש מפתח API) */
       let limit = Math.max(1, Math.min(+b.max || 100, 500));
@@ -372,6 +376,14 @@ module.exports = async (req, res) => {
         out.status = r.status; if (r.ok || r.status === 202) okAny = true; else out.error = 'IndexNow ' + r.status + ': ' + (await r.text().catch(() => '')).slice(0, 200);
       } catch (e) { out.error = 'IndexNow: ' + String(e.message || e).slice(0, 200); }
       if (okAny) { batch.forEach(u => { sent[k(u)] = today; }); try { await saveSetting('indexsent', sent); } catch (e) {} }
+      /* בינג חוסם את כתובות השרתים של Cloudflare (ThrottleIP / 429)? אם הוגדר INDEX_PROXY (כתובת האתר ב-Vercel, למשל https://xxx.vercel.app),
+         מעבירים את אותה בקשה לשם, ושם היא יוצאת מכתובות אחרות. שם צריך גם ADMIN_PASSWORD זהה ו-BING_API_KEY. */
+      const PX = (env('INDEX_PROXY') || '').replace(/\/$/, '');
+      if (!okAny && !b.noProxy && /^https:\/\//.test(PX)) {
+        try { const r = await fetch(PX + '/api/admin', { method: 'POST', signal: AbortSignal.timeout(25000), headers: { 'Content-Type': 'application/json', 'x-admin-password': String(req.headers['x-admin-password'] || b.password || '') }, body: JSON.stringify({ ...b, password: undefined, noProxy: true }) });
+          const j = await r.json(); return json(res, 200, { ...j, via: 'vercel', first: { status: out.status, quotaErr: out.quotaErr } }); }
+        catch (e) { out.proxyErr = String(e.message || e).slice(0, 120); }
+      }
       /* תמיד 200: Cloudflare מחליף תשובות 502 בדף שגיאה משלו, ואז לא רואים מה בינג ענה */
       return json(res, 200, { ok: okAny, ...out });
     }

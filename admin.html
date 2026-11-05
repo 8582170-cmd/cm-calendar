@@ -130,7 +130,7 @@ function render(){
   C.coupons.map((c,i)=>'<tr data-i="'+i+'"><td><input type="checkbox" data-k="on"'+(c.on?' checked':'')+'></td><td><input type="text" data-k="code" value="'+esc(c.code)+'" dir="ltr" style="width:130px;text-transform:uppercase"></td><td><input type="number" data-k="percent" min="1" max="100" value="'+val(c.percent)+'" style="width:70px"></td><td>'+planChecks(c.plans,'c'+i)+'</td><td><input type="date" data-k="until" value="'+esc(c.until)+'"></td><td><input type="number" data-k="max" min="0" value="'+val(c.max||0)+'" style="width:70px"></td><td>'+((D.uses||{})[String(c.code).toUpperCase()]||0)+'</td><td><input type="text" data-k="note" value="'+esc(c.note)+'" style="width:140px"></td><td><button class="btn danger" type="button" data-del="'+i+'">מחיקה</button></td></tr>').join('')+
   '</tbody></table></div><button class="btn" type="button" id="addC" style="margin-top:10px">+ קופון חדש</button></section>'+
   shabbatSection()+
-  '<section><h2>מנועי חיפוש</h2><p class="sub">שולח לבינג (ול-Yandex) דפים מהאתר, רק כמה שמותר היום: קודם הדפים החשובים (דף הבית, הטיימר, הבונים) אם לא נשלחו בשבוע האחרון, אחר כך דפים חדשים שעוד לא נשלחו, ואחר כך דפים שנשלחו לפני יותר מחודש. דף שנשלח לא יישלח שוב סתם. אפשר ללחוץ כל יום עד שלא נשאר מה לשלוח.</p><div class="row"><label style="display:inline-flex;gap:6px;align-items:center">עד <input type="number" id="inMax" value="100" min="1" max="500" style="width:80px"> דפים</label><button class="btn" type="button" id="inNow">שליחה לבינג (IndexNow)</button><span id="inMsg"></span></div><p class="sub" style="margin-top:6px">כדי שהכפתור יבדוק לבד כמה נשאר במכסה היומית של בינג ויישלח בדיוק את זה: ב-Bing Webmaster נכנסים ל"הגדרות" ← "גישה ל-API", יוצרים מפתח, ומוסיפים אותו במשתני הסביבה של Cloudflare בשם BING_API_KEY.</p></section>'+
+  '<section><h2>מנועי חיפוש</h2><p class="sub">שולח לבינג (ול-Yandex) דפים מהאתר, רק כמה שמותר היום: קודם הדפים החשובים (דף הבית, הטיימר, הבונים) אם לא נשלחו בשבוע האחרון, אחר כך דפים חדשים שעוד לא נשלחו, ואחר כך דפים שנשלחו לפני יותר מחודש. דף שנשלח לא יישלח שוב סתם. אפשר ללחוץ כל יום עד שלא נשאר מה לשלוח.</p><div class="row"><label style="display:inline-flex;gap:6px;align-items:center">עד <input type="number" id="inMax" value="100" min="1" max="500" style="width:80px"> דפים</label><button class="btn" type="button" id="inNow">שליחה לבינג (דרך השרת)</button><button class="btn" type="button" id="inBr" title="כשבינג חוסם את השרת: השליחה יוצאת מהמחשב שלכם">שליחה מהדפדפן שלי</button></div><div id="inMsg" style="margin-top:6px"></div><p class="sub" style="margin-top:6px">כדי שהכפתור יבדוק לבד כמה נשאר במכסה היומית של בינג ויישלח בדיוק את זה: ב-Bing Webmaster נכנסים ל"הגדרות" ← "גישה ל-API", יוצרים מפתח, ומוסיפים אותו במשתני הסביבה של Cloudflare בשם BING_API_KEY. אם בינג חוסם את השרת (ThrottleIP או 429), אפשר ללחוץ "שליחה מהדפדפן שלי", או להגדיר ב-Cloudflare משתנה INDEX_PROXY עם כתובת האתר ב-Vercel, ואז השרת ינסה אוטומטית לשלוח דרך Vercel.</p></section>'+
   yzSection()+cmsSection()+pgSection()+libSection()+tickerSection()+voiceSection()+dbSection()+
   '<div class="bar"><button class="btn primary" type="button" id="save">שמירה</button><span class="msg" id="smsg"></span></div>'+
   (D.mail?'<section><h2>מיילים ותזכורות</h2><p class="sub">מיילים שנשלחו היום (Resend: עד 100 ביום בחינם). תזכורות במייל מהלוח המקוון.</p><div class="row">'+
@@ -585,9 +585,21 @@ function bind(){
     o.querySelectorAll('[data-mtfill]').forEach(b=>b.onclick=()=>{const box=b.closest('.mt-k'),d=r.defaults[box.dataset.k]||{};box.querySelectorAll('[data-f]').forEach(i=>{if(!i.value)i.value=d[i.dataset.f]||''});prev()});
     o.querySelectorAll('[data-mtreset]').forEach(b=>b.onclick=()=>{b.closest('.mt-k').querySelectorAll('[data-f]').forEach(i=>i.value='');prev()});
   }).catch(e=>{o.textContent=e.message})};
+  /* שליחה מהדפדפן: בינג לא מחזיר תשובה לדפדפן (מגבלת אבטחה של דפדפנים), ולכן אם השליחה המלאה לא אפשרית שולחים כל דף בנפרד, בלי אישור */
+  if($('#inBr'))$('#inBr').onclick=async()=>{const M=$('#inMsg'),B=$('#inBr');B.disabled=true;M.textContent='מקבל את רשימת הדפים…';
+    try{const q=await api({action:'indexqueue',max:Math.min(+$('#inMax').value||50,200)});if(!q.urls||!q.urls.length){M.textContent='✅ אין מה לשלוח: כל '+q.total+' הדפים נשלחו לאחרונה';B.disabled=false;return}
+      let how='',ok=false;
+      try{const r=await fetch('https://api.indexnow.org/indexnow',{method:'POST',headers:{'Content-Type':'application/json; charset=utf-8'},body:JSON.stringify({host:q.host,key:q.key,keyLocation:q.keyLocation,urlList:q.urls})});
+        if(r.ok||r.status===202){ok=true;how='✅ נשלחו '+q.urls.length+' דפים, ובינג אישר ('+r.status+')'}else if(r.status===429){M.textContent='❌ בינג חוסם גם מהמחשב שלכם (429). נסו מחר.';B.disabled=false;return}else how='בינג ענה '+r.status+'. ';}catch(e){}
+      if(!ok){for(let i=0;i<q.urls.length;i++){M.textContent='שולח מהדפדפן… '+(i+1)+' / '+q.urls.length;try{await fetch('https://www.bing.com/indexnow?url='+encodeURIComponent(q.urls[i])+'&key='+q.key,{mode:'no-cors'})}catch(e){}await new Promise(r=>setTimeout(r,300))}
+        how=(how||'')+'✅ נשלחו '+q.urls.length+' דפים מהדפדפן, דף אחר דף (הדפדפן לא מקבל אישור מבינג, אז כדאי לבדוק מחר ב-Bing Webmaster שהדפים נסרקו)';ok=true}
+      const m=await api({action:'indexmark',urls:q.urls});M.innerHTML='<div>'+how+'</div><div>נשארו לשליחה בפעם הבאה: '+m.left+' מתוך '+m.total+'</div>'}
+    catch(e){M.textContent='❌ '+e.message}B.disabled=false};
   if($('#inNow'))$('#inNow').onclick=()=>{$('#inMsg').textContent='שולח…';api({action:'indexnow',max:+$('#inMax').value||100}).then(r=>{
     const L=[];
     /* בינג (שליחת כתובות עם מכסה): מופיע רק אם הוגדר BING_API_KEY */
+    if(r.via==='vercel')L.push('↪️ השרת ב-Cloudflare נחסם, ולכן נשלח דרך Vercel');
+    if(r.proxyErr)L.push('❌ השליחה דרך Vercel נכשלה: '+r.proxyErr);
     if(!r.hasKey)L.push('🔑 מפתח API של בינג: לא מוגדר (BING_API_KEY)');
     else{L.push(r.quota!=null?'🔑 מכסה בבינג היום לפני השליחה: '+r.quota:'🔑 בדיקת המכסה בבינג נכשלה: '+(r.quotaErr||'אין תשובה'));
       if(r.bing)L.push(r.bing===200?'✅ בינג (שליחת כתובות): נשלחו '+r.count:'❌ בינג (שליחת כתובות): '+r.bing+' '+(r.bingErr||''))}
