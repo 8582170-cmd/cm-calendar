@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'שעון ספירה לאחור חי לאתר ולמייל ←': 'Live countdown timer for websites and email →',
+ 'רוצים גם שעון ספירה לאחור חי, לשיתוף, להטמעה באתר ולמייל?': 'Want a live countdown timer too, to share, embed on a website or add to an email?',
+ 'ליצירת שעון ספירה בחינם ←': 'Make a free countdown timer →',
+ 'שעון ספירה לאחור': 'Countdown timer',
+ 'שעון ספירה חי לאתר, לוואטסאפ ולמייל': 'Live countdown timer for websites, WhatsApp and email',
  '🔓 רק זה': '🔓 Just this',
  '🔍 הגדלה': '🔍 Zoom in',
  'הקטנה': 'Zoom out',
