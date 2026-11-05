@@ -3929,10 +3929,11 @@ async function feedModal(){
     m.querySelector('#fdCopy').onclick=e=>{navigator.clipboard&&navigator.clipboard.writeText('https:'+u);e.target.textContent='הועתק'};
   }catch(err){m.querySelector('#fdBody').innerHTML='<p class="msg-bad">לא הצלחנו להכין את היומן. נסו שוב בעוד רגע.</p>'}
 }
+async function cloudRaw(id,ix){ix=ix||await readIndex();
+  if(ix[id]&&ix[id].store==='r2')return r2Load(id);
+  const {data,error}=await sb.storage.from('calendars').download(cloudPath(id));if(error||!data)throw error||new Error('no data');return JSON.parse(await data.text())}
 async function cloudOpen(id){
-  const ix=await readIndex();let raw;
-  if(ix[id]&&ix[id].store==='r2')raw=await r2Load(id);
-  else{const {data,error}=await sb.storage.from('calendars').download(cloudPath(id));if(error||!data)throw error||new Error('no data');raw=JSON.parse(await data.text())}
+  const ix=await readIndex();const raw=await cloudRaw(id,ix);
   const loaded=merge(DEFAULT,raw);loaded.s.cloudId=id;
   /* בדפדפן יש גרסה חדשה יותר של אותו לוח (למשל עבדו בלי חיבור לחשבון)? שואלים לפני שמחליפים */
   const strip=st=>{const c=structuredClone(st);['uiMode','step','wizardDone','cloudId','shareId','_mt'].forEach(k=>{if(c.s)delete c.s[k]});return JSON.stringify(c)};
@@ -4515,6 +4516,27 @@ if($('#startDateClr'))$('#startDateClr').onclick=()=>set('startDate','');
 if($('#endDateClr'))$('#endDateClr').onclick=()=>set('endDate','');
 if($('#cdQCustom'))$('#cdQCustom').addEventListener('input',e=>{state.s.cdQCustom=e.target.value;save();rerender()});
 if($('#nextYear'))$('#nextYear').onclick=()=>{const s=state.s;if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;save();syncUI();render()};
+/* טעינת אירועים ותמונות מלוח שמור (מהחשבון, מגרסה שהורדה, מגרסה קודמת בדפדפן או מקובץ גיבוי) לתוך הלוח הפתוח, בלי להחליף אותו */
+function mergeCount(src){const S=merge(DEFAULT,src),have=new Set(state.events.map(e=>e.id)),sig=e=>[e.kind,e.name,e.date,e.hdate,e.rec].join('|'),hs=new Set(state.events.map(sig));
+  const ev=(S.events||[]).filter(e=>e&&!have.has(e.id)&&!hs.has(sig(e)));
+  const sl=Object.keys(S.slots||{}).filter(k=>S.slots[k]&&S.slots[k].img&&!(state.slots[k]&&state.slots[k].img));
+  const cov=S.cover&&S.cover.img&&!(state.cover&&state.cover.img)?1:0;return {ev,sl,cov,S}}
+async function mergeApply(src,label){const {ev,sl,cov,S}=mergeCount(src);
+  if(!ev.length&&!sl.length&&!cov){modal('<h3>אין מה להוסיף</h3><p class="hint">כל האירועים והתמונות מ'+esc(label)+' כבר נמצאים בלוח הפתוח.</p><div class="row"><button class="btn" type="button" data-close>סגירה</button></div>');return}
+  const room=Math.max(0,PLAN().events-state.events.length),take=ev.slice(0,room);
+  const q=modal('<h3>טעינה מ'+esc(label)+'</h3><p class="hint">נמצאו <b>'+ev.length+' אירועים</b>'+(sl.length?' ו־<b>'+sl.length+' תמונות חודש</b>':'')+(cov?' ותמונת שער':'')+' שאין בלוח הפתוח. הם יתווספו ללוח, וכל מה שכבר יש בו יישאר.'+(take.length<ev.length?' <span class="msg-bad">במסלול הנוכחי אפשר להוסיף רק '+take.length+' מהם.</span>':'')+'</p><div class="row"><button class="btn primary" type="button" id="mgGo">להוסיף ללוח</button><button class="btn" type="button" data-close>ביטול</button></div>');
+  q.querySelector('#mgGo').onclick=async()=>{await histPush('לפני טעינה מלוח שמור');state.events.push(...take);sl.forEach(k=>{state.slots[k]=S.slots[k]});if(cov)state.cover={...(state.cover||{}),...S.cover};
+    monthsCache=buildMonths();save();renderEvents();render();q.remove();shareToast('נוספו '+take.length+' אירועים'+(sl.length?' ו־'+sl.length+' תמונות':'')+' ללוח')}}
+async function fromCalModal(){
+  const m=modal('<h3>טעינת אירועים ותמונות מלוח שמור</h3><p class="hint">בוחרים לוח שמור, והאירועים והתמונות שלו מתווספים ללוח הפתוח עכשיו (למשל מהלוח של שנה שעברה, או מגרסה שהורדה). שום דבר בלוח הפתוח לא נמחק.</p><div id="fcBody"><p class="hint">טוען…</p></div><div class="row"><button class="btn" type="button" id="fcFile">מקובץ גיבוי…</button><button class="btn" type="button" data-close>סגירה</button></div>');
+  const body=m.querySelector('#fcBody'),dt=x=>new Date(x).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}),L=[];
+  if(user){try{const ix=await readIndex();Object.keys(ix).filter(k=>!k.startsWith('__')&&k!==state.s.cloudId).sort((a,b)=>(ix[b].updated||'').localeCompare(ix[a].updated||'')).forEach(k=>L.push({t:'הלוחות שלי',name:ix[k].name||'לוח',at:ix[k].updated,load:()=>cloudRaw(k,ix)}))}catch(e){}
+    try{if(await r2On()){const j=await r2Api('snaps');(j.snaps||[]).forEach(x=>L.push({t:'גרסה שהורדה',name:x.name||'לוח',at:x.at,load:async()=>r2Load(null,(await r2Api('snapopen',{k:x.k})).cal)}))}}catch(e){}}
+  ((await idbGet(HKEY))||[]).forEach(x=>L.push({t:'גרסה קודמת בדפדפן',name:x.name||'לוח',at:x.at,load:async()=>x.st}));
+  body.innerHTML=(L.length?'<ul class="ac-list">'+L.map((x,i)=>'<li><span><b>'+esc(x.name)+'</b><small>'+esc(x.t)+' · '+dt(x.at)+'</small></span><button class="btn" type="button" data-fc="'+i+'">בחירה</button></li>').join('')+'</ul>':'<p class="hint">לא נמצאו לוחות שמורים'+(user?'':'. כדי לראות את הלוחות מהחשבון, היכנסו לחשבון')+'.</p>');
+  m.addEventListener('click',async e=>{const b=e.target.closest('[data-fc]');if(!b)return;const x=L[+b.dataset.fc];b.disabled=true;b.textContent='טוען…';try{const raw=await x.load();m.remove();await mergeApply(raw,x.t==='הלוחות שלי'?'"'+x.name+'"':x.t)}catch(err){b.textContent='שגיאה';console.warn(err)}});
+  m.querySelector('#fcFile').onclick=()=>{const f=$('#fileJson');f.value='';f.onchange=()=>{const r=new FileReader();r.onload=()=>{try{const raw=JSON.parse(r.result);m.remove();mergeApply(raw,'קובץ הגיבוי')}catch(err){alert('הקובץ אינו גיבוי תקין של MyLuach')}};if(f.files[0])r.readAsText(f.files[0])};f.click()}}
+if($('#evFromCal'))$('#evFromCal').onclick=()=>fromCalModal();
 if($('#evImport'))$('#evImport').onclick=()=>{
   const m=modal('<h3>ייבוא אירועים מקובץ</h3><p class="hint">אפשר לייבא מקובץ אקסל או CSV, או מקובץ יומן (ics) מגוגל, מאפל או מאאוטלוק. בקובץ אקסל צריכים להיות הטורים: <b>שם, סוג, תאריך, חזרה, אחרי השקיעה</b>. התאריך הוא לועזי (למשל 12/08/2018), והלוח מחשב לבד את התאריך העברי. בטור "חזרה" כותבים עברי, לועזי או פעם אחת.</p>'+
     '<div class="row"><button class="btn primary" type="button" id="ixPick">בחירת קובץ</button><button class="btn" type="button" id="ixSample">הורדת קובץ לדוגמה</button></div><input type="file" id="ixFile" accept=".csv,.xlsx,.xls,.ics,.txt" hidden><div id="ixOut"></div><p class="hint" id="ixMsg"></p>'+

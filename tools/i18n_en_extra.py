@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 # English translations that are not in i18n_en.json: phrases with numbers, and patterns (regex) for texts built in code.
 EXACT = {
+ 'טעינה מלוח שמור': 'Load from a saved calendar',
+ 'טעינת אירועים ותמונות מלוח שמור': 'Load events and photos from a saved calendar',
+ 'מקובץ גיבוי…': 'From a backup file…',
+ 'בחירה': 'Choose',
+ 'להוסיף ללוח': 'Add to the calendar',
+ 'אין מה להוסיף': 'Nothing to add',
  'בדפדפן הזה בלבד': 'in this browser only',
  '. כדי שהלוח יישמר בשרת, ותוכלו לפתוח אותו ממחשב או טלפון אחר ובשנים הבאות (עם כל האירועים והתמונות), חשוב ללחוץ ': '. To keep it on our server, so you can open it on another computer or phone and in future years (with all events and photos), click ',
  '"💾 שמירה בחשבון"': '"💾 Save to account"',
