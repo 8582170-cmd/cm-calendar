@@ -108,8 +108,12 @@ async function purgeLibrary(dry) {
   try { const S = await walk('shared', '', [], 5000); for (let i = 0; i < S.length; i += 20) { const part = await Promise.all(S.slice(i, i + 20).map(f => fetch(base() + '/storage/v1/object/shared/' + f.path, { headers: H() }).then(r => r.ok ? r.text() : '').catch(() => ''))); shared += part.join('\n'); } }
   catch (e) { throw new Error('לא הצלחנו לבדוק את עיצובי הברכות של הלקוחות, ולכן לא מוחקים כלום: ' + e.message); }
   const all = JSON.stringify(rows || []) + shared;
-  const F = (await walk('library', '', [], 50000)).filter(f => !all.includes('/library/' + f.path) && !all.includes('/library/' + encodeURI(f.path)));
-  const out = { files: F.length, bytes: F.reduce((a, f) => a + f.size, 0), deleted: 0 };
+  /* ורק קבצים שיש להם עותק ב-Cloudflare R2 (בדלי הציבורי, באותו נתיב) */
+  const R2 = require('./_r2'), M = R2.media(); if (!M) throw new Error('הדלי הציבורי ב-Cloudflare לא מוגדר, ולכן לא מוחקים כלום');
+  const inR2 = new Set((await R2.list('', 0, M)).map(x => x.key));
+  const W = await walk('library', '', [], 50000);
+  const F = W.filter(f => inR2.has(f.path) && !all.includes('/library/' + f.path) && !all.includes('/library/' + encodeURI(f.path)));
+  const out = { files: F.length, bytes: F.reduce((a, f) => a + f.size, 0), deleted: 0, total: W.length, notInR2: W.filter(f => !inR2.has(f.path)).length, inUse: W.filter(f => inR2.has(f.path) && !F.includes(f)).length };
   if (dry || !F.length) return out;
   for (let i = 0; i < F.length; i += 500) {
     const part = F.slice(i, i + 500).map(f => f.path);

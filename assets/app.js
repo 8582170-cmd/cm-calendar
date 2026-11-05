@@ -27,7 +27,7 @@ window.addEventListener('beforeprint',()=>{if(OURPRINT||Date.now()-BRPRINT_T<500
 /* לוח ספירה בלי מסלול: היכולות של "ספירה בסיסית" (ספירה עד 40 יום בחינם לכולם) */
 const canF=f=>SAMPLE?true:!LP?true:(CDMODE&&LP.current().id==='free'&&LP.byId('cdbasic').id==='cdbasic')?!!LP.byId('cdbasic').features[f]:LP.can(f);
 /* מגבלת החודשים של המסלול נספרת בלי החודשים החלקיים שלפני תחילת השנה ("התחלה מתאריך מדויק") */
-const planMonths=months=>PLAN().months+(months||[]).filter(m=>/^pre-/.test(m.key)).length;
+const planMonths=months=>PLAN().months+(months||[]).filter(m=>/^(pre|post)-/.test(m.key)).length;
 function monthCut(months){const n=planMonths(months);return n<months.length&&months[n]?months[n].days[0]:null}
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
 const stage=$('#stage');
@@ -286,7 +286,7 @@ function buildMonths(){
       m++;if(m>11){m=0;y++}
     }
   }
-  return applyStartDate(months);
+  return applyEndDate(applyStartDate(months));
 }
 /* התחלה מתאריך מדויק: לפני תחילת השנה (עד חודשיים, כעמודים חלקיים) או באמצע החודש הראשון */
 function applyStartDate(months){
@@ -303,6 +303,7 @@ function applyStartDate(months){
       cur.days.push(d)}
     pre.forEach(mo=>{const hs=mo.days.map(d=>new HDate(d));
       mo.other=s.calType==='heb'?[...new Set(mo.days.map(d=>GREG_MONTHS[d.getMonth()]))].join('–')+' '+[...new Set(mo.days.map(d=>d.getFullYear()))].join('–'):[...new Set(hs.map(h=>hebMonthName(h.getMonth(),isLeap(h.getFullYear()))))].join('–')+' '+[...new Set(hs.map(h=>hebYearStr(h.getFullYear())))].join('–')});
+    while(pre.length&&pre.length+months.length>MAX_MONTHS())pre.shift();
     return pre.concat(months)}
   if(sd>first&&sd<=last){
     const out=months.filter(mo=>mo.days.at(-1)>=sd);
@@ -310,6 +311,21 @@ function applyStartDate(months){
     return out}
   return months;
 }
+/* המשך אחרי סוף השנה (endDate): חודשים נוספים, עד שבסך הכל יש 16 חודשים בלוח עברי ו-14 בלוח לועזי */
+const MAX_MONTHS=()=>state.s.calType==='heb'?16:14;
+function applyEndDate(months){
+  const s=state.s;if(!s.endDate||!months.length)return months;
+  const ed=dateFromIso(s.endDate);if(!ed||isNaN(ed))return months;
+  const last=months.at(-1).days.at(-1);if(ed<=last)return months;
+  const heb=s.calType==='heb',post=[];let cur=null;
+  for(let d=new Date(last.getFullYear(),last.getMonth(),last.getDate()+1,12);d<=ed&&months.length+post.length<=MAX_MONTHS();d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,12)){
+    const hd=new HDate(d),key=heb?'post-heb-'+hd.getFullYear()+'-'+hd.getMonth():'post-greg-'+d.getFullYear()+'-'+d.getMonth();
+    if(!cur||cur.key!==key){if(months.length+post.length>=MAX_MONTHS())break;
+      cur=heb?{key,title:hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())),year:hebYearStr(hd.getFullYear()),other:'',days:[]}:{key,title:GREG_MONTHS[d.getMonth()],year:String(d.getFullYear()),other:'',days:[]};post.push(cur)}
+    cur.days.push(d)}
+  post.forEach(mo=>{const hs=mo.days.map(d=>new HDate(d));
+    mo.other=heb?[...new Set(mo.days.map(d=>GREG_MONTHS[d.getMonth()]))].join('–')+' '+[...new Set(mo.days.map(d=>d.getFullYear()))].join('–'):[...new Set(hs.map(h=>hebMonthName(h.getMonth(),isLeap(h.getFullYear()))))].join('–')+' '+[...new Set(hs.map(h=>hebYearStr(h.getFullYear())))].join('–')});
+  return months.concat(post)}
 function hebText(ev){let t='';try{t=ev.render(EN?'en':'he')}catch(e){}if(!t)t=ev.getDesc();return stripNikud(t).replace(/\b(5\d{3})\b/,(m,y)=>hebYearStr(+y))}
 /* שניות: לכל זמן אפשר לבחור בנפרד (עם / בלי), ואם לא נבחר, לפי ההגדרה הכללית */
 function zdir(key,def){const r=(state.s.zround||{})[key];return r&&r!=='auto'?r:def}
@@ -3165,7 +3181,8 @@ function syncUI(){if(typeof renderLearnOwn==='function')renderLearnOwn();if(type
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
   radio('calType',s.calType);{const pl=$('#printLang');if(pl)pl.value=s.printLang||'he'}radio('zmanimMode',s.zmanimMode);radio('theme',s.theme);radio('orient',s.orient);radio('layout',s.layout);radio('imgText',s.imgText||'auto');radio('view',s.view||'month');$('#dateStyle').value=dStyle();
-  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards();cdSyncDay()}spSync();if($('#startDate')){$('#startDate').value=s.startDate||'';$('#startDateClr').hidden=!s.startDate;$('#startDateRow').hidden=$('#startDateHint').hidden=['week','day','table','countdown'].includes(s.view||'month')}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
+  $('#rangeRow').hidden=['month','year','countdown'].includes(s.view||'month');$('#cdRow').hidden=s.view!=='countdown';{const c=cdCfg();if(document.activeElement!==$('#cdTitle'))$('#cdTitle').value=s.cdTitle||'';$('#cdDate').value=c.to;$('#cdFrom').value=c.from;$('#cdUnit').value=s.cdUnit||'days';$('#cdQTopic').value=s.cdQTopic||'auto';$('#cdBgOp').value=String(s.cdBgOp||0.25);if(document.activeElement!==$('#cdQCustom'))$('#cdQCustom').value=s.cdQCustom||'';$('#cdQBox').hidden=!s.cdQuotes;cdSyncCards();cdSyncDay()}spSync();if($('#startDate')){$('#startDate').value=s.startDate||'';$('#startDateClr').hidden=!s.startDate;$('#startDateRow').hidden=$('#startDateHint').hidden=['week','day','table','countdown'].includes(s.view||'month')}
+  if($('#endDate')){$('#endDate').value=s.endDate||'';$('#endDateClr').hidden=!s.endDate;$('#endDateRow').hidden=['week','day','table','countdown'].includes(s.view||'month');const mx=$('#endDateHint');if(mx)mx.textContent='אפשר להמשיך גם אחרי סוף השנה, למשל עד סוף החגים של תשרי. בסך הכל עד '+MAX_MONTHS()+' חודשים בלוח '+(s.calType==='heb'?'עברי':'לועזי')+'.'}$('#rangeFrom').value=s.rangeFrom||'';$('#rangeTo').value=s.rangeTo||'';
   {const v=s.view||'month';$('#splitColsRow').hidden=v!=='day';wkSync();$('#splitCols').checked=!!s.splitCols;$('#tcolsRow').hidden=v!=='table';const tc={zmanim:true,holidays:true,personal:true,yz:true,notes:false,...(s.tcols||{})};document.querySelectorAll('[data-tcol]').forEach(c=>c.checked=!!tc[c.dataset.tcol])}
   $('#viewHint').textContent={table:'עמוד לכל שבוע בצורת טבלה: שורה לכל יום, טור לכל זמן, וטורים נפרדים לחגים, לאירועים האישיים וליומי דהילולא (יארצייטן).',month:'עמוד לכל חודש.',countdown:'לוח שסופר את הימים עד תאריך שבחרתם: בכל יום כתוב כמה נשאר.',year:'כל השנה בעמוד אחד, למקרר או לקיר. ימי חג צבועים, וימים עם אירוע אישי מסומנים בנקודה ומפורטים מתחת לכל חודש.',week:'עמוד לכל שבוע, עם מקום לכתיבה בכל יום. השאירו את התאריכים ריקים לשנה שלמה (כ־52 עמודים).',day:'עמוד לכל יום, עם שעות, זמני היום ומקום לכתיבה. שנה שלמה היא כ־355 עמודים, לכן כדאי לבחור טווח תאריכים.'}[s.view||'month'];
   $('#yzOverflow').value=s.yzOverflow==='widen'?'widen':'spill';$('#histOverflow').value=s.histOverflow||'ask';{const c=dstCfg();$('#dstMode').value=c.mode;$('#dstCustom').hidden=c.mode!=='custom';$('#dstSd').value=c.sd;$('#dstSm').value=c.sm;$('#dstSt').value=c.st;$('#dstEd').value=c.ed;$('#dstEm').value=c.em;$('#dstEt').value=c.et}$('#plZ').value=s.zmanimMode;$('#plZ2').value=s.zmanimMode;{const m=zMode();$('#zmanimChecks').hidden=m!=='table';$('#zmPlaceBox').hidden=m==='table'||m==='none'}
@@ -3294,6 +3311,7 @@ document.addEventListener('change',e=>{
     case 'hebStart':return set('hebStart',+t.value);
     case 'rangeFrom':case 'rangeTo':return set(t.id,t.value);
     case 'startDate':return set('startDate',t.value||'');
+    case 'endDate':return set('endDate',t.value||'');
     case 'cdDate':case 'cdFrom':if(t.value)set(t.id,t.value);return;
     case 'cdUnit':case 'cdQTopic':cdFocus(t.id==='cdQTopic'?'quote':'page');return set(t.id,t.value);
     case 'cdDStyle':cdFocus('page');if(t.value==='hebOnly')state.s.calType='heb';if(t.value==='gregOnly')state.s.calType='greg';return set('dateStyle',t.value);
@@ -4439,6 +4457,7 @@ function cdApplyFocus(){if(!CDF)return;const k=CDF;CDF=null;
   else{let t=$('#cdToast');if(!t){t=document.createElement('button');t.id='cdToast';t.type='button';t.className='cd-toast';document.body.appendChild(t)}
     t.textContent='✓ עודכן · לראות בתצוגה ↓';t.onclick=()=>{el.scrollIntoView({behavior:'smooth',block:'start'});t.classList.remove('on')};t.classList.add('on');clearTimeout(cdToastT);cdToastT=setTimeout(()=>t.classList.remove('on'),4500)}}
 if($('#startDateClr'))$('#startDateClr').onclick=()=>set('startDate','');
+if($('#endDateClr'))$('#endDateClr').onclick=()=>set('endDate','');
 if($('#cdQCustom'))$('#cdQCustom').addEventListener('input',e=>{state.s.cdQCustom=e.target.value;save();rerender()});
 if($('#nextYear'))$('#nextYear').onclick=()=>{const s=state.s;if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;save();syncUI();render()};
 if($('#evImport'))$('#evImport').onclick=()=>{
@@ -5275,7 +5294,7 @@ function sxNextYear(){const old=$('#sxYear');if(old)old.remove();if(uiMode()==='
   const s=state.s,cur=s.calType==='heb'?hebYearStr(+s.hebYear):String(s.gregYear),nx=s.calType==='heb'?hebYearStr(+s.hebYear+1):String(+s.gregYear+1);
   const b=el('div','notice sx-year no-print','<span>הלוח הזה הוא של <b>'+esc(cur)+'</b>, שכבר הסתיימה. להמשיך ממנו ל־'+esc(nx)+'? כל התאריכים, הזמנים והעיצוב יישארו, ונשאר רק להחליף תמונות.</span><span class="row"><button type="button" class="btn primary small" id="sxYGo">כן, ללוח '+esc(nx)+'</button><button type="button" class="btn small" id="sxYNo">לא עכשיו</button></span>');b.id='sxYear';
   stage.prepend(b);b.querySelector('#sxYNo').onclick=()=>b.remove();
-  b.querySelector('#sxYGo').onclick=()=>{if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;s.rangeFrom='';s.rangeTo='';s.startDate='';save();syncUI();render();b.remove();shareToast('הלוח עבר ל־'+nx)}}
+  b.querySelector('#sxYGo').onclick=()=>{if(s.calType==='heb')s.hebYear=+s.hebYear+1;else s.gregYear=+s.gregYear+1;s.rangeFrom='';s.rangeTo='';s.startDate='';s.endDate='';save();syncUI();render();b.remove();shareToast('הלוח עבר ל־'+nx)}}
 
 /* תאריך עברי ליד כל שדה תאריך, ובחירה מלוח עברי */
 function sxDates(root){(root||document).querySelectorAll('.side input[type=date],.modal input[type=date]').forEach(inp=>{if(inp.dataset.sxd)return;inp.dataset.sxd='1';

@@ -42,11 +42,11 @@ function presign(method, key, expires, query, bucketCfg) {
 async function exists(key) { const r = await fetch(presign('HEAD', key, 300), { method: 'HEAD' }); return r.ok; }
 async function del(key) { const r = await fetch(presign('DELETE', key, 300), { method: 'DELETE' }); return r.ok || r.status === 404; }
 /* כל האובייקטים תחת prefix: [{key,size,at}] */
-async function list(prefix, max) {
+async function list(prefix, max, bucketCfg) {
   const out = []; let token = '';
   for (;;) {
     const q = { 'list-type': '2', prefix: prefix || '', 'max-keys': '1000' }; if (token) q['continuation-token'] = token;
-    const r = await fetch(presign('GET', '', 300, q)); if (!r.ok) throw new Error('r2 list ' + r.status);
+    const r = await fetch(presign('GET', '', 300, q, bucketCfg)); if (!r.ok) throw new Error('r2 list ' + r.status);
     const x = await r.text();
     for (const m of x.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
       const g = t => ((new RegExp('<' + t + '>([^<]*)</' + t + '>').exec(m[1]) || [])[1] || '');
