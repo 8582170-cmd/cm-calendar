@@ -257,7 +257,8 @@ module.exports = async (req, res) => {
       const { sendMail, frame, escH, textToHtml } = require('./_mail');
       const to = String(b.to || '').trim(), subject = String(b.subject || '').trim().slice(0, 200), title = String(b.title || subject).trim().slice(0, 200);
       const url = /^https:\/\/[^\s"'<>]+$/.test(String(b.url || '').trim()) ? String(b.url).trim() : '', button = url ? String(b.button || 'לפרטים').slice(0, 60) : '';
-      const html = frame({ title: escH(title), body: textToHtml(b.body), button: button ? escH(button) : null, url, foot: b.foot ? textToHtml(b.foot) : 'אפשר פשוט לענות למייל הזה.' });
+      const en = b.lang === 'en';
+      const html = frame({ title: escH(title), body: textToHtml(b.body), button: button ? escH(button) : null, url, foot: b.foot ? textToHtml(b.foot) : (en ? 'You can simply reply to this email.' : 'אפשר פשוט לענות למייל הזה.'), lang: en ? 'en' : 'he', size: b.size, accent: b.accent, ink: b.ink });
       if (b.preview) return json(res, 200, { html });
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return json(res, 400, { error: 'כתובת מייל לא תקינה' });
       if (!subject || String(b.body || '').trim().length < 2) return json(res, 400, { error: 'חסרים נושא או תוכן' });
@@ -331,11 +332,11 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && b.action === 'indexnow') {
       const KEY = 'a0e5a04b6480773e2788f0eb3f1ba9c1', host = 'www.myluach.org';
       let urls = [];
-      try { const sm = await (await fetch('https://' + host + '/sitemap.xml')).text(); urls = sm.split('<loc>').slice(1).map(x => x.slice(0, x.indexOf('<'))); } catch (e) {}
+      try { const smr = globalThis.__ASSETS ? await globalThis.__ASSETS.fetch('https://' + host + '/sitemap.xml') : await fetch('https://' + host + '/sitemap.xml'); const sm = await smr.text(); urls = sm.split('<loc>').slice(1).map(x => x.slice(0, x.indexOf('<'))); } catch (e) {}
       try { urls = urls.concat(await require('./_pages').publicUrls()); } catch (e) {}
       if (!urls.length) urls = ['https://' + host + '/'];
       try {
-        const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        const r = await fetch('https://api.indexnow.org/indexnow', { method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ host, key: KEY, keyLocation: 'https://' + host + '/' + KEY + '.txt', urlList: urls.slice(0, 10000) }) });
         const t = r.ok || r.status === 202 ? '' : (await r.text().catch(() => '')).slice(0, 200);
         return json(res, r.ok || r.status === 202 ? 200 : 502, { status: r.status, count: urls.length, ...(t ? { error: 'IndexNow ' + r.status + ': ' + t } : {}) });

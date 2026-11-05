@@ -10,6 +10,8 @@ function setEnv(env) {
 export async function run(handler, context, extraQuery) {
   const { request, env } = context;
   setEnv(env);
+  /* גישה לקבצים הסטטיים של האתר מתוך השרת, בלי לצאת לאינטרנט (למשל מפת האתר) */
+  if (env && env.ASSETS) globalThis.__ASSETS = env.ASSETS;
   const url = new URL(request.url);
   const query = Object.fromEntries(url.searchParams);
   Object.assign(query, extraQuery || {});

@@ -67,14 +67,17 @@ function logMail(provider, kind, ok, m, err) {
 }
 
 /* מסגרת מייל אחידה בעברית */
-function frame({ title, body, button, url, foot }) {
-  const btn = button && url ? '<p style="margin:0 0 22px"><a href="' + url + '" style="display:inline-block;background:#1f5c63;color:#ffffff;text-decoration:none;font-weight:bold;font-size:16px;padding:12px 26px;border-radius:10px">' + button + '</a></p>' : '';
-  return '<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;background:#f6f7f4;padding:24px 12px"><div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #dde2df;border-radius:14px;padding:28px 24px;text-align:right">' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px auto;direction:ltr"><tr><td style="vertical-align:middle;padding-right:8px"><span style="font-size:24px;font-weight:bold;color:#1f5c63;font-family:Arial,Helvetica,sans-serif">MyLuach</span></td>' +
-    '<td style="vertical-align:middle"><img src="https://www.myluach.org/assets/icon-180.png" width="36" height="36" alt="" style="display:block;border:0;border-radius:8px"></td></tr></table>' +
-    '<h1 style="font-size:20px;color:#172126;margin:0 0 10px">' + title + '</h1><div style="font-size:16px;line-height:1.6;color:#3c474b;margin:0 0 22px">' + body + '</div>' + btn +
-    (foot ? '<p style="font-size:13px;line-height:1.6;color:#6b7679;margin:0">' + foot + '</p>' : '') +
-    '</div><p style="text-align:center;font-size:12px;color:#8a9497;margin:14px 0 0">MyLuach · לוח שנה עברי־לועזי · myluach.org</p></div>';
+/* מסגרת המייל. o: lang ('he'/'en'), size ('s'/'m'/'l'), accent (צבע הכותרות, הכפתור והקישורים), ink (צבע הטקסט) */
+function frame({ title, body, button, url, foot, lang, size, accent, ink }) {
+  const en = lang === 'en', ok = c => /^#[0-9a-f]{6}$/i.test(String(c || ''));
+  const A = ok(accent) ? accent : '#1f5c63', T = ok(ink) ? ink : '#3c474b', fs = { s: 14, m: 16, l: 18 }[size] || 16;
+  const btn = button && url ? '<p style="margin:0 0 22px"><a href="' + url + '" style="display:inline-block;background:' + A + ';color:#ffffff;text-decoration:none;font-weight:bold;font-size:' + fs + 'px;padding:12px 26px;border-radius:10px">' + button + '</a></p>' : '';
+  return '<div dir="' + (en ? 'ltr' : 'rtl') + '" style="font-family:Arial,Helvetica,sans-serif;background:#f6f7f4;padding:24px 12px"><div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #dde2df;border-radius:14px;padding:28px 24px;text-align:' + (en ? 'left' : 'right') + '">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 ' + (en ? 'auto 18px 0' : '0 18px auto') + ';direction:ltr"><tr><td style="vertical-align:middle;padding-right:8px"><span style="font-size:24px;font-weight:bold;color:' + A + ';font-family:Arial,Helvetica,sans-serif">MyLuach</span></td>' +
+    '<td style="vertical-align:middle"><img src="https://www.myluach.org/assets/icon-180.png" width="36" height="36" alt="MyLuach" style="display:block;border:0;border-radius:8px"></td></tr></table>' +
+    '<h1 style="font-size:' + (fs + 4) + 'px;color:#172126;margin:0 0 10px">' + title + '</h1><div style="font-size:' + fs + 'px;line-height:1.6;color:' + T + ';margin:0 0 22px">' + String(body).replace(/\{A\}/g, A).replace(/\{FS(\d)\}/g, (m, n) => fs + (+n)) + '</div>' + btn +
+    (foot ? '<p style="font-size:' + (fs - 3) + 'px;line-height:1.6;color:#6b7679;margin:0">' + foot + '</p>' : '') +
+    '</div><p style="text-align:center;font-size:12px;color:#8a9497;margin:14px 0 0">' + (en ? 'MyLuach · Hebrew–Gregorian calendar · myluach.org' : 'MyLuach · לוח שנה עברי־לועזי · myluach.org') + '</p></div>';
 }
 const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -84,8 +87,12 @@ function configured() {
 /* טקסט רגיל שכותבים בדף הניהול: שורות, **מודגש**, וקישורים (כתובת מלאה או [טקסט](כתובת)) */
 function textToHtml(t) {
   return escH(String(t || '').slice(0, 20000))
-    .replace(/\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#1f5c63">$1</a>')
-    .replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" style="color:#1f5c63">$2</a>')
+    /* "# " בתחילת שורה = כותרת גדולה, "## " = כותרת משנה (בצבע המייל) */
+    .replace(/^## (.+)$/gm, '<b style="display:block;font-size:{FS2}px;color:{A};margin:10px 0 2px">$1</b>')
+    .replace(/^# (.+)$/gm, '<b style="display:block;font-size:{FS5}px;color:{A};margin:12px 0 4px">$1</b>')
+    .replace(/\n?(<b style="display:block[^>]*>[^<]*<\/b>)\n?/g, '$1')
+    .replace(/\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:{A}">$1</a>')
+    .replace(/(^|[\s(>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" style="color:{A}">$2</a>')
     .replace(/\*\*([^*\n]{1,200})\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
 }
 module.exports = { sendMail, frame, escH, configured, textToHtml };
