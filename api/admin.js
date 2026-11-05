@@ -303,6 +303,8 @@ module.exports = async (req, res) => {
         if (r.ok) { const ix = await r.json(); cals = Object.keys(ix).filter(k => !k.startsWith('__')).map(k => ({ id: k, name: ix[k].name, updated: ix[k].updated, size: ix[k].size, store: ix[k].store || 'supabase' })).sort((a, b2) => String(b2.updated).localeCompare(String(a.updated))); } else cals = []; } catch (e) { cals = null; } }
       return json(res, 200, { email: em, profile: p, orders: orders || [], downloads: dls || [], plan, cd, cals, bonus: B[em] || { n: 0, log: [] } });
     }
+    /* תחזית מיילים לימים הקרובים */
+    if (req.method === 'POST' && b.action === 'mailplan') { try { return json(res, 200, await require('./_mailplan').plan(b.days)); } catch (e) { return json(res, 200, { error: String(e.message || e).slice(0, 200) }); } }
     /* דף הזמנה לאירוע בתשלום: מחירים */
     if (req.method === 'POST' && (b.action === 'evpget' || b.action === 'evpset')) {
       const { loadSetting, saveSetting } = require('./_lib'), E = require('./_eventpay');

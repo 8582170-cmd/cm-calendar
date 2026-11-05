@@ -99,4 +99,6 @@ function textToHtml(t) {
     .replace(/(^|[\s(>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" style="color:{A}">$2</a>')
     .replace(/\*\*([^*\n]{1,200})\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
 }
-module.exports = { sendMail, frame, escH, configured, textToHtml };
+/* הקיבולת היומית של הספקים המחוברים (לתחזית בניהול) */
+function capacity() { const c = configured(), out = {}; Object.keys(c).forEach(k => { if (c[k]) out[k] = { day: cap(k), hour: hourCap(k) || null }; }); return out; }
+module.exports = { sendMail, frame, escH, configured, textToHtml, capacity };
