@@ -311,8 +311,8 @@ function applyStartDate(months){
     return out}
   return months;
 }
-/* המשך אחרי סוף השנה (endDate): חודשים נוספים, עד שבסך הכל יש 16 חודשים בלוח עברי ו-14 בלוח לועזי */
-const MAX_MONTHS=()=>state.s.calType==='heb'?16:14;
+/* המשך אחרי סוף השנה (endDate): חודשים נוספים, עד שבסך הכל יש 15 חודשים בלוח עברי ו-14 בלוח לועזי */
+const MAX_MONTHS=()=>state.s.calType==='heb'?15:14;
 function applyEndDate(months){
   const s=state.s;if(!s.endDate||!months.length)return months;
   const ed=dateFromIso(s.endDate);if(!ed||isNaN(ed))return months;
