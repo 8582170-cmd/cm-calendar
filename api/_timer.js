@@ -67,6 +67,9 @@ async function tehState(s) {
   const max = L.length ? L[0].round : 1, cur = L.filter(x => x.round === max), round = cur.length >= 150 ? max + 1 : max;
   return { round, done: round - 1, taken: round === max ? cur.map(x => ({ c: x.chapter, n: x.name })) : [] };
 }
+/* שבת וחג: לא שולחים ולא מתזמנים. בודקים לפי ארץ ישראל וגם לפי חו"ל (יום טוב שני), עם שעה לפני כניסת השבת וחצי שעה אחרי צאתה */
+async function holyAt(ms) { const S = require('./_shabbat'), conf = { shabbat: { on: true, yt: true, before: 60, after: 30 } };
+  for (const il of [true, false]) { const r = await S.status(ms, { lat: 31.778, lng: 35.235, tz: 'Asia/Jerusalem', il }, conf).catch(() => ({})); if (r.closed) return r; } return null; }
 async function T_put_mail(s, cur, mail) { await put(s, { ...cur, mail }); cur.mail = mail; }
 /* ---------- מייל ההזמנה: דומה לדף האירוע ---------- */
 const THC = { classic: ['1e5a63', 'ffffff', 'eef4f4'], wedding: ['a8646f', 'fff8f6', 'f8e8e5'], barmitzvah: ['1f3a5f', 'f7f8fb', 'e6ecf5'], batmitzvah: ['b8487a', 'fff7fb', 'fbe3ef'], kids: ['e0663a', 'fffaf2', 'ffe3d3'], elegant: ['c9a227', '1d1a17', '2a2622'], digital: ['39e888', '0b0f0c', '111a14'], minimal: ['172126', 'ffffff', 'f3f5f4'] };
@@ -116,6 +119,8 @@ function inviteMail(slug, cur, r, site) {
 /* שליחת המיילים שבתור, כמה בכל פעם (מגבלות השרת והספקים). נקרא מהדפדפן בלולאה, ומהמשימה היומית */
 async function sendBatch(s, cur, n) {
   const { sendMail } = require('./_mail'), site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+  if (cur.mail && cur.mail.at && Date.parse(cur.mail.at) > Date.now()) return { done: false, scheduled: cur.mail.at, sent: 0 };
+  if (await holyAt(Date.now())) return { done: false, stop: 'shabbat', sent: 0 };
   const Q = await db('timer_recip?slug=eq.' + s + '&status=eq.queued&select=id,name,email,token&order=id.asc&limit=' + n);
   if (!Q.length) return { done: true, left: 0 };
   const sentN = (await db('timer_recip?slug=eq.' + s + '&status=eq.sent&select=id&limit=10000')).length;
@@ -204,9 +209,17 @@ async function guest(req, res, b) {
       const sent = R.filter(x => x.status === 'sent').length, left = Math.max(0, (+cur.paid.emails || 0) - sent - R.filter(x => x.status === 'queued').length);
       const ids = Array.isArray(b.ids) && b.ids.length ? new Set(b.ids.map(Number)) : null;
       const pick = R.filter(x => (x.status === 'new' || x.status === 'fail' || (b.again && x.status === 'sent')) && (!ids || ids.has(x.id))).slice(0, left).map(x => x.id);
-      await T_put_mail(s, cur, { subject: clean1(b.subject, 140) || 'הזמנה: ' + (c.t || 'האירוע'), note: clean1(b.note, 600) });
+      let at = null;
+      if (b.at) { at = Date.parse(b.at); if (!isFinite(at)) return json(res, 400, { error: 'at' }); if (at < Date.now() + 2 * 60e3) at = null; else if (at > Date.now() + 400 * 864e5) return json(res, 400, { error: 'far' }); }
+      const hz = await holyAt(at || Date.now()); if (hz) return json(res, 400, { error: 'shabbat', end: hz.end });
+      await T_put_mail(s, cur, { subject: clean1(b.subject, 140) || 'הזמנה: ' + (c.t || 'האירוע'), note: clean1(b.note, 600), at: at ? new Date(at).toISOString() : null });
       for (let i = 0; i < pick.length; i += 300) await db('timer_recip?id=in.(' + pick.slice(i, i + 300).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'queued', err: null }) });
-      return json(res, 200, { ok: true, queued: pick.length, left: left - pick.length });
+      return json(res, 200, { ok: true, queued: pick.length, left: left - pick.length, at: at ? new Date(at).toISOString() : null });
+    }
+    /* ביטול תזמון: מחזירים את מי שבתור לרשימה */
+    if (b.act === 'unsched') {
+      await db('timer_recip?slug=eq.' + s + '&status=eq.queued', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'new' }) });
+      await T_put_mail(s, cur, { ...(cur.mail || {}), at: null }); return json(res, 200, { ok: true });
     }
     if (b.act === 'mailpreview') { const m = inviteMail(s, cur, { name: str(b.name, 80) || 'משפחת ישראלי', token: '0'.repeat(24) }, (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '')); return json(res, 200, { html: m.html }); }
     if (b.act === 'sendnext') { const r = await sendBatch(s, cur, 15); return json(res, 200, r); }
@@ -222,6 +235,8 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   try {
     if (req.method === 'GET' && q.unsub) return unsub(req, res, str(q.unsub, 40));
+    /* שליחה מתוזמנת: ה-Worker קורא לזה כל שעה (עם CRON_SECRET) */
+    if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' }); return json(res, 200, await cronSend(120)); }
     if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });

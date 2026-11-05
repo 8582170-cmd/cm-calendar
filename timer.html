@@ -133,6 +133,10 @@ summary{cursor:pointer;font-weight:700}
         <div class="row" style="margin-top:6px"><button class="btn" type="button" id="rcAdd">הוספה לרשימה</button><input type="file" id="rcFile" accept=".csv,.txt" hidden><button class="btn" type="button" id="rcCsv">ייבוא מקובץ CSV</button><span class="st" id="rcMsg"></span></div>
         <div id="rcList" style="margin-top:8px"></div>
         <div id="rcSend" hidden><label style="margin-top:10px">נושא המייל<input id="rcSubj" maxlength="140"></label><label>שורה אישית מכם (לא חובה)<textarea id="rcNote" rows="2" maxlength="600"></textarea></label>
+        <div class="chk" role="radiogroup" aria-label="מתי לשלוח"><label><input type="radio" name="rcWhen" value="now" checked>לשלוח עכשיו</label><label><input type="radio" name="rcWhen" value="at">לתזמן לתאריך ושעה</label></div>
+        <label id="rcAtL" hidden>מתי לשלוח (שעון ישראל)<input type="datetime-local" id="rcAt"></label>
+        <p class="mute" id="rcAtH" hidden style="font-size:13.5px;margin:-4px 0 8px">בשבת ובחג אין שליחה, וגם לא שעה לפני כניסתם ועד חצי שעה אחרי צאתם.</p>
+        <div id="rcSched"></div>
         <div class="row"><button class="btn" type="button" id="rcPrev">תצוגה מקדימה של המייל</button><button class="btn pri" type="button" id="rcGo">שליחה לכל מי שעוד לא קיבל</button></div><p class="st" id="rcProg" aria-live="polite"></p>
         <iframe id="rcFrame" title="תצוגה מקדימה של המייל" hidden style="height:620px;border:1px solid var(--line);margin-top:8px;background:#fff"></iframe></div>
       </div>
@@ -242,22 +246,30 @@ summary{cursor:pointer;font-weight:700}
     if(OWN&&OWN.rsetup){box.innerHTML='<p class="st no">רשימת הנמענים עוד לא הופעלה באתר (חסרה טבלה במסד הנתונים).</p>';return}
     var c=function(k){return R.filter(function(r){return r.status===k}).length};
     box.innerHTML=R.length?'<p class="sum">'+R.length+' נמענים · נשלחו '+c('sent')+' · ממתינים '+(c('new')+c('fail')+c('queued'))+(c('unsub')?' · ביקשו הסרה '+c('unsub'):'')+'</p><details><summary>הרשימה</summary><div style="max-height:260px;overflow:auto"><table><tbody>'+R.map(function(r){return '<tr><td>'+esc(r.name||'')+'</td><td dir="ltr">'+esc(r.email)+'</td><td>'+ST[r.status]+'</td><td>'+(r.status==='sent'?'':'<button class="btn sm" type="button" data-rrm="'+r.id+'">הסרה</button>')+'</td></tr>'}).join('')+'</tbody></table></div></details>':'<p class="mute">עוד אין נמענים.</p>';
-    $('rcSend').hidden=!R.length;if(!$('rcSubj').value)$('rcSubj').value=(OWN.mail&&OWN.mail.subject)||('הזמנה: '+($('t').value.trim()||'האירוע'));if(!$('rcNote').value&&OWN.mail)$('rcNote').value=OWN.mail.note||''}
+    $('rcSend').hidden=!R.length;
+    var q=c('queued'),at=OWN.mail&&OWN.mail.at;$('rcSched').innerHTML=at&&q&&Date.parse(at)>Date.now()?'<p class="st ok">🕒 מתוזמן: '+q+' הזמנות יישלחו ב־'+new Date(at).toLocaleString('he-IL',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' <button class="btn sm" type="button" id="rcUn">ביטול התזמון</button></p>':'';
+    var un=$('rcUn');if(un)un.onclick=function(){un.disabled=true;ownPost({act:'unsched'}).then(function(){$('ownLoad').click()})};if(!$('rcSubj').value)$('rcSubj').value=(OWN.mail&&OWN.mail.subject)||('הזמנה: '+($('t').value.trim()||'האירוע'));if(!$('rcNote').value&&OWN.mail)$('rcNote').value=OWN.mail.note||''}
   function ownPost(body){var s=slugVal();body.slug=s;body.token=store()[s];return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return [r.status,j]})})}
   function parseRc(txt){return txt.split(/\r?\n/).map(function(l){var m=l.match(/[^\s,;<>"']+@[^\s,;<>"']+\.[^\s,;<>"']+/);if(!m)return null;var n=l.replace(m[0],'').replace(/[<>"]/g,'').replace(/[,;\t]+/g,' ').trim();return {name:n,email:m[0]}}).filter(Boolean)}
   function rcAdd(L){var M=$('rcMsg');if(!L.length){M.textContent='לא נמצאו כתובות מייל.';M.className='st no';return}M.textContent='מוסיף…';M.className='st';
     ownPost({act:'radd',list:L}).then(function(a){if(a[0]===200){M.textContent='נוספו '+a[1].added+(a[1].skipped?' ('+a[1].skipped+' כבר היו ברשימה)':'');M.className='st ok';$('rcIn').value='';$('ownLoad').click()}else{M.textContent=a[1].error==='max'?'אפשר עד 10,000 נמענים.':'ההוספה לא הצליחה.';M.className='st no'}})}
+  [].forEach.call(document.querySelectorAll('[name=rcWhen]'),function(r){r.addEventListener('change',function(){var at=document.querySelector('[name=rcWhen]:checked').value==='at';$('rcAtL').hidden=!at;$('rcAtH').hidden=!at;$('rcGo').textContent=at?'תזמון השליחה':'שליחה לכל מי שעוד לא קיבל';
+    if(at&&!$('rcAt').value){var d=new Date(Date.now()+864e5);d.setMinutes(0,0,0);d.setHours(10);$('rcAt').value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}})});
   $('rcAdd').addEventListener('click',function(){rcAdd(parseRc($('rcIn').value))});
   $('rcCsv').addEventListener('click',function(){$('rcFile').click()});
   $('rcFile').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;var r=new FileReader();r.onload=function(){rcAdd(parseRc(String(r.result)))};r.readAsText(f)});
   $('rcList').addEventListener('click',function(e){var b=e.target.closest('[data-rrm]');if(!b)return;b.disabled=true;ownPost({act:'rrm',id:b.dataset.rrm}).then(function(){$('ownLoad').click()})});
   $('rcPrev').addEventListener('click',function(){var R=(OWN&&OWN.recip)||[];ownPost({act:'mailpreview',name:(R[0]&&R[0].name)||''}).then(function(a){if(a[1].html){$('rcFrame').hidden=false;$('rcFrame').srcdoc=a[1].html}})});
   $('rcGo').addEventListener('click',function(){var P=$('rcProg'),B=this;if(!OWN||!OWN.paid){P.textContent='קודם מפעילים את דף ההזמנה עם חבילת מיילים.';P.className='st no';return}
-    if(!confirm('לשלוח את ההזמנה לכל מי שעוד לא קיבל?'))return;B.disabled=true;P.className='st';P.textContent='מכין…';
-    ownPost({act:'send',subject:$('rcSubj').value,note:$('rcNote').value}).then(function(a){if(a[0]!==200){P.textContent=a[1].error==='unpaid'?'קודם מפעילים את דף ההזמנה.':'השליחה לא התחילה.';P.className='st no';B.disabled=false;return}
+    var sch=document.querySelector('[name=rcWhen]:checked').value==='at',atV=$('rcAt').value,atISO=sch&&atV?new Date(atV).toISOString():null;
+    if(sch&&(!atISO||Date.parse(atISO)<Date.now()+120000)){P.textContent='בחרו תאריך ושעה עתידיים.';P.className='st no';return}
+    if(!confirm(sch?'לתזמן את השליחה ל־'+new Date(atISO).toLocaleString('he-IL',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+'?':'לשלוח את ההזמנה לכל מי שעוד לא קיבל?'))return;B.disabled=true;P.className='st';P.textContent='מכין…';
+    ownPost({act:'send',subject:$('rcSubj').value,note:$('rcNote').value,at:atISO}).then(function(a){if(a[0]!==200){P.textContent=a[1].error==='unpaid'?'קודם מפעילים את דף ההזמנה.':a[1].error==='shabbat'?'הזמן שבחרתם בשבת או בחג (או קרוב לכניסתם או ליציאתם). בחרו זמן אחר.':'השליחה לא התחילה.';P.className='st no';B.disabled=false;return}
+      if(a[1].at&&a[1].queued){P.textContent='✓ מתוזמן: '+a[1].queued+' הזמנות יישלחו ב־'+new Date(a[1].at).toLocaleString('he-IL',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+'.';P.className='st ok';B.disabled=false;$('ownLoad').click();return}
       if(!a[1].queued){P.textContent=a[1].left===0?'נגמרו המיילים בחבילה. אפשר להוסיף מיילים למעלה.':'אין למי לשלוח: כולם כבר קיבלו.';B.disabled=false;return}
       var total=a[1].queued,done=0;(function next(){ownPost({act:'sendnext'}).then(function(x){var j=x[1];done+=j.sent||0;P.textContent='נשלחו '+done+' מתוך '+total+'…';
         if(j.stop==='limit'){P.textContent='נשלחו '+done+' מתוך '+total+'. הגענו למגבלת השליחה היומית, והשאר יישלח אוטומטית בימים הקרובים.';B.disabled=false;$('ownLoad').click();return}
+        if(j.stop==='shabbat'){P.textContent='נשלחו '+done+'. עכשיו שבת או חג, והשאר יישלח אוטומטית אחרי צאתם.';B.disabled=false;$('ownLoad').click();return}
         if(j.stop==='quota'){P.textContent='נשלחו '+done+'. נגמרו המיילים בחבילה.';B.disabled=false;$('ownLoad').click();return}
         if(j.done||x[0]!==200){P.textContent=x[0]===200?'✓ נשלחו '+done+' הזמנות'+(j.failed?' ('+j.failed+' נכשלו)':''):'השליחה נעצרה. אפשר ללחוץ שוב כדי להמשיך.';P.className=x[0]===200?'st ok':'st no';B.disabled=false;$('ownLoad').click();return}
         next()}).catch(function(){P.textContent='השליחה נעצרה (חיבור). אפשר ללחוץ שוב כדי להמשיך.';P.className='st no';B.disabled=false})})()})});
