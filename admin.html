@@ -184,7 +184,7 @@ function mailSection(){return '<section id="mlSec"><h2>שליחת מייל מע�
   '<div class="row"><button class="btn" type="button" onclick="mailPrev()">תצוגה מקדימה</button><button class="btn primary" type="button" onclick="mailSend(this)">שליחה</button><span class="sub" id="mlMsg" role="status"></span></div><iframe id="mlPrev" title="תצוגה מקדימה" style="width:100%;height:0;border:1px solid #dde;border-radius:10px;margin-top:8px;background:#fff" hidden></iframe></section>'}
 window.mailPrev=mailPrev;window.mailSend=mailSend;
 function mailVals(){const g=i=>document.getElementById(i).value;return {to:g('mlTo').trim(),subject:g('mlSub').trim(),title:g('mlTitle').trim(),body:g('mlBody'),button:g('mlBtn').trim(),url:g('mlUrl').trim()}}
-function mailCompose(o){const s=(i,v)=>{document.getElementById(i).value=v||''};s('mlTo',o.to);s('mlSub',o.subject);s('mlTitle',o.title);s('mlBody',o.body);s('mlBtn','');s('mlUrl','');document.getElementById('mlSec').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>{const b=document.getElementById('mlBody');b.focus();b.setSelectionRange(0,0)},400)}
+function mailCompose(o){const s=(i,v)=>{document.getElementById(i).value=v||''};s('mlTo',o.to);s('mlSub',o.subject);s('mlTitle',o.title);s('mlBody',o.body);s('mlBtn','');s('mlUrl','');const sec=document.getElementById('mlSec');if(window.openSection)openSection(sec);sec.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>{const b=document.getElementById('mlBody');b.focus();b.setSelectionRange(0,0)},400)}
 function mailPrev(){api({action:'mailcompose',preview:1,...mailVals()}).then(d=>{const f=document.getElementById('mlPrev');f.hidden=false;f.srcdoc=d.html;f.style.height='520px'}).catch(e=>{document.getElementById('mlMsg').textContent='שגיאה: '+e.message})}
 function mailSend(b){const v=mailVals(),M=document.getElementById('mlMsg');if(!confirm('לשלוח את המייל אל '+v.to+'?'))return;b.disabled=true;M.textContent='שולח…';
   api({action:'mailcompose',...v}).then(d=>{M.textContent='✓ נשלח (דרך '+d.via+')';['mlTo','mlSub','mlTitle','mlBody','mlBtn','mlUrl'].forEach(i=>document.getElementById(i).value='')}).catch(e=>{M.textContent='שגיאה: '+e.message}).finally(()=>b.disabled=false)}
@@ -621,6 +621,8 @@ function bind(){
   function bar(){if(document.querySelector('.fold-all')||!document.querySelector('section>h2'))return;var b=document.createElement('div');b.className='fold-all';
     b.innerHTML='<button type="button" data-f="1">כיווץ הכל</button><button type="button" data-f="0">פתיחת הכל</button>';
     b.onclick=function(e){var t=e.target.closest('[data-f]');if(!t)return;O={};if(t.dataset.f==='0')document.querySelectorAll('section').forEach(function(sec){var k=key(sec);if(k)O[k]=1});apply()};document.body.appendChild(b)}
+  /* פתיחה של חלק מתוך הקוד (למשל "✉ תשובה" פותח את שליחת המייל) */
+  window.openSection=function(sec){var k=key(sec);if(k){O[k]=1;sec.classList.remove('fold')}};
   apply();bar();
 })();
 </script>
