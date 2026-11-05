@@ -15,6 +15,9 @@ async function saveSnap(snap) {
 const KINDS = ['paid', 'lite', 'sample', 'countdown', 'browser'];
 const REPRINT = 30 * 60 * 1000; /* הדפסה חוזרת תוך 30 דקות (תקלה במדפסת) לא נספרת */
 const GRACE = 24 * 3600 * 1000; /* 24 שעות מההדפסה הראשונה של לוח (לפי המזהה שלו בחשבון): אפשר לתקן ולהדפיס שוב בלי שייספר */
+const FIXES = 3, SIMILAR = 0.6; /* עד 3 תיקונים, ורק אם רוב הלוח נשאר כמו שהיה (ולא לוח אחר לגמרי, למשל למשפחה אחרת) */
+const partsOf = v => String(v || '').split(',').filter(x => /^[0-9a-f]{10}$/.test(x));
+function similar(a, b) { const A = new Set(partsOf(a)), B = new Set(partsOf(b)); if (!A.size || !B.size) return 0; let n = 0; A.forEach(x => { if (B.has(x)) n++; }); return n / (A.size + B.size - n); }
 /* גרסה שכבר הודפסה (אותה "טביעת אצבע" של התוכן): אפשר להדפיס שוב בלי הגבלה, עד חודש אחרי סוף השנה של הלוח */
 async function yearEnd(yr) {
   const m = /^([hg])(\d{4})$/.exec(String(yr || '')); if (!m) return null;
@@ -25,15 +28,19 @@ async function yearEnd(yr) {
 async function freeReprint(user, b) {
   const cid = /^[\w-]{6,64}$/.test(String(b.cid || '')) ? String(b.cid) : '', vh = /^[0-9a-f]{64}$/.test(String(b.vh || '')) ? String(b.vh) : '';
   let rows = [];
-  try { rows = await db('downloads?select=created_at,cid,vh,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&order=created_at.desc&limit=200') || []; }
+  try { rows = await db('downloads?select=created_at,kind,cid,vh,parts,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&order=created_at.desc&limit=200') || []; }
   catch (e) { try { rows = await db('downloads?select=created_at,cal&kind=in.(paid,reprint)&user_id=eq.' + user.id + '&order=created_at.desc&limit=1') || []; } catch (x) {} }
   const now = Date.now();
   if (rows[0] && now - new Date(rows[0].created_at) < REPRINT) return { free: true, why: 'quick' };
   if (cid) {
     const mine = rows.filter(r => r.cid === cid);
     const first = mine.length ? mine[mine.length - 1] : null;
-    if (first && now - new Date(first.created_at) < GRACE) return { free: true, why: 'grace', until: new Date(new Date(first.created_at).getTime() + GRACE).toISOString() };
     if (vh && mine.some(r => r.vh === vh)) { const end = await yearEnd(b.yr); if (!end || now < end.getTime()) return { free: true, why: 'same' }; }
+    /* תיקון בתוך 24 שעות מההדפסה הראשונה של הלוח: רק אם רוב התוכן זהה, ועד 3 פעמים */
+    if (first && now - new Date(first.created_at) < GRACE && b.parts && first.parts && similar(b.parts, first.parts) >= SIMILAR) {
+      const fixes = mine.filter(r => r.kind === 'reprint' && r.parts && r.parts !== first.parts && new Date(r.created_at) > new Date(first.created_at)).length;
+      if (fixes < FIXES) return { free: true, why: 'grace', fixesLeft: FIXES - fixes - 1, until: new Date(new Date(first.created_at).getTime() + GRACE).toISOString() };
+    }
   }
   return { free: false };
 }
@@ -52,7 +59,7 @@ module.exports = async (req, res) => {
     if (info.used != null) {
       const fr = await freeReprint(user, b);
       /* בדיקה בלבד (לפני ההדפסה, כדי להציג ללקוח אם היא חינם) */
-      if (b.dry) return json(res, 200, { free: fr.free, why: fr.why || null, until: fr.until || null, left: info.left, limit: info.limit });
+      if (b.dry) return json(res, 200, { free: fr.free, why: fr.why || null, until: fr.until || null, fixesLeft: fr.fixesLeft == null ? null : fr.fixesLeft, left: info.left, limit: info.limit });
       if (fr.free) kind = 'reprint';
       else if (info.left <= 0) return json(res, 409, { error: 'used', limit: info.limit, plan: info.plan });
       /* הדפסות של מסלול אחד: רק לאותה שנה (לפי הלוח הראשון שהודפס מאז הרכישה) */
@@ -70,8 +77,8 @@ module.exports = async (req, res) => {
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) email = null;
   let snap = null; try { snap = await saveSnap(b.snap); } catch (e) {}
   try {
-    const cid = /^[\w-]{6,64}$/.test(String(b.cid || '')) ? String(b.cid) : null, vh = /^[0-9a-f]{64}$/.test(String(b.vh || '')) ? String(b.vh) : null;
-    await db('downloads', { meta: { ...(require('./_lib').reqMeta(req) || {}), ...(cid ? { cid } : {}), ...(vh ? { vh } : {}) }, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
+    const cid = /^[\w-]{6,64}$/.test(String(b.cid || '')) ? String(b.cid) : null, vh = /^[0-9a-f]{64}$/.test(String(b.vh || '')) ? String(b.vh) : null, parts = partsOf(b.parts).slice(0, 600).join(',') || null;
+    await db('downloads', { meta: { ...(require('./_lib').reqMeta(req) || {}), ...(cid ? { cid } : {}), ...(vh ? { vh } : {}), ...(parts ? { parts } : {}) }, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
       user_id: user ? user.id : null, email: email ? email.toLowerCase() : null, kind,
       plan: info ? info.plan : s(b.plan, 20), cal: (info && /^[hg]\d{4}$/.test(String(b.yr || '')) ? b.yr + ' · ' : '') + (s(b.cal, 110) || ''), view: s(b.view, 20), size: s(b.size, 30),
       pages: Math.max(0, Math.min(999, parseInt(b.pages, 10) || 0)) || null, snap, page: (s(b.page, 20) || 'app') + (b.kind === 'browser' ? (b.wm ? ' · עם סימן מים' : ' · בלי סימן מים') : '') }) });
