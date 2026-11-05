@@ -95,9 +95,11 @@ summary{cursor:pointer;font-weight:700}
       <h3>🌐 להטמעה באתר</h3>
       <textarea id="oEmb" rows="3" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oEmb">העתקת הקוד</button></div>
       <h3>✉️ למייל או לניוזלטר</h3>
-      <p class="mute" style="font-size:14.5px;margin:0 0 4px">תמונה שמתעדכנת בכל פתיחה של המייל (מייל לא יכול להריץ שעון חי). מדביקים את הקוד בעורך ה־HTML של המייל.</p>
+      <p class="mute" style="font-size:14.5px;margin:0 0 4px">תמונה שמתעדכנת בכל פתיחה של המייל (מייל לא יכול להריץ שעון חי). לוחצים "העתקה למייל" ומדביקים (Ctrl+V) ישר בגוף המייל, בג׳ימייל, באאוטלוק או בכל תוכנת דואר.</p>
       <div class="mailprev" id="oMailPrev"></div>
-      <textarea id="oMail" rows="4" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oMail">העתקת הקוד</button></div>
+      <div class="row"><button class="btn pri" type="button" id="cpMail">העתקה למייל</button></div>
+      <details style="border:0;padding:4px 0"><summary style="font-weight:600;font-size:14.5px">קוד HTML (לעורך HTML או לתוכנת דיוור)</summary>
+      <textarea id="oMail" rows="4" readonly></textarea><div class="row"><button class="btn" type="button" data-copy="oMail">העתקת הקוד</button></div></details>
     </div>
   </div>
 </div>
@@ -190,6 +192,10 @@ summary{cursor:pointer;font-weight:700}
   }
   ['t','d','h','u','lang','z','sz'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
   ['c','b'].forEach(function(i){$(i).addEventListener('input',function(){custom=true;upd()})});
+  /* העתקה "מעוצבת": מדביקים בגוף המייל ומקבלים את התמונה עצמה ולא את הקוד */
+  $('cpMail').addEventListener('click',function(){var b=this,html=$('oMail').value,done=function(ok){b.textContent=ok?'הועתק ✓ עכשיו מדביקים במייל':'לא הצליח. סמנו את התצוגה למעלה והעתיקו';setTimeout(function(){b.textContent='העתקה למייל'},2500)};
+    var fallback=function(){var el=$('oMailPrev'),r=document.createRange();el.querySelectorAll('img').forEach(function(i){i.src=i.src});r.selectNodeContents(el);var sel=getSelection();sel.removeAllRanges();sel.addRange(r);var ok=false;try{ok=document.execCommand('copy')}catch(e){}sel.removeAllRanges();done(ok)};
+    try{if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([$('oLink').value],{type:'text/plain'})})]).then(function(){done(true)},fallback)}else fallback()}catch(e){fallback()}});
   document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var x=$(b.dataset.copy);x.select();try{navigator.clipboard.writeText(x.value)}catch(er){document.execCommand('copy')}var o=b.textContent;b.textContent='הועתק ✓';setTimeout(function(){b.textContent=o},1500)});
   showMine();setTheme('classic');
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
