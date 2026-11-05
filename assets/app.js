@@ -26,7 +26,9 @@ function ourPrint(){OURPRINT=true;try{window.print()}finally{setTimeout(()=>{OUR
 window.addEventListener('beforeprint',()=>{if(OURPRINT||Date.now()-BRPRINT_T<5000)return;BRPRINT_T=Date.now();try{logDl('browser',{wm:PLAN().watermark?1:0})}catch(e){}});
 /* לוח ספירה בלי מסלול: היכולות של "ספירה בסיסית" (ספירה עד 40 יום בחינם לכולם) */
 const canF=f=>SAMPLE?true:!LP?true:(CDMODE&&LP.current().id==='free'&&LP.byId('cdbasic').id==='cdbasic')?!!LP.byId('cdbasic').features[f]:LP.can(f);
-function monthCut(months){const n=PLAN().months;return n<months.length&&months[n]?months[n].days[0]:null}
+/* מגבלת החודשים של המסלול נספרת בלי החודשים החלקיים שלפני תחילת השנה ("התחלה מתאריך מדויק") */
+const planMonths=months=>PLAN().months+(months||[]).filter(m=>/^pre-/.test(m.key)).length;
+function monthCut(months){const n=planMonths(months);return n<months.length&&months[n]?months[n].days[0]:null}
 function beforeCut(d,months){const c=monthCut(months);return !c||d<c}
 const stage=$('#stage');
 /* ספריית הלוח העברי לא נטענה: מנסים שוב לבד משרת אחר, ורק אם גם זה נכשל מציגים כפתור "נסו שוב" */
@@ -2018,7 +2020,7 @@ function renderNow(){
   }
   emitExtras('start');
   if(view==='month'){
-    const shownM=SAMPLE?months.filter(m=>m.key===SAMPLE.key):months.slice(0,PLAN().months);
+    const shownM=SAMPLE?months.filter(m=>m.key===SAMPLE.key):months.slice(0,planMonths(months));
     shownM.forEach(mo=>{
       if(s.layout==='split'){
         const pi=pageShell(mo.title+' · תמונה','mi-'+mo.key);
@@ -5139,7 +5141,7 @@ async function sxIssues(){const s=state.s,out=[],ok=[];const [W]=pageDims();
   if(low.length)out.push({t:low.length===1?'התמונה של '+slotLabel(low[0])+' קטנה מדי':low.length+' תמונות קטנות מדי',s:'בגודל הדף שבחרתם הן עלולות לצאת מטושטשות. כדאי להחליף בקובץ המקורי.',b:'החלפה',f:()=>sxGoSlot(low[0],true)});
   const noY=state.events.filter(e=>e.kind==='birthday'&&e.rec!=='once'&&!String(e.year||'').trim());
   if(noY.length)out.push({t:noY.length===1?'ליום ההולדת של '+(noY[0].name||'')+' אין שנה':noY.length+' ימי הולדת בלי שנת לידה',s:'בלי שנה לא יוצג הגיל.',b:'הוספת שנה',f:()=>openEventEditor({id:noY[0].id})});
-  let crowd=null,cn=0;try{for(const mo of (monthsCache||[]).slice(0,PLAN().months))for(const d of mo.days){const n=eventsOn(d,new HDate(d)).length;if(n>=3&&n>cn){cn=n;crowd=d}}}catch(e){}
+  let crowd=null,cn=0;try{for(const mo of (monthsCache||[]).slice(0,planMonths(monthsCache)))for(const d of mo.days){const n=eventsOn(d,new HDate(d)).length;if(n>=3&&n>cn){cn=n;crowd=d}}}catch(e){}
   if(crowd){const hd=new HDate(crowd);out.push({t:cn+' אירועים ב־'+gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())),s:'התא צפוף, והטקסט יוקטן.',b:'הצגה',f:()=>sxGoDay(iso(crowd))})}
   else ok.push('אין ימים צפופים מדי');
   if(s.cover&&!((state.cover||{}).title||'').trim())out.push({t:'בדף השער אין כותרת',s:'למשל: לוח השנה של משפחת כהן',b:'הצגה',f:()=>{const w=stage.querySelector('.sheet-wrap[data-key="cover"]');if(w){w.scrollIntoView({block:'start',behavior:'smooth'});setTimeout(()=>{const t=w.querySelector('.cover-title');if(t)t.focus()},500)}}});
