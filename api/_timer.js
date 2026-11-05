@@ -11,6 +11,25 @@ const SLUG = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 const RESERVED = new Set(['admin', 'api', 'new', 'edit', 'test', 'timer', 'myluach', 'www', 'login', 'null', 'undefined']);
 const key = s => 'timers/' + s + '.json';
 const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+/* תמונה מותרת רק מהדלי הציבורי שלנו (שהועלתה דרך הבונה) */
+function okImg(u) { u = String(u || ''); const M = (() => { try { return require('./_r2').media(); } catch (e) { return null; } })();
+  return u.length < 300 && /\/timers\/img\/[0-9]{6}\/[a-f0-9]{24}\.jpg$/.test(u) && (u.startsWith('https://media.myluach.org/') || (M && u.startsWith(M.url + '/'))); }
+/* העלאת תמונה: עד 20 לשעה מכל כתובת IP, עד 400KB, רק JPEG (הדפדפן מקטין וממיר לפני ההעלאה) */
+async function upload(req, res, b) {
+  const R2 = require('./_r2'); if (!R2.media()) return json(res, 503, { error: 'storage' });
+  const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.img || '')); if (!m) return json(res, 400, { error: 'type' });
+  const buf = Buffer.from(m[1], 'base64'); if (buf.length > 400000) return json(res, 413, { error: 'size' });
+  if (!(buf[0] === 0xFF && buf[1] === 0xD8)) return json(res, 400, { error: 'type' });
+  const ip = ((require('./_lib').reqMeta(req) || {}).ip || 'x').replace(/[^0-9a-f.:]/gi, '').slice(0, 45), hr = new Date().toISOString().slice(0, 13).replace(/\D/g, '');
+  const rk = 'timers/rl/' + hr + '/' + ip.replace(/:/g, '_') + '.json';
+  let n = 0; try { const r = await fetch(R2.presign('GET', rk, 60)); if (r.ok) n = (await r.json()).n || 0; } catch (e) {}
+  if (n >= 20) return json(res, 429, { error: 'rate' });
+  const path = 'timers/img/' + new Date().toISOString().slice(0, 7).replace('-', '') + '/' + crypto.randomBytes(12).toString('hex') + '.jpg';
+  const P = R2.mediaPut(path); const r = await fetch(P.upload, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: buf });
+  if (!r.ok) throw new Error('r2 put ' + r.status);
+  try { await fetch(R2.presign('PUT', rk, 60), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: n + 1 }) }); } catch (e) {}
+  return json(res, 200, { ok: true, url: P.url });
+}
 function clean(c) {
   c = c || {};
   return {
@@ -18,7 +37,8 @@ function clean(c) {
     z: /^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(c.z || '') ? c.z : 'Asia/Jerusalem', u: ['d', 'w', 'm'].includes(c.u) ? c.u : 'd',
     th: /^[a-z]{2,16}$/.test(c.th || '') ? c.th : 'classic', c: /^[0-9a-f]{6}$/i.test(c.c || '') ? c.c : '', b: /^([0-9a-f]{6}|none)$/i.test(c.b || '') ? c.b : '',
     lang: c.lang === 'en' ? 'en' : 'he', l: c.l === 'stack' ? 'stack' : 'row', fr: ['1', '2'].includes(String(c.fr)) ? String(c.fr) : '0',
-    wp: ['bottom', 'none'].includes(c.wp) ? c.wp : 'top', wd: ['h', 'b'].includes(c.wd) ? c.wd : 'g', ww: String(c.ww) === '0' ? '0' : '1', wt: String(c.wt) === '0' ? '0' : '1', ns: String(c.ns) === '1' ? '1' : '0'
+    wp: ['bottom', 'none'].includes(c.wp) ? c.wp : 'top', wd: ['h', 'b'].includes(c.wd) ? c.wd : 'g', wh: ['o', 'c'].includes(c.wh) ? c.wh : 's', ww: String(c.ww) === '0' ? '0' : '1', wt: String(c.wt) === '0' ? '0' : '1', ns: String(c.ns) === '1' ? '1' : '0',
+    p: okImg(c.p) ? c.p : '', ps: ['rect', 'wide'].includes(c.ps) ? c.ps : 'circle'
   };
 }
 async function get(s) {
@@ -43,7 +63,9 @@ module.exports = async (req, res) => {
       return json(res, 200, { cfg: o.cfg });
     }
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });
-    const b = readBody(req) || {}, s = str(b.slug, 40).toLowerCase();
+    const b = readBody(req) || {};
+    if (b.img) return upload(req, res, b);
+    const s = str(b.slug, 40).toLowerCase();
     if (!SLUG.test(s) || RESERVED.has(s)) return json(res, 400, { error: 'slug' });
     const cfg = clean(b.cfg); if (!cfg.d) return json(res, 400, { error: 'date' });
     const cur = await get(s);

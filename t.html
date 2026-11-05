@@ -38,6 +38,12 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
 .stack .clock .n{font-size:clamp(20px,7vw,46px)}
 .sep{font:800 clamp(20px,7vw,46px)/1 var(--nfont);color:var(--acc);padding:10px 2px 0;flex:none}
 .stack .clock .u{max-width:120px}
+/* תמונה */
+.ph{display:block;margin:0 auto 10px;object-fit:cover;border:3px solid var(--acc)}
+.ph-circle{width:clamp(84px,24vw,130px);height:clamp(84px,24vw,130px);border-radius:50%}
+.ph-rect{width:clamp(110px,34vw,190px);height:clamp(84px,24vw,140px);border-radius:14px}
+.ph-wide{width:100%;height:clamp(110px,30vw,220px);border-radius:12px;border:0}
+body.embed .ph-wide{height:clamp(90px,26vw,170px)}
 /* מסגרות */
 .fr1 .u{background:transparent;border:2px solid var(--acc)}
 .fr2 .clock,.fr2 .top{border:2px solid var(--acc);border-radius:16px;padding:8px 6px}
@@ -65,13 +71,27 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
     digital:{acc:'#39e888',card:'#0b0f0c',box:'#111a14',ink:'#d9f5e3',mute:'#7fa58d',bline:'#1f3327',nf:"Orbitron,monospace",tf:"Orbitron,'Secular One',sans-serif"},
     minimal:{acc:'#172126',card:'#ffffff',box:'#ffffff',ink:'#172126',mute:'#6b7679',bline:'#dde2df',nf:"Assistant,sans-serif",tf:"Assistant,sans-serif"}
   };
-  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה */
+  /* שקיעה (נוסחת NOAA המקוצרת), בשעות מקומיות. המיקום לפי אזור הזמן שנבחר (העיר הראשית שלו) */
+  var LL={'Asia/Jerusalem':[31.778,35.235],'America/New_York':[40.71,-74.0],'America/Chicago':[41.88,-87.63],'America/Los_Angeles':[34.05,-118.24],'Europe/London':[51.51,-0.13],'Europe/Paris':[48.86,2.35],'Europe/Moscow':[55.76,37.62],'Australia/Sydney':[-33.87,151.21],'America/Sao_Paulo':[-23.55,-46.63],'Africa/Johannesburg':[-26.2,28.05],'Europe/Kiev':[50.45,30.52],'Europe/Kyiv':[50.45,30.52],'America/Toronto':[43.65,-79.38],'America/Montreal':[45.5,-73.57],'Europe/Antwerp':[51.22,4.4],'Europe/Brussels':[50.85,4.35],'Europe/Zurich':[47.37,8.54],'America/Argentina/Buenos_Aires':[-34.6,-58.38],'America/Mexico_City':[19.43,-99.13],'Europe/Berlin':[52.52,13.4],'Europe/Rome':[41.9,12.5],'Europe/Amsterdam':[52.37,4.9],'Europe/Vienna':[48.21,16.37]};
+  function sunsetLocal(y,m,d,tz,offH){var c=LL[tz]||[32,offH*15],lat=c[0],lng=c[1],R=Math.PI/180;
+    var N=Math.round((Date.UTC(y,m-1,d)-Date.UTC(y,0,0))/864e5),lh=lng/15,t=N+(18-lh)/24,M=.9856*t-3.289;
+    var L=(M+1.916*Math.sin(M*R)+.02*Math.sin(2*M*R)+282.634+720)%360,RA=(Math.atan(.91764*Math.tan(L*R))/R+720)%360;
+    RA=(RA+Math.floor(L/90)*90-Math.floor(RA/90)*90)/15;var sd=.39782*Math.sin(L*R),cd=Math.cos(Math.asin(sd));
+    var ch=(Math.cos(90.833*R)-sd*Math.sin(lat*R))/(cd*Math.cos(lat*R));if(ch>1||ch<-1)return null;
+    var H=Math.acos(ch)/R/15,T=H+RA-.06571*t-6.622;return ((T-lh+offH)%24+48)%24}
   function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];n%=1000;var r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
-  function whenText(ms,tz,EN,o,hasTime){
+  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה,
+     wh = התאריך העברי לאירוע בערב: s לפי השקיעה (ברירת מחדל), o "אור ל־", c לפי התאריך הלועזי בלבד */
+  function whenText(ms,tz,EN,o,hasTime,dStr,hStr){
     var F=function(loc,op){op.timeZone=tz;try{return new Intl.DateTimeFormat(loc,op)}catch(e){delete op.timeZone;return new Intl.DateTimeFormat(loc,op)}},d=new Date(ms),out=[];
     var greg=F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
-    if(o.wd==='h'||o.wd==='b'){try{var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(d).forEach(function(x){p[x.type]=x.value});
-      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year)}catch(e){}}
+    if(o.wd==='h'||o.wd==='b'){try{
+      var after=false,dm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(dStr||''),hm=/^(\d{1,2}):(\d{2})$/.exec(hStr||'');
+      if(o.wh!=='c'&&dm&&hm){var p0={};F('en-US',{hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).forEach(function(x){p0[x.type]=x.value});
+        var offH=(Date.UTC(+p0.year,+p0.month-1,+p0.day,+p0.hour%24,+p0.minute)-ms)/36e5,ss=sunsetLocal(+dm[1],+dm[2],+dm[3],tz,offH);after=ss!=null&&(+hm[1]+hm[2]/60)>=ss}
+      var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(new Date(ms+(after?864e5:0))).forEach(function(x){p[x.type]=x.value});
+      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year);
+      if(after&&o.wh==='o')heb=(EN?'Eve of ':'אור ל')+heb}catch(e){}}
     var date=o.wd==='h'?(heb||greg):o.wd==='b'&&heb?greg+' · '+heb:greg;
     if(o.ww!=='0')out.push(F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
     out.push(date);
@@ -99,7 +119,7 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
         var off=function(ms){var p={};f.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms};
         var u=guess-off(guess);return guess-off(u)}catch(e){return guess}}
     var to=target();
-    var when=whenText(to,tz,EN,{wd:o.wd,ww:String(o.ww==null?'1':o.ww),wt:String(o.wt==null?'1':o.wt)},!!t),wp=o.wp==='bottom'||o.wp==='none'?o.wp:'top',noSec=String(o.ns)==='1';
+    var when=whenText(to,tz,EN,{wd:o.wd,wh:o.wh,ww:String(o.ww==null?'1':o.ww),wt:String(o.wt==null?'1':o.wt)},!!t,d,hm),wp=o.wp==='bottom'||o.wp==='none'?o.wp:'top',noSec=String(o.ns)==='1';
     function parts(ms){var s=Math.max(0,Math.floor(ms/1000)),out=[],days=Math.floor(s/86400);s-=days*86400;
       if(unit==='m'&&days>=28){var now=new Date(),end=new Date(now.getTime()+ms),mo=0,add=function(k){var x=new Date(now);x.setMonth(x.getMonth()+k);return x};
         while(add(mo+1)<=end)mo++;var rest=Math.floor((end-add(mo))/1000);days=Math.floor(rest/86400);s=rest-days*86400;out.push(['months',mo])}
@@ -112,7 +132,8 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
     function layout(P2){if(!stack)return '<div class="clock">'+P2.map(cell).join('')+'</div>';
       var top=P2.filter(function(p){return DK[p[0]]}),clk=P2.filter(function(p){return !DK[p[0]]});
       return '<div class="top">'+top.map(cell).join('')+'</div><div class="clock">'+clk.map(cell).join('<div class="sep" aria-hidden="true">:</div>')+'</div>'}
-    var wl='<div class="when">'+esc(when)+'</div>',head='<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
+    var pu=String(o.p||''),photo=/^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(pu)||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(pu)?'<img class="ph ph-'+(['rect','wide'].indexOf(o.ps)>=0?o.ps:'circle')+'" src="'+esc(pu)+'" alt="">':'';
+    var wl='<div class="when">'+esc(when)+'</div>',head=photo+'<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
     var credit=(wp==='bottom'?'<div class="when" style="margin-top:8px">'+esc(when)+'</div>':'')+'<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
     function draw(){
       var left=to-Date.now();
@@ -125,7 +146,7 @@ h1{margin:0 0 2px;font:400 clamp(19px,5vw,32px)/1.25 var(--tfont);color:var(--ac
     iv=setInterval(draw,1000);draw();
   }
   if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){start(j.cfg||{})}).catch(function(){start({})})}
-  else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr'),wp:Q.get('wp'),wd:Q.get('wd'),ww:Q.get('ww'),wt:Q.get('wt'),ns:Q.get('ns')});
+  else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr'),wp:Q.get('wp'),wd:Q.get('wd'),ww:Q.get('ww'),wt:Q.get('wt'),ns:Q.get('ns'),p:Q.get('p'),ps:Q.get('ps'),wh:Q.get('wh')});
 })();
 </script>
 </body>

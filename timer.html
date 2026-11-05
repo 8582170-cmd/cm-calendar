@@ -74,9 +74,13 @@ summary{cursor:pointer;font-weight:700}
 <div class="grid">
   <form class="box" id="f" onsubmit="return false">
     <label>שם האירוע (הכותרת)<input id="t" maxlength="90" placeholder="למשל: החתונה של שירה ויוסי"></label>
+    <label for="pbtn">תמונה (לא חובה)</label>
+    <div class="row" style="margin:4px 0 4px"><input type="file" id="pf" accept="image/*" hidden><button class="btn" type="button" id="pbtn">בחירת תמונה</button><select id="ps" style="width:auto;margin:0" aria-label="צורת התמונה"><option value="circle">עגולה</option><option value="rect">מלבן</option><option value="wide">רחבה (באנר)</option></select><button class="btn" type="button" id="prm" hidden>הסרה</button></div>
+    <p class="st" id="pst" aria-live="polite" style="margin:0 0 10px"></p>
     <div class="two"><label>תאריך<input type="date" id="d" required></label><label>שעה (לא חובה)<input type="time" id="h"></label></div>
     <label>איך להציג<select id="u"><option value="d">ימים, שעות, דקות ושניות</option><option value="w">שבועות, ימים, שעות…</option><option value="m">חודשים, ימים, שעות…</option></select></label>
     <div class="two"><label>תאריך היעד<select id="wp"><option value="top">למעלה, מתחת לכותרת</option><option value="bottom">למטה, מתחת לשעון</option><option value="none">לא להציג</option></select></label><label>סוג התאריך<select id="wd"><option value="g">לועזי</option><option value="h">עברי</option><option value="b">עברי ולועזי</option></select></label></div>
+    <label id="whL">תאריך עברי לאירוע בערב<select id="wh"><option value="s">לפי השקיעה (אחרי השקיעה: היום העברי הבא)</option><option value="o">"אור ל־" (למשל: אור לי״ד בניסן)</option><option value="c">לפי התאריך הלועזי, בלי שקיעה</option></select></label>
     <div class="chk"><label><input type="checkbox" id="ww" checked>יום בשבוע</label><label><input type="checkbox" id="wt" checked>שעת היעד</label><label><input type="checkbox" id="sec" checked>שניות בספירה</label></div>
     <div class="two"><label>פריסה<select id="l"><option value="row">הכול בשורה אחת</option><option value="stack">ימים למעלה, שעון מתחת</option></select></label><label>מסגרת<select id="fr"><option value="0">לפי העיצוב</option><option value="1">מסגרת לכל מספר</option><option value="2">מסגרת אחת מסביב</option></select></label></div>
     <div style="font-weight:600;font-size:15px">עיצוב</div>
@@ -128,7 +132,20 @@ summary{cursor:pointer;font-weight:700}
   var TH=[['classic','קלאסי','1e5a63','ffffff','5d6873'],['wedding','חתונה','a8646f','fff8f6','8b6b70'],['barmitzvah','בר מצווה','1f3a5f','f7f8fb','5a6a82'],['batmitzvah','בת מצווה','b8487a','fff7fb','8f6177'],
            ['kids','ילדים','e0663a','fffaf2','7a6252'],['elegant','אלגנטי','c9a227','1d1a17','b8ae9c'],['digital','דיגיטלי','39e888','0b0f0c','7fa58d'],['minimal','מינימלי','172126','ffffff','6b7679']];
   var SZ={full:['100%',260],l:[800,300],m:[560,240],s:[360,210]};
-  var th='classic',custom=false;
+  var th='classic',custom=false,photo='';
+  /* תמונה: מקטינים בדפדפן (עד 900 פיקסלים), ממירים ל-JPEG ומעלים */
+  function pstat(m,c){$('pst').textContent=m;$('pst').className='st'+(c?' '+c:'')}
+  function setPhoto(u){photo=u||'';$('prm').hidden=!photo;$('pbtn').textContent=photo?'החלפת תמונה':'בחירת תמונה';upd()}
+  $('pbtn').addEventListener('click',function(){$('pf').click()});
+  $('prm').addEventListener('click',function(){setPhoto('');pstat('')});
+  $('ps').addEventListener('change',function(){upd()});
+  $('pf').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;if(!/^image\//.test(f.type)){pstat('אפשר לבחור רק קובץ תמונה.','no');return}
+    pstat('מכין את התמונה…');var im=new Image(),url=URL.createObjectURL(f);
+    im.onload=function(){URL.revokeObjectURL(url);var k=Math.min(1,900/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+      var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);var q=.85,data=cv.toDataURL('image/jpeg',q);while(data.length>520000&&q>.4){q-=.15;data=cv.toDataURL('image/jpeg',q)}
+      pstat('מעלה…');fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({img:data})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+        if(a[0]===200&&a[1].url){setPhoto(a[1].url);pstat('התמונה נוספה ✓','ok')}else pstat(a[0]===429?'הועלו יותר מדי תמונות בשעה האחרונה. נסו שוב מאוחר יותר.':'ההעלאה לא הצליחה. נסו תמונה אחרת.','no')}).catch(function(){pstat('ההעלאה לא הצליחה. בדקו את החיבור.','no')})};
+    im.onerror=function(){pstat('לא הצלחנו לקרוא את התמונה. נסו קובץ JPG או PNG.','no')};im.src=url});
   $('ths').innerHTML=TH.map(function(x){return '<button type="button" class="th" data-th="'+x[0]+'" style="--th-f:#'+x[2]+';--th-b:#'+x[3]+'" aria-pressed="false"><b>12:34</b>'+x[1]+'</button>'}).join('');
   function T(){return TH.filter(function(x){return x[0]===th})[0]||TH[0]}
   function setTheme(k,keep){th=k;document.querySelectorAll('.th').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.th===k)});if(!keep){custom=false;$('c').value='#'+T()[2];$('b').value='#'+T()[3]}upd()}
@@ -141,13 +158,27 @@ summary{cursor:pointer;font-weight:700}
   var Q=new URLSearchParams(location.search);
   /* מילוי מראש מקישור (למשל מבונה לוח הספירה): ?t=…&d=YYYY-MM-DD&h=HH:MM */
   try{if(Q.get('t'))$('t').value=Q.get('t').slice(0,90);if(/^\d{4}-\d{2}-\d{2}$/.test(Q.get('d')||''))$('d').value=Q.get('d');if(/^\d{1,2}:\d{2}$/.test(Q.get('h')||''))$('h').value=Q.get('h').padStart(5,'0')}catch(e){}
-  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה */
+  /* שקיעה (נוסחת NOAA המקוצרת), בשעות מקומיות. המיקום לפי אזור הזמן שנבחר (העיר הראשית שלו) */
+  var LL={'Asia/Jerusalem':[31.778,35.235],'America/New_York':[40.71,-74.0],'America/Chicago':[41.88,-87.63],'America/Los_Angeles':[34.05,-118.24],'Europe/London':[51.51,-0.13],'Europe/Paris':[48.86,2.35],'Europe/Moscow':[55.76,37.62],'Australia/Sydney':[-33.87,151.21],'America/Sao_Paulo':[-23.55,-46.63],'Africa/Johannesburg':[-26.2,28.05],'Europe/Kiev':[50.45,30.52],'Europe/Kyiv':[50.45,30.52],'America/Toronto':[43.65,-79.38],'America/Montreal':[45.5,-73.57],'Europe/Antwerp':[51.22,4.4],'Europe/Brussels':[50.85,4.35],'Europe/Zurich':[47.37,8.54],'America/Argentina/Buenos_Aires':[-34.6,-58.38],'America/Mexico_City':[19.43,-99.13],'Europe/Berlin':[52.52,13.4],'Europe/Rome':[41.9,12.5],'Europe/Amsterdam':[52.37,4.9],'Europe/Vienna':[48.21,16.37]};
+  function sunsetLocal(y,m,d,tz,offH){var c=LL[tz]||[32,offH*15],lat=c[0],lng=c[1],R=Math.PI/180;
+    var N=Math.round((Date.UTC(y,m-1,d)-Date.UTC(y,0,0))/864e5),lh=lng/15,t=N+(18-lh)/24,M=.9856*t-3.289;
+    var L=(M+1.916*Math.sin(M*R)+.02*Math.sin(2*M*R)+282.634+720)%360,RA=(Math.atan(.91764*Math.tan(L*R))/R+720)%360;
+    RA=(RA+Math.floor(L/90)*90-Math.floor(RA/90)*90)/15;var sd=.39782*Math.sin(L*R),cd=Math.cos(Math.asin(sd));
+    var ch=(Math.cos(90.833*R)-sd*Math.sin(lat*R))/(cd*Math.cos(lat*R));if(ch>1||ch<-1)return null;
+    var H=Math.acos(ch)/R/15,T=H+RA-.06571*t-6.622;return ((T-lh+offH)%24+48)%24}
   function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];n%=1000;var r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
-  function whenText(ms,tz,EN,o,hasTime){
+  /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה,
+     wh = התאריך העברי לאירוע בערב: s לפי השקיעה (ברירת מחדל), o "אור ל־", c לפי התאריך הלועזי בלבד */
+  function whenText(ms,tz,EN,o,hasTime,dStr,hStr){
     var F=function(loc,op){op.timeZone=tz;try{return new Intl.DateTimeFormat(loc,op)}catch(e){delete op.timeZone;return new Intl.DateTimeFormat(loc,op)}},d=new Date(ms),out=[];
     var greg=F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
-    if(o.wd==='h'||o.wd==='b'){try{var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(d).forEach(function(x){p[x.type]=x.value});
-      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year)}catch(e){}}
+    if(o.wd==='h'||o.wd==='b'){try{
+      var after=false,dm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(dStr||''),hm=/^(\d{1,2}):(\d{2})$/.exec(hStr||'');
+      if(o.wh!=='c'&&dm&&hm){var p0={};F('en-US',{hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).forEach(function(x){p0[x.type]=x.value});
+        var offH=(Date.UTC(+p0.year,+p0.month-1,+p0.day,+p0.hour%24,+p0.minute)-ms)/36e5,ss=sunsetLocal(+dm[1],+dm[2],+dm[3],tz,offH);after=ss!=null&&(+hm[1]+hm[2]/60)>=ss}
+      var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(new Date(ms+(after?864e5:0))).forEach(function(x){p[x.type]=x.value});
+      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year);
+      if(after&&o.wh==='o')heb=(EN?'Eve of ':'אור ל')+heb}catch(e){}}
     var date=o.wd==='h'?(heb||greg):o.wd==='b'&&heb?greg+' · '+heb:greg;
     if(o.ww!=='0')out.push(F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
     out.push(date);
@@ -159,8 +190,8 @@ summary{cursor:pointer;font-weight:700}
   function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
   function remember(s,tok){try{var o=store();o[s]=tok;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
   function showMine(){var o=store(),k=Object.keys(o);$('mine').hidden=!k.length;$('mine').innerHTML='הספירות שלי: '+k.map(function(s){return '<a href="?s='+s+'">'+s+'</a>'}).join('')}
-  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1'}}
-  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);if(c.wp!=='top')p.set('wp',c.wp);if(c.wd!=='g')p.set('wd',c.wd);if(c.ww==='0')p.set('ww','0');if(c.wt==='0')p.set('wt','0');if(c.ns==='1')p.set('ns','1');
+  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,wh:$('wh').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1',p:photo,ps:$('ps').value}}
+  function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);if(c.wp!=='top')p.set('wp',c.wp);if(c.wd!=='g'){p.set('wd',c.wd);if(c.wh!=='s')p.set('wh',c.wh)}if(c.ww==='0')p.set('ww','0');if(c.wt==='0')p.set('wt','0');if(c.ns==='1')p.set('ns','1');if(c.p){p.set('p',c.p);if(c.ps!=='circle')p.set('ps',c.ps)}
     Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
   /* מצב הכתובת: saved = נשמרה (והשמירה תואמת להגדרות הנוכחיות) */
   var saved=null,savedCfg='',chk,slugState='';
@@ -184,12 +215,12 @@ summary{cursor:pointer;font-weight:700}
       else st('השמירה לא הצליחה. נסו שוב בעוד רגע.','no');slugUI()}).catch(function(){st('השמירה לא הצליחה. בדקו את החיבור ונסו שוב.','no');slugUI()})});
   var tm;function upd(){clearTimeout(tm);tm=setTimeout(go,250)}
   function go(){
-    slugUI();
+    slugUI();$('whL').hidden=$('wd').value==='g'||!$('h').value;
     if(!/^\d{4}-\d{2}-\d{2}$/.test($('d').value)){$('out').hidden=true;return}
     var s=slugVal(),useSlug=saved&&saved===s,dirty=useSlug&&JSON.stringify(cfg())!==savedCfg;
     var link=useSlug?SITE+'/t/'+s:SITE+'/t?'+params(),emb=useSlug?SITE+'/t/'+s+'?e=1':SITE+'/t?'+params({e:'1'});
     $('pv').src='/t?'+params({e:'1'});
-    var sz=(SZ[$('sz').value]||SZ.full).slice();if($('l').value==='stack')sz[1]+=$('sz').value==='s'?110:140;$('pv').style.height=sz[1]+'px';$('pv').style.maxWidth=sz[0]==='100%'?'':sz[0]+'px';$('pv').style.marginInline='auto';
+    var sz=(SZ[$('sz').value]||SZ.full).slice();if($('l').value==='stack')sz[1]+=$('sz').value==='s'?110:140;if(photo)sz[1]+=$('ps').value==='wide'?($('sz').value==='s'?110:180):($('sz').value==='s'?100:140);$('pv').style.height=sz[1]+'px';$('pv').style.maxWidth=sz[0]==='100%'?'':sz[0]+'px';$('pv').style.marginInline='auto';
     $('oLink').value=link;
     $('oWa').href='https://wa.me/?text='+encodeURIComponent(($('t').value.trim()||'ספירה לאחור')+' ⏳ '+link);
     var title=esc($('t').value.trim()||'ספירה לאחור');
@@ -204,7 +235,7 @@ summary{cursor:pointer;font-weight:700}
     var head=$('t').value.trim()?'<tr><td style="padding:12px 8px 2px;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#'+fg+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+title+'</td></tr>':'';
     var wtxt='',wp=$('wp').value;if(wp!=='none'){var dd=/^(\d{4})-(\d{2})-(\d{2})$/.exec($('d').value),hh=/^(\d{1,2}):(\d{2})$/.exec($('h').value)||[0,12,0];
       var ms=Date.UTC(+dd[1],+dd[2]-1,+dd[3],+hh[1],+hh[2]);try{var f=new Intl.DateTimeFormat('en-US',{timeZone:$('z').value,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),pp={};f.formatToParts(new Date(ms)).forEach(function(x){pp[x.type]=x.value});ms-=Date.UTC(+pp.year,+pp.month-1,+pp.day,+pp.hour%24,+pp.minute)-ms}catch(e){}
-      wtxt='<tr><td style="padding:'+(wp==='top'?'2px 8px 6px':'8px 8px 0')+';font-family:Arial,sans-serif;font-size:14px;color:#'+lb+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+esc(whenText(ms,$('z').value,en,cfg(),!!$('h').value))+'</td></tr>'}
+      wtxt='<tr><td style="padding:'+(wp==='top'?'2px 8px 6px':'8px 8px 0')+';font-family:Arial,sans-serif;font-size:14px;color:#'+lb+';text-align:center;direction:'+(en?'ltr':'rtl')+'">'+esc(whenText(ms,$('z').value,en,cfg(),!!$('h').value,$('d').value,$('h').value))+'</td></tr>'}
     var body;
     if($('l').value==='stack'){
       body='<tr><td align="center" style="padding-top:8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="direction:ltr"><tr>'+dateU.map(function(u,i){return '<td align="center" style="padding:0 6px;'+td+'"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+'&part=top&g='+i+'" alt="" height="84" style="display:block;height:84px;width:auto;border:0"></a>'+lab[u]+'</td>'}).join('')+'</tr></table></td></tr>'+
@@ -212,12 +243,14 @@ summary{cursor:pointer;font-weight:700}
     }else{
       body='<tr><td align="center"><a href="'+link+'" target="_blank" style="text-decoration:none"><img src="'+base+anim+'" alt="'+title+'" style="display:block;max-width:100%;height:auto;border:0" width="480"></a></td></tr><tr><td>'+labels(dateU.concat(clockU),'100%')+'</td></tr>';
     }
-    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+head+(wp==='top'?wtxt:'')+body+(wp==='bottom'?wtxt:'')+
+    var pr='';if(photo){var ps=$('ps').value;pr=ps==='wide'?'<tr><td><img src="'+photo+'" alt="" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:12px 12px 0 0"></td></tr>':
+      '<tr><td align="center" style="padding-top:14px"><img src="'+photo+'" alt="" width="'+(ps==='rect'?160:120)+'" height="120" style="display:block;width:'+(ps==='rect'?160:120)+'px;height:120px;object-fit:cover;border:3px solid #'+fg+';border-radius:'+(ps==='rect'?'12px':'50%')+'"></td></tr>'}
+    var mail='<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="max-width:100%;background:#'+bg+';border-radius:12px">'+pr+head+(wp==='top'?wtxt:'')+body+(wp==='bottom'?wtxt:'')+
       '<tr><td style="padding:6px 0 6px;text-align:center;font-family:Arial,sans-serif;font-size:9px;line-height:1"><a href="'+SITE+'/timer" target="_blank" style="color:#'+lb+';text-decoration:none">myluach.org</a></td></tr></table>';
     $('oMail').value=mail;$('oMailPrev').innerHTML=mail.split(SITE+'/api/').join('/api/');
     $('out').hidden=false;
   }
-  ['t','d','h','u','lang','z','sz','l','fr','wp','wd','ww','wt','sec'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
+  ['t','d','h','u','lang','z','sz','l','fr','wp','wd','wh','ww','wt','sec'].forEach(function(i){$(i).addEventListener('input',upd);$(i).addEventListener('change',upd)});
   ['c','b'].forEach(function(i){$(i).addEventListener('input',function(){custom=true;upd()})});
   /* העתקה "מעוצבת": מדביקים בגוף המייל ומקבלים את התמונה עצמה ולא את הקוד */
   $('cpMail').addEventListener('click',function(){var b=this,html=$('oMail').value,done=function(ok){b.textContent=ok?'הועתק ✓ עכשיו מדביקים במייל':'לא הצליח. סמנו את התצוגה למעלה והעתיקו';setTimeout(function(){b.textContent='העתקה למייל'},2500)};
@@ -228,7 +261,7 @@ summary{cursor:pointer;font-weight:700}
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
   var es=(Q.get('s')||'').toLowerCase();
   if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
-    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');
     setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
     $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('הכתובת הזו שלכם. אפשר לשנות ולעדכן.','ok')}else check();go()})}
 })();
