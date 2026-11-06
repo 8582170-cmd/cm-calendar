@@ -55,6 +55,8 @@ module.exports = async (req, res) => {
     return json(res, 200, { items });
   }
   /* משוב על בניית הלוח, וטופס פנייה מהדף הראשי: נשמר לדף הניהול ונשלח במייל לבעל האתר */
+  /* מנויים וחבילות שנמכרים כרגע (ברכות והזמנות, תזכורות בלוח) */
+  if (cp === '_subs') { res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120'); try { return json(res, 200, await require('./_subs').pub()); } catch (e) { return json(res, 200, { on: false }); } }
   if (cp === '_unblock') return require('./_sec').unblockPage(req, res);
   if (cp === '_cdimg') return require('./_cdimg')(req, res);
   if (cp === '_timer') return require('./_timer')(req, res);

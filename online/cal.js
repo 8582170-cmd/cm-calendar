@@ -479,14 +479,14 @@ function remEditor(id,date,pre){
     if(wantMail){const A=authTok();if(!/^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(email)){$('#rP').textContent=HE()?'כתבו כתובת מייל תקינה.':'Please enter a valid email.';$('#rE').focus();return}
       LS.set('mail',email);$('#rS').disabled=true;$('#rP').textContent=HE()?'שומרים…':'Saving…';
       try{const rr=await fetch(BASE+'../api/rem-subscribe',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},A?{Authorization:'Bearer '+A.tok}:{}),body:JSON.stringify({email,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice:[0],lang:st.lang,token:o.mail&&o.mail.email===email?o.mail.token:''})});
-        const j=await rr.json();if(rr.status===401){$('#rS').disabled=false;$('#rP').innerHTML=(HE()?'צריך להתחבר מחדש. ':'Please sign in again. ')+'<a href="'+loginUrl()+'">'+(HE()?'כניסה':'Sign in')+'</a>';return}if(!rr.ok||!j.token)throw new Error(j.error||rr.status);o.mail={email:j.email||email,token:j.token,status:j.status}}
+        const j=await rr.json();if(rr.status===402&&j.error==='limit'){$('#rS').disabled=false;$('#rP').innerHTML=esc(j.message||'')+' <a href="'+BASE+'../pricing.html#rem">'+(HE()?'לאפשרויות':'Options')+'</a>';return}if(rr.status===401){$('#rS').disabled=false;$('#rP').innerHTML=(HE()?'צריך להתחבר מחדש. ':'Please sign in again. ')+'<a href="'+loginUrl()+'">'+(HE()?'כניסה':'Sign in')+'</a>';return}if(!rr.ok||!j.token)throw new Error(j.error||rr.status);o.mail={email:j.email||email,token:j.token,status:j.status}}
       catch(e){$('#rS').disabled=false;$('#rP').textContent=HE()?'לא הצלחנו לשמור את התזכורת במייל. נסו שוב בעוד רגע.':'Could not save the email reminder. Please try again.';return}}
     else if(o.mail&&o.mail.token){fetch(BASE+'../api/rem-confirm?t='+o.mail.token+'&off=1').catch(()=>{});o.mail=null}
     o.voice=v.voice||null;
     if($('#rV')&&$('#rV').checked){const A=authTok();if(!A){$('#rS').disabled=false;$('#rP').innerHTML='לתזכורת קולית צריך להתחבר. <a href="'+loginUrl()+'">כניסה / הרשמה</a>';return}
       $('#rS').disabled=true;$('#rP').textContent='שומרים את התזכורת הקולית…';
       const rv=await vApi('POST',{id:o.voice&&o.voice.id,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice.filter(n=>n<=7):[0]});$('#rS').disabled=false;
-      if(rv.status===403){$('#rP').innerHTML='תזכורת קולית זמינה במסלול המלא. <a href="'+BASE+'../pricing.html">למסלולים</a>';return}
+      if(rv.status===403){$('#rP').innerHTML=esc(rv.message||'תזכורת קולית זמינה במסלול המלא.')+' <a href="'+BASE+'../pricing.html#rem">למסלולים</a>';return}
       if(rv.status===409){$('#rVBox').hidden=false;$('#rP').textContent='מאמתים את מספר הטלפון (פעם אחת), ואז לוחצים שוב "שמירה".';return}
       if(rv.status===429){$('#rP').textContent='הגעתם למקסימום של '+(rv.max||50)+' תזכורות קוליות.';return}
       if(rv.status!==200){$('#rP').textContent='לא הצלחנו לשמור את התזכורת הקולית. נסו שוב.';return}

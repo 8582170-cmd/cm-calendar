@@ -144,6 +144,8 @@ module.exports = async (req, res) => {
     /* הזמנות לאירוע במייל שעוד בתור (למשל אחרי שהגענו למגבלה היומית של ספקי המייל) */
     try { const inv = await require('./_timer').cronSend(150); if (inv.sent) console.log('invites sent', inv.sent); } catch (e) { console.error('invite queue', e.message); }
     try { const cm = await require('./_timer').cleanMedia(); if (cm.deleted) console.log('unpaid media deleted', cm.deleted); } catch (e) { console.error('clean media', e.message); }
+    /* מנויים: מייל חידוש כמה ימים לפני הסוף */
+    try { const rn = await require('./_subs').renewMails(); if (rn.sent) console.log('renew mails', rn.sent); } catch (e) { console.error('renew', e.message); }
     /* גיבוי לגוגל שיטס (אם הוגדר) */
     let backup = null; try { backup = await require('./_backup').run(); } catch (e) { backup = { error: String(e.message).slice(0, 120) }; console.error('backup', e.message); }
     /* ניקוי דוגמיות הורדה ישנות */

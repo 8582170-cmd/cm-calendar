@@ -18,7 +18,10 @@ module.exports = async (req, res) => {
       return json(res, 200, { ok: true });
     }
     if (!(await ready())) return json(res, 503, { error: 'off' });
-    if ((await bestPlan(user)) !== 'full') return json(res, 403, { error: 'plan' });
+    /* מגבלות מהניהול (מנויים וחבילות ← תזכורות בלוח). כשהן כבויות: כמו תמיד, רק במסלול המלא ועד max */
+    const SB = require('./_subs'), ent = await SB.remEnt(user).catch(() => ({ off: true }));
+    if (ent.off) { if ((await bestPlan(user)) !== 'full') return json(res, 403, { error: 'plan' }); }
+    else if (ent.voice === 0 && !parseInt(b.id, 10)) return json(res, 403, { error: 'plan', message: 'תזכורת בשיחה זמינה במסלולים ובמנויים שכוללים שיחות.' });
     const prof = await db('profiles?user_id=eq.' + user.id + '&select=phone,phone_verified_at');
     const ph = prof && prof[0] && prof[0].phone_verified_at ? prof[0].phone : null;
     if (!ph) return json(res, 409, { error: 'phone' });
@@ -32,7 +35,7 @@ module.exports = async (req, res) => {
       return json(res, 200, { id });
     }
     const mine = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&select=id');
-    const MAX = +(await cfg()).max || 50;
+    const MAX = ent.off ? (+(await cfg()).max || 50) : ent.voice == null ? 1000 : ent.voice;
     if ((mine || []).length >= MAX) return json(res, 429, { error: 'max', max: MAX });
     const row = await db('voice_reminders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ user_id: user.id, phone: ph, name, rule: clean, notice }) });
     json(res, 200, { id: row && row[0] && row[0].id });

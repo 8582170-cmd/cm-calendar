@@ -11,7 +11,8 @@
 <link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
-<script src="/assets/greetings/mine.js?v=3"></script>
+<script src="/assets/greetings/mine.js?v=4"></script>
+<script src="/assets/pay.js?v=1" defer></script>
 <style>
 .acc-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 14px}
 .acc-h h1{font-size:clamp(30px,4vw,42px);font-weight:900}
@@ -52,7 +53,7 @@
 (function(){
 'use strict';
 var G = window.Greetings, M = window.MyGreets, $ = function(id){ return document.getElementById(id); }, body = $('body');
-var TABS = [['designs', '🎨 העיצובים שלי'], ['buys', '🧾 הרכישות שלי'], ['me', '✎ הפרטים שלי'], ['help', 'עזרה']];
+var TABS = [['designs', '🎨 העיצובים שלי'], ['buys', '🧾 הרכישות שלי'], ['subs', '🔁 מנוי וחבילות'], ['me', '✎ הפרטים שלי'], ['help', 'עזרה']];
 var tab = (/^#(\w+)/.exec(location.hash) || [])[1]; if (!TABS.some(function(t){ return t[0] === tab; })) tab = 'designs';
 function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
 function dt(d){ try { return new Date(d).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: 'numeric' }); } catch (e) { return ''; } }
@@ -78,7 +79,7 @@ M.user().then(function(u){
   function show(k){ tab = k; try { history.replaceState(null, '', '#' + k); } catch (e) {}
     tb.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.t === k)); });
     pane.innerHTML = '<p class="empty">טוען…</p>';
-    ({ designs: designs, buys: buys, me: me, help: help })[k](pane); }
+    ({ designs: designs, buys: buys, subs: subs, me: me, help: help })[k](pane); }
   show(tab);
 }).catch(function(){ body.innerHTML = '<p class="bad">לא הצלחנו לטעון. בדקו את החיבור ונסו שוב.</p>'; });
 
@@ -112,7 +113,7 @@ function buys(pane){
     if (!L.length) { var c = el('div', 'acc-card'); c.appendChild(el('p', 'empty', 'עוד לא נמצאו רכישות של ברכות או הזמנות בחשבון הזה.')); c.appendChild(el('p', 'note', 'שילמתם עם כתובת מייל אחרת? הקישור לעיצוב נשלח למייל ששילמתם בו. אפשר גם להתחבר עם הכתובת הזו.')); pane.appendChild(c); return; }
     var ul = el('ul', 'acc-list'); pane.appendChild(ul);
     L.forEach(function(o){ var li = el('li'), s = el('span');
-      s.appendChild(el('b', '', o.title + ' · ' + money(o.amount)));
+      s.appendChild(el('b', '', o.title + ' · ' + (o.via === 'sub' ? 'מהמנוי' : o.via === 'pack' ? 'מהחבילה' : money(o.amount))));
       s.appendChild(el('small', '', dt(o.at) + ' · הזמנה ' + o.no));
       var st = el('small'), ed = o.editUntil && now <= Date.parse(o.editUntil), dl = o.dlUntil && now <= Date.parse(o.dlUntil);
       if (o.status === 'refunded') { st.className = 'bad'; st.textContent = 'בוצע החזר'; }
@@ -138,6 +139,38 @@ function conf(o){
 }
 
 /* הפרטים שממלאים פעם אחת: נשמרים בחשבון ובדפדפן, ומופיעים בכל העיצובים */
+/* מנוי וחבילות: מה יש לי עכשיו, ומה אפשר לקנות (תשלום מראש לתקופה, בלי חיוב אוטומטי) */
+function subs(pane){
+  M.ent().then(function(j){
+    pane.innerHTML = ''; var e = j.ent || {}, o = j.offers || {}, c = el('div', 'acc-card');
+    c.appendChild(el('h2', '', 'מה יש לי עכשיו'));
+    var L = [];
+    if (e.sub) L.push('מנוי: ' + e.sub.name + ' (' + (e.sub.per === 'y' ? 'שנתי' : 'חודשי') + '), בתוקף עד ' + dt(e.sub.end) + '. ' + (e.sub.quota ? 'החודש: נוצלו ' + e.sub.used + ' מתוך ' + e.sub.quota + ' עיצובים' + (e.sub.cycleEnd ? ' (מתחדש ב־' + dt(e.sub.cycleEnd) + ')' : '') : 'ללא הגבלת עיצובים') + '.');
+    (e.packs || []).forEach(function(p){ L.push('חבילה: ' + p.name + ' · נשארו ' + Math.max(0, p.n - p.used) + ' מתוך ' + p.n + (p.end ? ', בתוקף עד ' + dt(p.end) : '') + '.'); });
+    if (!L.length) L.push('אין מנוי או חבילה פעילים.');
+    L.forEach(function(t){ c.appendChild(el('p', 'note', t)); });
+    if (e.can) c.appendChild(el('p', 'note', 'איך משתמשים: פותחים עיצוב בתשלום, ובמקום "תשלום והורדה" לוחצים "לקבל מהמנוי" או "מהחבילה".'));
+    pane.appendChild(c);
+    var G = o.gsubs || [], P = o.gpacks || [];
+    if (!o.on || (!G.length && !P.length)) return;
+    var c2 = el('div', 'acc-card'); c2.appendChild(el('h2', '', 'מנויים'));
+    var buy = function(body, title, sub){ if (!window.MLPay) return; window.MLPay.open({ title: title, sub: sub, mailNote: 'המנוי משויך לחשבון עם המייל הזה', email: $('who').textContent, body: body, onPaid: function(){ setTimeout(function(){ subs(pane); }, 1500); } }); };
+    G.forEach(function(x){ var d = el('div', 'acc-card');
+      d.appendChild(el('h3', '', x.name + (x.best ? ' ⭐' : ''))); if (x.desc) d.appendChild(el('p', 'note', x.desc));
+      d.appendChild(el('p', 'note', x.quota ? 'עד ' + x.quota + ' עיצובים בתשלום בכל חודש' : 'עיצובים בתשלום ללא הגבלה'));
+      var r = el('div', 'acc-btns');
+      if (x.pm >= 1) { var a = el('button', 'acc-btn pri', 'חודשי · ' + x.pm + ' ₪'); a.type = 'button'; a.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'm' }, 'מנוי חודשי · ' + x.name, x.pm + ' ₪ לחודש. תשלום אחד, בלי חיוב אוטומטי.'); }; r.appendChild(a); }
+      if (x.py >= 1) { var b = el('button', 'acc-btn', 'שנתי · ' + x.py + ' ₪'); b.type = 'button'; b.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'y' }, 'מנוי שנתי · ' + x.name, x.py + ' ₪ לשנה. תשלום אחד, בלי חיוב אוטומטי.'); }; r.appendChild(b); }
+      d.appendChild(r); c2.appendChild(d); });
+    if (G.length) pane.appendChild(c2);
+    if (P.length) { var c3 = el('div', 'acc-card'); c3.appendChild(el('h2', '', 'חבילות'));
+      P.forEach(function(x){ var d = el('div', 'acc-card'); d.appendChild(el('h3', '', x.name)); if (x.desc) d.appendChild(el('p', 'note', x.desc));
+        d.appendChild(el('p', 'note', x.n + ' עיצובים בתשלום' + (x.months ? ', לשימוש תוך ' + x.months + ' חודשים' : ', בלי הגבלת זמן')));
+        var r = el('div', 'acc-btns'), a = el('button', 'acc-btn pri', 'קנייה · ' + x.price + ' ₪'); a.type = 'button'; a.onclick = function(){ buy({ plan: 'sub', kind: 'gpack', id: x.id }, 'חבילה · ' + x.name, x.price + ' ₪, תשלום אחד.'); }; r.appendChild(a); d.appendChild(r); c3.appendChild(d); });
+      pane.appendChild(c3); }
+    pane.appendChild(el('p', 'note', 'התשלום מראש לתקופה, בלי חיוב אוטומטי. כמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש.'));
+  }).catch(function(){ pane.innerHTML = '<p class="bad">לא הצלחנו לטעון.</p>'; });
+}
 function me(pane){
   Promise.all([M.profileGet().catch(function(){ return null; })]).then(function(r){
     var P = Object.assign({}, G.profile(), r[0] || {}), tmr = null;

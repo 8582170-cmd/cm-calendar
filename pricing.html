@@ -252,6 +252,12 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
       <p class="note"><b>כל מסלול תקף ללוח של שנה אחת:</b> כל ההורדות במסלול הן ללוח של אותה שנה שבה הודפס הלוח הראשון (למשל, אם הדפסתם לוח לשנת תשפ״ז, גם שאר ההורדות הן לתשפ״ז). לשנה אחרת רוכשים מסלול חדש. מי שמחדש בשנה הבאה מקבל הנחה, וכל מה שבנה עובר איתו.</p>
     </section>
 
+    <section id="rem" hidden data-cms-skip>
+      <div class="sec-head"><h2>תזכורות בלוח המקוון</h2><p id="remIntro"></p></div>
+      <div class="plans" id="remGrid"></div>
+      <p class="note">שיחות טלפון ו־SMS: בשלב זה רק למספרים בישראל. מנוי משולם מראש לתקופה, בלי חיוב אוטומטי, וכמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש.</p>
+    </section>
+
     <section id="faq">
       <div class="sec-head"><h2>שאלות על המחירים</h2></div>
       <div class="faq">
@@ -281,6 +287,26 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 </div>
 
 <script src="assets/plans.js?v=202611050420"></script>
+<script>
+/* תזכורות בלוח: האפשרויות מהניהול (מנויים וחבילות). מוצג רק כשהמגבלות פעילות */
+(function(){
+  var lim = function(n, w){ return n == null ? w + ' ללא הגבלה' : n === 0 ? 'בלי ' + w : 'עד ' + n + ' ' + w; };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  fetch('/api/pricing?c=_subs').then(function(r){ return r.ok ? r.json() : {}; }).then(function(j){
+    var R = j && j.rem; if (!R) return; var S = document.getElementById('rem'), G = document.getElementById('remGrid');
+    document.getElementById('remIntro').textContent = 'בחינם: ' + lim(R.freeMail, 'תזכורות במייל') + ', ' + lim(R.freeVoice, 'תזכורות בשיחה') + '. רוצים יותר? כלול במסלולים של הלוח, או במנוי.';
+    G.innerHTML = R.opts.map(function(x, i){
+      return '<div class="plan"><h3>' + esc(x.name || 'אפשרות') + '</h3>' + (x.desc ? '<p class="sub">' + esc(x.desc) + '</p>' : '') +
+        '<ul><li>' + lim(x.mail, 'תזכורות במייל') + '</li><li>' + lim(x.voice, 'תזכורות בשיחה') + '</li>' + (x.planNames.length ? '<li>כלול בקניית מסלול ' + x.planNames.map(esc).join(' / ') + ' בלוח</li>' : '') + '</ul>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (x.pm >= 1 ? '<button class="btn btn-primary" type="button" data-rb="' + i + '" data-per="m">' + x.pm + ' ₪ לחודש</button>' : '') + (x.py >= 1 ? '<button class="btn" type="button" data-rb="' + i + '" data-per="y">' + x.py + ' ₪ לשנה</button>' : '') + '</div></div>';
+    }).join('');
+    S.hidden = false; if (location.hash === '#rem') S.scrollIntoView();
+    G.addEventListener('click', function(e){ var b = e.target.closest('[data-rb]'); if (!b) return; var x = R.opts[+b.dataset.rb], per = b.dataset.per;
+      var go = function(){ window.MLPay.open({ title: 'מנוי תזכורות · ' + (x.name || ''), sub: (per === 'y' ? x.py + ' ₪ לשנה' : x.pm + ' ₪ לחודש') + '. תשלום אחד, בלי חיוב אוטומטי.', mailNote: 'המייל שאיתו נרשמים לתזכורות (ושל החשבון)', body: { plan: 'sub', kind: 'rsub', id: x.id, per: per }, onPaid: function(){ b.textContent = '✓ שולם'; } }); };
+      if (window.MLPay) go(); else { var s = document.createElement('script'); s.src = '/assets/pay.js?v=1'; s.onload = go; document.head.appendChild(s); } });
+  }).catch(function(){});
+})();
+</script>
 <script>
 (function(){
   'use strict';

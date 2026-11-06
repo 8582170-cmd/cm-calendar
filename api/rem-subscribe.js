@@ -35,6 +35,10 @@ module.exports = async (req, res) => {
     /* הגבלות נגד ניצול */
     const mine = await db('reminders?email=eq.' + encodeURIComponent(email) + '&select=status,created_at&order=created_at.desc&limit=200');
     if ((mine || []).filter(r => r.status !== 'off').length >= 100) return json(res, 429, { error: 'too many' });
+    /* מגבלה מהניהול (מנויים וחבילות ← תזכורות בלוח): חינם עד כמות מסוימת, יותר עם מסלול בלוח או מנוי */
+    { const ent = await require('./_subs').remEnt({ id: own ? user.id : null, email }).catch(() => ({ off: true }));
+      const n = (mine || []).filter(r => r.status !== 'off').length;
+      if (!ent.off && ent.mail != null && n >= ent.mail) return json(res, 402, { error: 'limit', max: ent.mail, message: 'הגעתם ל־' + ent.mail + ' תזכורות במייל. כדי להוסיף עוד: מסלול בלוח השנה או מנוי תזכורות.' }); }
     const confirmed = own;
     if (!confirmed) { /* נגד שליחת מיילי אישור בהמוניהם מאותו מחשב */
       const ip = (require('./_lib').reqMeta(req) || {}).ip;

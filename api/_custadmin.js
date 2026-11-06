@@ -100,7 +100,8 @@ module.exports = async function (b) {
   const coupons = ((cfg && cfg.coupons) || []).filter(c => String(c.note || '').toLowerCase().indexOf(em) >= 0);
   /* שימוש בקופונים האלה בהזמנות */
   let used = {}; if (coupons.length) { const R = await db('orders?select=coupon&status=eq.paid&coupon=in.(' + coupons.map(c => encodeURIComponent(c.code)).join(',') + ')').catch(() => []); (R || []).forEach(o => { used[o.coupon] = (used[o.coupon] || 0) + 1; }); }
-  return { email: em, meta: me, events, reminders: rem || [], voice: vrem || [], feedback: fb, coupons: coupons.map(c => ({ ...c, used: used[c.code] || 0 })), plans: PAID.map(id => [id, PLAN_NAMES[id] || id]) };
+  let ent = null; try { const SB = require('./_subs'), S = await SB.cfg(), who = { id: uid, email: em }; ent = { g: await SB.greetEnt(who, S), r: await SB.remEnt(who, S), names: {} }; } catch (e) {}
+  return { email: em, ent, meta: me, events, reminders: rem || [], voice: vrem || [], feedback: fb, coupons: coupons.map(c => ({ ...c, used: used[c.code] || 0 })), plans: PAID.map(id => [id, PLAN_NAMES[id] || id]) };
 };
 
 /* חסימה: getUser ב-_lib בודק כאן (עם זיכרון של דקה), כך שלקוח חסום לא מזוהה בשרת: לא קונה, לא מוריד ולא שומר */

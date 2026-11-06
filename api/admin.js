@@ -72,7 +72,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
+const ALOG_RO = /^(subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -112,6 +112,12 @@ module.exports = async (req, res) => {
     /* בדיקת מערכת, יומן פעולות, מצב תחזוקה */
     if (req.method === 'POST' && b.action === 'health') return json(res, 200, await require('./_health').run());
     if (req.method === 'POST' && b.action === 'alog') { const L = await require('./_lib').loadSetting('adminlog').catch(() => []); return json(res, 200, { items: Array.isArray(L) ? L : [] }); }
+    /* מנויים וחבילות (api/_subs.js) */
+    if (req.method === 'POST' && (b.action === 'subsget' || b.action === 'subsset')) {
+      const SB = require('./_subs');
+      if (b.action === 'subsset') await require('./_lib').saveSetting('subs', SB.clean(b.subs || {}));
+      return json(res, 200, { subs: await SB.cfg(), plans: PAID.map(id => [id, (LP.PLANS.find(p => p.id === id) || {}).name || id]) });
+    }
     /* תזמון התזכורות: לוח (cal) ואירועים (ev), מייל ושיחה בנפרד */
     if (req.method === 'POST' && (b.action === 'schedget' || b.action === 'schedset')) {
       const { loadSetting, saveSetting } = require('./_lib');

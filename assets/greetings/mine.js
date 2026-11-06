@@ -47,7 +47,12 @@
   /* הרכישות: ברכות והזמנות ששולמו, עם הקישור האישי */
   function purchases(){ return client().then(function(sb){ if (!sb) throw new Error('login'); return sb.auth.getSession(); }).then(function(r){ var s = r && r.data && r.data.session; if (!s) throw Object.assign(new Error('login'), { login: true });
     return fetch('/api/pricing?c=_greetpay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + s.access_token }, body: JSON.stringify({ action: 'mine' }) }).then(function(x){ return x.json().then(function(j){ if (!x.ok) throw new Error(j.error || x.status); return j; }); }); }); }
+  /* מנויים וחבילות: הזכאות של המחובר (ent), ושימוש בה לעיצוב (redeem). בלי חשבון: רק מה שאפשר לקנות */
+  function gpAuth(body){ return client().then(function(sb){ return sb ? sb.auth.getSession() : null; }).catch(function(){ return null; }).then(function(r){ var s = r && r.data && r.data.session;
+    return fetch('/api/pricing?c=_greetpay', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, s ? { Authorization: 'Bearer ' + s.access_token } : {}), body: JSON.stringify(body) }).then(function(x){ return x.json().catch(function(){ return {}; }).then(function(j){ if (!x.ok) throw Object.assign(new Error(j.error || x.status), { msg: j.message, status: x.status }); return j; }); }); }); }
+  function ent(){ return gpAuth({ action: 'ent' }); }
+  function redeem(body){ return gpAuth(Object.assign({ action: 'redeem' }, body)); }
   function signOut(){ return client().then(function(sb){ return sb && sb.auth.signOut(); }); }
   function loginUrl(){ return '/app.html#login&back=' + encodeURIComponent(location.pathname + location.search + location.hash); }
-  window.MyGreets = { user: user, list: list, get: get, save: save, remove: remove, rename: rename, duplicate: duplicate, profileGet: profileGet, profileSave: profileSave, profileSync: profileSync, purchases: purchases, signOut: signOut, thumb: thumb, loginUrl: loginUrl };
+  window.MyGreets = { user: user, list: list, get: get, save: save, remove: remove, rename: rename, duplicate: duplicate, profileGet: profileGet, profileSave: profileSave, profileSync: profileSync, purchases: purchases, ent: ent, redeem: redeem, signOut: signOut, thumb: thumb, loginUrl: loginUrl };
 })();

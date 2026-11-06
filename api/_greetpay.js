@@ -133,16 +133,35 @@ module.exports = async (req, res) => {
       const user = await require('./_lib').getUser(req);
       if (!user) return json(res, 401, { error: 'login' });
       const em = String(user.email || '').toLowerCase(), enc = encodeURIComponent;
-      const rows = await db('orders?select=id,amount,status,created_at,paid_at&plan=eq.greet&status=in.(paid,refunded)&or=(user_id.eq.' + user.id + (em ? ',email.eq.' + enc(em) : '') + ')&order=created_at.desc&limit=100').catch(() => []);
+      const rows = await db('orders?select=id,amount,status,coupon,created_at,paid_at&plan=eq.greet&status=in.(paid,refunded)&or=(user_id.eq.' + user.id + (em ? ',email.eq.' + enc(em) : '') + ')&order=created_at.desc&limit=100').catch(() => []);
       const now = Date.now();
       const list = await Promise.all((rows || []).map(async o => {
         const rec = await get(o.id).catch(() => null);
-        const x = { id: o.id, no: String(o.id).slice(0, 8), amount: +o.amount || 0, status: o.status, at: o.paid_at || o.created_at, title: (rec && rec.title) || 'ברכה / הזמנה', tpl: rec ? rec.tpl : '', v: rec ? rec.v : -1,
+        const x = { id: o.id, no: String(o.id).slice(0, 8), amount: +o.amount || 0, via: o.coupon === 'SUB' ? 'sub' : o.coupon === 'PACK' ? 'pack' : '', status: o.status, at: o.paid_at || o.created_at, title: (rec && rec.title) || 'ברכה / הזמנה', tpl: rec ? rec.tpl : '', v: rec ? rec.v : -1,
           editUntil: rec && rec.editUntil || null, dlUntil: rec && rec.dlUntil || null };
         if (rec && rec.paidAt && o.status === 'paid' && (!rec.dlUntil || now <= Date.parse(rec.dlUntil))) x.link = '/brachot/edit.html?o=' + o.id + '&k=' + token(o.id);
         return x;
       }));
       return json(res, 200, { now: new Date(now).toISOString(), list });
+    }
+    /* מנויים וחבילות: מה יש ללקוח המחובר, ומה אפשר לקנות */
+    if (b.action === 'ent') {
+      const SB = require('./_subs'), user = await require('./_lib').getUser(req).catch(() => null), S = await SB.cfg();
+      return json(res, 200, { offers: await SB.pub(), ent: user ? await SB.greetEnt(user, S) : null, login: !!user });
+    }
+    /* עיצוב בתשלום מתוך המנוי או החבילה: נוצרת הזמנה ששולמה בסכום 0 (קופון SUB / PACK), ומשם הכל כמו תשלום רגיל */
+    if (b.action === 'redeem') {
+      const user = await require('./_lib').getUser(req); if (!user) return json(res, 401, { error: 'login', message: 'צריך להתחבר לחשבון.' });
+      const SB = require('./_subs'), ent = await SB.greetEnt(user);
+      const use = ent.canSub ? 'SUB' : ent.packLeft > 0 ? 'PACK' : null;
+      if (!use) return json(res, 402, { error: 'none', message: ent.sub ? 'נוצלה המכסה של החודש במנוי.' : 'אין מנוי או חבילה פעילים.' });
+      const p = await prepare(b); if (p.error) return json(res, 400, { error: 'greet', message: p.error });
+      const oid = crypto.randomBytes(12).toString('hex'), now0 = new Date().toISOString();
+      const o = { id: oid, plan: 'greet', amount: 0, status: 'pending', email: user.email, user_id: user.id, coupon: use, created_at: now0 };
+      await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify(o) });
+      await create(oid, user.email, p);
+      await require('./_paid').markPaid(o, { callback: { redeem: use, value: p.amount } }, use === 'SUB' ? 'מנוי' : 'חבילה');
+      return json(res, 200, { id: oid, use });
     }
     if (!okId(id)) return json(res, 400, { error: 'id' });
     const now = Date.now();

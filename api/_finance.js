@@ -29,13 +29,14 @@ module.exports = async function (b) {
   let w = '&status=in.(paid,refunded)';
   if (from) w += '&paid_at=gte.' + encodeURIComponent(new Date(Date.parse(from + 'T00:00:00Z') - 864e5).toISOString());
   if (to) w += '&paid_at=lt.' + encodeURIComponent(new Date(Date.parse(to + 'T00:00:00Z') + 2 * 864e5).toISOString());
+  const SUBS = await require('./_subs').cfg().catch(() => null);
   const raw = await all('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at,callback' + w + '&order=paid_at.asc');
   const rows = [];
   raw.forEach(o => {
     const day = ilDay(o.paid_at || o.created_at); if ((from && day < from) || (to && day > to)) return;
     const cb = o.callback && typeof o.callback === 'object' ? o.callback : {};
     const refunded = r2((cb.refunds || []).reduce((a, x) => a + (+x.amount || 0), 0)) + (o.status === 'refunded' && !(cb.refunds || []).length ? +o.amount || 0 : 0);
-    rows.push({ id: o.id, day, plan: o.plan, name: PLAN_NAMES[o.plan] ? 'מסלול ' + PLAN_NAMES[o.plan] : SPECIAL[o.plan] || o.plan, amount: +o.amount || 0, refunded: r2(refunded), status: o.status, via: viaOf(o, cb), coupon: o.coupon || '', email: String(o.email || '').toLowerCase(), admin: !!cb.admin });
+    rows.push({ id: o.id, day, plan: o.plan, name: PLAN_NAMES[o.plan] ? 'מסלול ' + PLAN_NAMES[o.plan] : SPECIAL[o.plan] || (/^(gsub|gpack|rsub):/.test(o.plan) ? require('./_subs').nameOf(o.plan, SUBS) : null) || o.plan, amount: +o.amount || 0, refunded: r2(refunded), status: o.status, via: viaOf(o, cb), coupon: o.coupon || '', email: String(o.email || '').toLowerCase(), admin: !!cb.admin });
   });
   const inc = rows.filter(o => o.plan !== 'gift');
   const S = { gross: 0, refunds: 0, net: 0, n: 0, paidN: 0, donations: 0, free: 0, customers: 0, avg: 0 };

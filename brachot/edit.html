@@ -204,7 +204,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
 <script src="/assets/pay.js?v=1" defer></script>
-<script src="/assets/greetings/mine.js?v=3"></script>
+<script src="/assets/greetings/mine.js?v=4"></script>
 <script src="/assets/sitemsg.js?v=2" defer></script>
 </head>
 <body>
@@ -940,8 +940,8 @@ function renderPay(){
   if (m === 'free') return;
   if (m === 'unpaid') {
     box.innerHTML = '<div class="pr">' + PRICE() + ' ₪</div><p>אחרי התשלום: הורדה <b>בלי סימן מים</b> בכל הגדלים, ועוד <b>' + PAYCFG.editHours + ' שעות</b> לשינויים אחרונים. קישור אישי לעיצוב יישלח למייל.</p>' +
-      '<div class="row2"><button class="big-btn" type="button" id="payBtn">תשלום והורדה</button></div>';
-    $('payBtn').onclick = startPay; return;
+      '<div class="row2"><button class="big-btn" type="button" id="payBtn">תשלום והורדה</button></div><div id="subBox"></div>';
+    $('payBtn').onclick = startPay; subOffer(); return;
   }
   if (m === 'expired') { box.innerHTML = '<p><b>תוקף הקישור הסתיים</b> (' + fmtT(ORD.dlUntil) + ').</p>'; return; }
   box.innerHTML = '<p><b>✓ שולם.</b> ' + (m === 'edit' ? 'אפשר לשנות עד <b>' + fmtT(ORD.editUntil) + '</b>, ולהוריד עד ' + fmtT(ORD.dlUntil) + '.' : 'זמן השינויים הסתיים. אפשר להוריד את הקובץ עד <b>' + fmtT(ORD.dlUntil) + '</b>.') + '</p>' +
@@ -953,20 +953,34 @@ function renderPay(){
       .catch(function(e){ $('mailMsg').textContent = e.msg || 'לא הצלחנו לשלוח. נסו שוב.'; b.disabled = false; });
   };
 }
+/* מנוי / חבילה: מי שיש לו יתרה מקבל את העיצוב בלי תשלום. מי שאין לו רואה קישור למנויים (אם נמכרים) */
+function subOffer(){
+  if (!window.MyGreets || !window.MyGreets.ent) return;
+  window.MyGreets.ent().then(function(j){ var B = $('subBox'); if (!B) return; var e = j.ent, o = j.offers || {};
+    if (e && e.can) {
+      var lbl = e.canSub ? 'מהמנוי' + (e.sub.left == null ? '' : ' (נשארו ' + e.sub.left + ' החודש)') : 'מהחבילה (נשארו ' + e.packLeft + ')';
+      B.innerHTML = '<div class="row2"><button class="big-btn ghost" type="button" id="subBtn">✓ לקבל ' + lbl + '</button></div><p class="info" id="subMsg"></p>';
+      $('subBtn').onclick = function(){ var b = $('subBtn'); if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'לקבל את העיצוב ' + lbl + '? ללחוץ שוב לאישור'; return; } b.disabled = true; $('subMsg').textContent = 'רגע…';
+        window.MyGreets.redeem({ tpl: tpl.id, v: tpl.variantOf ? tpl.variant : -1, state: S }).then(function(r){ afterPaid(r.id); })
+          .catch(function(er){ b.disabled = false; delete b.dataset.sure; b.textContent = '✓ לקבל ' + lbl; $('subMsg').textContent = er.msg || 'לא הצליח. נסו שוב.'; }); };
+    } else if (o.on && ((o.gsubs || []).length || (o.gpacks || []).length)) B.innerHTML = '<p class="info">עושים הרבה עיצובים? <a href="/brachot/my.html#subs">מנוי או חבילה</a> יוצאים משתלמים יותר.</p>';
+  }).catch(function(){});
+}
+function afterPaid(id){
+  flash('פותחים את העיצוב…');
+  var tries = 0;
+  (function claim(){ gp({ action: 'claim', o: id }).then(function(j){
+    CRED = { o: id, k: j.k }; ORD = j; SKEW = Date.parse(j.now) - Date.now();
+    try { localStorage.setItem(OKEY, JSON.stringify(CRED)) } catch (e) {}
+    try { history.replaceState(null, '', '/brachot/edit.html?o=' + id + '&k=' + j.k + '#download') } catch (e) {}
+    renderPay(); outPreview(); draw(); flash('✓ מוכן! עכשיו מורידים בלי סימן מים. הקישור נשלח גם למייל.');
+  }).catch(function(){ if (++tries < 8) setTimeout(claim, 2500); else flash('הקישור לעיצוב נשלח למייל שלכם.'); }); })();
+}
 function startPay(){
   if (!window.MLPay) { flash('טוען…'); setTimeout(startPay, 500); return; }
   window.MLPay.open({ title: 'תשלום · ' + tpl.title, sub: PRICE() + ' ₪. אחרי התשלום: הורדה בלי סימן מים, ו־' + PAYCFG.editHours + ' שעות לשינויים.',
     body: { plan: 'greet', tpl: tpl.id, v: tpl.variantOf ? tpl.variant : -1, state: S },
-    onPaid: function(id){
-      flash('התשלום התקבל. פותחים את העיצוב…');
-      var tries = 0;
-      (function claim(){ gp({ action: 'claim', o: id }).then(function(j){
-        CRED = { o: id, k: j.k }; ORD = j; SKEW = Date.parse(j.now) - Date.now();
-        try { localStorage.setItem(OKEY, JSON.stringify(CRED)) } catch (e) {}
-        try { history.replaceState(null, '', '/brachot/edit.html?o=' + id + '&k=' + j.k + '#download') } catch (e) {}
-        renderPay(); outPreview(); draw(); flash('✓ שולם! עכשיו מורידים בלי סימן מים. הקישור נשלח גם למייל.');
-      }).catch(function(){ if (++tries < 8) setTimeout(claim, 2500); else flash('התשלום התקבל. הקישור לעיצוב נשלח למייל שלכם.'); }); })();
-    } });
+    onPaid: function(id){ flash('התשלום התקבל.'); afterPaid(id); } });
 }
 function compose(sz, f){
   var pw = Math.round(sz.px[0] * f), ph = Math.round(sz.px[1] * f);
