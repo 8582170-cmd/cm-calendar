@@ -194,7 +194,7 @@ function tools(){M.innerHTML='<h1>כלים</h1><div class="card"><h2 style="marg
   $('#tGo').onclick=function(){var v=$('#tS').value.trim().toLowerCase().replace(/^.*\/t\//,'');if(v)open(v)}}
 
 function err(e){M.insertAdjacentHTML('beforeend','<p class="msg no">'+esc(e.message)+'</p>');if(e.code===401){$('#app').hidden=true;$('#login').hidden=false}}
-function start(){api({action:'evpget'}).then(function(j){EP=j;$('#login').hidden=true;$('#app').hidden=false;try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}var h=(location.hash||'').slice(1);show(['dash','list','set','voice','gifts','mail','tools'].indexOf(h)>=0?h:'dash')})
+function start(){api({action:'evpget'}).then(function(j){EP=j;$('#login').hidden=true;$('#app').hidden=false;try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}var h=(location.hash||'').slice(1),q='';try{q=new URLSearchParams(location.search).get('q')||''}catch(e){}if(q){LS.q=q.slice(0,60);show('list')}else show(['dash','list','set','voice','gifts','mail','tools'].indexOf(h)>=0?h:'dash')})
   .catch(function(e){$('#app').hidden=true;$('#login').hidden=false;$('#lmsg').textContent=e.code===401?'סיסמה שגויה':e.code===429?'יותר מדי ניסיונות. נסו מאוחר יותר.':PW?e.message:''})}
 $('#login').onsubmit=function(e){e.preventDefault();PW=$('#pw').value;start()};
 document.addEventListener('keydown',function(e){if(e.key==='Escape')$('#dr').hidden=true});

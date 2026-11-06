@@ -149,7 +149,11 @@ async function getUser(req) {
     const r = await fetch(url + '/auth/v1/user', { headers: { apikey: key, Authorization: 'Bearer ' + token } });
     if (!r.ok) return null;
     const u = await r.json();
-    return u && u.id ? { id: u.id, email: String(u.email || '').toLowerCase() } : null;
+    if (!u || !u.id) return null;
+    const em = String(u.email || '').toLowerCase();
+    /* לקוח שנחסם בכרטיס הלקוח בניהול */
+    try { if (await require('./_custadmin').blocked(em)) return null; } catch (e) {}
+    return { id: u.id, email: em };
   } catch (e) { return null; }
 }
 

@@ -91,6 +91,11 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ key: 'pricing', value, updated_at: new Date().toISOString() }) });
       return json(res, 200, { ok: true, config: value });
     }
+    /* כרטיס לקוח מאוחד: אירועים, תזכורות, פניות, הערה, חסימה, מסלול במתנה, קופון אישי */
+    if (req.method === 'POST' && /^cu_[a-z]+$/.test(b.action || '')) {
+      try { const out = await require('./_custadmin')(b); return json(res, out.error ? 400 : 200, out); }
+      catch (e) { console.error('custadmin', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
+    }
     /* ניהול האירועים (admin-events.html) */
     if (req.method === 'POST' && /^ev_[a-z]+$/.test(b.action || '')) {
       try { const out = await require('./_evadmin')(b); return json(res, out.error ? 400 : 200, out); }
