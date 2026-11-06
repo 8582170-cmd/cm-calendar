@@ -95,7 +95,9 @@ module.exports = async (req, res) => {
       amount = greet.amount; info = { amount, base: amount, off: 0, why: '' };
     } else if (plan === 'sub') {
       /* מנוי / חבילה (ברכות והזמנות, או תזכורות בלוח): תשלום מראש לתקופה. ההזמנה נשמרת עם plan = gsub:… / gpack:… / rsub:… */
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'email', message: 'נא למלא כתובת מייל. המנוי משויך לחשבון עם המייל הזה.' });
+      /* המנוי משויך לחשבון המחובר (user_id). המייל שמולא בתשלום נשמר בהזמנה (לקבלה ולמיילים) */
+      if (!user) return json(res, 401, { error: 'login', message: 'כדי לקנות מנוי צריך להיכנס לחשבון (המנוי נשמר בחשבון).' });
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'email', message: 'נא למלא כתובת מייל.' });
       sub = await require('./_subs').prepare(b);
       if (sub.error) return json(res, 400, { error: 'sub', message: sub.error });
       amount = sub.amount; plan = sub.plan; info = { amount, base: amount, off: 0, why: '' };

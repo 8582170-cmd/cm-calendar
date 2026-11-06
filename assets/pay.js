@@ -21,6 +21,8 @@ function load(src){ return new Promise(function(ok, bad){ var s = document.creat
 var cfgP = null;
 function cfg(){ if (!cfgP) cfgP = fetch('/api/pricing').then(function(r){ return r.ok ? r.json() : {} }).catch(function(){ return {} }); return cfgP; }
 
+/* החשבון המחובר באתר (אותו מפתח בכל העמודים): נשלח לקופה כדי לשייך את הרכישה לחשבון גם אם משלמים עם מייל אחר */
+function authH(){ try { var o = JSON.parse(localStorage.getItem('myluach-auth') || 'null'); if (o && o.access_token && (o.expires_at || 0) * 1000 > Date.now() + 30000) return { Authorization: 'Bearer ' + o.access_token }; } catch (e) {} return {}; }
 function open(opt){
   if (!document.getElementById('mlp-css')) { var st = document.createElement('style'); st.id = 'mlp-css'; st.textContent = CSS; document.head.appendChild(st); }
   var saved = {}; try { saved = JSON.parse(localStorage.getItem('myluach-buyer') || '{}') || {} } catch (e) {}
@@ -63,7 +65,7 @@ function open(opt){
   function mkOrder(){
     var mail = $('mlpMail').value.trim();
     var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT });
-    return fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify(body) })
       .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok || !(j.tx || j.ppid || j.sumit)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
       .then(function(j){ order = j; PROVS = j.provs || [j.provider]; setup(j.provider); return j; });
   }
@@ -102,7 +104,7 @@ function open(opt){
         Promise.all([orderP, libs]).then(function(r){ var o = r[0]; return new Promise(function(res, rej){ var S = o.sumit || {};
           window.OfficeGuy.Payments.CreateToken({ CompanyID: S.cid, APIPublicKey: S.pk, FormSelector: '#mlpSm',
             ResponseCallback: function(x){ if (x && x.Status === 0 && x.Data && x.Data.SingleUseToken) res({ o: o, t: x.Data.SingleUseToken }); else rej(Object.assign(new Error((x && x.UserErrorMessage) || 'פרטי הכרטיס לא תקינים'), { sys: !x || (x.Status !== 1 && !x.UserErrorMessage) })); } }); }); })
-          .then(function(r){ return fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sumitcharge', id: r.o.id, token: r.t, name: name, email: mail }) }).then(function(x){ return x.json() }); })
+          .then(function(r){ return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify({ action: 'sumitcharge', id: r.o.id, token: r.t, name: name, email: mail }) }).then(function(x){ return x.json() }); })
           .then(function(x){ if (x.fallback) { fallback(x.message); return; } if (x.status === 'paid') { done(); return; } fail(x.message || 'התשלום לא אושר.'); })
           .catch(function(e){ if (e && e.sys) { fallback(); return; } fail(e.message || 'התשלום נכשל. נסו שוב.'); });
       };
@@ -111,7 +113,7 @@ function open(opt){
     /* PayPal: כרטיס אשראי דרך פייפל */
     ready = true; ned(false); go.hidden = true; var pbox = $('mlpBox'); pbox.hidden = false; msg('טוען טופס תשלום מאובטח…');
     var createOrder = function(){ return orderP.then(function(o){ return o.ppid }) };
-    var onApprove = function(){ msg('מאשרים את התשלום…'); return orderP.then(function(o){ return fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'ppcapture', id: o.id }) }).then(function(r){ return r.json() }); })
+    var onApprove = function(){ msg('מאשרים את התשלום…'); return orderP.then(function(o){ return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify({ action: 'ppcapture', id: o.id }) }).then(function(r){ return r.json() }); })
       .then(function(x){ if (x.status === 'paid') { done(); return; } msg(esc(x.message || 'התשלום לא הושלם. אפשר לנסות שוב.'), 1); })
       .catch(function(){ msg('לא הצלחנו לאשר את התשלום. אם חויבתם, פנו אלינו עם מספר ההזמנה ' + (order ? order.id.slice(0, 8) : ''), 1); }); };
     cfg().then(function(d){

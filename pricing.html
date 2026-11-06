@@ -303,7 +303,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
     S.hidden = false; if (location.hash === '#rem') S.scrollIntoView();
     G.addEventListener('click', function(e){ var b = e.target.closest('[data-rb]'); if (!b) return; var x = R.opts[+b.dataset.rb], per = b.dataset.per;
       var go = function(){ window.MLPay.open({ title: 'מנוי תזכורות · ' + (x.name || ''), sub: (per === 'y' ? x.py + ' ₪ לשנה' : x.pm + ' ₪ לחודש') + '. תשלום אחד, בלי חיוב אוטומטי.', mailNote: 'המייל שאיתו נרשמים לתזכורות (ושל החשבון)', body: { plan: 'sub', kind: 'rsub', id: x.id, per: per }, onPaid: function(){ b.textContent = '✓ שולם'; } }); };
-      if (window.MLPay) go(); else { var s = document.createElement('script'); s.src = '/assets/pay.js?v=1'; s.onload = go; document.head.appendChild(s); } });
+      if (window.MLPay) go(); else { var s = document.createElement('script'); s.src = '/assets/pay.js?v=2'; s.onload = go; document.head.appendChild(s); } });
   }).catch(function(){});
 })();
 </script>
