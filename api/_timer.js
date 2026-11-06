@@ -65,7 +65,7 @@ function clean(c) {
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
     qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 10).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 12).map(v => str(v, 40).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
-    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, vt: str(c.vt, 600).replace(/[<>]/g, ''), vrt: str(c.vrt, 600).replace(/[<>]/g, ''), clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
+    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, ml: ['he', 'en', 'yi'].includes(c.ml) ? c.ml : '', vt: str(c.vt, 600).replace(/[<>]/g, ''), vrt: str(c.vrt, 600).replace(/[<>]/g, ''), clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
     bgi: okImg(c.bgi) ? c.bgi : '', bgv: okMedia(c.bgv, 'video') ? c.bgv : '', mus: okMedia(c.mus, 'audio') ? c.mus : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
   };
 }
@@ -107,37 +107,41 @@ function sunsetH(y, m, d, tz) { const c = LLs[tz] || LLs['Asia/Jerusalem'], lat 
   RA = (RA + Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90) / 15; const sd = .39782 * Math.sin(L * R), cd = Math.cos(Math.asin(sd)), ch = (Math.cos(90.833 * R) - sd * Math.sin(lat * R)) / (cd * Math.cos(lat * R));
   if (ch > 1 || ch < -1) return null; const Hh = Math.acos(ch) / R / 15, T = Hh + RA - .06571 * t - 6.622; return ((T - lh + off) % 24 + 48) % 24; }
 const H = v => String(v == null ? '' : v).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const YWD = ['זונטאג', 'מאנטאג', 'דינסטאג', 'מיטוואך', 'דאנערשטאג', 'פרייטאג', 'שבת קודש'], YMO = ['יאנואר', 'פעברואר', 'מערץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אויגוסט', 'סעפטעמבער', 'אקטאבער', 'נאוועמבער', 'דעצעמבער'];
 function inviteMail(slug, cur, r, site, mode) {
   const c = cur.cfg || {}, th = THC[c.th] || THC.classic, acc = /^[0-9a-f]{6}$/i.test(c.c || '') ? c.c : th[0], bg = /^[0-9a-f]{6}$/i.test(c.b || '') ? c.b : th[1], dark = c.th === 'elegant' || c.th === 'digital';
-  const ink = dark ? 'f3efe6' : '1a232c', mute = dark ? 'b8ae9c' : '5d6873', EN = c.lang === 'en', page = site + '/t/' + slug + '?' + (r.name ? 'to=' + encodeURIComponent(r.name) + '&' : '') + 'r=' + r.token;
-  const title = c.t || (EN ? 'You are invited' : 'הזמנה');
-  let when = c.d; try { const d = new Date(c.d + 'T12:00:00Z'); when = (c.ww !== '0' ? new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { weekday: 'long', timeZone: 'UTC' }).format(d) + ', ' : '') + new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d);
+  const ink = dark ? 'f3efe6' : '1a232c', mute = dark ? 'b8ae9c' : '5d6873', ML = c.ml || c.lang || 'he', EN = ML === 'en', YI = ML === 'yi', page = site + '/t/' + slug + '?' + (r.name ? 'to=' + encodeURIComponent(r.name) + '&' : '') + 'r=' + r.token;
+  const title = c.t || (EN ? 'You are invited' : YI ? 'איינלאדונג' : 'הזמנה');
+  let when = c.d; try { const d = new Date(c.d + 'T12:00:00Z');
+    when = YI ? (c.ww !== '0' ? YWD[d.getUTCDay()] + ', ' : '') + d.getUTCDate() + 'טן ' + YMO[d.getUTCMonth()] + ' ' + d.getUTCFullYear()
+      : (c.ww !== '0' ? new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { weekday: 'long', timeZone: 'UTC' }).format(d) + ', ' : '') + new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d);
     if (c.wd === 'h' || c.wd === 'b') { const [y, mo, da] = c.d.split('-').map(Number), hm = /^(\d{1,2}):(\d{2})$/.exec(c.h || ''), ss = hm && c.wh !== 'c' ? sunsetH(y, mo, da, c.z || 'Asia/Jerusalem') : null, after = ss != null && (+hm[1] + hm[2] / 60) >= ss;
       const p = {}; new Intl.DateTimeFormat(EN ? 'en-u-ca-hebrew' : 'he-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).formatToParts(new Date(d.getTime() + (after ? 864e5 : 0))).forEach(x => { p[x.type] = x.value; });
-      let hd = EN ? p.day + ' ' + p.month + ' ' + p.year : gemN(+p.day) + ' ב' + p.month + ' ' + gemN(+p.year); if (after && c.wh === 'o') hd = (EN ? 'Eve of ' : 'אור ל') + hd;
+      let hd = EN ? p.day + ' ' + p.month + ' ' + p.year : gemN(+p.day) + (YI ? ' ' : ' ב') + p.month + ' ' + gemN(+p.year); if (after && c.wh === 'o') hd = (EN ? 'Eve of ' : 'אור ל') + hd;
       when = c.wd === 'h' ? hd : when + ' · ' + hd; } } catch (e) {}
-  if (c.h) when += (EN ? ' · ' : ' · בשעה ') + c.h;
-  const greet = r.name ? String(c.pt || (EN ? 'Dear {name}, we would be delighted to celebrate with you!' : 'לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!')).replace(/\{(שם|name)\}/g, r.name) : '';
+  if (c.h) when += (EN || YI ? ' · ' : ' · בשעה ') + c.h;
+  const greet = r.name ? String(c.pt || (EN ? 'Dear {name}, we would be delighted to celebrate with you!' : YI ? 'לכבוד {שם}, מיר וועלן זיך זייער פרייען אייך צו זען ביי אונזער שמחה!' : 'לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!')).replace(/\{(שם|name)\}/g, r.name) : '';
   const img = site + '/api/pricing?c=_cdimg&d=' + c.d + (c.h ? '&h=' + encodeURIComponent(c.h) : '') + '&u=' + (c.u || 'd') + '&fg=' + acc + '&bg=' + bg + (c.z && c.z !== 'Asia/Jerusalem' ? '&z=' + encodeURIComponent(c.z) : '') + '&a=1';
   const btn = (href, label, pri) => '<a href="' + H(href) + '" target="_blank" style="display:inline-block;margin:4px;padding:10px 18px;border-radius:999px;border:2px solid #' + acc + ';' + (pri ? 'background:#' + acc + ';color:#' + bg : 'color:#' + acc) + ';font-weight:bold;text-decoration:none;font-family:Arial,sans-serif;font-size:15px">' + label + '</a>';
   const loc = [c.venue, c.addr].filter(Boolean).join(', '), dir = EN ? 'ltr' : 'rtl', unsub = site + '/api/pricing?c=_timer&unsub=' + r.token;
   const L = EN ? { rsvp: '✅ RSVP', wish: '✍️ Write a blessing', cal: '📅 Add to calendar', waze: '🚗 Waze', maps: '📍 Maps', gift: '🎁 ' + (c.gl || 'Gift'), rec: 'Reception', open: 'Open the invitation', un: 'Unsubscribe' }
+                 : YI ? { rsvp: '✅ באשטעטיגן קומען', wish: '✍️ שרייבן א ברכה', cal: '📅 צולייגן צום קאלענדאר', waze: '🚗 וועיז', maps: '📍 מאפע', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'צו דער איינלאדונג', un: 'אראפנעמען פון דער ליסטע' }
                  : { rsvp: '✅ אישור הגעה', wish: '✍️ כתיבת ברכה', cal: '📅 הוספה ליומן', waze: '🚗 וייז', maps: '📍 מפות', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'לדף ההזמנה', un: 'הסרה מרשימת התפוצה' };
   const row = x => '<tr><td style="padding:8px 18px;text-align:center">' + x + '</td></tr>';
   let h = '<!doctype html><html dir="' + dir + '"><body style="margin:0;padding:0;background:#f4f2ee"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:16px 8px">' +
     '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#' + bg + ';border-radius:16px;overflow:hidden;direction:' + dir + ';font-family:Arial,sans-serif;color:#' + ink + '">';
   if (/^https:\/\//.test(c.inv || '')) h += '<tr><td><a href="' + H(page) + '" target="_blank"><img src="' + H(c.inv) + '" width="600" alt="' + H(title) + '" style="display:block;width:100%;height:auto;border:0"></a></td></tr>';
-  const MH = { nr: EN ? 'We haven’t heard from you yet. Will you join us? Please reply with one click.' : 'עוד לא קיבלנו ממך אישור הגעה. נשמח לדעת אם תגיעו, בלחיצה אחת.', dr: EN ? 'Today is the day! Looking forward to seeing you.' : 'היום זה קורה! מחכים לראותכם.', ty: c.tyt || (EN ? 'Thank you for celebrating with us!' : 'תודה רבה שהשתתפתם בשמחתנו!') };
+  const MH = { nr: EN ? 'We haven’t heard from you yet. Will you join us? Please reply with one click.' : YI ? 'מיר האבן נאך נישט באקומען אייער באשטעטיגונג. מיר וועלן זיך פרייען צו וויסן צי איר קומט, מיט איין קליק.' : 'עוד לא קיבלנו ממך אישור הגעה. נשמח לדעת אם תגיעו, בלחיצה אחת.', dr: EN ? 'Today is the day! Looking forward to seeing you.' : YI ? 'היינט איז די שמחה! מיר ווארטן אייך צו זען.' : 'היום זה קורה! מחכים לראותכם.', ty: c.tyt || (EN ? 'Thank you for celebrating with us!' : YI ? 'א הארציגן דאנק פארן מיטפרייען זיך מיט אונז!' : 'תודה רבה שהשתתפתם בשמחתנו!') };
   if (mode && MH[mode]) h += row('<div style="font-size:19px;font-weight:bold;color:#' + acc + ';white-space:pre-line">' + H(MH[mode]) + '</div>');
   if (greet && mode !== 'ty') h += row('<div style="font-size:21px;font-weight:bold;color:#' + acc + '">' + H(greet) + '</div>');
   if (cur.mail && cur.mail.note && !mode) h += row('<div style="font-size:16px;white-space:pre-line">' + H(cur.mail.note) + '</div>');
   if (c.it && !mode) h += row('<div style="font-size:16px;white-space:pre-line">' + H(c.it) + '</div>');
   h += row('<div style="font-size:22px;font-weight:bold;color:#' + acc + '">' + H(title) + '</div><div style="font-size:14px;color:#' + mute + ';margin-top:4px">' + H(when) + '</div>');
-  const U = (c.u === 'm' ? ['months'] : c.u === 'w' ? ['weeks'] : []).concat(['days', 'hours', 'minutes', 'seconds']), UL = EN ? { months: 'months', weeks: 'weeks', days: 'days', hours: 'hours', minutes: 'minutes', seconds: 'seconds' } : { months: 'חודשים', weeks: 'שבועות', days: 'ימים', hours: 'שעות', minutes: 'דקות', seconds: 'שניות' };
+  const U = (c.u === 'm' ? ['months'] : c.u === 'w' ? ['weeks'] : []).concat(['days', 'hours', 'minutes', 'seconds']), UL = EN ? { months: 'months', weeks: 'weeks', days: 'days', hours: 'hours', minutes: 'minutes', seconds: 'seconds' } : YI ? { months: 'חדשים', weeks: 'וואכן', days: 'טעג', hours: 'שעות', minutes: 'מינוט', seconds: 'סעקונדעס' } : { months: 'חודשים', weeks: 'שבועות', days: 'ימים', hours: 'שעות', minutes: 'דקות', seconds: 'שניות' };
   if (mode !== 'ty' && c.clk !== 0) h += row('<a href="' + H(page) + '" target="_blank"><img src="' + H(img) + '" width="420" alt="" style="display:block;margin:0 auto;max-width:100%;height:auto;border:0"></a><table role="presentation" width="420" align="center" cellpadding="0" cellspacing="0" style="max-width:100%;direction:ltr;font-size:13px;color:#' + mute + ';text-align:center"><tr>' + U.map(k => '<td>' + UL[k] + '</td>').join('') + '</tr></table>');
   if (loc || c.tr) h += row('<div style="font-size:15px">' + (c.venue ? '<b style="color:#' + acc + '">' + H(c.venue) + '</b><br>' : '') + (c.addr ? H(c.addr) + '<br>' : '') + (c.tr ? L.rec + ': ' + H(c.tr) + (c.h ? ' · ' + H(c.tl || (EN ? 'Ceremony' : 'חופה')) + ': ' + H(c.h) : '') : '') + '</div>' +
     (c.addr ? '<div style="margin-top:6px">' + btn('https://waze.com/ul?q=' + encodeURIComponent(c.addr) + '&navigate=yes', L.waze) + btn('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc), L.maps) + '</div>' : ''));
-  h += row((mode === 'ty' ? btn(page, L.open, true) + (c.gal ? btn(page + '&go=gal', EN ? '📷 Share your photos' : '📷 להעלאת תמונות מהאירוע') : '') : (c.rv && mode !== 'dr' ? btn(page + '&go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + btn(page + '&go=cal', L.cal)) + (c.wl ? btn(page + '&go=wish', L.wish) : '') + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
+  h += row((mode === 'ty' ? btn(page, L.open, true) + (c.gal ? btn(page + '&go=gal', EN ? '📷 Share your photos' : YI ? '📷 ארויפלייגן בילדער פון דער שמחה' : '📷 להעלאת תמונות מהאירוע') : '') : (c.rv && mode !== 'dr' ? btn(page + '&go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + btn(page + '&go=cal', L.cal)) + (c.wl ? btn(page + '&go=wish', L.wish) : '') + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
   h += '<tr><td style="padding:14px 18px 16px;text-align:center;font-size:11px;color:#' + mute + '"><a href="' + H(unsub) + '" style="color:#' + mute + '">' + L.un + '</a> · <a href="' + site + '/invite" style="color:#' + mute + ';text-decoration:none">myluach.org</a></td></tr></table></td></tr></table></body></html>';
   const text = (greet ? greet + '\n\n' : '') + title + '\n' + when + (loc ? '\n' + loc : '') + '\n\n' + page + '\n\n' + L.un + ': ' + unsub;
   return { html: h, text, unsub };
@@ -192,7 +196,7 @@ async function autoMails(cover, max) {
       const who = R.filter(r => !r[job + '_at'] && (job === 'nr' ? !A[r.token] : A[r.token] === 'yes'));
       const done = [];
       for (const r of who) { if (budget <= 0 || room <= 0) break; const mm = inviteMail(s, cur, r, site, job);
-        const subj = { nr: (c.lang === 'en' ? 'Reminder: please RSVP · ' : 'תזכורת: נשמח לאישור הגעה · '), dr: (c.lang === 'en' ? 'Today! ' : 'היום! '), ty: (c.lang === 'en' ? 'Thank you · ' : 'תודה · ') }[job] + (c.t || '');
+        const ML = c.ml || c.lang || 'he', subj = { nr: (ML === 'en' ? 'Reminder: please RSVP · ' : ML === 'yi' ? 'דערמאנונג: ביטע באשטעטיגט · ' : 'תזכורת: נשמח לאישור הגעה · '), dr: (ML === 'en' ? 'Today! ' : ML === 'yi' ? 'היינט! ' : 'היום! '), ty: (ML === 'en' ? 'Thank you · ' : ML === 'yi' ? 'א דאנק · ' : 'תודה · ') }[job] + (c.t || '');
         try { await sendMail({ to: r.email, subject: subj, html: mm.html, text: mm.text, replyTo: cur.paid.email || undefined, headers: { 'List-Unsubscribe': '<' + mm.unsub + '>' } }, 'invite-' + job); done.push(r.id); budget--; room--; out[job]++; }
         catch (e) { if (/no mail provider/.test(e.message)) { budget = 0; break; } } }
       if (done.length) await db('timer_recip?id=in.(' + done.join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ [job + '_at']: new Date().toISOString() }) });
@@ -335,7 +339,7 @@ async function guest(req, res, b) {
       let at = null;
       if (b.at) { at = Date.parse(b.at); if (!isFinite(at)) return json(res, 400, { error: 'at' }); if (at < Date.now() + 2 * 60e3) at = null; else if (at > Date.now() + 400 * 864e5) return json(res, 400, { error: 'far' }); }
       const hz = await holyAt(at || Date.now()); if (hz) return json(res, 400, { error: 'shabbat', end: hz.end });
-      await T_put_mail(s, cur, { subject: clean1(b.subject, 140) || 'הזמנה: ' + (c.t || 'האירוע'), note: clean1(b.note, 600), at: at ? new Date(at).toISOString() : null });
+      await T_put_mail(s, cur, { subject: clean1(b.subject, 140) || ((c.ml || c.lang) === 'yi' ? 'איינלאדונג: ' : (c.ml || c.lang) === 'en' ? 'Invitation: ' : 'הזמנה: ') + (c.t || ''), note: clean1(b.note, 600), at: at ? new Date(at).toISOString() : null });
       for (let i = 0; i < pick.length; i += 300) await db('timer_recip?id=in.(' + pick.slice(i, i + 300).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'queued', err: null }) });
       return json(res, 200, { ok: true, queued: pick.length, left: left - pick.length, at: at ? new Date(at).toISOString() : null });
     }
