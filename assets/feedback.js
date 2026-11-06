@@ -134,7 +134,21 @@
         return '<figure class="mlrv">' + (x.stars ? '<div class="mlrv-s" aria-label="' + x.stars + T.stars + '">' + st(x.stars) + '</div>' : '') + (x.text ? '<blockquote>' + esc(x.text) + '</blockquote>' : '') + '<figcaption>' + esc(x.name || (EN ? 'A customer' : 'לקוח/ה')) + '</figcaption></figure>';
       }).join('') + '</div>';
       el.hidden = false;
+      rateLd(L);
     }).catch(function () {});
+  }
+  /* דירוג לגוגל (כוכבים בתוצאות החיפוש): מוסיפים לסימון WebApplication שבדף את הממוצע והמשובים שמוצגים בפועל.
+     רק משובים עם כוכבים, ורק מ־3 ומעלה. המספרים תמיד זהים למה שרואים בדף */
+  function rateLd(L) {
+    try {
+      var R = L.filter(function (x) { return x.stars >= 1; }); if (R.length < 3) return;
+      var sc = [].filter.call(document.querySelectorAll('script[type="application/ld+json"]'), function (x) { return /"WebApplication"/.test(x.textContent); })[0]; if (!sc) return;
+      var root = JSON.parse(sc.textContent), o = (root['@graph'] || [root]).filter(function (n) { return n['@type'] === 'WebApplication'; })[0] || root, avg = R.reduce(function (a, x) { return a + x.stars; }, 0) / R.length;
+      o.aggregateRating = { '@type': 'AggregateRating', ratingValue: Math.round(avg * 10) / 10, ratingCount: R.length, bestRating: 5, worstRating: 1 };
+      o.review = R.filter(function (x) { return x.name; }).slice(0, 10).map(function (x) { var v = { '@type': 'Review', author: { '@type': 'Person', name: x.name }, reviewRating: { '@type': 'Rating', ratingValue: x.stars, bestRating: 5, worstRating: 1 } }; if (x.text) v.reviewBody = x.text; if (x.t) v.datePublished = x.t; return v; });
+      if (!o.review.length) delete o.review;
+      sc.textContent = JSON.stringify(root);
+    } catch (e) {}
   }
   var css2 = '.mlrv-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}.mlrv{margin:0;background:var(--panel,#fff);border:1px solid var(--line,#d3dae0);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}' +
     '.mlrv-s{direction:ltr;text-align:right;font-size:18px;color:#d5d9dd}.mlrv-s .on{color:#f2a900}.mlrv-s .half{background:linear-gradient(90deg,#d5d9dd 50%,#f2a900 50%);-webkit-background-clip:text;background-clip:text;color:transparent}' +
