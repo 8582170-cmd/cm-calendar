@@ -676,8 +676,21 @@ function bind(){
 })();
 </script>
 <script>
-/* כיווץ חלקים בניהול: בכניסה הכל מכווץ, ולחיצה על כותרת פותחת או סוגרת אותה */
+window.ADMIN_NAV={title:'ניהול MyLuach',sub:'הגדרות האתר',groups:[
+  ['dash','📊 סקירה',/הזמנות אחרונות|הורדות ותזכורות|שימוש באחסון/],
+  ['sales','💰 מחירים ותשלום',/^מחירים|מבצע כללי|מסלולים נוספים|תשלום ולקוחות|קופונים/],
+  ['cust','👤 לקוחות ופניות',/^לקוח|משובים ופניות|שליחת מייל מעוצב/],
+  ['mail','✉️ מיילים',/דוח מיילים|המיילים שהלקוחות|מיילים ותזכורות|מיילים מתוזמנים/],
+  ['phone','📞 תזכורות קוליות',/קוליות/],
+  ['content','📝 תוכן ודפים',/דפים|הודעות לגולשים|מאגר|מבזקי/],
+  ['sys','⚙️ מערכת',/אבטחה|שומר שבת|מנועי חיפוש|מסד הנתונים|משימת הלילה/],
+  ['events','🎉 הזמנות לאירועים',/הזמנות לאירועים|דף הזמנה לאירוע/]],
+  links:[['/admin-events','🎉 ניהול אירועים'],['/admin-studio','🎨 סטודיו רקעים']]};
+</script>
+<script>
+/* כיווץ חלקים בניהול: בכניסה הכל מכווץ, ולחיצה על כותרת פותחת או סוגרת אותה (לא פעיל כשיש תפריט צד) */
 (function(){
+  if(window.ADMIN_NAV){window.openSection=function(){};return}
   var O={};
   function key(sec){var h=sec.querySelector(':scope>h2');return h?h.textContent.trim().slice(0,40):''}
   function apply(){document.querySelectorAll('section').forEach(function(sec){var k=key(sec);if(k)sec.classList.toggle('fold',!O[k])})}
@@ -691,4 +704,5 @@ function bind(){
   apply();bar();
 })();
 </script>
+<script src="/assets/admin-nav.js?v=1"></script>
 </body></html>
