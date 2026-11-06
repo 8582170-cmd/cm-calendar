@@ -258,7 +258,7 @@ summary{cursor:pointer;font-weight:700}
         <div class="row"><button class="btn" type="button" id="rcPrev">פארויסקוק פונעם אימעיל</button><button class="btn pri" type="button" id="rcGo">שיקן צו אלע וואס האבן נאך נישט באקומען</button></div><p class="st" id="rcProg" aria-live="polite"></p>
         <iframe id="rcFrame" title="פארויסקוק פונעם אימעיל" hidden style="height:620px;border:1px solid var(--line);margin-top:8px;background:#fff"></iframe></div>
       </div>
-      <div class="own" id="vBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">📞 קול-מעסעדזש צום טעלעפאן</h3>
+      <div class="own" id="vBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">📞 קול-מעסעדזש צום טעלעפאן</h3><p class="mute" style="margin:0 0 6px;font-size:14px">דערווייל נאר צו נומערן אין ארץ ישראל.</p>
         <p class="mute" style="font-size:14px;margin:0 0 6px">קומט אן צו יעדן טעלעפאן, אויך א כשר'ער. דער גאסט הערט די הזמנה און באשטעטיגט מיט קנעפלעך (קומט אדער נישט, וויפיל מענטשן, און ענטפערס אויף די פראגעס). די ענטפערס קומען אריין אין דער ליסטע.</p>
         <div id="vStat"></div>
         <div class="chk" role="radiogroup" aria-label="סוג ההודעה"><label><input type="radio" name="vMode" value="inv" checked>הזמנה מיט באשטעטיגונג</label><label><input type="radio" name="vMode" value="rem">דערמאנונג פאר די וואס האבן באשטעטיגט</label></div>
@@ -268,7 +268,7 @@ summary{cursor:pointer;font-weight:700}
         <div class="row"><button class="btn pri" type="button" id="vGo">📞 שיקן</button><span class="st" id="vM" aria-live="polite"></span></div>
         <details style="margin:6px 0"><summary style="font-weight:600;font-size:15px">א פרובע-רוף צו מיין טעלעפאן</summary><div class="row"><input id="vTP" type="tel" dir="ltr" maxlength="20" placeholder="050-0000000" style="width:170px;margin:0"><button class="btn sm" type="button" id="vTest">רופט מיך אן</button><span class="st" id="vTM"></span></div></details>
         <div id="vCamps"></div></div>
-      <div class="own" id="smsBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">שיקן אין SMS (ארץ ישראל)</h3><div id="smsOut"></div></div>
+      <div class="own" id="smsBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">שיקן אין SMS</h3><p class="mute" style="margin:0 0 6px;font-size:14px">דערווייל נאר צו נומערן אין ארץ ישראל.</p><div id="smsOut"></div></div>
       <div class="own" id="ownBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">באשטעטיגונגען און ברכות</h3><div class="row"><button class="btn" type="button" id="ownLoad">ווייזן און דערהיינטיגן</button><button class="btn" type="button" id="ownCsv" hidden>אראפנעמען צו עקסעל (CSV)</button><button class="btn" type="button" id="ownBook" hidden>📖 ברכות-בוך צו דרוקן</button><a class="btn" id="ownOpen" target="_blank" rel="noopener">עפענען די הזמנה</a></div><div id="ownOut"></div>
         <div id="seatOut"></div><div id="galOut"></div><div id="giftOut"></div></div>
     </details>
@@ -375,7 +375,7 @@ summary{cursor:pointer;font-weight:700}
     var show=plans.filter(function(x){return !full||x.price>have});
     var card=function(x){var price=full?Math.max(1,x.price-have):x.price;
       return '<div class="plan'+(x.best?' best':'')+'">'+(x.best?'<span class="badge">רעקאמענדירט</span>':'')+'<h4>'+esc(x.name)+'</h4><div class="pr">'+price+' ₪'+(full?' <small>ארויפגיין</small>':'')+'</div>'+(x.desc?'<p class="mute" style="font-size:13.5px;margin:4px 0">'+esc(x.desc)+'</p>':'')+
-        '<ul>'+(x.emails?'<li>✉️ '+x.emails.toLocaleString('he-IL')+' אימעילס</li>':'')+(x.sms?'<li>💬 '+x.sms+' SMS</li>':'')+(x.calls?'<li>📞 '+x.calls+' רופן</li>':'')+
+        '<ul>'+(x.emails?'<li>✉️ '+x.emails.toLocaleString('he-IL')+' אימעילס</li>':'')+(x.sms?'<li>💬 '+x.sms+' SMS (ארץ ישראל)</li>':'')+(x.calls?'<li>📞 '+x.calls+' רופן (ארץ ישראל)</li>':'')+
         FT.map(function(f){return '<li'+(x.feats&&x.feats[f[0]]?'':' class="no"')+'>'+(x.feats&&x.feats[f[0]]?'✓ ':'— ')+esc(f[1])+'</li>'}).join('')+'</ul>'+
         (P.on===false?'':'<button class="btn pri sm" type="button" data-buy="'+esc(x.id)+'" data-price="'+price+'">'+(full?'ארויפגיין':'קלייבן')+'</button>')+'</div>'};
     O.innerHTML=(full?'<p class="st ok">✓ דף ההזמנה פעיל'+(cur?', אינעם פעקל "'+esc(cur.name)+'"':', מיטן פולן פעקל')+'. אימעילס: געשיקט '+pd.sent+' פון '+pd.emails+'.</p>'+(show.length?'<p style="margin:8px 0 2px"><b>ארויפגיין אין פעקל:</b> מען צאלט נאר דעם אונטערשייד.</p>':''):

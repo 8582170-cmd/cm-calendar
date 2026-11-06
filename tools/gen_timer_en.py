@@ -9,6 +9,7 @@ src = open(os.path.join(ROOT, 'timer.html'), encoding='utf-8').read()
 
 # החלפות במבנה הדף (לפני התרגום)
 STRUCT = [
+    ('בשלב זה רק למספרים בישראל.', 'For now, Israeli phone numbers only.'),
     ('<html lang="he" dir="rtl" data-pg="timer">', '<html lang="en" dir="ltr" data-pg="timer">'),
     ('<link rel="canonical" href="https://www.myluach.org/timer">', '<link rel="canonical" href="https://www.myluach.org/timer-en">'),
     ('<meta property="og:url" content="https://www.myluach.org/timer">', '<meta property="og:url" content="https://www.myluach.org/timer-en">'),

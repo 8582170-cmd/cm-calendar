@@ -277,7 +277,7 @@ EN = [
     (' שיחות. הסטטוס יתעדכן ברשימה.', ' calls. The status will update in the list.'),
     ('>קניית שיחות<', '>Buy calls<'),
     ('שליחות קודמות', 'Previous sends'),
-    ('שליחה ב־SMS (בארץ)', 'Send by SMS (Israel)'),
+    ('שליחה ב־SMS', 'Send by SMS'), ('בשלב זה רק למספרים בישראל.', 'For now, Israeli phone numbers only.'), (' SMS (בישראל)</li>', ' SMS (Israel)</li>'), (' שיחות (בישראל)</li>', ' calls (Israel)</li>'),
     ('>קניית SMS<', '>Buy SMS<'),
     ('לשלוח SMS עם הקישור האישי לכל מי שעוד לא קיבל?', 'Send an SMS with the personal link to everyone who hasn’t received it?'),
     ('<p>יתרת SMS: <b>', '<p>SMS balance: <b>'),

@@ -260,7 +260,7 @@ summary{cursor:pointer;font-weight:700}
         <div class="row"><button class="btn" type="button" id="rcPrev">תצוגה מקדימה של המייל</button><button class="btn pri" type="button" id="rcGo">שליחה לכל מי שעוד לא קיבל</button></div><p class="st" id="rcProg" aria-live="polite"></p>
         <iframe id="rcFrame" title="תצוגה מקדימה של המייל" hidden style="height:620px;border:1px solid var(--line);margin-top:8px;background:#fff"></iframe></div>
       </div>
-      <div class="own" id="vBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">📞 הודעה קולית לטלפון</h3>
+      <div class="own" id="vBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">📞 הודעה קולית לטלפון</h3><p class="mute" style="margin:0 0 6px;font-size:14px">בשלב זה רק למספרים בישראל.</p>
         <p class="mute" style="font-size:14px;margin:0 0 6px">מגיעה לכל טלפון, גם כשר. המוזמן שומע את ההזמנה בהקראה ממוחשבת ומאשר הגעה בהקשות (מגיע או לא, כמה אנשים, ותשובות לשאלות עם אפשרויות). התשובות נכנסות לרשימה.</p>
         <div id="vStat"></div>
         <div class="chk" role="radiogroup" aria-label="סוג ההודעה"><label><input type="radio" name="vMode" value="inv" checked>הזמנה עם אישור הגעה</label><label><input type="radio" name="vMode" value="rem">תזכורת למי שאישר</label></div>
@@ -270,7 +270,7 @@ summary{cursor:pointer;font-weight:700}
         <div class="row"><button class="btn pri" type="button" id="vGo">📞 שליחת ההודעה</button><span class="st" id="vM" aria-live="polite"></span></div>
         <details style="margin:6px 0"><summary style="font-weight:600;font-size:15px">שיחת ניסיון לטלפון שלי</summary><div class="row"><input id="vTP" type="tel" dir="ltr" maxlength="20" placeholder="050-0000000" style="width:170px;margin:0"><button class="btn sm" type="button" id="vTest">התקשרו אליי</button><span class="st" id="vTM"></span></div></details>
         <div id="vCamps"></div></div>
-      <div class="own" id="smsBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">שליחה ב־SMS (בארץ)</h3><div id="smsOut"></div></div>
+      <div class="own" id="smsBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">שליחה ב־SMS</h3><p class="mute" style="margin:0 0 6px;font-size:14px">בשלב זה רק למספרים בישראל.</p><div id="smsOut"></div></div>
       <div class="own" id="ownBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">אישורי הגעה וברכות</h3><div class="row"><button class="btn" type="button" id="ownLoad">הצגה ורענון</button><button class="btn" type="button" id="ownCsv" hidden>הורדה לאקסל (CSV)</button><button class="btn" type="button" id="ownBook" hidden>📖 ספר ברכות להדפסה</button><a class="btn" id="ownOpen" target="_blank" rel="noopener">פתיחת דף ההזמנה</a></div><div id="ownOut"></div>
         <div id="seatOut"></div><div id="galOut"></div><div id="giftOut"></div></div>
     </details>
@@ -376,7 +376,7 @@ summary{cursor:pointer;font-weight:700}
     var show=plans.filter(function(x){return !full||x.price>have});
     var card=function(x){var price=full?Math.max(1,x.price-have):x.price;
       return '<div class="plan'+(x.best?' best':'')+'">'+(x.best?'<span class="badge">מומלץ</span>':'')+'<h4>'+esc(x.name)+'</h4><div class="pr">'+price+' ₪'+(full?' <small>שדרוג</small>':'')+'</div>'+(x.desc?'<p class="mute" style="font-size:13.5px;margin:4px 0">'+esc(x.desc)+'</p>':'')+
-        '<ul>'+(x.emails?'<li>✉️ '+x.emails.toLocaleString('he-IL')+' מיילים</li>':'')+(x.sms?'<li>💬 '+x.sms+' SMS</li>':'')+(x.calls?'<li>📞 '+x.calls+' שיחות</li>':'')+
+        '<ul>'+(x.emails?'<li>✉️ '+x.emails.toLocaleString('he-IL')+' מיילים</li>':'')+(x.sms?'<li>💬 '+x.sms+' SMS (בישראל)</li>':'')+(x.calls?'<li>📞 '+x.calls+' שיחות (בישראל)</li>':'')+
         FT.map(function(f){return '<li'+(x.feats&&x.feats[f[0]]?'':' class="no"')+'>'+(x.feats&&x.feats[f[0]]?'✓ ':'— ')+esc(f[1])+'</li>'}).join('')+'</ul>'+
         (P.on===false?'':'<button class="btn pri sm" type="button" data-buy="'+esc(x.id)+'" data-price="'+price+'">'+(full?'שדרוג':'בחירה')+'</button>')+'</div>'};
     O.innerHTML=(full?'<p class="st ok">✓ דף ההזמנה פעיל'+(cur?', במסלול "'+esc(cur.name)+'"':', בחבילה מלאה')+'. מיילים: נשלחו '+pd.sent+' מתוך '+pd.emails+'.</p>'+(show.length?'<p style="margin:8px 0 2px"><b>שדרוג המסלול:</b> משלמים רק את ההפרש.</p>':''):
