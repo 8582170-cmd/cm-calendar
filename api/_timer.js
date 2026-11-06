@@ -217,6 +217,29 @@ async function autoMails(cover, max) {
   }
   return out;
 }
+/* תזכורת קולית אוטומטית לפני האירוע (אם הופעלה בניהול האירועים ← תזמון): למי שביקש בשלוחה "לתזכורת הקישו 1" (call_rem=1).
+   daysBefore ימים לפני האירוע, מהיתרה של שיחות האירוע. אחרי השיחה call_rem=2, כדי שלא יתקשרו שוב */
+async function autoCalls(cover, daysBefore) {
+  const EP = await require('./_eventpay').prices().catch(() => ({})), V = require('./_ivoice'), out = { events: 0, calls: 0, noQuota: 0 };
+  if (!EP.voiceOn || !(await V.ready().catch(() => false))) return { off: true };
+  const idx = (await require('./_lib').loadSetting('evpaid').catch(() => null)) || {}, { addD, iso, todayIL } = require('./_rem'), today = todayIL();
+  const covered = cover.map(k => iso(addD(today, k))), site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+  for (const s of Object.keys(idx)) {
+    const cur = await get(s).catch(() => null); if (!feat(cur, 'voice') || cur.disabled) continue; const c = cur.cfg || {}; if (!/^\d{4}-\d{2}-\d{2}$/.test(c.d || '')) continue;
+    const [y, m, d] = c.d.split('-').map(Number); if (!covered.includes(iso(addD(new Date(y, m - 1, d, 12), -Math.max(0, daysBefore))))) continue;
+    let L = await db('timer_recip?slug=eq.' + s + '&call_rem=eq.1&phone=not.is.null&status=neq.unsub&select=id,name,phone&limit=5000').catch(() => []); if (!L || !L.length) continue;
+    const P = { ...cur.paid }, left = (+P.calls || 0) - (+P.callsUsed || 0); if (left <= 0) { out.noQuota++; continue; }
+    if (L.length > left) { out.noQuota++; L = L.slice(0, left); }
+    try {
+      const x = await V.sendTTS(L, c.vrt || V.defText(c, 'rem', EP), site + '/api/pricing?c=_ivrcb&k=' + EP.vkey + '&s=' + s), now = new Date().toISOString();
+      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode: 'rem', auto: 1, tts: 1, fin: 1 }].concat(cur.calls || []).slice(0, 30);
+      await put(s, { ...cur, paid: P, calls });
+      const ids = L.map(r => r.id); for (let i = 0; i < ids.length; i += 200) await db('timer_recip?slug=eq.' + s + '&id=in.(' + ids.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_rem: 2, call_at: now, call_st: 'ממתין', call_cid: x.id }) }).catch(() => {});
+      out.events++; out.calls += x.n;
+    } catch (e) { console.error('auto calls', s, e.message); }
+  }
+  return out;
+}
 /* מחיקת סרטונים ומוזיקה של אירועים שלא שולמו תוך שבוע מההעלאה */
 async function cleanMedia() {
   const { loadSetting, saveSetting } = require('./_lib'), M = (await loadSetting('mediapend').catch(() => null)) || {}, R2 = require('./_r2'), MB = R2.media(); if (!MB) return { deleted: 0 };
@@ -485,7 +508,10 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'GET' && q.unsub) return unsub(req, res, str(q.unsub, 40));
     /* שליחה מתוזמנת: ה-Worker קורא לזה כל שעה (עם CRON_SECRET) */
-    if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' }); return json(res, 200, await cronSend(120)); }
+    if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' });
+      /* גם: תזכורות בשעות שנקבעו בניהול (מייל / שיחה, לוח / אירועים) */
+      const inv = await cronSend(120); let slots = null; try { slots = await require('./cron-reminders').slots(); } catch (e) { slots = { error: String(e.message).slice(0, 120) }; }
+      return json(res, 200, { ...inv, slots }); }
     if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: E.FEATS, mailpk: E.MAILPK, freeEmails: P.freeEmails, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
@@ -526,5 +552,5 @@ module.exports = async (req, res) => {
 };
 
 module.exports.ivr = ivr; module.exports.feat = feat; module.exports.evIndex = evIndex; module.exports.key = key; module.exports.ivrcb = ivrcb; module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
-module.exports.cronSend = cronSend; module.exports.inviteMail = inviteMail;
+module.exports.cronSend = cronSend; module.exports.autoCalls = autoCalls; module.exports.holyAt = holyAt; module.exports.inviteMail = inviteMail;
 module.exports.autoMails = autoMails; module.exports.cleanMedia = cleanMedia;

@@ -56,6 +56,12 @@ async function run() {
     else { const h = (Date.now() - Date.parse(last.at)) / 3600e3;
       add('act', 'cronrun', h > 74 ? 'bad' : h > 50 ? 'warn' : 'ok', 'משימת הלילה רצה לאחרונה לפני ' + (h < 1 ? 'פחות משעה' : Math.round(h) + ' שעות'), last.err ? 'שגיאה בריצה האחרונה: ' + last.err : last.skipped ? 'שבת / חג: לא נשלח כלום' : (last.sent != null ? 'נשלחו ' + last.sent + ' תזכורות במייל' : ''), h > 50 ? 'לבדוק ב"משימת הלילה" (אפשר להריץ ידנית), ואת ה־Cron ב־Cloudflare / GitHub' : ''); }
     try {
+      const S = (await loadSetting('sched')) || {}, any = ['cal', 'ev'].some(a => ['mail', 'voice'].some(b => (((S[a] || {})[b] || {}).hours || []).length));
+      if (any) { const H = await loadSetting('hourlast').catch(() => null), h = H && H.at ? (Date.now() - Date.parse(H.at)) / 3600e3 : 1e9;
+        /* בשבת ובחג ה־Worker לא רץ, לכן הסף גבוה */
+        if (h > 28) add('act', 'hourly', h > 80 ? 'bad' : 'warn', 'הריצה השעתית לא פועלת' + (h < 1e8 ? ' (לאחרונה לפני ' + Math.round(h) + ' שעות)' : ''), 'נקבעו שעות לתזכורות, אבל הן יוצאות רק כשהריצה השעתית פועלת', 'ב־Cloudflare ← ה־Worker של המשימות ← Triggers: להוסיף Cron "15 * * * *"'); }
+    } catch (e) {}
+    try {
       const M = await db('email_log?select=ok,kind,error,created_at&created_at=gte.' + encodeURIComponent(iso(864e5)) + '&limit=5000');
       const n = (M || []).length, bad = (M || []).filter(x => x.ok === false);
       if (bad.length) { const ex = bad.slice(0, 3).map(x => (x.kind || '') + ': ' + String(x.error || '').slice(0, 80)).join(' · ');

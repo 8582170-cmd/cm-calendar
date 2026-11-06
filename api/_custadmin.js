@@ -6,7 +6,38 @@ const { db, loadSetting, saveSetting, PAID, PLAN_NAMES } = require('./_lib');
 const str = (v, n) => String(v == null ? '' : v).slice(0, n);
 const EM = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+/* חיפוש לקוחות לפי שם, חלק מהמייל או טלפון: בכל המקומות שיש בהם שם (חשבונות, תשלומים, אירועים, פניות) */
+async function search(q0) {
+  const q = String(q0 || '').replace(/[,()*"\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (q.length < 2) return { error: 'צריך לפחות 2 אותיות' };
+  const lq = q.toLowerCase(), like = '*' + encodeURIComponent(q) + '*', R = {};
+  const add = (email, name, src, extra) => { email = String(email || '').trim().toLowerCase(); if (!EM.test(email) || /@phone\.invalid$/.test(email)) return;
+    const r = R[email] || (R[email] = { email, names: [], src: [], phone: '' }); if (name && !r.names.includes(name)) r.names.push(String(name).slice(0, 80)); if (src && !r.src.includes(src)) r.src.push(src); if (extra && extra.phone && !r.phone) r.phone = extra.phone; };
+  const has = v => String(v || '').toLowerCase().includes(lq);
+  const jobs = [
+    /* חשבונות: שם מגוגל או מההרשמה (נשמר אצל Supabase) */
+    (async () => { const { env } = require('./_lib'), key = env('SUPABASE_SERVICE_ROLE_KEY'), url = env('SUPABASE_URL').replace(/\/$/, '');
+      for (let page = 1; page <= 10; page++) { const r = await fetch(url + '/auth/v1/admin/users?page=' + page + '&per_page=1000', { headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }) } });
+        if (!r.ok) break; const j = await r.json(), U = j.users || j || []; if (!Array.isArray(U) || !U.length) break;
+        U.forEach(u => { const m = u.user_metadata || {}, nm = m.full_name || m.name || [m.given_name, m.family_name].filter(Boolean).join(' ');
+          if (has(nm) || has(u.email) || has(u.phone)) add(u.email, nm, 'חשבון', { phone: u.phone }); });
+        if (U.length < 1000) break; } })(),
+    db('profiles?select=email,phone&or=(email.ilike.' + like + ',phone.ilike.' + like + ')&limit=200').then(L => (L || []).forEach(x => add(x.email, '', 'חשבון', { phone: x.phone }))),
+    db('orders?select=email&email=ilike.' + like + '&limit=200').then(L => (L || []).forEach(x => add(x.email, '', 'הזמנה'))),
+    /* השם שהלקוח מילא בתשלום (נדרים פלוס, פייפל) */
+    db('orders?select=email,nm:callback->>ClientName&callback->>ClientName=ilike.' + like + '&limit=200').then(L => (L || []).forEach(x => add(x.email, x.nm, 'תשלום'))),
+    db('orders?select=email,g:callback->paypal->payer->name->>given_name,f:callback->paypal->payer->name->>surname&or=(callback->paypal->payer->name->>given_name.ilike.' + like + ',callback->paypal->payer->name->>surname.ilike.' + like + ')&limit=200').then(L => (L || []).forEach(x => add(x.email, [x.g, x.f].filter(Boolean).join(' '), 'PayPal'))),
+    /* אירועים: השם מופיע בכותרת (למשל "החתונה של אברהם ושרה") */
+    db('timer_event?select=email,title,slug&title=ilike.' + like + '&limit=200').then(L => (L || []).forEach(x => add(x.email, x.title, 'אירוע: ' + x.slug))),
+    loadSetting('feedback').then(L => (Array.isArray(L) ? L : []).forEach(x => { if (x && (has(x.name) || has(x.email) || has(x.phone) || has(x.pubName))) add(x.email, x.name || x.pubName, x.kind === 'contact' ? 'פנייה' : 'משוב', { phone: x.phone }); }))
+  ].map(p => Promise.resolve(p).catch(() => {}));
+  await Promise.all(jobs);
+  const items = Object.values(R).sort((a, c) => c.src.length - a.src.length).slice(0, 100);
+  return { q, items };
+}
+
 module.exports = async function (b) {
+  if (b.action === 'cu_search') return search(b.q);
   const em = str(b.email, 200).trim().toLowerCase();
   if (!EM.test(em)) return { error: 'כתובת מייל לא תקינה' };
   const M = (await loadSetting('custmeta').catch(() => ({}))) || {}, me = M[em] || {};

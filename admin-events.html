@@ -55,6 +55,7 @@ pre{background:var(--paper);border:1px solid var(--line);border-radius:8px;paddi
     <button type="button" data-v="set">⚙️ הגדרות ומחירים</button>
     <button type="button" data-v="voice">📞 קולי ו־SMS</button>
     <button type="button" data-v="gifts">💳 מתנות</button>
+    <button type="button" data-v="time">⏰ תזמון תזכורות</button>
     <button type="button" data-v="mail">✉️ מיילים מתוזמנים</button>
     <button type="button" data-v="tools">🧰 כלים</button>
     <a href="/admin" style="margin-top:auto">← לניהול הכללי</a>
@@ -72,7 +73,7 @@ var PL={full:'חבילה מלאה',free:'חינם',none:'לא הופעל'},KIND=
 var pill=function(e){return e.disabled?'<span class="pill off">מושבת</span>':'<span class="pill '+(e.plan||'none')+'">'+PL[e.plan||'none']+'</span>'};
 var dd=function(d){if(!d)return '—';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric',year:'2-digit'})};
 var setupMsg='<div class="card"><b>צריך להריץ פעם אחת SQL ב-Supabase</b><p class="sub">טבלת האינדקס של האירועים (timer_event) עוד לא קיימת. הקוד נמצא בסוף tools/supabase_timer.sql. אחרי ההרצה: "כלים" ← "סריקה מחדש", כדי לאסוף את האירועים שכבר קיימים.</p></div>';
-function show(v){V=v;$('#dr').hidden=true;[].forEach.call(document.querySelectorAll('.side [data-v]'),function(b){b.setAttribute('aria-current',b.dataset.v===v)});({dash:dash,list:list,set:sets,voice:voice,gifts:gifts,mail:mail,tools:tools})[v]();try{history.replaceState(null,'','#'+v)}catch(e){}}
+function show(v){V=v;$('#dr').hidden=true;[].forEach.call(document.querySelectorAll('.side [data-v]'),function(b){b.setAttribute('aria-current',b.dataset.v===v)});({dash:dash,list:list,set:sets,voice:voice,gifts:gifts,mail:mail,tools:tools,time:timeV})[v]();try{history.replaceState(null,'','#'+v)}catch(e){}}
 document.querySelector('.side').addEventListener('click',function(e){var b=e.target.closest('[data-v]');if(b)show(b.dataset.v)});
 
 /* ---------- לוח בקרה ---------- */
@@ -187,6 +188,16 @@ function gifts(slugDone){M.innerHTML='<h1>מתנות באשראי</h1><p class="
    B.onclick=function(e){var d=e.target.closest('[data-done]'),o=e.target.closest('[data-o]');if(d&&confirm('לסמן שהכסף הועבר?'))gifts(d.dataset.done);if(o){e.preventDefault();open(o.dataset.o)}}}).catch(err)}
 
 /* ---------- מיילים מתוזמנים ---------- */
+/* ---------- תזמון התזכורות של האירועים (sched.ev) ---------- */
+function hrPick(id,sel){var h='<div id="'+id+'" style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">';for(var i=0;i<24;i++)h+='<label style="border:1px solid var(--line);border-radius:8px;padding:3px 7px;font-size:13px;cursor:pointer;display:inline-flex;gap:4px;align-items:center"><input type="checkbox" value="'+i+'"'+((sel||[]).indexOf(i)>=0?' checked':'')+'>'+(i<10?'0':'')+i+':00</label>';return h+'</div>'}
+function hrRead(id){return [].map.call(document.querySelectorAll('#'+id+' input:checked'),function(x){return +x.value})}
+function timeV(){M.innerHTML='<h1>תזמון תזכורות</h1><p class="sub">טוען…</p>';api({action:'schedget'}).then(function(j){var E=(j.sched||{}).ev||{},m=E.mail||{},v=E.voice||{},ago=function(x){return x&&x.at?new Date(x.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'עדיין לא'};
+  M.innerHTML='<h1>תזמון תזכורות</h1><p class="sub">מתי יוצאות התזכורות האוטומטיות של דפי ההזמנה. בלי לסמן שעה = פעם ביום עם משימת הבוקר (בערך 06:00–07:00). בשבת ובחג לא יוצא כלום. התזכורות מהלוח נקבעות בניהול הכללי.</p>'+
+   '<div class="card"><h2 style="margin-top:0">✉️ מיילים אוטומטיים</h2><p class="sub">מה שבעל האירוע בחר: תזכורת למי שלא ענה, מייל ביום האירוע ותודה אחרי. כל מייל יוצא פעם אחת לכל מוזמן, בשעה הראשונה שמגיעה.</p>'+hrPick('tM',m.hours)+'</div>'+
+   '<div class="card"><h2 style="margin-top:0">📞 תזכורת קולית אוטומטית</h2><p class="sub">מוזמנים שאישרו בשלוחה ולחצו "לתזכורת טלפונית הקישו 1" מקבלים שיחה לפני האירוע (על חשבון יתרת השיחות של האירוע). כל מוזמן מקבל שיחה אחת. בלי זה, רק בעל האירוע יכול לשלוח תזכורת קולית, ידנית.</p>'+
+    '<label class="row"><input type="checkbox" id="tVon"'+(v.on?' checked':'')+'> להתקשר אוטומטית</label><label class="row">כמה ימים לפני האירוע <select id="tVd">'+[0,1,2,3].map(function(n){return '<option value="'+n+'"'+((v.days==null?1:v.days)===n?' selected':'')+'>'+(n?n===1?'יום לפני':n+' ימים לפני':'ביום האירוע')+'</option>'}).join('')+'</select></label>'+hrPick('tV',v.hours)+'</div>'+
+   '<div class="row"><button class="btn pri" type="button" id="tSave">שמירה</button><span class="msg" id="tMsg"></span></div><p class="sub">משימת הבוקר רצה לאחרונה: '+ago(j.cronlast)+' · הריצה השעתית: '+ago(j.hourlast)+'. שעות שנבחרו יוצאות בערך ברבע אחרי השעה.</p>';
+  $('#tSave').onclick=function(){$('#tMsg').textContent='שומר…';api({action:'schedset',part:'ev',data:{mail:{hours:hrRead('tM')},voice:{on:$('#tVon').checked,days:+$('#tVd').value,hours:hrRead('tV')}}}).then(function(){$('#tMsg').textContent='✓ נשמר';$('#tMsg').className='msg ok'}).catch(function(e){$('#tMsg').textContent='❌ '+e.message;$('#tMsg').className='msg no'})}}).catch(err)}
 function mail(){M.innerHTML='<h1>מיילים מתוזמנים</h1><p class="sub">כמה מיילים צפויים לצאת בכל יום: תזכורות, פגישות והזמנות לאירועים. בשבת ובחג לא יוצא כלום.</p><div class="row"><label>ימים <select id="mpD"><option>7</option><option selected>14</option><option>30</option></select></label><button class="btn" type="button" id="mpGo">חישוב</button><span class="msg" id="mpM"></span></div><div id="mpO" class="card" hidden></div>';
   $('#mpGo').onclick=function(){var O=$('#mpO'),Mm=$('#mpM');Mm.textContent='מחשב…';api({action:'mailplan',days:+$('#mpD').value}).then(function(r){if(r.error){Mm.textContent='❌ '+r.error;return}Mm.textContent='';O.hidden=false;
     var cap=Object.values(r.capacity||{}).reduce(function(a,c){return a+(c.day||0)},0),WD=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','שבת'],inv=r.invites||{};
@@ -200,7 +211,7 @@ function tools(){M.innerHTML='<h1>כלים</h1><div class="card"><h2 style="marg
   $('#tGo').onclick=function(){var v=$('#tS').value.trim().toLowerCase().replace(/^.*\/t\//,'');if(v)open(v)}}
 
 function err(e){M.insertAdjacentHTML('beforeend','<p class="msg no">'+esc(e.message)+'</p>');if(e.code===401){$('#app').hidden=true;$('#login').hidden=false}}
-function start(){api({action:'evpget'}).then(function(j){EP=j;$('#login').hidden=true;$('#app').hidden=false;try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}var h=(location.hash||'').slice(1),q='';try{q=new URLSearchParams(location.search).get('q')||''}catch(e){}if(q){LS.q=q.slice(0,60);show('list')}else show(['dash','list','set','voice','gifts','mail','tools'].indexOf(h)>=0?h:'dash')})
+function start(){api({action:'evpget'}).then(function(j){EP=j;$('#login').hidden=true;$('#app').hidden=false;try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}var h=(location.hash||'').slice(1),q='';try{q=new URLSearchParams(location.search).get('q')||''}catch(e){}if(q){LS.q=q.slice(0,60);show('list')}else show(['dash','list','set','voice','gifts','mail','tools','time'].indexOf(h)>=0?h:'dash')})
   .catch(function(e){$('#app').hidden=true;$('#login').hidden=false;$('#lmsg').textContent=e.code===401?'סיסמה שגויה':e.code===429?'יותר מדי ניסיונות. נסו מאוחר יותר.':PW?e.message:''})}
 $('#login').onsubmit=function(e){e.preventDefault();PW=$('#pw').value;start()};
 document.addEventListener('keydown',function(e){if(e.key==='Escape')$('#dr').hidden=true});

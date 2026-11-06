@@ -72,7 +72,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
+const ALOG_RO = /^(cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -112,6 +112,18 @@ module.exports = async (req, res) => {
     /* בדיקת מערכת, יומן פעולות, מצב תחזוקה */
     if (req.method === 'POST' && b.action === 'health') return json(res, 200, await require('./_health').run());
     if (req.method === 'POST' && b.action === 'alog') { const L = await require('./_lib').loadSetting('adminlog').catch(() => []); return json(res, 200, { items: Array.isArray(L) ? L : [] }); }
+    /* תזמון התזכורות: לוח (cal) ואירועים (ev), מייל ושיחה בנפרד */
+    if (req.method === 'POST' && (b.action === 'schedget' || b.action === 'schedset')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      const S = (await loadSetting('sched').catch(() => null)) || {};
+      if (b.action === 'schedset' && (b.part === 'cal' || b.part === 'ev')) {
+        const hrs = v => [...new Set((Array.isArray(v) ? v : []).map(Number).filter(h => Number.isInteger(h) && h >= 0 && h <= 23))].sort((x, y) => x - y).slice(0, 12);
+        const d = b.data || {}, one = x => ({ hours: hrs((x || {}).hours), rep: !!(x || {}).rep });
+        S[b.part] = b.part === 'cal' ? { mail: one(d.mail), voice: one(d.voice) } : { mail: { hours: hrs((d.mail || {}).hours) }, voice: { on: !!(d.voice || {}).on, days: Math.max(0, Math.min(7, parseInt((d.voice || {}).days, 10) || 1)), hours: hrs((d.voice || {}).hours) } };
+        await saveSetting('sched', S);
+      }
+      return json(res, 200, { sched: S, hourlast: await loadSetting('hourlast').catch(() => null), cronlast: await loadSetting('cronlast').catch(() => null) });
+    }
     if (req.method === 'POST' && (b.action === 'maintget' || b.action === 'maintset')) {
       const { loadSetting, saveSetting } = require('./_lib');
       if (b.action === 'maintset') await saveSetting('maint', { on: !!b.on, full: !!b.on && !!b.full, buy: !!b.buy, text: String(b.text || '').replace(/<[^>]*>/g, '').slice(0, 400), at: new Date().toISOString() });

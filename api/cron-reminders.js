@@ -11,25 +11,25 @@ const WD = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', '�
 const when = n => n === 0 ? 'היום' : n === 1 ? 'מחר' : n === 2 ? 'מחרתיים' : n === 7 ? 'בעוד שבוע' : 'בעוד ' + n + ' ימים';
 const { isHoly } = require('./_shabbat');
 
-module.exports = async (req, res) => {
-  const secret = env('CRON_SECRET');
-  if (secret && req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, { error: 'unauthorized' });
+/* חלקי השליחה. כל חלק רץ במשימת הבוקר, או בשעות שנקבעו בניהול (sched) דרך הריצה השעתית. rep = לשלוח שוב גם אם כבר נשלח היום */
+async function ctxOf() {
   const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
   const today = todayIL(), tIso = iso(today);
-  let sent = 0, failed = 0, checked = 0;
-  /* שומר שבת: בשבת ובחג לא שולחים כלום. בערב שבת/חג (הריצה בבוקר, לפני 12:00) שולחים גם את מה שהיה אמור לצאת בשבת ובחג */
-  if (await isHoly(today, true, true)) { try { await require('./_lib').saveSetting('cronlast', { at: new Date().toISOString(), skipped: 'shabbat' }); } catch (e) {} return json(res, 200, { date: tIso, skipped: 'shabbat' }); }
+  if (await isHoly(today, true, true)) return null;
   const days = [0]; for (let k = 1; k < 4 && await isHoly(addD(today, k), true, true); k++) days.push(k);
-  /* תזכורת שהייתה אמורה לצאת ביום today+k (k ב-days): המרחק שלה מהיום */
   const dueIn = async (r) => { const N = (r.notice || [1]).slice().sort((a, b) => a - b);
     for (const k of days) for (const n of N) { if (await hits(r.rule || {}, addD(today, k + n))) return k + n; } return null; };
-  try {
+  return { site, today, tIso, days, dueIn };
+}
+/* תזכורות במייל מהלוח */
+async function calMail(X, rep) {
+  const { site, today, tIso, dueIn } = X; let sent = 0, failed = 0, checked = 0;
     for (let from = 0; ; from += 1000) {
       const rows = await db('reminders?status=eq.active&select=id,email,name,rule,notice,token,last_sent&order=id&offset=' + from + '&limit=1000');
       if (!rows || !rows.length) break;
       for (const r of rows) {
         checked++;
-        if (r.last_sent === tIso) continue;
+        if (!rep && r.last_sent === tIso) continue;
         const hitN = await dueIn(r);
         if (hitN === null) continue;
         const day = addD(today, hitN), heb = await hebStr(day);
@@ -46,18 +46,17 @@ module.exports = async (req, res) => {
       }
       if (rows.length < 1000) break;
     }
-    /* הזמנות לאירוע במייל שעוד בתור (למשל אחרי שהגענו למגבלה היומית של ספקי המייל) */
-    try { const inv = await require('./_timer').cronSend(150); if (inv.sent) console.log('invites sent', inv.sent); } catch (e) { console.error('invite queue', e.message); }
-    try { const cm = await require('./_timer').cleanMedia(); if (cm.deleted) console.log('unpaid media deleted', cm.deleted); } catch (e) { console.error('clean media', e.message); }
-    /* דפי הזמנה: תזכורת למי שלא ענה, ביום האירוע, ותודה אחרי (לפי מה שבעל האירוע בחר) */
-    try { const am = await require('./_timer').autoMails(days, 300); console.log('event auto mails', JSON.stringify(am)); } catch (e) { console.error('event auto', e.message); }
-    /* תזכורות קוליות בטלפון (אם ימות המשיח מוגדר) */
+  return { checked, sent, failed };
+}
+/* תזכורות קוליות מהלוח */
+async function calVoice(X, rep) {
+  const { today, tIso, dueIn } = X;
     let vsent = 0, vfailed = 0;
     if (await voice.ready()) {
       const vc = await voice.cfg();
       const vr = await db('voice_reminders?status=eq.active&select=id,phone,name,rule,notice,last_sent&order=id&limit=5000').catch(() => []);
       for (const r of vr || []) {
-        if (r.last_sent === tIso) continue;
+        if (!rep && r.last_sent === tIso) continue;
         const hitN = await dueIn(r);
         if (hitN === null) continue;
         const day = addD(today, hitN), heb = await hebStr(day);
@@ -68,7 +67,11 @@ module.exports = async (req, res) => {
         } catch (e) { vfailed++; console.error('voice send', r.id, e.message); }
       }
     }
-    /* פגישות: מייל אחד לכל משתמש עם הפגישות של היום (בבוקר) ושל מחר (יום לפני) */
+  return { vsent, vfailed };
+}
+/* פגישות ביומן (יוצאות יחד עם התזכורות במייל) */
+async function calAppts(X, rep) {
+  const { site, today, tIso, days } = X;
     let asent = 0;
     try {
       /* בבוקר של היום (ושל שבת/חג שאחריו), ויום לפני (כולל מה שאחרי השבת/החג) */
@@ -77,7 +80,7 @@ module.exports = async (req, res) => {
       const ap = await db('appointments?notify=neq.none&date=in.(' + all.join(',') + ')&select=id,email,date,start_t,end_t,title,place,notify,last_sent&order=date,start_t&limit=10000');
       const by = {};
       for (const a of ap || []) {
-        if (!a.email || a.last_sent === tIso) continue;
+        if (!a.email || (!rep && a.last_sent === tIso)) continue;
         const ok = (morn.includes(a.date) && ['morning', 'both'].includes(a.notify)) || (before.includes(a.date) && ['daybefore', 'both'].includes(a.notify));
         if (!ok) continue;
         (by[a.email] = by[a.email] || []).push(a);
@@ -94,6 +97,53 @@ module.exports = async (req, res) => {
         } catch (e) { console.error('appt mail', email, e.message); }
       }
     } catch (e) { console.error('appt cron', e.message); }
+  return { asent };
+}
+async function evMail(X) { return require('./_timer').autoMails(X.days, 300); }
+async function evVoice(X, S) { return require('./_timer').autoCalls(X.days, +((S.ev || {}).voice || {}).days || 1); }
+/* ההגדרה מהניהול. hours ריק = פעם ביום עם משימת הבוקר */
+async function sched() { const S = (await require('./_lib').loadSetting('sched').catch(() => null)) || {}; return S; }
+const hoursOf = (S, a, b) => { const x = ((S[a] || {})[b] || {}); return Array.isArray(x.hours) ? x.hours.filter(h => h >= 0 && h <= 23) : []; };
+const PARTS = [['cal', 'mail'], ['cal', 'voice'], ['ev', 'mail'], ['ev', 'voice']];
+async function runPart(a, b, X, S) {
+  const rep = !!(((S[a] || {})[b] || {}).rep);
+  if (a === 'cal' && b === 'mail') { const m = await calMail(X, rep); let ap = { asent: 0 }; try { ap = await calAppts(X, rep); } catch (e) { console.error('appt cron', e.message); } return { ...m, ...ap }; }
+  if (a === 'cal' && b === 'voice') return calVoice(X, rep);
+  if (a === 'ev' && b === 'mail') return evMail(X);
+  if (a === 'ev' && b === 'voice') return (((S.ev || {}).voice || {}).on) ? evVoice(X, S) : { off: true };
+}
+/* מהריצה השעתית (pricing?c=_timer&cron=1): מריץ את החלקים שנקבעה להם השעה הזאת, פעם אחת בשעה */
+async function slots() {
+  const S = await sched(), h = +new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem', hour: 'numeric', hourCycle: 'h23' });
+  const due = PARTS.filter(([a, b]) => hoursOf(S, a, b).includes(h)); try { await require('./_lib').saveSetting('hourlast', { at: new Date().toISOString(), h }); } catch (e) {}
+  if (!due.length) return { h, due: 0 };
+  /* שבת וחג (כולל כניסת שבת ביום שישי): לא שולחים */
+  const T = require('./_timer'); if (T.holyAt && await T.holyAt(Date.now())) return { h, skipped: 'shabbat' };
+  const X = await ctxOf(); if (!X) return { h, skipped: 'shabbat' };
+  const { loadSetting, saveSetting } = require('./_lib'), D = (await loadSetting('slotsdone').catch(() => null)) || {}, done = D.date === X.tIso ? D : { date: X.tIso };
+  const out = { h };
+  for (const [a, b] of due) { const k = a + '-' + b; done[k] = done[k] || []; if (done[k].includes(h)) continue; done[k].push(h); await saveSetting('slotsdone', done);
+    try { out[k] = await runPart(a, b, X, S); } catch (e) { out[k] = { error: String(e.message).slice(0, 120) }; console.error('slot', k, e.message); } }
+  return out;
+}
+module.exports = async (req, res) => {
+  const secret = env('CRON_SECRET');
+  if (secret && req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, { error: 'unauthorized' });
+  const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+  const today = todayIL(), tIso = iso(today);
+  let sent = 0, failed = 0, checked = 0, vsent = 0, vfailed = 0, asent = 0;
+  /* שומר שבת: בשבת ובחג לא שולחים כלום. בערב שבת/חג (הריצה בבוקר, לפני 12:00) שולחים גם את מה שהיה אמור לצאת בשבת ובחג */
+  const X = await ctxOf();
+  if (!X) { try { await require('./_lib').saveSetting('cronlast', { at: new Date().toISOString(), skipped: 'shabbat' }); } catch (e) {} return json(res, 200, { date: tIso, skipped: 'shabbat' }); }
+  const days = X.days, S = await sched(), parts = {};
+  try {
+    /* כל חלק שלא נקבעו לו שעות בניהול רץ כאן, בבוקר (כמו תמיד) */
+    for (const [a, b] of PARTS) { if (hoursOf(S, a, b).length) { parts[a + '-' + b] = 'scheduled'; continue; }
+      try { const r = await runPart(a, b, X, S); parts[a + '-' + b] = r; if (a === 'cal' && b === 'mail') { sent = r.sent; failed = r.failed; checked = r.checked; asent = r.asent; } if (a === 'cal' && b === 'voice') { vsent = r.vsent; vfailed = r.vfailed; } }
+      catch (e) { parts[a + '-' + b] = { error: String(e.message).slice(0, 120) }; console.error('part', a, b, e.message); } }
+    /* הזמנות לאירוע במייל שעוד בתור (למשל אחרי שהגענו למגבלה היומית של ספקי המייל) */
+    try { const inv = await require('./_timer').cronSend(150); if (inv.sent) console.log('invites sent', inv.sent); } catch (e) { console.error('invite queue', e.message); }
+    try { const cm = await require('./_timer').cleanMedia(); if (cm.deleted) console.log('unpaid media deleted', cm.deleted); } catch (e) { console.error('clean media', e.message); }
     /* גיבוי לגוגל שיטס (אם הוגדר) */
     let backup = null; try { backup = await require('./_backup').run(); } catch (e) { backup = { error: String(e.message).slice(0, 120) }; console.error('backup', e.message); }
     /* ניקוי דוגמיות הורדה ישנות */
@@ -115,10 +165,11 @@ module.exports = async (req, res) => {
     /* בדיקת מערכת: מייל לבעל האתר אם יש תקלה חדשה. ורישום הריצה (מוצג בבדיקת המערכת בניהול) */
     let health = null; try { health = await require('./_health').alert(); } catch (e) { console.error('health', e.message); }
     try { await require('./_lib').saveSetting('cronlast', { at: new Date().toISOString(), sent, failed, vsent, vfailed, asent }); } catch (e) {}
-    json(res, 200, { date: tIso, days: days.length, cleaned, backup, checked, sent, failed, vsent, vfailed, asent, health });
+    json(res, 200, { date: tIso, days: days.length, cleaned, backup, checked, sent, failed, vsent, vfailed, asent, parts, health });
   } catch (e) {
     console.error('cron', e);
     try { await require('./_lib').saveSetting('cronlast', { at: new Date().toISOString(), err: String(e.message || e).slice(0, 200), sent, failed }); } catch (x) {}
     json(res, 500, { error: 'server error', sent, failed });
   }
 };
+module.exports.slots = slots;
