@@ -57,6 +57,7 @@ module.exports = async (req, res) => {
   if (cp === '_unblock') return require('./_sec').unblockPage(req, res);
   if (cp === '_cdimg') return require('./_cdimg')(req, res);
   if (cp === '_timer') return require('./_timer')(req, res);
+  if (cp === '_ivr') return require('./_timer').ivr(req, res);
   if (cp === '_contact') {
     res.setHeader('Cache-Control', 'private, no-store');
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });

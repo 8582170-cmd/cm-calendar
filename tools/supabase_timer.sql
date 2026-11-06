@@ -88,3 +88,8 @@ notify pgrst, 'reload schema';
 -- מעקב פתיחה של הקישור האישי
 alter table public.timer_recip add column if not exists opened_at timestamptz, add column if not exists last_open timestamptz, add column if not exists opens int default 0;
 notify pgrst, 'reload schema';
+
+-- הודעות קוליות (ימות המשיח): סטטוס שיחה לכל מוזמן
+alter table public.timer_recip add column if not exists call_at timestamptz, add column if not exists call_st text, add column if not exists call_cid text, add column if not exists call_rem int;
+create index if not exists timer_recip_phone on public.timer_recip (phone);
+notify pgrst, 'reload schema';

@@ -65,7 +65,7 @@ function clean(c) {
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
     qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 10).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 12).map(v => str(v, 40).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
-    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
+    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, vt: str(c.vt, 600).replace(/[<>]/g, ''), vrt: str(c.vrt, 600).replace(/[<>]/g, ''), clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
     bgi: okImg(c.bgi) ? c.bgi : '', bgv: okMedia(c.bgv, 'video') ? c.bgv : '', mus: okMedia(c.mus, 'audio') ? c.mus : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
   };
 }
@@ -295,14 +295,21 @@ async function guest(req, res, b) {
       return json(res, 200, { ok: true });
     }
     if (b.act === 'owner') {
+      /* הודעות קוליות: עדכון הסטטוס של כל מוזמן מהקמפיינים של הימים האחרונים */
+      const open = (cur.calls || []).filter(x => !x.fin && Date.now() - Date.parse(x.at) < 4 * 864e5).slice(0, 3);
+      if (open.length) { try { const V = require('./_ivoice'); let ch = false;
+        for (const k of open) { const st = await V.status(k.id), by = {}; st.entries.forEach(e => { if (e.phone) (by[e.st] = by[e.st] || []).push(e.phone); });
+          for (const [t2, ph] of Object.entries(by)) for (let i = 0; i < ph.length; i += 150) await db('timer_recip?slug=eq.' + s + '&call_cid=eq.' + encodeURIComponent(k.id) + '&phone=in.(' + ph.slice(i, i + 150).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: t2 }) }).catch(() => {});
+          if (/FINISHED|STOPPED/.test(st.st || '')) { k.fin = 1; k.price = st.price; ch = true; } }
+        if (ch) await put(s, cur); } catch (e) {} }
       const [t, r, w] = await Promise.all([db('timer_teh?slug=eq.' + s + '&select=round,chapter,name,created_at&order=round.asc,chapter.asc&limit=3000').catch(() => null),db('timer_rsvp?slug=eq.' + s + '&select=id,name,phone,status,adults,kids,note,created_at&order=created_at.desc&limit=2000').catch(() => null),
         db('timer_wall?slug=eq.' + s + '&select=id,name,text,public,hidden,created_at&order=created_at.desc&limit=1000').catch(() => null)]);
-      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
+      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
       const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=2000').catch(() => null);
       const EP = await require('./_eventpay').prices().catch(() => ({}));
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed }, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!(EP.voiceOn && EP.voiceTpl) }, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv'), defRem: require('./_ivoice').defText(c, 'rem') } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     if (b.act === 'radd') {
@@ -353,6 +360,30 @@ async function guest(req, res, b) {
       const to = require('./_lib').env('OWNER_EMAIL'); if (to) { const { sendMail, frame, escH } = require('./_mail'); await sendMail({ to, subject: 'בקשת העברת מתנות: ' + s + ' · ' + sum.toFixed(2) + ' ₪', html: frame({ title: 'בקשה להעברת מתנות', body: 'אירוע: <b>' + escH(s) + '</b><br>' + G.length + ' מתנות · לתשלום לבעל האירוע: <b>' + sum.toFixed(2) + ' ₪</b><br>מייל בעל האירוע: ' + escH((cur.paid && cur.paid.email) || '') + '<br>פרטי חשבון: ' + escH(clean1(b.bank, 300)) }) }, 'owner').catch(() => {}); }
       return json(res, 200, { ok: true, sum });
     }
+    /* הודעה קולית (ימות המשיח, אם הופעל בניהול): הזמנה עם אישור הגעה בהקשה, או תזכורת למי שאישר */
+    if (b.act === 'voice' || b.act === 'voicetest') {
+      const EP = await require('./_eventpay').prices(), V = require('./_ivoice');
+      if (!EP.voiceOn || !(await V.ready())) return json(res, 403, { error: 'voice off' });
+      if (!isFull(cur)) return json(res, 402, { error: 'full' });
+      const hz = await holyAt(Date.now()); if (hz) return json(res, 400, { error: 'shabbat' });
+      const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()); if (hr < 8 || hr >= 22) return json(res, 400, { error: 'night' });
+      const mode = b.mode === 'rem' ? 'rem' : 'inv', text = str(b.text, 600).replace(/[<>]/g, ''), P = cur.paid, now = new Date().toISOString();
+      if (b.act === 'voicetest') { const ph = V.phone(b.phone); if (!ph) return json(res, 400, { error: 'phone' }); if ((+P.vtests || 0) >= 5) return json(res, 429, { error: 'tests' });
+        await V.run(cur, [{ phone: ph, name: clean1(b.name, 40) }], mode, text); P.vtests = (+P.vtests || 0) + 1; await put(s, { ...cur, paid: P }); return json(res, 200, { ok: true }); }
+      let L = await db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at,call_at,call_rem&order=id.asc&limit=20000').catch(() => db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at&order=id.asc&limit=20000'));
+      const A = {}; ((await db('timer_rsvp?slug=eq.' + s + '&rtok=not.is.null&select=rtok,status&limit=20000').catch(() => [])) || []).forEach(x => { A[x.rtok] = x.status; });
+      if (mode === 'rem') L = L.filter(r => A[r.token] === 'yes' || r.call_rem);
+      else { const w = String(b.who || 'all'); if (w === 'noans') L = L.filter(r => !A[r.token]); else if (w === 'noopen') L = L.filter(r => !r.opened_at && !A[r.token]); else if (w === 'nocall') L = L.filter(r => !r.call_at); }
+      if (b.grp) L = L.filter(r => r.grp === String(b.grp));
+      if (Array.isArray(b.ids) && b.ids.length) { const I = new Set(b.ids.map(Number)); L = L.filter(r => I.has(r.id)); }
+      if (!L.length) return json(res, 200, { sent: 0, empty: true });
+      const left = (+P.calls || 0) - (+P.callsUsed || 0); if (L.length > left) return json(res, 402, { error: 'quota', need: L.length, left });
+      const x = await V.run(cur, L, mode, text);
+      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode }].concat(cur.calls || []).slice(0, 30);
+      await put(s, { ...cur, paid: P, calls });
+      const ids = L.map(r => r.id); for (let i = 0; i < ids.length; i += 200) await db('timer_recip?slug=eq.' + s + '&id=in.(' + ids.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_at: now, call_st: 'ממתין', call_cid: x.id }) }).catch(() => {});
+      return json(res, 200, { sent: x.n });
+    }
     /* SMS (רק בארץ, אם הופעל בניהול): שליחה לנמענים עם טלפון, ביתרת ה-SMS של האירוע */
     if (b.act === 'smsnext') {
       const EP = await require('./_eventpay').prices(); if (!EP.smsOn || !require('./_sms').ready()) return json(res, 403, { error: 'sms off' });
@@ -384,13 +415,42 @@ async function guest(req, res, b) {
   } catch (e) { console.error('timer guest', e.message); return json(res, 500, { error: /relation|does not exist|42P01/.test(e.message) ? 'setup' : 'server' }); }
   return json(res, 400, { error: 'act' });
 }
+/* שלוחת API בימות המשיח: אישור הגעה בהקשות. מזהים את המוזמן לפי מספר הטלפון (הקמפיין האחרון שנשלח אליו) */
+async function ivr(req, res) {
+  const q = { ...(req.query || {}), ...(req.body && typeof req.body === 'object' ? req.body : {}) }, out = t => { res.statusCode = 200; res.setHeader('Content-Type', 'text/plain; charset=utf-8'); res.end(t); };
+  const EP = await require('./_eventpay').prices().catch(() => ({}));
+  if (!EP.vkey || String(q.k || '') !== EP.vkey) return out('id_list_message=t-השלוחה לא מוגדרת&go_to_folder=hangup');
+  if (q.hangup === 'yes') return out('');
+  const V = require('./_ivoice'), ph = V.phone(q.ApiPhone), say = t => 't-' + V.tts(t), bye = t => out('id_list_message=' + say(t) + '&go_to_folder=hangup');
+  const rd = (t, k, max, min, ok, nz) => out('read=' + say(t) + '=' + k + ',no,' + max + ',' + min + ',10,NO,yes,' + (nz ? 'yes' : 'no') + ',,' + (ok || ''));
+  if (!ph) return bye('לא זוהה מספר הטלפון');
+  let L = await db('timer_recip?phone=eq.' + ph + '&call_at=not.is.null&select=id,slug,name,token&order=call_at.desc&limit=3').catch(() => []);
+  if (!L || !L.length) L = await db('timer_recip?phone=eq.' + ph + '&select=id,slug,name,token&order=id.desc&limit=5').catch(() => []);
+  const today = new Date(Date.now() - 864e5).toISOString().slice(0, 10); let r = null, cur = null;
+  for (const x of L || []) { const o = await get(x.slug).catch(() => null); if (o && isFull(o) && (o.cfg || {}).d >= today) { r = x; cur = o; break; } }
+  if (!r) return bye('מספר הטלפון שלכם לא נמצא ברשימת המוזמנים לאירוע קרוב. להתראות');
+  const c = cur.cfg || {}, QS = (c.qs || []).map((x, i) => ({ ...x, i })).filter(x => x.o && x.o.length >= 2 && x.o.length <= 9);
+  const save = async (st, n) => { const ans = (c.qs || []).map((x, i) => { const v = +q['Q' + i]; return v && x.o && x.o[v - 1] ? x.o[v - 1] : ''; });
+    const row = { slug: r.slug, name: r.name || ph, phone: ph, status: st, adults: st === 'no' ? 0 : Math.max(1, Math.min(50, n || 1)), kids: 0, note: 'אישור בטלפון', rtok: r.token, ans: ans.some(Boolean) ? ans : null };
+    const prev = await db('timer_rsvp?slug=eq.' + r.slug + '&rtok=eq.' + r.token + '&select=id&limit=1').catch(() => []);
+    if (prev && prev[0]) await db('timer_rsvp?id=eq.' + prev[0].id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+    else await db('timer_rsvp', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+    await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st === 'yes' ? 'אישר בטלפון' : 'לא מגיע (טלפון)' }) }).catch(() => {}); };
+  if (!q.A) return rd('שלום ' + (r.name || '') + '. ' + (c.t || '') + '. אם תגיעו, הקישו 1. אם לא תוכלו להגיע, הקישו 2', 'A', 1, 1, '1.2');
+  if (q.A === '2') { await save('no'); return bye('תודה, תשובתכם נרשמה. להתראות בשמחות'); }
+  if (!q.N) return rd('כמה אנשים תגיעו? הקישו את המספר', 'N', 2, 1, '', true);
+  for (const x of QS) if (q['Q' + x.i] == null) return rd(x.q + ' ' + x.o.map((v, j) => v + ', הקישו ' + (j + 1)).join('. '), 'Q' + x.i, 1, 1, x.o.map((v, j) => j + 1).join('.'));
+  if (q.R == null) { await save('yes', +q.N); return rd('תודה, אישור ההגעה של ' + (+q.N) + ' אנשים נרשם. לתזכורת טלפונית לפני האירוע הקישו 1. לסיום הקישו 2', 'R', 1, 1, '1.2'); }
+  if (q.R === '1') await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_rem: 1 }) }).catch(() => {});
+  return bye(q.R === '1' ? 'נתקשר להזכיר לפני האירוע. להתראות בשמחות' : 'תודה רבה, להתראות בשמחות');
+}
 module.exports = async (req, res) => {
   const q = req.query || {};
   try {
     if (req.method === 'GET' && q.unsub) return unsub(req, res, str(q.unsub, 40));
     /* שליחה מתוזמנת: ה-Worker קורא לזה כל שעה (עם CRON_SECRET) */
     if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' }); return json(res, 200, await cronSend(120)); }
-    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, sms: E.SMS, smsOn: P.smsOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
+    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!(P.voiceOn && P.voiceTpl), giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
       /* קיר הברכות הציבורי */
@@ -428,6 +488,6 @@ module.exports = async (req, res) => {
   } catch (e) { console.error('timer', e.message); return json(res, 500, { error: e.message === 'storage' ? 'storage' : 'server' }); }
 };
 
-module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
+module.exports.ivr = ivr; module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
 module.exports.cronSend = cronSend; module.exports.inviteMail = inviteMail;
 module.exports.autoMails = autoMails; module.exports.cleanMedia = cleanMedia;
