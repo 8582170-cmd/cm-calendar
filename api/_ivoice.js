@@ -5,7 +5,7 @@
 'use strict';
 const V = () => require('./_voice'), EP = () => require('./_eventpay');
 /* tpl: האם יש תבנית קמפיין (נדרשת להזמנה עם הקשה). תזכורת נשלחת ב-SendTTS ולא צריכה תבנית */
-async function ready(tpl) { try { const c = await V().cfg(), P = await EP().prices(); return !!(c.token && (!tpl || P.voiceTpl)); } catch (e) { return false; } }
+async function ready(tpl) { try { const c = await V().cfg(), P = await EP().prices(); return !!(c.token && (!tpl || P.voiceTpl || P.voicePath)); } catch (e) { return false; } }
 async function yem(method, params) {
   const c = await V().cfg(), body = new URLSearchParams({ token: c.token || '', ...params });
   const r = await fetch(String(c.base || 'https://www.call2all.co.il/ym/api/').replace(/\/?$/, '/') + method, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString(), signal: AbortSignal.timeout(25000) });
@@ -34,11 +34,19 @@ function defText(c, mode) {
 async function run(cur, list, mode, text) {
   const c = cur.cfg || {}, T = String(text || '').trim() || defText(c, mode), P = {};
   const E = await EP().prices(), direct = E.voiceDirect && mode !== 'rem';
+  if (E.voicePath && mode !== 'rem') return bridge(list, E.voicePath);
   list.forEach(r => { const p = phone(r.phone); if (p && !P[p]) P[p] = direct ? { name: String(r.name || '').slice(0, 40) } : { name: String(r.name || '').slice(0, 40), text: tts(T.replace(/\{(שם|name)\}/g, r.name || '')) }; });
   const n = Object.keys(P).length; if (!n) throw new Error('no phones');
   const vc = await V().cfg(), tpl = mode === 'rem' ? (E.voiceTplRem || E.voiceTpl) : E.voiceTpl;
   const j = await yem('RunCampaign', { templateId: String(tpl), phones: JSON.stringify(P), ...(direct ? {} : { ttsMode: '1' }), ...(vc.callerId ? { callerId: vc.callerId } : {}) });
   return { id: j.campaignId, n, price: j.estimatedPrice, units: j.customerUnits };
+}
+/* קמפיין שנכנס לשלוחה (CallExtensionBridging): מי שעונה נכנס ישר לשלוחת ה-API ושומע את ההזמנה משם. עד 500 מספרים לקריאה */
+async function bridge(list, path) {
+  const ph = [...new Set(list.map(r => phone(r.phone)).filter(Boolean))]; if (!ph.length) throw new Error('no phones');
+  const vc = await V().cfg(), ids = [];
+  for (let i = 0; i < ph.length; i += 500) { const j = await yem('CallExtensionBridging', { phones: ph.slice(i, i + 500).join(':'), ivrPath: 'ivr2:/' + path, ...(vc.callerId ? { callerId: vc.callerId } : {}) }); ids.push(j.campaignId || ''); }
+  return { id: ids[0], ids, n: ph.length, bridge: 1 };
 }
 /* שליחת טקסט ישירות (SendTTS): אותו טקסט לכולם, בלי תבנית. הסטטוסים חוזרים בזמן אמת ל-callbackUrl (עד 500 מספרים) */
 async function sendTTS(list, text, cb) {

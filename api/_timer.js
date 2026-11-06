@@ -307,9 +307,11 @@ async function guest(req, res, b) {
       const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
       const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=2000').catch(() => null);
       const EP = await require('./_eventpay').prices().catch(() => ({}));
+      const stale = (R || []).filter(x => x.call_st === 'ממתין' && x.call_at && Date.now() - Date.parse(x.call_at) > 2 * 3600e3);
+      if (stale.length) { stale.forEach(x => { x.call_st = 'לא ענה'; }); const sid = stale.map(x => x.id); for (let i = 0; i < sid.length; i += 200) await db('timer_recip?slug=eq.' + s + '&call_st=eq.' + encodeURIComponent('ממתין') + '&id=in.(' + sid.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'לא ענה' }) }).catch(() => {}); }
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!EP.voiceTpl }, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv'), defRem: require('./_ivoice').defText(c, 'rem') } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv'), defRem: require('./_ivoice').defText(c, 'rem') } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     if (b.act === 'radd') {
@@ -365,7 +367,7 @@ async function guest(req, res, b) {
       const EP = await require('./_eventpay').prices(), V = require('./_ivoice');
       if (!EP.voiceOn || !(await V.ready())) return json(res, 403, { error: 'voice off' });
       if (!isFull(cur)) return json(res, 402, { error: 'full' });
-      if (b.mode !== 'rem' && !EP.voiceTpl) return json(res, 403, { error: 'tpl' });
+      if (b.mode !== 'rem' && !EP.voiceTpl && !EP.voicePath) return json(res, 403, { error: 'tpl' });
       const hz = await holyAt(Date.now()); if (hz) return json(res, 400, { error: 'shabbat' });
       const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()); if (hr < 8 || hr >= 22) return json(res, 400, { error: 'night' });
       const mode = b.mode === 'rem' ? 'rem' : 'inv', text = str(b.text, 600).replace(/[<>]/g, ''), P = cur.paid, now = new Date().toISOString();
@@ -382,7 +384,7 @@ async function guest(req, res, b) {
       const left = (+P.calls || 0) - (+P.callsUsed || 0); if (L.length > left) return json(res, 402, { error: 'quota', need: L.length, left });
       const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
       const x = mode === 'rem' ? await V.sendTTS(L, text || V.defText(c, 'rem'), site + '/api/pricing?c=_ivrcb&k=' + EP.vkey + '&s=' + s) : await V.run(cur, L, mode, text);
-      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode, ...(mode === 'rem' ? { tts: 1, fin: 1 } : {}) }].concat(cur.calls || []).slice(0, 30);
+      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode, ...(mode === 'rem' || x.bridge ? { tts: mode === 'rem' ? 1 : 0, bridge: x.bridge ? 1 : 0, fin: 1 } : {}) }].concat(cur.calls || []).slice(0, 30);
       await put(s, { ...cur, paid: P, calls });
       const ids = L.map(r => r.id); for (let i = 0; i < ids.length; i += 200) await db('timer_recip?slug=eq.' + s + '&id=in.(' + ids.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_at: now, call_st: 'ממתין', call_cid: x.id }) }).catch(() => {});
       return json(res, 200, { sent: x.n });
@@ -427,7 +429,7 @@ async function ivr(req, res) {
   const V = require('./_ivoice'), ph = V.phone(q.ApiPhone), say = t => 't-' + V.tts(t), bye = t => out('id_list_message=' + say(t) + '&go_to_folder=hangup');
   const rd = (t, k, max, min, ok, nz) => out('read=' + say(t) + '=' + k + ',no,' + max + ',' + min + ',10,NO,yes,' + (nz ? 'yes' : 'no') + ',,' + (ok || ''));
   if (!ph) return bye('לא זוהה מספר הטלפון');
-  let L = await db('timer_recip?phone=eq.' + ph + '&call_at=not.is.null&select=id,slug,name,token&order=call_at.desc&limit=3').catch(() => []);
+  let L = await db('timer_recip?phone=eq.' + ph + '&call_at=not.is.null&select=id,slug,name,token,call_st&order=call_at.desc&limit=3').catch(() => []);
   if (!L || !L.length) L = await db('timer_recip?phone=eq.' + ph + '&select=id,slug,name,token&order=id.desc&limit=5').catch(() => []);
   const today = new Date(Date.now() - 864e5).toISOString().slice(0, 10); let r = null, cur = null;
   for (const x of L || []) { const o = await get(x.slug).catch(() => null); if (o && isFull(o) && (o.cfg || {}).d >= today) { r = x; cur = o; break; } }
@@ -440,7 +442,8 @@ async function ivr(req, res) {
     else await db('timer_rsvp', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
     await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st === 'yes' ? 'אישר בטלפון' : 'לא מגיע (טלפון)' }) }).catch(() => {}); };
   /* בקמפיין שמוגדר כשיחה נכנסת: ההזמנה עצמה מושמעת מכאן (הנוסח של בעל האירוע, בלי "הקישו 1") */
-  const intro = EP.voiceDirect ? String(c.vt || V.defText(c, 'ivr')).replace(/[^.]*הקישו[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : 'שלום ' + (r.name || '') + '. ' + (c.t || '') + '.';
+  const intro = EP.voiceDirect || EP.voicePath ? String(c.vt || V.defText(c, 'ivr')).replace(/[^.]*הקישו[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : 'שלום ' + (r.name || '') + '. ' + (c.t || '') + '.';
+  if (!q.A && (!r.call_st || /ממתין|לא ענה|תפוס|תא קולי/.test(r.call_st))) await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'ענה' }) }).catch(() => {});
   if (!q.A) return rd(intro + ' אם תגיעו, הקישו 1. אם לא תוכלו להגיע, הקישו 2', 'A', 1, 1, '1.2');
   if (q.A === '2') { await save('no'); return bye('תודה, תשובתכם נרשמה. להתראות בשמחות'); }
   if (!q.N) return rd('כמה אנשים תגיעו? הקישו את המספר', 'N', 2, 1, '', true);
