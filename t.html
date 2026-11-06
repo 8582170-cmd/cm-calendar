@@ -119,35 +119,39 @@ body.hasbg{background:transparent}
   function gem(n){var o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];n%=1000;var r=h[Math.floor(n/100)]||'';n%=100;r+=n===15?'טו':n===16?'טז':t[Math.floor(n/10)]+o[n%10];return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳'}
   /* שורת תאריך היעד: wd = g לועזי / h עברי / b שניהם, ww = יום בשבוע, wt = שעה,
      wh = התאריך העברי לאירוע בערב: s לפי השקיעה (ברירת מחדל), o "אור ל־", c לפי התאריך הלועזי בלבד */
+  /* יידיש (כתיב חסידי) */
+  var YI=false,YWD=['זונטאג','מאנטאג','דינסטאג','מיטוואך','דאנערשטאג','פרייטאג','שבת קודש'],YMO=['יאנואר','פעברואר','מערץ','אפריל','מאי','יוני','יולי','אויגוסט','סעפטעמבער','אקטאבער','נאוועמבער','דעצעמבער'];
   function whenText(ms,tz,EN,o,hasTime,dStr,hStr){
     var F=function(loc,op){op.timeZone=tz;try{return new Intl.DateTimeFormat(loc,op)}catch(e){delete op.timeZone;return new Intl.DateTimeFormat(loc,op)}},d=new Date(ms),out=[];
-    var greg=F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
+    var yp={};if(YI)F('en-US',{weekday:'short',day:'numeric',month:'numeric',year:'numeric'}).formatToParts(d).forEach(function(x){yp[x.type]=x.value});
+    var greg=YI?yp.day+'טן '+YMO[+yp.month-1]+' '+yp.year:F(EN?'en-US':'he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d),heb='';
     if(o.wd==='h'||o.wd==='b'){try{
       var after=false,dm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(dStr||''),hm=/^(\d{1,2}):(\d{2})$/.exec(hStr||'');
       if(o.wh!=='c'&&dm&&hm){var p0={};F('en-US',{hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).forEach(function(x){p0[x.type]=x.value});
         var offH=(Date.UTC(+p0.year,+p0.month-1,+p0.day,+p0.hour%24,+p0.minute)-ms)/36e5,ss=sunsetLocal(+dm[1],+dm[2],+dm[3],tz,offH);after=ss!=null&&(+hm[1]+hm[2]/60)>=ss}
       var p={};F(EN?'en-u-ca-hebrew':'he-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(new Date(ms+(after?864e5:0))).forEach(function(x){p[x.type]=x.value});
-      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+' ב'+p.month+' '+gem(+p.year);
+      heb=EN?p.day+' '+p.month+' '+p.year:gem(+p.day)+(YI?' ':' ב')+p.month+' '+gem(+p.year);
       if(after&&o.wh==='o')heb=(EN?'Eve of ':'אור ל')+heb}catch(e){}}
     var date=o.wd==='h'?(heb||greg):o.wd==='b'&&heb?greg+' · '+heb:greg;
-    if(o.ww!=='0')out.push(F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
+    if(o.ww!=='0')out.push(YI?YWD[['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(yp.weekday)]:F(EN?'en-US':'he-IL',{weekday:'long'}).format(d));
     out.push(date);
     var s=out.join(', ');
-    if(hasTime&&o.wt!=='0')s+=(EN?' · ':' · בשעה ')+F('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
+    if(hasTime&&o.wt!=='0')s+=(EN||YI?' · ':' · בשעה ')+F('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
     return s}
   var c=document.getElementById('c'),PAID=false,FULL=false,GCON=false;
   function esc(x){return String(x).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]})}
   var Q=new URLSearchParams(location.search),slug=(/^\/t\/([a-z0-9-]{3,40})\/?$/.exec(location.pathname)||[])[1];
   if(Q.get('e')==='1')document.body.classList.add('embed');
   function start(o){
-    var EN=o.lang==='en',title=String(o.t||'').slice(0,90),d=o.d||'',hm=o.h||'',tz=/^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(o.z||'')?o.z:'Asia/Jerusalem',unit=['d','w','m'].indexOf(o.u)>=0?o.u:'d';
+    var EN=o.lang==='en';YI=o.lang==='yi';var title=String(o.t||'').slice(0,90),d=o.d||'',hm=o.h||'',tz=/^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(o.z||'')?o.z:'Asia/Jerusalem',unit=['d','w','m'].indexOf(o.u)>=0?o.u:'d';
     var th=TH[o.th]||TH.classic,R=document.documentElement.style,hex=function(v){return /^[0-9a-f]{6}$/i.test(v||'')?'#'+v:null};
     document.body.classList.add('th-'+(TH[o.th]?o.th:'classic'));
     R.setProperty('--acc',hex(o.c)||th.acc);R.setProperty('--card',th.card);R.setProperty('--box',th.box);R.setProperty('--ink',th.ink);R.setProperty('--mute',th.mute);R.setProperty('--bline',th.bline);R.setProperty('--nfont',th.nf);R.setProperty('--tfont',th.tf);
     R.setProperty('--bg',document.body.classList.contains('embed')?'transparent':th.card);R.setProperty('--line',th.bline==='transparent'?'#e2ddd2':th.bline);
     if(o.b==='none'){R.setProperty('--card','transparent');R.setProperty('--line','transparent')}else if(hex(o.b)){R.setProperty('--card',hex(o.b));if(!document.body.classList.contains('embed'))R.setProperty('--bg',hex(o.b))}
-    if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr'}
+    if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr'}if(YI)document.documentElement.lang='yi';
     var L=EN?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds',done:'🎉 The time has come!',bad:'This countdown was not found.',make:'Make your own countdown'}
+           :YI?{months:'חדשים',weeks:'וואכן',days:'טעג',hours:'שעות',minutes:'מינוט',seconds:'סעקונדעס',done:'🎉 די צייט איז אנגעקומען!',bad:'מען האט נישט געטראפן דעם קאונטדאון.',make:'מאכט אייער אייגענעם קאונטדאון'}
            :{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות',done:'🎉 הגיע הזמן!',bad:'הספירה לא נמצאה.',make:'ליצירת ספירה לאחור משלכם'};
     var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d),t=/^(\d{1,2}):(\d{2})$/.exec(hm);
     if(!m){c.innerHTML='<p class="bad">'+L.bad+'</p><div class="cr"><a href="https://www.myluach.org/timer" target="_top">'+L.make+'</a></div>';return}
@@ -170,7 +174,7 @@ body.hasbg{background:transparent}
       var top=P2.filter(function(p){return DK[p[0]]}),clk=P2.filter(function(p){return !DK[p[0]]});
       return '<div class="top">'+top.map(cell).join('')+'</div><div class="clock">'+clk.map(cell).join('<div class="sep" aria-hidden="true">:</div>')+'</div>'}
     var pu=String(o.p||''),photo=/^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(pu)||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(pu)?'<img class="ph ph-'+(['rect','wide'].indexOf(o.ps)>=0?o.ps:'circle')+'" src="'+esc(pu)+'" alt="">':'';
-    var wl='<div class="when">'+esc(when)+'</div>',head=photo+'<h1>'+esc(title||(EN?'Countdown':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
+    var wl='<div class="when">'+esc(when)+'</div>',head=photo+'<h1>'+esc(title||(EN?'Countdown':YI?'קאונטדאון':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
     var credit=(wp==='bottom'?'<div class="when" style="margin-top:8px">'+esc(when)+'</div>':'')+'<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
     var noClock=!!slug&&o.clk===0;
     function draw(){
@@ -181,9 +185,9 @@ body.hasbg{background:transparent}
       if(!built||c.querySelectorAll('.u').length!==P2.length){c.innerHTML=head+layout(P2)+credit;built=true}
       P2.forEach(function(p){var e=c.querySelector('[data-k="'+p[0]+'"]');if(e)e.textContent=String(p[1]).padStart(2,'0')});
     }
-    document.title=(title||(EN?'Countdown':'ספירה לאחור'))+' · MyLuach';
+    document.title=(title||(EN?'Countdown':YI?'קאונטדאון':'ספירה לאחור'))+' · MyLuach';
     iv=setInterval(draw,1000);draw();
-    if(slug&&!document.body.classList.contains('embed'))invite(o,to,!!t,EN,title||(EN?'Countdown':'ספירה לאחור'));
+    if(slug&&!document.body.classList.contains('embed'))invite(o,to,!!t,EN,title||(EN?'Countdown':YI?'קאונטדאון':'ספירה לאחור'));
   }
 
   /* ---------- דף הזמנה (רק בכתובת שמורה, לא בהטמעה) ---------- */
@@ -196,6 +200,10 @@ body.hasbg{background:transparent}
         nm:'Your name',st:'Will you attend?',yes:'Yes, I\'ll be there',no:'Sorry, can\'t make it',maybe:'Maybe',ad:'Adults',kd:'Children',ph:'Phone (optional)',nt:'Note (optional)',send:'Send',thx:'Thank you! Your reply was received.',
         em:'Email',days:'When to remind you?',d0:'On the day',d1:'A day before',d2:'2 days before',d3:'3 days before',d7:'A week before',d14:'Two weeks before',remok:'Done! You will get a reminder by email.',rempend:'Almost done: we sent you an email to confirm the reminder.',
         wt:'Your blessing',who:'Who can see it?',all:'Everyone',host:'Only the hosts',wok:'Thank you! Your blessing was received.',wall:'Blessings',err:'Something went wrong. Please try again.',rate:'Too many attempts. Please try again later.',done:'You already replied. You can send again to update.',gal:'Photos from the event',gup:'Add photos',gok:'Thank you! The photo was added.',cg:'Gift by credit card',cga:'Amount (₪)',cgm:'Blessing (optional)',cgp:'Continue to payment',cgok:'Thank you! Your gift was received.',teh:'Psalms (Tehillim) division',tsub:'Pick chapters to read before the event',tprog:'{n} of 150 chapters taken',tround:'Round {r}',tpick:'Choose up to 10 chapters, then enter your name',ttake:'Take these chapters',tgot:'Thank you! Your chapters:',tread:'Read online',tremq:'Want a reminder to read them?',ttaken:'Those chapters were just taken. Please choose others.'}
+      :YI?{to:'לכבוד {שם}, מיר וועלן זיך זייער פרייען אייך צו זען ביי אונזער שמחה!',venue:'דער ארט',rec:'קבלת פנים',main:'חופה',waze:'וועיז',maps:'גוגל מאפס',gcal:'צולייגן צום גוגל קאלענדאר',ics:'עפל / אוטלוק קאלענדאר',rsvp:'באשטעטיגן קומען',rem:'דערמאנונג',wish:'שרייבן א ברכה',
+        nm:'נאמען',st:'וועט איר קומען?',yes:'יא, מיר קומען',no:'צום באדויערן קענען מיר נישט',maybe:'נאך נישט זיכער',ad:'דערוואקסענע',kd:'קינדער',ph:'טעלעפאן (נישט נויטיג)',nt:'באמערקונג (נישט נויטיג)',send:'שיקן',thx:'א דאנק! דאס באשטעטיגונג איז אנגעקומען.',
+        em:'אימעיל',days:'ווען צו דערמאנען?',d0:'אינעם טאג פון דער שמחה',d1:'א טאג פריער',d2:'צוויי טעג פריער',d3:'3 טעג פריער',d7:'א וואך פריער',d14:'צוויי וואכן פריער',remok:'איר זענט פארשריבן! די דערמאנונג וועט אנקומען אין אימעיל.',rempend:'כמעט פארטיג: מיר האבן געשיקט אן אימעיל צו באשטעטיגן די דערמאנונג.',
+        wt:'די ברכה',who:'ווער וועט זען די ברכה?',all:'אלע',host:'נאר די בעלי שמחה',wok:'א דאנק! די ברכה איז אנגעקומען.',wall:'ברכות',err:'עפעס איז נישט געגאנגען. פרובירט נאכאמאל.',rate:'צופיל פרובירונגען. פרובירט שפעטער.',done:'איר האט שוין באשטעטיגט. מען קען נאכאמאל שיקן צו טוישן.',gal:'בילדער פון דער שמחה',gup:'צולייגן בילדער',gok:'א דאנק! דאס בילד איז צוגעלייגט.',cg:'מתנה מיט קרעדיט קארטל',cga:'סכום (₪)',cgm:'ברכה (נישט נויטיג)',cgp:'ווייטער צום באצאלן',cgok:'א דאנק! די מתנה איז אנגעקומען.',teh:'צוטיילן ספר תהילים',tsub:'קלייבט קאפיטלעך צו זאגן לכבוד דער שמחה',tprog:'{n} פון 150 קאפיטלעך זענען שוין גענומען',tround:'רונדע {r}',tpick:'קלייבט ביז 10 קאפיטלעך, און שרייבט אייער נאמען',ttake:'איך נעם די קאפיטלעך',tgot:'א דאנק! אייערע קאפיטלעך:',tread:'צו לערנען אויף ספריא',tremq:'ווילט איר א דערמאנונג צו זאגן?',ttaken:'די קאפיטלעך זענען יעצט גענומען געווארן. קלייבט אנדערע.'}
       :{to:'לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!',venue:'המקום',rec:'קבלת פנים',main:'חופה',waze:'וייז',maps:'גוגל מפות',gcal:'הוספה ליומן גוגל',ics:'יומן אפל / אאוטלוק',rsvp:'אישור הגעה',rem:'תזכורת לאירוע',wish:'כתיבת ברכה',
         nm:'שם',st:'האם תגיעו?',yes:'כן, נגיע',no:'לצערנו לא נוכל',maybe:'עוד לא בטוח',ad:'מבוגרים',kd:'ילדים',ph:'טלפון (לא חובה)',nt:'הערה (לא חובה)',send:'שליחה',thx:'תודה! אישור ההגעה התקבל.',
         em:'מייל',days:'מתי להזכיר?',d0:'ביום האירוע',d1:'יום לפני',d2:'יומיים לפני',d3:'3 ימים לפני',d7:'שבוע לפני',d14:'שבועיים לפני',remok:'נרשמתם! התזכורת תגיע במייל.',rempend:'כמעט סיימנו: שלחנו מייל לאישור התזכורת.',
@@ -206,8 +214,8 @@ body.hasbg{background:transparent}
     if(okM(o.bgv)||okM(o.bgi)){var bw=document.createElement('div');bw.id='bgw';bw.setAttribute('aria-hidden','true');
       bw.innerHTML=(okM(o.bgv)?'<video autoplay muted loop playsinline'+(okM(o.bgi)?' poster="'+esc(o.bgi)+'"':'')+' src="'+esc(o.bgv)+'"></video>':'<img src="'+esc(o.bgi)+'" alt="">')+'<i style="opacity:'+((+o.bgo||0)/100)+'"></i>';
       document.body.prepend(bw);document.body.classList.add('hasbg');document.documentElement.style.setProperty('--bg','transparent')}
-    if(okM(o.mus)){var au=new Audio(o.mus);au.loop=true;var mb=document.createElement('button');mb.type='button';mb.className='mus';mb.textContent=EN?'🎵 Play music':'🎵 הפעלת מוזיקה';
-      var tg=function(){if(au.paused){au.play().then(function(){mb.textContent=EN?'⏸ Music':'⏸ מוזיקה'}).catch(function(){})}else{au.pause();mb.textContent=EN?'🎵 Play music':'🎵 הפעלת מוזיקה'}};
+    if(okM(o.mus)){var au=new Audio(o.mus);au.loop=true;var mb=document.createElement('button');mb.type='button';mb.className='mus';mb.textContent=EN?'🎵 Play music':YI?'🎵 שפילן מוזיק':'🎵 הפעלת מוזיקה';
+      var tg=function(){if(au.paused){au.play().then(function(){mb.textContent=EN?'⏸ Music':YI?'⏸ מוזיק':'⏸ מוזיקה'}).catch(function(){})}else{au.pause();mb.textContent=EN?'🎵 Play music':YI?'🎵 שפילן מוזיק':'🎵 הפעלת מוזיקה'}};
       mb.onclick=function(e){e.stopPropagation();tg()};document.body.appendChild(mb);
       /* נגיעה ראשונה בדף מפעילה את המוזיקה (דפדפנים לא מאפשרים לנגן לפני כן) */
       var first=function(e){document.removeEventListener('pointerdown',first);if(e.target!==mb&&au.paused)tg()};document.addEventListener('pointerdown',first)}
@@ -217,6 +225,7 @@ body.hasbg{background:transparent}
     var h='';
     if(ok(o.inv))h+='<img class="invimg" src="'+esc(o.inv)+'" alt="'+esc(title)+'">';
     var ES={wed:['מתחתנים','הורי החתן','הורי הכלה','Getting married'],eng:['מתארסים','הורי החתן','הורי הכלה','Engaged'],sheva:['שבע ברכות','המארחים','','Sheva Brachot'],bar:['בר מצווה','ההורים','הסבים','Bar Mitzvah'],bat:['בת מצווה','ההורים','הסבים','Bat Mitzvah'],brit:['ברית מילה','ההורים','הסבים','Brit Milah'],zbd:['שמחת בת','ההורים','הסבים','Simchat Bat'],pid:['פדיון הבן','ההורים','הסבים','Pidyon Haben'],chl:['חלאקה','ההורים','הסבים','Upsherin'],sfr:['הכנסת ספר תורה','המזמינים','','Hachnasat Sefer Torah'],bd:['יום הולדת','המזמינים','','Birthday'],oth:['','המזמינים','','']}[o.et];
+    if(ES&&YI)ES={wed:['חתונה','עלטערן פונעם חתן','עלטערן פון דער כלה'],eng:['ווארט','עלטערן פונעם חתן','עלטערן פון דער כלה'],sheva:['שבע ברכות','די מכבדים',''],bar:['בר מצוה','עלטערן','זיידע און באבע'],bat:['בת מצוה','עלטערן','זיידע און באבע'],brit:['ברית מילה','עלטערן','זיידע און באבע'],zbd:['קידוש לכבוד דער נייגעבוירענער טאכטער','עלטערן','זיידע און באבע'],pid:['פדיון הבן','עלטערן','זיידע און באבע'],chl:['אפשערן','עלטערן','זיידע און באבע'],sfr:['הכנסת ספר תורה','די מכבדים',''],bd:['געבורטסטאג','די מכבדים',''],oth:['','די מכבדים','']}[o.et];
     if(ES&&EN){ES=[ES[3],/הורי/.test(ES[1])?(o.et==='wed'||o.et==='eng'?"Groom's parents":'Parents'):ES[1]?'Hosts':'',ES[2]?(/הורי/.test(ES[2])?"Bride's parents":'Grandparents'):'']}
     var nm=[o.n1,o.n2].filter(Boolean).map(esc).join(' &amp; ');
     if(ES&&(nm||o.f1||ES[0])){var par=[[ES[1],o.f1],[ES[2],o.f2]].filter(function(x){return x[1]});
@@ -232,7 +241,7 @@ body.hasbg{background:transparent}
       (o.tr?'<div><b>'+T.rec+':</b> '+esc(o.tr)+'</div>':'')+(hasTime&&(o.tr||o.tl)?'<div><b>'+esc(o.tl||T.main)+':</b> '+esc(o.h)+'</div>':'')+'</div><div class="btns">'+
       (o.addr?'<a class="bt" target="_blank" rel="noopener" href="https://waze.com/ul?q='+encodeURIComponent(o.addr)+'&navigate=yes">🚗 '+T.waze+'</a><a class="bt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(loc)+'">📍 '+T.maps+'</a>':'')+
       '<a class="bt" target="_blank" rel="noopener" href="'+gcal+'">📅 '+T.gcal+'</a><button class="bt" type="button" id="icsB">🗓 '+T.ics+'</button></div></div>';
-    var gift=/^https:\/\/[^\s<>"']+$/.test(o.gift||'')?'<a class="bt" target="_blank" rel="noopener nofollow" href="'+esc(o.gift)+'">🎁 '+esc(o.gl||(EN?'Gift / donation':'מתנה / תרומה'))+'</a>':'';
+    var gift=/^https:\/\/[^\s<>"']+$/.test(o.gift||'')?'<a class="bt" target="_blank" rel="noopener nofollow" href="'+esc(o.gift)+'">🎁 '+esc(o.gl||(EN?'Gift / donation':YI?'מתנה / צדקה':'מתנה / תרומה'))+'</a>':'';
     var cgb=GCON&&PAID?'<button class="bt" type="button" data-p="cg">💳 '+T.cg+'</button>':'';
     var qs=(o.qs||[]).map(function(q,i){return '<label>'+esc(q.q)+(q.o&&q.o.length?'<select name="q'+i+'">'+q.o.map(function(v){return '<option>'+esc(v)+'</option>'}).join('')+'</select>':'<input name="q'+i+'" maxlength="100">')+'</label>'}).join('');
     var act='<div class="box2"><div class="btns">'+gift+cgb+(o.rv?'<button class="bt pri" type="button" data-p="rsvp">✅ '+T.rsvp+'</button>':'')+(o.rm?'<button class="bt" type="button" data-p="rem">🔔 '+T.rem+'</button>':'')+(o.wl?'<button class="bt" type="button" data-p="wish">✍️ '+T.wish+'</button>':'')+'</div>'+
@@ -293,7 +302,7 @@ body.hasbg{background:transparent}
     /* מתנה באשראי דרך האתר */
     var fcg=document.getElementById('f-cg');
     if(fcg)fcg.onsubmit=function(e){e.preventDefault();var M=fcg.querySelector('.msg'),amt=+fcg.elements['amount'].value;if(!(amt>0)){M.className='msg no';M.textContent=T.err;return}
-      var go2=function(){window.MLPay.open({title:'🎁 '+T.cg,sub:title+' · '+amt+' ₪',mailNote:EN?'for the receipt':'לשם תישלח הקבלה',body:{plan:'gift',slug:slug,amount:amt,gname:fcg.elements['name'].value,gmsg:fcg.elements['msg'].value},onPaid:function(){M.className='msg';M.textContent=T.cgok;fcg.reset()}})};
+      var go2=function(){window.MLPay.open({title:'🎁 '+T.cg,sub:title+' · '+amt+' ₪',mailNote:EN?'for the receipt':YI?'אהין וועט מען שיקן די קבלה':'לשם תישלח הקבלה',body:{plan:'gift',slug:slug,amount:amt,gname:fcg.elements['name'].value,gmsg:fcg.elements['msg'].value},onPaid:function(){M.className='msg';M.textContent=T.cgok;fcg.reset()}})};
       if(window.MLPay)go2();else{var sc=document.createElement('script');sc.src='/assets/pay.js?v=2';sc.onload=go2;document.head.appendChild(sc)}};
     /* מעקב פתיחה: נכנסו מהקישור האישי (פעם אחת בכל ביקור) */
     var rt=Q.get('r');if(PAID&&rt&&/^[0-9a-f]{24}$/.test(rt)&&!isOwner){var sk='op-'+slug+rt;var seen=false;try{seen=!!sessionStorage.getItem(sk);sessionStorage.setItem(sk,'1')}catch(e){}if(!seen)post({act:'open',slug:slug,r:rt}).catch(function(){})}
