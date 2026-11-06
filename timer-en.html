@@ -387,7 +387,7 @@ summary{cursor:pointer;font-weight:700}
     if(R.length)glDraw(R,A);
     $('rcSend').hidden=!R.length;
     var q=c('queued'),at=OWN.mail&&OWN.mail.at;$('rcSched').innerHTML=at&&q&&Date.parse(at)>Date.now()?'<p class="st ok">🕒 מתוזמן: '+q+' הזמנות יישלחו ב־'+new Date(at).toLocaleString('he-IL',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' <button class="btn sm" type="button" id="rcUn">ביטול התזמון</button></p>':'';
-    var un=$('rcUn');if(un)un.onclick=function(){un.disabled=true;ownPost({act:'unsched'}).then(function(){$('ownLoad').click()})};if(!$('rcSubj').value){var mlv=$('ml').value||$('lang').value;$('rcSubj').value=(OWN.mail&&OWN.mail.subject)||((mlv==='yi'?'איינלאדונג: ':mlv==='en'?'Invitation: ':'הזמנה: ')+($('t').value.trim()||''))}if(!$('rcNote').value&&OWN.mail)$('rcNote').value=OWN.mail.note||''}
+    var un=$('rcUn');if(un)un.onclick=function(){un.disabled=true;ownPost({act:'unsched'}).then(function(){$('ownLoad').click()})};if(!$('rcSubj').value){var mlv=$('ml').value||$('lang').value;$('rcSubj').value=(OWN.mail&&OWN.mail.subject)||((mlv==='yi'?'הזמנה: ':mlv==='en'?'Invitation: ':'הזמנה: ')+($('t').value.trim()||''))}if(!$('rcNote').value&&OWN.mail)$('rcNote').value=OWN.mail.note||''}
   /* רשימת המוזמנים: חיפוש, סינון, פעולות */
   var GF={q:'',f:'all',g:''};
   function glDraw(R,A){var O=$('gList');if(!O)return;var ppl=function(a){return (+a.adults||0)+(+a.kids||0)},ph=function(r){return r.phone||''},em=function(r){return /@phone\.invalid$/.test(r.email)?'':r.email};
@@ -594,7 +594,7 @@ summary{cursor:pointer;font-weight:700}
     if(at&&!$('rcAt').value){var d=new Date(Date.now()+864e5);d.setMinutes(0,0,0);d.setHours(10);$('rcAt').value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}})});
   $('rcAdd').addEventListener('click',function(){rcAdd(parseRc($('rcIn').value))});
   /* שפת המיילים: נשמרת מיד עם הדף, כדי שהתצוגה המקדימה והשליחה ישתמשו בה */
-  $('ml').addEventListener('change',function(){var v=$('ml').value||$('lang').value,S=$('rcSubj').value;if(/^(הזמנה|איינלאדונג|Invitation): /.test(S))$('rcSubj').value=(v==='yi'?'איינלאדונג: ':v==='en'?'Invitation: ':'הזמנה: ')+S.replace(/^[^:]+: /,'');if($('save2'))$('save2').click()});
+  $('ml').addEventListener('change',function(){var v=$('ml').value||$('lang').value,S=$('rcSubj').value;if(/^(הזמנה|הזמנה|Invitation): /.test(S))$('rcSubj').value=(v==='yi'?'הזמנה: ':v==='en'?'Invitation: ':'הזמנה: ')+S.replace(/^[^:]+: /,'');if($('save2'))$('save2').click()});
   /* שאלות באישור ההגעה: עד 10, עם הוספה מהירה */
   function qShow(){var rows=document.querySelectorAll('.qrow'),last=-1;[].forEach.call(rows,function(r,i){if($('q'+i).value.trim()||$('o'+i).value.trim())last=i});[].forEach.call(rows,function(r,i){if(i<=Math.max(1,last))r.hidden=false});$('qAdd').hidden=!document.querySelector('.qrow[hidden]')}
   function qFree(){for(var i=0;i<10;i++)if(!$('q'+i).value.trim()&&!$('o'+i).value.trim())return i;return -1}

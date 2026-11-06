@@ -151,7 +151,7 @@ body.hasbg{background:transparent}
     if(o.b==='none'){R.setProperty('--card','transparent');R.setProperty('--line','transparent')}else if(hex(o.b)){R.setProperty('--card',hex(o.b));if(!document.body.classList.contains('embed'))R.setProperty('--bg',hex(o.b))}
     if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr'}if(YI)document.documentElement.lang='yi';
     var L=EN?{months:'months',weeks:'weeks',days:'days',hours:'hours',minutes:'minutes',seconds:'seconds',done:'🎉 The time has come!',bad:'This countdown was not found.',make:'Make your own countdown'}
-           :YI?{months:'חדשים',weeks:'וואכן',days:'טעג',hours:'שעות',minutes:'מינוט',seconds:'סעקונדעס',done:'🎉 די צייט איז אנגעקומען!',bad:'מען האט נישט געטראפן דעם קאונטדאון.',make:'מאכט אייער אייגענעם קאונטדאון'}
+           :YI?{months:'חדשים',weeks:'וואכן',days:'טעג',hours:'שעות',minutes:'מינוט',seconds:'סעקונדעס',done:'🎉 די צייט איז אנגעקומען!',bad:'מען האט נישט געטראפן דעם צייל־זייגער.',make:'מאכט אייער אייגענעם צייל־זייגער'}
            :{months:'חודשים',weeks:'שבועות',days:'ימים',hours:'שעות',minutes:'דקות',seconds:'שניות',done:'🎉 הגיע הזמן!',bad:'הספירה לא נמצאה.',make:'ליצירת ספירה לאחור משלכם'};
     var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d),t=/^(\d{1,2}):(\d{2})$/.exec(hm);
     if(!m){c.innerHTML='<p class="bad">'+L.bad+'</p><div class="cr"><a href="https://www.myluach.org/timer" target="_top">'+L.make+'</a></div>';return}
@@ -174,7 +174,7 @@ body.hasbg{background:transparent}
       var top=P2.filter(function(p){return DK[p[0]]}),clk=P2.filter(function(p){return !DK[p[0]]});
       return '<div class="top">'+top.map(cell).join('')+'</div><div class="clock">'+clk.map(cell).join('<div class="sep" aria-hidden="true">:</div>')+'</div>'}
     var pu=String(o.p||''),photo=/^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(pu)||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(pu)?'<img class="ph ph-'+(['rect','wide'].indexOf(o.ps)>=0?o.ps:'circle')+'" src="'+esc(pu)+'" alt="">':'';
-    var wl='<div class="when">'+esc(when)+'</div>',head=photo+'<h1>'+esc(title||(EN?'Countdown':YI?'קאונטדאון':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
+    var wl='<div class="when">'+esc(when)+'</div>',head=photo+'<h1>'+esc(title||(EN?'Countdown':YI?'צייל־זייגער':'ספירה לאחור'))+'</h1>'+(wp==='top'?wl:''),built=false,iv;
     var credit=(wp==='bottom'?'<div class="when" style="margin-top:8px">'+esc(when)+'</div>':'')+'<div class="cr"><a href="https://www.myluach.org/timer" target="_blank" rel="noopener">myluach.org</a></div>';
     var noClock=!!slug&&o.clk===0;
     function draw(){
@@ -185,9 +185,9 @@ body.hasbg{background:transparent}
       if(!built||c.querySelectorAll('.u').length!==P2.length){c.innerHTML=head+layout(P2)+credit;built=true}
       P2.forEach(function(p){var e=c.querySelector('[data-k="'+p[0]+'"]');if(e)e.textContent=String(p[1]).padStart(2,'0')});
     }
-    document.title=(title||(EN?'Countdown':YI?'קאונטדאון':'ספירה לאחור'))+' · MyLuach';
+    document.title=(title||(EN?'Countdown':YI?'צייל־זייגער':'ספירה לאחור'))+' · MyLuach';
     iv=setInterval(draw,1000);draw();
-    if(slug&&!document.body.classList.contains('embed'))invite(o,to,!!t,EN,title||(EN?'Countdown':YI?'קאונטדאון':'ספירה לאחור'));
+    if(slug&&!document.body.classList.contains('embed'))invite(o,to,!!t,EN,title||(EN?'Countdown':YI?'צייל־זייגער':'ספירה לאחור'));
   }
 
   /* ---------- דף הזמנה (רק בכתובת שמורה, לא בהטמעה) ---------- */

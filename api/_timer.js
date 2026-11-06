@@ -111,7 +111,7 @@ const YWD = ['זונטאג', 'מאנטאג', 'דינסטאג', 'מיטוואך',
 function inviteMail(slug, cur, r, site, mode) {
   const c = cur.cfg || {}, th = THC[c.th] || THC.classic, acc = /^[0-9a-f]{6}$/i.test(c.c || '') ? c.c : th[0], bg = /^[0-9a-f]{6}$/i.test(c.b || '') ? c.b : th[1], dark = c.th === 'elegant' || c.th === 'digital';
   const ink = dark ? 'f3efe6' : '1a232c', mute = dark ? 'b8ae9c' : '5d6873', ML = c.ml || c.lang || 'he', EN = ML === 'en', YI = ML === 'yi', page = site + '/t/' + slug + '?' + (r.name ? 'to=' + encodeURIComponent(r.name) + '&' : '') + 'r=' + r.token;
-  const title = c.t || (EN ? 'You are invited' : YI ? 'איינלאדונג' : 'הזמנה');
+  const title = c.t || (EN ? 'You are invited' : YI ? 'הזמנה' : 'הזמנה');
   let when = c.d; try { const d = new Date(c.d + 'T12:00:00Z');
     when = YI ? (c.ww !== '0' ? YWD[d.getUTCDay()] + ', ' : '') + d.getUTCDate() + 'טן ' + YMO[d.getUTCMonth()] + ' ' + d.getUTCFullYear()
       : (c.ww !== '0' ? new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { weekday: 'long', timeZone: 'UTC' }).format(d) + ', ' : '') + new Intl.DateTimeFormat(EN ? 'en-US' : 'he-IL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d);
@@ -125,7 +125,7 @@ function inviteMail(slug, cur, r, site, mode) {
   const btn = (href, label, pri) => '<a href="' + H(href) + '" target="_blank" style="display:inline-block;margin:4px;padding:10px 18px;border-radius:999px;border:2px solid #' + acc + ';' + (pri ? 'background:#' + acc + ';color:#' + bg : 'color:#' + acc) + ';font-weight:bold;text-decoration:none;font-family:Arial,sans-serif;font-size:15px">' + label + '</a>';
   const loc = [c.venue, c.addr].filter(Boolean).join(', '), dir = EN ? 'ltr' : 'rtl', unsub = site + '/api/pricing?c=_timer&unsub=' + r.token;
   const L = EN ? { rsvp: '✅ RSVP', wish: '✍️ Write a blessing', cal: '📅 Add to calendar', waze: '🚗 Waze', maps: '📍 Maps', gift: '🎁 ' + (c.gl || 'Gift'), rec: 'Reception', open: 'Open the invitation', un: 'Unsubscribe' }
-                 : YI ? { rsvp: '✅ באשטעטיגן קומען', wish: '✍️ שרייבן א ברכה', cal: '📅 צולייגן צום קאלענדאר', waze: '🚗 וועיז', maps: '📍 מאפע', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'צו דער איינלאדונג', un: 'אראפנעמען פון דער ליסטע' }
+                 : YI ? { rsvp: '✅ באשטעטיגן קומען', wish: '✍️ שרייבן א ברכה', cal: '📅 צולייגן צום קאלענדאר', waze: '🚗 וועיז', maps: '📍 מאפע', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'צו דער הזמנה', un: 'אראפנעמען פון דער ליסטע' }
                  : { rsvp: '✅ אישור הגעה', wish: '✍️ כתיבת ברכה', cal: '📅 הוספה ליומן', waze: '🚗 וייז', maps: '📍 מפות', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'לדף ההזמנה', un: 'הסרה מרשימת התפוצה' };
   const row = x => '<tr><td style="padding:8px 18px;text-align:center">' + x + '</td></tr>';
   let h = '<!doctype html><html dir="' + dir + '"><body style="margin:0;padding:0;background:#f4f2ee"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:16px 8px">' +
@@ -339,7 +339,7 @@ async function guest(req, res, b) {
       let at = null;
       if (b.at) { at = Date.parse(b.at); if (!isFinite(at)) return json(res, 400, { error: 'at' }); if (at < Date.now() + 2 * 60e3) at = null; else if (at > Date.now() + 400 * 864e5) return json(res, 400, { error: 'far' }); }
       const hz = await holyAt(at || Date.now()); if (hz) return json(res, 400, { error: 'shabbat', end: hz.end });
-      await T_put_mail(s, cur, { subject: clean1(b.subject, 140) || ((c.ml || c.lang) === 'yi' ? 'איינלאדונג: ' : (c.ml || c.lang) === 'en' ? 'Invitation: ' : 'הזמנה: ') + (c.t || ''), note: clean1(b.note, 600), at: at ? new Date(at).toISOString() : null });
+      await T_put_mail(s, cur, { subject: clean1(b.subject, 140) || ((c.ml || c.lang) === 'yi' ? 'הזמנה: ' : (c.ml || c.lang) === 'en' ? 'Invitation: ' : 'הזמנה: ') + (c.t || ''), note: clean1(b.note, 600), at: at ? new Date(at).toISOString() : null });
       for (let i = 0; i < pick.length; i += 300) await db('timer_recip?id=in.(' + pick.slice(i, i + 300).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'queued', err: null }) });
       return json(res, 200, { ok: true, queued: pick.length, left: left - pick.length, at: at ? new Date(at).toISOString() : null });
     }
