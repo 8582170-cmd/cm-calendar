@@ -92,6 +92,8 @@ async function tehState(s) {
 /* שבת וחג: לא שולחים ולא מתזמנים. בודקים לפי ארץ ישראל וגם לפי חו"ל (יום טוב שני), עם שעה לפני כניסת השבת וחצי שעה אחרי צאתה */
 async function holyAt(ms) { const S = require('./_shabbat'), conf = { shabbat: { on: true, yt: true, before: 60, after: 30 } };
   for (const il of [true, false]) { const r = await S.status(ms, { lat: 31.778, lng: 35.235, tz: 'Asia/Jerusalem', il }, conf).catch(() => ({})); if (r.closed) return r; } return null; }
+/* מסלול חינם (עם רישום): דף ההזמנה פתוח ו-20 מיילים. "מלא" = שולם */
+const isFull = cur => !!(cur && cur.paid && !cur.paid.free);
 async function T_put_mail(s, cur, mail) { await put(s, { ...cur, mail }); cur.mail = mail; }
 /* ---------- מייל ההזמנה: דומה לדף האירוע ---------- */
 const THC = { classic: ['1e5a63', 'ffffff', 'eef4f4'], wedding: ['a8646f', 'fff8f6', 'f8e8e5'], barmitzvah: ['1f3a5f', 'f7f8fb', 'e6ecf5'], batmitzvah: ['b8487a', 'fff7fb', 'fbe3ef'], kids: ['e0663a', 'fffaf2', 'ffe3d3'], elegant: ['c9a227', '1d1a17', '2a2622'], digital: ['39e888', '0b0f0c', '111a14'], minimal: ['172126', 'ffffff', 'f3f5f4'] };
@@ -176,7 +178,7 @@ async function autoMails(cover, max) {
   const { sendMail } = require('./_mail'); let budget = max;
   for (const s of Object.keys(idx)) {
     if (budget <= 0) break;
-    const cur = await get(s).catch(() => null); if (!cur || !cur.paid) continue; const c = cur.cfg || {}; if (!/^\d{4}-\d{2}-\d{2}$/.test(c.d || '')) continue;
+    const cur = await get(s).catch(() => null); if (!isFull(cur)) continue; const c = cur.cfg || {}; if (!/^\d{4}-\d{2}-\d{2}$/.test(c.d || '')) continue;
     const [y, m, d] = c.d.split('-').map(Number), ev = new Date(y, m - 1, d, 12), dd = n => iso(addD(ev, n));
     const jobs = [];
     if (c.nr && c.rv && covered.includes(dd(-c.nr))) jobs.push('nr');
@@ -205,7 +207,7 @@ async function cleanMedia() {
   for (const path of Object.keys(M)) {
     const x = M[path]; if (Date.now() - x.at < 7 * 864e5) continue;
     const cur = await get(x.s).catch(() => null);
-    if (cur && cur.paid) { delete M[path]; changed = true; kept++; continue; }
+    if (isFull(cur)) { delete M[path]; changed = true; kept++; continue; }
     try { await fetch(R2.presign('DELETE', path, 120, null, MB), { method: 'DELETE' }); del++; } catch (e) { continue; }
     if (cur && cur.cfg) { const u = MB.url + '/' + path, c = { ...cur.cfg }; let ch = false; ['bgv', 'mus'].forEach(k => { if (c[k] === u) { c[k] = ''; ch = true; } }); if (ch) await put(x.s, { ...cur, cfg: c }).catch(() => {}); }
     delete M[path]; changed = true;
@@ -226,6 +228,14 @@ async function guest(req, res, b) {
   const c = cur.cfg || {}, meta = require('./_lib').reqMeta(req) || {}, clean1 = (v, n) => str(v, n).replace(/[<>]/g, '').trim();
   /* דף ההזמנה פתוח לאורחים רק אחרי תשלום */
   if (['rsvp', 'wish', 'teh'].includes(b.act) && !cur.paid) return json(res, 402, { error: 'unpaid' });
+  /* מעקב פתיחה: מוזמן שנכנס מהקישור האישי שלו */
+  if (b.act === 'open') {
+    const tk = String(b.r || ''); if (!/^[0-9a-f]{24}$/.test(tk)) return json(res, 400, { error: 'r' });
+    const L = await db('timer_recip?slug=eq.' + s + '&token=eq.' + tk + '&select=id,opened_at,opens&limit=1').catch(() => null); const x = L && L[0]; if (!x) return json(res, 200, { ok: false });
+    const now = new Date().toISOString();
+    await db('timer_recip?id=eq.' + x.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ opened_at: x.opened_at || now, last_open: now, opens: (+x.opens || 0) + 1 }) }).catch(() => {});
+    return json(res, 200, { ok: true });
+  }
   try {
     if (b.act === 'rsvp') {
       if (!c.rv) return json(res, 403, { error: 'off' });
@@ -241,7 +251,7 @@ async function guest(req, res, b) {
       return json(res, 200, { ok: true });
     }
     if (b.act === 'gal') {
-      if (!c.gal) return json(res, 403, { error: 'off' });
+      if (!c.gal || !isFull(cur)) return json(res, 403, { error: 'off' });
       const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.img || '')); if (!m) return json(res, 400, { error: 'type' });
       const buf = Buffer.from(m[1], 'base64'); if (buf.length > 900000 || !(buf[0] === 0xFF && buf[1] === 0xD8)) return json(res, 400, { error: 'size' });
       const R2 = require('./_r2'); if (!R2.media()) return json(res, 503, { error: 'storage' });
@@ -273,15 +283,26 @@ async function guest(req, res, b) {
     }
     /* בעל האירוע */
     if (!own(cur, b.token)) return json(res, 403, { error: 'token' });
+    /* הפעלה חינם (עם רישום): עד 3 אירועים חינם לכל משתמש */
+    if (b.act === 'freeact') {
+      if (cur.paid) return json(res, 200, { ok: true, already: true });
+      const user = await require('./_lib').getUser(req).catch(() => null); if (!user) return json(res, 401, { error: 'login' });
+      const { loadSetting, saveSetting } = require('./_lib'), F = (await loadSetting('evfree').catch(() => null)) || {}, mine = (F[user.id] || []).filter(x => x !== s);
+      if (mine.length >= 3) return json(res, 429, { error: 'max' });
+      F[user.id] = mine.concat(s); await saveSetting('evfree', F);
+      await put(s, { ...cur, paid: { free: true, emails: 20, sms: 0, email: user.email || '', orders: [], at: new Date().toISOString() } });
+      await require('./_eventpay').index(s, c.d).catch(() => {});
+      return json(res, 200, { ok: true });
+    }
     if (b.act === 'owner') {
       const [t, r, w] = await Promise.all([db('timer_teh?slug=eq.' + s + '&select=round,chapter,name,created_at&order=round.asc,chapter.asc&limit=3000').catch(() => null),db('timer_rsvp?slug=eq.' + s + '&select=id,name,phone,status,adults,kids,note,created_at&order=created_at.desc&limit=2000').catch(() => null),
         db('timer_wall?slug=eq.' + s + '&select=id,name,text,public,hidden,created_at&order=created_at.desc&limit=1000').catch(() => null)]);
-      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
+      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
       const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=2000').catch(() => null);
       const EP = await require('./_eventpay').prices().catch(() => ({}));
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed }, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed }, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     if (b.act === 'radd') {
@@ -316,7 +337,12 @@ async function guest(req, res, b) {
     }
     if (b.act === 'mailpreview') { const m = inviteMail(s, cur, { name: str(b.name, 80) || 'משפחת ישראלי', token: '0'.repeat(24) }, (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '')); return json(res, 200, { html: m.html }); }
     /* הושבה: שולחנות (בקובץ האירוע) ושיבוץ לכל אישור הגעה */
+    if (['tables', 'seatset', 'smsnext', 'seatbulk'].includes(b.act) && !isFull(cur)) return json(res, 402, { error: 'full' });
     if (b.act === 'tables') { const T = (Array.isArray(b.tables) ? b.tables : []).slice(0, 200).map((x, i) => ({ id: str(x && x.id, 12).replace(/[^\w-]/g, '') || 't' + i, n: clean1(x && x.n, 40) || String(i + 1), c: Math.max(1, Math.min(50, parseInt(x && x.c, 10) || 10)) })); await put(s, { ...cur, seat: { tables: T } }); return json(res, 200, { ok: true, tables: T }); }
+    /* שיבוץ של כמה אורחים ביחד (שיבוץ אוטומטי): { map: { rsvpId: tableId } } */
+    if (b.act === 'seatbulk') { const by = {}; Object.entries(b.map || {}).slice(0, 2000).forEach(([id, t]) => { id = parseInt(id, 10); if (id) (by[str(t, 12) || ''] = by[str(t, 12) || ''] || []).push(id); });
+      for (const t of Object.keys(by)) await db('timer_rsvp?slug=eq.' + s + '&id=in.(' + by[t].join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ seat: t || null }) });
+      return json(res, 200, { ok: true }); }
     if (b.act === 'seatset') { const id = parseInt(b.id, 10); if (!id) return json(res, 400, { error: 'id' }); await db('timer_rsvp?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ seat: str(b.seat, 12) || null }) }); return json(res, 200, { ok: true }); }
     if (b.act === 'galdel') { const k = str(b.key, 200); if (!k.startsWith('timers/gal/' + s + '/')) return json(res, 400, { error: 'key' }); const R2 = require('./_r2'), M = R2.media(); await fetch(R2.presign('DELETE', k, 120, null, M), { method: 'DELETE' }); return json(res, 200, { ok: true }); }
     /* מתנות באשראי: בקשה להעברת הכסף לבעל האירוע (מייל למנהל האתר) */
@@ -363,15 +389,15 @@ module.exports = async (req, res) => {
       /* קיר הברכות הציבורי */
       /* חלוקת תהילים: הסבב הנוכחי ומי לקח כל פרק */
       if (q.teh) { res.setHeader('Cache-Control', 'no-store'); return json(res, 200, await tehState(s)); }
-      if (q.gal) { const cur = await get(s); if (!cur || !cur.paid || !(cur.cfg || {}).gal) return json(res, 200, { gal: [] }); res.setHeader('Cache-Control', 'no-store'); return json(res, 200, { gal: (await galList(s).catch(() => [])).map(x => x.url) }); }
+      if (q.gal) { const cur = await get(s); if (!isFull(cur) || !(cur.cfg || {}).gal) return json(res, 200, { gal: [] }); res.setHeader('Cache-Control', 'no-store'); return json(res, 200, { gal: (await galList(s).catch(() => [])).map(x => x.url) }); }
       if (q.wall) { const L = await db('timer_wall?slug=eq.' + s + '&public=is.true&hidden=is.false&select=id,name,text,created_at&order=created_at.desc&limit=300').catch(() => []);
         res.setHeader('Cache-Control', 'no-store'); return json(res, 200, { wall: L || [] }); }
       const o = RESERVED.has(s) ? { reserved: true } : await get(s);
       if (q.check) return json(res, 200, { free: !o });
       if (!o || o.reserved) return json(res, 404, { error: 'not found' });
       res.setHeader('Cache-Control', 'public, max-age=60');
-      let gcOn = false; if (o.paid && o.cfg && o.cfg.gc) { try { gcOn = !!(await require('./_eventpay').prices()).giftOn; } catch (e) {} }
-      return json(res, 200, { cfg: o.cfg, paid: !!o.paid, gcOn });
+      let gcOn = false; if (isFull(o) && o.cfg && o.cfg.gc) { try { gcOn = !!(await require('./_eventpay').prices()).giftOn; } catch (e) {} }
+      return json(res, 200, { cfg: o.cfg, paid: !!o.paid, full: isFull(o), gcOn });
     }
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });
     const b = readBody(req) || {};
@@ -395,6 +421,6 @@ module.exports = async (req, res) => {
   } catch (e) { console.error('timer', e.message); return json(res, 500, { error: e.message === 'storage' ? 'storage' : 'server' }); }
 };
 
-module.exports.get = get; module.exports.put = put; module.exports.own = own;
+module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
 module.exports.cronSend = cronSend; module.exports.inviteMail = inviteMail;
 module.exports.autoMails = autoMails; module.exports.cleanMedia = cleanMedia;

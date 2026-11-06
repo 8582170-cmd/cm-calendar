@@ -22,7 +22,7 @@ async function prepare(b) {
   const cur = await T.get(s).catch(() => null); if (!cur) return { error: 'הכתובת של האירוע לא נמצאה. שמרו אותה קודם.' };
   if (!T.own(cur, b.token)) return { error: 'אפשר לשלם רק מהדפדפן שבו נשמרה הכתובת.' };
   const { prices: P, on, smsOn } = await prices(); if (!on) return { error: 'הרכישה סגורה כרגע' };
-  const paid = !!cur.paid;
+  const paid = !!(cur.paid && !cur.paid.free);
   if (isSms) { if (!smsOn) return { error: 'SMS לא זמין כרגע' }; if (!paid) return { error: 'קודם מפעילים את דף ההזמנה' }; return { amount: P[tier], slug: s, tier, title: smsOf(tier) + ' הודעות SMS (' + s + ')' }; }
   if (paid && tier === 'base') return { error: 'דף ההזמנה כבר פעיל' };
   const amount = paid ? Math.max(1, P[tier] - P.base) : P[tier];
@@ -33,7 +33,7 @@ async function create(id, email, ev) { await pput('timers/pay/' + id + '.json', 
 async function paid(o) {
   const p = await pjson('timers/pay/' + o.id + '.json'); if (!p) throw new Error('no pay file ' + o.id);
   const T = require('./_timer'), cur = await T.get(p.slug); if (!cur) throw new Error('no timer ' + p.slug);
-  const P = cur.paid || { emails: 0, orders: [] };
+  const P = cur.paid || { emails: 0, orders: [] }; delete P.free;
   if ((P.orders || []).includes(o.id)) return;
   P.emails = (+P.emails || 0) + emailsOf(p.tier); P.sms = (+P.sms || 0) + smsOf(p.tier); P.orders = (P.orders || []).concat(o.id); P.email = P.email || p.email || o.email || ''; P.at = P.at || new Date().toISOString();
   await T.put(p.slug, { ...cur, paid: P });

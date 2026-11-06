@@ -84,3 +84,7 @@ create table if not exists public.timer_gift (
 create index if not exists timer_gift_slug on public.timer_gift(slug, status);
 alter table public.timer_gift enable row level security;
 notify pgrst, 'reload schema';
+
+-- מעקב פתיחה של הקישור האישי
+alter table public.timer_recip add column if not exists opened_at timestamptz, add column if not exists last_open timestamptz, add column if not exists opens int default 0;
+notify pgrst, 'reload schema';

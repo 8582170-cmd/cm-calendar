@@ -6,7 +6,7 @@ const { db, env } = require('./_lib');
 const r2 = n => Math.round(n * 100) / 100;
 async function prepare(b) {
   const T = require('./_timer'), s = String(b.slug || '').toLowerCase(), cur = await T.get(s).catch(() => null);
-  if (!cur || !cur.paid || !(cur.cfg || {}).gc) return { error: 'המתנה באשראי לא זמינה באירוע הזה' };
+  if (!cur || !cur.paid || cur.paid.free || !(cur.cfg || {}).gc) return { error: 'המתנה באשראי לא זמינה באירוע הזה' };
   const E = await require('./_eventpay').prices(); if (!E.giftOn) return { error: 'המתנה באשראי לא זמינה כרגע' };
   const amount = r2(Number(b.amount)); if (!(amount >= E.giftMin && amount <= E.giftMax)) return { error: 'הסכום צריך להיות בין ' + E.giftMin + ' ל־' + E.giftMax + ' ₪' };
   const fee = Math.min(amount, r2(amount * E.giftPct / 100 + E.giftFixed));
