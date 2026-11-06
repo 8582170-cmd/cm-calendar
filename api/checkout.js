@@ -62,6 +62,21 @@ module.exports = async (req, res) => {
       await require('./_paid').markPaid(o, { txn: String(c.paymentId || ''), callback: { sumit: c.raw } }, 'SUMIT');
       return json(res, 200, { status: 'paid', plan: o.plan, receipt: !!c.documentId });
     }
+    /* ביט: יצירת הבקשה בנדרים (שם וטלפון חובה) ומעבר לביט */
+    if (b.action === 'bitgo') {
+      const id = String(b.id || ''); if (!/^[0-9a-f]{24}$/.test(id)) return json(res, 400, { error: 'id' });
+      const o = ((await db('orders?id=eq.' + id + '&select=*')) || [])[0]; if (!o || !o.callback || !o.callback.bit) return json(res, 404, { error: 'order' });
+      if (o.status === 'paid') return json(res, 200, { status: 'paid' });
+      const name = String(b.name || '').trim(), phone = String(b.phone || '').replace(/\D/g, '');
+      if (name.split(/\s+/).length < 2) return json(res, 400, { error: 'name', message: 'נא למלא שם פרטי ושם משפחה.' });
+      if (!/^05\d{8}$/.test(phone)) return json(res, 400, { error: 'phone', message: 'נא למלא מספר נייד (05…), זה המספר שמחובר לביט.' });
+      const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, ''), back = String(b.back || '').startsWith(site + '/') ? String(b.back).slice(0, 400) : site + '/';
+      try {
+        const x = await require('./_nedarim').bitCreate({ amount: o.amount, name, phone, mail: o.email || '', ref: id, comment: (o.callback.bit.desc || 'MyLuach') + ' · ' + id.slice(0, 8), back, callback: site + '/api/nedarim-callback' });
+        await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { bit: { ...o.callback.bit, pre: x.pre } } }) });
+        return json(res, 200, { link: x.link });
+      } catch (e) { return json(res, 502, { error: 'bit', message: 'ביט: ' + e.message }); }
+    }
     /* פייפל, מנוי: אחרי שהלקוח אישר את המנוי */
     if (b.action === 'ppsubok') {
       const id = String(b.id || ''), sid = String(b.sid || ''); if (!/^[0-9a-f]{24}$/.test(id) || !/^I-[A-Z0-9]{6,30}$/.test(sid)) return json(res, 400, { error: 'id' });
@@ -157,6 +172,11 @@ module.exports = async (req, res) => {
     if (await require('./_shabbat').closedNow(req, cfg)) return json(res, 423, { error: 'shabbat', message: MSG.shabbat });
     let provs = await providers(cfg, isDon, String(b.avoid || '')), prov = provs.indexOf(String(b.prov || '')) >= 0 || (b.prov === 'paypal' && !isDon && require('./_paypal').ready()) ? String(b.prov) : (provs[0] || null);
     if (!prov) return json(res, 503, { error: 'payments not configured', message: MSG.config });
+    /* ביט (דרך נדרים פלוס), אם פתוח למוסד. לא למנוי עם חידוש אוטומטי */
+    /* רק בחלון התשלום המשותף (pay.js), שיודע להציג ביט */
+    const bitOk = !!b.bitUI && !(sub && b.auto) && await require('./_nedarim').bitOn().catch(() => false);
+    if (bitOk) provs = provs.concat('bit');
+    if (String(b.prov || '') === 'bit' && bitOk) prov = 'bit';
     const id = crypto.randomBytes(12).toString('hex');
     if (greet) await require('./_greetpay').create(id, email, greet);
     if (ev) await require('./_eventpay').create(id, email, ev);
@@ -164,6 +184,11 @@ module.exports = async (req, res) => {
     const desc = isDon ? 'MyLuach · תרומה' : sub ? 'MyLuach · ' + sub.title : greet ? 'MyLuach · ' + greet.title : ev ? 'MyLuach · ' + ev.title : gift ? 'MyLuach · ' + gift.title : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
     const extra = { base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', min: !!(info && info.min), coupon: coupon ? coupon.code : null };
 
+    if (prov === 'bit') {
+      const charge = isDon || gift ? amount : (Number(env('NEDARIM_TEST_AMOUNT')) || amount);
+      await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon, callback: { bit: { desc } } }) });
+      return json(res, 200, { id, amount: charge, provider: 'bit', provs, bit: true, ...extra });
+    }
     /* מנוי עם חידוש אוטומטי: פייפל (מנוי) או נדרים פלוס (הוראת קבע, חודשי) */
     if (sub && sub.auto) {
       const AP = require('./_subauto'), per = /:y$/.test(plan) ? 'y' : 'm';

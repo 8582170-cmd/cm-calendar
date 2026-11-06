@@ -11,8 +11,8 @@
 <link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
-<script src="/assets/greetings/mine.js?v=5"></script>
-<script src="/assets/pay.js?v=3" defer></script>
+<script src="/assets/greetings/mine.js?v=6"></script>
+<script src="/assets/pay.js?v=4" defer></script>
 <style>
 .acc-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 14px}
 .acc-h h1{font-size:clamp(30px,4vw,42px);font-weight:900}
@@ -122,6 +122,7 @@ function buys(pane){
       else st.textContent = 'תוקף ההורדה הסתיים';
       s.appendChild(st); li.appendChild(s);
       var bb = el('div', 'acc-btns');
+      if (o.rc) { var rcb = el('button', 'pill', '🧾 קבלה'); rcb.type = 'button'; rcb.onclick = function(){ var w = window.open('', '_blank'); rcb.disabled = true; M.receipt(o.id).then(function(r){ rcb.disabled = false; if (w) w.location = r.url; }).catch(function(er){ if (w) w.close(); rcb.disabled = false; rcb.textContent = er.msg || 'עוד לא מוכנה'; }); }; bb.appendChild(rcb); }
       if (o.link) { var a = el('a', 'acc-btn pri', ed ? 'פתיחה ועריכה' : 'פתיחה והורדה'); a.href = o.link + (ed ? '' : '#download'); bb.appendChild(a); }
       if (o.status === 'paid') { var cf = el('button', 'acc-btn', 'אישור תשלום'); cf.type = 'button'; cf.onclick = function(){ conf(o); }; bb.appendChild(cf); }
       li.appendChild(bb); ul.appendChild(li); });

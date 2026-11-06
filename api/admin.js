@@ -72,7 +72,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
+const ALOG_RO = /^(receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -117,6 +117,19 @@ module.exports = async (req, res) => {
       const SB = require('./_subs');
       if (b.action === 'subsset') await require('./_lib').saveSetting('subs', SB.clean(b.subs || {}));
       return json(res, 200, { subs: await SB.cfg(), plans: PAID.map(id => [id, (LP.PLANS.find(p => p.id === id) || {}).name || id]) });
+    }
+    /* חיבור עדכוני הסירובים של נדרים פלוס לאתר (כדי לשלוח ללקוח מייל כשחיוב חודשי נכשל) */
+    if (req.method === 'POST' && b.action === 'nedhook') {
+      const N = require('./_nedarim'); if (!N.apiReady()) return json(res, 400, { error: 'חסר NEDARIM_API_PASSWORD' });
+      const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, ''), r = await N.setSiruvHook(site + '/api/nedarim-callback');
+      return r.Result === 'OK' ? json(res, 200, { ok: true, url: r.Url }) : json(res, 400, { error: String(r.Message || r.text || 'שגיאה').slice(0, 200) });
+    }
+    /* קבלה מנדרים פלוס להזמנה (קישור לצפייה) */
+    if (req.method === 'POST' && b.action === 'receipt') {
+      const id = String(b.id || ''); if (!/^[0-9a-f]{24}$/.test(id)) return json(res, 400, { error: 'id' });
+      const o = ((await db('orders?id=eq.' + id + '&select=txn')) || [])[0]; if (!o) return json(res, 404, { error: 'not found' });
+      const N = require('./_nedarim'); if (!N.apiReady()) return json(res, 400, { error: 'חסר NEDARIM_API_PASSWORD' });
+      const u = await N.receipt(o.txn).catch(() => null); return u ? json(res, 200, { url: u }) : json(res, 404, { error: 'לא נמצאה קבלה לעסקה הזאת בנדרים פלוס' });
     }
     /* תזמון התזכורות: לוח (cal) ואירועים (ev), מייל ושיחה בנפרד */
     if (req.method === 'POST' && (b.action === 'schedget' || b.action === 'schedset')) {
@@ -358,7 +371,7 @@ module.exports = async (req, res) => {
       const p = (prof || [])[0] || null, uid = p && p.user_id;
       const or = 'or=(' + (uid ? 'user_id.eq.' + uid + ',' : '') + 'email.eq.' + encodeURIComponent(em) + ')';
       const [orders, dls] = await Promise.all([
-        db('orders?select=id,plan,amount,status,coupon,created_at,paid_at,ip,ip_geo,ua&' + or + '&order=created_at.desc&limit=50').catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at,ip,ip_geo&' + or + '&order=created_at.desc&limit=50')).catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at&' + or + '&order=created_at.desc&limit=50')).catch(() => []),
+        db('orders?select=id,plan,amount,status,coupon,txn,created_at,paid_at,ip,ip_geo,ua&' + or + '&order=created_at.desc&limit=50').catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at,ip,ip_geo&' + or + '&order=created_at.desc&limit=50')).catch(() => db('orders?select=id,plan,amount,status,coupon,created_at,paid_at&' + or + '&order=created_at.desc&limit=50')).catch(() => []),
         db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo,ua,snap&' + or + '&order=created_at.desc&limit=60').catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page,ip,ip_geo&' + or + '&order=created_at.desc&limit=60')).catch(() => db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&' + or + '&order=created_at.desc&limit=60')).catch(() => [])]);
       let plan = null, cd = null; if (uid) { try { plan = await planInfo({ id: uid, email: em }, false); } catch (e) {} try { cd = await planInfo({ id: uid, email: em }, true); } catch (e) {} }
       const B = (await loadSetting('dlbonus')) || {};
@@ -495,6 +508,12 @@ module.exports = async (req, res) => {
       let amt = b.amount === '' || b.amount == null ? left : Math.round(Number(b.amount) * 100) / 100;
       if (!(amt > 0) || amt > left + 0.001) return json(res, 400, { error: 'סכום ההחזר לא תקין (נשאר להחזרה: ' + left + ' ₪)' });
       let rec = { at: new Date().toISOString(), amount: amt, via: 'manual', note: String(b.note || '').slice(0, 200) };
+      /* נדרים פלוס: ביטול (עסקה מהיום) או זיכוי, דרך ה-API (אם הוגדר NEDARIM_API_PASSWORD) */
+      const N = require('./_nedarim'), nedTid = !pp && !cb.sumit && !cb.bit && /^\d{4,}$/.test(String(o.txn || '')) ? o.txn : null;
+      if (nedTid && N.apiReady() && b.manual !== true) {
+        try { const r = await N.refund(nedTid, amt, amt >= left - 0.001 && !done); rec = { ...rec, via: 'nedarim', how: r.how }; }
+        catch (e) { return json(res, 400, { error: 'נדרים פלוס: ' + e.message }); }
+      }
       if (pp && pp.txn && b.manual !== true) {
         try { const r = await require('./_paypal').refund(pp.txn, amt, id + '-' + (cb.refunds || []).length, b.note); rec = { ...rec, via: 'paypal', id: r.id, status: r.status }; }
         catch (e) { const M = { CAPTURE_FULLY_REFUNDED: 'התשלום כבר הוחזר במלואו בפייפל', REFUND_AMOUNT_EXCEEDED: 'הסכום גבוה מהסכום שנגבה', REFUND_TIME_LIMIT_EXCEEDED: 'עברו יותר מ־180 יום מהתשלום; החזר רק דרך התמיכה של פייפל', PERMISSION_DENIED: 'לאפליקציה בפייפל אין הרשאה להחזרים' }; return json(res, 502, { error: M[e.issue] || ('פייפל: ' + e.message) }); }
@@ -609,7 +628,7 @@ module.exports = async (req, res) => {
     } catch (e) { dl = { missing: /does not exist|42P01|PGRST205/.test(e.message) }; }
     const orders = (await db('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at,callback&order=created_at.desc&limit=100') || []).map(o => {
       const cb = o.callback && typeof o.callback === 'object' ? o.callback : {};
-      const via = cb.paypal ? 'paypal' : cb.sumit ? 'sumit' : !(+o.amount) ? 'free' : Object.keys(cb).some(k => /^[A-Z]/.test(k)) ? 'nedarim' : '';
+      const via = cb.paypal ? 'paypal' : cb.sumit ? 'sumit' : cb.bit ? 'bit' : !(+o.amount) ? 'free' : Object.keys(cb).some(k => /^[A-Z]/.test(k)) ? 'nedarim' : '';
       const refunded = (cb.refunds || []).reduce((a, r) => a + (+r.amount || 0), 0); delete o.callback; return { ...o, via, refunded };
     });
     const uses = {};
@@ -645,7 +664,7 @@ module.exports = async (req, res) => {
     } catch (e) { mail = null; }
     let smUsed = null; try { const mStart = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }).slice(0, 7) + '-01T00:00:00+02:00'), since = cfg.sumitPeriod === 'rolling' ? new Date(Date.now() - 30 * 864e5) : mStart;
       smUsed = ((await db('orders?select=id&status=in.(paid,refunded)&paid_at=gte.' + encodeURIComponent(since.toISOString()) + '&callback->sumit=not.is.null&limit=1000')) || []).length; } catch (e) {}
-    const payStatus = { smUsed, sumit: require('./_sumit').ready(), smTest: env('SUMIT_TEST_AMOUNT') || '', nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
+    const payStatus = { nedApi: require('./_nedarim').apiReady(), smUsed, sumit: require('./_sumit').ready(), smTest: env('SUMIT_TEST_AMOUNT') || '', nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
     json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, dl, payStatus, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
     console.error('admin', e);

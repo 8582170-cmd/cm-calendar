@@ -6,11 +6,12 @@ const { db, PLAN_NAMES } = require('./_lib');
 const ilDay = t => new Date(t).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
 const r2 = n => Math.round(n * 100) / 100;
 const SPECIAL = { event: 'דף הזמנה לאירוע', greet: 'ברכה / הזמנה מעוצבת', donation: 'תרומה', gift: 'מתנות לאירועים (כסף של בעלי האירוע)' };
-const VIA = { paypal: 'PayPal', sumit: 'SUMIT', nedarim: 'נדרים פלוס', free: 'חינם / מתנה מהניהול', other: 'לא ידוע' };
+const VIA = { bit: 'ביט', paypal: 'PayPal', sumit: 'SUMIT', nedarim: 'נדרים פלוס', free: 'חינם / מתנה מהניהול', other: 'לא ידוע' };
 
 function viaOf(o, cb) {
   if (cb.paypal) return 'paypal';
   if (cb.sumit) return 'sumit';
+  if (cb.bit) return 'bit';
   if (!(+o.amount)) return 'free';
   if (Object.keys(cb).some(k => /^[A-Z]/.test(k))) return 'nedarim';
   return 'other';

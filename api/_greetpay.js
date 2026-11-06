@@ -133,11 +133,11 @@ module.exports = async (req, res) => {
       const user = await require('./_lib').getUser(req);
       if (!user) return json(res, 401, { error: 'login' });
       const em = String(user.email || '').toLowerCase(), enc = encodeURIComponent;
-      const rows = await db('orders?select=id,amount,status,coupon,created_at,paid_at&plan=eq.greet&status=in.(paid,refunded)&or=(user_id.eq.' + user.id + (em ? ',email.eq.' + enc(em) : '') + ')&order=created_at.desc&limit=100').catch(() => []);
+      const rows = await db('orders?select=id,amount,status,coupon,txn,created_at,paid_at&plan=eq.greet&status=in.(paid,refunded)&or=(user_id.eq.' + user.id + (em ? ',email.eq.' + enc(em) : '') + ')&order=created_at.desc&limit=100').catch(() => []);
       const now = Date.now();
       const list = await Promise.all((rows || []).map(async o => {
         const rec = await get(o.id).catch(() => null);
-        const x = { id: o.id, no: String(o.id).slice(0, 8), amount: +o.amount || 0, via: o.coupon === 'SUB' ? 'sub' : o.coupon === 'PACK' ? 'pack' : '', status: o.status, at: o.paid_at || o.created_at, title: (rec && rec.title) || 'ברכה / הזמנה', tpl: rec ? rec.tpl : '', v: rec ? rec.v : -1,
+        const x = { id: o.id, no: String(o.id).slice(0, 8), amount: +o.amount || 0, via: o.coupon === 'SUB' ? 'sub' : o.coupon === 'PACK' ? 'pack' : '', rc: /^\d{4,}$/.test(String(o.txn || '')) && require('./_nedarim').apiReady(), status: o.status, at: o.paid_at || o.created_at, title: (rec && rec.title) || 'ברכה / הזמנה', tpl: rec ? rec.tpl : '', v: rec ? rec.v : -1,
           editUntil: rec && rec.editUntil || null, dlUntil: rec && rec.dlUntil || null };
         if (rec && rec.paidAt && o.status === 'paid' && (!rec.dlUntil || now <= Date.parse(rec.dlUntil))) x.link = '/brachot/edit.html?o=' + o.id + '&k=' + token(o.id);
         return x;
@@ -148,6 +148,15 @@ module.exports = async (req, res) => {
     if (b.action === 'ent') {
       const SB = require('./_subs'), user = await require('./_lib').getUser(req).catch(() => null), S = await SB.cfg();
       return json(res, 200, { offers: await SB.pub(), ent: user ? await SB.greetEnt(user, S) : null, rent: user ? await SB.remEnt(user, S).catch(() => null) : null, login: !!user });
+    }
+    /* קבלה מנדרים פלוס להזמנה של המשתמש */
+    if (b.action === 'receipt') {
+      const user = await require('./_lib').getUser(req); if (!user) return json(res, 401, { error: 'login' });
+      const oid = String(b.order || ''); if (!okId(oid)) return json(res, 400, { error: 'id' });
+      const o = ((await db('orders?id=eq.' + oid + '&select=email,user_id,txn')) || [])[0];
+      if (!o || (o.user_id !== user.id && String(o.email || '').toLowerCase() !== user.email)) return json(res, 404, { error: 'not found' });
+      const u = await require('./_nedarim').receipt(o.txn).catch(() => null);
+      return u ? json(res, 200, { url: u }) : json(res, 404, { error: 'none', message: 'הקבלה עוד לא מוכנה. נסו שוב מאוחר יותר.' });
     }
     /* ביטול חידוש אוטומטי של מנוי (ברכות או תזכורות). התוקף נשאר עד סוף התקופה ששולמה */
     if (b.action === 'cancelauto') {

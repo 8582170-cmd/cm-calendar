@@ -64,17 +64,17 @@ function open(opt){
 
   function mkOrder(){
     var mail = $('mlpMail').value.trim();
-    var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT });
+    var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT, bitUI: 1 });
     return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify(body) })
-      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok || !(j.tx || j.ppid || j.sumit || j.ppsub)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
+      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok || !(j.tx || j.ppid || j.sumit || j.ppsub || j.bit)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
       .then(function(j){ order = j; PROVS = j.provs || [j.provider]; setup(j.provider); return j; });
   }
   function resetPay(){ var box = $('mlpBox'); box.innerHTML = ''; box.hidden = true; frame.hidden = true; if (NED_GO) go.onclick = NED_GO; go.hidden = false; go.disabled = true; ned(false); PROV = ''; ready = false; }
   function switchTo(pv, why, avoid){ if (stop) return; if (avoid) AVOID = avoid; WANT = pv || ''; resetPay(); msg(why || 'טוען…'); orderP = mkOrder(); orderP.catch(function(e){ msg(e.msg ? esc(e.msg) : 'התשלום באתר לא זמין כרגע. נסו שוב בעוד כמה דקות.', 1); }); }
   function drawChoose(){
     var c = $('mlpChoose'), L = PROVS.slice(); if (L.length < 2) { c.hidden = true; return; }
-    var N = { nedarim: '💳 כרטיס אשראי', sumit: '💳 כרטיס אשראי', paypal: 'PayPal / כרטיס מחו״ל' };
-    c.hidden = false; c.innerHTML = L.map(function(k){ return '<button type="button" role="radio" aria-checked="' + (k === PROV) + '" data-pv="' + k + '">' + (L.filter(function(x){ return x !== 'paypal' }).length > 1 && k !== 'paypal' ? (k === 'sumit' ? '💳 כרטיס (SUMIT)' : '💳 כרטיס (נדרים פלוס)') : N[k]) + '</button>'; }).join('');
+    var N = { nedarim: '💳 כרטיס אשראי', sumit: '💳 כרטיס אשראי', paypal: 'PayPal / כרטיס מחו״ל', bit: 'ביט' };
+    c.hidden = false; c.innerHTML = L.map(function(k){ return '<button type="button" role="radio" aria-checked="' + (k === PROV) + '" data-pv="' + k + '">' + (L.filter(function(x){ return x !== 'paypal' && x !== 'bit' }).length > 1 && k !== 'paypal' && k !== 'bit' ? (k === 'sumit' ? '💳 כרטיס (SUMIT)' : '💳 כרטיס (נדרים פלוס)') : N[k]) + '</button>'; }).join('');
     c.querySelectorAll('[data-pv]').forEach(function(b){ b.onclick = function(){ if (b.dataset.pv !== PROV) switchTo(b.dataset.pv); }; });
   }
   function setup(pv){
@@ -107,6 +107,25 @@ function open(opt){
           .then(function(r){ return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify({ action: 'sumitcharge', id: r.o.id, token: r.t, name: name, email: mail }) }).then(function(x){ return x.json() }); })
           .then(function(x){ if (x.fallback) { fallback(x.message); return; } if (x.status === 'paid') { done(); return; } fail(x.message || 'התשלום לא אושר.'); })
           .catch(function(e){ if (e && e.sys) { fallback(); return; } fail(e.message || 'התשלום נכשל. נסו שוב.'); });
+      };
+      return;
+    }
+    /* ביט (דרך נדרים פלוס): שם וטלפון, ואז מעבר לביט. האישור מגיע כשהלקוח מאשר באפליקציה */
+    if (PROV === 'bit') {
+      ready = true; ned(true); var zl = $('mlpZeout'); if (zl && zl.closest('label')) zl.closest('label').hidden = true;
+      go.hidden = false; go.disabled = false; go.textContent = 'לתשלום בביט ' + priceTxt();
+      msg('ממלאים שם ומספר הנייד שמחובר לביט, ולוחצים. נפתח דף של ביט לאישור התשלום.');
+      go.onclick = function(){
+        var name = $('mlpName').value.trim(), phone = $('mlpPhone').value.replace(/\D/g, '');
+        if (name.split(/\s+/).length < 2) { msg('נא למלא שם פרטי ושם משפחה.', 1); $('mlpName').focus(); return; }
+        if (!/^05\d{8}$/.test(phone)) { msg('נא למלא מספר נייד (05…).', 1); $('mlpPhone').focus(); return; }
+        try { localStorage.setItem('myluach-buyer', JSON.stringify({ mail: $('mlpMail').value.trim(), name: name, phone: phone })) } catch (e) {}
+        var w = window.open('', '_blank'); go.disabled = true; msg('פותחים את ביט…');
+        orderP.then(function(o){ return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify({ action: 'bitgo', id: o.id, name: name, phone: phone, back: location.href }) }).then(function(x){ return x.json(); }); })
+          .then(function(x){ if (!x.link) { if (w) w.close(); go.disabled = false; msg(esc(x.message || 'ביט לא זמין כרגע. אפשר לבחור כרטיס אשראי.'), 1); return; }
+            if (w) w.location = x.link; else location.href = x.link;
+            go.hidden = true; msg('מאשרים את התשלום באפליקציית ביט. הדף יתעדכן לבד כשהתשלום יעבור. <a href="' + esc(x.link) + '" target="_blank" rel="noopener">לא נפתח? לחצו כאן</a>'); waitPaid(); })
+          .catch(function(){ if (w) w.close(); go.disabled = false; msg('ביט לא זמין כרגע. אפשר לבחור כרטיס אשראי.', 1); });
       };
       return;
     }

@@ -5,7 +5,7 @@
 const { db, env, loadSetting, loadConfig } = require('./_lib');
 
 async function run() {
-  const C = [], add = (g, id, lv, t, d, fix) => C.push({ g, id, lv, t, d: d || '', fix: fix || '' });
+  const C = [], add = (g, id, lv, t, d, fix, act) => C.push({ g, id, lv, t, d: d || '', fix: fix || '', ...(act ? { act } : {}) });
   const iso = ms => new Date(Date.now() - ms).toISOString();
   const cnt = async q => { const r = await db(q + '&limit=1000'); return (r || []).length; };
 
@@ -29,6 +29,14 @@ async function run() {
   const PN = { nedarim: 'נדרים פלוס', paypal: 'PayPal', sumit: 'SUMIT' };
   const used = [cfg.pay || 'nedarim'].concat(Array.isArray(cfg.payAlso) ? cfg.payAlso : []);
   used.forEach(p => { if (PN[p] && !provReady[p]) add('pay', 'pay-' + p, 'bad', PN[p] + ' נבחר כאמצעי תשלום אבל לא מוגדר', 'לקוחות שיבחרו בו לא יוכלו לשלם', 'להשלים את המפתחות של ' + PN[p] + ' בהגדרות השרת, או להוריד אותו ב"תשלום ולקוחות חוזרים"'); });
+  /* נדרים פלוס: מפתח API (להחזרים, קבלות והוראות קבע), עדכוני סירובים וחתימה */
+  if (provReady.nedarim) {
+    const N = require('./_nedarim');
+    if (!N.apiReady()) add('pay', 'ned-api', 'warn', 'נדרים פלוס: חסר מפתח API (NEDARIM_API_PASSWORD)', 'בלי המפתח: אין החזר אוטומטי, קבלות באתר והוראת קבע', 'ליצור מפתח שמתחיל ב־npk_ בנדרים (הגדרות > API > מפתחות API) ולהוסיף בהגדרות השרת');
+    else { try { const h = await N.hooks(); const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+      if (h.Result === 'OK' && !String(h.CallBackSiruvUrl || '').startsWith(site)) add('pay', 'ned-hook', 'warn', 'נדרים פלוס: עדכוני הסירובים לא מחוברים לאתר', 'כשחיוב חודשי של מנוי נכשל, הלקוח לא יקבל מייל לעדכון הכרטיס', 'ללחוץ "חיבור" כאן', 'nedhook');
+      if (h.Result === 'OK' && +h.SignatureEnabled === 1 && !env('NEDARIM_WEBHOOK_SECRET')) add('pay', 'ned-sig', 'warn', 'נדרים פלוס: העדכונים חתומים, אבל באתר לא הוגדר המפתח', 'האתר בודק את העדכונים רק לפי כתובת IP', 'להוסיף NEDARIM_WEBHOOK_SECRET בהגדרות השרת'); } catch (e) {} }
+  }
   if (!used.some(p => provReady[p])) add('pay', 'pay-none', 'bad', 'אין אף אמצעי תשלום פעיל', 'אי אפשר לקנות באתר'); else add('pay', 'pay-ok', 'ok', 'אמצעי תשלום פעילים: ' + used.filter(p => provReady[p]).map(p => PN[p]).join(', '));
   if (env('PAYPAL_MODE') && env('PAYPAL_MODE') !== 'live' && used.includes('paypal')) add('pay', 'pp-sandbox', 'warn', 'PayPal במצב בדיקה (sandbox)', 'תשלומים אמיתיים לא עוברים', 'לשנות את PAYPAL_MODE ל־live');
   ['PAYPAL_TEST_AMOUNT', 'NEDARIM_TEST_AMOUNT', 'SUMIT_TEST_AMOUNT'].forEach(k => { if (env(k)) add('pay', 'test-' + k, 'warn', 'מוגדר סכום בדיקה: ' + k, 'כל התשלומים בספק הזה נגבים בסכום הבדיקה במקום במחיר האמיתי', 'למחוק את ' + k + ' בהגדרות השרת כשמסיימים לבדוק'); });

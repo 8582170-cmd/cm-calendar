@@ -25,15 +25,15 @@ export async function run(handler, context, extraQuery) {
   if (cf.country) headers['x-vercel-ip-country'] = String(cf.country);
   const ip = headers['cf-connecting-ip'];
   if (ip) { headers['x-forwarded-for'] = ip; headers['x-real-ip'] = ip; }
-  let body;
+  let body, txt;
   if (!['GET', 'HEAD'].includes(request.method)) {
-    const txt = await request.text();
+    txt = await request.text();
     const ct = headers['content-type'] || '';
     if (/json/.test(ct)) { try { body = JSON.parse(txt || 'null'); } catch (e) { body = txt; } }
     else if (/x-www-form-urlencoded/.test(ct)) body = Object.fromEntries(new URLSearchParams(txt));
     else body = txt;
   }
-  const req = { method: request.method, url: url.pathname + url.search, headers, query, body };
+  const req = { method: request.method, url: url.pathname + url.search, headers, query, body, rawBody: typeof txt === 'string' ? txt : undefined };
   const out = { status: 200, headers: new Headers(), chunks: [] };
   let done; const finished = new Promise(r => { done = r; });
   const res = {
