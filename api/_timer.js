@@ -391,7 +391,7 @@ async function guest(req, res, b) {
     }
     /* SMS (רק בארץ, אם הופעל בניהול): שליחה לנמענים עם טלפון, ביתרת ה-SMS של האירוע */
     if (b.act === 'smsnext') {
-      const EP = await require('./_eventpay').prices(); if (!EP.smsOn || !require('./_sms').ready()) return json(res, 403, { error: 'sms off' });
+      const EP = await require('./_eventpay').prices(); if (!EP.smsOn || !(await require('./_sms').ready())) return json(res, 403, { error: 'sms off' });
       if (!cur.paid) return json(res, 402, { error: 'unpaid' }); if (await holyAt(Date.now())) return json(res, 200, { stop: 'shabbat', sent: 0 });
       const used = (await db('timer_recip?slug=eq.' + s + '&sms_at=not.is.null&select=id&limit=20000')).length; let room = (+cur.paid.sms || 0) - used;
       if (room <= 0) return json(res, 200, { stop: 'quota', sent: 0 });

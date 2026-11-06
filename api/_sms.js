@@ -8,10 +8,22 @@
    הטלפון נשלח בפורמט בינלאומי (9725XXXXXXXX). אם הספק רוצה 05XXXXXXXX: SMS_LOCAL=1 */
 'use strict';
 const { env } = require('./_lib');
-const ready = () => /^https:\/\//.test(env('SMS_URL') || '');
+/* בלי SMS_URL: שולחים דרך ימות המשיח (SendSms, 0.1 יחידה לכל 70 תווים), עם הטוקן מהגדרות התזכורות הקוליות */
+const urlReady = () => /^https:\/\//.test(env('SMS_URL') || '');
+async function ready() { if (urlReady()) return true; try { const c = await require('./_voice').cfg(); return !!c.token; } catch (e) { return false; } }
+async function yemot(phone, text) {
+  let p = String(phone || '').replace(/[^\d]/g, ''); if (p.startsWith('972')) p = '0' + p.slice(3); if (!/^05\d{8}$/.test(p)) throw new Error('phone');
+  const c = await require('./_voice').cfg(), from = env('SMS_FROM') || c.smsFrom || '';
+  const body = new URLSearchParams({ token: c.token, phones: p, message: text, ...(from ? { from } : {}) });
+  const r = await fetch(String(c.base || 'https://www.call2all.co.il/ym/api/').replace(/\/?$/, '/') + 'SendSms', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString(), signal: AbortSignal.timeout(15000) });
+  const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+  if (!j || j.responseStatus !== 'OK') throw new Error('sms ' + t.slice(0, 100));
+  if (j.errors && Object.keys(j.errors).length && !(j.oks || []).length) throw new Error('sms rejected ' + JSON.stringify(j.errors).slice(0, 80));
+  return true;
+}
 function intl(p) { p = String(p || '').replace(/[^\d]/g, ''); if (p.startsWith('972')) p = '0' + p.slice(3); if (!/^05\d{8}$/.test(p)) throw new Error('phone'); return env('SMS_LOCAL') === '1' ? p : '972' + p.slice(1); }
 async function send(phone, text) {
-  if (!ready()) throw new Error('sms not configured');
+  if (!urlReady()) return yemot(phone, text);
   const to = intl(phone), from = env('SMS_FROM') || 'MyLuach', enc = encodeURIComponent;
   const fillU = t => t.replace(/\{to\}/g, enc(to)).replace(/\{msg\}/g, enc(text)).replace(/\{from\}/g, enc(from));
   const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
