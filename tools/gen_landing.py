@@ -81,3 +81,4 @@ add = ''.join(f'  <url><loc>{SITE}/{p["slug"]}.html</loc></url>\n' for p in PAGE
 if add:
     s = s.replace('</urlset>', add + '</urlset>'); open(sm, 'w').write(s)
 print(len(PAGES), 'landing pages;', add.count('<url>'), 'added to sitemap')
+import runpy; runpy.run_path(os.path.join(os.path.dirname(__file__), 'gen_yi_landing.py'))
