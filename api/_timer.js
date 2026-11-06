@@ -64,7 +64,7 @@ function clean(c) {
     gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
-    qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 3).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 8).map(v => str(v, 30).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
+    qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 10).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 12).map(v => str(v, 40).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
     gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
     bgi: okImg(c.bgi) ? c.bgi : '', bgv: okMedia(c.bgv, 'video') ? c.bgv : '', mus: okMedia(c.mus, 'audio') ? c.mus : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
   };
@@ -242,7 +242,7 @@ async function guest(req, res, b) {
       const name = clean1(b.name, 80); if (!name) return json(res, 400, { error: 'name' });
       if (await recent('timer_rsvp', s, meta.ip) >= 15) return json(res, 429, { error: 'rate' });
       const st = ['yes', 'no', 'maybe'].includes(b.status) ? b.status : 'yes', n = v => Math.max(0, Math.min(50, parseInt(v, 10) || 0));
-      const rtok = /^[0-9a-f]{24}$/.test(String(b.r || '')) ? String(b.r) : null, ans = (Array.isArray(b.ans) ? b.ans : []).slice(0, 3).map(v => clean1(v, 100));
+      const rtok = /^[0-9a-f]{24}$/.test(String(b.r || '')) ? String(b.r) : null, ans = (Array.isArray(b.ans) ? b.ans : []).slice(0, 10).map(v => clean1(v, 100));
       const row = { slug: s, name, phone: clean1(b.phone, 30), status: st, adults: st === 'no' ? 0 : n(b.adults) || 1, kids: st === 'no' ? 0 : n(b.kids), note: clean1(b.note, 300), rtok, ans: ans.length ? ans : null };
       /* מי שהגיע מקישור אישי: עדכון של התשובה הקודמת שלו, לא שורה חדשה */
       const prev = rtok ? await db('timer_rsvp?slug=eq.' + s + '&rtok=eq.' + rtok + '&select=id&limit=1').catch(() => []) : [];
