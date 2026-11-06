@@ -309,7 +309,7 @@ async function guest(req, res, b) {
       const EP = await require('./_eventpay').prices().catch(() => ({}));
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!(EP.voiceOn && EP.voiceTpl) }, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv'), defRem: require('./_ivoice').defText(c, 'rem') } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!EP.voiceTpl }, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv'), defRem: require('./_ivoice').defText(c, 'rem') } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     if (b.act === 'radd') {
@@ -365,11 +365,13 @@ async function guest(req, res, b) {
       const EP = await require('./_eventpay').prices(), V = require('./_ivoice');
       if (!EP.voiceOn || !(await V.ready())) return json(res, 403, { error: 'voice off' });
       if (!isFull(cur)) return json(res, 402, { error: 'full' });
+      if (b.mode !== 'rem' && !EP.voiceTpl) return json(res, 403, { error: 'tpl' });
       const hz = await holyAt(Date.now()); if (hz) return json(res, 400, { error: 'shabbat' });
       const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()); if (hr < 8 || hr >= 22) return json(res, 400, { error: 'night' });
       const mode = b.mode === 'rem' ? 'rem' : 'inv', text = str(b.text, 600).replace(/[<>]/g, ''), P = cur.paid, now = new Date().toISOString();
       if (b.act === 'voicetest') { const ph = V.phone(b.phone); if (!ph) return json(res, 400, { error: 'phone' }); if ((+P.vtests || 0) >= 5) return json(res, 429, { error: 'tests' });
-        await V.run(cur, [{ phone: ph, name: clean1(b.name, 40) }], mode, text); P.vtests = (+P.vtests || 0) + 1; await put(s, { ...cur, paid: P }); return json(res, 200, { ok: true }); }
+        const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+        if (mode === 'rem') await V.sendTTS([{ phone: ph }], text || V.defText(c, 'rem')); else await V.run(cur, [{ phone: ph, name: clean1(b.name, 40) }], mode, text); P.vtests = (+P.vtests || 0) + 1; await put(s, { ...cur, paid: P }); return json(res, 200, { ok: true }); }
       let L = await db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at,call_at,call_rem&order=id.asc&limit=20000').catch(() => db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at&order=id.asc&limit=20000'));
       const A = {}; ((await db('timer_rsvp?slug=eq.' + s + '&rtok=not.is.null&select=rtok,status&limit=20000').catch(() => [])) || []).forEach(x => { A[x.rtok] = x.status; });
       if (mode === 'rem') L = L.filter(r => A[r.token] === 'yes' || r.call_rem);
@@ -378,8 +380,9 @@ async function guest(req, res, b) {
       if (Array.isArray(b.ids) && b.ids.length) { const I = new Set(b.ids.map(Number)); L = L.filter(r => I.has(r.id)); }
       if (!L.length) return json(res, 200, { sent: 0, empty: true });
       const left = (+P.calls || 0) - (+P.callsUsed || 0); if (L.length > left) return json(res, 402, { error: 'quota', need: L.length, left });
-      const x = await V.run(cur, L, mode, text);
-      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode }].concat(cur.calls || []).slice(0, 30);
+      const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+      const x = mode === 'rem' ? await V.sendTTS(L, text || V.defText(c, 'rem'), site + '/api/pricing?c=_ivrcb&k=' + EP.vkey + '&s=' + s) : await V.run(cur, L, mode, text);
+      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode, ...(mode === 'rem' ? { tts: 1, fin: 1 } : {}) }].concat(cur.calls || []).slice(0, 30);
       await put(s, { ...cur, paid: P, calls });
       const ids = L.map(r => r.id); for (let i = 0; i < ids.length; i += 200) await db('timer_recip?slug=eq.' + s + '&id=in.(' + ids.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_at: now, call_st: 'ממתין', call_cid: x.id }) }).catch(() => {});
       return json(res, 200, { sent: x.n });
@@ -444,13 +447,22 @@ async function ivr(req, res) {
   if (q.R === '1') await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_rem: 1 }) }).catch(() => {});
   return bye(q.R === '1' ? 'נתקשר להזכיר לפני האירוע. להתראות בשמחות' : 'תודה רבה, להתראות בשמחות');
 }
+/* SendTTS: סטטוס שיחות בזמן אמת מימות */
+async function ivrcb(req, res) {
+  const q = req.query || {}, b = readBody(req) || {}, done = () => json(res, 200, { ok: true });
+  const EP = await require('./_eventpay').prices().catch(() => ({})); if (!EP.vkey || String(q.k || '') !== EP.vkey) return json(res, 401, { error: 'auth' });
+  const s = str(q.s, 40).toLowerCase(), ph = require('./_ivoice').phone(b.Number), cid = str(b.CampaignId, 120); if (!SLUG.test(s) || !ph || !cid) return done();
+  const st = b.Status === 'UP' ? 'ענה' : b.Status === 'DOWN' ? (+b.CallTimeMS > 0 ? 'ענה' : null) : b.Status === 'FAILD' || b.Status === 'FAILED' ? 'לא ענה' : null;
+  if (st) await db('timer_recip?slug=eq.' + s + '&call_cid=eq.' + encodeURIComponent(cid) + '&phone=eq.' + ph, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st }) }).catch(() => {});
+  return done();
+}
 module.exports = async (req, res) => {
   const q = req.query || {};
   try {
     if (req.method === 'GET' && q.unsub) return unsub(req, res, str(q.unsub, 40));
     /* שליחה מתוזמנת: ה-Worker קורא לזה כל שעה (עם CRON_SECRET) */
     if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' }); return json(res, 200, await cronSend(120)); }
-    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!(P.voiceOn && P.voiceTpl), giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
+    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
       /* קיר הברכות הציבורי */
@@ -488,6 +500,6 @@ module.exports = async (req, res) => {
   } catch (e) { console.error('timer', e.message); return json(res, 500, { error: e.message === 'storage' ? 'storage' : 'server' }); }
 };
 
-module.exports.ivr = ivr; module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
+module.exports.ivr = ivr; module.exports.ivrcb = ivrcb; module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
 module.exports.cronSend = cronSend; module.exports.inviteMail = inviteMail;
 module.exports.autoMails = autoMails; module.exports.cleanMedia = cleanMedia;

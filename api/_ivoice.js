@@ -4,7 +4,8 @@
    voiceTplRem = תבנית לתזכורות (לא חובה), vkey = סוד שמוגדר בשלוחת ה-API (api_add_0=k=...) */
 'use strict';
 const V = () => require('./_voice'), EP = () => require('./_eventpay');
-async function ready() { try { const c = await V().cfg(), P = await EP().prices(); return !!(c.token && P.voiceTpl); } catch (e) { return false; } }
+/* tpl: האם יש תבנית קמפיין (נדרשת להזמנה עם הקשה). תזכורת נשלחת ב-SendTTS ולא צריכה תבנית */
+async function ready(tpl) { try { const c = await V().cfg(), P = await EP().prices(); return !!(c.token && (!tpl || P.voiceTpl)); } catch (e) { return false; } }
 async function yem(method, params) {
   const c = await V().cfg(), body = new URLSearchParams({ token: c.token || '', ...params });
   const r = await fetch(String(c.base || 'https://www.call2all.co.il/ym/api/').replace(/\/?$/, '/') + method, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString(), signal: AbortSignal.timeout(25000) });
@@ -25,7 +26,7 @@ function whenSay(c) {
 function defText(c, mode) {
   const where = [c.venue, c.addr].filter(Boolean).join(', ');
   const t = c.t || 'האירוע', toT = /^ה/.test(t) ? 'ל' + t.slice(1) : 'ל' + t;
-  if (mode === 'rem') return 'שלום {שם}. תזכורת: ' + t + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '. נשמח לראותכם בשמחתנו.';
+  if (mode === 'rem') return 'שלום. תזכורת: ' + t + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '. נשמח לראותכם בשמחתנו.';
   return 'שלום {שם}. הנכם מוזמנים ' + toT + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '. למענה על ההזמנה, הקישו 1.';
 }
 /* הפעלת קמפיין לרשימה: list = [{phone, name}] */
@@ -37,6 +38,13 @@ async function run(cur, list, mode, text) {
   const j = await yem('RunCampaign', { templateId: String(tpl), phones: JSON.stringify(P), ttsMode: '1', ...(vc.callerId ? { callerId: vc.callerId } : {}) });
   return { id: j.campaignId, n, price: j.estimatedPrice, units: j.customerUnits };
 }
+/* שליחת טקסט ישירות (SendTTS): אותו טקסט לכולם, בלי תבנית. הסטטוסים חוזרים בזמן אמת ל-callbackUrl (עד 500 מספרים) */
+async function sendTTS(list, text, cb) {
+  const ph = [...new Set(list.map(r => phone(r.phone)).filter(Boolean))]; if (!ph.length) throw new Error('no phones');
+  const vc = await V().cfg(), T = tts(String(text || '').replace(/\{(שם|name)\}/g, '').replace(/\s+,/g, ','));
+  const j = await yem('SendTTS', { ttsMessage: T, phones: ph.join(':'), ...(vc.callerId ? { callerId: vc.callerId } : {}), ...(cb && ph.length <= 500 ? { callbackUrl: cb } : {}) });
+  return { id: j.CampaignId || j.campaignId || '', n: ph.length, price: j.billing };
+}
 const ST = { done: 'ענה', bridged: 'ענה', accepted: 'ענה', up: 'בשיחה', no_answer: 'לא ענה', busy: 'תפוס', amd: 'תא קולי', failed: 'נכשל', error: 'נכשל', canceled: 'בוטל', blocked: 'חסום', remove_request: 'ביקש הסרה', pending: 'ממתין', ringing: 'מחייג', redial: 'חיוג חוזר' };
 async function status(id) { const j = await yem('GetCampaignStatus', { campaignId: id, entries: 'all' }); const c = j.campaign || {}; return { st: c.campaignStatus, price: c.currentPrice, entries: (c.entries || []).map(e => ({ phone: phone(e.phone), st: ST[e.entryStatus] || e.entryStatus })) }; }
-module.exports = { ready, yem, run, status, defText, tts, phone, whenSay };
+module.exports = { ready, yem, run, sendTTS, status, defText, tts, phone, whenSay };
