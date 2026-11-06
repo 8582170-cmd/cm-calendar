@@ -52,6 +52,10 @@ body.inv{display:block}
 .box2{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
 .to{font:400 clamp(20px,5vw,28px)/1.35 var(--tfont);color:var(--acc);margin:0}
 .it{white-space:pre-line;margin:6px 0 0;font-size:17px}
+.hd{padding:22px 16px}.hd .nm{font:400 clamp(30px,8.5vw,50px)/1.15 var(--tfont);color:var(--ink);margin:6px 0 0;overflow-wrap:anywhere}
+.hd .sub{font:400 clamp(20px,5vw,26px)/1.3 var(--tfont);color:var(--acc);margin:2px 0 10px}
+.par{display:flex;justify-content:center;gap:12px 36px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.par small{display:block;color:var(--mute);font-size:14px}.par b{font-size:17px}
 .det{display:grid;gap:4px;font-size:16px}.det b{color:var(--acc)}
 .btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
 .bt{font:inherit;font-weight:700;font-size:15px;border:1.5px solid var(--acc);color:var(--acc);background:transparent;border-radius:999px;padding:7px 16px;cursor:pointer;text-decoration:none;display:inline-flex;gap:6px;align-items:center}
@@ -184,7 +188,7 @@ body.hasbg{background:transparent}
 
   /* ---------- דף הזמנה (רק בכתובת שמורה, לא בהטמעה) ---------- */
   function invite(o,to,hasTime,EN,title){
-    var on=o.inv||o.it||o.venue||o.addr||o.rv||o.rm||o.wl||o.tp||o.gift;if(!on)return;
+    var on=o.et||o.n1||o.f1||o.inv||o.it||o.venue||o.addr||o.rv||o.rm||o.wl||o.tp||o.gift;if(!on)return;
     /* לפני תשלום: רק בעל האירוע (מהדפדפן שבו נשמרה הכתובת) רואה תצוגה מקדימה. האורחים רואים רק את השעון */
     var isOwner=false;try{isOwner=!!JSON.parse(localStorage.getItem('myTimers')||'{}')[slug]}catch(e){}
     if(!PAID&&!isOwner)return;
@@ -212,7 +216,13 @@ body.hasbg{background:transparent}
     var tn=(Q.get('to')||'').replace(/[<>]/g,'').trim().slice(0,60),pt=String(o.pt||'')||T.to;
     var h='';
     if(ok(o.inv))h+='<img class="invimg" src="'+esc(o.inv)+'" alt="'+esc(title)+'">';
-    if(tn||o.it)h+='<div class="box2">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+'</div>';
+    var ES={wed:['מתחתנים','הורי החתן','הורי הכלה','Getting married'],eng:['מתארסים','הורי החתן','הורי הכלה','Engaged'],sheva:['שבע ברכות','המארחים','','Sheva Brachot'],bar:['בר מצווה','ההורים','הסבים','Bar Mitzvah'],bat:['בת מצווה','ההורים','הסבים','Bat Mitzvah'],brit:['ברית מילה','ההורים','הסבים','Brit Milah'],zbd:['שמחת בת','ההורים','הסבים','Simchat Bat'],pid:['פדיון הבן','ההורים','הסבים','Pidyon Haben'],chl:['חלאקה','ההורים','הסבים','Upsherin'],sfr:['הכנסת ספר תורה','המזמינים','','Hachnasat Sefer Torah'],bd:['יום הולדת','המזמינים','','Birthday'],oth:['','המזמינים','','']}[o.et];
+    if(ES&&EN){ES=[ES[3],/הורי/.test(ES[1])?(o.et==='wed'||o.et==='eng'?"Groom's parents":'Parents'):ES[1]?'Hosts':'',ES[2]?(/הורי/.test(ES[2])?"Bride's parents":'Grandparents'):'']}
+    var nm=[o.n1,o.n2].filter(Boolean).map(esc).join(' &amp; ');
+    if(ES&&(nm||o.f1||ES[0])){var par=[[ES[1],o.f1],[ES[2],o.f2]].filter(function(x){return x[1]});
+      h+='<div class="box2 hd">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(nm?'<h2 class="nm">'+nm+'</h2>':'')+(ES[0]?'<p class="sub">'+ES[0]+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+
+        (par.length?'<div class="par">'+par.map(function(x){return '<div>'+(x[0]?'<small>'+x[0]+'</small>':'')+'<b>'+esc(x[1])+'</b></div>'}).join('')+'</div>':'')+'</div>'}
+    else if(tn||o.it)h+='<div class="box2">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+'</div>';
     page.insertAdjacentHTML('beforeend',h);page.appendChild(c);
     var url=location.origin+'/t/'+slug,fmt=function(ms){return new Date(ms).toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'')},d8=function(x){return x.replace(/-/g,'')};
     var nextDay=function(x){var q=new Date(x+'T12:00:00Z');q.setUTCDate(q.getUTCDate()+1);return q.toISOString().slice(0,10)};

@@ -67,10 +67,28 @@ textarea{width:100%;font:13px/1.45 ui-monospace,Consolas,monospace;direction:ltr
 [data-pg="invite"] .box{border-radius:20px;padding:18px;box-shadow:0 8px 30px -18px rgb(0 0 0 / .25)}
 [data-pg="invite"] #f [role=tabpanel]>div,[data-pg="invite"] .own,[data-pg="invite"] .clkD{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}
 [data-pg="invite"] #f [role=tabpanel] h3{margin-top:0!important}
+.etg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin:6px 0 10px}
+.etg button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:inherit;font:inherit;font-size:14px;cursor:pointer;margin:0}
+.etg button i{font-style:normal;font-size:24px;line-height:1}.etg button:hover{border-color:var(--teal)}
+.etg button[aria-checked="true"]{border-color:var(--teal);background:color-mix(in srgb,var(--teal) 13%,var(--card));font-weight:700}
+.grid.wide{grid-template-columns:minmax(0,1fr)}.grid.wide>:has(#pvbox){display:none}
+.gform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;align-items:end;margin:4px 0}
+.gform label{font-size:13px;margin:0}.gform input{margin:2px 0 0}.gform .btn{margin:0;height:40px}
+@media (max-width:760px){.gform{grid-template-columns:1fr 1fr}.gform .gn{grid-column:1/-1}}
 [data-pg="invite"] .tabs{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px;flex-wrap:nowrap;overflow-x:auto}
 [data-pg="invite"] .tabs button{border-radius:999px;border:0;margin:0;white-space:nowrap;flex:1 0 auto;padding:8px 12px}
 [data-pg="invite"] .tabs button[aria-selected="true"]{background:var(--teal);color:var(--teal-ink)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:8px 0 12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 12px}
+.stat{position:relative;padding-inline-end:56px!important;border-radius:18px!important}.stat>i{position:absolute;inset-inline-end:10px;top:12px;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-style:normal;font-size:18px;background:rgb(255 255 255 / .7)}
+.stat.ok{background:#eaf7ef!important;border-color:#cfe9d8!important}.stat.no{background:#fdeeee!important;border-color:#f3d3d3!important}.stat.mb{background:#fdf6e3!important;border-color:#f0e2b6!important}.stat.op{background:#eef3fb!important;border-color:#d6e2f3!important}.stat.wt{background:#f4f1ec!important}
+.prog{height:8px;border-radius:9px;background:var(--line);overflow:hidden;margin:6px 0 2px}.prog i{display:block;height:100%;background:var(--teal);border-radius:9px}
+.gbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}.gbar input,.gbar select{margin:0;width:auto}.gbar input[type=search]{flex:1 1 180px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.chips button{border:1px solid var(--line);background:var(--card);color:inherit;border-radius:999px;padding:4px 12px;font:inherit;font-size:13.5px;cursor:pointer;margin:0}.chips button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.gtab{width:100%;border-collapse:collapse;font-size:14px}.gtab th{font-size:12.5px;color:var(--mute);font-weight:600;text-align:start;padding:6px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper)}.gtab td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12.5px;background:#f0efe9;white-space:nowrap}.pill.ok{background:#e3f4ea;color:#256b42}.pill.no{background:#fbe5e5;color:#9b3324}.pill.mb{background:#fbf1d5;color:#7d5f0b}.pill.op{background:#e6eefa;color:#2c4f80}
+.acts{display:flex;gap:4px;justify-content:flex-end}.acts a,.acts button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;text-decoration:none;font-size:14px;cursor:pointer;padding:0;margin:0;color:inherit}.acts a:hover,.acts button:hover{border-color:var(--teal)}
+.gtab input,.gtab select{margin:0;padding:4px 6px;font-size:13.5px}
+@media (max-width:760px){.gtab .hm{display:none}}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 .stat b{display:block;font-size:26px;line-height:1.1}.stat span{font-size:13.5px;color:var(--mute)}
 .stat.ok b{color:#2e7d4f}.stat.no b{color:#b3412e}.stat.mb b{color:#a07a12}.stat.op b{color:var(--teal)}
@@ -149,6 +167,14 @@ summary{cursor:pointer;font-weight:700}
     </div>
     <p class="mute" id="invPromo" style="font-size:14.5px;margin:12px 0 0">📨 New: <a href="invite" id="invLink">Event invitation page</a> with RSVP, guest reminders, a blessings wall and Psalms division. Free. (Hebrew)</p>
     <details class="inv" id="invD"><summary>📨 Event invitation page: RSVP, reminders and blessings</summary>
+      <div id="iType">
+      <h3 style="font-size:16px;margin:0 0 2px">איזה אירוע?</h3>
+      <div class="etg" id="etg" role="radiogroup" aria-label="סוג האירוע"></div><input type="hidden" id="et">
+      <div id="etF" hidden>
+      <div class="two"><label id="n1L"><span></span><input id="n1" maxlength="60"></label><label id="n2L"><span></span><input id="n2" maxlength="60"></label></div>
+      <div class="two"><label id="f1L"><span></span><input id="f1" maxlength="120"></label><label id="f2L"><span></span><input id="f2" maxlength="120"></label></div>
+      </div>
+      </div>
       <div id="iIntro">
       <p class="mute" style="font-size:14.5px;margin:4px 0 10px">The event link becomes an invitation page: the invitation, the clock, venue details with Waze, add-to-calendar, RSVP, reminder sign-up and a blessings wall. Works with a saved address, and is saved with it.</p>
       </div>
@@ -189,7 +215,7 @@ summary{cursor:pointer;font-weight:700}
       <p class="mute" style="font-size:13.5px;margin:-4px 0 8px">The money goes straight to you through your own link. We never touch it.</p>
       </div>
       <div id="iPers">
-      <h3 style="font-size:16px;margin:10px 0 4px">Personal invitations</h3>
+      <h3 style="font-size:16px;margin:10px 0 4px">קישורים אישיים מהירים (בלי רשימה)</h3>
       <label>Personal line ({name} is replaced by each guest’s name)<input id="pt" maxlength="300" placeholder="Dear {name}, we would be delighted to celebrate with you!"></label>
       <label>Guest names (one per line)<textarea id="names" rows="3" placeholder="The Cohen family&#10;David and Sarah Levi"></textarea></label>
       <div class="row"><button class="btn" type="button" id="mkLinks">Create personal links</button></div>
@@ -199,10 +225,14 @@ summary{cursor:pointer;font-weight:700}
       <div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="save2">Save the invitation page</button><span class="st" id="st2"></span></div>
       </div>
       <div class="own" id="payBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">הפעלת דף ההזמנה</h3><div id="payOut"><p class="mute">טוען…</p></div></div>
-      <div class="own" id="rcBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">שליחת ההזמנה במייל</h3>
-        <p class="mute" style="font-size:14px;margin:0 0 6px">מוסיפים נמענים: שורה לכל אחד, עם פסיקים: שם, מייל (ו/או טלפון), קבוצה, כמה מוזמנים. למשל: משפחת כהן, cohen@gmail.com, משפחת החתן, 4. אפשר גם להדביק עמודות מאקסל.</p>
+      <div class="own" id="rcBox" hidden><h3 style="font-size:16px;margin:12px 0 4px">המוזמנים</h3>
+        <p class="mute" style="font-size:14px;margin:0 0 6px">מוסיפים כל מוזמן עם מייל ו/או טלפון. הקבוצה עוזרת לסנן, לעקוב ולהושיב יחד.</p>
+        <div class="gform"><label class="gn">שם<input id="gN" maxlength="80" placeholder="משפחת כהן"></label><label>טלפון<input id="gP" type="tel" dir="ltr" maxlength="20" placeholder="050-0000000"></label><label>מייל<input id="gE" type="email" dir="ltr" maxlength="200" placeholder="name@gmail.com"></label><label>קבוצה<input id="gG" list="grpL" maxlength="40" placeholder="בחירה או כתיבה"></label><label>כמה<input id="gC" type="number" min="1" max="50" inputmode="numeric" placeholder="1"></label><button class="btn pri" type="button" id="gAdd">+ הוספה</button></div>
+        <datalist id="grpL"></datalist><p class="st" id="gM" aria-live="polite" style="margin:0 0 6px"></p>
+        <details style="margin:4px 0 8px"><summary style="font-weight:600;font-size:15px">הדבקת רשימה שלמה, או ייבוא מאקסל / CSV</summary>
+        <p class="mute" style="font-size:14px;margin:0 0 6px">שורה לכל אחד, עם פסיקים: שם, מייל (ו/או טלפון), קבוצה, כמה מוזמנים. למשל: משפחת כהן, cohen@gmail.com, משפחת החתן, 4. אפשר גם להדביק עמודות מאקסל.</p>
         <textarea id="rcIn" rows="4" dir="auto" placeholder="משפחת כהן, cohen@gmail.com&#10;דוד לוי, david@walla.co.il"></textarea>
-        <div class="row" style="margin-top:6px"><button class="btn" type="button" id="rcAdd">הוספה לרשימה</button><input type="file" id="rcFile" accept=".csv,.txt" hidden><button class="btn" type="button" id="rcCsv">ייבוא מקובץ CSV</button><span class="st" id="rcMsg"></span></div>
+        <div class="row" style="margin-top:6px"><button class="btn" type="button" id="rcAdd">הוספה לרשימה</button><input type="file" id="rcFile" accept=".csv,.txt" hidden><button class="btn" type="button" id="rcCsv">ייבוא מקובץ CSV</button><span class="st" id="rcMsg"></span></div></details>
         <div id="rcList" style="margin-top:8px"></div>
         <div id="rcSend" hidden><label style="margin-top:10px">נושא המייל<input id="rcSubj" maxlength="140"></label><label>שורה אישית מכם (לא חובה)<textarea id="rcNote" rows="2" maxlength="600"></textarea></label>
         <div class="chk" role="radiogroup" aria-label="מתי לשלוח"><label><input type="radio" name="rcWhen" value="now" checked>לשלוח עכשיו</label><label><input type="radio" name="rcWhen" value="at">לתזמן לתאריך ושעה</label></div>
@@ -321,16 +351,42 @@ summary{cursor:pointer;font-weight:700}
       fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+authTok()},body:JSON.stringify({act:'freeact',slug:slugVal(),token:store()[slugVal()]})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){if(a[0]===200){$('pv').dataset.k='';$('ownLoad').click()}else{fg.disabled=false;$('freeM').textContent=a[0]===429?'אפשר עד 3 אירועים חינם לכל חשבון.':a[0]===401?'צריך להתחבר מחדש.':'לא הצליח. נסו שוב.';$('freeM').className='st no'}})};
     var g=$('payGo');if(g)g.onclick=function(){if(!window.MLPay){alert('טוען את מערכת התשלום, נסו שוב בעוד רגע');return}var s=slugVal(),t=$('payTier').value;
       MLPay.open({title:full?'תוספת מיילים':'חבילה מלאה לדף ההזמנה',sub:$('payTier').selectedOptions[0].textContent,mailNote:'לשם יישלח אישור הרכישה',body:{plan:'event',slug:s,tier:t,token:store()[s]},onPaid:function(){setTimeout(function(){$('ownLoad').click()},1500)}})}})}
-  function rcDraw(){var R=(OWN&&OWN.recip)||[],box=$('rcList'),ST={new:'לא נשלח',queued:'בתור',sent:'נשלח ✓',fail:'נכשל',unsub:'ביקש Remove'};
+  function rcDraw(){var gl={};((OWN&&OWN.recip)||[]).forEach(function(r){if(r.grp)gl[r.grp]=1});(EVG[$('et').value]||EVG.x).forEach(function(g){gl[g]=1});$('grpL').innerHTML=Object.keys(gl).map(function(g){return '<option value="'+esc(g)+'">'}).join('');
+    var R=(OWN&&OWN.recip)||[],box=$('rcList'),ST={new:'לא נשלח',queued:'בתור',sent:'נשלח ✓',fail:'נכשל',unsub:'ביקש Remove'};
     if(OWN&&OWN.rsetup){box.innerHTML='<p class="st no">רשימת הנמענים עוד לא הופעלה באתר (חסרה טבלה במסד הנתונים).</p>';return}
     var c=function(k){return R.filter(function(r){return r.status===k}).length};
     var A={};(OWN.rsvp||[]).forEach(function(x){if(x.rtok)A[x.rtok]=x});var AS={yes:'אישר ✓',no:'לא מגיע',maybe:'אולי'};
     var G={};R.forEach(function(r){var g=r.grp||'בלי קבוצה',a=A[r.token],e=G[g]=G[g]||{inv:0,n:0,yes:0,ppl:0,no:0,none:0};e.n++;e.inv+=(+r.cnt||0);if(!a)e.none++;else if(a.status==='yes'){e.yes++;e.ppl+=(+a.adults||0)+(+a.kids||0)}else if(a.status==='no')e.no++});
     var gk=Object.keys(G),gt=gk.length>1||(gk[0]&&gk[0]!=='בלי קבוצה')?'<table style="margin:6px 0"><thead><tr><th>קבוצה</th><th>הזמנות</th><th>מוזמנים (צפי)</th><th>אישרו</th><th>יגיעו (אנשים)</th><th>לא מגיעים</th><th>לא ענו</th></tr></thead><tbody>'+gk.map(function(k){var e=G[k];return '<tr><td>'+esc(k)+'</td><td>'+e.n+'</td><td>'+(e.inv||'')+'</td><td>'+e.yes+'</td><td>'+e.ppl+'</td><td>'+e.no+'</td><td>'+e.none+'</td></tr>'}).join('')+'</tbody></table>':'';
-    box.innerHTML=R.length?'<p class="sum">'+R.length+' נמענים · נשלחו '+c('sent')+' · ממתינים '+(c('new')+c('fail')+c('queued'))+(c('unsub')?' · ביקשו Remove '+c('unsub'):'')+'</p>'+gt+'<details><summary>הרשימה</summary><div style="max-height:300px;overflow:auto"><table><tbody>'+R.map(function(r){var a=A[r.token];return '<tr><td>'+esc(r.name||'')+(r.grp?' <small class="mute">'+esc(r.grp)+'</small>':'')+(r.cnt?' <small>('+r.cnt+')</small>':'')+'</td><td dir="ltr">'+(/@phone\.invalid$/.test(r.email)?'':esc(r.email))+(r.phone?' '+esc(r.phone):'')+'</td><td>'+ST[r.status]+(r.sms_at?' · SMS ✓':'')+'</td><td>'+(r.opened_at?'<span title="'+new Date(r.last_open||r.opened_at).toLocaleString('he-IL')+'">👁 פתח'+(r.opens>1?' ×'+r.opens:'')+'</span>':'<span class="mute">לא פתח</span>')+'</td><td>'+(a?AS[a.status]:'<span class="mute">לא ענה</span>')+'</td><td>'+(r.status==='sent'?'':'<button class="btn sm" type="button" data-rrm="'+r.id+'">Remove</button>')+'</td></tr>'}).join('')+'</tbody></table></div></details>':'<p class="mute">עוד אין נמענים.</p>';
+    box.innerHTML=R.length?'<p class="sum">'+R.length+' נמענים · נשלחו '+c('sent')+' · ממתינים '+(c('new')+c('fail')+c('queued'))+(c('unsub')?' · ביקשו Remove '+c('unsub'):'')+'</p>'+'<details'+(gt?'':' hidden')+'><summary>סיכום לפי קבוצות</summary>'+gt+'</details><h3 style="font-size:16px;margin:12px 0 2px">רשימת המוזמנים</h3><div id="gList"></div>':'<p class="mute">עוד אין מוזמנים ברשימה.</p>';
+    if(R.length)glDraw(R,A);
     $('rcSend').hidden=!R.length;
     var q=c('queued'),at=OWN.mail&&OWN.mail.at;$('rcSched').innerHTML=at&&q&&Date.parse(at)>Date.now()?'<p class="st ok">🕒 מתוזמן: '+q+' הזמנות יישלחו ב־'+new Date(at).toLocaleString('he-IL',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' <button class="btn sm" type="button" id="rcUn">ביטול התזמון</button></p>':'';
     var un=$('rcUn');if(un)un.onclick=function(){un.disabled=true;ownPost({act:'unsched'}).then(function(){$('ownLoad').click()})};if(!$('rcSubj').value)$('rcSubj').value=(OWN.mail&&OWN.mail.subject)||('הזמנה: '+($('t').value.trim()||'האירוע'));if(!$('rcNote').value&&OWN.mail)$('rcNote').value=OWN.mail.note||''}
+  /* רשימת המוזמנים: חיפוש, סינון, פעולות */
+  var GF={q:'',f:'all',g:''};
+  function glDraw(R,A){var O=$('gList');if(!O)return;var ppl=function(a){return (+a.adults||0)+(+a.kids||0)},ph=function(r){return r.phone||''},em=function(r){return /@phone\.invalid$/.test(r.email)?'':r.email};
+    var FL=[['all','הכל',function(){return 1}],['op','פתחו',function(r){return r.opened_at}],['nop','לא פתחו',function(r){return !r.opened_at}],['yes','מגיעים',function(r){return A[r.token]&&A[r.token].status==='yes'}],['no','לא מגיעים',function(r){return A[r.token]&&A[r.token].status==='no'}],['mb','מתלבטים',function(r){return A[r.token]&&A[r.token].status==='maybe'}],['wait','ממתינים',function(r){return !A[r.token]}],['nph','בלי טלפון',function(r){return !ph(r)}]];
+    var grps={};R.forEach(function(r){if(r.grp)grps[r.grp]=(grps[r.grp]||0)+1});
+    var f=FL.filter(function(x){return x[0]===GF.f})[0]||FL[0],q=GF.q.trim().toLowerCase();
+    var L=R.filter(function(r){return f[2](r)&&(!GF.g||r.grp===GF.g)&&(!q||[r.name,ph(r),em(r),r.grp].join(' ').toLowerCase().indexOf(q)>=0)});
+    var url=function(r){return location.origin+'/t/'+slugVal()+'?to='+encodeURIComponent(r.name||'')+'&r='+r.token};
+    var wa=function(r){var p=ph(r).replace(/\D/g,'');return 'https://wa.me/'+(p?'972'+p.replace(/^0/,''):'')+'?text='+encodeURIComponent(($('pt').value.trim()||'Dear {name}, we would be delighted to celebrate with you!').replace(/\{(שם|name)\}/g,r.name||'')+'\n'+url(r))};
+    var ST={new:'<span class="pill">לא נשלח</span>',queued:'<span class="pill">בתור</span>',sent:'<span class="pill ok">נשלח</span>',fail:'<span class="pill no">נכשל</span>',unsub:'<span class="pill no">Remove</span>'},AS={yes:'ok',no:'no',maybe:'mb'},AT={yes:'מגיע',no:'לא מגיע',maybe:'מתלבט'};
+    O.innerHTML='<div class="gbar"><input type="search" id="glQ" placeholder="חיפוש לפי שם, טלפון או מייל…" value="'+esc(GF.q)+'">'+(Object.keys(grps).length?'<select id="glG"><option value="">כל הקבוצות</option>'+Object.keys(grps).map(function(g){return '<option'+(g===GF.g?' selected':'')+'>'+esc(g)+'</option>'}).join('')+'</select>':'')+'</div>'+
+      '<div class="chips">'+FL.map(function(x){var n=R.filter(x[2]).length;return x[0]==='all'||n?'<button type="button" data-gf="'+x[0]+'" aria-pressed="'+(x[0]===f[0])+'">'+x[1]+' '+n+'</button>':''}).join('')+'</div>'+
+      '<div style="max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:12px"><table class="gtab"><thead><tr><th>שם</th><th class="hm">טלפון / מייל</th><th>הזמנה</th><th>קישור</th><th>תשובה</th><th></th></tr></thead><tbody>'+
+      (L.length?L.map(function(r){var a=A[r.token];return '<tr data-rid="'+r.id+'"><td><b>'+esc(r.name||'')+'</b>'+(r.grp?'<br><small class="mute">'+esc(r.grp)+'</small>':'')+(r.cnt?' <small class="mute">· '+r.cnt+' מוזמנים</small>':'')+'</td><td class="hm" dir="ltr" style="text-align:start;font-size:13px">'+esc(ph(r))+(ph(r)&&em(r)?'<br>':'')+esc(em(r))+'</td><td>'+(ST[r.status]||'')+(r.sms_at?' <span class="pill">SMS</span>':'')+'</td><td>'+(r.opened_at?'<span class="pill op" title="'+new Date(r.last_open||r.opened_at).toLocaleString('he-IL')+'">פתח'+(r.opens>1?' ×'+r.opens:'')+'</span>':'<span class="pill">לא פתח</span>')+'</td><td>'+(a?'<span class="pill '+AS[a.status]+'">'+AT[a.status]+(a.status==='yes'?' · '+ppl(a):'')+'</span>':'<span class="mute" style="font-size:13px">ממתין</span>')+'</td>'+
+        '<td><div class="acts"><a href="'+wa(r)+'" target="_blank" rel="noopener" title="שליחה בWhatsApp">💬</a>'+(ph(r)?'<a href="tel:'+esc(ph(r))+'" title="התקשרות">📞</a>':'')+'<button type="button" data-gcp title="העתקת הקישור האישי">🔗</button><button type="button" data-ged title="עריכה">✏️</button><button type="button" data-gdel title="מחיקה">🗑</button></div></td></tr>'}).join(''):'<tr><td colspan="6" class="mute" style="text-align:center;padding:16px">אין מוזמנים שמתאימים לסינון.</td></tr>')+'</tbody></table></div>';
+    var qi=$('glQ');qi.oninput=function(){GF.q=qi.value;var p=qi.selectionStart;glDraw(R,A);var n=$('glQ');n.focus();n.setSelectionRange(p,p)};
+    var gs=$('glG');if(gs)gs.onchange=function(){GF.g=gs.value;glDraw(R,A)};
+    O.onclick=function(e){var c=e.target.closest('[data-gf]');if(c){GF.f=c.dataset.gf;glDraw(R,A);return}
+      var tr=e.target.closest('tr[data-rid]');if(!tr)return;var r=R.filter(function(x){return String(x.id)===tr.dataset.rid})[0];if(!r)return;
+      if(e.target.closest('[data-gcp]')){navigator.clipboard&&navigator.clipboard.writeText(url(r));e.target.closest('button').textContent='✓';return}
+      if(e.target.closest('[data-gdel]')){if(confirm('למחוק את '+(r.name||'המוזמן')+' מהרשימה?'))ownPost({act:'rrm',id:r.id}).then(function(){$('ownLoad').click()});return}
+      if(e.target.closest('[data-ged]')){tr.innerHTML='<td colspan="6"><div class="gform" style="margin:0"><label class="gn">שם<input data-k="name" value="'+esc(r.name||'')+'"></label><label>טלפון<input data-k="phone" dir="ltr" value="'+esc(ph(r))+'"></label><label>מייל<input data-k="email" dir="ltr" value="'+esc(em(r))+'"></label><label>קבוצה<input data-k="grp" list="grpL" value="'+esc(r.grp||'')+'"></label><label>כמה<input data-k="cnt" type="number" min="0" max="50" value="'+(r.cnt||'')+'"></label><div class="row" style="margin:0;gap:4px"><button class="btn sm pri" type="button" data-gsv>שמירה</button><button class="btn sm" type="button" data-gcx>ביטול</button></div></div></td>';return}
+      if(e.target.closest('[data-gcx]')){glDraw(R,A);return}
+      if(e.target.closest('[data-gsv]')){var b={act:'redit',id:r.id};[].forEach.call(tr.querySelectorAll('[data-k]'),function(i){b[i.dataset.k]=i.value.trim()});if(!b.name){alert('חסר שם');return}ownPost(b).then(function(){$('ownLoad').click()})}}}
   /* הושבה, גלריה, מתנות ו-SMS (לבעל האירוע) */
   function extraDraw(){var F=OWN.flags||{};$('gcW').hidden=!F.giftOn;$('gcN').hidden=!F.giftOn;if(F.giftOn)$('gcN').textContent='האורחים משלמים באשראי באתר, והכסף מועבר אליכם אחרי בקשה'+(F.giftPct||F.giftFixed?' (בניכוי עמלה של '+[F.giftPct?F.giftPct+'%':'',F.giftFixed?F.giftFixed+' ₪ למתנה':''].filter(Boolean).join(' + ')+')':'')+'.';
     var full=OWN.paid&&!OWN.paid.free;if($('lockN'))$('lockN').hidden=!!full;
@@ -344,7 +400,9 @@ summary{cursor:pointer;font-weight:700}
     V.forEach(function(x){F.push([x.created_at,(x.status==='yes'?'✅ ':x.status==='no'?'❌ ':'❔ ')+x.name+(x.status==='yes'?' אישר/ה הגעה ('+ppl(x)+')':x.status==='no'?' לא מגיע/ה':' מתלבט/ת')])});
     (OWN.wall||[]).forEach(function(w){F.push([w.created_at,'✍️ '+w.name+' כתב/ה ברכה'])});
     F.sort(function(a,b){return String(b[0]).localeCompare(String(a[0]))});
-    O.innerHTML='<div class="stats"><div class="stat"><b>'+(R.length||'–')+'</b><span>הזמנות נשלחו'+(inv?' · '+inv+' מוזמנים':'')+'</span></div><div class="stat op"><b>'+opened+'</b><span>פתחו את הקישור</span></div><div class="stat ok"><b>'+yes.reduce(function(a,x){return a+ppl(x)},0)+'</b><span>מגיעים ('+yes.length+' אישורים)</span></div><div class="stat no"><b>'+V.filter(function(x){return x.status==='no'}).length+'</b><span>לא מגיעים</span></div><div class="stat mb"><b>'+V.filter(function(x){return x.status==='maybe'}).length+'</b><span>מתלבטים</span></div><div class="stat"><b>'+(R.length?none:'–')+'</b><span>עוד לא ענו</span></div></div>'+
+    var pc=R.length?Math.round(opened/R.length*100):0;
+    O.innerHTML='<div class="stats"><div class="stat"><i>👥</i><b>'+(inv||R.length||'–')+'</b><span>סה״כ מוזמנים'+(inv&&R.length?' · '+R.length+' הזמנות':'')+'</span></div><div class="stat ok"><i>✓</i><b>'+yes.reduce(function(a,x){return a+ppl(x)},0)+'</b><span>מגיעים · '+yes.length+' אישורים</span></div><div class="stat no"><i>✕</i><b>'+V.filter(function(x){return x.status==='no'}).length+'</b><span>לא מגיעים</span></div><div class="stat mb"><i>?</i><b>'+V.filter(function(x){return x.status==='maybe'}).length+'</b><span>מתלבטים</span></div><div class="stat wt"><i>⏳</i><b>'+(R.length?none:'–')+'</b><span>ממתינים לתשובה</span></div>'+
+      '<div class="stat op"><i>👁</i><b>'+opened+(R.length?' <small style="font-size:14px;font-weight:600">'+pc+'%</small>':'')+'</b><span>פתחו את הקישור האישי</span><div class="prog"><i style="width:'+pc+'%"></i></div></div></div>'+
       (F.length?'<details open><summary style="font-weight:700">פעילות אחרונה</summary><div class="feed">'+F.slice(0,40).map(function(f){return '<div><span>'+esc(f[1])+'</span><small>'+dt(f[0])+'</small></div>'}).join('')+'</div></details>':'')}
 
   function seatDraw(){var T=(OWN.seat&&OWN.seat.tables)||[],R=(OWN.rsvp||[]).filter(function(r){return r.status==='yes'}),O=$('seatOut'),full=OWN.paid&&!OWN.paid.free;
@@ -398,25 +456,55 @@ summary{cursor:pointer;font-weight:700}
       var g=$('smsGo');if(g)g.onclick=function(){if(!confirm('לשלוח SMS עם הקישור האישי לכל מי שעוד לא קיבל?'))return;g.disabled=true;var P2=$('smsP'),n=0;(function next(){ownPost({act:'smsnext'}).then(function(x){var j=x[1];n+=j.sent||0;P2.textContent='נשלחו '+n+'…';
         if(x[0]!==200||j.stop||j.done){P2.textContent=j.stop==='shabbat'?'עכשיו שבת או חג. נסו אחרי צאתם.':j.stop==='quota'?'נגמרה יתרת ה־SMS. נשלחו '+n+'.':x[0]!==200?'השליחה נעצרה.':'✓ נשלחו '+n+' הודעות SMS'+(j.failed?' ('+j.failed+' נכשלו)':'');g.disabled=false;$('ownLoad').click();return}next()})})()}})}
   /* בונה ההזמנה: ההזמנה היא העיקר. סדר: פרטי האירוע, עיצוב, כתובת, פרטי ההזמנה, ובסוף שעון ספירה (לא חובה) */
+  /* סוגי אירועים: [מפתח, סמל, שם, שם 1, שם 2, משפחה 1, משפחה 2, What happens at the target time, תחילית לכותרת, נוסח] */
+  var EVT=[['wed','💍','Wedding','שם החתן','שם הכלה','הורי החתן','הורי הכלה','חופה וקידושין','החתונה של','בשבח והודיה להשי"ת, אנו שמחים להזמינכם להשתתף בשמחת נישואי ילדינו'],
+    ['eng','🥂','אירוסין / וורט','שם החתן','שם הכלה','הורי החתן','הורי הכלה','','האירוסין של','בשמחה רבה אנו מתכבדים להזמינכם לשמחת האירוסין של ילדינו'],
+    ['sheva','🍷','שבע ברכות','שם החתן','שם הכלה','המארחים (לא חובה)','','','שבע ברכות ל','נשמח לראותכם בסעודת שבע ברכות לכבוד החתן והכלה'],
+    ['bar','📜','Bar mitzvah','שם בר המצווה','','ההורים','הסבים (לא חובה)','','בר המצווה של','בשבח והודיה להשי"ת, אנו שמחים להזמינכם לשמחת בר המצווה של בננו'],
+    ['bat','🌸','Bat mitzvah','שם בת המצווה','','ההורים','הסבים (לא חובה)','','בת המצווה של','בשמחה רבה אנו מזמינים אתכם לחגוג עמנו את בת המצווה של בתנו'],
+    ['brit','🕊️','ברית מילה','','','ההורים','הסבים (לא חובה)','ברית מילה','ברית מילה','בשבח והודיה להשי"ת על הולדת בננו, נתכבד בהשתתפותכם בשמחת הברית'],
+    ['zbd','🌷','שמחת בת','שם הבת (לא חובה)','','ההורים','הסבים (לא חובה)','','שמחת הבת','בשמחה רבה על הולדת בתנו, נשמח לראותכם בשמחתנו'],
+    ['pid','🪙','פדיון הבן','','','ההורים','הסבים (לא חובה)','פדיון הבן','פדיון הבן','בשבח והודיה להשי"ת, נתכבד בהשתתפותכם בסעודת מצוות פדיון הבן של בננו'],
+    ['chl','✂️','חלאקה','שם הילד','','ההורים','הסבים (לא חובה)','','החלאקה של','בשמחה רבה נשמח לראותכם בשמחת החלאקה של בננו'],
+    ['sfr','📖','הכנסת ספר תורה','','','המזמינים','','הכנסת ספר התורה','הכנסת ספר תורה','בשמחה ובהודיה נתכבד בהשתתפותכם בשמחת הכנסת ספר התורה'],
+    ['bd','🎂','יום הולדת','שם בעל/ת השמחה','','המזמינים (לא חובה)','','','יום ההולדת של','נשמח לחגוג אתכם'],
+    ['oth','🎉','אירוע אחר','שם בעל/ת השמחה (לא חובה)','','המזמינים (לא חובה)','','','','']];
+  var EVG={wed:['משפחת החתן','משפחת הכלה','חברים של החתן','חברים של הכלה','עבודה','שכנים'],eng:['משפחת החתן','משפחת הכלה','חברים'],sheva:['משפחה','חברים'],x:['משפחה','חברים','עבודה','שכנים','קהילה']};
+  var EVA={t:true,it:'',tl:''};
+  function etTitle(e){var n=[$('n1').value.trim(),$('n2').value.trim()].filter(Boolean),f=$('f1').value.trim(),p=e[8];
+    if(n.length&&/(של|ל)$/.test(p))return p+(/\sל$/.test(p)?'':' ')+n.join(' ו');if(n.length)return (p?p+' · ':'')+n.join(' ו');return p+(f&&p?' · '+f:f)}
+  function etSet(k,user){var e=EVT.filter(function(x){return x[0]===k})[0];$('et').value=e?k:'';
+    [].forEach.call($('etg').children,function(b){b.setAttribute('aria-checked',b.dataset.et===k)});$('etF').hidden=!e;if(!e)return;
+    [['n1L',3],['n2L',4],['f1L',5],['f2L',6]].forEach(function(x){var L=$(x[0]);L.hidden=!e[x[1]];L.querySelector('span').textContent=e[x[1]];if(!e[x[1]])L.querySelector('input').value=''});
+    $('n1L').parentNode.hidden=!e[3]&&!e[4];
+    if(!user)return;
+    if(!$('it').value.trim()||$('it').value===EVA.it){$('it').value=e[9];EVA.it=e[9]}
+    if(!$('tl').value.trim()||$('tl').value===EVA.tl){$('tl').value=e[7];EVA.tl=e[7]}
+    etAuto();upd()}
+  function etAuto(){var e=EVT.filter(function(x){return x[0]===$('et').value})[0];if(!e||!EVA.t)return;var v=etTitle(e);if(v&&v!==$('t').value){$('t').value=v;$('t').dispatchEvent(new Event('input'))}}
+  $('etg').innerHTML=EVT.map(function(e){return '<button type="button" role="radio" aria-checked="false" data-et="'+e[0]+'"><i aria-hidden="true">'+e[1]+'</i>'+e[2]+'</button>'}).join('');
+  $('etg').addEventListener('click',function(ev){var b=ev.target.closest('[data-et]');if(b)etSet(b.dataset.et,true)});
+  ['n1','n2','f1','f2'].forEach(function(k){$(k).addEventListener('input',function(){etAuto();upd()})});
+  $('t').addEventListener('input',function(e){if(e.isTrusted)EVA.t=!$('t').value.trim()});
   function invLayout(){var f=$('f'),tl=$('t').closest('label'),dt=$('d').closest('.two');
     var sm=$('invD').querySelector('summary');
     var cd=document.createElement('details');cd.className='clkD';cd.id='clkD';cd.innerHTML='<summary>⏱ שעון ספירה לאחור בדף (לא חובה)</summary><label style="margin-top:6px;display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="clk" style="width:auto;margin:0">להציג שעון שסופר לאחור עד האירוע</label>';
     [$('gUnit'),$('gLay')].forEach(function(x){cd.appendChild(x)});cd.appendChild($('sec').closest('label'));$('gPhoto').hidden=true;
     $('sz').closest('label').hidden=true;
     /* לשוניות */
-    var TB=[['p1','📝 פרטים'],['p2','🎨 עיצוב'],['p3','📨 ההזמנה'],['p4','📤 שליחה'],['p5','💌 תשובות']],nav=document.createElement('div');nav.className='tabs';nav.setAttribute('role','tablist');
+    var TB=[['p1','📝 פרטים'],['p2','🎨 עיצוב'],['p3','📨 ההזמנה'],['p4','👥 מוזמנים'],['p5','📊 מעקב']],nav=document.createElement('div');nav.className='tabs';nav.setAttribute('role','tablist');
     nav.innerHTML=TB.map(function(t,i){return '<button type="button" role="tab" data-tab="'+t[0]+'" aria-selected="'+(i===0)+'">'+t[1]+'</button>'}).join('');
     var P={};TB.forEach(function(t,i){var d=document.createElement('div');d.id=t[0];d.setAttribute('role','tabpanel');d.hidden=i>0;P[t[0]]=d});
-    [tl,dt,$('gDate'),$('gSzLang'),$('gTz'),$('gSlug')].forEach(function(x){P.p1.appendChild(x)});
+    [$('iType'),tl,dt,$('gDate'),$('gSzLang'),$('gTz'),$('gSlug')].forEach(function(x){P.p1.appendChild(x)});
     [$('gDesign'),$('iImg'),$('iMedia'),cd].forEach(function(x){P.p2.appendChild(x)});
     [$('iIntro'),$('iMain'),$('iOpts')].forEach(function(x){P.p3.appendChild(x)});
-    [$('payBox'),$('iPers'),$('rcBox'),$('smsBox')].forEach(function(x){P.p4.appendChild(x)});
+    [$('payBox'),$('rcBox'),$('smsBox'),$('iPers')].forEach(function(x){P.p4.appendChild(x)});
     P.p5.appendChild($('ownBox'));
     var sv=$('iSave');sv.className='savebar';
     f.prepend(nav);TB.forEach(function(t){nav.after(P[t[0]])});
     var last=P.p1;TB.slice(1).forEach(function(t){last.after(P[t[0]]);last=P[t[0]]});last.after(sv);
     $('invD').hidden=true;$('invPromo').hidden=true;
-    nav.addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(!b)return;nav.querySelectorAll('[data-tab]').forEach(function(x){x.setAttribute('aria-selected',x===b)});TB.forEach(function(t){P[t[0]].hidden=t[0]!==b.dataset.tab});if((b.dataset.tab==='p5'||b.dataset.tab==='p4')&&saved&&saved===slugVal()&&store()[slugVal()])$('ownLoad').click()});
+    nav.addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(!b)return;nav.querySelectorAll('[data-tab]').forEach(function(x){x.setAttribute('aria-selected',x===b)});TB.forEach(function(t){P[t[0]].hidden=t[0]!==b.dataset.tab});$('pvbox').closest('.grid').classList.toggle('wide',b.dataset.tab==='p4'||b.dataset.tab==='p5');if((b.dataset.tab==='p5'||b.dataset.tab==='p4')&&saved&&saved===slugVal()&&store()[slugVal()])$('ownLoad').click()});
     $('p4').insertAdjacentHTML('afterbegin','<p class="mute" id="p4n" style="font-size:14px">קודם שומרים את הדף (למטה), ואז אפשר להפעיל, להוסיף מוזמנים ולשלוח.</p>');
     $('p5').insertAdjacentHTML('afterbegin','<p class="mute" id="p5n" style="font-size:14px">כאן יופיעו אישורי ההגעה, הברכות, ההושבה, התמונות והמתנות, אחרי השמירה.</p>');
     $('clk').addEventListener('change',upd);
@@ -455,11 +543,16 @@ summary{cursor:pointer;font-weight:700}
   function parseRc(txt){return txt.split(/\r?\n/).map(function(l){var parts=l.split(/[,;\t]+/).map(function(x){return x.replace(/[<>"]/g,'').trim()}).filter(Boolean),o={name:'',email:'',phone:'',grp:'',cnt:0},rest=[];
     parts.forEach(function(x){if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x))o.email=x;else if(/^\+?[\d\-\s]{9,15}$/.test(x)&&x.replace(/\D/g,'').length>=9)o.phone=x;else if(/^\d{1,2}$/.test(x))o.cnt=+x;else rest.push(x)});
     o.name=rest[0]||'';o.grp=rest[1]||'';return o.email||o.phone?o:null}).filter(Boolean)}
-  function rcAdd(L){var M=$('rcMsg');if(!L.length){M.textContent='לא נמצאו כתובות מייל.';M.className='st no';return}M.textContent='מוסיף…';M.className='st';
-    ownPost({act:'radd',list:L}).then(function(a){if(a[0]===200){M.textContent='נוספו '+a[1].added+(a[1].skipped?' ('+a[1].skipped+' כבר היו ברשימה)':'');M.className='st ok';$('rcIn').value='';$('ownLoad').click()}else{M.textContent=a[1].error==='max'?'אפשר עד 10,000 נמענים.':'ההוספה לא הצליחה.';M.className='st no'}})}
+  function rcAdd(L,M,done){M=M||$('rcMsg');if(!L.length){M.textContent='לא נמצאו מייל או טלפון.';M.className='st no';return}M.textContent='מוסיף…';M.className='st';
+    ownPost({act:'radd',list:L}).then(function(a){if(a[0]===200){M.textContent='נוספו '+a[1].added+(a[1].skipped?' ('+a[1].skipped+' כבר היו ברשימה)':'');M.className='st ok';if(done)done();else $('rcIn').value='';$('ownLoad').click()}else{M.textContent=a[1].error==='max'?'אפשר עד 10,000 נמענים.':'ההוספה לא הצליחה.';M.className='st no'}})}
   [].forEach.call(document.querySelectorAll('[name=rcWhen]'),function(r){r.addEventListener('change',function(){var at=document.querySelector('[name=rcWhen]:checked').value==='at';$('rcAtL').hidden=!at;$('rcAtH').hidden=!at;$('rcGo').textContent=at?'תזמון השליחה':'שליחה לכל מי שעוד לא קיבל';
     if(at&&!$('rcAt').value){var d=new Date(Date.now()+864e5);d.setMinutes(0,0,0);d.setHours(10);$('rcAt').value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}})});
   $('rcAdd').addEventListener('click',function(){rcAdd(parseRc($('rcIn').value))});
+  function gAdd(){var M=$('gM'),n=$('gN').value.replace(/[<>"]/g,'').trim(),p=$('gP').value.trim(),e=$('gE').value.trim(),bad=function(m,f){M.textContent=m;M.className='st no';$(f).focus()};
+    if(!n)return bad('חסר שם.','gN');if(!p&&!e)return bad('צריך מייל או טלפון (או שניהם).',e?'gP':'gE');
+    if(e&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))return bad('כתובת המייל לא תקינה.','gE');if(p&&p.replace(/\D/g,'').length<9)return bad('מספר הטלפון לא תקין.','gP');
+    rcAdd([{name:n,email:e,phone:p,grp:$('gG').value.replace(/[<>"]/g,'').trim(),cnt:+$('gC').value||0}],M,function(){['gN','gP','gE','gC'].forEach(function(k){$(k).value=''});$('gN').focus()})}
+  $('gAdd').addEventListener('click',gAdd);['gN','gP','gE','gG','gC'].forEach(function(k){$(k).addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();gAdd()}})});
   $('rcCsv').addEventListener('click',function(){$('rcFile').click()});
   $('rcFile').addEventListener('change',function(){var f=this.files[0];this.value='';if(!f)return;var r=new FileReader();r.onload=function(){rcAdd(parseRc(String(r.result)))};r.readAsText(f)});
   $('rcList').addEventListener('click',function(e){var b=e.target.closest('[data-rrm]');if(!b)return;b.disabled=true;ownPost({act:'rrm',id:b.dataset.rrm}).then(function(){$('ownLoad').click()})});
@@ -541,7 +634,7 @@ summary{cursor:pointer;font-weight:700}
   function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
   function remember(s,tok){try{var o=store();o[s]=tok;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
   function showMine(){var o=store(),k=Object.keys(o);$('mine').hidden=!k.length;$('mine').innerHTML='My countdowns: '+k.map(function(s){return '<a href="?s='+s+'">'+s+'</a>'}).join('')}
-  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,wh:$('wh').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1',p:photo,ps:$('ps').value,inv:invImg,it:$('it').value.trim(),pt:$('pt').value.trim(),venue:$('venue').value.trim(),addr:$('addr').value.trim(),tr:$('tr').value,tl:$('tl').value.trim(),rv:$('rv').checked?1:0,rm:$('rm').checked?1:0,wl:$('wl').checked?1:0,tp:$('tp').checked?1:0,tpt:$('tpt').value.trim(),gift:/^https:\/\//.test($('gift').value.trim())?$('gift').value.trim():'',gl:$('gl').value.trim(),nr:+$('nr').value,dr:$('dr').checked?1:0,ty:$('ty').checked?1:0,tyt:$('tyt').value.trim(),gal:$('gal').checked?1:0,clk:PG==='invite'?($('clk')&&$('clk').checked?1:0):1,bgi:MEDIA.bgi,bgv:MEDIA.bgv,mus:MEDIA.mus,bgo:+$('bgo').value,gc:$('gc').checked?1:0,qs:[0,1,2].map(function(i){return {q:$('q'+i).value.trim(),o:$('o'+i).value.split(/[,،]/).map(function(x){return x.trim()}).filter(Boolean)}}).filter(function(x){return x.q})}}
+  function cfg(){var t=T();return {t:$('t').value.trim(),d:$('d').value,h:$('h').value,z:$('z').value,u:$('u').value,th:th,c:custom?$('c').value.slice(1):'',b:custom?$('b').value.slice(1):'',lang:$('lang').value,l:$('l').value,fr:$('fr').value,wp:$('wp').value,wd:$('wd').value,wh:$('wh').value,ww:$('ww').checked?'1':'0',wt:$('wt').checked?'1':'0',ns:$('sec').checked?'0':'1',p:photo,ps:$('ps').value,inv:invImg,et:$('et').value,n1:$('n1').value.trim(),n2:$('n2').value.trim(),f1:$('f1').value.trim(),f2:$('f2').value.trim(),it:$('it').value.trim(),pt:$('pt').value.trim(),venue:$('venue').value.trim(),addr:$('addr').value.trim(),tr:$('tr').value,tl:$('tl').value.trim(),rv:$('rv').checked?1:0,rm:$('rm').checked?1:0,wl:$('wl').checked?1:0,tp:$('tp').checked?1:0,tpt:$('tpt').value.trim(),gift:/^https:\/\//.test($('gift').value.trim())?$('gift').value.trim():'',gl:$('gl').value.trim(),nr:+$('nr').value,dr:$('dr').checked?1:0,ty:$('ty').checked?1:0,tyt:$('tyt').value.trim(),gal:$('gal').checked?1:0,clk:PG==='invite'?($('clk')&&$('clk').checked?1:0):1,bgi:MEDIA.bgi,bgv:MEDIA.bgv,mus:MEDIA.mus,bgo:+$('bgo').value,gc:$('gc').checked?1:0,qs:[0,1,2].map(function(i){return {q:$('q'+i).value.trim(),o:$('o'+i).value.split(/[,،]/).map(function(x){return x.trim()}).filter(Boolean)}}).filter(function(x){return x.q})}}
   function params(extra){var c=cfg(),p=new URLSearchParams();if(c.t)p.set('t',c.t);p.set('d',c.d);if(c.h)p.set('h',c.h);p.set('u',c.u);if(th!=='classic')p.set('th',th);if(c.c)p.set('c',c.c);if(c.b)p.set('b',c.b);if(c.z!=='Asia/Jerusalem')p.set('z',c.z);if(c.lang==='en')p.set('lang','en');if(c.l==='stack')p.set('l','stack');if(c.fr!=='0')p.set('fr',c.fr);if(c.wp!=='top')p.set('wp',c.wp);if(c.wd!=='g'){p.set('wd',c.wd);if(c.wh!=='s')p.set('wh',c.wh)}if(c.ww==='0')p.set('ww','0');if(c.wt==='0')p.set('wt','0');if(c.ns==='1')p.set('ns','1');if(c.p){p.set('p',c.p);if(c.ps!=='circle')p.set('ps',c.ps)}
     Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k])});return p}
   /* מצב הכתובת: saved = נשמרה (והשמירה תואמת להגדרות הנוכחיות) */
@@ -610,12 +703,12 @@ summary{cursor:pointer;font-weight:700}
     try{if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([$('oLink').value],{type:'text/plain'})})]).then(function(){done(true)},fallback)}else fallback()}catch(e){fallback()}});
   document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var x=$(b.dataset.copy);x.select();try{navigator.clipboard.writeText(x.value)}catch(er){document.execCommand('copy')}var o=b.textContent;b.textContent='Copied ✓';setTimeout(function(){b.textContent=o},1500)});
   /* בדף השעון: בלי דף ההזמנה (הוא בדף נפרד). ספירה שמורה עם דף הזמנה נשמרת עם כל ההגדרות שלה */
-  if(PG==='timer'){$('invD').hidden=true;['rv','rm','wl','dr'].forEach(function(k){$(k).checked=false});$('nr').value='0'}else{$('invPromo').hidden=true;$('invD').open=true;invLayout()}
+  if(PG==='timer'){$('invD').hidden=true;['rv','rm','wl','dr'].forEach(function(k){$(k).checked=false});$('nr').value='0'}else{$('invPromo').hidden=true;$('invD').open=true;$('wd').value='b';invLayout()}
   showMine();setTheme('classic');
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
   var es=(Q.get('s')||'').toLowerCase();
   if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
-    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');setInv(c.inv||'');['it','pt','venue','addr','tr','tl'].forEach(function(k){$(k).value=c[k]||''});['rv','rm','wl','tp'].forEach(function(k){$(k).checked=!!c[k]});$('tpt').value=c.tpt||'';$('gift').value=c.gift||'';$('gl').value=c.gl||'';$('nr').value=String(c.nr||0);$('dr').checked=!!c.dr;$('ty').checked=!!c.ty;$('tyt').value=c.tyt||'';$('gal').checked=!!c.gal;if($('clk'))$('clk').checked=c.clk!==0;$('bgo').value=c.bgo!=null?c.bgo:35;if(window.__setMedia){__setMedia('bgi',c.bgi);__setMedia('bgv',c.bgv);__setMedia('mus',c.mus)}else{MEDIA.bgi=c.bgi||'';MEDIA.bgv=c.bgv||'';MEDIA.mus=c.mus||''}$('gc').checked=!!c.gc;[0,1,2].forEach(function(i){var q=(c.qs||[])[i]||{};$('q'+i).value=q.q||'';$('o'+i).value=(q.o||[]).join(', ')});if(c.inv||c.it||c.venue||c.addr||c.rv||c.wl)$('invD').open=true;
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');setInv(c.inv||'');['n1','n2','f1','f2'].forEach(function(k){$(k).value=c[k]||''});etSet(c.et||'');EVA.t=!c.t;EVA.it='';EVA.tl='';['it','pt','venue','addr','tr','tl'].forEach(function(k){$(k).value=c[k]||''});['rv','rm','wl','tp'].forEach(function(k){$(k).checked=!!c[k]});$('tpt').value=c.tpt||'';$('gift').value=c.gift||'';$('gl').value=c.gl||'';$('nr').value=String(c.nr||0);$('dr').checked=!!c.dr;$('ty').checked=!!c.ty;$('tyt').value=c.tyt||'';$('gal').checked=!!c.gal;if($('clk'))$('clk').checked=c.clk!==0;$('bgo').value=c.bgo!=null?c.bgo:35;if(window.__setMedia){__setMedia('bgi',c.bgi);__setMedia('bgv',c.bgv);__setMedia('mus',c.mus)}else{MEDIA.bgi=c.bgi||'';MEDIA.bgv=c.bgv||'';MEDIA.mus=c.mus||''}$('gc').checked=!!c.gc;[0,1,2].forEach(function(i){var q=(c.qs||[])[i]||{};$('q'+i).value=q.q||'';$('o'+i).value=(q.o||[]).join(', ')});if(c.inv||c.it||c.venue||c.addr||c.rv||c.wl)$('invD').open=true;
     setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
     $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('This address is yours. You can change and update it.','ok')}else check();go()})}
 })();

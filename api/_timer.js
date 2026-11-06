@@ -59,7 +59,7 @@ function clean(c) {
     wp: ['bottom', 'none'].includes(c.wp) ? c.wp : 'top', wd: ['h', 'b'].includes(c.wd) ? c.wd : 'g', wh: ['o', 'c'].includes(c.wh) ? c.wh : 's', ww: String(c.ww) === '0' ? '0' : '1', wt: String(c.wt) === '0' ? '0' : '1', ns: String(c.ns) === '1' ? '1' : '0',
     p: okImg(c.p) ? c.p : '', ps: ['rect', 'wide'].includes(c.ps) ? c.ps : 'circle',
     /* דף הזמנה */
-    inv: okImg(c.inv) ? c.inv : '', it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
+    inv: okImg(c.inv) ? c.inv : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
     tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
     gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
@@ -373,6 +373,13 @@ async function guest(req, res, b) {
     if (b.act === 'whide') { await db('timer_wall?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ hidden: !!b.hidden }) }); return json(res, 200, { ok: true }); }
     if (b.act === 'wdel') { await db('timer_wall?id=eq.' + id + '&slug=eq.' + s, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return json(res, 200, { ok: true }); }
     if (b.act === 'rrm') { await db('timer_recip?id=eq.' + id + '&slug=eq.' + s, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return json(res, 200, { ok: true }); }
+    if (b.act === 'redit') {
+      let v = String(b.phone || '').replace(/[^\d+]/g, ''); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); const phone = /^0(5\d{8}|[2-9]\d{7})$/.test(v) ? v : '';
+      const up = { name: clean1(b.name, 80), grp: clean1(b.grp, 40) || null, cnt: Math.max(0, Math.min(99, parseInt(b.cnt, 10) || 0)) || null, phone: phone || null };
+      const em = str(b.email, 200).trim().toLowerCase(); if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) up.email = em; else if (phone && b.email === '') up.email = 'sms-' + phone + '@phone.invalid';
+      await db('timer_recip?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up) }).catch(() => db('timer_recip?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name: up.name, ...(up.email ? { email: up.email } : {}) }) }));
+      return json(res, 200, { ok: true });
+    }
     if (b.act === 'rdel') { await db('timer_rsvp?id=eq.' + id + '&slug=eq.' + s, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return json(res, 200, { ok: true }); }
   } catch (e) { console.error('timer guest', e.message); return json(res, 500, { error: /relation|does not exist|42P01/.test(e.message) ? 'setup' : 'server' }); }
   return json(res, 400, { error: 'act' });
