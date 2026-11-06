@@ -16,6 +16,7 @@ STRUCT = [
     ('<a class="logo" href="./">', '<a class="logo" href="en.html">'),
     ('<a href="countdown.html">לוח ספירה להדפסה</a><a class="lsw" href="timer-en.html" hreflang="en" lang="en">English</a>',
      '<a href="countdown-en.html">Printable countdown</a><a class="lsw" href="timer.html" hreflang="he" lang="he">עברית</a>'),
+    ('<a class="lsw" href="timer-yi.html" hreflang="yi" lang="yi">אידיש</a>', '<a class="lsw" href="timer-yi.html" hreflang="yi" lang="yi">Yiddish</a>'),
     ('<option value="he">עברית</option><option value="en">English</option>', '<option value="he">עברית</option><option value="en" selected>English</option>'),
     ('<a href="countdown.html">בונים לוח ספירה לאחור להדפסה</a>', '<a href="countdown-en.html">make a printable countdown calendar</a>'),
     ('<footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="countdown.html">לוח ספירה להדפסה</a><a href="online/">הלוח המקוון</a>',

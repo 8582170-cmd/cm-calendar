@@ -8,6 +8,7 @@
 <link rel="canonical" href="https://www.myluach.org/timer">
 <link rel="alternate" hreflang="he" href="https://www.myluach.org/timer">
 <link rel="alternate" hreflang="en" href="https://www.myluach.org/timer-en">
+<link rel="alternate" hreflang="yi" href="https://www.myluach.org/timer-yi">
 <link rel="alternate" hreflang="x-default" href="https://www.myluach.org/timer">
 <meta property="og:title" content="שעון ספירה לאחור לאירוע · MyLuach">
 <meta property="og:url" content="https://www.myluach.org/timer">
@@ -126,7 +127,7 @@ summary{cursor:pointer;font-weight:700}
 <script src="/assets/cms.js?v=1" defer></script>
 </head>
 <body><div class="wrap">
-<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><nav class="nl"><a href="countdown.html">לוח ספירה להדפסה</a><a class="lsw" href="timer-en.html" hreflang="en" lang="en">English</a></nav></header>
+<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><nav class="nl"><a href="countdown.html">לוח ספירה להדפסה</a><a class="lsw" href="timer-en.html" hreflang="en" lang="en">English</a><a class="lsw" href="timer-yi.html" hreflang="yi" lang="yi">אידיש</a></nav></header>
 <main>
 <h1>שעון ספירה לאחור לאירוע</h1>
 <p class="mute">שעון דיגיטלי שסופר לאחור עד התאריך שלכם: חתונה, בר מצווה, לידה, חופשה או כל יעד. בחינם, בלי הרשמה. אפשר לשתף בקישור, להטמיע באתר, או להוסיף למייל.</p>
@@ -512,8 +513,8 @@ summary{cursor:pointer;font-weight:700}
     ['oth','🎉','אירוע אחר','שם בעל/ת השמחה (לא חובה)','','המזמינים (לא חובה)','','','','']];
   var EVG={wed:['משפחת החתן','משפחת הכלה','חברים של החתן','חברים של הכלה','עבודה','שכנים'],eng:['משפחת החתן','משפחת הכלה','חברים'],sheva:['משפחה','חברים'],x:['משפחה','חברים','עבודה','שכנים','קהילה']};
   var EVA={t:true,it:'',tl:''};
-  function etTitle(e){var n=[$('n1').value.trim(),$('n2').value.trim()].filter(Boolean),f=$('f1').value.trim(),p=e[8];
-    if(n.length&&/(של|ל)$/.test(p))return p+(/\sל$/.test(p)?'':' ')+n.join(' ו');if(n.length)return (p?p+' · ':'')+n.join(' ו');if(/(של|\sל)$/.test(p))p=e[2];return p+(f&&p?' · '+f:f)}
+  function etTitle(e){var n=[$('n1').value.trim(),$('n2').value.trim()].filter(Boolean),f=$('f1').value.trim(),p=e[8],J=document.documentElement.lang==='yi'?' און ':' ו';
+    if(n.length&&/(של|ל|פון|פאר)$/.test(p))return p+(/\sל$/.test(p)?'':' ')+n.join(J);if(n.length)return (p?p+' · ':'')+n.join(J);if(/(של|\sל|פון|פאר)$/.test(p))p=e[2];return p+(f&&p?' · '+f:f)}
   function etSet(k,user){var e=EVT.filter(function(x){return x[0]===k})[0];$('et').value=e?k:'';
     [].forEach.call($('etg').children,function(b){b.setAttribute('aria-checked',b.dataset.et===k)});$('etF').hidden=!e;if(!e)return;
     [['n1L',3],['n2L',4],['f1L',5],['f2L',6]].forEach(function(x){var L=$(x[0]);L.hidden=!e[x[1]];L.querySelector('span').textContent=e[x[1]];if(!e[x[1]])L.querySelector('input').value=''});
@@ -564,7 +565,7 @@ summary{cursor:pointer;font-weight:700}
     var TR={'ב':'b','ג':'g','ד':'d','ז':'z','ח':'ch','ט':'t','כ':'k','ך':'ch','ל':'l','מ':'m','ם':'m','נ':'n','ן':'n','ס':'s','פ':'p','ף':'f','צ':'tz','ץ':'tz','ק':'k','ר':'r','ש':'sh','ת':'t','ע':''};
     var tw=function(w){if(DICT[w])return DICT[w];if(w.length>3&&'הולבש'.indexOf(w[0])>=0&&DICT[w.slice(1)])return DICT[w.slice(1)];if(w.length>3&&w[0]==='ו')w=w.slice(1);if(DICT[w])return DICT[w];var o='';for(var i=0;i<w.length;i++){var ch=w[i],end=i===w.length-1;
       if(ch==='ו')o+=w[i+1]==='ו'?(i++,'v'):i===0?'v':'o';else if(ch==='י')o+=i===0?'y':(w[i+1]==='י'?(i++,'ey'):'i');else if(ch==='ה')o+=end?'a':'h';else if(ch==='א')o+=end||i===0?'a':'';else o+=TR[ch]!=null?TR[ch]:ch}return o};
-    var sug=function(){if(!autoSlug||(saved&&saved===slugVal()))return;var words=$('t').value.trim().toLowerCase().replace(/[֑-ׇ"'״׳]/g,'').split(/[^a-z0-9א-ת]+/).filter(function(w){return w&&!/^(של|את|עם|ה|ו|ל|ב)$/.test(w)});
+    var sug=function(){if(!autoSlug||(saved&&saved===slugVal()))return;var words=$('t').value.trim().toLowerCase().replace(/[֑-ׇ"'״׳]/g,'').split(/[^a-z0-9א-ת]+/).filter(function(w){return w&&!/^(של|את|עם|ה|ו|ל|ב|די|דער|דאס|דעם|פון|פאר|און|א)$/.test(w)});
       var t=words.map(tw).join('-').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').split('-').slice(0,4).join('-');
       var d=$('d').value?$('d').value.slice(2).replace(/-/g,''):'';var v=((t||'event')+(d?'-'+d:'')).slice(0,40).replace(/-+$/,'');if(v.length<3)v='event-'+d;if(v!==$('slug').value){$('slug').value=v;check()}};
     var st;['t','d'].forEach(function(k){$(k).addEventListener('input',function(){clearTimeout(st);st=setTimeout(sug,600)})});
