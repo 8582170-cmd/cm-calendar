@@ -93,3 +93,12 @@ notify pgrst, 'reload schema';
 alter table public.timer_recip add column if not exists call_at timestamptz, add column if not exists call_st text, add column if not exists call_cid text, add column if not exists call_rem int;
 create index if not exists timer_recip_phone on public.timer_recip (phone);
 notify pgrst, 'reload schema';
+
+-- אינדקס האירועים לדף ניהול האירועים (admin-events.html). מתעדכן בכל שמירה; כפתור "סריקה" בונה אותו מחדש
+create table if not exists public.timer_event (
+  slug text primary key, title text, date date, kind text, lang text, plan text, email text,
+  emails int default 0, sms int default 0, calls int default 0, calls_used int default 0,
+  disabled boolean default false, created_at timestamptz default now(), updated_at timestamptz default now());
+create index if not exists timer_event_date on public.timer_event (date);
+alter table public.timer_event enable row level security;
+notify pgrst, 'reload schema';

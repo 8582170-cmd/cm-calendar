@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ניהול אירועים · MyLuach</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<style>
+:root{--paper:#f6f7f4;--sheet:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--teal-soft:#e4eeec;--bad:#b3261e;--ok:#1f7a3a;--warn:#8a5a00;--warn-bg:#fff4d6;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--sheet:#172024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--bad:#ef8a80;--ok:#7fd49a;--warn:#f0c46a;--warn-bg:#3a3018;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--sheet:#172024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--bad:#ef8a80;--ok:#7fd49a;--warn:#f0c46a;--warn-bg:#3a3018;color-scheme:dark}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Assistant",Arial,sans-serif}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+@media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}.side{position:static!important;height:auto!important;flex-direction:row!important;overflow-x:auto}.side .brand{display:none}}
+.side{position:sticky;top:0;height:100vh;background:var(--sheet);border-inline-end:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:4px}
+.brand{font-weight:800;font-size:18px;padding:4px 10px 14px}.brand small{display:block;color:var(--mute);font-weight:600;font-size:13px}
+.side button,.side a{font:inherit;font-weight:700;text-align:start;border:0;background:transparent;color:var(--ink);padding:10px 12px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+.side button[aria-current="true"]{background:var(--teal);color:var(--teal-ink)}.side button:hover:not([aria-current="true"]),.side a:hover{background:var(--teal-soft)}
+main{padding:20px clamp(12px,3vw,32px) 60px;max-width:1180px}
+h1{margin:0 0 4px;font-size:26px}h2{font-size:19px;margin:18px 0 8px}.sub{color:var(--mute);font-size:14px;margin:0 0 12px}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 14px}
+.stat{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:12px 14px}.stat b{display:block;font-size:28px;line-height:1.1}.stat span{color:var(--mute);font-size:13.5px}
+.stat.ok{background:color-mix(in srgb,var(--ok) 10%,var(--sheet))}.stat.tl{background:var(--teal-soft)}.stat.wn{background:var(--warn-bg)}
+input,select,textarea{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);min-width:0}
+input[type=number]{width:90px}input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
+.btn{font:inherit;font-weight:700;padding:7px 14px;border-radius:9px;border:1.5px solid var(--teal);background:transparent;color:var(--teal);cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:var(--teal);color:var(--teal-ink)}.btn.danger{border-color:var(--bad);color:var(--bad)}.btn.sm{padding:4px 10px;font-size:14px}.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}.row label{display:flex;gap:6px;align-items:center;font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:14.5px}.tbl th{text-align:start;font-size:12.5px;color:var(--mute);font-weight:700;padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}.tbl tr[data-s]{cursor:pointer}.tbl tr[data-s]:hover{background:var(--teal-soft)}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12.5px;background:var(--teal-soft);white-space:nowrap}.pill.full{background:#dff1e5;color:#1f6a3a}.pill.free{background:#e7eefb;color:#2c4f80}.pill.none{background:#f1efe9;color:#6b6250}.pill.off{background:#fbe5e5;color:#9b3324}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.chips button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--sheet);color:inherit;border-radius:999px;padding:5px 12px;cursor:pointer}.chips button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.msg{font-weight:700}.msg.ok{color:var(--ok)}.msg.no{color:var(--bad)}.mute{color:var(--mute)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14.5px}.kv dt{color:var(--mute)}.kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.drawer{position:fixed;inset:0;background:rgb(0 0 0 / .35);display:flex;justify-content:flex-start;z-index:20}
+.drawer>div{background:var(--paper);width:min(720px,100%);height:100%;overflow:auto;padding:18px 20px 40px;box-shadow:0 0 40px rgb(0 0 0 / .25)}
+.login{max-width:360px;margin:80px auto;display:flex;flex-direction:column;gap:10px;background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:20px}
+pre{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px;user-select:all;white-space:pre-wrap;direction:ltr;text-align:left}
+.setgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 14px}.setgrid label{display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+<form class="login" id="login" hidden><h1>ניהול אירועים</h1><p class="sub">סיסמת הניהול של האתר</p><input type="password" id="pw" autocomplete="current-password" required><button class="btn pri">כניסה</button><p class="msg no" id="lmsg"></p></form>
+<div class="app" id="app" hidden>
+  <nav class="side" aria-label="ניהול אירועים">
+    <div class="brand">ניהול אירועים<small>הזמנות דיגיטליות · MyLuach</small></div>
+    <button type="button" data-v="dash" aria-current="true">📊 לוח בקרה</button>
+    <button type="button" data-v="list">📋 כל האירועים</button>
+    <button type="button" data-v="set">⚙️ הגדרות ומחירים</button>
+    <button type="button" data-v="voice">📞 קולי ו־SMS</button>
+    <button type="button" data-v="gifts">💳 מתנות</button>
+    <button type="button" data-v="mail">✉️ מיילים מתוזמנים</button>
+    <button type="button" data-v="tools">🧰 כלים</button>
+    <a href="/admin" style="margin-top:auto">← לניהול הכללי</a>
+  </nav>
+  <main id="main"></main>
+</div>
+<div class="drawer" id="dr" hidden><div id="drIn"></div></div>
+<script>
+(function(){'use strict';
+var $=function(s){return document.querySelector(s)},PW='';try{PW=sessionStorage.getItem('myluach-admin')||''}catch(e){}
+function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function api(body){return fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':PW},body:JSON.stringify(body)}).then(function(r){return r.text().then(function(t){var j;try{j=JSON.parse(t)}catch(e){throw Object.assign(new Error('שגיאת שרת '+r.status),{code:r.status})}if(!r.ok)throw Object.assign(new Error(j.error||('שגיאה '+r.status)),{code:r.status,j:j});return j})})}
+var M=$('#main'),V='dash',EP=null;
+var PL={full:'חבילה מלאה',free:'חינם',none:'לא הופעל'},KIND={wed:'חתונה',eng:'אירוסין',sheva:'שבע ברכות',bar:'בר מצווה',bat:'בת מצווה',brit:'ברית',zbd:'שמחת בת',pid:'פדיון הבן',chl:'חלאקה',sfr:'הכנסת ס״ת',bd:'יום הולדת',oth:'אחר'};
+var pill=function(e){return e.disabled?'<span class="pill off">מושבת</span>':'<span class="pill '+(e.plan||'none')+'">'+PL[e.plan||'none']+'</span>'};
+var dd=function(d){if(!d)return '—';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric',year:'2-digit'})};
+var setupMsg='<div class="card"><b>צריך להריץ פעם אחת SQL ב-Supabase</b><p class="sub">טבלת האינדקס של האירועים (timer_event) עוד לא קיימת. הקוד נמצא בסוף tools/supabase_timer.sql. אחרי ההרצה: "כלים" ← "סריקה מחדש", כדי לאסוף את האירועים שכבר קיימים.</p></div>';
+function show(v){V=v;$('#dr').hidden=true;[].forEach.call(document.querySelectorAll('.side [data-v]'),function(b){b.setAttribute('aria-current',b.dataset.v===v)});({dash:dash,list:list,set:sets,voice:voice,gifts:gifts,mail:mail,tools:tools})[v]();try{history.replaceState(null,'','#'+v)}catch(e){}}
+document.querySelector('.side').addEventListener('click',function(e){var b=e.target.closest('[data-v]');if(b)show(b.dataset.v)});
+
+/* ---------- לוח בקרה ---------- */
+function dash(){M.innerHTML='<h1>לוח בקרה</h1><p class="sub">טוען…</p>';api({action:'ev_stats'}).then(function(r){if(r.setup){M.innerHTML='<h1>לוח בקרה</h1>'+setupMsg;return}var S=r.stats,R=r.rev;
+  M.innerHTML='<h1>לוח בקרה</h1><p class="sub">כל האירועים שיש להם דף הזמנה. המספרים מתעדכנים בכל שמירה של אירוע.</p>'+
+   '<div class="stats"><div class="stat tl"><b>'+S.total+'</b><span>אירועים בסך הכול</span></div><div class="stat ok"><b>'+S.full+'</b><span>בחבילה מלאה</span></div><div class="stat"><b>'+S.free+'</b><span>בחינם</span></div><div class="stat"><b>'+S.none+'</b><span>עוד לא הופעלו</span></div>'+
+   '<div class="stat wn"><b>'+S.next30+'</b><span>אירועים ב־30 הימים הקרובים</span></div><div class="stat"><b>'+S.upcoming+'</b><span>עתידיים</span></div><div class="stat"><b>'+S.newWeek+'</b><span>עודכנו השבוע</span></div><div class="stat"><b>'+S.disabled+'</b><span>מושבתים</span></div></div>'+
+   '<div class="stats">'+(R?'<div class="stat ok"><b>'+Math.round(R.month).toLocaleString('he-IL')+' ₪</b><span>הכנסות החודש ('+R.n+' רכישות בסך הכול)</span></div><div class="stat"><b>'+Math.round(R.total).toLocaleString('he-IL')+' ₪</b><span>הכנסות מאירועים בסך הכול</span></div>':'')+
+   '<div class="stat"><b>'+S.emails.toLocaleString('he-IL')+'</b><span>מיילים שנמכרו / ניתנו</span></div><div class="stat"><b>'+S.callsUsed+' / '+S.calls+'</b><span>שיחות שנוצלו / נמכרו</span></div><div class="stat"><b>'+S.sms+'</b><span>SMS שנמכרו</span></div></div>'+
+   '<h2>אירועים קרובים (30 יום)</h2>'+(r.soon.length?'<div class="card scroll"><table class="tbl"><thead><tr><th>תאריך</th><th>אירוע</th><th>מסלול</th><th>מוזמנים</th><th>מגיעים</th><th>פתחו</th><th>בעל האירוע</th></tr></thead><tbody>'+r.soon.map(function(e){var c=e.c||{};return '<tr data-s="'+esc(e.slug)+'"><td>'+dd(e.date)+'</td><td><b>'+esc(e.title||e.slug)+'</b><br><small class="mute" dir="ltr">'+esc(e.slug)+'</small></td><td>'+pill(e)+'</td><td>'+(c.recip||0)+'</td><td>'+(c.ppl||0)+' <small class="mute">('+(c.yes||0)+')</small></td><td>'+(c.opened||0)+'</td><td dir="ltr">'+esc(e.email||'')+'</td></tr>'}).join('')+'</tbody></table></div>':'<p class="sub">אין אירועים פעילים בחודש הקרוב.</p>');
+  bindRows()}).catch(err)}
+
+/* ---------- רשימת האירועים ---------- */
+var LS={f:'all',q:'',page:0,sort:''};
+function list(){M.innerHTML='<h1>כל האירועים</h1><p class="sub">לחיצה על שורה פותחת את כל הפרטים והפעולות.</p><div class="row"><input type="search" id="lq" placeholder="חיפוש: כתובת, שם האירוע או מייל" style="flex:1 1 260px" value="'+esc(LS.q)+'"><select id="lsort"><option value="">לפי עדכון אחרון</option><option value="date"'+(LS.sort==='date'?' selected':'')+'>לפי תאריך האירוע</option></select></div>'+
+  '<div class="chips" id="lf">'+[['all','הכול'],['upcoming','עתידיים'],['past','עברו'],['full','חבילה מלאה'],['free','חינם'],['none','לא הופעלו'],['disabled','מושבתים']].map(function(x){return '<button type="button" data-f="'+x[0]+'" aria-pressed="'+(LS.f===x[0])+'">'+x[1]+'</button>'}).join('')+'</div><div id="lo"><p class="sub">טוען…</p></div>';
+  var t;$('#lq').oninput=function(){clearTimeout(t);t=setTimeout(function(){LS.q=$('#lq').value;LS.page=0;load()},350)};$('#lsort').onchange=function(){LS.sort=this.value;LS.page=0;load()};
+  $('#lf').onclick=function(e){var b=e.target.closest('[data-f]');if(!b)return;LS.f=b.dataset.f;LS.page=0;[].forEach.call(this.children,function(x){x.setAttribute('aria-pressed',x===b)});load()};load()}
+function load(){var O=$('#lo');O.innerHTML='<p class="sub">טוען…</p>';api({action:'ev_list',filter:LS.f,q:LS.q,page:LS.page,sort:LS.sort}).then(function(r){if(r.setup){O.innerHTML=setupMsg;return}
+  O.innerHTML=r.rows.length?'<div class="card scroll" style="padding:6px"><table class="tbl"><thead><tr><th>תאריך</th><th>אירוע</th><th>סוג</th><th>מסלול</th><th>מוזמנים</th><th>נשלחו</th><th>פתחו</th><th>אישרו</th><th>מגיעים</th><th>מיילים</th><th>שיחות</th><th>בעל האירוע</th></tr></thead><tbody>'+r.rows.map(function(e){var c=e.c||{};
+    return '<tr data-s="'+esc(e.slug)+'"><td>'+dd(e.date)+'</td><td><b>'+esc(e.title||'(בלי שם)')+'</b><br><small class="mute" dir="ltr">'+esc(e.slug)+'</small></td><td>'+esc(KIND[e.kind]||'')+'</td><td>'+pill(e)+'</td><td>'+c.recip+'</td><td>'+c.sent+'</td><td>'+c.opened+'</td><td>'+c.rsvp+'</td><td><b>'+c.ppl+'</b></td><td>'+(e.plan?c.sent+' / '+e.emails:'—')+'</td><td>'+(e.calls?e.calls_used+' / '+e.calls:'—')+'</td><td dir="ltr" style="font-size:13px">'+esc(e.email||'')+'</td></tr>'}).join('')+'</tbody></table></div>'+
+    '<div class="row">'+(LS.page?'<button class="btn sm" type="button" id="lp">→ הקודמים</button>':'')+(r.more?'<button class="btn sm" type="button" id="ln">הבאים ←</button>':'')+'<span class="sub" style="margin:0">עמוד '+(LS.page+1)+'</span></div>':'<p class="sub">לא נמצאו אירועים.</p>';
+  var p=$('#lp'),n=$('#ln');if(p)p.onclick=function(){LS.page--;load()};if(n)n.onclick=function(){LS.page++;load()};bindRows()}).catch(function(e){O.innerHTML='<p class="msg no">'+esc(e.message)+'</p>'})}
+function bindRows(){[].forEach.call(document.querySelectorAll('tr[data-s]'),function(tr){tr.onclick=function(){open(tr.dataset.s)}})}
+
+/* ---------- אירוע אחד: פרטים ופעולות ---------- */
+function open(s){var D=$('#dr'),I=$('#drIn');D.hidden=false;I.innerHTML='<p class="sub">טוען…</p>';D.onclick=function(e){if(e.target===D)D.hidden=true};
+  api({action:'ev_get',slug:s}).then(function(r){var c=r.cfg||{},P=r.paid,C=r.c||{},site=location.origin;
+    var log=(P&&P.log||[]).slice().reverse().map(function(l){return '<div style="font-size:13.5px;border-bottom:1px solid var(--line);padding:3px 0">'+new Date(l.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+' · '+(l.plan?'מסלול: '+esc(PL[l.plan]):[l.emails?'מיילים '+(l.emails>0?'+':'')+l.emails:'',l.sms?'SMS '+(l.sms>0?'+':'')+l.sms:'',l.calls?'שיחות '+(l.calls>0?'+':'')+l.calls:''].filter(Boolean).join(', '))+(l.why?' · '+esc(l.why):'')+'</div>'}).join('');
+    I.innerHTML='<div class="row" style="justify-content:space-between"><h1 style="margin:0">'+esc(c.t||s)+'</h1><button class="btn sm" type="button" id="dX">סגירה ✕</button></div>'+
+     '<p class="sub" dir="ltr" style="text-align:right">myluach.org/t/'+esc(s)+'</p>'+
+     '<div class="row"><a class="btn" target="_blank" href="/t/'+esc(s)+'">פתיחת דף האורחים</a><button class="btn pri" type="button" id="dOwn">ניהול כבעל האירוע</button>'+(r.disabled?'<span class="pill off">מושבת</span>':'')+'</div>'+
+     '<div class="stats"><div class="stat"><b>'+(C.recip||0)+'</b><span>מוזמנים ברשימה</span></div><div class="stat"><b>'+(C.sent||0)+'</b><span>מיילים נשלחו</span></div><div class="stat"><b>'+(C.opened||0)+'</b><span>פתחו</span></div><div class="stat ok"><b>'+(C.ppl||0)+'</b><span>מגיעים ('+(C.yes||0)+' אישורים)</span></div><div class="stat"><b>'+(C.no||0)+'</b><span>לא מגיעים</span></div><div class="stat"><b>'+(C.called||0)+'</b><span>התקשרו</span></div><div class="stat"><b>'+(C.wall||0)+'</b><span>ברכות</span></div>'+(r.gifts.n?'<div class="stat"><b>'+r.gifts.amount.toFixed(0)+' ₪</b><span>'+r.gifts.n+' מתנות באשראי</span></div>':'')+'</div>'+
+     '<div class="grid2"><div class="card"><h2 style="margin-top:0">פרטים</h2><dl class="kv"><dt>תאריך</dt><dd>'+dd(c.d)+(c.h?' · '+esc(c.h):'')+'</dd><dt>סוג</dt><dd>'+esc(KIND[c.et]||'—')+'</dd><dt>שפת הדף</dt><dd>'+esc({he:'עברית',en:'אנגלית',yi:'אידיש'}[c.lang]||c.lang||'עברית')+'</dd><dt>מקום</dt><dd>'+esc([c.venue,c.addr].filter(Boolean).join(', ')||'—')+'</dd><dt>מסלול</dt><dd>'+pill({plan:P?(P.free?'free':'full'):null,disabled:r.disabled})+'</dd><dt>מייל בעל האירוע</dt><dd dir="ltr">'+esc(P&&P.email||'—')+'</dd><dt>הופעל</dt><dd>'+(P&&P.at?new Date(P.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'—')+'</dd><dt>הזמנות ששולמו</dt><dd dir="ltr">'+esc((P&&P.orders||[]).join(', ')||'—')+'</dd><dt>שולחנות</dt><dd>'+r.seat+'</dd></dl></div>'+
+     '<div class="card"><h2 style="margin-top:0">יתרות</h2><dl class="kv"><dt>מיילים</dt><dd>'+(C.sent||0)+' נשלחו מתוך '+(P?+P.emails||0:0)+'</dd><dt>SMS</dt><dd>'+(C.sms||0)+' מתוך '+(P?+P.sms||0:0)+'</dd><dt>שיחות</dt><dd>'+(P?+P.callsUsed||0:0)+' מתוך '+(P?+P.calls||0:0)+'</dd><dt>שיחות ניסיון</dt><dd>'+(P?+P.vtests||0:0)+'</dd></dl>'+
+      '<h3 style="margin:12px 0 4px;font-size:16px">הוספת יתרה (אפשר גם מינוס)</h3><div class="row"><label>מיילים <input type="number" id="cE" value="0"></label><label>SMS <input type="number" id="cS" value="0"></label><label>שיחות <input type="number" id="cC" value="0"></label></div><div class="row"><input id="cW" placeholder="סיבה (לא חובה), למשל: פיצוי" style="flex:1"><button class="btn pri sm" type="button" id="cGo">הוספה</button></div>'+
+      (log?'<details style="margin-top:8px"><summary>היסטוריית שינויים</summary>'+log+'</details>':'')+'</div></div>'+
+     '<div class="card"><h2 style="margin-top:0">מסלול ומצב</h2><div class="row"><label>מסלול <select id="pSel"><option value="full"'+(P&&!P.free?' selected':'')+'>חבילה מלאה</option><option value="free"'+(P&&P.free?' selected':'')+'>חינם</option><option value="none"'+(!P?' selected':'')+'>לא מופעל</option></select></label><button class="btn sm" type="button" id="pGo">שמירת מסלול</button></div>'+
+      '<div class="row"><button class="btn sm '+(r.disabled?'pri':'danger')+'" type="button" id="dDis">'+(r.disabled?'הפעלה מחדש של הדף':'השבתת הדף (האורחים לא יראו אותו)')+'</button></div></div>'+
+     (r.media.length?'<div class="card"><h2 style="margin-top:0">קבצים</h2>'+r.media.map(function(m){return '<div class="row"><b style="min-width:110px">'+esc({bgi:'תמונת רקע',bgv:'סרטון רקע',mus:'מוזיקה',inv:'תמונת ההזמנה',p:'תמונה בשעון'}[m.k])+'</b><a href="'+esc(m.url)+'" target="_blank" dir="ltr" style="font-size:13px;overflow-wrap:anywhere;flex:1">'+esc(m.url.split('/').pop())+'</a><button class="btn sm danger" type="button" data-md="'+m.k+'">מחיקה</button></div>'}).join('')+'</div>':'')+
+     ((r.calls||[]).length?'<div class="card"><h2 style="margin-top:0">שליחות קוליות</h2>'+r.calls.map(function(k){return '<div style="font-size:14px">'+new Date(k.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})+' · '+(k.mode==='rem'?'תזכורת':'הזמנה')+' · '+k.n+' שיחות'+(k.price!=null?' · '+k.price+' יחידות':'')+'</div>'}).join('')+'</div>':'')+
+     '<div class="card"><h2 style="margin-top:0">הערה פנימית</h2><textarea id="nT" rows="3" style="width:100%">'+esc(r.note)+'</textarea><div class="row"><button class="btn sm" type="button" id="nGo">שמירה</button></div></div>'+
+     '<div class="card" style="border-color:var(--bad)"><h2 style="margin-top:0">פעולות רגישות</h2><div class="row"><button class="btn sm" type="button" id="dTok">החלפת קוד העריכה</button><span class="sub" style="margin:0">בעל האירוע יאבד גישה מהדפדפן שלו.</span></div><div class="row"><input id="delC" placeholder="להקליד את הכתובת: '+esc(s)+'" dir="ltr"><button class="btn sm danger" type="button" id="dDel">מחיקת האירוע לגמרי</button></div></div><p class="msg" id="dM"></p>';
+    var msg=function(t,ok){$('#dM').textContent=t;$('#dM').className='msg '+(ok?'ok':'no')},act=function(b,again){b.slug=s;return api(b).then(function(x){msg('✓ נשמר',1);if(again!==false)setTimeout(function(){if(!$('#dr').hidden)open(s);if(V==='list')load()},400);return x}).catch(function(e){msg('❌ '+e.message)})};
+    $('#dX').onclick=function(){$('#dr').hidden=true};
+    $('#dOwn').onclick=function(){try{var m=JSON.parse(localStorage.getItem('myTimers')||'{}');m[s]=r.token;localStorage.setItem('myTimers',JSON.stringify(m))}catch(e){}window.open((c.lang==='yi'?'/invite-yi':c.lang==='en'?'/invite-en':'/invite')+'?s='+encodeURIComponent(s),'_blank')};
+    $('#cGo').onclick=function(){act({action:'ev_credit',emails:+$('#cE').value,sms:+$('#cS').value,calls:+$('#cC').value,why:$('#cW').value})};
+    $('#pGo').onclick=function(){if(confirm('לשנות את המסלול?'))act({action:'ev_plan',plan:$('#pSel').value})};
+    $('#dDis').onclick=function(){act({action:'ev_disable',on:!r.disabled})};
+    $('#nGo').onclick=function(){act({action:'ev_note',note:$('#nT').value},false)};
+    [].forEach.call(I.querySelectorAll('[data-md]'),function(b){b.onclick=function(){if(confirm('למחוק את הקובץ?'))act({action:'ev_media',k:b.dataset.md})}});
+    $('#dTok').onclick=function(){if(confirm('להחליף את קוד העריכה? בעל האירוע לא יוכל לנהל מהדפדפן שלו.'))act({action:'ev_retoken'})};
+    $('#dDel').onclick=function(){if($('#delC').value.trim()!==s){msg('כדי למחוק, צריך להקליד את הכתובת בדיוק.');return}if(!confirm('למחוק את האירוע, המוזמנים, האישורים והברכות? אי אפשר לבטל.'))return;api({action:'ev_delete',slug:s,confirm:s}).then(function(){$('#dr').hidden=true;if(V==='list')load();else show(V)}).catch(function(e){msg('❌ '+e.message)})}
+  }).catch(function(e){I.innerHTML='<p class="msg no">'+esc(e.message)+'</p>'})}
+
+/* ---------- הגדרות ומחירים ---------- */
+function evp(){return api({action:'evpget'}).then(function(j){EP=j;return j})}
+function saveEvp(extra){var j=EP,P={};[].forEach.call(document.querySelectorAll('[data-evp]'),function(i){P[i.dataset.evp]=+i.value});var v=function(id,d){var x=$('#'+id);return x?(x.type==='checkbox'?x.checked:x.value):d};
+  return api(Object.assign({action:'evpset',on:v('sOn',j.on),prices:Object.assign({},j.prices,P),smsOn:v('sSms',j.smsOn),giftOn:v('sGift',j.giftOn),giftPct:+v('gPct',j.giftPct),giftFixed:+v('gFix',j.giftFixed),giftMin:+v('gMin',j.giftMin),giftMax:+v('gMax',j.giftMax),
+    voiceOn:v('vOn',j.voiceOn),voiceTpl:v('vTpl',j.voiceTpl),voicePath:v('vPath',j.voicePath),voiceTplRem:j.voiceTplRem||'',voiceDirect:!!j.voiceDirect,freeEmails:+v('fE',j.freeEmails),freeMax:+v('fM',j.freeMax),mediaDays:+v('mD',j.mediaDays),vFrom:+v('vF',j.vFrom),vTo:+v('vT',j.vTo),vTests:+v('vX',j.vTests)},extra||{})).then(function(x){EP=x;return x})}
+var priceIn=function(k,label,j){return '<label>'+label+'<input type="number" min="0" step="1" data-evp="'+k+'" value="'+(j.prices[k]!=null?j.prices[k]:'')+'"></label>'};
+function sets(){M.innerHTML='<h1>הגדרות ומחירים</h1><p class="sub">טוען…</p>';evp().then(function(j){var L={base:'בסיסית, בלי מיילים נוספים'};
+  M.innerHTML='<h1>הגדרות ומחירים</h1><p class="sub">כל מה שקשור לדפי ההזמנה. השינויים נכנסים לתוקף מיד אחרי השמירה.</p>'+
+   '<div class="card"><h2 style="margin-top:0">רכישה</h2><label class="row"><input type="checkbox" id="sOn"'+(j.on?' checked':'')+'> הרכישה פתוחה לבעלי אירועים</label>'+
+    '<h3 style="font-size:16px;margin:10px 0 6px">חבילה מלאה (₪, חד־פעמי לאירוע)</h3><div class="setgrid">'+j.tiers.map(function(t){return priceIn(t[0],L[t[0]]||'עד '+t[1].toLocaleString('he-IL')+' מיילים',j)}).join('')+'</div><p class="sub">מי שכבר בחבילה מלאה וקונה עוד מיילים משלם רק את ההפרש מהבסיסית.</p></div>'+
+   '<div class="card"><h2 style="margin-top:0">מסלול חינם</h2><div class="setgrid"><label>מיילים בחינם לכל אירוע<input type="number" id="fE" min="0" value="'+j.freeEmails+'"></label><label>אירועים חינם לכל חשבון<input type="number" id="fM" min="0" value="'+j.freeMax+'"></label><label>ימים עד מחיקת סרטון ומוזיקה באירוע שלא שולם<input type="number" id="mD" min="1" value="'+j.mediaDays+'"></label></div></div>'+
+   '<div class="card"><h2 style="margin-top:0">מתנות ותרומות באשראי</h2><p class="sub">⚠️ לבדוק את הצד החוקי והחשבונאי לפני הפעלה. הכסף נכנס לחשבון הסליקה של האתר, וההעברה לבעלי האירועים ידנית (לשונית "מתנות").</p><label class="row"><input type="checkbox" id="sGift"'+(j.giftOn?' checked':'')+'> להציע מתנה באשראי בדפי ההזמנה</label>'+
+    '<div class="setgrid"><label>עמלה באחוזים<input type="number" step="0.5" id="gPct" value="'+j.giftPct+'"></label><label>עמלה קבועה למתנה (₪)<input type="number" step="0.5" id="gFix" value="'+j.giftFixed+'"></label><label>מתנה מינימלית (₪)<input type="number" id="gMin" value="'+j.giftMin+'"></label><label>מתנה מקסימלית (₪)<input type="number" id="gMax" value="'+j.giftMax+'"></label></div></div>'+
+   '<div class="row"><button class="btn pri" type="button" id="sSave">שמירה</button><span class="msg" id="sM"></span></div>';
+  $('#sSave').onclick=function(){$('#sM').textContent='שומר…';saveEvp().then(function(){$('#sM').textContent='✓ נשמר';$('#sM').className='msg ok'}).catch(function(e){$('#sM').textContent='❌ '+e.message;$('#sM').className='msg no'})}}).catch(err)}
+
+/* ---------- קולי ו-SMS ---------- */
+function voice(){M.innerHTML='<h1>הודעות קוליות ו־SMS</h1><p class="sub">טוען…</p>';evp().then(function(j){
+  M.innerHTML='<h1>הודעות קוליות ו־SMS</h1><p class="sub">דרך ימות המשיח. הטוקן והזיהוי היוצא נלקחים מהגדרות התזכורות הקוליות בניהול הכללי. '+(j.vReady?'<span class="pill full">טוקן ימות מוגדר</span>':'<span class="pill off">אין טוקן ימות</span>')+'</p>'+
+   '<div class="card"><h2 style="margin-top:0">הודעות קוליות</h2><label class="row"><input type="checkbox" id="vOn"'+(j.voiceOn?' checked':'')+'> להציע הודעות קוליות לבעלי אירועים</label>'+
+    '<div class="setgrid"><label>שלוחת אישור ההגעה (CallExtensionBridging)<input id="vPath" dir="ltr" value="'+esc(j.voicePath||'')+'" placeholder="9"></label><label>או: מזהה תבנית קמפיין (עם "הקישו 1")<input id="vTpl" dir="ltr" value="'+esc(j.voiceTpl||'')+'"></label><label>שליחה משעה<input type="number" id="vF" min="0" max="23" value="'+j.vFrom+'"></label><label>עד שעה<input type="number" id="vT" min="1" max="24" value="'+j.vTo+'"></label><label>שיחות ניסיון לאירוע<input type="number" id="vX" min="0" value="'+j.vTests+'"></label></div>'+
+    '<h3 style="font-size:16px;margin:10px 0 6px">חבילות שיחות (₪)</h3><div class="setgrid">'+(j.voice||[]).map(function(t){return priceIn(t[0],t[1]+' שיחות',j)}).join('')+'</div>'+
+    (j.vkey?'<h3 style="font-size:16px;margin:12px 0 6px">הגדרת השלוחה בימות (ext.ini)</h3><pre>type=api\napi_link='+esc(j.site)+'/api/pricing?c=_ivr\napi_add_0=k='+esc(j.vkey)+'</pre><p class="sub">אותה שלוחה משמשת גם כקו נכנס: מוזמן שמתקשר מזוהה לפי מספר הטלפון.</p>':'<p class="sub">אחרי השמירה הראשונה יופיעו כאן ההגדרות לשלוחה.</p>')+'</div>'+
+   '<div class="card"><h2 style="margin-top:0">SMS (בארץ)</h2><label class="row"><input type="checkbox" id="sSms"'+(j.smsOn?' checked':'')+'> להציע SMS לבעלי אירועים</label> '+(j.smsReady?'<span class="pill full">ספק SMS מחובר</span>':'<span class="pill off">ספק SMS לא מחובר</span>')+
+    '<h3 style="font-size:16px;margin:10px 0 6px">חבילות SMS (₪)</h3><div class="setgrid">'+(j.sms||[]).map(function(t){return priceIn(t[0],t[1]+' הודעות',j)}).join('')+'</div>'+
+    '<div class="row"><input id="smsPh" placeholder="05XXXXXXXX" dir="ltr" style="width:150px"><button class="btn sm" type="button" id="smsT">SMS לבדיקה</button><span id="smsM" class="msg"></span></div></div>'+
+   '<div class="row"><button class="btn pri" type="button" id="vSave">שמירה</button><span class="msg" id="vM"></span></div>';
+  $('#vSave').onclick=function(){$('#vM').textContent='שומר…';saveEvp().then(function(){$('#vM').textContent='✓ נשמר';$('#vM').className='msg ok';voice()}).catch(function(e){$('#vM').textContent='❌ '+e.message;$('#vM').className='msg no'})};
+  $('#smsT').onclick=function(){$('#smsM').textContent='שולח…';api({action:'smstest',phone:$('#smsPh').value}).then(function(r){$('#smsM').textContent=r.ok?'✓ נשלח':'❌ '+r.error})}}).catch(err)}
+
+/* ---------- מתנות ---------- */
+function gifts(slugDone){M.innerHTML='<h1>מתנות באשראי</h1><p class="sub">מתנות שאורחים שילמו דרך האתר, לפי אירוע. אחרי שהעברתם את הכסף לבעל האירוע, מסמנים "הועבר".</p><div id="gB" class="card"><p class="sub">טוען…</p></div>';
+  api(typeof slugDone==='string'?{action:'giftdone',slug:slugDone}:{action:'giftlist'}).then(function(r){var B=$('#gB'),f=function(v){return (+v).toFixed(2)};if(r.setup){B.innerHTML='<p class="sub">חסרה טבלת המתנות במסד הנתונים.</p>';return}
+   B.innerHTML=r.events.length?'<div class="scroll"><table class="tbl"><thead><tr><th>אירוע</th><th>מתנות</th><th>סה״כ</th><th>עמלה (שלכם)</th><th>הועבר</th><th>להעברה</th><th></th></tr></thead><tbody>'+r.events.map(function(e){return '<tr><td dir="ltr"><a href="#" data-o="'+esc(e.slug)+'">'+esc(e.slug)+'</a></td><td>'+e.n+'</td><td>'+f(e.amount)+'</td><td>'+f(e.fee)+'</td><td>'+f(e.paidOut)+'</td><td><b>'+f(e.owed)+'</b>'+(e.requested?' <span class="pill off">ביקשו העברה</span>':'')+'</td><td>'+(e.owed>0?'<button class="btn sm" type="button" data-done="'+esc(e.slug)+'">סימון שהועבר</button>':'')+'</td></tr>'}).join('')+'</tbody></table></div>':'<p class="sub">עוד אין מתנות.</p>';
+   B.onclick=function(e){var d=e.target.closest('[data-done]'),o=e.target.closest('[data-o]');if(d&&confirm('לסמן שהכסף הועבר?'))gifts(d.dataset.done);if(o){e.preventDefault();open(o.dataset.o)}}}).catch(err)}
+
+/* ---------- מיילים מתוזמנים ---------- */
+function mail(){M.innerHTML='<h1>מיילים מתוזמנים</h1><p class="sub">כמה מיילים צפויים לצאת בכל יום: תזכורות, פגישות והזמנות לאירועים. בשבת ובחג לא יוצא כלום.</p><div class="row"><label>ימים <select id="mpD"><option>7</option><option selected>14</option><option>30</option></select></label><button class="btn" type="button" id="mpGo">חישוב</button><span class="msg" id="mpM"></span></div><div id="mpO" class="card" hidden></div>';
+  $('#mpGo').onclick=function(){var O=$('#mpO'),Mm=$('#mpM');Mm.textContent='מחשב…';api({action:'mailplan',days:+$('#mpD').value}).then(function(r){if(r.error){Mm.textContent='❌ '+r.error;return}Mm.textContent='';O.hidden=false;
+    var cap=Object.values(r.capacity||{}).reduce(function(a,c){return a+(c.day||0)},0),WD=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','שבת'],inv=r.invites||{};
+    O.innerHTML='<p class="sub">קיבולת שליחה יומית: <b>'+cap+'</b>'+(inv.queued!=null?' · הזמנות בתור עכשיו: <b>'+inv.queued+'</b>'+(inv.waiting?' · עוד לא נשלח ל־'+inv.waiting:''):'')+'</p><div class="scroll"><table class="tbl"><thead><tr><th>יום</th><th>תזכורות</th><th>פגישות</th><th>סה״כ</th><th>שיחות</th></tr></thead><tbody>'+r.days.map(function(d,i){var t=d.rem+d.appt,dt=new Date(d.date+'T12:00:00');
+      return '<tr'+(d.holy?' style="opacity:.6"':'')+'><td>'+WD[d.wd]+' '+dt.getDate()+'.'+(dt.getMonth()+1)+(i===0?' (היום)':'')+'</td>'+(d.holy?'<td colspan="4">שבת / חג</td>':'<td>'+d.rem+'</td><td>'+d.appt+'</td><td><b>'+t+'</b>'+(cap&&t>cap*.8?' <span class="pill off">'+(t>cap?'מעל הקיבולת':'קרוב לקיבולת')+'</span>':'')+'</td><td>'+d.voice+'</td>')+'</tr>'}).join('')+'</tbody></table></div>'}).catch(function(e){Mm.textContent='❌ '+e.message})};$('#mpGo').click()}
+
+/* ---------- כלים ---------- */
+function tools(){M.innerHTML='<h1>כלים</h1><div class="card"><h2 style="margin-top:0">סריקה מחדש של האירועים</h2><p class="sub">עוברת על כל הקבצים ב-R2 ובונה מחדש את רשימת האירועים. צריך פעם אחת אחרי יצירת הטבלה, ואחר כך רק אם משהו לא מופיע. יכול לקחת דקה.</p><div class="row"><button class="btn" type="button" id="tScan">סריקה מחדש</button><span class="msg" id="tM"></span></div></div>'+
+  '<div class="card"><h2 style="margin-top:0">מעבר מהיר לאירוע</h2><div class="row"><input id="tS" dir="ltr" placeholder="כתובת האירוע (slug)"><button class="btn" type="button" id="tGo">פתיחה</button></div></div>';
+  $('#tScan').onclick=function(){var m=$('#tM');m.textContent='סורק…';m.className='msg';api({action:'ev_scan'}).then(function(r){m.textContent='✓ נמצאו '+r.files+' קבצים, '+r.indexed+' נבדקו';m.className='msg ok'}).catch(function(e){m.textContent='❌ '+e.message;m.className='msg no'})};
+  $('#tGo').onclick=function(){var v=$('#tS').value.trim().toLowerCase().replace(/^.*\/t\//,'');if(v)open(v)}}
+
+function err(e){M.insertAdjacentHTML('beforeend','<p class="msg no">'+esc(e.message)+'</p>');if(e.code===401){$('#app').hidden=true;$('#login').hidden=false}}
+function start(){api({action:'evpget'}).then(function(j){EP=j;$('#login').hidden=true;$('#app').hidden=false;try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}var h=(location.hash||'').slice(1);show(['dash','list','set','voice','gifts','mail','tools'].indexOf(h)>=0?h:'dash')})
+  .catch(function(e){$('#app').hidden=true;$('#login').hidden=false;$('#lmsg').textContent=e.code===401?'סיסמה שגויה':e.code===429?'יותר מדי ניסיונות. נסו מאוחר יותר.':PW?e.message:''})}
+$('#login').onsubmit=function(e){e.preventDefault();PW=$('#pw').value;start()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')$('#dr').hidden=true});
+if(PW)start();else $('#login').hidden=false;
+})();
+</script>
+</body>
+</html>

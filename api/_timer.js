@@ -78,6 +78,17 @@ async function put(s, obj) {
   const R2 = require('./_r2');
   const r = await fetch(R2.presign('PUT', key(s), 120), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) });
   if (!r.ok) throw new Error('r2 put ' + r.status);
+  await evIndex(s, obj).catch(() => {});
+}
+/* אינדקס האירועים לניהול (טבלת timer_event): רק כתובות עם דף הזמנה או תשלום */
+const INVF = ['et', 'inv', 'it', 'venue', 'addr', 'rv', 'wl', 'tp', 'gift'];
+async function evIndex(s, o) {
+  const c = (o && o.cfg) || {}, P = o && o.paid, inv = INVF.some(k => c[k]);
+  if (!inv && !P) return;
+  const row = { slug: s, title: String(c.t || '').slice(0, 120), date: /^\d{4}-\d{2}-\d{2}$/.test(c.d || '') ? c.d : null, kind: c.et || null, lang: c.lang || 'he',
+    plan: P ? (P.free ? 'free' : 'full') : null, email: (P && P.email) || null, emails: P ? +P.emails || 0 : 0, sms: P ? +P.sms || 0 : 0, calls: P ? +P.calls || 0 : 0, calls_used: P ? +P.callsUsed || 0 : 0,
+    disabled: !!o.disabled, updated_at: new Date().toISOString() };
+  await db('timer_event?on_conflict=slug', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(row) });
 }
 /* אורחים: אישור הגעה וברכה. בעל האירוע (עם קוד העריכה): רשימות, הסתרה ומחיקה */
 const { db } = require('./_lib');
@@ -207,9 +218,9 @@ async function autoMails(cover, max) {
 /* מחיקת סרטונים ומוזיקה של אירועים שלא שולמו תוך שבוע מההעלאה */
 async function cleanMedia() {
   const { loadSetting, saveSetting } = require('./_lib'), M = (await loadSetting('mediapend').catch(() => null)) || {}, R2 = require('./_r2'), MB = R2.media(); if (!MB) return { deleted: 0 };
-  let del = 0, kept = 0, changed = false;
+  let del = 0, kept = 0, changed = false; const MD = ((await require('./_eventpay').prices().catch(() => ({}))).mediaDays) || 7;
   for (const path of Object.keys(M)) {
-    const x = M[path]; if (Date.now() - x.at < 7 * 864e5) continue;
+    const x = M[path]; if (Date.now() - x.at < MD * 864e5) continue;
     const cur = await get(x.s).catch(() => null);
     if (isFull(cur)) { delete M[path]; changed = true; kept++; continue; }
     try { await fetch(R2.presign('DELETE', path, 120, null, MB), { method: 'DELETE' }); del++; } catch (e) { continue; }
@@ -229,6 +240,7 @@ async function galList(s) { const R2 = require('./_r2'), M = R2.media(); if (!M)
 async function guest(req, res, b) {
   const s = str(b.slug, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
   const cur = await get(s); if (!cur) return json(res, 404, { error: 'not found' });
+  if (cur.disabled && b.act !== 'owner') return json(res, 410, { error: 'disabled' });
   const c = cur.cfg || {}, meta = require('./_lib').reqMeta(req) || {}, clean1 = (v, n) => str(v, n).replace(/[<>]/g, '').trim();
   /* דף ההזמנה פתוח לאורחים רק אחרי תשלום */
   if (['rsvp', 'wish', 'teh'].includes(b.act) && !cur.paid) return json(res, 402, { error: 'unpaid' });
@@ -292,9 +304,9 @@ async function guest(req, res, b) {
       if (cur.paid) return json(res, 200, { ok: true, already: true });
       const user = await require('./_lib').getUser(req).catch(() => null); if (!user) return json(res, 401, { error: 'login' });
       const { loadSetting, saveSetting } = require('./_lib'), F = (await loadSetting('evfree').catch(() => null)) || {}, mine = (F[user.id] || []).filter(x => x !== s);
-      if (mine.length >= 3) return json(res, 429, { error: 'max' });
+      const EPf = await require('./_eventpay').prices().catch(() => ({})); if (mine.length >= (EPf.freeMax || 3)) return json(res, 429, { error: 'max' });
       F[user.id] = mine.concat(s); await saveSetting('evfree', F);
-      await put(s, { ...cur, paid: { free: true, emails: 20, sms: 0, email: user.email || '', orders: [], at: new Date().toISOString() } });
+      await put(s, { ...cur, paid: { free: true, emails: EPf.freeEmails || 20, sms: 0, email: user.email || '', orders: [], at: new Date().toISOString() } });
       await require('./_eventpay').index(s, c.d).catch(() => {});
       return json(res, 200, { ok: true });
     }
@@ -373,9 +385,9 @@ async function guest(req, res, b) {
       if (!isFull(cur)) return json(res, 402, { error: 'full' });
       if (b.mode !== 'rem' && !EP.voiceTpl && !EP.voicePath) return json(res, 403, { error: 'tpl' });
       const hz = await holyAt(Date.now()); if (hz) return json(res, 400, { error: 'shabbat' });
-      const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()); if (hr < 8 || hr >= 22) return json(res, 400, { error: 'night' });
+      const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()); if (hr < (EP.vFrom || 8) || hr >= (EP.vTo || 22)) return json(res, 400, { error: 'night', from: EP.vFrom || 8, to: EP.vTo || 22 });
       const mode = b.mode === 'rem' ? 'rem' : 'inv', text = str(b.text, 600).replace(/[<>]/g, ''), P = cur.paid, now = new Date().toISOString();
-      if (b.act === 'voicetest') { const ph = V.phone(b.phone); if (!ph) return json(res, 400, { error: 'phone' }); if ((+P.vtests || 0) >= 5) return json(res, 429, { error: 'tests' });
+      if (b.act === 'voicetest') { const ph = V.phone(b.phone); if (!ph) return json(res, 400, { error: 'phone' }); if ((+P.vtests || 0) >= (EP.vTests || 5)) return json(res, 429, { error: 'tests' });
         const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
         if (mode === 'rem') await V.sendTTS([{ phone: ph }], text || V.defText(c, 'rem')); else await V.run(cur, [{ phone: ph, name: clean1(b.name, 40) }], mode, text); P.vtests = (+P.vtests || 0) + 1; await put(s, { ...cur, paid: P }); return json(res, 200, { ok: true }); }
       let L = await db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at,call_at,call_rem&order=id.asc&limit=20000').catch(() => db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at&order=id.asc&limit=20000'));
@@ -483,6 +495,7 @@ module.exports = async (req, res) => {
       const o = RESERVED.has(s) ? { reserved: true } : await get(s);
       if (q.check) return json(res, 200, { free: !o });
       if (!o || o.reserved) return json(res, 404, { error: 'not found' });
+      if (o.disabled) return json(res, 410, { error: 'disabled' });
       res.setHeader('Cache-Control', 'public, max-age=60');
       let gcOn = false; if (isFull(o) && o.cfg && o.cfg.gc) { try { gcOn = !!(await require('./_eventpay').prices()).giftOn; } catch (e) {} }
       return json(res, 200, { cfg: o.cfg, paid: !!o.paid, full: isFull(o), gcOn });
@@ -509,6 +522,6 @@ module.exports = async (req, res) => {
   } catch (e) { console.error('timer', e.message); return json(res, 500, { error: e.message === 'storage' ? 'storage' : 'server' }); }
 };
 
-module.exports.ivr = ivr; module.exports.ivrcb = ivrcb; module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
+module.exports.ivr = ivr; module.exports.evIndex = evIndex; module.exports.key = key; module.exports.ivrcb = ivrcb; module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
 module.exports.cronSend = cronSend; module.exports.inviteMail = inviteMail;
 module.exports.autoMails = autoMails; module.exports.cleanMedia = cleanMedia;
