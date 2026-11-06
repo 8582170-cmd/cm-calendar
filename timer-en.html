@@ -67,11 +67,15 @@ textarea{width:100%;font:13px/1.45 ui-monospace,Consolas,monospace;direction:ltr
 [data-pg="invite"] .box{border-radius:20px;padding:18px;box-shadow:0 8px 30px -18px rgb(0 0 0 / .25)}
 [data-pg="invite"] #f [role=tabpanel]>div,[data-pg="invite"] .own,[data-pg="invite"] .clkD{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}
 [data-pg="invite"] #f [role=tabpanel] h3{margin-top:0!important}
-.etg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin:6px 0 10px}
+.etg{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin:6px 0 10px}
 .etg button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:inherit;font:inherit;font-size:14px;cursor:pointer;margin:0}
 .etg button i{font-style:normal;font-size:24px;line-height:1}.etg button:hover{border-color:var(--teal)}
 .etg button[aria-checked="true"]{border-color:var(--teal);background:color-mix(in srgb,var(--teal) 13%,var(--card));font-weight:700}
-.grid.wide{grid-template-columns:minmax(0,1fr)}.grid.wide>:has(#pvbox){display:none}
+.grid.wide{grid-template-columns:minmax(0,1fr)}
+[data-pg="invite"] .tabs{position:sticky;top:0;z-index:5}
+@media (max-width:979px){[data-pg="invite"] .grid{grid-template-columns:minmax(0,1fr)}}
+@media (min-width:980px){[data-pg="invite"] .wrap{max-width:1240px}[data-pg="invite"] .grid{grid-template-columns:190px minmax(0,1fr) minmax(0,1fr)}[data-pg="invite"] .grid.wide{grid-template-columns:190px minmax(0,1fr)}
+  [data-pg="invite"] .grid>.tabs{flex-direction:column;border-radius:18px;top:12px;overflow:visible;padding:8px;gap:4px;align-self:start}[data-pg="invite"] .grid>.tabs button{flex:none;text-align:start;border-radius:12px;padding:11px 14px;font-size:15.5px}}.grid.wide>:has(#pvbox){display:none}
 .gform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;align-items:end;margin:4px 0}
 .gform label{font-size:13px;margin:0}.gform input{margin:2px 0 0}.gform .btn{margin:0;height:40px}
 @media (max-width:760px){.gform{grid-template-columns:1fr 1fr}.gform .gn{grid-column:1/-1}}
@@ -316,14 +320,14 @@ summary{cursor:pointer;font-weight:700}
         if(a[0]===200&&a[1].url){setInv(a[1].url);istat('Invitation added ✓ don’t forget to save','ok')}else if(a[0]===401)needLogin(istat);else istat(a[0]===429?'Too many photos were uploaded in the last hour. Please try again later.':'Upload failed. Try another photo.','no')}).catch(function(){istat('Upload failed. Check your connection.','no')})};
     im.onerror=function(){istat('Could not read the photo. Try a JPG or PNG file.','no')};im.src=url});
   /* קישור אישי לכל מוזמן: ?to=<שם>, עם כפתור WhatsApp */
-  $('mkLinks').addEventListener('click',function(){var s=slugVal();if(!saved||saved!==s){$('plist').innerHTML='<p class="st no">First save an event address (above), then create links.</p>';return}
+  $('mkLinks').addEventListener('click',function(){var s=slugVal();if(!saved||saved!==s){$('plist').innerHTML='<p class="st no">קודם שומרים כתובת לאירוע '+(PG==='invite'?'(בלשונית ״פרטים״)':'(למעלה)')+', ואז יוצרים קישורים.</p>';return}
     var N=$('names').value.split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,500),pt=$('pt').value.trim()||'Dear {name}, we would be delighted to celebrate with you!';
     $('plist').innerHTML=N.length?N.map(function(n,i){var u=SITE+'/t/'+s+'?to='+encodeURIComponent(n),msg=pt.replace(/\{(שם|name)\}/g,n)+'\n'+($('t').value.trim()?$('t').value.trim()+'\n':'')+u;
       return '<div><b>'+esc(n)+'</b><a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">WhatsApp</a><button class="btn sm" type="button" data-cpl="'+esc(u)+'">Copy link</button></div>'}).join(''):'<p class="st no">Enter at least one name.</p>'});
   $('plist').addEventListener('click',function(e){var b=e.target.closest('[data-cpl]');if(!b)return;try{navigator.clipboard.writeText(b.dataset.cpl)}catch(er){}b.textContent='Copied ✓'});
   /* RSVPs and blessings (לבעל האירוע, עם קוד העריכה מהדפדפן הזה) */
   var OWN=null;
-  if($('save2'))$('save2').addEventListener('click',function(){var s=slugVal();if(!valid(s)){$('st2').textContent='First choose an event address (above).';$('st2').className='st no';$('slug').focus();return}$('st2').textContent='';if($('save').disabled&&saved===s){$('st2').textContent='Saved ✓';$('st2').className='st ok';return}$('save').click();setTimeout(function(){$('st2').textContent=$('st').textContent;$('st2').className=$('st').className},900)});
+  if($('save2'))$('save2').addEventListener('click',function(){var s=slugVal();if(!valid(s)){$('st2').textContent='קודם בוחרים כתובת לאירוע'+(PG==='invite'?' (בלשונית ״פרטים״, בסוף).':' (למעלה).');if(PG==='invite'){var tb=document.querySelector('[data-tab=p1]');if(tb)tb.click();$('slug').focus()}$('st2').className='st no';$('slug').focus();return}$('st2').textContent='';if($('save').disabled&&saved===s){$('st2').textContent='Saved ✓';$('st2').className='st ok';return}$('save').click();setTimeout(function(){$('st2').textContent=$('st').textContent;$('st2').className=$('st').className},900)});
   function ownUI(){var sv=slugVal(),mineX=!!(saved&&saved===sv&&store()[sv]);if($('p4n')){$('p4n').hidden=mineX;$('p5n').hidden=mineX}if($('payBox')){$('payBox').hidden=!(mineX&&PG==='invite');$('rcBox').hidden=!(mineX&&PG==='invite');if(mineX&&PG==='invite'&&!ownUI.did){ownUI.did=1;setTimeout(function(){$('ownLoad').click()},100)}}if($('invLink'))$('invLink').href='invite'+(saved&&saved===sv?'?s='+sv:'');var s=slugVal(),mine=!!(saved&&saved===s&&store()[s]);$('ownBox').hidden=!mine;if(mine)$('ownOpen').href='/t/'+s}
   $('ownLoad').addEventListener('click',function(){var s=slugVal(),O=$('ownOut');O.textContent='Loading…';
     fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({act:'owner',slug:s,token:store()[s]})}).then(function(r){return r.json()}).then(function(j){
@@ -472,7 +476,7 @@ summary{cursor:pointer;font-weight:700}
   var EVG={wed:['משפחת החתן','משפחת הכלה','חברים של החתן','חברים של הכלה','עבודה','שכנים'],eng:['משפחת החתן','משפחת הכלה','חברים'],sheva:['משפחה','חברים'],x:['משפחה','חברים','עבודה','שכנים','קהילה']};
   var EVA={t:true,it:'',tl:''};
   function etTitle(e){var n=[$('n1').value.trim(),$('n2').value.trim()].filter(Boolean),f=$('f1').value.trim(),p=e[8];
-    if(n.length&&/(של|ל)$/.test(p))return p+(/\sל$/.test(p)?'':' ')+n.join(' ו');if(n.length)return (p?p+' · ':'')+n.join(' ו');return p+(f&&p?' · '+f:f)}
+    if(n.length&&/(של|ל)$/.test(p))return p+(/\sל$/.test(p)?'':' ')+n.join(' ו');if(n.length)return (p?p+' · ':'')+n.join(' ו');if(/(של|\sל)$/.test(p))p=e[2];return p+(f&&p?' · '+f:f)}
   function etSet(k,user){var e=EVT.filter(function(x){return x[0]===k})[0];$('et').value=e?k:'';
     [].forEach.call($('etg').children,function(b){b.setAttribute('aria-checked',b.dataset.et===k)});$('etF').hidden=!e;if(!e)return;
     [['n1L',3],['n2L',4],['f1L',5],['f2L',6]].forEach(function(x){var L=$(x[0]);L.hidden=!e[x[1]];L.querySelector('span').textContent=e[x[1]];if(!e[x[1]])L.querySelector('input').value=''});
@@ -502,12 +506,15 @@ summary{cursor:pointer;font-weight:700}
     P.p5.appendChild($('ownBox'));
     var sv=$('iSave');sv.className='savebar';
     f.prepend(nav);TB.forEach(function(t){nav.after(P[t[0]])});
-    var last=P.p1;TB.slice(1).forEach(function(t){last.after(P[t[0]]);last=P[t[0]]});last.after(sv);
+    var last=P.p1;TB.slice(1).forEach(function(t){last.after(P[t[0]]);last=P[t[0]]});last.after(sv);$('pvbox').closest('.grid').prepend(nav);
+    var wpL=$('wp').closest('label');wpL.firstChild.textContent='מיקום התאריך ביחס לשעון';$('wp').options[0].text='מעל השעון';$('wp').options[1].text='מתחת לשעון';$('wp').options[2].text='Hide תאריך';
+    $('gDate').insertAdjacentHTML('afterbegin','<h3 style="font-size:16px;margin:0 0 4px">איך יוצג התאריך בדף</h3>');
+    var wpS=function(){wpL.hidden=!$('clk').checked;if(!$('clk').checked&&$('wp').value==='bottom')$('wp').value='top'};
     $('invD').hidden=true;$('invPromo').hidden=true;
     nav.addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(!b)return;nav.querySelectorAll('[data-tab]').forEach(function(x){x.setAttribute('aria-selected',x===b)});TB.forEach(function(t){P[t[0]].hidden=t[0]!==b.dataset.tab});$('pvbox').closest('.grid').classList.toggle('wide',b.dataset.tab==='p4'||b.dataset.tab==='p5');if((b.dataset.tab==='p5'||b.dataset.tab==='p4')&&saved&&saved===slugVal()&&store()[slugVal()])$('ownLoad').click()});
     $('p4').insertAdjacentHTML('afterbegin','<p class="mute" id="p4n" style="font-size:14px">קודם שומרים את הדף (למטה), ואז אפשר להפעיל, להוסיף מוזמנים ולשלוח.</p>');
     $('p5').insertAdjacentHTML('afterbegin','<p class="mute" id="p5n" style="font-size:14px">כאן יופיעו אישורי ההגעה, הברכות, ההושבה, התמונות והמתנות, אחרי השמירה.</p>');
-    $('clk').addEventListener('change',upd);
+    $('clk').addEventListener('change',function(){wpS();upd()});wpS();
     $('pvbox').insertAdjacentHTML('afterbegin','<p class="mute" id="pvNote" style="margin:6px 8px;font-size:14px">כאן תופיע התצוגה של דף ההזמנה, אחרי השמירה.</p>');
     var col=$('pvbox').parentNode;col.style.position='sticky';col.style.top='10px';$('pv').style.height='85vh';$('out').hidden=true;
     $('dsgL').innerHTML='עיצוב הדף <span class="mute" style="font-weight:400;font-size:13.5px">· הצבעים והגופנים של דף ההזמנה והכפתורים</span>';
@@ -708,7 +715,7 @@ summary{cursor:pointer;font-weight:700}
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
   var es=(Q.get('s')||'').toLowerCase();
   if(valid(es)){fetch(API+'&s='+es).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.cfg)return;var c=j.cfg;
-    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');setInv(c.inv||'');['n1','n2','f1','f2'].forEach(function(k){$(k).value=c[k]||''});etSet(c.et||'');EVA.t=!c.t;EVA.it='';EVA.tl='';['it','pt','venue','addr','tr','tl'].forEach(function(k){$(k).value=c[k]||''});['rv','rm','wl','tp'].forEach(function(k){$(k).checked=!!c[k]});$('tpt').value=c.tpt||'';$('gift').value=c.gift||'';$('gl').value=c.gl||'';$('nr').value=String(c.nr||0);$('dr').checked=!!c.dr;$('ty').checked=!!c.ty;$('tyt').value=c.tyt||'';$('gal').checked=!!c.gal;if($('clk'))$('clk').checked=c.clk!==0;$('bgo').value=c.bgo!=null?c.bgo:35;if(window.__setMedia){__setMedia('bgi',c.bgi);__setMedia('bgv',c.bgv);__setMedia('mus',c.mus)}else{MEDIA.bgi=c.bgi||'';MEDIA.bgv=c.bgv||'';MEDIA.mus=c.mus||''}$('gc').checked=!!c.gc;[0,1,2].forEach(function(i){var q=(c.qs||[])[i]||{};$('q'+i).value=q.q||'';$('o'+i).value=(q.o||[]).join(', ')});if(c.inv||c.it||c.venue||c.addr||c.rv||c.wl)$('invD').open=true;
+    $('t').value=c.t||'';$('d').value=c.d;$('h').value=c.h||'';$('u').value=c.u||'d';addZ(c.z);$('z').value=c.z||'Asia/Jerusalem';$('lang').value=c.lang||'he';$('l').value=c.l==='stack'?'stack':'row';$('fr').value=['1','2'].indexOf(c.fr)>=0?c.fr:'0';$('wp').value=c.wp||'top';$('wd').value=c.wd||'g';$('wh').value=['o','c'].indexOf(c.wh)>=0?c.wh:'s';$('ww').checked=c.ww!=='0';$('wt').checked=c.wt!=='0';$('sec').checked=c.ns!=='1';$('ps').value=['rect','wide'].indexOf(c.ps)>=0?c.ps:'circle';setPhoto(c.p||'');setInv(c.inv||'');['n1','n2','f1','f2'].forEach(function(k){$(k).value=c[k]||''});etSet(c.et||'');EVA.t=!c.t;EVA.it='';EVA.tl='';['it','pt','venue','addr','tr','tl'].forEach(function(k){$(k).value=c[k]||''});['rv','rm','wl','tp'].forEach(function(k){$(k).checked=!!c[k]});$('tpt').value=c.tpt||'';$('gift').value=c.gift||'';$('gl').value=c.gl||'';$('nr').value=String(c.nr||0);$('dr').checked=!!c.dr;$('ty').checked=!!c.ty;$('tyt').value=c.tyt||'';$('gal').checked=!!c.gal;if($('clk')){$('clk').checked=c.clk!==0;$('clk').dispatchEvent(new Event('change'))}$('bgo').value=c.bgo!=null?c.bgo:35;if(window.__setMedia){__setMedia('bgi',c.bgi);__setMedia('bgv',c.bgv);__setMedia('mus',c.mus)}else{MEDIA.bgi=c.bgi||'';MEDIA.bgv=c.bgv||'';MEDIA.mus=c.mus||''}$('gc').checked=!!c.gc;[0,1,2].forEach(function(i){var q=(c.qs||[])[i]||{};$('q'+i).value=q.q||'';$('o'+i).value=(q.o||[]).join(', ')});if(c.inv||c.it||c.venue||c.addr||c.rv||c.wl)$('invD').open=true;
     setTheme(TH.some(function(x){return x[0]===c.th})?c.th:'classic');if(c.c||c.b){custom=true;if(c.c)$('c').value='#'+c.c;if(/^[0-9a-f]{6}$/i.test(c.b||''))$('b').value='#'+c.b}
     $('slug').value=es;if(store()[es]){saved=es;savedCfg=JSON.stringify(cfg());st('This address is yours. You can change and update it.','ok')}else check();go()})}
 })();
