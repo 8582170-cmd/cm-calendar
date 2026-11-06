@@ -71,6 +71,24 @@ function clean(c) {
   return out;
 }
 
+/* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
+const ALOG_RO = /^(fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
+async function alogAdd(req, b, act, st) {
+  const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
+  const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
+  let L = await loadSetting('adminlog').catch(() => []); if (!Array.isArray(L)) L = [];
+  /* כניסה: נרשמת פעם בחצי שעה לכל כתובת */
+  if (act === 'login' && L.some(x => x.a === 'login' && x.ip === ip && Date.now() - Date.parse(x.t) < 1800e3)) return;
+  const pick = ['slug', 'email', 'to', 'id', 'name', 'plan', 'code', 'k', 'phone', 'page', 'key', 'cat'];
+  let d = ''; for (const k of pick) { const v = b[k]; if (v != null && v !== '' && typeof v !== 'object') { d = k + ': ' + String(v).slice(0, 60); break; } }
+  if (act === 'table' && b.del) d = (b.name || '') + ' · ' + (Array.isArray(b.del) ? b.del.length : 0) + ' שורות';
+  if (act === 'ev_credit') d += ' · ' + ['emails', 'sms', 'calls'].filter(k => +b[k]).map(k => k + ' ' + b[k]).join(' ');
+  if (act === 'refund') d += ' · ' + (b.amount || 'הכל') + ' ₪';
+  if (act === 'maintset') d = b.on ? (b.full ? 'סגירת האתר' : 'פס תחזוקה') + (b.buy ? ' + חסימת רכישות' : '') : (b.buy ? 'חסימת רכישות' : 'כבוי');
+  if (b.why || b.note) d += ' · ' + String(b.why || b.note).slice(0, 80);
+  L.unshift({ t: now, a: act, d, ok: st < 400, ip, ua: SEC.uaInfo ? String(SEC.uaInfo(req.headers['user-agent'] || '') || '').slice(0, 60) : '' });
+  await saveSetting('adminlog', L.slice(0, 600));
+}
 module.exports = async (req, res) => {
   const b = readBody(req), SEC = require('./_sec');
   /* הגבלת ניסיונות: אחרי 5 סיסמאות שגויות מאותה כתובת, נעילה ל-5 דקות, אחר כך 15, שעה, 4 שעות, יום */
@@ -84,7 +102,21 @@ module.exports = async (req, res) => {
     return json(res, 401, { error: 'wrong password' });
   }
   await SEC.loginResult(req, true).catch(() => {});
+  /* יומן פעולות: כל פעולה שמשנה משהו (וכניסה לניהול) נרשמת אחרי שהיא מסתיימת */
+  { const act = String(b.action || '');
+    if (req.method === 'GET' ? !act : (act && !ALOG_RO.test(act) && !(act === 'table' && !b.del))) {
+      const end0 = res.end.bind(res); let once = false;
+      res.end = function (...a) { if (once) return end0(...a); once = true; alogAdd(req, b, act || 'login', res.statusCode).catch(() => {}).then(() => end0(...a)); return res; };
+    } }
   try {
+    /* בדיקת מערכת, יומן פעולות, מצב תחזוקה */
+    if (req.method === 'POST' && b.action === 'health') return json(res, 200, await require('./_health').run());
+    if (req.method === 'POST' && b.action === 'alog') { const L = await require('./_lib').loadSetting('adminlog').catch(() => []); return json(res, 200, { items: Array.isArray(L) ? L : [] }); }
+    if (req.method === 'POST' && (b.action === 'maintget' || b.action === 'maintset')) {
+      const { loadSetting, saveSetting } = require('./_lib');
+      if (b.action === 'maintset') await saveSetting('maint', { on: !!b.on, full: !!b.on && !!b.full, buy: !!b.buy, text: String(b.text || '').replace(/<[^>]*>/g, '').slice(0, 400), at: new Date().toISOString() });
+      return json(res, 200, (await loadSetting('maint').catch(() => null)) || {});
+    }
     if (req.method === 'POST' && b.action === 'save') {
       const value = clean(b.config || {});
       await db('settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
@@ -324,9 +356,9 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && (b.action === 'evpget' || b.action === 'evpset')) {
       const { loadSetting, saveSetting } = require('./_lib'), E = require('./_eventpay');
       if (b.action === 'evpset') { const P = {}; Object.keys(E.DEF).forEach(k => { const v = Number((b.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; });
-        await saveSetting('eventpay', { on: b.on === true, prices: P, plans: Array.isArray(b.plans) ? E.cleanPlans(b.plans) : ((await loadSetting('eventpay').catch(() => null)) || {}).plans, smsOn: b.smsOn === true, giftOn: b.giftOn === true, giftPct: +b.giftPct || 0, giftFixed: +b.giftFixed || 0, giftMin: +b.giftMin || 18, giftMax: +b.giftMax || 5000, voiceOn: b.voiceOn === true, freeEmails: +b.freeEmails, freeMax: +b.freeMax, mediaDays: +b.mediaDays, vFrom: +b.vFrom, vTo: +b.vTo, vTests: +b.vTests, voiceDirect: b.voiceDirect === true, voicePath: String(b.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30), voiceTpl: String(b.voiceTpl || '').replace(/\D/g, '').slice(0, 12), voiceTplRem: String(b.voiceTplRem || '').replace(/\D/g, '').slice(0, 12), vtxt: b.vtxt && typeof b.vtxt === 'object' ? E.vtxtClean(b.vtxt) : ((await loadSetting('eventpay').catch(() => null)) || {}).vtxt, vkey: (await E.prices()).vkey || require('crypto').randomBytes(12).toString('hex') }); }
+        await saveSetting('eventpay', { on: b.on === true, prices: P, plans: Array.isArray(b.plans) ? E.cleanPlans(b.plans) : ((await loadSetting('eventpay').catch(() => null)) || {}).plans, smsOn: b.smsOn === true, giftOn: b.giftOn === true, giftPct: +b.giftPct || 0, giftFixed: +b.giftFixed || 0, giftMin: +b.giftMin || 18, giftMax: +b.giftMax || 5000, voiceOn: b.voiceOn === true, freeEmails: +b.freeEmails, freeMax: +b.freeMax, mediaDays: +b.mediaDays, vFrom: +b.vFrom, vTo: +b.vTo, vTests: +b.vTests, voiceDirect: b.voiceDirect === true, voicePath: String(b.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30), voiceTpl: String(b.voiceTpl || '').replace(/\D/g, '').slice(0, 12), voiceTplRem: String(b.voiceTplRem || '').replace(/\D/g, '').slice(0, 12), ivrtxt: b.ivrtxt && typeof b.ivrtxt === 'object' ? E.ivrClean(b.ivrtxt) : ((await loadSetting('eventpay').catch(() => null)) || {}).ivrtxt, vtxt: b.vtxt && typeof b.vtxt === 'object' ? E.vtxtClean(b.vtxt) : ((await loadSetting('eventpay').catch(() => null)) || {}).vtxt, vkey: (await E.prices()).vkey || require('crypto').randomBytes(12).toString('hex') }); }
       const x = await E.prices(); let vReady = false; try { vReady = !!(await require('./_voice').cfg()).token; } catch (e) {}
-      return json(res, 200, { ...x, tiers: E.TIERS, feats: E.FEATS, mailpk: E.MAILPK, sms: E.SMS, voice: E.VOICE, smsReady: await require('./_sms').ready(), vReady, vtxtDef: require('./_ivoice').VTXT, site: (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '') });
+      return json(res, 200, { ...x, tiers: E.TIERS, feats: E.FEATS, mailpk: E.MAILPK, sms: E.SMS, voice: E.VOICE, smsReady: await require('./_sms').ready(), vReady, vtxtDef: require('./_ivoice').VTXT, ivrDef: require('./_ivoice').IVR, site: (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '') });
     }
     /* מתנות באשראי: דוח לפי אירוע, וסימון שהכסף הועבר לבעל האירוע */
     if (req.method === 'POST' && (b.action === 'giftlist' || b.action === 'giftdone')) {

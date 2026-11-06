@@ -45,6 +45,8 @@ module.exports = async (req, res) => {
   try {
     const b = readBody(req);
     const cfg = await loadConfig();
+    /* מצב תחזוקה (בניהול): לא נפתחות הזמנות חדשות. השלמת תשלום שכבר התחיל ממשיכה כרגיל */
+    if (!b.action) { const MT = await require('./_lib').loadSetting('maint').catch(() => null); if (MT && MT.buy) return json(res, 503, { error: 'maint', message: MT.text || 'האתר בתחזוקה קצרה, והרכישה סגורה כרגע. נסו שוב בעוד זמן קצר.' }); }
     /* SUMIT: חיוב לפי האסימון שהדפדפן קיבל מ-SUMIT */
     if (b.action === 'sumitcharge') {
       const id = String(b.id || ''), token = String(b.token || ''); if (!/^[0-9a-f]{24}$/.test(id) || !token || token.length > 400) return json(res, 400, { error: 'bad request' });

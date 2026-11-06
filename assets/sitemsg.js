@@ -34,6 +34,17 @@
   }
   function go() {
     fetch('/api/pricing?c=_msgs').then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (j) {
+      /* מצב תחזוקה מהניהול: פס שאי אפשר לסגור, ובמצב "סגירת האתר" גם מסך שמכסה את הדף (בעל האתר, אחרי כניסה לניהול, רואה רק את הפס) */
+      if (j && j.maint) {
+        var t = j.maint.text || (EN ? 'The site is under short maintenance. Please try again soon.' : 'האתר בתחזוקה קצרה. אפשר לחזור בעוד זמן קצר.');
+        show([{ id: 'maint', title: EN ? 'Maintenance' : '🛠️ תחזוקה', text: t, style: 'warn', close: false }]);
+        if (j.maint.full && ls('myluach-maint-bypass') !== '1') {
+          var o = document.createElement('div'); o.setAttribute('role', 'alertdialog'); o.setAttribute('aria-label', EN ? 'Maintenance' : 'תחזוקה');
+          o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#f6f7f4;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font:500 18px/1.6 Assistant,Heebo,Arial,sans-serif;color:#172126';
+          o.innerHTML = '<div style="max-width:520px"><div style="font-size:46px">🛠️</div><h1 style="font-size:26px;margin:8px 0">' + (EN ? 'Back soon' : 'נחזור בקרוב') + '</h1><p>' + fmt(t) + '</p></div>';
+          document.body.appendChild(o); document.documentElement.style.overflow = 'hidden';
+        }
+      }
       var L = ((j && j.items) || []).filter(function (m) { return (m.areas || []).indexOf(area) >= 0 && ls('smsg-' + m.id) !== String(m.v || '1') && (!m.lang || m.lang === (EN ? 'en' : 'he')); });
       show(L);
     }).catch(function () {});

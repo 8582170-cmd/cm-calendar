@@ -452,8 +452,8 @@ async function ivr(req, res) {
   if (!L || !L.length) L = await db('timer_recip?phone=eq.' + ph + '&select=id,slug,name,token&order=id.desc&limit=5').catch(() => []);
   const today = new Date(Date.now() - 864e5).toISOString().slice(0, 10); let r = null, cur = null;
   for (const x of L || []) { const o = await get(x.slug).catch(() => null); if (o && isFull(o) && (o.cfg || {}).d >= today) { r = x; cur = o; break; } }
-  if (!r) return bye('מספר הטלפון שלכם לא נמצא ברשימת המוזמנים לאירוע קרוב. להתראות');
-  const c = cur.cfg || {}, QS = (c.qs || []).map((x, i) => ({ ...x, i })).filter(x => x.o && x.o.length >= 2 && x.o.length <= 9);
+  if (!r) return bye(V.ivrT(EP, 'he').notFound);
+  const c = cur.cfg || {}, I = V.ivrT(EP, c.lang), QS = (c.qs || []).map((x, i) => ({ ...x, i })).filter(x => x.o && x.o.length >= 2 && x.o.length <= 9);
   const save = async (st, n) => { const ans = (c.qs || []).map((x, i) => { const v = +q['Q' + i]; return v && x.o && x.o[v - 1] ? x.o[v - 1] : ''; });
     const row = { slug: r.slug, name: r.name || ph, phone: ph, status: st, adults: st === 'no' ? 0 : Math.max(1, Math.min(50, n || 1)), kids: 0, note: 'אישור בטלפון', rtok: r.token, ans: ans.some(Boolean) ? ans : null };
     const prev = await db('timer_rsvp?slug=eq.' + r.slug + '&rtok=eq.' + r.token + '&select=id&limit=1').catch(() => []);
@@ -461,15 +461,15 @@ async function ivr(req, res) {
     else await db('timer_rsvp', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
     await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st === 'yes' ? 'אישר בטלפון' : 'לא מגיע (טלפון)' }) }).catch(() => {}); };
   /* בקמפיין שמוגדר כשיחה נכנסת: ההזמנה עצמה מושמעת מכאן (הנוסח של בעל האירוע, בלי "הקישו 1") */
-  const intro = EP.voiceDirect || EP.voicePath ? String(c.vt || V.defText(c, 'ivr', EP)).replace(/[^.]*הקישו[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : 'שלום ' + (r.name || '') + '. ' + (c.t || '') + '.';
+  const intro = EP.voiceDirect || EP.voicePath ? String(c.vt || V.defText(c, 'ivr', EP)).replace(/[^.]*(הקישו|דריקט)[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : V.fillT(I.hello, { 'שם': r.name || '' }) + ' ' + (c.t || '') + '.';
   if (!q.A && (!r.call_st || /ממתין|לא ענה|תפוס|תא קולי/.test(r.call_st))) await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'ענה' }) }).catch(() => {});
-  if (!q.A) return rd(intro + ' אם תגיעו, הקישו 1. אם לא תוכלו להגיע, הקישו 2', 'A', 1, 1, '1.2');
-  if (q.A === '2') { await save('no'); return bye('תודה, תשובתכם נרשמה. להתראות בשמחות'); }
-  if (!q.N) return rd('כמה אנשים תגיעו? הקישו את המספר', 'N', 2, 1, '', true);
-  for (const x of QS) if (q['Q' + x.i] == null) return rd(x.q + ' ' + x.o.map((v, j) => v + ', הקישו ' + (j + 1)).join('. '), 'Q' + x.i, 1, 1, x.o.map((v, j) => j + 1).join('.'));
-  if (q.R == null) { await save('yes', +q.N); return rd('תודה, אישור ההגעה של ' + (+q.N) + ' אנשים נרשם. לתזכורת טלפונית לפני האירוע הקישו 1. לסיום הקישו 2', 'R', 1, 1, '1.2'); }
+  if (!q.A) return rd(intro + ' ' + I.askA, 'A', 1, 1, '1.2');
+  if (q.A === '2') { await save('no'); return bye(I.noThanks); }
+  if (!q.N) return rd(I.askN, 'N', 2, 1, '', true);
+  for (const x of QS) if (q['Q' + x.i] == null) return rd(x.q + ' ' + x.o.map((v, j) => v + ', ' + I.press + ' ' + (j + 1)).join('. '), 'Q' + x.i, 1, 1, x.o.map((v, j) => j + 1).join('.'));
+  if (q.R == null) { await save('yes', +q.N); return rd(V.fillT(I.saved, { 'מספר': +q.N }), 'R', 1, 1, '1.2'); }
   if (q.R === '1') await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_rem: 1 }) }).catch(() => {});
-  return bye(q.R === '1' ? 'נתקשר להזכיר לפני האירוע. להתראות בשמחות' : 'תודה רבה, להתראות בשמחות');
+  return bye(q.R === '1' ? I.remYes : I.bye);
 }
 /* SendTTS: סטטוס שיחות בזמן אמת מימות */
 async function ivrcb(req, res) {

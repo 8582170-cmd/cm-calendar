@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
   const today = todayIL(), tIso = iso(today);
   let sent = 0, failed = 0, checked = 0;
   /* שומר שבת: בשבת ובחג לא שולחים כלום. בערב שבת/חג (הריצה בבוקר, לפני 12:00) שולחים גם את מה שהיה אמור לצאת בשבת ובחג */
-  if (await isHoly(today, true, true)) return json(res, 200, { date: tIso, skipped: 'shabbat' });
+  if (await isHoly(today, true, true)) { try { await require('./_lib').saveSetting('cronlast', { at: new Date().toISOString(), skipped: 'shabbat' }); } catch (e) {} return json(res, 200, { date: tIso, skipped: 'shabbat' }); }
   const days = [0]; for (let k = 1; k < 4 && await isHoly(addD(today, k), true, true); k++) days.push(k);
   /* תזכורת שהייתה אמורה לצאת ביום today+k (k ב-days): המרחק שלה מהיום */
   const dueIn = async (r) => { const N = (r.notice || [1]).slice().sort((a, b) => a - b);
@@ -112,9 +112,13 @@ module.exports = async (req, res) => {
         }
       }
     } catch (e) { console.error('r2 alert', e.message); }
-    json(res, 200, { date: tIso, days: days.length, cleaned, backup, checked, sent, failed, vsent, vfailed, asent });
+    /* בדיקת מערכת: מייל לבעל האתר אם יש תקלה חדשה. ורישום הריצה (מוצג בבדיקת המערכת בניהול) */
+    let health = null; try { health = await require('./_health').alert(); } catch (e) { console.error('health', e.message); }
+    try { await require('./_lib').saveSetting('cronlast', { at: new Date().toISOString(), sent, failed, vsent, vfailed, asent }); } catch (e) {}
+    json(res, 200, { date: tIso, days: days.length, cleaned, backup, checked, sent, failed, vsent, vfailed, asent, health });
   } catch (e) {
     console.error('cron', e);
+    try { await require('./_lib').saveSetting('cronlast', { at: new Date().toISOString(), err: String(e.message || e).slice(0, 200), sent, failed }); } catch (x) {}
     json(res, 500, { error: 'server error', sent, failed });
   }
 };

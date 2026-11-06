@@ -41,7 +41,8 @@ module.exports = async (req, res) => {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
     const items = (Array.isArray(L) ? L : []).filter(m => m && m.on && m.text && (!m.from || m.from <= today) && (!m.until || m.until >= today))
       .map(m => ({ id: m.id, v: m.v, title: m.title || '', text: m.text, style: m.style || 'info', areas: m.areas || [], close: m.close !== false, lang: m.lang || '' }));
-    return json(res, 200, { items });
+    let maint = null; try { const MT = await require('./_lib').loadSetting('maint'); if (MT && MT.on) maint = { text: String(MT.text || ''), full: !!MT.full, v: MT.at || '' }; } catch (e) {}
+    return json(res, 200, { items, maint });
   }
   /* משובים שבעל האתר סימן בדף הניהול להצגה באתר (ברירת מחדל: אף אחד) */
   if (cp === '_reviews') {
