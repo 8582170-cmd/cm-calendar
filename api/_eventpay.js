@@ -4,7 +4,10 @@
 'use strict';
 const { env, loadSetting } = require('./_lib');
 const TIERS = [['base', 0], ['e100', 100], ['e250', 250], ['e400', 400], ['e600', 600], ['e1000', 1000], ['e2500', 2500], ['e10000', 10000]];
-const DEF = { base: 49, e100: 69, e250: 89, e400: 109, e600: 129, e1000: 169, e2500: 299, e10000: 699, s100: 25, s250: 55, s500: 99, s1000: 179, v100: 39, v250: 89, v500: 159, v1000: 289 };
+const DEF = { base: 49, e100: 69, e250: 89, e400: 109, e600: 129, e1000: 169, e2500: 299, e10000: 699, s100: 25, s250: 55, s500: 99, s1000: 179, v100: 39, v250: 89, v500: 159, v1000: 289, m100: 20, m250: 40, m500: 69, m1000: 120, m2500: 250 };
+/* תוספת מיילים למי שכבר במסלול בתשלום (כמו שהיה: קונים עוד מיילים בלי להחליף מסלול) */
+const MAILPK = [['m100', 100], ['m250', 250], ['m500', 500], ['m1000', 1000], ['m2500', 2500]];
+const mailOf = t => (MAILPK.find(x => x[0] === t) || [0, 0])[1];
 /* חבילות SMS (רק אם הופעל בניהול): נקנות בנפרד, אחרי הפעלת דף ההזמנה */
 const SMS = [['s100', 100], ['s250', 250], ['s500', 500], ['s1000', 1000]];
 /* חבילות הודעות קוליות (ימות המשיח, אם הופעל בניהול) */
@@ -17,7 +20,7 @@ function defaultPlans(P) { return TIERS.map(([id, n]) => ({ id, name: id === 'ba
 function cleanPlans(L) {
   const seen = {}, n = (v, a, z) => { v = Math.round(Number(v)); return isFinite(v) ? Math.max(a, Math.min(z, v)) : 0; };
   return (Array.isArray(L) ? L : []).slice(0, 30).map(x => {
-    let id = String((x && x.id) || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24); if (!id || seen[id] || /^[sv]\d+$/.test(id)) id = 'p' + Math.random().toString(36).slice(2, 8); seen[id] = 1;
+    let id = String((x && x.id) || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24); if (!id || seen[id] || /^[svm]\d+$/.test(id)) id = 'p' + Math.random().toString(36).slice(2, 8); seen[id] = 1;
     const f = {}; FEATS.forEach(([k]) => { f[k] = !!(x.feats && x.feats[k]); });
     return { id, name: String(x.name || '').replace(/[<>]/g, '').slice(0, 60) || id, price: n(x.price, 0, 100000), emails: n(x.emails, 0, 1000000), sms: n(x.sms, 0, 100000), calls: n(x.calls, 0, 100000), feats: f,
       desc: String(x.desc || '').replace(/[<>]/g, '').slice(0, 400), best: !!x.best, hidden: !!x.hidden };
@@ -34,13 +37,14 @@ async function pput(key, o) { const r = await fetch(R2().presign('PUT', key, 120
 /* לפני התשלום: בודקים שהכתובת קיימת ושייכת למשלם (קוד העריכה), ומחשבים מחיר */
 async function prepare(b) {
   const T = require('./_timer'), s = String(b.slug || '').toLowerCase(), tier = String(b.tier || '');
-  const isSms = SMS.some(x => x[0] === tier), isVoice = VOICE.some(x => x[0] === tier);
+  const isSms = SMS.some(x => x[0] === tier), isVoice = VOICE.some(x => x[0] === tier), isMail = MAILPK.some(x => x[0] === tier);
   const E = await prices(), plan = E.plans.find(x => x.id === tier && !x.hidden);
-  if (!plan && !isSms && !isVoice) return { error: 'החבילה לא נמצאה' };
+  if (!plan && !isSms && !isVoice && !isMail) return { error: 'החבילה לא נמצאה' };
   const cur = await T.get(s).catch(() => null); if (!cur) return { error: 'הכתובת של האירוע לא נמצאה. שמרו אותה קודם.' };
   if (!T.own(cur, b.token)) return { error: 'אפשר לשלם רק מהדפדפן שבו נשמרה הכתובת.' };
   const { prices: P, on, smsOn, voiceOn } = E; if (!on) return { error: 'הרכישה סגורה כרגע' };
   const paid = !!(cur.paid && !cur.paid.free);
+  if (isMail) { if (!paid) return { error: 'קודם מפעילים מסלול בתשלום' }; return { amount: P[tier], slug: s, tier, title: 'תוספת ' + mailOf(tier) + ' מיילים (' + s + ')' }; }
   if (isVoice) { if (!voiceOn) return { error: 'הודעות קוליות לא זמינות כרגע' }; if (!paid) return { error: 'קודם מפעילים חבילה מלאה' }; return { amount: P[tier], slug: s, tier, title: voiceOf(tier) + ' הודעות קוליות (' + s + ')' }; }
   if (isSms) { if (!smsOn) return { error: 'SMS לא זמין כרגע' }; if (!paid) return { error: 'קודם מפעילים את דף ההזמנה' }; return { amount: P[tier], slug: s, tier, title: smsOf(tier) + ' הודעות SMS (' + s + ')' }; }
   const have = paid ? curPrice(cur, E) : 0;
@@ -61,7 +65,7 @@ async function paid(o) {
   if (plan) { const was = curQuota(cur, E); added = { emails: Math.max(0, plan.emails - (was.emails || 0)), sms: Math.max(0, plan.sms - (was.sms || 0)), calls: Math.max(0, plan.calls - (was.calls || 0)) };
     P.emails = (+P.emails || 0) + added.emails; P.sms = (+P.sms || 0) + added.sms; P.calls = (+P.calls || 0) + added.calls;
     const F = { ...(P.feats || {}) }; Object.keys(plan.feats).forEach(k => { if (plan.feats[k]) F[k] = true; }); P.feats = F; P.plan = plan.id; P.planPrice = Math.max(+P.planPrice || 0, plan.price); }
-  else { P.sms = (+P.sms || 0) + smsOf(p.tier); P.calls = (+P.calls || 0) + voiceOf(p.tier); added.emails = 0; } P.orders = (P.orders || []).concat(o.id); P.email = P.email || p.email || o.email || ''; P.at = P.at || new Date().toISOString();
+  else { P.sms = (+P.sms || 0) + smsOf(p.tier); P.calls = (+P.calls || 0) + voiceOf(p.tier); added.emails = mailOf(p.tier); P.emails = (+P.emails || 0) + added.emails; } P.orders = (P.orders || []).concat(o.id); P.email = P.email || p.email || o.email || ''; P.at = P.at || new Date().toISOString();
   await T.put(p.slug, { ...cur, paid: P });
   await index(p.slug, (cur.cfg || {}).d).catch(() => {});
   const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
@@ -71,4 +75,4 @@ async function paid(o) {
 /* רשימת האירועים ששולמו (לשליחות האוטומטיות היומיות): כתובת ← תאריך. אירוע שעבר לפני יותר מחודש יוצא מהרשימה */
 async function index(slug, date) { const { loadSetting, saveSetting } = require('./_lib'), I = (await loadSetting('evpaid').catch(() => null)) || {}; I[slug] = date || I[slug] || '';
   const cut = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10); Object.keys(I).forEach(k => { if (I[k] && I[k] < cut) delete I[k]; }); await saveSetting('evpaid', I); }
-module.exports = { TIERS, SMS, VOICE, FEATS, cleanPlans, voiceOf, DEF, prices, prepare, create, paid, emailsOf, index };
+module.exports = { TIERS, SMS, VOICE, MAILPK, FEATS, cleanPlans, voiceOf, DEF, prices, prepare, create, paid, emailsOf, index };

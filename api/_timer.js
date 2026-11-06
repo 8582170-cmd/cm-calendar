@@ -486,7 +486,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' && q.unsub) return unsub(req, res, str(q.unsub, 40));
     /* שליחה מתוזמנת: ה-Worker קורא לזה כל שעה (עם CRON_SECRET) */
     if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' }); return json(res, 200, await cronSend(120)); }
-    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: E.FEATS, freeEmails: P.freeEmails, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
+    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: E.FEATS, mailpk: E.MAILPK, freeEmails: P.freeEmails, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
       /* קיר הברכות הציבורי */
