@@ -309,7 +309,7 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && (b.action === 'evpget' || b.action === 'evpset')) {
       const { loadSetting, saveSetting } = require('./_lib'), E = require('./_eventpay');
       if (b.action === 'evpset') { const P = {}; Object.keys(E.DEF).forEach(k => { const v = Number((b.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; });
-        await saveSetting('eventpay', { on: b.on === true, prices: P, smsOn: b.smsOn === true, giftOn: b.giftOn === true, giftPct: +b.giftPct || 0, giftFixed: +b.giftFixed || 0, giftMin: +b.giftMin || 18, giftMax: +b.giftMax || 5000, voiceOn: b.voiceOn === true, voiceTpl: String(b.voiceTpl || '').replace(/\D/g, '').slice(0, 12), voiceTplRem: String(b.voiceTplRem || '').replace(/\D/g, '').slice(0, 12), vkey: (await E.prices()).vkey || require('crypto').randomBytes(12).toString('hex') }); }
+        await saveSetting('eventpay', { on: b.on === true, prices: P, smsOn: b.smsOn === true, giftOn: b.giftOn === true, giftPct: +b.giftPct || 0, giftFixed: +b.giftFixed || 0, giftMin: +b.giftMin || 18, giftMax: +b.giftMax || 5000, voiceOn: b.voiceOn === true, voiceDirect: b.voiceDirect === true, voiceTpl: String(b.voiceTpl || '').replace(/\D/g, '').slice(0, 12), voiceTplRem: String(b.voiceTplRem || '').replace(/\D/g, '').slice(0, 12), vkey: (await E.prices()).vkey || require('crypto').randomBytes(12).toString('hex') }); }
       const x = await E.prices(); let vReady = false; try { vReady = !!(await require('./_voice').cfg()).token; } catch (e) {}
       return json(res, 200, { ...x, tiers: E.TIERS, sms: E.SMS, voice: E.VOICE, smsReady: require('./_sms').ready(), vReady, site: (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '') });
     }

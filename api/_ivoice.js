@@ -27,15 +27,17 @@ function defText(c, mode) {
   const where = [c.venue, c.addr].filter(Boolean).join(', ');
   const t = c.t || 'האירוע', toT = /^ה/.test(t) ? 'ל' + t.slice(1) : 'ל' + t;
   if (mode === 'rem') return 'שלום. תזכורת: ' + t + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '. נשמח לראותכם בשמחתנו.';
+  if (mode === 'ivr') return 'שלום {שם}. הנכם מוזמנים ' + toT + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '.';
   return 'שלום {שם}. הנכם מוזמנים ' + toT + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '. למענה על ההזמנה, הקישו 1.';
 }
 /* הפעלת קמפיין לרשימה: list = [{phone, name}] */
 async function run(cur, list, mode, text) {
   const c = cur.cfg || {}, T = String(text || '').trim() || defText(c, mode), P = {};
-  list.forEach(r => { const p = phone(r.phone); if (p && !P[p]) P[p] = { name: String(r.name || '').slice(0, 40), text: tts(T.replace(/\{(שם|name)\}/g, r.name || '')) }; });
+  const E = await EP().prices(), direct = E.voiceDirect && mode !== 'rem';
+  list.forEach(r => { const p = phone(r.phone); if (p && !P[p]) P[p] = direct ? { name: String(r.name || '').slice(0, 40) } : { name: String(r.name || '').slice(0, 40), text: tts(T.replace(/\{(שם|name)\}/g, r.name || '')) }; });
   const n = Object.keys(P).length; if (!n) throw new Error('no phones');
-  const E = await EP().prices(), vc = await V().cfg(), tpl = mode === 'rem' ? (E.voiceTplRem || E.voiceTpl) : E.voiceTpl;
-  const j = await yem('RunCampaign', { templateId: String(tpl), phones: JSON.stringify(P), ttsMode: '1', ...(vc.callerId ? { callerId: vc.callerId } : {}) });
+  const vc = await V().cfg(), tpl = mode === 'rem' ? (E.voiceTplRem || E.voiceTpl) : E.voiceTpl;
+  const j = await yem('RunCampaign', { templateId: String(tpl), phones: JSON.stringify(P), ...(direct ? {} : { ttsMode: '1' }), ...(vc.callerId ? { callerId: vc.callerId } : {}) });
   return { id: j.campaignId, n, price: j.estimatedPrice, units: j.customerUnits };
 }
 /* שליחת טקסט ישירות (SendTTS): אותו טקסט לכולם, בלי תבנית. הסטטוסים חוזרים בזמן אמת ל-callbackUrl (עד 500 מספרים) */

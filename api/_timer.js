@@ -439,7 +439,9 @@ async function ivr(req, res) {
     if (prev && prev[0]) await db('timer_rsvp?id=eq.' + prev[0].id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
     else await db('timer_rsvp', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
     await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st === 'yes' ? 'אישר בטלפון' : 'לא מגיע (טלפון)' }) }).catch(() => {}); };
-  if (!q.A) return rd('שלום ' + (r.name || '') + '. ' + (c.t || '') + '. אם תגיעו, הקישו 1. אם לא תוכלו להגיע, הקישו 2', 'A', 1, 1, '1.2');
+  /* בקמפיין שמוגדר כשיחה נכנסת: ההזמנה עצמה מושמעת מכאן (הנוסח של בעל האירוע, בלי "הקישו 1") */
+  const intro = EP.voiceDirect ? String(c.vt || V.defText(c, 'ivr')).replace(/[^.]*הקישו[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : 'שלום ' + (r.name || '') + '. ' + (c.t || '') + '.';
+  if (!q.A) return rd(intro + ' אם תגיעו, הקישו 1. אם לא תוכלו להגיע, הקישו 2', 'A', 1, 1, '1.2');
   if (q.A === '2') { await save('no'); return bye('תודה, תשובתכם נרשמה. להתראות בשמחות'); }
   if (!q.N) return rd('כמה אנשים תגיעו? הקישו את המספר', 'N', 2, 1, '', true);
   for (const x of QS) if (q['Q' + x.i] == null) return rd(x.q + ' ' + x.o.map((v, j) => v + ', הקישו ' + (j + 1)).join('. '), 'Q' + x.i, 1, 1, x.o.map((v, j) => j + 1).join('.'));
