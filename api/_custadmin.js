@@ -86,6 +86,12 @@ module.exports = async function (b) {
     return { ok: true };
   }
 
+  /* ביטול חידוש אוטומטי של מנוי (מול פייפל / נדרים). התוקף נשאר עד סוף התקופה ששולמה */
+  if (b.action === 'cu_autocancel') {
+    const oid = str(b.id, 40); if (!/^[0-9a-f]{24}$/.test(oid)) return { error: 'id' };
+    const o = ((await db('orders?id=eq.' + oid + '&select=id,email,plan,callback')) || [])[0]; if (!o || String(o.email || '').toLowerCase() !== em) return { error: 'ההזמנה לא נמצאה' };
+    const A = await require('./_subauto').cancel(o); return { ok: true, until: A.until };
+  }
   if (b.action !== 'cu_extra') return { error: 'unknown action' };
   const prof = await db('profiles?select=user_id&email=eq.' + encodeURIComponent(em) + '&limit=1').catch(() => []);
   const uid = prof && prof[0] && prof[0].user_id;

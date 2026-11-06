@@ -144,6 +144,8 @@ module.exports = async (req, res) => {
     /* הזמנות לאירוע במייל שעוד בתור (למשל אחרי שהגענו למגבלה היומית של ספקי המייל) */
     try { const inv = await require('./_timer').cronSend(150); if (inv.sent) console.log('invites sent', inv.sent); } catch (e) { console.error('invite queue', e.message); }
     try { const cm = await require('./_timer').cleanMedia(); if (cm.deleted) console.log('unpaid media deleted', cm.deleted); } catch (e) { console.error('clean media', e.message); }
+    /* מנויים עם חידוש אוטומטי: בדיקה מול פייפל / נדרים, הארכה אחרי כל חיוב */
+    try { const sa = await require('./_subauto').sync(); if (sa.checked) console.log('auto subs', JSON.stringify(sa)); } catch (e) { console.error('subauto', e.message); }
     /* מנויים: מייל חידוש כמה ימים לפני הסוף */
     try { const rn = await require('./_subs').renewMails(); if (rn.sent) console.log('renew mails', rn.sent); } catch (e) { console.error('renew', e.message); }
     /* גיבוי לגוגל שיטס (אם הוגדר) */

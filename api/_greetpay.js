@@ -147,7 +147,16 @@ module.exports = async (req, res) => {
     /* מנויים וחבילות: מה יש ללקוח המחובר, ומה אפשר לקנות */
     if (b.action === 'ent') {
       const SB = require('./_subs'), user = await require('./_lib').getUser(req).catch(() => null), S = await SB.cfg();
-      return json(res, 200, { offers: await SB.pub(), ent: user ? await SB.greetEnt(user, S) : null, login: !!user });
+      return json(res, 200, { offers: await SB.pub(), ent: user ? await SB.greetEnt(user, S) : null, rent: user ? await SB.remEnt(user, S).catch(() => null) : null, login: !!user });
+    }
+    /* ביטול חידוש אוטומטי של מנוי (ברכות או תזכורות). התוקף נשאר עד סוף התקופה ששולמה */
+    if (b.action === 'cancelauto') {
+      const user = await require('./_lib').getUser(req); if (!user) return json(res, 401, { error: 'login' });
+      const oid = String(b.order || ''); if (!okId(oid)) return json(res, 400, { error: 'id' });
+      const o = ((await db('orders?id=eq.' + oid + '&select=id,email,user_id,plan,callback')) || [])[0];
+      if (!o || (o.user_id !== user.id && String(o.email || '').toLowerCase() !== user.email)) return json(res, 404, { error: 'not found' });
+      try { const A = await require('./_subauto').cancel(o); return json(res, 200, { ok: true, until: A.until }); }
+      catch (e) { console.error('cancelauto', e.message); return json(res, 502, { error: 'provider', message: 'לא הצלחנו לבטל מול חברת התשלום. נסו שוב או כתבו לנו.' }); }
     }
     /* עיצוב בתשלום מתוך המנוי או החבילה: נוצרת הזמנה ששולמה בסכום 0 (קופון SUB / PACK), ומשם הכל כמו תשלום רגיל */
     if (b.action === 'redeem') {

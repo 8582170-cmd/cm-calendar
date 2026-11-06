@@ -56,4 +56,12 @@ async function refund(captureId, amount, key, note) {
   if (!r.ok) { const iss = (j.details && j.details[0] && j.details[0].issue) || j.name || ''; throw Object.assign(new Error(iss || ('paypal ' + r.status)), { issue: iss }); }
   return { id: j.id, status: j.status, amount: j.amount ? +j.amount.value : amount };
 }
-module.exports = { ready, create, capture, refund };
+/* פנייה כללית ל-API (למנויים: מוצר, תוכנית, מנוי) */
+async function api(method, path, body) {
+  const r = await fetch(base() + path, { method, headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 204) return {};
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error('paypal ' + r.status + ' ' + ((j.details && j.details[0] && j.details[0].issue) || j.name || '')), { j, status: r.status });
+  return j;
+}
+module.exports = { ready, create, capture, refund, api };

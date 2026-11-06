@@ -66,7 +66,7 @@ function open(opt){
     var mail = $('mlpMail').value.trim();
     var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT });
     return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify(body) })
-      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok || !(j.tx || j.ppid || j.sumit)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
+      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok || !(j.tx || j.ppid || j.sumit || j.ppsub)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
       .then(function(j){ order = j; PROVS = j.provs || [j.provider]; setup(j.provider); return j; });
   }
   function resetPay(){ var box = $('mlpBox'); box.innerHTML = ''; box.hidden = true; frame.hidden = true; if (NED_GO) go.onclick = NED_GO; go.hidden = false; go.disabled = true; ned(false); PROV = ''; ready = false; }
@@ -108,6 +108,22 @@ function open(opt){
           .then(function(x){ if (x.fallback) { fallback(x.message); return; } if (x.status === 'paid') { done(); return; } fail(x.message || 'התשלום לא אושר.'); })
           .catch(function(e){ if (e && e.sys) { fallback(); return; } fail(e.message || 'התשלום נכשל. נסו שוב.'); });
       };
+      return;
+    }
+    /* PayPal, מנוי עם חידוש אוטומטי: כפתורי מנוי (SDK נפרד, בשם paypalSub) */
+    if (order && order.ppsub) {
+      ready = true; ned(false); go.hidden = true; var sbox = $('mlpBox'); sbox.hidden = false; msg('טוען…');
+      cfg().then(function(d){
+        if (!d || !d.ppc) { msg('התשלום בפייפל עדיין לא מוגדר.', 1); return; }
+        var runS = function(){ if (stop) return; var P = window.paypalSub;
+          P.Buttons({ style: { layout: 'vertical', shape: 'rect', label: 'subscribe' },
+            createSubscription: function(_, a){ return a.subscription.create({ plan_id: order.ppsub, custom_id: order.id }); },
+            onApprove: function(dd){ msg('מאשרים את המנוי…'); return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify({ action: 'ppsubok', id: order.id, sid: dd.subscriptionID }) }).then(function(x){ return x.json(); })
+              .then(function(x){ if (x.status === 'paid') { done(); return; } msg(esc(x.message || 'המנוי לא אושר. אפשר לנסות שוב.'), 1); }).catch(function(){ msg('לא הצלחנו לאשר את המנוי.', 1); }); },
+            onError: function(){ msg('תקלה בטופס המנוי. נסו שוב.', 1); } }).render(sbox);
+          msg('המנוי מתחדש אוטומטית, ואפשר לבטל אותו בכל עת באזור האישי או בחשבון הפייפל.'); };
+        if (window.paypalSub) runS(); else { var sc = document.createElement('script'); sc.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(d.ppc) + '&vault=true&intent=subscription&currency=ILS&locale=he_IL&components=buttons&disable-funding=paylater,venmo'; sc.setAttribute('data-namespace', 'paypalSub'); sc.onload = runS; sc.onerror = function(){ msg('לא הצלחנו לטעון את טופס פייפל.', 1); }; document.head.appendChild(sc); }
+      });
       return;
     }
     /* PayPal: כרטיס אשראי דרך פייפל */

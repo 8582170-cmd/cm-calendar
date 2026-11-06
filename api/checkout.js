@@ -62,6 +62,14 @@ module.exports = async (req, res) => {
       await require('./_paid').markPaid(o, { txn: String(c.paymentId || ''), callback: { sumit: c.raw } }, 'SUMIT');
       return json(res, 200, { status: 'paid', plan: o.plan, receipt: !!c.documentId });
     }
+    /* פייפל, מנוי: אחרי שהלקוח אישר את המנוי */
+    if (b.action === 'ppsubok') {
+      const id = String(b.id || ''), sid = String(b.sid || ''); if (!/^[0-9a-f]{24}$/.test(id) || !/^I-[A-Z0-9]{6,30}$/.test(sid)) return json(res, 400, { error: 'id' });
+      const rows = await db('orders?id=eq.' + id + '&select=*'); const o = rows && rows[0]; if (!o) return json(res, 404, { error: 'order' });
+      if (o.status === 'paid') return json(res, 200, { status: 'paid', plan: o.plan });
+      try { await require('./_subauto').ppApprove(o, sid); return json(res, 200, { status: 'paid', plan: o.plan }); }
+      catch (e) { console.error('ppsubok', e.message); return json(res, 402, { error: 'payment', message: 'לא הצלחנו לאשר את המנוי בפייפל. אם חויבתם, פנו אלינו עם מספר ההזמנה ' + id.slice(0, 8) }); }
+    }
     /* פייפל: גבייה אחרי שהלקוח אישר בחלון של פייפל */
     if (b.action === 'ppcapture') {
       const id = String(b.id || ''); if (!/^[0-9a-f]{24}$/.test(id)) return json(res, 400, { error: 'id' });
@@ -100,7 +108,7 @@ module.exports = async (req, res) => {
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'email', message: 'נא למלא כתובת מייל.' });
       sub = await require('./_subs').prepare(b);
       if (sub.error) return json(res, 400, { error: 'sub', message: sub.error });
-      amount = sub.amount; plan = sub.plan; info = { amount, base: amount, off: 0, why: '' };
+      amount = sub.amount; plan = sub.plan; info = { amount, base: amount, off: 0, why: '' }; sub.auto = !!b.auto;
     } else if (plan === 'gift') {
       /* מתנה לאירוע בכרטיס אשראי: הסכום נבחר על ידי האורח */
       gift = await require('./_giftpay').prepare(b);
@@ -156,6 +164,20 @@ module.exports = async (req, res) => {
     const desc = isDon ? 'MyLuach · תרומה' : sub ? 'MyLuach · ' + sub.title : greet ? 'MyLuach · ' + greet.title : ev ? 'MyLuach · ' + ev.title : gift ? 'MyLuach · ' + gift.title : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
     const extra = { base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', min: !!(info && info.min), coupon: coupon ? coupon.code : null };
 
+    /* מנוי עם חידוש אוטומטי: פייפל (מנוי) או נדרים פלוס (הוראת קבע, חודשי) */
+    if (sub && sub.auto) {
+      const AP = require('./_subauto'), per = /:y$/.test(plan) ? 'y' : 'm';
+      provs = AP.provs(per); prov = provs.indexOf(String(b.prov || '')) >= 0 ? String(b.prov) : provs[0];
+      if (!prov) return json(res, 503, { error: 'auto', message: 'חידוש אוטומטי לא זמין כרגע' + (per === 'y' ? ' במנוי שנתי' : '') + '. אפשר לשלם מראש לתקופה.' });
+      const row = A => db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount, status: 'pending', email: email || null, user_id: user ? user.id : null, callback: { auto: A } }) });
+      if (prov === 'paypal') { const pp = await AP.ppPlan(plan, sub.title, per, amount); await row({ prov: 'paypal', plan: pp }); return json(res, 200, { id, amount, provider: 'paypal', provs, ppsub: pp, auto: true, ...extra }); }
+      await row({ prov: 'nedarim' });
+      const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+      const tx = { Mosad: env('NEDARIM_MOSAD'), ApiValid: env('NEDARIM_API_VALID'), Zeout: '', PaymentType: 'HK', Amount: String(amount), Tashlumim: '', Currency: '1',
+        FirstName: '', LastName: '', Street: '', City: '', Phone: '', Mail: email, Groupe: env('NEDARIM_GROUPE') || '', Comment: desc + ' · ' + id.slice(0, 8),
+        Param1: id, Param2: plan, CallBack: site + '/api/nedarim-callback', CallBackMailError: env('NEDARIM_CALLBACK_MAIL_ERROR') };
+      return json(res, 200, { id, amount, provider: 'nedarim', provs, tx, auto: true, ...extra });
+    }
     if (prov === 'sumit') {
       const charge = isDon || gift ? amount : (Number(env('SUMIT_TEST_AMOUNT')) || amount);
       await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });

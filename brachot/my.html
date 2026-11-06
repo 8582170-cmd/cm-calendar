@@ -11,8 +11,8 @@
 <link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
-<script src="/assets/greetings/mine.js?v=4"></script>
-<script src="/assets/pay.js?v=2" defer></script>
+<script src="/assets/greetings/mine.js?v=5"></script>
+<script src="/assets/pay.js?v=3" defer></script>
 <style>
 .acc-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 14px}
 .acc-h h1{font-size:clamp(30px,4vw,42px);font-weight:900}
@@ -145,22 +145,35 @@ function subs(pane){
     pane.innerHTML = ''; var e = j.ent || {}, o = j.offers || {}, c = el('div', 'acc-card');
     c.appendChild(el('h2', '', 'מה יש לי עכשיו'));
     var L = [];
-    if (e.sub) L.push('מנוי: ' + e.sub.name + ' (' + (e.sub.per === 'y' ? 'שנתי' : 'חודשי') + '), בתוקף עד ' + dt(e.sub.end) + '. ' + (e.sub.quota ? 'החודש: נוצלו ' + e.sub.used + ' מתוך ' + e.sub.quota + ' עיצובים' + (e.sub.cycleEnd ? ' (מתחדש ב־' + dt(e.sub.cycleEnd) + ')' : '') : 'ללא הגבלת עיצובים') + '.');
+    if (e.sub) L.push((e.sub.auto && e.sub.auto.state === 'active' ? '🔁 ' : '') + 'מנוי: ' + e.sub.name + ' (' + (e.sub.per === 'y' ? 'שנתי' : 'חודשי') + '), בתוקף עד ' + dt(e.sub.end) + '. ' + (e.sub.quota ? 'החודש: נוצלו ' + e.sub.used + ' מתוך ' + e.sub.quota + ' עיצובים' + (e.sub.cycleEnd ? ' (מתחדש ב־' + dt(e.sub.cycleEnd) + ')' : '') : 'ללא הגבלת עיצובים') + '.');
     (e.packs || []).forEach(function(p){ L.push('חבילה: ' + p.name + ' · נשארו ' + Math.max(0, p.n - p.used) + ' מתוך ' + p.n + (p.end ? ', בתוקף עד ' + dt(p.end) : '') + '.'); });
     if (!L.length) L.push('אין מנוי או חבילה פעילים.');
     L.forEach(function(t){ c.appendChild(el('p', 'note', t)); });
+    /* חידוש אוטומטי: מצב וביטול (גם של מנוי התזכורות) */
+    var autos = []; if (e.sub && e.sub.auto) autos.push({ order: e.sub.order, name: 'מנוי ' + e.sub.name, st: e.sub.auto.state, end: e.sub.end });
+    ((j.rent && j.rent.via) || []).forEach(function(v){ if (v.auto && v.order) autos.push({ order: v.order, name: 'מנוי תזכורות ' + v.name, st: v.auto.state, end: v.until }); });
+    autos.forEach(function(a){ var p = el('p', 'note');
+      if (a.st === 'active') { p.textContent = a.name + ': מתחדש אוטומטית. '; var x = el('button', 'pill', 'ביטול החידוש'); x.type = 'button';
+        x.onclick = function(){ if (!x.dataset.sure) { x.dataset.sure = 1; x.textContent = 'לבטל? התוקף יישאר עד ' + dt(a.end) + '. ללחוץ שוב'; return; } x.disabled = true;
+          M.cancelAuto(a.order).then(function(){ subs(pane); }).catch(function(er){ x.disabled = false; x.textContent = er.msg || 'לא הצליח, נסו שוב'; }); };
+        p.appendChild(x); }
+      else p.textContent = a.name + ': החידוש האוטומטי בוטל. בתוקף עד ' + dt(a.end) + '.';
+      c.appendChild(p); });
     if (e.can) c.appendChild(el('p', 'note', 'איך משתמשים: פותחים עיצוב בתשלום, ובמקום "תשלום והורדה" לוחצים "לקבל מהמנוי" או "מהחבילה".'));
     pane.appendChild(c);
     var G = o.gsubs || [], P = o.gpacks || [];
     if (!o.on || (!G.length && !P.length)) return;
     var c2 = el('div', 'acc-card'); c2.appendChild(el('h2', '', 'מנויים'));
+    var AU = o.auto || {};
     var buy = function(body, title, sub){ if (!window.MLPay) return; window.MLPay.open({ title: title, sub: sub, mailNote: 'המנוי משויך לחשבון עם המייל הזה', email: $('who').textContent, body: body, onPaid: function(){ setTimeout(function(){ subs(pane); }, 1500); } }); };
     G.forEach(function(x){ var d = el('div', 'acc-card');
       d.appendChild(el('h3', '', x.name + (x.best ? ' ⭐' : ''))); if (x.desc) d.appendChild(el('p', 'note', x.desc));
       d.appendChild(el('p', 'note', x.quota ? 'עד ' + x.quota + ' עיצובים בתשלום בכל חודש' : 'עיצובים בתשלום ללא הגבלה'));
       var r = el('div', 'acc-btns');
-      if (x.pm >= 1) { var a = el('button', 'acc-btn pri', 'חודשי · ' + x.pm + ' ₪'); a.type = 'button'; a.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'm' }, 'מנוי חודשי · ' + x.name, x.pm + ' ₪ לחודש. תשלום אחד, בלי חיוב אוטומטי.'); }; r.appendChild(a); }
-      if (x.py >= 1) { var b = el('button', 'acc-btn', 'שנתי · ' + x.py + ' ₪'); b.type = 'button'; b.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'y' }, 'מנוי שנתי · ' + x.name, x.py + ' ₪ לשנה. תשלום אחד, בלי חיוב אוטומטי.'); }; r.appendChild(b); }
+      if (x.pm >= 1 && AU.m) { var am = el('button', 'acc-btn pri', 'חודשי · ' + x.pm + ' ₪ · מתחדש אוטומטית'); am.type = 'button'; am.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'm', auto: 1 }, 'מנוי חודשי · ' + x.name, x.pm + ' ₪ לחודש, מתחדש אוטומטית. אפשר לבטל בכל עת באזור האישי.'); }; r.appendChild(am); }
+      if (x.py >= 1 && AU.y) { var ay = el('button', 'acc-btn' + (AU.m ? '' : ' pri'), 'שנתי · ' + x.py + ' ₪ · מתחדש אוטומטית'); ay.type = 'button'; ay.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'y', auto: 1 }, 'מנוי שנתי · ' + x.name, x.py + ' ₪ לשנה, מתחדש אוטומטית. אפשר לבטל בכל עת באזור האישי.'); }; r.appendChild(ay); }
+      if (x.pm >= 1) { var a = el('button', 'acc-btn' + (AU.m ? '' : ' pri'), 'חודש אחד · ' + x.pm + ' ₪'); a.type = 'button'; a.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'm' }, 'מנוי חודשי · ' + x.name, x.pm + ' ₪ לחודש. תשלום אחד, בלי חיוב אוטומטי.'); }; r.appendChild(a); }
+      if (x.py >= 1) { var b = el('button', 'acc-btn', 'שנה אחת · ' + x.py + ' ₪'); b.type = 'button'; b.onclick = function(){ buy({ plan: 'sub', kind: 'gsub', id: x.id, per: 'y' }, 'מנוי שנתי · ' + x.name, x.py + ' ₪ לשנה. תשלום אחד, בלי חיוב אוטומטי.'); }; r.appendChild(b); }
       d.appendChild(r); c2.appendChild(d); });
     if (G.length) pane.appendChild(c2);
     if (P.length) { var c3 = el('div', 'acc-card'); c3.appendChild(el('h2', '', 'חבילות'));
@@ -168,7 +181,7 @@ function subs(pane){
         d.appendChild(el('p', 'note', x.n + ' עיצובים בתשלום' + (x.months ? ', לשימוש תוך ' + x.months + ' חודשים' : ', בלי הגבלת זמן')));
         var r = el('div', 'acc-btns'), a = el('button', 'acc-btn pri', 'קנייה · ' + x.price + ' ₪'); a.type = 'button'; a.onclick = function(){ buy({ plan: 'sub', kind: 'gpack', id: x.id }, 'חבילה · ' + x.name, x.price + ' ₪, תשלום אחד.'); }; r.appendChild(a); d.appendChild(r); c3.appendChild(d); });
       pane.appendChild(c3); }
-    pane.appendChild(el('p', 'note', 'התשלום מראש לתקופה, בלי חיוב אוטומטי. כמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש.'));
+    pane.appendChild(el('p', 'note', (AU.m || AU.y ? 'מנוי שמתחדש אוטומטית: אפשר לבטל בכל עת כאן, והתוקף נשאר עד סוף התקופה ששולמה. ' : '') + '"חודש אחד" / "שנה אחת": תשלום אחד בלי חיוב אוטומטי, וכמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש.'));
   }).catch(function(){ pane.innerHTML = '<p class="bad">לא הצלחנו לטעון.</p>'; });
 }
 function me(pane){

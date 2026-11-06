@@ -255,7 +255,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
     <section id="rem" hidden data-cms-skip>
       <div class="sec-head"><h2>תזכורות בלוח המקוון</h2><p id="remIntro"></p></div>
       <div class="plans" id="remGrid"></div>
-      <p class="note">שיחות טלפון ו־SMS: בשלב זה רק למספרים בישראל. מנוי משולם מראש לתקופה, בלי חיוב אוטומטי, וכמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש.</p>
+      <p class="note">שיחות טלפון ו־SMS: בשלב זה רק למספרים בישראל. מנוי שמתחדש אוטומטית אפשר לבטל בכל עת באזור האישי. "חודש אחד" / "שנה אחת": תשלום אחד, וכמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש. צריך להיות מחוברים לחשבון.</p>
     </section>
 
     <section id="faq">
@@ -293,17 +293,17 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   var lim = function(n, w){ return n == null ? w + ' ללא הגבלה' : n === 0 ? 'בלי ' + w : 'עד ' + n + ' ' + w; };
   var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   fetch('/api/pricing?c=_subs').then(function(r){ return r.ok ? r.json() : {}; }).then(function(j){
-    var R = j && j.rem; if (!R) return; var S = document.getElementById('rem'), G = document.getElementById('remGrid');
+    var R = j && j.rem; if (!R) return; var AU = j.auto || {}; var S = document.getElementById('rem'), G = document.getElementById('remGrid');
     document.getElementById('remIntro').textContent = 'בחינם: ' + lim(R.freeMail, 'תזכורות במייל') + ', ' + lim(R.freeVoice, 'תזכורות בשיחה') + '. רוצים יותר? כלול במסלולים של הלוח, או במנוי.';
     G.innerHTML = R.opts.map(function(x, i){
       return '<div class="plan"><h3>' + esc(x.name || 'אפשרות') + '</h3>' + (x.desc ? '<p class="sub">' + esc(x.desc) + '</p>' : '') +
         '<ul><li>' + lim(x.mail, 'תזכורות במייל') + '</li><li>' + lim(x.voice, 'תזכורות בשיחה') + '</li>' + (x.planNames.length ? '<li>כלול בקניית מסלול ' + x.planNames.map(esc).join(' / ') + ' בלוח</li>' : '') + '</ul>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (x.pm >= 1 ? '<button class="btn btn-primary" type="button" data-rb="' + i + '" data-per="m">' + x.pm + ' ₪ לחודש</button>' : '') + (x.py >= 1 ? '<button class="btn" type="button" data-rb="' + i + '" data-per="y">' + x.py + ' ₪ לשנה</button>' : '') + '</div></div>';
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (x.pm >= 1 && AU.m ? '<button class="btn btn-primary" type="button" data-rb="' + i + '" data-per="m" data-auto="1">' + x.pm + ' ₪ לחודש · מתחדש</button>' : '') + (x.py >= 1 && AU.y ? '<button class="btn" type="button" data-rb="' + i + '" data-per="y" data-auto="1">' + x.py + ' ₪ לשנה · מתחדש</button>' : '') + (x.pm >= 1 ? '<button class="btn' + (AU.m ? '' : ' btn-primary') + '" type="button" data-rb="' + i + '" data-per="m">חודש אחד · ' + x.pm + ' ₪</button>' : '') + (x.py >= 1 ? '<button class="btn" type="button" data-rb="' + i + '" data-per="y">שנה אחת · ' + x.py + ' ₪</button>' : '') + '</div></div>';
     }).join('');
     S.hidden = false; if (location.hash === '#rem') S.scrollIntoView();
-    G.addEventListener('click', function(e){ var b = e.target.closest('[data-rb]'); if (!b) return; var x = R.opts[+b.dataset.rb], per = b.dataset.per;
-      var go = function(){ window.MLPay.open({ title: 'מנוי תזכורות · ' + (x.name || ''), sub: (per === 'y' ? x.py + ' ₪ לשנה' : x.pm + ' ₪ לחודש') + '. תשלום אחד, בלי חיוב אוטומטי.', mailNote: 'המייל שאיתו נרשמים לתזכורות (ושל החשבון)', body: { plan: 'sub', kind: 'rsub', id: x.id, per: per }, onPaid: function(){ b.textContent = '✓ שולם'; } }); };
-      if (window.MLPay) go(); else { var s = document.createElement('script'); s.src = '/assets/pay.js?v=2'; s.onload = go; document.head.appendChild(s); } });
+    G.addEventListener('click', function(e){ var b = e.target.closest('[data-rb]'); if (!b) return; var x = R.opts[+b.dataset.rb], per = b.dataset.per, auto = !!b.dataset.auto;
+      var go = function(){ window.MLPay.open({ title: 'מנוי תזכורות · ' + (x.name || ''), sub: (per === 'y' ? x.py + ' ₪ לשנה' : x.pm + ' ₪ לחודש') + (auto ? ', מתחדש אוטומטית. אפשר לבטל בכל עת באזור האישי.' : '. תשלום אחד, בלי חיוב אוטומטי.'), mailNote: 'למייל הזה יישלחו הקבלה והעדכונים', body: { plan: 'sub', kind: 'rsub', id: x.id, per: per, auto: auto ? 1 : 0 }, onPaid: function(){ b.textContent = '✓ שולם'; } }); };
+      if (window.MLPay) go(); else { var s = document.createElement('script'); s.src = '/assets/pay.js?v=3'; s.onload = go; document.head.appendChild(s); } });
   }).catch(function(){});
 })();
 </script>

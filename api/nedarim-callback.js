@@ -19,6 +19,10 @@ module.exports = async (req, res) => {
     const paid = Number(p.Amount || p.amount || 0);
     const enough = !paid || paid + 0.001 >= Number(o.amount);
     const base = { callback: p, txn: String(p.TransactionId || p.TransactionID || p.Id || p.id || '') };
+    /* הוראת קבע (מנוי עם חידוש אוטומטי): שומרים את מזהה ההוראה. ההטבה עד מועד החיוב הראשון + כמה ימים, ומשימת הבוקר מאריכה אחרי כל חיוב */
+    const A0 = o.callback && o.callback.auto;
+    if (A0 && A0.prov === 'nedarim') { const AP = require('./_subauto'), nx = AP.ddmm(p.NextDate) || Date.now();
+      base.callback = { ...p, auto: { ...A0, kid: String(p.ID || p.KevaId || ''), state: 'active', until: Math.max(nx, Date.now()) + 4 * 864e5, paid: 0 } }; base.txn = 'HK-' + String(p.ID || p.KevaId || ''); }
     if (o.status === 'paid' || (ok && enough)) await require('./_paid').markPaid(o, base, 'נדרים פלוס');
     else await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ ...base, status: ok ? 'underpaid' : 'failed' }) });
     json(res, 200, { ok: true });
