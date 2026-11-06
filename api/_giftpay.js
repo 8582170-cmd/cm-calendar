@@ -18,7 +18,7 @@ async function paid(o) {
   const L = await db('timer_gift?order_id=eq.' + o.id + '&select=id,slug,name,msg,amount,net,status&limit=1'); const g = L && L[0]; if (!g || g.status === 'paid') return;
   await db('timer_gift?id=eq.' + g.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString() }) });
   const cur = await require('./_timer').get(g.slug).catch(() => null), to = cur && cur.paid && cur.paid.email; if (!to) return;
-  const { sendMail, frame, escH } = require('./_mail'), site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
-  await sendMail({ to, subject: '🎁 קיבלתם מתנה: ' + (g.name || 'אורח') + ' · ' + (+g.amount) + ' ₪', html: frame({ title: 'קיבלתם מתנה 🎁', body: '<b>' + escH(g.name || 'אורח') + '</b> שלח/ה מתנה של ' + (+g.amount) + ' ₪' + (g.msg ? '<br><br>"' + escH(g.msg) + '"' : '') + '<br><br>מגיע לכם (אחרי עמלה): ' + (+g.net) + ' ₪', button: 'לניהול האירוע', url: site + '/invite?s=' + g.slug }) }, 'gift').catch(() => {});
+  const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
+  await require('./_paid').send('gift', to, { 'שם': g.name || 'אורח', 'סכום': (+g.amount) + ' ₪', 'ברכה': g.msg ? '\n\n"' + g.msg + '"' : '', 'נטו': (+g.net) + ' ₪' }, { url: site + '/invite?s=' + g.slug }, 'gift').catch(() => {});
 }
 module.exports = { prepare, create, paid };

@@ -19,19 +19,40 @@ const DEFAULTS = {
   refund: { subject: 'החזר תשלום מ־MyLuach', title: 'בוצע החזר תשלום',
     body: 'ביצענו החזר של {החזר} עבור {מסלול} (הזמנה {הזמנה}).\nההחזר יופיע באמצעי התשלום שבו שילמתם, בדרך כלל תוך כמה ימי עסקים.', button: '', foot: 'שאלות? פשוט עונים למייל הזה.' },
   owner: { subject: '💰 {סוג} חדשה: {מסלול} · {סכום}', title: '{סוג} חדשה',
-    body: '{מסלול}\nסכום: {סכום}{קופון}\nלקוח: {מייל}\nאמצעי תשלום: {אמצעי}\nמספר הזמנה: {הזמנה}', button: 'לדף הניהול', foot: '' }
+    body: '{מסלול}\nסכום: {סכום}{קופון}\nלקוח: {מייל}\nאמצעי תשלום: {אמצעי}\nמספר הזמנה: {הזמנה}', button: 'לדף הניהול', foot: '' },
+  /* מיילים של מוצרים נוספים (עד עכשיו הנוסח היה קבוע בקוד) */
+  event: { subject: 'דף ההזמנה לאירוע פעיל ✓', title: 'תודה! דף ההזמנה פעיל',
+    body: 'דף ההזמנה בכתובת **{כתובת}** פתוח עכשיו לאורחים.{מיילים}\nאת הניהול (רשימת נמענים, שליחה, אישורי הגעה) עושים מאותו דפדפן שבו נשמרה הכתובת.', button: 'לניהול האירוע', foot: '' },
+  gift: { subject: '🎁 קיבלתם מתנה: {שם} · {סכום}', title: 'קיבלתם מתנה 🎁',
+    body: '**{שם}** שלח/ה מתנה של {סכום}{ברכה}\n\nמגיע לכם (אחרי עמלה): {נטו}', button: 'לניהול האירוע', foot: '' },
+  greet: { subject: 'התשלום התקבל: {עיצוב} · MyLuach', title: 'העיצוב שלכם מוכן',
+    body: 'התשלום התקבל, תודה!\n\nזה הקישור האישי לעיצוב "{עיצוב}".\nאפשר לפתוח אותו מכל מחשב או טלפון, לשנות את הטקסט עד {עריכה}, ולהוריד את הקובץ בכל גודל עד {הורדה}.',
+    button: 'לפתיחת העיצוב', foot: 'מספר הזמנה: {הזמנה}. לא לשתף את הקישור: מי שיש לו אותו יכול לשנות את העיצוב.' },
+  greetlink: { subject: 'הקישור לעיצוב: {עיצוב} · MyLuach', title: 'הקישור לעיצוב שלכם',
+    body: 'זה הקישור האישי לעיצוב "{עיצוב}".\nאפשר לפתוח אותו מכל מחשב או טלפון, לשנות את הטקסט עד {עריכה}, ולהוריד את הקובץ בכל גודל עד {הורדה}.',
+    button: 'לפתיחת העיצוב', foot: 'מספר הזמנה: {הזמנה}. לא לשתף את הקישור: מי שיש לו אותו יכול לשנות את העיצוב.' },
+  remconfirm: { subject: 'אישור תזכורות במייל מ־MyLuach', title: 'לאשר תזכורות במייל?',
+    body: 'ביקשתם לקבל במייל הזה תזכורת: **{שם}**.\nלחצו כדי לאשר. אם לא ביקשתם, אפשר להתעלם מהמייל הזה, ולא יישלח אליכם כלום.', button: 'לאישור התזכורות',
+    foot: 'אם לא ביקשתם, אפשר להתעלם מהמייל הזה ולא יישלח אליכם דבר.' },
+  reminder: { subject: 'תזכורת: {שם} {מתי}', title: '{שם}', body: '**{מתי}**, יום {יום}\n{תאריך עברי} · {תאריך}', button: '{כפתור}',
+    foot: 'קיבלתם את המייל כי ביקשתם תזכורת בלוח השנה של MyLuach.' }
 };
-const KINDS = { welcome: 'ללקוח אחרי הרשמה', purchase: 'ללקוח אחרי רכישה', donation: 'לתורם אחרי תרומה', refund: 'ללקוח אחרי החזר תשלום', owner: 'אליך על כל רכישה ותרומה' };
+const KINDS = { welcome: 'ללקוח אחרי הרשמה', purchase: 'ללקוח אחרי רכישה', donation: 'לתורם אחרי תרומה', refund: 'ללקוח אחרי החזר תשלום', owner: 'אליך על כל רכישה ותרומה',
+  event: 'לבעל אירוע אחרי תשלום על דף הזמנה', gift: 'לבעל אירוע כשאורח שולח מתנה', greet: 'ללקוח אחרי תשלום על ברכה / הזמנה מעוצבת', greetlink: 'ללקוח שמבקש שוב את הקישור לעיצוב', remconfirm: 'אישור הרשמה לתזכורות במייל', reminder: 'התזכורת עצמה (מהלוח המקוון)' };
 
 /* בונה מייל לפי הנוסח (מהניהול או הרגיל) והנתונים */
-function render(kind, vars, tpl) {
+function render(kind, vars, tpl, opt) {
+  opt = opt || {};
   const { frame, escH } = require('./_mail');
   const T = { ...DEFAULTS[kind] }; const own = (tpl || {})[kind] || {};
   for (const k of ['subject', 'title', 'body', 'button', 'foot']) if (own[k] != null && String(own[k]).trim() !== '') T[k] = String(own[k]);
-  const fill = (s, html) => String(s || '').replace(/\{([^{}]{1,12})\}/g, (m, k) => vars[k] != null ? (html ? escH(vars[k]) : String(vars[k])) : m);
-  const h = s => fill(escH(s).replace(/\n/g, '<br>'), true);
-  const url = kind === 'owner' ? site() + '/admin' : site() + '/app.html';
-  return { subject: fill(T.subject, false), html: frame({ title: h(T.title), body: h(T.body), button: T.button ? h(T.button) : null, url, foot: T.foot ? h(T.foot) : '' }), text: fill(T.title, false) + '\n\n' + fill(T.body, false) };
+  const fill = (s, html) => String(s || '').replace(/\{([^{}]{1,12})\}/g, (m, k) => vars[k] != null ? (html ? escH(vars[k]).replace(/\n/g, '<br>') : String(vars[k])) : m);
+  /* **מודגש** */
+  const h = s => fill(escH(s).replace(/\*\*([^*\n]{1,200})\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'), true);
+  const plain = s => fill(s, false).replace(/\*\*([^*\n]{1,200})\*\*/g, '$1');
+  const url = opt.url || (kind === 'owner' ? site() + '/admin' : site() + '/app.html');
+  const foot = (T.foot ? h(T.foot) : '') + (opt.footHtml ? (T.foot ? ' ' : '') + opt.footHtml : '');
+  return { subject: plain(T.subject), html: frame({ title: h(T.title), body: h(T.body), button: T.button ? h(T.button) : null, url, foot }), text: plain(T.title) + '\n\n' + plain(T.body) + (opt.text ? '\n\n' + opt.text : '') };
 }
 function vars(o) {
   const isDon = o.plan === 'donation';
@@ -57,12 +78,27 @@ async function notify(o) {
   const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');
   if (to) { try { await sendMail({ to, ...render('owner', V, tpl) }, 'owner'); } catch (e) { console.error('owner mail', e.message); } }
 }
+/* שליחה של מייל לפי סוג (עם הנוסח מהניהול). opt: url לכפתור, footHtml (קישור הסרה), text, headers, replyTo */
+let TPL = null;
+async function send(kind, to, V, opt, logKind) {
+  const { sendMail } = require('./_mail'); opt = opt || {};
+  /* הנוסח נשמר בזיכרון לדקה (במשימת הלילה נשלחים הרבה מיילים ברצף) */
+  if (!TPL || Date.now() - TPL.at > 60000) TPL = { at: Date.now(), v: (await loadConfig()).mailTpl };
+  const tpl = TPL.v;
+  const m = render(kind, V || {}, tpl, opt);
+  return sendMail({ to, ...m, ...(opt.headers ? { headers: opt.headers } : {}), ...(opt.replyTo ? { replyTo: opt.replyTo } : {}) }, logKind || kind);
+}
 async function welcome() { return render('welcome', {}, (await loadConfig()).mailTpl); }
 /* לתצוגה מקדימה בניהול: כל המיילים עם נתוני דוגמה, לפי נוסח נתון (גם לפני שמירה) */
 function previews(tpl) {
   const V = vars({ id: 'a1b2c3d4e5f6', plan: 'family', amount: 89, email: 'customer@example.com', coupon: '', via: 'PayPal' });
   const VD = vars({ id: 'a1b2c3d4e5f6', plan: 'donation', amount: 50, email: 'donor@example.com', via: 'נדרים פלוס' });
-  return Object.keys(DEFAULTS).map(k => ({ k, who: KINDS[k], ...render(k, k === 'donation' ? VD : k === 'refund' ? { ...V, 'החזר': '89 ₪' } : V, tpl) }));
+  const EX = { event: { 'כתובת': 'myluach.org/t/cohen-wedding', 'מיילים': '\nנוספו 250 מיילים לשליחת הזמנות.' },
+    gift: { 'שם': 'משפחת לוי', 'סכום': '360 ₪', 'ברכה': '\n\n"מזל טוב! שתזכו לבנות בית נאמן בישראל"', 'נטו': '349.20 ₪' },
+    greet: { 'עיצוב': 'הזמנה לבר מצווה', 'עריכה': '20.11, 23:00', 'הורדה': '6.12, 23:00', 'הזמנה': 'a1b2c3d4' },
+    reminder: { 'שם': 'יום הולדת לשרה', 'מתי': 'בעוד שבוע', 'יום': 'שלישי', 'תאריך עברי': 'כ״ה בכסלו תשפ״ז', 'תאריך': '5 בדצמבר 2026', 'כפתור': 'ללוח השנה' } };
+  EX.greetlink = EX.greet; EX.remconfirm = { 'שם': 'יום הולדת לשרה' };
+  return Object.keys(DEFAULTS).map(k => ({ k, who: KINDS[k], ...render(k, k === 'donation' ? VD : k === 'refund' ? { ...V, 'החזר': '89 ₪' } : EX[k] || V, tpl, k === 'reminder' ? { footHtml: '<a href="#" style="color:#6b7679">להפסקת התזכורת</a>' } : null) }));
 }
 /* מייל ללקוח על החזר */
 async function refundMail(o, amt) {
@@ -70,4 +106,4 @@ async function refundMail(o, amt) {
   const { sendMail } = require('./_mail'), tpl = (await loadConfig()).mailTpl;
   try { await sendMail({ to: o.email, ...render('refund', { ...vars(o), 'החזר': (+amt).toLocaleString('he-IL') + ' ₪' }, tpl) }, 'refund'); } catch (e) { console.error('refund mail', e.message); }
 }
-module.exports = { markPaid, notify, welcome, previews, refundMail, DEFAULTS, KINDS };
+module.exports = { markPaid, notify, welcome, previews, refundMail, send, render, DEFAULTS, KINDS };

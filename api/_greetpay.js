@@ -101,14 +101,9 @@ const fmt = t => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem
 
 async function sendLink(rec, first) {
   if (!rec.email) return false;
-  const { sendMail, frame, escH } = require('./_mail');
   const url = link(rec.id);
-  const body = (first ? 'התשלום התקבל, תודה!\n\n' : '') + 'זה הקישור האישי לעיצוב "' + rec.title + '".\n' +
-    'אפשר לפתוח אותו מכל מחשב או טלפון, לשנות את הטקסט עד ' + fmt(rec.editUntil) + ', ולהוריד את הקובץ בכל גודל עד ' + fmt(rec.dlUntil) + '.';
-  const h = s => escH(s).replace(/\n/g, '<br>');
-  await sendMail({ to: rec.email, subject: (first ? 'התשלום התקבל: ' : 'הקישור לעיצוב: ') + rec.title + ' · MyLuach',
-    html: frame({ title: h(first ? 'העיצוב שלכם מוכן' : 'הקישור לעיצוב שלכם'), body: h(body), button: 'לפתיחת העיצוב', url, foot: h('מספר הזמנה: ' + rec.id.slice(0, 8) + '. לא לשתף את הקישור: מי שיש לו אותו יכול לשנות את העיצוב.') }),
-    text: body + '\n\n' + url }, 'greet');
+  /* הנוסח: בניהול ← המיילים שהלקוחות מקבלים ← greet / greetlink */
+  await require('./_paid').send(first ? 'greet' : 'greetlink', rec.email, { 'עיצוב': rec.title, 'עריכה': fmt(rec.editUntil), 'הורדה': fmt(rec.dlUntil), 'הזמנה': rec.id.slice(0, 8) }, { url, text: url }, 'greet');
   return true;
 }
 /* מ-markPaid: פותחים את זמן העריכה ושולחים את הקישור */

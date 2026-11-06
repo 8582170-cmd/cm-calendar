@@ -23,17 +23,22 @@ function whenSay(c) {
     const p = {}; new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatToParts(d).forEach(x => { p[x.type] = x.value; });
     return wd + ', ' + p.day + ' ב' + p.month + (c.h ? ', בשעה ' + c.h : ''); } catch (e) { return c.d || ''; }
 }
-function defText(c, mode) {
+/* הנוסח הרגיל של ההודעה הקולית. אפשר לשנות אותו בניהול האירועים (eventpay.vtxt). {שם} מתמלא בשם המוזמן בזמן השליחה */
+const VTXT = { inv: 'שלום {שם}. הנכם מוזמנים {לאירוע}, {מתי}{מקום}. למענה על ההזמנה, הקישו 1.',
+  ivr: 'שלום {שם}. הנכם מוזמנים {לאירוע}, {מתי}{מקום}.',
+  rem: 'שלום. תזכורת: {אירוע}, {מתי}{מקום}. נשמח לראותכם בשמחתנו.' };
+function defText(c, mode, E) {
   const where = [c.venue, c.addr].filter(Boolean).join(', ');
   const t = c.t || 'האירוע', toT = /^ה/.test(t) ? 'ל' + t.slice(1) : 'ל' + t;
-  if (mode === 'rem') return 'שלום. תזכורת: ' + t + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '. נשמח לראותכם בשמחתנו.';
-  if (mode === 'ivr') return 'שלום {שם}. הנכם מוזמנים ' + toT + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '.';
-  return 'שלום {שם}. הנכם מוזמנים ' + toT + ', ' + whenSay(c) + (where ? ', ב' + where : '') + '. למענה על ההזמנה, הקישו 1.';
+  const m = mode === 'rem' || mode === 'ivr' ? mode : 'inv';
+  const own = E && E.vtxt && String(E.vtxt[m] || '').trim();
+  const V = { 'אירוע': t, 'לאירוע': toT, 'מתי': whenSay(c), 'מקום': where ? ', ב' + where : '' };
+  return (own || VTXT[m]).replace(/\{(אירוע|לאירוע|מתי|מקום)\}/g, (x, k) => V[k]);
 }
 /* הפעלת קמפיין לרשימה: list = [{phone, name}] */
 async function run(cur, list, mode, text) {
-  const c = cur.cfg || {}, T = String(text || '').trim() || defText(c, mode), P = {};
-  const E = await EP().prices(), direct = E.voiceDirect && mode !== 'rem';
+  const c = cur.cfg || {}, E = await EP().prices(), T = String(text || '').trim() || defText(c, mode, E), P = {};
+  const direct = E.voiceDirect && mode !== 'rem';
   if (E.voicePath && mode !== 'rem') return bridge(list, E.voicePath);
   list.forEach(r => { const p = phone(r.phone); if (p && !P[p]) P[p] = direct ? { name: String(r.name || '').slice(0, 40) } : { name: String(r.name || '').slice(0, 40), text: tts(T.replace(/\{(שם|name)\}/g, r.name || '')) }; });
   const n = Object.keys(P).length; if (!n) throw new Error('no phones');
@@ -57,4 +62,4 @@ async function sendTTS(list, text, cb) {
 }
 const ST = { done: 'ענה', bridged: 'ענה', accepted: 'ענה', up: 'בשיחה', no_answer: 'לא ענה', busy: 'תפוס', amd: 'תא קולי', failed: 'נכשל', error: 'נכשל', canceled: 'בוטל', blocked: 'חסום', remove_request: 'ביקש הסרה', pending: 'ממתין', ringing: 'מחייג', redial: 'חיוג חוזר' };
 async function status(id) { const j = await yem('GetCampaignStatus', { campaignId: id, entries: 'all' }); const c = j.campaign || {}; return { st: c.campaignStatus, price: c.currentPrice, entries: (c.entries || []).map(e => ({ phone: phone(e.phone), st: ST[e.entryStatus] || e.entryStatus })) }; }
-module.exports = { ready, yem, run, sendTTS, status, defText, tts, phone, whenSay };
+module.exports = { ready, yem, run, sendTTS, status, defText, VTXT, tts, phone, whenSay };

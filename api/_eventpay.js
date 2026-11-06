@@ -30,7 +30,9 @@ const emailsOf = t => (TIERS.find(x => x[0] === t) || [0, 0])[1], smsOf = t => (
 async function prices() { const s = (await loadSetting('eventpay').catch(() => null)) || {}, P = { ...DEF }; Object.keys(DEF).forEach(k => { const v = Number((s.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; });
   const num = (v, a, z, d) => { v = Number(v); return isFinite(v) && v >= a && v <= z ? v : d; };
   const plans = Array.isArray(s.plans) && s.plans.length ? cleanPlans(s.plans) : defaultPlans(P);
-  return { plans, prices: P, on: s.on === true, smsOn: s.smsOn === true, giftOn: s.giftOn === true, giftPct: num(s.giftPct, 0, 30, 0), giftFixed: num(s.giftFixed, 0, 100, 0), giftMin: num(s.giftMin, 1, 10000, 18), giftMax: num(s.giftMax, 10, 100000, 5000), voiceOn: s.voiceOn === true, freeEmails: num(s.freeEmails, 0, 1000, 20), freeMax: num(s.freeMax, 0, 100, 3), mediaDays: num(s.mediaDays, 1, 90, 7), vFrom: num(s.vFrom, 0, 23, 8), vTo: num(s.vTo, 1, 24, 22), vTests: num(s.vTests, 0, 50, 5), voiceDirect: s.voiceDirect === true, voicePath: String(s.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, ''), voiceTpl: String(s.voiceTpl || '').replace(/\D/g, ''), voiceTplRem: String(s.voiceTplRem || '').replace(/\D/g, ''), vkey: String(s.vkey || '') }; }
+  return { plans, prices: P, on: s.on === true, smsOn: s.smsOn === true, giftOn: s.giftOn === true, giftPct: num(s.giftPct, 0, 30, 0), giftFixed: num(s.giftFixed, 0, 100, 0), giftMin: num(s.giftMin, 1, 10000, 18), giftMax: num(s.giftMax, 10, 100000, 5000), voiceOn: s.voiceOn === true, freeEmails: num(s.freeEmails, 0, 1000, 20), freeMax: num(s.freeMax, 0, 100, 3), mediaDays: num(s.mediaDays, 1, 90, 7), vFrom: num(s.vFrom, 0, 23, 8), vTo: num(s.vTo, 1, 24, 22), vTests: num(s.vTests, 0, 50, 5), voiceDirect: s.voiceDirect === true, voicePath: String(s.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, ''), voiceTpl: String(s.voiceTpl || '').replace(/\D/g, ''), voiceTplRem: String(s.voiceTplRem || '').replace(/\D/g, ''), vkey: String(s.vkey || ''), vtxt: vtxtClean(s.vtxt) }; }
+/* נוסחי ההודעה הקולית מהניהול (ריק = הנוסח הרגיל ב-_ivoice) */
+function vtxtClean(v) { const o = {}; ['inv', 'ivr', 'rem'].forEach(k => { const t = String((v || {})[k] || '').replace(/[<>]/g, '').trim().slice(0, 400); if (t) o[k] = t; }); return o; }
 const R2 = () => require('./_r2');
 async function pjson(key) { const r = await fetch(R2().presign('GET', key, 120)); return r.ok ? r.json() : null; }
 async function pput(key, o) { const r = await fetch(R2().presign('PUT', key, 120), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(o) }); if (!r.ok) throw new Error('r2 ' + r.status); }
@@ -69,10 +71,10 @@ async function paid(o) {
   await T.put(p.slug, { ...cur, paid: P });
   await index(p.slug, (cur.cfg || {}).d).catch(() => {});
   const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
-  if (o.email) { const { sendMail, frame } = require('./_mail');
-    await sendMail({ to: o.email, subject: 'דף ההזמנה לאירוע פעיל ✓', html: frame({ title: 'תודה! דף ההזמנה פעיל', body: 'דף ההזמנה בכתובת <b dir="ltr">myluach.org/t/' + p.slug + '</b> פתוח עכשיו לאורחים.' + (added.emails ? '<br>נוספו ' + added.emails + ' מיילים לשליחת הזמנות.' : '') + '<br>את הניהול (רשימת נמענים, שליחה, אישורי הגעה) עושים מאותו דפדפן שבו נשמרה הכתובת.', button: 'לניהול האירוע', url: site + '/invite?s=' + p.slug }) }, 'purchase').catch(e => console.error('event paid mail', e.message)); }
+  /* הנוסח: בניהול ← המיילים שהלקוחות מקבלים ← event */
+  if (o.email) await require('./_paid').send('event', o.email, { 'כתובת': site.replace(/^https?:\/\/(www\.)?/, '') + '/t/' + p.slug, 'מיילים': added.emails ? '\nנוספו ' + added.emails + ' מיילים לשליחת הזמנות.' : '' }, { url: site + '/invite?s=' + p.slug }, 'purchase').catch(e => console.error('event paid mail', e.message));
 }
 /* רשימת האירועים ששולמו (לשליחות האוטומטיות היומיות): כתובת ← תאריך. אירוע שעבר לפני יותר מחודש יוצא מהרשימה */
 async function index(slug, date) { const { loadSetting, saveSetting } = require('./_lib'), I = (await loadSetting('evpaid').catch(() => null)) || {}; I[slug] = date || I[slug] || '';
   const cut = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10); Object.keys(I).forEach(k => { if (I[k] && I[k] < cut) delete I[k]; }); await saveSetting('evpaid', I); }
-module.exports = { TIERS, SMS, VOICE, MAILPK, FEATS, cleanPlans, voiceOf, DEF, prices, prepare, create, paid, emailsOf, index };
+module.exports = { vtxtClean, TIERS, SMS, VOICE, MAILPK, FEATS, cleanPlans, voiceOf, DEF, prices, prepare, create, paid, emailsOf, index };

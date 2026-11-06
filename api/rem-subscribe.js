@@ -46,9 +46,7 @@ module.exports = async (req, res) => {
       const recent = (mine || []).find(r => r.status === 'pending' && Date.now() - new Date(r.created_at) < 10 * 60000);
       if (!recent) {
         const url = site + '/api/rem-confirm?t=' + token;
-        await sendMail({ to: email, subject: 'אישור תזכורות במייל מ־MyLuach',
-          html: frame({ title: 'לאשר תזכורות במייל?', body: 'ביקשתם לקבל במייל הזה תזכורת: <b>' + escH(name) + '</b>.<br>לחצו כדי לאשר. אם לא ביקשתם, אפשר להתעלם מהמייל הזה, ולא יישלח אליכם כלום.', button: 'לאישור התזכורות', url, foot: 'אם לא ביקשתם, אפשר להתעלם מהמייל הזה ולא יישלח אליכם דבר.' }),
-          text: 'לאישור תזכורות במייל מ־MyLuach: ' + url }, 'confirm');
+        await require('./_paid').send('remconfirm', email, { 'שם': name }, { url, text: url }, 'confirm');
       }
     }
     json(res, 200, { token, email, status: confirmed ? 'active' : 'pending' });

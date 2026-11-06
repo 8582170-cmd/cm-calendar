@@ -37,10 +37,9 @@ module.exports = async (req, res) => {
         const off = site + '/api/rem-confirm?t=' + r.token + '&off=1';
         const subject = 'תזכורת: ' + r.name + ' ' + when(hitN);
         try {
-          await sendMail({ to: r.email, subject,
-            html: frame({ title: escH(r.name), body: '<b>' + when(hitN) + '</b>, יום ' + WD[day.getDay()] + '<br>' + escH(heb) + ' · ' + gStr, button: r.rule && r.rule.url ? 'לדף האירוע' : 'ללוח השנה', url: site + (r.rule && r.rule.url ? r.rule.url : '/online/'), foot: 'קיבלתם את המייל כי ביקשתם תזכורת בלוח השנה של MyLuach. <a href="' + off + '" style="color:#6b7679">להפסקת התזכורת</a>' }),
-            text: r.name + ' ' + when(hitN) + ' (' + heb + ', ' + gStr + ').\nלהפסקת התזכורת: ' + off,
-            headers: { 'List-Unsubscribe': '<' + off + '>' } }, 'reminder');
+          /* הנוסח: בניהול ← המיילים שהלקוחות מקבלים ← reminder. קישור ההסרה תמיד נוסף בסוף */
+          await require('./_paid').send('reminder', r.email, { 'שם': r.name, 'מתי': when(hitN), 'יום': WD[day.getDay()], 'תאריך עברי': heb, 'תאריך': gStr, 'כפתור': r.rule && r.rule.url ? 'לדף האירוע' : 'ללוח השנה' },
+            { url: site + (r.rule && r.rule.url ? r.rule.url : '/online/'), footHtml: '<a href="' + off + '" style="color:#6b7679">להפסקת התזכורת</a>', text: 'להפסקת התזכורת: ' + off, headers: { 'List-Unsubscribe': '<' + off + '>' } }, 'reminder');
           await db('reminders?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_sent: tIso }) });
           sent++;
         } catch (e) { failed++; console.error('reminder send', r.id, e.message); }
