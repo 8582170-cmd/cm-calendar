@@ -80,8 +80,9 @@ module.exports = async function (b) {
     const p = b.plan; let P = cur.paid ? { ...cur.paid } : null;
     if (p === 'none') P = null;
     else if (p === 'free') P = { ...(P || {}), free: true, emails: Math.max(+((P || {}).emails) || 0, (await require('./_eventpay').prices()).freeEmails || 20), orders: (P || {}).orders || [], at: (P || {}).at || new Date().toISOString() };
-    else if (p === 'full') { P = { ...(P || { emails: 0, orders: [], at: new Date().toISOString() }) }; delete P.free; }
-    else return { error: 'plan' };
+    else if (p === 'full') { P = { ...(P || { emails: 0, orders: [], at: new Date().toISOString() }) }; delete P.free; delete P.plan; delete P.feats; }
+    else { const pl = (await require('./_eventpay').prices()).plans.find(x => x.id === p); if (!pl) return { error: 'plan' };
+      P = { ...(P || { emails: 0, orders: [], at: new Date().toISOString() }) }; delete P.free; P.plan = pl.id; P.feats = { ...pl.feats }; P.planPrice = pl.price; }
     if (P) P.log = (P.log || []).concat({ at: new Date().toISOString(), by: 'admin', plan: p, why: str(b.why, 200) }).slice(-50);
     const o = { ...cur }; if (P) o.paid = P; else delete o.paid;
     await save(o); if (P && cur.cfg && cur.cfg.d) await require('./_eventpay').index(s, cur.cfg.d).catch(() => {});

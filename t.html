@@ -138,7 +138,7 @@ body.hasbg{background:transparent}
     var s=out.join(', ');
     if(hasTime&&o.wt!=='0')s+=(EN||YI?' · ':' · בשעה ')+F('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
     return s}
-  var c=document.getElementById('c'),PAID=false,FULL=false,GCON=false;
+  var c=document.getElementById('c'),PAID=false,FULL=false,GAL=false,GCON=false;
   function esc(x){return String(x).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]})}
   var Q=new URLSearchParams(location.search),slug=(/^\/t\/([a-z0-9-]{3,40})\/?$/.exec(location.pathname)||[])[1];
   if(Q.get('e')==='1')document.body.classList.add('embed');
@@ -252,7 +252,7 @@ body.hasbg{background:transparent}
       (o.wl?'<form class="fm" id="f-wish" hidden><label>'+T.nm+'<input name="name" required maxlength="80" value="'+esc(tn)+'" autocomplete="name"></label><label>'+T.wt+'<textarea name="text" rows="4" required maxlength="1000"></textarea></label><div><b>'+T.who+'</b><div class="opts"><label><input type="radio" name="pub" value="1" checked>'+T.all+'</label><label><input type="radio" name="pub" value="0">'+T.host+'</label></div></div><button class="bt pri" type="submit">'+T.send+'</button><p class="msg" aria-live="polite"></p></form>':'')+'</div>';
     var teh=o.tp?'<div class="box2" id="tehBox"><h2 class="sec">📖 '+T.teh+'</h2><div>'+esc(o.tpt||T.tsub)+'</div><div class="tbar"><i id="tBar" style="width:0"></i></div><div class="mute" id="tProg"></div>'+
       '<p style="margin:8px 0 0">'+T.tpick+'</p><div class="tgrid" id="tGrid"></div><form class="fm" id="f-teh"><label>'+T.nm+'<input name="name" required maxlength="80" value="'+esc(tn)+'" autocomplete="name"></label><button class="bt pri" type="submit">'+T.ttake+'</button><p class="msg" aria-live="polite"></p></form><div id="tMine"></div></div>':'';
-    var galH=o.gal&&FULL?'<div class="box2" id="galBox"><h2 class="sec">📷 '+T.gal+'</h2><input type="file" id="galF" accept="image/*" multiple hidden><button class="bt pri" type="button" id="galB">'+T.gup+'</button><p class="msg" id="galM" aria-live="polite"></p><div id="galG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px"></div></div>':'';
+    var galH=o.gal&&GAL?'<div class="box2" id="galBox"><h2 class="sec">📷 '+T.gal+'</h2><input type="file" id="galF" accept="image/*" multiple hidden><button class="bt pri" type="button" id="galB">'+T.gup+'</button><p class="msg" id="galM" aria-live="polite"></p><div id="galG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px"></div></div>':'';
     page.insertAdjacentHTML('beforeend',det+(o.rv||o.rm||o.wl||gift||cgb?act:'')+teh+galH+(o.wl?'<div class="box2" id="wallBox" hidden><h2 class="sec">'+T.wall+'</h2><div class="wall" id="wall"></div></div>':''));
     page.addEventListener('click',function(e){var b=e.target.closest('[data-p]');if(!b)return;['rsvp','rem','wish','cg'].forEach(function(k){var f=document.getElementById('f-'+k);if(f)f.hidden=k!==b.dataset.p?true:!f.hidden});var f=document.getElementById('f-'+b.dataset.p);if(f&&!f.hidden){var i=f.querySelector('input:not([type=radio]):not([type=checkbox]),textarea');if(i&&!i.value)i.focus()}});
     document.getElementById('icsB').onclick=function(){var dt=hasTime?'DTSTART:'+fmt(to)+'\r\nDTEND:'+fmt(to+3*3600e3):'DTSTART;VALUE=DATE:'+d8(o.d)+'\r\nDTEND;VALUE=DATE:'+d8(nextDay(o.d));
@@ -314,7 +314,7 @@ body.hasbg{background:transparent}
       post({act:'wish',slug:slug,name:fw.elements['name'].value,text:fw.elements['text'].value,pub:fw.elements['pub'].value==='1'}).then(function(a){B.disabled=false;
         if(a[0]===200){M.className='msg';M.textContent=T.wok;fw.elements['text'].value='';loadWall()}else{M.className='msg no';M.textContent=a[0]===429?T.rate:T.err}}).catch(function(){B.disabled=false;M.className='msg no';M.textContent=T.err})}}
   }
-  if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){PAID=!!j.paid;FULL=!!j.full;GCON=!!j.gcOn;start(j.cfg||{})}).catch(function(){start({})})}
+  if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){PAID=!!j.paid;FULL=!!j.full;GAL=FULL&&j.gal!==false;GCON=!!j.gcOn;start(j.cfg||{})}).catch(function(){start({})})}
   else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr'),wp:Q.get('wp'),wd:Q.get('wd'),ww:Q.get('ww'),wt:Q.get('wt'),ns:Q.get('ns'),p:Q.get('p'),ps:Q.get('ps'),wh:Q.get('wh')});
 })();
 </script>
