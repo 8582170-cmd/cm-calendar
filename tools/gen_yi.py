@@ -31,7 +31,7 @@ def build(key):
   s = re.sub(r'<meta property="og:url" content="[^"]+">', '<meta property="og:url" content="%s">' % P['url'], s, count=1)
   s = s.replace('<meta property="og:locale" content="he_IL">', '<meta property="og:locale" content="yi">')
   # קישור החלפת שפה: לעברית
-  s = re.sub(r'<a class="lsw" href="timer-en\.html" hreflang="en" lang="en">English</a>', '', s)
+  s = re.sub(r'<a class="lsw" href="(?:timer-en\.html|invite-en)" hreflang="en" lang="en">English</a>', '', s)
   s = re.sub(r'<a class="lsw" href="(timer-yi\.html|invite-yi)" hreflang="yi" lang="yi">אידיש</a>', '<a class="lsw" href="%s" hreflang="he" lang="he">עברית</a>' % P['he'].rsplit('/', 1)[1], s)
   # שפת דף האורחים: אידיש כברירת מחדל
   rep('<option value="yi">יידיש</option>', '<option value="yi" selected>אידיש</option>')
