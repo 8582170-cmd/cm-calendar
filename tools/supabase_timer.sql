@@ -102,3 +102,8 @@ create table if not exists public.timer_event (
 create index if not exists timer_event_date on public.timer_event (date);
 alter table public.timer_event enable row level security;
 notify pgrst, 'reload schema';
+
+-- קיר ברכות ומתנות: מי רואה (vis: all / anon / host), הסתרת השם גם מבעלי השמחה, עיצוב, תמונה, וסכום מתנה שצורף לברכה
+alter table public.timer_wall add column if not exists vis text default 'all', add column if not exists noname boolean default false, add column if not exists style text, add column if not exists img text, add column if not exists gift numeric, add column if not exists gift_id bigint;
+alter table public.timer_gift add column if not exists vis text default 'all', add column if not exists noname boolean default false, add column if not exists style text, add column if not exists img text, add column if not exists wall boolean default true;
+notify pgrst, 'reload schema';
