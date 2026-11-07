@@ -89,7 +89,9 @@ async function alogAdd(req, b, act, st) {
   L.unshift({ t: now, a: act, d, ok: st < 400, ip, ua: SEC.uaInfo ? String(SEC.uaInfo(req.headers['user-agent'] || '') || '').slice(0, 60) : '' });
   await saveSetting('adminlog', L.slice(0, 600));
 }
-module.exports = async (req, res) => {
+/* הפונקציה מחכה גם לרישום ביומן הפעולות, כדי שהתשובה תישלח רק אחריו (אחרת ב-Cloudflare התשובה יוצאת ריקה) */
+module.exports = async (req, res) => { await main(req, res); if (res.__logP) await res.__logP; };
+async function main(req, res) {
   const b = readBody(req), SEC = require('./_sec');
   /* הגבלת ניסיונות: אחרי 5 סיסמאות שגויות מאותה כתובת, נעילה ל-5 דקות, אחר כך 15, שעה, 4 שעות, יום */
   const lock = await SEC.loginLocked(req).catch(() => null);
@@ -106,7 +108,7 @@ module.exports = async (req, res) => {
   { const act = String(b.action || '');
     if (req.method === 'GET' ? !act : (act && !ALOG_RO.test(act) && !(act === 'table' && !b.del))) {
       const end0 = res.end.bind(res); let once = false;
-      res.end = function (...a) { if (once) return end0(...a); once = true; alogAdd(req, b, act || 'login', res.statusCode).catch(() => {}).then(() => end0(...a)); return res; };
+      res.end = function (...a) { if (once) return end0(...a); once = true; res.__logP = alogAdd(req, b, act || 'login', res.statusCode).catch(() => {}).then(() => end0(...a)); return res; };
     } }
   try {
     /* בדיקת מערכת, יומן פעולות, מצב תחזוקה */
@@ -670,4 +672,4 @@ module.exports = async (req, res) => {
     console.error('admin', e);
     json(res, 500, { error: 'server error', message: String(e.message || e).slice(0, 200) });
   }
-};
+}
