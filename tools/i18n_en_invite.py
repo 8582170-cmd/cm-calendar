@@ -519,4 +519,7 @@ EN = [
     ('השולח ביקש לא להציג לכם את שמו', 'The sender asked not to show you their name'),
     ('גלויה לכולם עם השם', 'Public, with name'),
     ('גלויה לכולם בלי השם', 'Public, without name'),
+    ('לפרסם את הברכות לכל האורחים', 'Show blessings to all guests'),
+    ('לפרסם את המתנות לכל האורחים', 'Show gifts to all guests'),
+    ('שלוחת סליקה למתנות (לא חובה)', 'Gift payment extension (optional)'),
 ]

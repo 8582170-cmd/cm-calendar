@@ -60,7 +60,7 @@ function clean(c) {
     p: okImg(c.p) ? c.p : '', ps: ['rect', 'wide'].includes(c.ps) ? c.ps : 'circle',
     /* דף הזמנה */
     inv: okImg(c.inv) ? c.inv : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
-    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
+    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
     gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
@@ -103,10 +103,13 @@ function wishVis(c, b) {
 /* תמונה של ברכה: רק מהאחסון שלנו, בתיקייה של האירוע */
 function okWishImg(u, s) { u = String(u || ''); const M = (() => { try { return require('./_r2').media(); } catch (e) { return null; } })(); return M && u.indexOf(M.url + '/timers/wish/' + s + '/') === 0 && /^[\w:/.-]+\.jpg$/.test(u) ? u : ''; }
 /* מה מוצג לכולם: ברכות ומתנות פומביות (בלי שם כשביקשו) */
-async function publicWall(s) {
+async function publicWall(s, c) {
+  c = c || {}; const W = c.wpub !== 0, G = c.gpub !== 0; if (!W && !G) return [];
   const L = await db('timer_wall?slug=eq.' + s + '&public=is.true&hidden=is.false&select=id,name,text,created_at,vis,style,img,gift&order=created_at.desc&limit=500')
     .catch(() => db('timer_wall?slug=eq.' + s + '&public=is.true&hidden=is.false&select=id,name,text,created_at&order=created_at.desc&limit=300').catch(() => []));
-  return (L || []).map(w => ({ id: w.id, name: w.vis === 'anon' ? '' : w.name, text: w.text, t: w.created_at, style: w.style || '', img: w.img || '', gift: w.gift ? +w.gift : 0 }));
+  /* בעל האירוע בחר לא לפרסם ברכות ו/או מתנות: מורידים את מה שלא מתפרסם */
+  return (L || []).map(w => ({ id: w.id, name: w.vis === 'anon' ? '' : w.name, text: W ? w.text : '', t: w.created_at, style: W ? w.style || '' : '', img: W ? w.img || '' : '', gift: G && w.gift ? +w.gift : 0 }))
+    .filter(w => w.text || w.img || w.gift);
 }
 async function recent(table, s, ip) { if (!ip) return 0; const L = await db(table + '?slug=eq.' + s + '&ip=eq.' + encodeURIComponent(ip) + '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 3600e3).toISOString()) + '&select=id&limit=30').catch(() => []); return (L || []).length; }
 const own = (cur, tok) => { tok = str(tok, 64); return !!(cur && tok && tok.length === cur.token.length && crypto.timingSafeEqual(Buffer.from(tok), Buffer.from(cur.token))); };
@@ -514,15 +517,23 @@ async function ivr(req, res) {
     const prev = await db('timer_rsvp?slug=eq.' + r.slug + '&rtok=eq.' + r.token + '&select=id&limit=1').catch(() => []);
     if (prev && prev[0]) await db('timer_rsvp?id=eq.' + prev[0].id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
     else await db('timer_rsvp', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
-    await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st === 'yes' ? 'אישר בטלפון' : 'לא מגיע (טלפון)' }) }).catch(() => {}); };
+    await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st === 'yes' ? 'אישר בטלפון' : st === 'maybe' ? 'מתלבט (טלפון)' : 'לא מגיע (טלפון)' }) }).catch(() => {}); };
   /* בקמפיין שמוגדר כשיחה נכנסת: ההזמנה עצמה מושמעת מכאן (הנוסח של בעל האירוע, בלי "הקישו 1") */
   const intro = EP.voiceDirect || EP.voicePath ? String(c.vt || V.defText(c, 'ivr', EP)).replace(/[^.]*(הקישו|דריקט)[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : V.fillT(I.hello, { 'שם': r.name || '' }) + ' ' + (c.t || '') + '.';
   if (!q.A && (!r.call_st || /ממתין|לא ענה|תפוס|תא קולי/.test(r.call_st))) await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'ענה' }) }).catch(() => {});
-  if (!q.A) return rd(intro + ' ' + I.askA, 'A', 1, 1, '1.2');
-  if (q.A === '2') { await save('no'); return bye(I.noThanks); }
+  /* מתנה בטלפון: מעבר לשלוחת הסליקה (מהניהול), אם האירוע מקבל מתנות */
+  const giftOk = !!EP.vGiftPath && !!c.gc && feat(cur, 'gift') && !!EP.giftOn;
+  const goGift = () => out('id_list_message=' + say(I.toGift) + '&go_to_folder=/' + EP.vGiftPath);
+  /* תשובה אחרי "לא מגיעים" / "מתלבטים" (ימות שולחים שוב את כל ההקשות הקודמות) */
+  if (q.R === '4' && giftOk) return goGift();
+  if ((q.A === '2' || q.A === '3') && q.R != null) return bye(I.bye);
+  if (!q.A) return rd(intro + ' ' + I.askA + '. ' + I.askMaybe + (giftOk ? '. ' + I.askGift : ''), 'A', 1, 1, giftOk ? '1.2.3.4' : '1.2.3');
+  if (q.A === '4' && giftOk) return goGift();
+  if (q.A === '3') { await save('maybe'); return giftOk ? rd(I.maybeThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.maybeThanks); }
+  if (q.A === '2') { await save('no'); return giftOk ? rd(I.noThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.noThanks); }
   if (!q.N) return rd(I.askN, 'N', 2, 1, '', true);
   for (const x of QS) if (q['Q' + x.i] == null) return rd(x.q + ' ' + x.o.map((v, j) => v + ', ' + I.press + ' ' + (j + 1)).join('. '), 'Q' + x.i, 1, 1, x.o.map((v, j) => j + 1).join('.'));
-  if (q.R == null) { await save('yes', +q.N); return rd(V.fillT(I.saved, { 'מספר': +q.N }), 'R', 1, 1, '1.2'); }
+  if (q.R == null) { await save('yes', +q.N); return rd(V.fillT(I.saved, { 'מספר': +q.N }) + (giftOk ? '. ' + I.askGift : ''), 'R', 1, 1, giftOk ? '1.2.4' : '1.2'); }
   if (q.R === '1') await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_rem: 1 }) }).catch(() => {});
   return bye(q.R === '1' ? I.remYes : I.bye);
 }
@@ -551,7 +562,7 @@ module.exports = async (req, res) => {
       /* חלוקת תהילים: הסבב הנוכחי ומי לקח כל פרק */
       if (q.teh) { res.setHeader('Cache-Control', 'no-store'); return json(res, 200, await tehState(s)); }
       if (q.gal) { const cur = await get(s); if (!feat(cur, 'gal') || !(cur.cfg || {}).gal) return json(res, 200, { gal: [] }); res.setHeader('Cache-Control', 'no-store'); return json(res, 200, { gal: (await galList(s).catch(() => [])).map(x => x.url) }); }
-      if (q.wall) { res.setHeader('Cache-Control', 'no-store'); return json(res, 200, { wall: await publicWall(s) }); }
+      if (q.wall) { res.setHeader('Cache-Control', 'no-store'); const cw = await get(s).catch(() => null); return json(res, 200, { wall: await publicWall(s, (cw && cw.cfg) || {}) }); }
       const o = RESERVED.has(s) ? { reserved: true } : await get(s);
       if (q.check) return json(res, 200, { free: !o });
       if (!o || o.reserved) return json(res, 404, { error: 'not found' });
