@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>הפרטים שלי בהזמנות | MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/greetings/greetings.css?v=7">
+<script src="/assets/a11y.js?v=1" defer></script>
+<style>
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;margin:0 0 14px;max-width:640px}
+.card h2{font-size:22px;margin:0}
+.card p{margin:0;font-size:17px;line-height:1.6}
+.card input{font:inherit;font-size:17px;min-height:46px;padding:6px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper,#fff);color:var(--ink);width:100%;box-sizing:border-box}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.b{font:inherit;font-size:16px;font-weight:700;min-height:44px;padding:6px 18px;border:1.5px solid var(--line);border-radius:999px;background:var(--sheet);color:var(--ink);cursor:pointer}
+.b.pri{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.b.no{border-color:#b3261e;color:#b3261e}
+.msg{min-height:1.4em;font-size:16px;color:var(--mute)}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+h1{font-size:clamp(28px,4vw,40px);font-weight:900;margin:8px 0 14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav"><a class="logo" href="/"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="36" height="36">MyLuach</a></header>
+  <main id="main">
+    <h1>הפרטים שלי בהזמנות</h1>
+    <div id="box"></div>
+  </main>
+</div>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); }, B = $('box'), T = new URLSearchParams(location.search).get('t');
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  function post(b){ return fetch('/api/pricing?c=_dirme', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if (!r.ok) throw Object.assign(new Error(j.error || r.status), { code: j.error }); return j; }); }); }
+  /* שלב 1: כתובת המייל → קישור אישי למייל */
+  function ask(note){
+    B.innerHTML = '<div class="card"><h2>עדכון או מחיקה של המייל</h2>' + (note ? '<p><b>' + esc(note) + '</b></p>' : '') +
+      '<p>אם קיבלתם הזמנה דרך MyLuach (במייל או בטלפון), כאן אפשר לעדכן את כתובת המייל, למחוק אותה, או לבקש שלא יתקשרו אליכם יותר.</p>' +
+      '<p>כתבו את כתובת המייל, ונשלח אליה קישור אישי.</p>' +
+      '<label>כתובת המייל<input type="email" id="em" dir="ltr" autocomplete="email"></label>' +
+      '<div class="btns"><button class="b pri" type="button" id="go">שליחת קישור</button></div><p class="msg" id="m" role="status"></p></div>' +
+      '<div class="card"><h2>הסרה מהשיחות בלי מייל</h2><p>בכל שיחת הזמנה מ־MyLuach אפשר להקיש 9, ואז לא נתקשר יותר למספר הזה, מאף אירוע.</p></div>';
+    $('go').onclick = function(){ var e = $('em').value.trim(); if (!/@/.test(e)) { $('m').textContent = 'נא לכתוב כתובת מייל.'; return; }
+      $('go').disabled = true; $('m').textContent = 'שולח…';
+      post({ act: 'req', email: e }).then(function(){ $('m').textContent = 'אם הכתובת נמצאת אצלנו, נשלח אליה עכשיו קישור (תקף ליומיים). כדאי לבדוק גם בתיקיית הספאם.'; })
+        .catch(function(){ $('go').disabled = false; $('m').textContent = 'לא הצלחנו לשלוח. נסו שוב.'; }); };
+  }
+  /* שלב 2: עם הקישור */
+  function show(){
+    post({ act: 'get', t: T }).then(function(j){
+      B.innerHTML = '<div class="card"><h2>המייל שלכם: <span dir="ltr">' + esc(j.email) + '</span></h2>' +
+        (j.people.length ? '<p>רשום אצלנו בספרי הטלפונים: ' + j.people.map(function(p){ return esc(p.name) + (p.city ? ' (' + esc(p.city) + ')' : ''); }).join(', ') + '.</p>' : '') +
+        (j.events ? '<p>הכתובת נמצאת ברשימת המוזמנים של ' + j.events + ' אירועים.</p>' : '') +
+        '<p>בעלי האירועים לא רואים את הכתובת. הם רואים רק שיש מייל.</p>' +
+        '<label>כתובת חדשה<input type="email" id="ne" dir="ltr" autocomplete="email"></label>' +
+        '<div class="btns"><button class="b pri" type="button" id="set">עדכון הכתובת</button><button class="b no" type="button" id="del">מחיקת המייל</button></div><p class="msg" id="m" role="status"></p></div>' +
+        (j.phones.length ? '<div class="card"><h2>שיחות טלפון</h2><p>המספרים שמקושרים למייל הזה:</p>' + j.phones.map(function(p){ return '<div class="ph"><span dir="ltr">' + esc(p.p) + '</span>' + (p.blocked ? '<span>🔕 לא מקבל שיחות <button class="b" type="button" data-u="' + p.id + '">להחזיר</button></span>' : '<button class="b no" type="button" data-k="' + p.id + '">🔕 לא להתקשר אליי יותר</button>') + '</div>'; }).join('') + '<p class="msg" id="m2" role="status"></p></div>' : '');
+      $('set').onclick = function(){ var e = $('ne').value.trim(); if (!/@/.test(e)) { $('m').textContent = 'נא לכתוב כתובת חדשה.'; return; }
+        post({ act: 'set', t: T, email: e }).then(function(){ $('m').textContent = '✓ הכתובת עודכנה. מעכשיו ההזמנות יגיעו לכתובת החדשה.'; }).catch(function(x){ $('m').textContent = x.code === 'email' ? 'הכתובת לא תקינה.' : 'לא הצליח. נסו שוב.'; }); };
+      $('del').onclick = function(){ var b = $('del'); if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'בטוח? ללחוץ שוב למחיקה'; return; }
+        post({ act: 'del', t: T }).then(function(){ B.innerHTML = '<div class="card"><h2>✓ המייל נמחק</h2><p>לא יישלחו יותר הזמנות לכתובת הזאת דרך MyLuach. אם הכתובת תגיע אלינו שוב בקובץ, היא לא תתווסף.</p></div>'; }).catch(function(){ $('m').textContent = 'לא הצליח. נסו שוב.'; }); };
+      B.onclick = function(e){ var k = e.target.closest('[data-k],[data-u]'); if (!k) return;
+        post({ act: k.dataset.k ? 'block' : 'unblock', t: T, id: k.dataset.k || k.dataset.u }).then(show).catch(function(){ var m = $('m2'); if (m) m.textContent = 'לא הצליח. נסו שוב.'; }); };
+    }).catch(function(e){ T = null; ask(e.code === 'token' ? 'הקישור לא בתוקף. אפשר לבקש קישור חדש.' : ''); });
+  }
+  if (T) { B.innerHTML = '<p>טוען…</p>'; show(); } else ask();
+})();
+</script>
+</body>
+</html>

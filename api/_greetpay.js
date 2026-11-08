@@ -96,6 +96,8 @@ async function prepare(b) {
 async function create(id, email, p) {
   await put(id, { id, email, tpl: p.tpl, v: p.v, title: p.title, state: p.state, created: new Date().toISOString(), mails: 0 });
 }
+/* המאגרים שהמשתמש יכול לבחור מהם נמענים לברכה (null = לא פעיל) */
+async function gmDir(user) { const D = require('./_dir'), C = await D.cfg(); if (!C.on || !C.greet || !user) return null; const L = await D.books(user.email); return L.length ? L.map(x => ({ id: x.id, name: x.name, city: x.city || '' })) : null; }
 /* הגדרות השליחה במייל (בניהול): on, free (גם לעיצוב חינמי), perDay (מגבלה יומית למשתמש) */
 async function mailCfg() { const g = (await loadSetting('greetmail').catch(() => ({}))) || {}; return { on: !!g.on, free: !!g.free, perDay: Math.max(1, Math.min(500, parseInt(g.perDay, 10) || 20)) }; }
 function link(id) { return site() + '/brachot/edit.html?o=' + id + '&k=' + token(id) + '#download'; }
@@ -149,10 +151,17 @@ module.exports = async (req, res) => {
     /* מנויים וחבילות: מה יש ללקוח המחובר, ומה אפשר לקנות */
     if (b.action === 'ent') {
       const SB = require('./_subs'), user = await require('./_lib').getUser(req).catch(() => null), S = await SB.cfg();
-      return json(res, 200, { gmail: await mailCfg().then(g => g.on ? { free: g.free, perDay: g.perDay } : null).catch(() => null), offers: await SB.pub(), ent: user ? await SB.greetEnt(user, S) : null, rent: user ? await SB.remEnt(user, S).catch(() => null) : null, login: !!user });
+      const gdir = user ? await gmDir(user).catch(() => null) : null;
+      return json(res, 200, { gmail: await mailCfg().then(g => g.on ? { free: g.free, perDay: g.perDay, dir: gdir } : null).catch(() => null), offers: await SB.pub(), ent: user ? await SB.greetEnt(user, S) : null, rent: user ? await SB.remEnt(user, S).catch(() => null) : null, login: !!user });
     }
     /* שליחת ברכה מעוצבת במייל (הגדרה greetmail בניהול): רק למשתמש מחובר, לעיצוב ששולם (o + k) או חינמי (אם מותר), עם מגבלה יומית.
        התמונה מגיעה מהדפדפן (JPEG), נשמרת באחסון, ומוצגת בגוף המייל. המייל יוצא בשם השולח, ותשובה מגיעה אליו */
+    /* בחירת נמענים מספרי הטלפונים (אם הופעל בניהול, ורק מאגרים שמותרים למשתמש). רואים רק שמות, לא מיילים */
+    if (b.action === 'gmdir') {
+      const user = await require('./_lib').getUser(req); if (!user) return json(res, 401, { error: 'login' });
+      if (!(await gmDir(user))) return json(res, 403, { error: 'off' });
+      const r = await require('./_dir').search(user.email, { book: b.book, city: b.city, q: b.q, off: b.off, need: 'email' }); return json(res, r.error ? 403 : 200, r);
+    }
     if (b.action === 'gmsend') {
       const GM = await mailCfg(); if (!GM.on) return json(res, 403, { error: 'off', message: 'השליחה במייל לא פעילה כרגע.' });
       const user = await require('./_lib').getUser(req); if (!user) return json(res, 401, { error: 'login', message: 'צריך להיכנס לחשבון.' });
@@ -160,10 +169,14 @@ module.exports = async (req, res) => {
       if (okId(b.o) && String(b.k || '') === token(b.o)) { const rec = await get(b.o).catch(() => null); okDesign = !!(rec && rec.paidAt && Date.now() <= Date.parse(rec.dlUntil)); }
       else if (GM.free && b.free) okDesign = true;
       if (!okDesign) return json(res, 402, { error: 'paid', message: 'אפשר לשלוח במייל עיצוב ששולם' + (GM.free ? ' או עיצוב חינמי' : '') + '.' });
-      const to = [...new Set(String(b.to || '').split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)))].slice(0, 50);
+      let to = [...new Set(String(b.to || '').split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)))].slice(0, 50);
+      /* נמענים מהמאגר: המיילים נשארים בשרת */
+      if (b.dir && b.dir.book && (await gmDir(user))) { const L = await require('./_dir').resolve(user.email, { book: b.dir.book, city: b.dir.city, q: b.dir.q, need: 'email', ids: Array.isArray(b.dir.ids) ? b.dir.ids : null }, 500).catch(() => null);
+        if (L) to = [...new Set(to.concat(L.map(p => String(p.email || '').toLowerCase()).filter(Boolean)))]; }
       if (!to.length) return json(res, 400, { error: 'to', message: 'נא לכתוב לפחות כתובת מייל אחת.' });
       const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }), { loadSetting: ls, saveSetting: ss } = require('./_lib');
       const CNT = (await ls('greetmailcnt').catch(() => ({}))) || {}, C = CNT.day === day ? CNT : { day, u: {} }, used = +C.u[user.id] || 0;
+      if (to.length > 500) to = to.slice(0, 500);
       if (used + to.length > GM.perDay) return json(res, 429, { error: 'limit', message: 'אפשר לשלוח עד ' + GM.perDay + ' מיילים ביום. נשארו היום: ' + Math.max(0, GM.perDay - used) + '.' });
       const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.img || '')); if (!m) return json(res, 400, { error: 'img' });
       const buf = Buffer.from(m[1], 'base64'); if (buf.length > 1300000) return json(res, 413, { error: 'big' });

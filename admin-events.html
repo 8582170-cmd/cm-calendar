@@ -130,7 +130,7 @@ function open(s){var D=$('#dr'),I=$('#drIn');D.hidden=false;I.innerHTML='<p clas
   }).catch(function(e){I.innerHTML='<p class="msg no">'+esc(e.message)+'</p>'})}
 
 /* ---------- הגדרות ומחירים ---------- */
-var IVR_L=[['hello','פתיחה (כשההזמנה לא מוקראת במלואה)'],['askA','שאלת ההגעה'],['noThanks','מי שלא מגיע'],['askN','כמה אנשים'],['press','המילה "הקישו" (בשאלות)'],['saved','אחרי אישור + הצעת תזכורת'],['remYes','ביקש תזכורת'],['bye','סיום'],['notFound','מספר לא נמצא'],['askMaybe','אפשרות "מתלבטים"'],['maybeThanks','אחרי "מתלבטים"'],['askGift','אפשרות מתנה (כשמוגדרת שלוחת סליקה)'],['toGift','מעבר לשלוחת המתנה'],['end','"לסיום הקישו 2"']];
+var IVR_L=[['hello','פתיחה (כשההזמנה לא מוקראת במלואה)'],['askA','שאלת ההגעה'],['noThanks','מי שלא מגיע'],['askN','כמה אנשים'],['press','המילה "הקישו" (בשאלות)'],['saved','אחרי אישור + הצעת תזכורת'],['remYes','ביקש תזכורת'],['bye','סיום'],['notFound','מספר לא נמצא'],['askMaybe','אפשרות "מתלבטים"'],['maybeThanks','אחרי "מתלבטים"'],['askGift','אפשרות מתנה (כשמוגדרת שלוחת סליקה)'],['toGift','מעבר לשלוחת המתנה'],['end','"לסיום הקישו 2"'],['askMail','אפשרות "לקבל במייל" (7)'],['mailAsk','בקשת כתובת המייל'],['mailSaved','אחרי שהמייל נקלט'],['mailBad','מייל לא תקין'],['askRemove','אפשרות הסרה (9)'],['removed','אחרי הסרה']];
 function ivrRead(){var o={};['he','yi'].forEach(function(l){var x={};IVR_L.forEach(function(k){var i=$('#ivr-'+l+'-'+k[0]);if(i&&i.value.trim())x[k[0]]=i.value.trim()});o[l]=x});return o}
 function evp(){return api({action:'evpget'}).then(function(j){EP=j;return j})}
 function saveEvp(extra){var j=EP,P={};[].forEach.call(document.querySelectorAll('[data-evp]'),function(i){P[i.dataset.evp]=+i.value});var v=function(id,d){var x=$('#'+id);return x?(x.type==='checkbox'?x.checked:x.value):d};

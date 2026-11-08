@@ -204,7 +204,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
 <script src="/assets/pay.js?v=4" defer></script>
-<script src="/assets/greetings/mine.js?v=7"></script>
+<script src="/assets/greetings/mine.js?v=8"></script>
 <script src="/assets/sitemsg.js?v=2" defer></script>
 </head>
 <body>
@@ -990,24 +990,46 @@ function gmBox(){
       if (!u) { B.innerHTML = '<h2 style="margin:0 0 6px">✉ שליחת הברכה במייל</h2><p>אפשר לשלוח את הברכה ישירות למייל של מי שתרצו. <a href="' + window.MyGreets.loginUrl() + '">כניסה לחשבון</a> כדי לשלוח.</p>'; return; }
       B.innerHTML = '<h2 style="margin:0 0 6px">✉ שליחת הברכה במייל</h2><p class="info">הברכה תופיע בגוף המייל. המייל יוצא מהאתר בשמכם, ותשובה תגיע אליכם (' + escH(u.email) + '). עד ' + C.perDay + ' נמענים ביום.</p>' +
         '<label class="f">כתובות מייל של הנמענים (אפשר כמה, מופרדות בפסיק או בשורה חדשה)<textarea id="gmTo" rows="2" dir="ltr" style="width:100%"></textarea></label>' +
+        (C.dir ? '<div class="f"><button class="pill" type="button" id="gmDirB">📒 בחירת נמענים מספרי הטלפונים</button> <span class="info" id="gmDirN"></span><div id="gmDirP" hidden style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:6px"></div></div>' : '') +
         '<label class="f">השם שלכם (כך זה יופיע: "קיבלת ברכה מ…")<input type="text" id="gmFrom" maxlength="60"></label>' +
         '<label class="f">הודעה אישית (לא חובה)<textarea id="gmNote" rows="2" maxlength="600" style="width:100%"></textarea></label>' +
         '<div class="row2"><button class="big-btn" type="button" id="gmGo">✉ שליחה</button></div><p class="info" id="gmMsg" role="status"></p>';
-      $('gmGo').onclick = gmSend; });
+      $('gmGo').onclick = gmSend; if (C.dir) gmDirInit(C.dir); });
   };
   if (GMC !== undefined) { go(); return; }
   GMC = null; window.MyGreets.ent().then(function(j){ GMC = j || {}; go(); }).catch(function(){ GMC = {}; });
 }
+/* נמענים מהמאגר: רואים רק שם ועיר. המיילים נשארים בשרת */
+var GD = { sel: {}, rows: [], total: 0, all: false };
+function gmDirN(){ var n = GD.all ? GD.total : Object.keys(GD.sel).length; $('gmDirN').textContent = n ? '+ ' + n + ' נמענים מהמאגר' : ''; return n; }
+function gmDirInit(books){
+  var P = $('gmDirP'); GD.book = books[0].id;
+  $('gmDirB').onclick = function(){ P.hidden = !P.hidden; if (!P.hidden && !GD.loaded) { GD.loaded = 1; draw0(); find(); } };
+  function draw0(){ P.innerHTML = '<div class="row2" style="gap:6px;flex-wrap:wrap"><select id="gdB">' + books.map(function(b){ return '<option value="' + b.id + '">' + escH(b.name) + (b.city ? ' · ' + escH(b.city) : '') + '</option>'; }).join('') + '</select><select id="gdC"><option value="">כל הערים</option></select><input type="search" id="gdQ" placeholder="חיפוש שם…" style="flex:1;min-width:140px"></div><p class="info" id="gdM"></p><div id="gdL"></div>';
+    var t; $('gdB').onchange = function(){ GD.book = +this.value; GD.sel = {}; GD.all = false; GD.city = ''; $('gdC').innerHTML = '<option value="">כל הערים</option>'; find(); };
+    $('gdC').onchange = function(){ GD.city = this.value; GD.all = false; find(); };
+    $('gdQ').oninput = function(){ var v = this.value; clearTimeout(t); t = setTimeout(function(){ GD.q = v.trim(); GD.all = false; find(); }, 350); };
+    P.onchange = function(e){ var c = e.target.closest('[data-gd]'); if (c) { if (c.checked) GD.sel[c.dataset.gd] = 1; else delete GD.sel[c.dataset.gd]; GD.all = false; var a = $('gdAll'); if (a) a.checked = false; gmDirN(); } if (e.target.id === 'gdAll') { GD.all = e.target.checked; list(); gmDirN(); } };
+    P.onclick = function(e){ if (e.target.id === 'gdMore') find(true); }; }
+  function find(more){ $('gdM').textContent = 'מחפש…';
+    window.MyGreets.gmDir({ book: GD.book, city: GD.city, q: GD.q, off: more ? GD.rows.length : 0 }).then(function(j){ GD.rows = more ? GD.rows.concat(j.rows) : j.rows; GD.total = j.total; $('gdM').textContent = '';
+      if (j.cities && $('gdC').options.length < 2) $('gdC').innerHTML = '<option value="">כל הערים</option>' + j.cities.map(function(x){ return '<option>' + escH(x.k) + '</option>'; }).join('');
+      list(); gmDirN(); }).catch(function(){ $('gdM').textContent = 'החיפוש לא הצליח.'; }); }
+  function list(){ $('gdL').innerHTML = '<label class="info"><input type="checkbox" id="gdAll"' + (GD.all ? ' checked' : '') + '> כל ה־' + GD.total + ' שיש להם מייל</label><div style="max-height:260px;overflow:auto">' +
+    GD.rows.map(function(p){ return '<label style="display:block;padding:4px 0;border-bottom:1px solid var(--line)"><input type="checkbox" data-gd="' + p.id + '"' + (GD.all || GD.sel[p.id] ? ' checked' : '') + (GD.all ? ' disabled' : '') + '> <b>' + escH(p.name) + '</b> <small class="info">' + escH([p.father ? 'בן ' + p.father : '', p.street, p.city].filter(Boolean).join(' · ')) + '</small></label>'; }).join('') + '</div>' +
+    (GD.rows.length < GD.total ? '<button class="pill" type="button" id="gdMore">עוד…</button>' : ''); }
+}
 function gmSend(){
-  var M = $('gmMsg'), b = $('gmGo'), to = $('gmTo').value.trim(), from = $('gmFrom').value.trim();
-  if (!/@/.test(to)) { M.textContent = 'נא לכתוב לפחות כתובת מייל אחת.'; $('gmTo').focus(); return; }
+  var M = $('gmMsg'), b = $('gmGo'), to = $('gmTo').value.trim(), from = $('gmFrom').value.trim(), nd = $('gmDirN') ? gmDirN() : 0;
+  if (!/@/.test(to) && !nd) { M.textContent = 'נא לכתוב לפחות כתובת מייל אחת.'; $('gmTo').focus(); return; }
   if (!from) { M.textContent = 'נא לכתוב את השם שלכם.'; $('gmFrom').focus(); return; }
   b.disabled = true; M.textContent = 'מכינים את התמונה…';
   var cnv = document.createElement('canvas'), paid = mode() !== 'free';
   Promise.resolve(G.render(cnv, tpl, S, { scale: Math.min(1, 1000 / D().W), watermark: null })).then(function(cc){ cc = cc || cnv; var q = .86, d = cc.toDataURL('image/jpeg', q); while (d.length > 1150000 && q > .4) { q -= .12; d = cc.toDataURL('image/jpeg', q); }
     M.textContent = 'שולחים…';
-    return window.MyGreets.mailSend(Object.assign({ to: to, from: from, note: $('gmNote').value.trim(), img: d }, paid && CRED ? { o: CRED.o, k: CRED.k } : { free: 1 })); })
-    .then(function(j){ b.disabled = false; M.textContent = '✓ נשלח ל־' + j.sent + ' נמענים' + (j.left != null ? '. אפשר לשלוח היום עוד ' + j.left + '.' : '.'); if (j.sent) $('gmTo').value = ''; })
+    var dir = nd ? { book: GD.book, city: GD.city, q: GD.q, ids: GD.all ? null : Object.keys(GD.sel).map(Number) } : null;
+    return window.MyGreets.mailSend(Object.assign({ to: to, from: from, note: $('gmNote').value.trim(), img: d, dir: dir }, paid && CRED ? { o: CRED.o, k: CRED.k } : { free: 1 })); })
+    .then(function(j){ b.disabled = false; M.textContent = '✓ נשלח ל־' + j.sent + ' נמענים' + (j.left != null ? '. אפשר לשלוח היום עוד ' + j.left + '.' : '.'); if (j.sent) { $('gmTo').value = ''; GD.sel = {}; GD.all = false; if ($('gmDirN')) gmDirN(); if ($('gdL')) $('gdL').innerHTML = ''; GD.loaded = 0; if ($('gmDirP')) $('gmDirP').hidden = true; } })
     .catch(function(e){ b.disabled = false; M.textContent = e.msg || 'לא הצלחנו לשלוח. נסו שוב.'; });
 }
 /* ברכה לקיר של אירוע (הגיעו מדף ההזמנה): תמונה של העיצוב עולה לקיר הברכות, עם מתנה אם רוצים. תשלום אחד על העיצוב ועל המתנה */

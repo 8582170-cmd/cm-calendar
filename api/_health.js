@@ -55,6 +55,8 @@ async function run() {
     const miss = [];
     await db('timer_event?select=slug&limit=1').catch(() => miss.push('טבלת האירועים (timer_event)'));
     await db('timer_recip?select=opened_at,call_at,call_st&limit=1').catch(() => miss.push('עמודות הפתיחה והשיחות ב־timer_recip'));
+    await db('dir_person?select=id&limit=1').catch(() => miss.push('ספרי הטלפונים (dir_book, dir_person, dir_block)'));
+    await db('timer_recip?select=dir_id,email_src&limit=1').catch(() => miss.push('עמודות המאגר ב־timer_recip'));
     await db('email_log?select=to_email,error&limit=1').catch(() => miss.push('עמודות ב־email_log'));
     if (miss.length) add('sys', 'sql', 'warn', 'חסרים חלקים במסד הנתונים', miss.join(' · '), 'להריץ ב־Supabase את הקבצים tools/supabase_timer.sql ו־tools/supabase_reminders.sql (בטוח להריץ שוב)');
 

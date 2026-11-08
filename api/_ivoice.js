@@ -43,12 +43,14 @@ const IVR = {
     press: 'הקישו', saved: 'תודה, אישור ההגעה של {מספר} אנשים נרשם. לתזכורת טלפונית לפני האירוע הקישו 1. לסיום הקישו 2', remYes: 'נתקשר להזכיר לפני האירוע. להתראות בשמחות',
     bye: 'תודה רבה, להתראות בשמחות', notFound: 'מספר הטלפון שלכם לא נמצא ברשימת המוזמנים לאירוע קרוב. להתראות',
     fromName: 'שלום {שם}, קיבלתם הזמנה אישית מאת', rest: '{לאירוע}, {מתי}{מקום}',
-    askMaybe: 'אם עוד לא בטוחים, הקישו 3', askGift: 'לתת מתנה לבעלי השמחה, הקישו 4', maybeThanks: 'תודה, רשמנו שאתם עוד מתלבטים. נשמח אם תעדכנו בהמשך', toGift: 'מעבירים אתכם לתשלום המתנה', end: 'לסיום הקישו 2' },
+    askMaybe: 'אם עוד לא בטוחים, הקישו 3', askGift: 'לתת מתנה לבעלי השמחה, הקישו 4', maybeThanks: 'תודה, רשמנו שאתם עוד מתלבטים. נשמח אם תעדכנו בהמשך', toGift: 'מעבירים אתכם לתשלום המתנה', end: 'לסיום הקישו 2',
+    askMail: 'לקבלת ההזמנה במייל, הקישו 7', askRemove: 'להסרה מרשימת השיחות, הקישו 9', mailAsk: 'הקישו את כתובת המייל שלכם', mailSaved: 'תודה, ההזמנה תישלח למייל שלכם', mailBad: 'כתובת המייל לא תקינה', removed: 'הוסרתם מרשימת השיחות, ולא נתקשר אליכם יותר. להתראות' },
   yi: { hello: 'שלום {שם}.', askA: 'אויב איר קומט, דריקט 1. אויב איר קענט נישט קומען, דריקט 2', noThanks: 'א דאנק, אייער ענטפער איז פארשריבן. זאלן מיר זיך זען ביי שמחות', askN: 'וויפיל מענטשן וועלן קומען? דריקט די צאל',
     press: 'דריקט', saved: 'א דאנק, די באשטעטיגונג פאר {מספר} מענטשן איז פארשריבן. פאר א טעלעפאן דערמאנונג פאר דער שמחה דריקט 1. צו ענדיגן דריקט 2', remYes: 'מיר וועלן אייך אנקלינגען צו דערמאנען פאר דער שמחה. זאלן מיר זיך זען ביי שמחות',
     bye: 'א שיינעם דאנק, זאלן מיר זיך זען ביי שמחות', notFound: 'אייער טעלעפאן נומער איז נישט געפונען אין דער ליסטע פון געלאדענע צו א שמחה. א גוטן טאג',
     fromName: 'שלום {שם}, איר האט באקומען א פערזענליכע הזמנה פון', rest: '{לאירוע}, {מתי}{מקום}',
-    askMaybe: 'אויב איר זענט נאך נישט זיכער, דריקט 3', askGift: 'צו געבן א מתנה פאר די בעלי שמחה, דריקט 4', maybeThanks: 'א דאנק, מיר האבן פארשריבן אז איר זענט נאך נישט זיכער. ביטע לאזט אונז וויסן שפעטער', toGift: 'מיר פירן אייך איבער צו באצאלן די מתנה', end: 'צו ענדיגן דריקט 2' } };
+    askMaybe: 'אויב איר זענט נאך נישט זיכער, דריקט 3', askGift: 'צו געבן א מתנה פאר די בעלי שמחה, דריקט 4', maybeThanks: 'א דאנק, מיר האבן פארשריבן אז איר זענט נאך נישט זיכער. ביטע לאזט אונז וויסן שפעטער', toGift: 'מיר פירן אייך איבער צו באצאלן די מתנה', end: 'צו ענדיגן דריקט 2',
+    askMail: 'צו באקומען די הזמנה אין אימעיל, דריקט 7', askRemove: 'אראפגענומען צו ווערן פון דער טעלעפאן ליסטע, דריקט 9', mailAsk: 'דריקט אייער אימעיל אדרעס', mailSaved: 'א דאנק, די הזמנה וועט געשיקט ווערן צו אייער אימעיל', mailBad: 'דער אימעיל אדרעס איז נישט גילטיג', removed: 'איר זענט אראפגענומען פון דער טעלעפאן ליסטע, און מען וועט אייך מער נישט אנקלינגען. א גוטן טאג' } };
 /* ההודעות לשפה: הנוסח מהניהול, ומה שריק מהנוסח הרגיל. vars ממלא {שם} {מספר} */
 function ivrT(E, lang) { const L = lang === 'yi' ? 'yi' : 'he', own = ((E && E.ivrtxt) || {})[L] || {}, D = IVR[L], o = {};
   Object.keys(D).forEach(k => { const v = String(own[k] || '').trim(); o[k] = v || D[k]; }); return o; }
@@ -61,8 +63,11 @@ function defText(c, mode, E) {
   const V = { 'אירוע': t, 'לאירוע': toT, 'מתי': whenSay(c), 'מקום': where ? ', ב' + where : '' };
   return (own || VTXT[m]).replace(/\{(אירוע|לאירוע|מתי|מקום)\}/g, (x, k) => V[k]);
 }
+/* מספרים שביקשו הסרה (רשימת החסימה הקבועה) לא מקבלים שיחות, מאף אירוע */
+async function drop(list) { try { const B = await require('./_dir').blockedSet(list.map(r => r.phone)); return B.size ? list.filter(r => !B.has(phone(r.phone))) : list; } catch (e) { return list; } }
 /* הפעלת קמפיין לרשימה: list = [{phone, name}] */
 async function run(cur, list, mode, text) {
+  list = await drop(list);
   const c = cur.cfg || {}, E = await EP().prices(), T = String(text || '').trim() || defText(c, mode, E), P = {};
   const direct = E.voiceDirect && mode !== 'rem';
   if (E.voicePath && mode !== 'rem') return bridge(list, E.voicePath);
@@ -74,6 +79,7 @@ async function run(cur, list, mode, text) {
 }
 /* קמפיין שנכנס לשלוחה (CallExtensionBridging): מי שעונה נכנס ישר לשלוחת ה-API ושומע את ההזמנה משם. עד 500 מספרים לקריאה */
 async function bridge(list, path) {
+  list = await drop(list);
   const ph = [...new Set(list.map(r => phone(r.phone)).filter(Boolean))]; if (!ph.length) throw new Error('no phones');
   const vc = await V().cfg(), ids = [];
   for (let i = 0; i < ph.length; i += 500) { const j = await yem('CallExtensionBridging', { phones: ph.slice(i, i + 500).join(':'), ivrPath: 'ivr2:/' + path, ...(vc.callerId ? { callerId: vc.callerId } : {}) }); ids.push(j.campaignId || ''); }
@@ -81,6 +87,7 @@ async function bridge(list, path) {
 }
 /* שליחת טקסט ישירות (SendTTS): אותו טקסט לכולם, בלי תבנית. הסטטוסים חוזרים בזמן אמת ל-callbackUrl (עד 500 מספרים) */
 async function sendTTS(list, text, cb) {
+  list = await drop(list);
   const ph = [...new Set(list.map(r => phone(r.phone)).filter(Boolean))]; if (!ph.length) throw new Error('no phones');
   const vc = await V().cfg(), T = tts(String(text || '').replace(/\{(שם|name)\}/g, '').replace(/\s+,/g, ','));
   const j = await yem('SendTTS', { ttsMessage: T, phones: ph.join(':'), ...(vc.callerId ? { callerId: vc.callerId } : {}), ...(cb && ph.length <= 500 ? { callbackUrl: cb } : {}) });
@@ -88,4 +95,4 @@ async function sendTTS(list, text, cb) {
 }
 const ST = { done: 'ענה', bridged: 'ענה', accepted: 'ענה', up: 'בשיחה', no_answer: 'לא ענה', busy: 'תפוס', amd: 'תא קולי', failed: 'נכשל', error: 'נכשל', canceled: 'בוטל', blocked: 'חסום', remove_request: 'ביקש הסרה', pending: 'ממתין', ringing: 'מחייג', redial: 'חיוג חוזר' };
 async function status(id) { const j = await yem('GetCampaignStatus', { campaignId: id, entries: 'all' }); const c = j.campaign || {}; return { st: c.campaignStatus, price: c.currentPrice, entries: (c.entries || []).map(e => ({ phone: phone(e.phone), st: ST[e.entryStatus] || e.entryStatus })) }; }
-module.exports = { upload, ready, yem, run, sendTTS, status, defText, VTXT, IVR, ivrT, fillT, tts, phone, whenSay };
+module.exports = { drop, upload, ready, yem, run, sendTTS, status, defText, VTXT, IVR, ivrT, fillT, tts, phone, whenSay };

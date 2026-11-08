@@ -156,9 +156,9 @@ function inviteMail(slug, cur, r, site, mode) {
   const img = site + '/api/pricing?c=_cdimg&d=' + c.d + (c.h ? '&h=' + encodeURIComponent(c.h) : '') + '&u=' + (c.u || 'd') + '&fg=' + acc + '&bg=' + bg + (c.z && c.z !== 'Asia/Jerusalem' ? '&z=' + encodeURIComponent(c.z) : '') + '&a=1';
   const btn = (href, label, pri) => '<a href="' + H(href) + '" target="_blank" style="display:inline-block;margin:4px;padding:10px 18px;border-radius:999px;border:2px solid #' + acc + ';' + (pri ? 'background:#' + acc + ';color:#' + bg : 'color:#' + acc) + ';font-weight:bold;text-decoration:none;font-family:Arial,sans-serif;font-size:15px">' + label + '</a>';
   const loc = [c.venue, c.addr].filter(Boolean).join(', '), dir = EN ? 'ltr' : 'rtl', unsub = site + '/api/pricing?c=_timer&unsub=' + r.token;
-  const L = EN ? { rsvp: '✅ RSVP', wish: '✍️ Write a blessing', cal: '📅 Add to calendar', waze: '🚗 Waze', maps: '📍 Maps', gift: '🎁 ' + (c.gl || 'Gift'), rec: 'Reception', open: 'Open the invitation', un: 'Unsubscribe' }
-                 : YI ? { rsvp: '✅ באשטעטיגן קומען', wish: '✍️ שרייבן א ברכה', cal: '📅 צולייגן צום קאלענדאר', waze: '🚗 וועיז', maps: '📍 מאפע', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'צו דער הזמנה', un: 'אראפנעמען פון דער ליסטע' }
-                 : { rsvp: '✅ אישור הגעה', wish: '✍️ כתיבת ברכה', cal: '📅 הוספה ליומן', waze: '🚗 וייז', maps: '📍 מפות', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'לדף ההזמנה', un: 'הסרה מרשימת התפוצה' };
+  const L = EN ? { rsvp: '✅ RSVP', wish: '✍️ Write a blessing', cal: '📅 Add to calendar', waze: '🚗 Waze', maps: '📍 Maps', gift: '🎁 ' + (c.gl || 'Gift'), rec: 'Reception', open: 'Open the invitation', un: 'Unsubscribe', me: 'Update or delete my email' }
+                 : YI ? { rsvp: '✅ באשטעטיגן קומען', wish: '✍️ שרייבן א ברכה', cal: '📅 צולייגן צום קאלענדאר', waze: '🚗 וועיז', maps: '📍 מאפע', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'צו דער הזמנה', un: 'אראפנעמען פון דער ליסטע', me: 'טוישן אדער אויסמעקן מיין אימעיל' }
+                 : { rsvp: '✅ אישור הגעה', wish: '✍️ כתיבת ברכה', cal: '📅 הוספה ליומן', waze: '🚗 וייז', maps: '📍 מפות', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'לדף ההזמנה', un: 'הסרה מרשימת התפוצה', me: 'עדכון או מחיקה של המייל שלי' };
   const row = x => '<tr><td style="padding:8px 18px;text-align:center">' + x + '</td></tr>';
   let h = '<!doctype html><html dir="' + dir + '"><body style="margin:0;padding:0;background:#f4f2ee"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:16px 8px">' +
     '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#' + bg + ';border-radius:16px;overflow:hidden;direction:' + dir + ';font-family:Arial,sans-serif;color:#' + ink + '">';
@@ -174,7 +174,7 @@ function inviteMail(slug, cur, r, site, mode) {
   if (loc || c.tr) h += row('<div style="font-size:15px">' + (c.venue ? '<b style="color:#' + acc + '">' + H(c.venue) + '</b><br>' : '') + (c.addr ? H(c.addr) + '<br>' : '') + (c.tr ? L.rec + ': ' + H(c.tr) + (c.h ? ' · ' + H(c.tl || (EN ? 'Ceremony' : 'חופה')) + ': ' + H(c.h) : '') : '') + '</div>' +
     (c.addr ? '<div style="margin-top:6px">' + btn('https://waze.com/ul?q=' + encodeURIComponent(c.addr) + '&navigate=yes', L.waze) + btn('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc), L.maps) + '</div>' : ''));
   h += row((mode === 'ty' ? btn(page, L.open, true) + (c.gal ? btn(page + '&go=gal', EN ? '📷 Share your photos' : YI ? '📷 ארויפלייגן בילדער פון דער שמחה' : '📷 להעלאת תמונות מהאירוע') : '') : (c.rv && mode !== 'dr' ? btn(page + '&go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + btn(page + '&go=cal', L.cal)) + (c.wl ? btn(page + '&go=wish', L.wish) : '') + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
-  h += '<tr><td style="padding:14px 18px 16px;text-align:center;font-size:11px;color:#' + mute + '"><a href="' + H(unsub) + '" style="color:#' + mute + '">' + L.un + '</a> · <a href="' + site + '/invite" style="color:#' + mute + ';text-decoration:none">myluach.org</a></td></tr></table></td></tr></table></body></html>';
+  h += '<tr><td style="padding:14px 18px 16px;text-align:center;font-size:11px;color:#' + mute + '"><a href="' + H(unsub) + '" style="color:#' + mute + '">' + L.un + '</a> · <a href="' + site + '/dir/" style="color:#' + mute + '">' + L.me + '</a> · <a href="' + site + '/invite" style="color:#' + mute + ';text-decoration:none">myluach.org</a></td></tr></table></td></tr></table></body></html>';
   const text = (greet ? greet + '\n\n' : '') + title + '\n' + when + (loc ? '\n' + loc : '') + '\n\n' + page + '\n\n' + L.un + ': ' + unsub;
   return { html: h, text, unsub };
 }
@@ -246,7 +246,7 @@ async function autoCalls(cover, daysBefore) {
   for (const s of Object.keys(idx)) {
     const cur = await get(s).catch(() => null); if (!feat(cur, 'voice') || cur.disabled) continue; const c = cur.cfg || {}; if (!/^\d{4}-\d{2}-\d{2}$/.test(c.d || '')) continue;
     const [y, m, d] = c.d.split('-').map(Number); if (!covered.includes(iso(addD(new Date(y, m - 1, d, 12), -Math.max(0, daysBefore))))) continue;
-    let L = await db('timer_recip?slug=eq.' + s + '&call_rem=eq.1&phone=not.is.null&status=neq.unsub&select=id,name,phone&limit=5000').catch(() => []); if (!L || !L.length) continue;
+    let L = await db('timer_recip?slug=eq.' + s + '&call_rem=eq.1&phone=not.is.null&status=neq.unsub&select=id,name,phone&limit=5000').catch(() => []); if (L && L.length) L = await V.drop(L); if (!L || !L.length) continue;
     const P = { ...cur.paid }, left = (+P.calls || 0) - (+P.callsUsed || 0); if (left <= 0) { out.noQuota++; continue; }
     if (L.length > left) { out.noQuota++; L = L.slice(0, left); }
     try {
@@ -379,7 +379,11 @@ async function guest(req, res, b) {
         db('timer_wall?slug=eq.' + s + '&select=id,name,text,public,hidden,created_at,vis,noname,style,img,gift&order=created_at.desc&limit=1000').catch(() => db('timer_wall?slug=eq.' + s + '&select=id,name,text,public,hidden,created_at&order=created_at.desc&limit=1000').catch(() => null))]);
       /* ברכה / מתנה שהנותן ביקש להסתיר את שמו גם מבעלי השמחה */
       (w || []).forEach(x => { if (x.noname) x.name = ''; });
-      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
+      const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem,dir_id,email_src&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
+      /* פרטיות: טלפון ומייל מספרי הטלפונים, ומייל שהמוזמן מסר בטלפון / באזור האישי, לא מוצגים לבעל האירוע (רק שיש) */
+      (R || []).forEach(x => { if (x.dir_id) { x.hp = x.phone ? 1 : 0; x.phone = null; x.dir = 1; }
+        if ((x.dir_id || /^(phone|self|dir)$/.test(x.email_src || '')) && x.email && !/@phone\.invalid$/.test(x.email)) { x.hm = 1; x.email = 'hidden@mail.invalid'; }
+        delete x.dir_id; delete x.email_src; });
       const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&amount=gt.0&select=id,name,msg,amount,fee,net,payout,paid_at,vis,noname&order=paid_at.desc&limit=2000').catch(() => db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=2000').catch(() => null));
       (G || []).forEach(x => { if (x.noname) x.name = ''; });
       const EP = await require('./_eventpay').prices().catch(() => ({}));
@@ -390,6 +394,44 @@ async function guest(req, res, b) {
       return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
+    /* ספרי טלפונים: המאגרים שמותרים לבעל האירוע, חיפוש (בלי טלפון ומייל), והוספה לרשימת המוזמנים */
+    if (b.act === 'dirbooks' || b.act === 'dirsearch' || b.act === 'diradd') {
+      const D = require('./_dir'), DC = await D.cfg();
+      if (!DC.on || !(DC.voice || DC.mail)) return json(res, 403, { error: 'off' });
+      const em = String((cur.paid && cur.paid.email) || '').toLowerCase();
+      if (b.act === 'dirbooks') return json(res, 200, { books: (await D.books(em)).map(x => ({ id: x.id, name: x.name, city: x.city || '', note: x.note || '' })), voice: DC.voice, mail: DC.mail, max: DC.maxAdd });
+      const need = DC.voice && DC.mail ? '' : DC.voice ? 'phone' : 'email', F0 = { book: b.book, city: b.city, q: b.q, need };
+      if (b.act === 'dirsearch') { const r = await D.search(em, { ...F0, off: b.off }); return json(res, r.error ? 403 : 200, r); }
+      if (!cur.paid) return json(res, 402, { error: 'unpaid' });
+      const have = (await db('timer_recip?slug=eq.' + s + '&select=email,phone,dir_id&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=email,phone&limit=10000'))) || [];
+      const HE = new Set(have.map(x => x.email)), HP = new Set(have.map(x => x.phone).filter(Boolean)), HD = new Set(have.map(x => x.dir_id).filter(Boolean));
+      const room = Math.min(DC.maxAdd - HD.size, 10000 - have.length); if (room <= 0) return json(res, 400, { error: 'max', max: DC.maxAdd });
+      const L = await D.resolve(em, { ...F0, ids: Array.isArray(b.ids) ? b.ids : null }, Math.min(room + HD.size, 20000)); if (!L) return json(res, 403, { error: 'book' });
+      const grp = clean1(b.grp, 40), add = [];
+      for (const p of L) {
+        if (add.length >= room) break; if (HD.has(p.id)) continue;
+        const phone = DC.voice ? (p.phone || p.mobile) : null, mail = DC.mail && p.email ? p.email : null;
+        const email = mail || (phone ? 'sms-' + phone + '@phone.invalid' : ''); if (!email || HE.has(email) || (phone && HP.has(phone))) continue;
+        HE.add(email); if (phone) HP.add(phone);
+        add.push({ slug: s, name: D.inviteName(p) || D.nameOf(p) || '', email, token: crypto.randomBytes(12).toString('hex'), status: 'new', dir_id: p.id, ...(mail ? { email_src: 'dir' } : {}), ...(phone ? { phone } : {}), ...(grp ? { grp } : {}) });
+      }
+      for (let i = 0; i < add.length; i += 500) await db('timer_recip', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(add.slice(i, i + 500)) });
+      return json(res, 200, { ok: true, added: add.length, skipped: L.length - add.length });
+    }
+    /* פנקס הכתובות: המוזמנים מאירועים קודמים של אותו בעל אירוע (לפי המייל של החשבון ששילם) */
+    if (b.act === 'rprev' || b.act === 'rcopy') {
+      const em = String((cur.paid && cur.paid.email) || '').toLowerCase(); if (!em) return json(res, 200, { events: [] });
+      const E = ((await db('timer_event?email=eq.' + encodeURIComponent(em) + '&slug=neq.' + s + '&select=slug,title,date&order=date.desc.nullslast&limit=50').catch(() => [])) || []);
+      if (b.act === 'rprev') { const out = []; for (const e of E) { const n = ((await db('timer_recip?slug=eq.' + e.slug + '&status=neq.unsub&select=id&limit=10000').catch(() => [])) || []).length; if (n) out.push({ ...e, n }); } return json(res, 200, { events: out }); }
+      const from = E.find(e => e.slug === String(b.from || '')); if (!from) return json(res, 403, { error: 'from' });
+      const src = (await db('timer_recip?slug=eq.' + from.slug + '&status=neq.unsub&select=name,email,phone,grp,cnt,dir_id,email_src&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + from.slug + '&status=neq.unsub&select=name,email,phone,grp,cnt&order=id.asc&limit=10000'))) || [];
+      const have = (await db('timer_recip?slug=eq.' + s + '&select=email,phone&limit=10000')) || [], HE = new Set(have.map(x => x.email)), HP = new Set(have.map(x => x.phone).filter(Boolean));
+      const add = [];
+      for (const x of src) { if (have.length + add.length >= 10000) break; if (HE.has(x.email) || (x.phone && HP.has(x.phone))) continue; HE.add(x.email); if (x.phone) HP.add(x.phone);
+        add.push({ slug: s, name: x.name, email: x.email, token: crypto.randomBytes(12).toString('hex'), status: 'new', ...(x.phone ? { phone: x.phone } : {}), ...(x.grp ? { grp: x.grp } : {}), ...(x.cnt ? { cnt: x.cnt } : {}), ...(x.dir_id ? { dir_id: x.dir_id } : {}), ...(x.email_src ? { email_src: x.email_src } : {}) }); }
+      for (let i = 0; i < add.length; i += 500) await db('timer_recip', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(add.slice(i, i + 500)) });
+      return json(res, 200, { ok: true, added: add.length, skipped: src.length - add.length });
+    }
     if (b.act === 'radd') {
       const ph = v => { v = String(v || '').replace(/[^\d+]/g, ''); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); return /^0(5\d{8}|[2-9]\d{7})$/.test(v) ? v : ''; };
       const L = (Array.isArray(b.list) ? b.list : []).slice(0, 10000).map(x => ({ name: clean1(x && x.name, 80), email: str(x && x.email, 200).trim().toLowerCase(), grp: clean1(x && x.grp, 40), cnt: Math.max(0, Math.min(99, parseInt(x && x.cnt, 10) || 0)), phone: ph(x && x.phone) }))
@@ -473,6 +515,7 @@ async function guest(req, res, b) {
       else { const w = String(b.who || 'all'); if (w === 'noans') L = L.filter(r => !A[r.token]); else if (w === 'noopen') L = L.filter(r => !r.opened_at && !A[r.token]); else if (w === 'nocall') L = L.filter(r => !r.call_at); }
       if (b.grp) L = L.filter(r => r.grp === String(b.grp));
       if (Array.isArray(b.ids) && b.ids.length) { const I = new Set(b.ids.map(Number)); L = L.filter(r => I.has(r.id)); }
+      L = await V.drop(L);
       if (!L.length) return json(res, 200, { sent: 0, empty: true });
       const left = (+P.calls || 0) - (+P.callsUsed || 0); if (L.length > left) return json(res, 402, { error: 'quota', need: L.length, left });
       const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
@@ -503,6 +546,12 @@ async function guest(req, res, b) {
     if (b.act === 'wdel') { await db('timer_wall?id=eq.' + id + '&slug=eq.' + s, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return json(res, 200, { ok: true }); }
     if (b.act === 'rrm') { await db('timer_recip?id=eq.' + id + '&slug=eq.' + s, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return json(res, 200, { ok: true }); }
     if (b.act === 'redit') {
+      /* שורה מהמאגר / מייל מוסתר: בעל האירוע משנה רק שם, קבוצה ומספר מוזמנים */
+      const old = ((await db('timer_recip?id=eq.' + id + '&slug=eq.' + s + '&select=dir_id,email_src,email,phone&limit=1').catch(() => [])) || [])[0];
+      if (old && (old.dir_id || /^(phone|self|dir)$/.test(old.email_src || ''))) {
+        await db('timer_recip?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name: clean1(b.name, 80), grp: clean1(b.grp, 40) || null, cnt: Math.max(0, Math.min(99, parseInt(b.cnt, 10) || 0)) || null }) });
+        return json(res, 200, { ok: true });
+      }
       let v = String(b.phone || '').replace(/[^\d+]/g, ''); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); const phone = /^0(5\d{8}|[2-9]\d{7})$/.test(v) ? v : '';
       const up = { name: clean1(b.name, 80), grp: clean1(b.grp, 40) || null, cnt: Math.max(0, Math.min(99, parseInt(b.cnt, 10) || 0)) || null, phone: phone || null };
       const em = str(b.email, 200).trim().toLowerCase(); if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) up.email = em; else if (phone && b.email === '') up.email = 'sms-' + phone + '@phone.invalid';
@@ -522,8 +571,8 @@ async function ivr(req, res) {
   const V = require('./_ivoice'), ph = V.phone(q.ApiPhone), say = t => 't-' + V.tts(t), bye = t => out('id_list_message=' + say(t) + '&go_to_folder=hangup');
   const rd = (t, k, max, min, ok, nz) => out('read=' + say(t) + '=' + k + ',no,' + max + ',' + min + ',10,NO,yes,' + (nz ? 'yes' : 'no') + ',,' + (ok || ''));
   if (!ph) return bye('לא זוהה מספר הטלפון');
-  let L = await db('timer_recip?phone=eq.' + ph + '&call_at=not.is.null&select=id,slug,name,token,call_st&order=call_at.desc&limit=3').catch(() => []);
-  if (!L || !L.length) L = await db('timer_recip?phone=eq.' + ph + '&select=id,slug,name,token&order=id.desc&limit=5').catch(() => []);
+  let L = await db('timer_recip?phone=eq.' + ph + '&call_at=not.is.null&select=id,slug,name,token,call_st,email,status&order=call_at.desc&limit=3').catch(() => []);
+  if (!L || !L.length) L = await db('timer_recip?phone=eq.' + ph + '&select=id,slug,name,token,email,status&order=id.desc&limit=5').catch(() => []);
   const today = new Date(Date.now() - 864e5).toISOString().slice(0, 10); let r = null, cur = null;
   for (const x of L || []) { const o = await get(x.slug).catch(() => null); if (o && isFull(o) && (o.cfg || {}).d >= today) { r = x; cur = o; break; } }
   if (!r) return bye(V.ivrT(EP, 'he').notFound);
@@ -553,12 +602,31 @@ async function ivr(req, res) {
   const goGift = () => out('id_list_message=' + say(I.toGift) + '&go_to_folder=/' + EP.vGiftPath);
   /* תשובה אחרי "לא מגיעים" / "מתלבטים" (ימות שולחים שוב את כל ההקשות הקודמות) */
   if (q.R === '4' && giftOk) return goGift();
-  if ((q.A === '2' || q.A === '3') && q.R != null) return bye(I.bye);
-  if (!q.A) { const ask = I.askA + '. ' + I.askMaybe + (giftOk ? '. ' + I.askGift : ''); if (!direct) return rd(intro + ' ' + ask, 'A', 1, 1, giftOk ? '1.2.3.4' : '1.2.3');
-    return out('read=' + pre + say(ask) + '=A,no,1,1,10,NO,yes,no,,' + (giftOk ? '1.2.3.4' : '1.2.3')); }
-  if (q.A === '4' && giftOk) return goGift();
-  if (q.A === '3') { await save('maybe'); return giftOk ? rd(I.maybeThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.maybeThanks); }
-  if (q.A === '2') { await save('no'); return giftOk ? rd(I.noThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.noThanks); }
+  /* ספרי הטלפונים: 7 = לקבל את ההזמנה במייל (רק אם אין מייל ויש יתרת מיילים), 9 = הסרה קבועה מהשיחות */
+  const DC = await require('./_dir').cfg().catch(() => ({})), realMail = r.email && !/@phone\.invalid$/.test(r.email);
+  const mailOpt = !!DC.ivrMail && !realMail && (+(cur.paid || {}).emails || 0) > 0, remOpt = !!DC.ivrRemove;
+  const askAll = m => I.askA + '. ' + I.askMaybe + (giftOk ? '. ' + I.askGift : '') + (m && mailOpt ? '. ' + I.askMail : '') + (remOpt ? '. ' + I.askRemove : '');
+  const keys = m => '1.2.3' + (giftOk ? '.4' : '') + (m && mailOpt ? '.7' : '') + (remOpt ? '.9' : '');
+  if (q.A === '7' && mailOpt) {
+    if (q.E == null) return out('read=' + say(I.mailAsk) + '=E,no,100,5,60,GetMail');
+    if (q.B == null) {
+      const e = require('./_dir').okMail(q.E); let msg = I.mailBad;
+      if (e) { msg = I.mailSaved;
+        const up = { email: e, email_src: 'phone', ...(r.status === 'new' || r.status === 'fail' || !r.status ? { status: 'queued' } : {}) };
+        const ok = await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up) }).then(() => true).catch(() => false);
+        await require('./_dir').linkEmail(ph, e).catch(() => {});
+        if (ok && up.status) await sendBatch(r.slug, cur, 5).catch(err => console.error('ivr mail', err.message)); }
+      return out('read=' + say(msg + '. ' + askAll(false)) + '=B,no,1,1,10,NO,yes,no,,' + keys(false));
+    }
+  }
+  const A = q.A === '7' ? q.B : q.A;
+  if (A === '9' && remOpt) { await require('./_dir').block(ph, 'ivr').catch(() => {}); return bye(I.removed); }
+  if ((A === '2' || A === '3') && q.R != null) return bye(I.bye);
+  if (!q.A) { const ask = askAll(true); if (!direct) return rd(intro + ' ' + ask, 'A', 1, 1, keys(true));
+    return out('read=' + pre + say(ask) + '=A,no,1,1,10,NO,yes,no,,' + keys(true)); }
+  if (A === '4' && giftOk) return goGift();
+  if (A === '3') { await save('maybe'); return giftOk ? rd(I.maybeThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.maybeThanks); }
+  if (A === '2') { await save('no'); return giftOk ? rd(I.noThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.noThanks); }
   if (!q.N) return rd(I.askN, 'N', 2, 1, '', true);
   for (const x of QS) if (q['Q' + x.i] == null) return rd(x.q + ' ' + x.o.map((v, j) => v + ', ' + I.press + ' ' + (j + 1)).join('. '), 'Q' + x.i, 1, 1, x.o.map((v, j) => j + 1).join('.'));
   if (q.R == null) { await save('yes', +q.N); return rd(V.fillT(I.saved, { 'מספר': +q.N }) + (giftOk ? '. ' + I.askGift : ''), 'R', 1, 1, giftOk ? '1.2.4' : '1.2'); }

@@ -107,3 +107,27 @@ notify pgrst, 'reload schema';
 alter table public.timer_wall add column if not exists vis text default 'all', add column if not exists noname boolean default false, add column if not exists style text, add column if not exists img text, add column if not exists gift numeric, add column if not exists gift_id bigint;
 alter table public.timer_gift add column if not exists vis text default 'all', add column if not exists noname boolean default false, add column if not exists style text, add column if not exists img text, add column if not exists wall boolean default true;
 notify pgrst, 'reload schema';
+
+-- ספרי טלפונים (מאגרים): מאגר, משפחות (כל משפחה יכולה להיות בכמה מאגרים), ורשימת חסימה קבועה של מי שביקש הסרה
+create table if not exists public.dir_book (
+  id bigserial primary key, name text not null, city text, note text,
+  access text default 'off',          -- off / all / approved
+  allow text[] default '{}',          -- מיילים של בעלי אירועים שאושרו (כש-access = approved)
+  created_at timestamptz default now());
+create table if not exists public.dir_person (
+  id bigserial primary key, pkey text unique not null,
+  title text, first text, last text, wife text, father text, fil text,
+  street text, city text, phone text, mobile text, email text, email_src text, lang text, notes text,
+  books bigint[] default '{}', created_at timestamptz default now(), updated_at timestamptz default now());
+create index if not exists dir_person_books on public.dir_person using gin (books);
+create index if not exists dir_person_phone on public.dir_person (phone);
+create index if not exists dir_person_mobile on public.dir_person (mobile);
+create index if not exists dir_person_email on public.dir_person (email);
+create index if not exists dir_person_city on public.dir_person (city);
+create table if not exists public.dir_block (phone text primary key, why text, created_at timestamptz default now());
+alter table public.dir_book enable row level security;
+alter table public.dir_person enable row level security;
+alter table public.dir_block enable row level security;
+alter table public.timer_recip add column if not exists dir_id bigint, add column if not exists email_src text;
+create index if not exists timer_recip_email on public.timer_recip (email);
+notify pgrst, 'reload schema';

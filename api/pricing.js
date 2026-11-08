@@ -17,6 +17,9 @@ module.exports = async (req, res) => {
   if (cp === '_greetings') return require('./_greetings')(req, res);
   /* ברכות בתשלום: הקישור האישי, שמירה בזמן העריכה ושליחת הקישור למייל */
   if (cp === '_greetpay') { res.setHeader('Cache-Control', 'private, no-store'); return require('./_greetpay')(req, res); }
+  /* אזור אישי של ספרי הטלפונים: עדכון / מחיקה של המייל, הסרה מהשיחות */
+  if (cp === '_dirme') { res.setHeader('Cache-Control', 'private, no-store'); if (req.method !== 'POST') return json(res, 405, {});
+    try { const out = await require('./_dir').me(require('./_lib').readBody(req) || {}); return json(res, out.status || 200, out); } catch (e) { console.error('dirme', e); return json(res, 500, { error: 'server' }); } }
   /* חיפוש מיקום (מיקוד / כתובת / נקודה) */
   if (cp === '_geo') return require('./_geo')(req, res, json);
   /* אתר שומר שבת: האם עכשיו שבת או חג במיקום של הגולש */

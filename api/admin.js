@@ -72,7 +72,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(gmget|receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
+const ALOG_RO = /^(dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -172,6 +172,11 @@ async function main(req, res) {
     if (req.method === 'POST' && /^cu_[a-z]+$/.test(b.action || '')) {
       try { const out = await require('./_custadmin')(b); return json(res, out.error ? 400 : 200, out); }
       catch (e) { console.error('custadmin', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
+    }
+    /* ספרי טלפונים (api/_dir.js) */
+    if (req.method === 'POST' && /^dir_[a-z]+$/.test(b.action || '')) {
+      try { const out = await require('./_dir').admin(b); return json(res, out.error ? 400 : 200, out); }
+      catch (e) { console.error('dir', e); return json(res, 500, { error: String(e.message || e).slice(0, 200) }); }
     }
     /* ניהול האירועים (admin-events.html) */
     if (req.method === 'POST' && /^ev_[a-z]+$/.test(b.action || '')) {
