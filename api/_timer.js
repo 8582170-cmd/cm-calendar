@@ -403,7 +403,15 @@ async function guest(req, res, b) {
       const D = require('./_dir'), DC = await D.cfg();
       if (!DC.on || !(DC.voice || DC.mail)) return json(res, 403, { error: 'off' });
       const em = String((cur.paid && cur.paid.email) || '').toLowerCase();
-      if (b.act === 'dirbooks') return json(res, 200, { books: (await D.books(em)).map(x => ({ id: x.id, name: x.name, city: x.city || '', note: x.note || '' })), voice: DC.voice, mail: DC.mail, max: DC.maxAdd });
+      /* המסלול של האירוע צריך לפתוח את המאגרים (בהגדרת המסלולים), ומאגר בתשלום צריך להיפתח (קנייה) */
+      const EB = await D.eventBooks(cur, em);
+      if (b.act === 'dirbooks') {
+        if (!EB) { const E = await require('./_eventpay').prices().catch(() => ({ plans: [] })), ok = E.plans.filter(p => !p.hidden && p.feats && p.feats.dir).map(p => p.name);
+          return json(res, 402, { error: 'plan', plans: ok, any: (await D.books(em)).length > 0 }); }
+        return json(res, 200, { books: EB, voice: DC.voice, mail: DC.mail, max: DC.maxAdd });
+      }
+      const bk = EB && EB.find(x => x.id === parseInt(b.book, 10));
+      if (!bk) return json(res, 403, { error: 'book' }); if (!bk.open) return json(res, 402, { error: 'locked', price: bk.price });
       const need = DC.voice && DC.mail ? '' : DC.voice ? 'phone' : 'email', F0 = { book: b.book, city: b.city, q: b.q, need };
       if (b.act === 'dirsearch') { const r = await D.search(em, { ...F0, off: b.off }); return json(res, r.error ? 403 : 200, r); }
       if (!cur.paid) return json(res, 402, { error: 'unpaid' });
@@ -656,7 +664,7 @@ module.exports = async (req, res) => {
       /* גם: תזכורות בשעות שנקבעו בניהול (מייל / שיחה, לוח / אירועים) */
       const inv = await cronSend(120); let slots = null; try { slots = await require('./cron-reminders').slots(); } catch (e) { slots = { error: String(e.message).slice(0, 120) }; }
       return json(res, 200, { ...inv, slots }); }
-    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: E.FEATS, mailpk: E.MAILPK, freeEmails: P.freeEmails, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
+    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: (await require('./_dir').cfg().catch(() => ({}))).on ? E.FEATS : E.FEATS.filter(f => f[0] !== 'dir'), mailpk: E.MAILPK, freeEmails: P.freeEmails, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
       /* קיר הברכות הציבורי */

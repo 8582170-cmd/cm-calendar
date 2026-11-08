@@ -555,4 +555,12 @@ EN = [
     ('📒 מהמאגר', '📒 From directory'),
     ('פרטי הקשר מספרי הטלפונים לא מוצגים', 'Contact details from directories are not shown'),
     ('\' <small dir="rtl" class="mute">(מוסתר)</small>\'', '\' <small dir="rtl" class="mute">(hidden)</small>\''),
+    ('ספר הטלפונים <b>', 'The phone directory <b>'),
+    ('</b> נפתח לאירוע בתשלום חד־פעמי של <b>', '</b> opens for this event for a one-time payment of <b>'),
+    (' ₪</b>. אחרי התשלום אפשר לבחור ממנו מוזמנים בלי הגבלה (עד המכסה של האירוע).', ' ₪</b>. After paying you can choose guests from it freely (up to the event quota).'),
+    ('>פתיחת המאגר · ', '>Open the directory · '),
+    ("'ספר טלפונים: '", "'Phone directory: '"),
+    ('<b>📒 ספרי טלפונים</b>', '<b>📒 Phone directories</b>'),
+    ('בחירת מוזמנים מספרי הטלפונים זמינה במסלולים: <b>', 'Choosing guests from phone directories is available in these plans: <b>'),
+    ('</b>. אפשר לשדרג בלשונית התשלום.', '</b>. You can upgrade in the payment tab.'),
 ]

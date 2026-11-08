@@ -16,7 +16,7 @@ const site = () => (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/,
    ivrMail = בשיחה: "לקבלת ההזמנה במייל הקישו 7", ivrRemove = בשיחה: "להסרה הקישו 9", maxAdd = כמה אפשר להוסיף מהמאגר לאירוע אחד */
 async function cfg() {
   const c = (await loadSetting('dircfg').catch(() => null)) || {};
-  return { on: !!c.on, voice: c.voice !== false, mail: c.mail !== false, greet: !!c.greet, ivrMail: c.ivrMail !== false, ivrRemove: c.ivrRemove !== false, maxAdd: Math.max(10, Math.min(20000, parseInt(c.maxAdd, 10) || 2000)) };
+  return { on: !!c.on, free: !!c.free, voice: c.voice !== false, mail: c.mail !== false, greet: !!c.greet, ivrMail: c.ivrMail !== false, ivrRemove: c.ivrRemove !== false, maxAdd: Math.max(10, Math.min(20000, parseInt(c.maxAdd, 10) || 2000)) };
 }
 
 /* שם לתצוגה: הרב אברהם כהן */
@@ -26,11 +26,26 @@ const inviteName = p => { const n = [p.title, p.first].filter(Boolean).join(' ')
 
 /* ---------- גישה ---------- */
 async function books(email, all) {
-  const L = (await db('dir_book?select=id,name,city,note,access,allow,created_at&order=name.asc&limit=500').catch(() => [])) || [];
+  const L = (await db('dir_book?select=id,name,city,note,access,allow,price,created_at&order=name.asc&limit=500').catch(() => db('dir_book?select=id,name,city,note,access,allow,created_at&order=name.asc&limit=500')).catch(() => [])) || [];
   if (all) return L;
   email = String(email || '').toLowerCase();
   return L.filter(b => b.access === 'all' || (b.access === 'approved' && email && (b.allow || []).map(x => String(x).toLowerCase()).includes(email)));
 }
+/* אירוע: האם המסלול שלו פותח את המאגרים, ומחיר כל מאגר לפי המסלול (book.price = { <מזהה מסלול>: ₪, _free: ₪ }; 0 / ריק = בלי תשלום).
+   מאגר בתשלום נפתח לאירוע אחרי קנייה (cur.paid.dirs) */
+async function eventPlan(cur) {
+  const P = cur && cur.paid; if (!P) return null;
+  if (P.free) return (await cfg()).free ? { pk: '_free', name: 'חינמי' } : null;
+  const E = await require('./_eventpay').prices(), plan = E.plans.find(x => x.id === P.plan);
+  const ok = (plan && plan.feats && plan.feats.dir) || (P.feats && P.feats.dir) || (!plan && !P.feats);
+  return ok ? { pk: P.plan || 'base', name: plan ? plan.name : '' } : null;
+}
+async function eventBooks(cur, email) {
+  const ep = await eventPlan(cur); if (!ep) return null;
+  const opened = new Set(((cur.paid || {}).dirs || []).map(Number));
+  return (await books(email)).map(b => { const price = Math.max(0, Number((b.price || {})[ep.pk]) || 0); return { id: b.id, name: b.name, city: b.city || '', note: b.note || '', price, open: !price || opened.has(b.id) }; });
+}
+async function forEvent(cur, id) { const L = await eventBooks(cur, String((cur.paid && cur.paid.email) || '').toLowerCase()); return L && L.find(b => b.id === id) || null; }
 async function canBook(email, id) { return (await books(email)).some(b => String(b.id) === String(id)); }
 
 /* ---------- רשימת חסימה ---------- */
@@ -250,19 +265,22 @@ async function me(b) {
 async function admin(b) {
   const a = b.action;
   if (a === 'dir_cfgget') return { cfg: await cfg() };
-  if (a === 'dir_cfgset') { const c = b.cfg || {}; await saveSetting('dircfg', { on: !!c.on, voice: !!c.voice, mail: !!c.mail, greet: !!c.greet, ivrMail: !!c.ivrMail, ivrRemove: !!c.ivrRemove, maxAdd: parseInt(c.maxAdd, 10) || 2000 }); return { cfg: await cfg() }; }
+  if (a === 'dir_cfgset') { const c = b.cfg || {}; await saveSetting('dircfg', { on: !!c.on, free: !!c.free, voice: !!c.voice, mail: !!c.mail, greet: !!c.greet, ivrMail: !!c.ivrMail, ivrRemove: !!c.ivrRemove, maxAdd: parseInt(c.maxAdd, 10) || 2000 }); return { cfg: await cfg() }; }
   if (a === 'dir_books') {
     const L = await books('', true), out = [];
     for (const k of L) { const n = (await db('dir_person?books=cs.%7B' + k.id + '%7D&select=id&limit=50000').catch(() => [])) || []; out.push({ ...k, n: n.length }); }
     const tot = (await db('dir_person?select=id&limit=100000').catch(() => [])) || [], bl = (await db('dir_block?select=phone&limit=100000').catch(() => [])) || [];
-    return { books: out, total: tot.length, blocked: bl.length, cfg: await cfg() };
+    const EP = await require('./_eventpay').prices().catch(() => ({ plans: [] }));
+    return { books: out, total: tot.length, blocked: bl.length, cfg: await cfg(), plans: EP.plans.filter(p => !p.hidden || (p.feats && p.feats.dir)).map(p => ({ id: p.id, name: p.name, dir: !!(p.feats && p.feats.dir) })) };
   }
   if (a === 'dir_bookset') {
     const row = { name: T(b.name, 60), city: T(b.city, 40) || null, note: T(b.note, 200) || null, access: ['off', 'all', 'approved'].includes(b.access) ? b.access : 'off',
       allow: String(b.allow || '').split(/[\s,;]+/).map(okMail).filter(Boolean).slice(0, 500) };
+    /* מחיר לפי מסלול (ריק / 0 = בלי תשלום) */
+    if (b.price && typeof b.price === 'object') { const pr = {}; Object.keys(b.price).slice(0, 40).forEach(k => { const v = Math.round(Number(b.price[k]) * 100) / 100; if (/^[a-z0-9_-]{1,24}$/.test(k) && v > 0 && v <= 10000) pr[k] = v; }); row.price = pr; }
     if (!row.name) return { error: 'name' };
-    if (b.id) await db('dir_book?id=eq.' + parseInt(b.id, 10), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
-    else await db('dir_book', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+    const W = r => b.id ? db('dir_book?id=eq.' + parseInt(b.id, 10), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(r) }) : db('dir_book', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(r) });
+    try { await W(row); } catch (e) { if (row.price && /price/.test(e.message)) { delete row.price; await W(row); return { ok: true, warn: 'price' }; } throw e; }
     return { ok: true };
   }
   if (a === 'dir_bookdel') {
@@ -293,4 +311,4 @@ async function admin(b) {
   return { error: 'action' };
 }
 
-module.exports = { cfg, books, canBook, search, resolve, blockedSet, block, linkEmail, importRows, admin, me, nameOf, inviteName, ph, okMail };
+module.exports = { cfg, books, eventPlan, eventBooks, forEvent, canBook, search, resolve, blockedSet, block, linkEmail, importRows, admin, me, nameOf, inviteName, ph, okMail };

@@ -668,7 +668,7 @@ summary{cursor:pointer;font-weight:700}
   /* ספרי טלפונים (אם פתוחים לבעל האירוע בניהול) ומוזמנים מאירוע קודם: בודקים פעם אחת לכל דף */
   var DP={s:null,books:[],book:null,city:'',q:'',rows:[],total:0,sel:{}};
   function dirInit(){var s=slugVal();if(DP.s===s)return;DP.s=s;$('dirOpen').hidden=true;$('prevOpen').hidden=true;$('dirPick').hidden=true;
-    ownPost({act:'dirbooks'}).then(function(a){if(a[0]===200&&a[1].books&&a[1].books.length){DP.books=a[1].books;DP.cfg=a[1];$('dirOpen').hidden=false}});
+    ownPost({act:'dirbooks'}).then(function(a){DP.plan=null;if(a[0]===200&&a[1].books&&a[1].books.length){DP.books=a[1].books;DP.cfg=a[1];$('dirOpen').hidden=false}else if(a[0]===402&&a[1].any&&a[1].plans&&a[1].plans.length){DP.plan=a[1].plans;$('dirOpen').hidden=false}});
     ownPost({act:'rprev'}).then(function(a){if(a[0]===200&&a[1].events&&a[1].events.length){DP.prev=a[1].events;$('prevOpen').hidden=false}})}
   $('ownLoad').addEventListener('click',function(){if(!$('rcBox').hidden)dirInit()});
   $('prevOpen').addEventListener('click',function(){var P=$('dirPick');P.hidden=false;
@@ -688,14 +688,20 @@ summary{cursor:pointer;font-weight:700}
     if(all&&!confirm('להוסיף '+DP.total+' משפחות צו דער ליסטע?'))return;M.textContent='לייגט צו…';M.className='st';
     ownPost(b).then(function(a){if(a[0]===200){M.textContent='✓ צוגעלייגט '+a[1].added+(a[1].skipped?' ('+a[1].skipped+' כבר היו ברשימה או בלי טלפון/מייל)':'');M.className='st ok';DP.sel={};dirList();$('ownLoad').click()}
       else{M.textContent=a[1].error==='max'?'איר האט דערגרייכט דעם מאקסימום פון די ביכער פאר איין שמחה ('+a[1].max+').':a[1].error==='unpaid'?'פריער אקטיווירט מען דעם הזמנה בלאט (א פלאן).':'צולייגן איז נישט געלונגען.';M.className='st no'}})}
-  $('dirOpen').addEventListener('click',function(){var P=$('dirPick');P.hidden=false;if(!DP.book)DP.book=DP.books[0].id;DP.cities=null;
+  /* מאגר בתשלום שעוד לא נפתח לאירוע */
+  function dirLocked(){var b=DP.books.filter(function(x){return x.id===DP.book})[0];$('dpQ').disabled=$('dpCity').disabled=true;$('dpOut').innerHTML='<div class="gform" style="display:block;margin:6px 0"><p style="margin:0 0 8px">דאס טעלעפאן בוך <b>'+esc(b.name)+'</b> עפנט זיך פאר דער שמחה מיט אן איינמאליגע צאלונג פון <b>'+b.price+' ₪</b>. נאך דער צאלונג קען מען אויסקלייבן געלאדענע דערפון אן א גרענעץ (ביז דער קוואטע פון דער שמחה).</p><button class="btn pri" type="button" id="dpBuy">עפענען דאס בוך · '+b.price+' ₪</button></div>';
+    $('dpBuy').onclick=function(){if(!window.MLPay){alert('מען לאדנט די צאל-סיסטעם, פרובירט נאכאמאל אין א מינוט');return}var s=slugVal();MLPay.open({title:'טעלעפאן בוך: '+b.name,sub:b.price+' ₪',mailNote:'אהין וועט מען שיקן די קבלה',body:{plan:'event',slug:s,tier:'d'+b.id,token:store()[s]},onPaid:function(){setTimeout(function(){ownPost({act:'dirbooks'}).then(function(a){if(a[0]===200){DP.books=a[1].books;$('dirOpen').click()}})},1500)}})}}
+  $('dirOpen').addEventListener('click',function(){var P=$('dirPick');P.hidden=false;
+    if(DP.plan){P.innerHTML='<b>📒 טעלעפאן ביכער</b><p class="mute" style="font-size:14px;margin:4px 0">אויסקלייבן געלאדענע פון די טעלעפאן ביכער איז פאראן אין די פלענער: <b>'+DP.plan.map(esc).join(', ')+'</b>. מען קען אויפגרעידן אין דעם צאלונג טייל.</p>';return}
+    if(!DP.book)DP.book=DP.books[0].id;DP.cities=null;
     P.innerHTML='<b>📒 אויסקלייבן פון די טעלעפאן ביכער</b><p class="mute" style="font-size:14px;margin:4px 0">מען צייכנט אן משפחות און מען לייגט זיי צו צו דער ליסטע. דער טעלעפאן און דער אימעיל ווערן נישט געוויזן (פריוואטקייט).</p><p class="mute" style="font-size:14px;margin:0 0 6px">'+(DP.cfg.voice&&DP.cfg.mail?'זיי וועלן באקומען די הזמנה אין א טעלעפאן רוף און/אדער אין אימעיל ווען איר וועט שיקן.':DP.cfg.voice?'זיי וועלן באקומען די הזמנה אין א טעלעפאן רוף ווען איר וועט שיקן.':'זיי וועלן באקומען די הזמנה אין אימעיל ווען איר וועט שיקן.')+'</p>'+
-      '<div class="row" style="gap:6px;flex-wrap:wrap;margin:0"><select id="dpBook">'+DP.books.map(function(b){return '<option value="'+b.id+'"'+(b.id===DP.book?' selected':'')+'>'+esc(b.name)+(b.city?' · '+esc(b.city):'')+'</option>'}).join('')+'</select><select id="dpCity"><option value="">אלע שטעט</option></select><input type="search" id="dpQ" placeholder="זוכן: נאמען, טאטע, שווער, גאס…" style="flex:1;min-width:160px"></div><p class="st" id="dpM"></p><div id="dpOut"></div>';
-    var t;$('dpBook').onchange=function(){DP.book=+this.value;DP.city='';DP.sel={};DP.cities=null;$('dpCity').innerHTML='<option value="">אלע שטעט</option>';dirSearch()};
+      '<div class="row" style="gap:6px;flex-wrap:wrap;margin:0"><select id="dpBook">'+DP.books.map(function(b){return '<option value="'+b.id+'"'+(b.id===DP.book?' selected':'')+'>'+esc(b.name)+(b.city?' · '+esc(b.city):'')+(b.open?'':' · 🔒 '+b.price+' ₪')+'</option>'}).join('')+'</select><select id="dpCity"><option value="">אלע שטעט</option></select><input type="search" id="dpQ" placeholder="זוכן: נאמען, טאטע, שווער, גאס…" style="flex:1;min-width:160px"></div><p class="st" id="dpM"></p><div id="dpOut"></div>';
+    var t;$('dpBook').onchange=function(){DP.book=+this.value;DP.city='';DP.sel={};DP.cities=null;$('dpCity').innerHTML='<option value="">אלע שטעט</option>';$('dpQ').disabled=$('dpCity').disabled=false;dirGo()};
     $('dpCity').onchange=function(){DP.city=this.value;dirSearch()};$('dpQ').oninput=function(){var v=this.value;clearTimeout(t);t=setTimeout(function(){DP.q=v.trim();dirSearch()},350)};
     P.onchange=function(e){var c=e.target.closest('[data-dp]');if(c){if(c.checked)DP.sel[c.dataset.dp]=1;else delete DP.sel[c.dataset.dp];var n=Object.keys(DP.sel).length,b=$('dpAddSel');b.disabled=!n;b.textContent='+ צולייגן די אנגעצייכנטע ('+n+')'}if(e.target.id==='dpG')DP.grp=e.target.value};
     P.onclick=function(e){if(e.target.id==='dpMore')dirSearch(true);else if(e.target.id==='dpAddSel')dirAdd(false);else if(e.target.id==='dpAddAll')dirAdd(true)};
-    dirSearch()});
+    dirGo()});
+  function dirGo(){var b=DP.books.filter(function(x){return x.id===DP.book})[0];if(b&&!b.open)dirLocked();else dirSearch()}
   /* שפת המיילים: נשמרת מיד עם הדף, כדי שהתצוגה המקדימה והשליחה ישתמשו בה */
   $('ml').addEventListener('change',function(){var v=$('ml').value||$('lang').value,S=$('rcSubj').value;if(/^(הזמנה|הזמנה|Invitation): /.test(S))$('rcSubj').value=(v==='yi'?'הזמנה: ':v==='en'?'Invitation: ':'הזמנה: ')+S.replace(/^[^:]+: /,'');if($('save2'))$('save2').click()});
   /* שאלות באישור ההגעה: עד 10, עם הוספה מהירה */

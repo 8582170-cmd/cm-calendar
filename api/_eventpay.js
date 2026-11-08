@@ -14,7 +14,7 @@ const SMS = [['s100', 100], ['s250', 250], ['s500', 500], ['s1000', 1000]];
 const VOICE = [['v100', 100], ['v250', 250], ['v500', 500], ['v1000', 1000]];
 /* מסלולים לאירועים: מוגדרים בניהול (eventpay.plans). בלי הגדרה: נבנים מהחבילות הקבועות (בסיסית + מיילים).
    לכל מסלול: מחיר, מכסות (מיילים, SMS, שיחות) ויכולות. מי שכבר במסלול וקונה מסלול יקר יותר משלם את ההפרש ומקבל את הפרש המכסות */
-const FEATS = [['rem', 'תזכורות אוטומטיות ומייל תודה'], ['seat', 'סידורי הושבה'], ['gal', 'גלריית תמונות לאורחים'], ['media', 'סרטון רקע ומוזיקה'], ['gift', 'מתנה באשראי'], ['voice', 'הודעות קוליות (בישראל)'], ['sms', 'SMS (בישראל)']];
+const FEATS = [['rem', 'תזכורות אוטומטיות ומייל תודה'], ['seat', 'סידורי הושבה'], ['gal', 'גלריית תמונות לאורחים'], ['media', 'סרטון רקע ומוזיקה'], ['gift', 'מתנה באשראי'], ['voice', 'הודעות קוליות (בישראל)'], ['sms', 'SMS (בישראל)'], ['dir', 'בחירת מוזמנים מספרי הטלפונים']];
 const ALLF = () => Object.fromEntries(FEATS.map(f => [f[0], true]));
 function defaultPlans(P) { return TIERS.map(([id, n]) => ({ id, name: id === 'base' ? 'חבילה מלאה' : 'חבילה מלאה + ' + n.toLocaleString('he-IL') + ' מיילים', price: P[id], emails: n, sms: 0, calls: 0, feats: ALLF(), desc: '', best: id === 'e250', hidden: false })); }
 function cleanPlans(L) {
@@ -40,6 +40,15 @@ async function pput(key, o) { const r = await fetch(R2().presign('PUT', key, 120
 /* לפני התשלום: בודקים שהכתובת קיימת ושייכת למשלם (קוד העריכה), ומחשבים מחיר */
 async function prepare(b) {
   const T = require('./_timer'), s = String(b.slug || '').toLowerCase(), tier = String(b.tier || '');
+  /* פתיחת מאגר בתשלום (tier = d<מספר המאגר>): המחיר לפי המסלול של האירוע, מהגדרות המאגר */
+  if (/^d\d{1,9}$/.test(tier)) {
+    const cur = await T.get(s).catch(() => null); if (!cur) return { error: 'הכתובת של האירוע לא נמצאה. שמרו אותה קודם.' };
+    if (!T.own(cur, b.token)) return { error: 'אפשר לשלם רק מהדפדפן שבו נשמרה הכתובת.' };
+    if (!(await prices()).on) return { error: 'הרכישה סגורה כרגע' };
+    const D = require('./_dir'), x = await D.forEvent(cur, +tier.slice(1)); if (!x) return { error: 'המאגר לא זמין לאירוע הזה' };
+    if (!(x.price > 0)) return { error: 'המאגר הזה בלי תשלום' }; if (x.open) return { error: 'המאגר כבר פתוח לאירוע הזה' };
+    return { amount: x.price, slug: s, tier, title: 'ספר טלפונים: ' + x.name + ' (' + s + ')' };
+  }
   const isSms = SMS.some(x => x[0] === tier), isVoice = VOICE.some(x => x[0] === tier), isMail = MAILPK.some(x => x[0] === tier);
   const E = await prices(), plan = E.plans.find(x => x.id === tier && !x.hidden);
   if (!plan && !isSms && !isVoice && !isMail) return { error: 'החבילה לא נמצאה' };
@@ -62,8 +71,11 @@ async function create(id, email, ev) { await pput('timers/pay/' + id + '.json', 
 async function paid(o) {
   const p = await pjson('timers/pay/' + o.id + '.json'); if (!p) throw new Error('no pay file ' + o.id);
   const T = require('./_timer'), cur = await T.get(p.slug); if (!cur) throw new Error('no timer ' + p.slug);
-  const P = cur.paid || { emails: 0, orders: [] }; delete P.free;
+  const P = cur.paid || { emails: 0, orders: [] };
   if ((P.orders || []).includes(o.id)) return;
+  /* פתיחת מאגר: לא משנה את המסלול (גם אירוע חינמי נשאר חינמי) */
+  if (/^d\d+$/.test(p.tier)) { P.dirs = [...new Set((P.dirs || []).concat(+p.tier.slice(1)))]; P.orders = (P.orders || []).concat(o.id); await T.put(p.slug, { ...cur, paid: P }); return; }
+  delete P.free;
   const E = await prices(), plan = E.plans.find(x => x.id === p.tier); let added = { emails: 0 };
   if (plan) { const was = curQuota(cur, E); added = { emails: Math.max(0, plan.emails - (was.emails || 0)), sms: Math.max(0, plan.sms - (was.sms || 0)), calls: Math.max(0, plan.calls - (was.calls || 0)) };
     P.emails = (+P.emails || 0) + added.emails; P.sms = (+P.sms || 0) + added.sms; P.calls = (+P.calls || 0) + added.calls;

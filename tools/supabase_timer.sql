@@ -136,3 +136,5 @@ notify pgrst, 'reload schema';
 alter table public.dir_person add column if not exists alias text[] default '{}';
 create index if not exists dir_person_alias on public.dir_person using gin (alias);
 notify pgrst, 'reload schema';
+alter table public.dir_book add column if not exists price jsonb default '{}';
+notify pgrst, 'reload schema';
