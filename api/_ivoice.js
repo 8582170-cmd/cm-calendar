@@ -14,6 +14,16 @@ async function yem(method, params) {
   if (j.responseStatus && j.responseStatus !== 'OK') { const e = new Error(String(j.message || j.responseStatus).slice(0, 160)); e.code = j.messageCode || j.code; throw e; }
   return j;
 }
+/* העלאת קובץ שמע למערכת בימות (UploadFile, multipart). path = ivr2:/<שלוחה>/<שם>.wav. convertAudio=1: ימות ממירים לפורמט של הטלפון */
+async function upload(path, buf) {
+  const c = await V().cfg(), fd = new FormData();
+  fd.append('token', c.token || ''); fd.append('path', path); fd.append('convertAudio', '1');
+  fd.append('file', new Blob([buf], { type: 'audio/wav' }), path.split('/').pop());
+  const r = await fetch(String(c.base || 'https://www.call2all.co.il/ym/api/').replace(/\/?$/, '/') + 'UploadFile', { method: 'POST', body: fd, signal: AbortSignal.timeout(40000) });
+  const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+  if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error('upload ' + ((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 100)));
+  return j;
+}
 /* טקסט להקראה: בלי תווים שיש להם משמעות בתשובות של ימות */
 const tts = s => String(s || '').replace(/[.=&"<>]/g, ',').replace(/[״׳'`]/g, '').replace(/\s+/g, ' ').trim();
 const phone = v => { v = String(v || '').replace(/[^\d+]/g, ''); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); return /^0\d{8,9}$/.test(v) ? v : ''; };
@@ -32,10 +42,12 @@ const IVR = {
   he: { hello: 'שלום {שם}.', askA: 'אם תגיעו, הקישו 1. אם לא תוכלו להגיע, הקישו 2', noThanks: 'תודה, תשובתכם נרשמה. להתראות בשמחות', askN: 'כמה אנשים תגיעו? הקישו את המספר',
     press: 'הקישו', saved: 'תודה, אישור ההגעה של {מספר} אנשים נרשם. לתזכורת טלפונית לפני האירוע הקישו 1. לסיום הקישו 2', remYes: 'נתקשר להזכיר לפני האירוע. להתראות בשמחות',
     bye: 'תודה רבה, להתראות בשמחות', notFound: 'מספר הטלפון שלכם לא נמצא ברשימת המוזמנים לאירוע קרוב. להתראות',
+    fromName: 'שלום {שם}, קיבלתם הזמנה אישית מאת', rest: '{לאירוע}, {מתי}{מקום}',
     askMaybe: 'אם עוד לא בטוחים, הקישו 3', askGift: 'לתת מתנה לבעלי השמחה, הקישו 4', maybeThanks: 'תודה, רשמנו שאתם עוד מתלבטים. נשמח אם תעדכנו בהמשך', toGift: 'מעבירים אתכם לתשלום המתנה', end: 'לסיום הקישו 2' },
   yi: { hello: 'שלום {שם}.', askA: 'אויב איר קומט, דריקט 1. אויב איר קענט נישט קומען, דריקט 2', noThanks: 'א דאנק, אייער ענטפער איז פארשריבן. זאלן מיר זיך זען ביי שמחות', askN: 'וויפיל מענטשן וועלן קומען? דריקט די צאל',
     press: 'דריקט', saved: 'א דאנק, די באשטעטיגונג פאר {מספר} מענטשן איז פארשריבן. פאר א טעלעפאן דערמאנונג פאר דער שמחה דריקט 1. צו ענדיגן דריקט 2', remYes: 'מיר וועלן אייך אנקלינגען צו דערמאנען פאר דער שמחה. זאלן מיר זיך זען ביי שמחות',
     bye: 'א שיינעם דאנק, זאלן מיר זיך זען ביי שמחות', notFound: 'אייער טעלעפאן נומער איז נישט געפונען אין דער ליסטע פון געלאדענע צו א שמחה. א גוטן טאג',
+    fromName: 'שלום {שם}, איר האט באקומען א פערזענליכע הזמנה פון', rest: '{לאירוע}, {מתי}{מקום}',
     askMaybe: 'אויב איר זענט נאך נישט זיכער, דריקט 3', askGift: 'צו געבן א מתנה פאר די בעלי שמחה, דריקט 4', maybeThanks: 'א דאנק, מיר האבן פארשריבן אז איר זענט נאך נישט זיכער. ביטע לאזט אונז וויסן שפעטער', toGift: 'מיר פירן אייך איבער צו באצאלן די מתנה', end: 'צו ענדיגן דריקט 2' } };
 /* ההודעות לשפה: הנוסח מהניהול, ומה שריק מהנוסח הרגיל. vars ממלא {שם} {מספר} */
 function ivrT(E, lang) { const L = lang === 'yi' ? 'yi' : 'he', own = ((E && E.ivrtxt) || {})[L] || {}, D = IVR[L], o = {};
@@ -76,4 +88,4 @@ async function sendTTS(list, text, cb) {
 }
 const ST = { done: 'ענה', bridged: 'ענה', accepted: 'ענה', up: 'בשיחה', no_answer: 'לא ענה', busy: 'תפוס', amd: 'תא קולי', failed: 'נכשל', error: 'נכשל', canceled: 'בוטל', blocked: 'חסום', remove_request: 'ביקש הסרה', pending: 'ממתין', ringing: 'מחייג', redial: 'חיוג חוזר' };
 async function status(id) { const j = await yem('GetCampaignStatus', { campaignId: id, entries: 'all' }); const c = j.campaign || {}; return { st: c.campaignStatus, price: c.currentPrice, entries: (c.entries || []).map(e => ({ phone: phone(e.phone), st: ST[e.entryStatus] || e.entryStatus })) }; }
-module.exports = { ready, yem, run, sendTTS, status, defText, VTXT, IVR, ivrT, fillT, tts, phone, whenSay };
+module.exports = { upload, ready, yem, run, sendTTS, status, defText, VTXT, IVR, ivrT, fillT, tts, phone, whenSay };

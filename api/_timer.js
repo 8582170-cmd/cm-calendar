@@ -60,7 +60,7 @@ function clean(c) {
     p: okImg(c.p) ? c.p : '', ps: ['rect', 'wide'].includes(c.ps) ? c.ps : 'circle',
     /* דף הזמנה */
     inv: okImg(c.inv) ? c.inv : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
-    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
+    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, vm: ['tts', 'name', 'full'].includes(c.vm) ? c.vm : 'tts', wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
     gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
@@ -387,7 +387,7 @@ async function guest(req, res, b) {
       if (stale.length) { stale.forEach(x => { x.call_st = 'לא ענה'; }); const sid = stale.map(x => x.id); for (let i = 0; i < sid.length; i += 200) await db('timer_recip?slug=eq.' + s + '&call_st=eq.' + encodeURIComponent('ממתין') + '&id=in.(' + sid.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'לא ענה' }) }).catch(() => {}); }
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     if (b.act === 'radd') {
@@ -443,6 +443,22 @@ async function guest(req, res, b) {
     if (b.act === 'voice' || b.act === 'voicetest') {
       const EP = await require('./_eventpay').prices(), V = require('./_ivoice');
       if (!EP.voiceOn || !(await V.ready())) return json(res, 403, { error: 'voice off' });
+      /* קבצי שמע של האירוע (הקלטה או קובץ): השם, ההזמנה כולה, פתיחה וסיום. כבר מומרים בדפדפן לאיכות של טלפון (WAV, 8kHz, מונו).
+         נשמרים באחסון שלנו (להשמעה מקדימה) ובשלוחת האישור בימות (להשמעה בשיחה). עובד רק כשמוגדרת שלוחת אישור (voicePath) */
+      if (b.act === 'vaudio' || b.act === 'vaudiodel') {
+        if (!feat(cur, 'voice')) return json(res, 402, { error: 'full' });
+        if (!EP.voicePath) return json(res, 403, { error: 'path' });
+        const kind = ['name', 'full', 'intro', 'outro'].includes(b.kind) ? b.kind : null; if (!kind) return json(res, 400, { error: 'kind' });
+        const VA = { ...(cur.vaudio || {}) };
+        if (b.act === 'vaudiodel') { delete VA[kind]; await put(s, { ...cur, vaudio: VA }); return json(res, 200, { ok: true, vaudio: VA }); }
+        const m = /^data:audio\/wav;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.wav || '')); if (!m) return json(res, 400, { error: 'type' });
+        const buf = Buffer.from(m[1], 'base64'); if (buf.length < 1000 || buf.length > 2600000 || buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WAVE') return json(res, 400, { error: 'wav' });
+        const nm = 'ev' + crypto.createHash('sha1').update(s).digest('hex').slice(0, 10) + kind.charAt(0) + Date.now().toString(36);
+        try { await V.upload('ivr2:/' + EP.voicePath + '/' + nm + '.wav', buf); } catch (e) { console.error('vaudio upload', e.message); return json(res, 502, { error: 'yemot', message: String(e.message).slice(0, 120) }); }
+        let url = ''; try { const R2 = require('./_r2'); if (R2.media()) { const P2 = R2.mediaPut('timers/voice/' + s + '/' + nm + '.wav'); const r2 = await fetch(P2.upload, { method: 'PUT', headers: { 'Content-Type': 'audio/wav' }, body: buf }); if (r2.ok) url = P2.url; } } catch (e) {}
+        VA[kind] = { y: nm, url, sec: Math.round((buf.length - 44) / 16000 * 10) / 10, at: new Date().toISOString() };
+        await put(s, { ...cur, vaudio: VA }); return json(res, 200, { ok: true, vaudio: VA });
+      }
       if (!feat(cur, 'voice')) return json(res, 402, { error: 'full' });
       if (b.mode !== 'rem' && !EP.voiceTpl && !EP.voicePath) return json(res, 403, { error: 'tpl' });
       const hz = await holyAt(Date.now()); if (hz) return json(res, 400, { error: 'shabbat' });
@@ -519,7 +535,18 @@ async function ivr(req, res) {
     else await db('timer_rsvp', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
     await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: st === 'yes' ? 'אישר בטלפון' : st === 'maybe' ? 'מתלבט (טלפון)' : 'לא מגיע (טלפון)' }) }).catch(() => {}); };
   /* בקמפיין שמוגדר כשיחה נכנסת: ההזמנה עצמה מושמעת מכאן (הנוסח של בעל האירוע, בלי "הקישו 1") */
-  const intro = EP.voiceDirect || EP.voicePath ? String(c.vt || V.defText(c, 'ivr', EP)).replace(/[^.]*(הקישו|דריקט)[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : V.fillT(I.hello, { 'שם': r.name || '' }) + ' ' + (c.t || '') + '.';
+  const direct = !!(EP.voiceDirect || EP.voicePath);
+  const intro = direct ? String(c.vt || V.defText(c, 'ivr', EP)).replace(/[^.]*(הקישו|דריקט)[^.]*\.?/g, '').replace(/\{(שם|name)\}/g, r.name || '') : V.fillT(I.hello, { 'שם': r.name || '' }) + ' ' + (c.t || '') + '.';
+  /* קבצי השמע של האירוע: פתיחה, ההזמנה (קובץ מלא / הקלטת השם + הקראה / הקראה), סיום */
+  const VA = cur.vaudio || {}, fp = k => EP.voicePath && VA[k] && VA[k].y ? 'f-/' + EP.voicePath + '/' + VA[k].y + '.' : '';
+  let pre = '';
+  if (direct) {
+    pre += fp('intro');
+    if (c.vm === 'full' && fp('full')) pre += fp('full');
+    else if (c.vm === 'name' && fp('name')) { const rest = V.defText({ ...c }, 'ivr', { vtxt: { ivr: I.rest } }).replace(/\{(שם|name)\}/g, ''); pre += say(V.fillT(I.fromName, { 'שם': r.name || '' })) + '.' + fp('name') + say(String(c.vt || rest).replace(/\{(שם|name)\}/g, r.name || '')) + '.'; }
+    else pre += say(intro) + '.';
+    pre += fp('outro');
+  }
   if (!q.A && (!r.call_st || /ממתין|לא ענה|תפוס|תא קולי/.test(r.call_st))) await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'ענה' }) }).catch(() => {});
   /* מתנה בטלפון: מעבר לשלוחת הסליקה (מהניהול), אם האירוע מקבל מתנות */
   const giftOk = !!EP.vGiftPath && !!c.gc && feat(cur, 'gift') && !!EP.giftOn;
@@ -527,7 +554,8 @@ async function ivr(req, res) {
   /* תשובה אחרי "לא מגיעים" / "מתלבטים" (ימות שולחים שוב את כל ההקשות הקודמות) */
   if (q.R === '4' && giftOk) return goGift();
   if ((q.A === '2' || q.A === '3') && q.R != null) return bye(I.bye);
-  if (!q.A) return rd(intro + ' ' + I.askA + '. ' + I.askMaybe + (giftOk ? '. ' + I.askGift : ''), 'A', 1, 1, giftOk ? '1.2.3.4' : '1.2.3');
+  if (!q.A) { const ask = I.askA + '. ' + I.askMaybe + (giftOk ? '. ' + I.askGift : ''); if (!direct) return rd(intro + ' ' + ask, 'A', 1, 1, giftOk ? '1.2.3.4' : '1.2.3');
+    return out('read=' + pre + say(ask) + '=A,no,1,1,10,NO,yes,no,,' + (giftOk ? '1.2.3.4' : '1.2.3')); }
   if (q.A === '4' && giftOk) return goGift();
   if (q.A === '3') { await save('maybe'); return giftOk ? rd(I.maybeThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.maybeThanks); }
   if (q.A === '2') { await save('no'); return giftOk ? rd(I.noThanks + '. ' + I.askGift + '. ' + I.end, 'R', 1, 1, '2.4') : bye(I.noThanks); }
