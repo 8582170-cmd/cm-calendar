@@ -395,7 +395,7 @@ async function guest(req, res, b) {
       if (stale.length) { stale.forEach(x => { x.call_st = 'לא ענה'; }); const sid = stale.map(x => x.id); for (let i = 0; i < sid.length; i += 200) await db('timer_recip?slug=eq.' + s + '&call_st=eq.' + encodeURIComponent('ממתין') + '&id=in.(' + sid.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'לא ענה' }) }).catch(() => {}); }
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP), defTy: require('./_ivoice').defText(c, 'ty', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     /* ספרי טלפונים: המאגרים שמותרים לבעל האירוע, חיפוש (בלי טלפון ומייל), והוספה לרשימת המוזמנים */
@@ -514,16 +514,18 @@ async function guest(req, res, b) {
         await put(s, { ...cur, vaudio: VA }); return json(res, 200, { ok: true, vaudio: VA });
       }
       if (!feat(cur, 'voice')) return json(res, 402, { error: 'full' });
-      if (b.mode !== 'rem' && !EP.voiceTpl && !EP.voicePath) return json(res, 403, { error: 'tpl' });
+      if (b.mode !== 'rem' && b.mode !== 'ty' && !EP.voiceTpl && !EP.voicePath) return json(res, 403, { error: 'tpl' });
       const hz = await holyAt(Date.now()); if (hz) return json(res, 400, { error: 'shabbat' });
       const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()); if (hr < (EP.vFrom || 8) || hr >= (EP.vTo || 22)) return json(res, 400, { error: 'night', from: EP.vFrom || 8, to: EP.vTo || 22 });
-      const mode = b.mode === 'rem' ? 'rem' : 'inv', text = str(b.text, 600).replace(/[<>]/g, ''), P = cur.paid, now = new Date().toISOString();
+      const mode = b.mode === 'rem' ? 'rem' : b.mode === 'ty' ? 'ty' : 'inv', text = str(b.text, 600).replace(/[<>]/g, ''), P = cur.paid, now = new Date().toISOString();
       if (b.act === 'voicetest') { const ph = V.phone(b.phone); if (!ph) return json(res, 400, { error: 'phone' }); if ((+P.vtests || 0) >= (EP.vTests || 5)) return json(res, 429, { error: 'tests' });
         const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
-        if (mode === 'rem') await V.sendTTS([{ phone: ph }], text || V.defText(c, 'rem', EP)); else await V.run(cur, [{ phone: ph, name: clean1(b.name, 40) }], mode, text); P.vtests = (+P.vtests || 0) + 1; await put(s, { ...cur, paid: P }); return json(res, 200, { ok: true }); }
+        if (mode === 'rem' || mode === 'ty') await V.sendTTS([{ phone: ph }], text || V.defText(c, mode, EP)); else await V.run(cur, [{ phone: ph, name: clean1(b.name, 40) }], mode, text); P.vtests = (+P.vtests || 0) + 1; await put(s, { ...cur, paid: P }); return json(res, 200, { ok: true }); }
       let L = await db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at,call_at,call_rem&order=id.asc&limit=20000').catch(() => db('timer_recip?slug=eq.' + s + '&phone=not.is.null&status=neq.unsub&select=id,name,phone,token,grp,opened_at&order=id.asc&limit=20000'));
       const A = {}; ((await db('timer_rsvp?slug=eq.' + s + '&rtok=not.is.null&select=rtok,status&limit=20000').catch(() => [])) || []).forEach(x => { A[x.rtok] = x.status; });
       if (mode === 'rem') L = L.filter(r => A[r.token] === 'yes' || r.call_rem);
+      /* תודה אחרי האירוע: למי שאישר הגעה (באתר או בטלפון), או לכולם */
+      else if (mode === 'ty') { if (String(b.who || 'yes') !== 'all') L = L.filter(r => A[r.token] === 'yes'); }
       else { const w = String(b.who || 'all'); if (w === 'noans') L = L.filter(r => !A[r.token]); else if (w === 'noopen') L = L.filter(r => !r.opened_at && !A[r.token]); else if (w === 'nocall') L = L.filter(r => !r.call_at); }
       if (b.grp) L = L.filter(r => r.grp === String(b.grp));
       if (Array.isArray(b.ids) && b.ids.length) { const I = new Set(b.ids.map(Number)); L = L.filter(r => I.has(r.id)); }
@@ -531,8 +533,8 @@ async function guest(req, res, b) {
       if (!L.length) return json(res, 200, { sent: 0, empty: true });
       const left = (+P.calls || 0) - (+P.callsUsed || 0); if (L.length > left) return json(res, 402, { error: 'quota', need: L.length, left });
       const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
-      const x = mode === 'rem' ? await V.sendTTS(L, text || V.defText(c, 'rem', EP), site + '/api/pricing?c=_ivrcb&k=' + EP.vkey + '&s=' + s) : await V.run(cur, L, mode, text);
-      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode, ...(mode === 'rem' || x.bridge ? { tts: mode === 'rem' ? 1 : 0, bridge: x.bridge ? 1 : 0, fin: 1 } : {}) }].concat(cur.calls || []).slice(0, 30);
+      const x = mode === 'rem' || mode === 'ty' ? await V.sendTTS(L, text || V.defText(c, mode, EP), site + '/api/pricing?c=_ivrcb&k=' + EP.vkey + '&s=' + s) : await V.run(cur, L, mode, text);
+      P.callsUsed = (+P.callsUsed || 0) + x.n; const calls = [{ id: x.id, at: now, n: x.n, mode, ...(mode === 'rem' || mode === 'ty' || x.bridge ? { tts: mode === 'rem' || mode === 'ty' ? 1 : 0, bridge: x.bridge ? 1 : 0, fin: 1 } : {}) }].concat(cur.calls || []).slice(0, 30);
       await put(s, { ...cur, paid: P, calls });
       const ids = L.map(r => r.id); for (let i = 0; i < ids.length; i += 200) await db('timer_recip?slug=eq.' + s + '&id=in.(' + ids.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_at: now, call_st: 'ממתין', call_cid: x.id }) }).catch(() => {});
       return json(res, 200, { sent: x.n });

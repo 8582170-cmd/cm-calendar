@@ -1,12 +1,15 @@
 /* הודעות לגולשים שנכתבות בדף הניהול ("הודעות לגולשים").
-   כל הודעה מוצגת בראש הדף רק באזורים שנבחרו לה: דף הבית, בוני הלוח, הלוח המקוון, הברכות. אפשר לסגור, ואז היא לא חוזרת (עד שמשנים אותה). */
+   כל הודעה מוצגת בראש הדף רק באזורים שנבחרו לה: דף הבית, בוני הלוח, הלוח המקוון, הברכות, בניית דפי הזמנה, דפי ההזמנה שהאורחים רואים,
+   האזור האישי של ספרי הטלפונים, ושאר דפי המידע. אפשר לסגור, ואז היא לא חוזרת (עד שמשנים אותה). */
 (function () {
   'use strict';
   var p = location.pathname;
-  var area = /^\/online(\/|$)/.test(p) ? 'online' : /^\/brachot(\/|$)/.test(p) ? 'brachot' :
-    /\/(app|simple|countdown)(-en)?(\.html)?$/.test(p) ? 'builder' : /^\/(index\.html|new\.html|en\.html)?$/.test(p) ? 'home' : 'other';
+  var area = /^\/online(\/|$)/.test(p) ? 'online' : /^\/brachot(\/|$)/.test(p) ? 'brachot' : /^\/dir(\/|$)/.test(p) ? 'dir' : /^\/t(\/|$)/.test(p) ? 'event' :
+    /^\/(invite|timer)(-en|-yi)?(\.html)?$|^\/invite-help(\.html)?$/.test(p) ? 'invite' :
+    /\/(app|simple|countdown)(-en)?(\.html)?$/.test(p) ? 'builder' : /^\/(index\.html|new\.html|en\.html)?$/.test(p) ? 'home' :
+    /^\/(pricing|gallery|donate|terms|privacy|accessibility|share)(\.html)?$/.test(p) ? 'info' : 'other';
   if (area === 'other') return;
-  var EN = document.documentElement.lang === 'en';
+  var LG = document.documentElement.lang === 'en' ? 'en' : document.documentElement.lang === 'yi' ? 'yi' : 'he', EN = LG === 'en';
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   /* קישורים: [טקסט](https://...) או כתובת רגילה */
@@ -45,7 +48,7 @@
           document.body.appendChild(o); document.documentElement.style.overflow = 'hidden';
         }
       }
-      var L = ((j && j.items) || []).filter(function (m) { return (m.areas || []).indexOf(area) >= 0 && ls('smsg-' + m.id) !== String(m.v || '1') && (!m.lang || m.lang === (EN ? 'en' : 'he')); });
+      var L = ((j && j.items) || []).filter(function (m) { return (m.areas || []).indexOf(area) >= 0 && ls('smsg-' + m.id) !== String(m.v || '1') && (!m.lang || m.lang === LG); });
       show(L);
     }).catch(function () {});
   }

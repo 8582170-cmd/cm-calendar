@@ -564,4 +564,10 @@ EN = [
     ('בחירת מוזמנים מספרי הטלפונים זמינה במסלולים: <b>', 'Choosing guests from phone directories is available in these plans: <b>'),
     ('</b>. אפשר לשדרג בלשונית התשלום.', '</b>. You can upgrade in the payment tab.'),
     ('❓ הסבר ושאלות', '❓ Help & FAQ (Hebrew)'),
+    ('>תודה אחרי האירוע</label>', '>Thank you after the event</label>'),
+    ('נוסח התודה (אותו נוסח לכולם, בלי שם)', 'Thank-you text (same for everyone, no name)'),
+    ('<option value="yes">למי שאישר הגעה</option>', '<option value="yes">To guests who confirmed</option>'),
+    ("k.mode==='ty'?'תודה':", "k.mode==='ty'?'Thank you':"),
+    ("'לשלוח שיחת תודה לכל המוזמנים עם טלפון?'", "'Send a thank-you call to all guests with a phone?'"),
+    ("'לשלוח שיחת תודה לכל מי שאישר הגעה?'", "'Send a thank-you call to everyone who confirmed?'"),
 ]

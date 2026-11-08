@@ -426,7 +426,7 @@ async function main(req, res) {
           const id = str(m.id, 16).replace(/[^\w]/g, '') || Math.random().toString(36).slice(2, 10), text = str(m.text, 600), title = str(m.title, 80);
           const o = old[id], same = o && o.text === text && o.title === title;
           return { id, v: same ? o.v : Date.now().toString(36), on: !!m.on, title, text, style: ['info', 'ok', 'warn', 'sale'].includes(m.style) ? m.style : 'info',
-            areas: (Array.isArray(m.areas) ? m.areas : []).filter(x => ['home', 'builder', 'online', 'brachot'].includes(x)), from: dt(m.from), until: dt(m.until), close: m.close !== false, lang: ['he', 'en'].includes(m.lang) ? m.lang : '' };
+            areas: (Array.isArray(m.areas) ? m.areas : []).filter(x => ['home', 'builder', 'online', 'brachot', 'invite', 'event', 'dir', 'info'].includes(x)), from: dt(m.from), until: dt(m.until), close: m.close !== false, lang: ['he', 'en', 'yi'].includes(m.lang) ? m.lang : '' };
         });
         await saveSetting('sitemsgs', L);
       }
