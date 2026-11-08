@@ -1016,7 +1016,7 @@ function gmDirInit(books){
       if (j.cities && $('gdC').options.length < 2) $('gdC').innerHTML = '<option value="">כל הערים</option>' + j.cities.map(function(x){ return '<option>' + escH(x.k) + '</option>'; }).join('');
       list(); gmDirN(); }).catch(function(){ $('gdM').textContent = 'החיפוש לא הצליח.'; }); }
   function list(){ $('gdL').innerHTML = '<label class="info"><input type="checkbox" id="gdAll"' + (GD.all ? ' checked' : '') + '> כל ה־' + GD.total + ' שיש להם מייל</label><div style="max-height:260px;overflow:auto">' +
-    GD.rows.map(function(p){ return '<label style="display:block;padding:4px 0;border-bottom:1px solid var(--line)"><input type="checkbox" data-gd="' + p.id + '"' + (GD.all || GD.sel[p.id] ? ' checked' : '') + (GD.all ? ' disabled' : '') + '> <b>' + escH(p.name) + '</b> <small class="info">' + escH([p.father ? 'בן ' + p.father : '', p.street, p.city].filter(Boolean).join(' · ')) + '</small></label>'; }).join('') + '</div>' +
+    GD.rows.map(function(p){ return '<label style="display:block;padding:4px 0;border-bottom:1px solid var(--line)"><input type="checkbox" data-gd="' + p.id + '"' + (GD.all || GD.sel[p.id] ? ' checked' : '') + (GD.all ? ' disabled' : '') + '> <b>' + escH(p.name) + '</b> <small class="info">' + escH([p.father ? 'בן ' + p.father : '', p.fil ? 'חתן ' + p.fil : '', [p.street, p.city].filter(Boolean).join(', ')].filter(Boolean).join(' · ')) + '</small></label>'; }).join('') + '</div>' +
     (GD.rows.length < GD.total ? '<button class="pill" type="button" id="gdMore">עוד…</button>' : ''); }
 }
 function gmSend(){

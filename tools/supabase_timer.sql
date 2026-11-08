@@ -131,3 +131,8 @@ alter table public.dir_block enable row level security;
 alter table public.timer_recip add column if not exists dir_id bigint, add column if not exists email_src text;
 create index if not exists timer_recip_email on public.timer_recip (email);
 notify pgrst, 'reload schema';
+alter table public.dir_person add column if not exists self_at timestamptz;
+notify pgrst, 'reload schema';
+alter table public.dir_person add column if not exists alias text[] default '{}';
+create index if not exists dir_person_alias on public.dir_person using gin (alias);
+notify pgrst, 'reload schema';

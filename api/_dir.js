@@ -125,11 +125,16 @@ async function importRows(list, bookIds, byName) {
   for (let i = 0; i < ok.length; i += 200) {
     const part = ok.slice(i, i + 200), have = {};
     ((await db('dir_person?pkey=in.(' + part.map(r => encodeURIComponent('"' + r.pkey + '"')).join(',') + ')&select=*&limit=200').catch(() => [])) || []).forEach(p => { have[p.pkey] = p; });
+    /* משפחה שהחליפה מספר באזור האישי: המספר הישן נשמר ב-alias, כדי שהייבוא הבא לא ייצור אותה שוב */
+    const miss = part.filter(r => !have[r.pkey]).map(r => r.pkey);
+    if (miss.length) ((await db('dir_person?alias=ov.' + encodeURIComponent('{' + miss.map(k => '"' + k + '"').join(',') + '}') + '&select=*&limit=200').catch(() => [])) || []).forEach(p => { (p.alias || []).forEach(k => { if (miss.includes(k)) have[k] = p; }); });
     const up = part.map(r => { const h = have[r.pkey]; if (!h) { R.added++; return { ...r, email_src: r.email ? 'import' : null }; }
-      R.updated++; const m = { ...h }; F.forEach(k => { if (r[k]) m[k] = r[k]; });
+      R.updated++; const m = { ...h }; if (!h.self_at) F.forEach(k => { if (r[k]) m[k] = r[k]; });
       /* מייל שהאדם עצמו עדכן או מחק (בטלפון / באזור האישי) לא נדרס מהקובץ */
       if (h.email_src && h.email_src !== 'import') { m.email = h.email; m.email_src = h.email_src; } else if (r.email) m.email_src = 'import';
       m.books = [...new Set((h.books || []).concat(r.books))]; m.updated_at = new Date().toISOString(); delete m.created_at; return m; });
+    /* אותה משפחה פעמיים באותה מנה (דרך alias): מאחדים */
+    const byId = {}; for (let j = up.length - 1; j >= 0; j--) { const u = up[j]; if (!u.id) continue; if (byId[u.id]) { byId[u.id].books = [...new Set(byId[u.id].books.concat(u.books))]; up.splice(j, 1); R.updated--; } else byId[u.id] = u; }
     const cols = ['pkey', 'books', 'email_src', ...F]; const norm = up.map(u => { const o = {}; cols.forEach(k => { o[k] = u[k] == null ? null : u[k]; }); if (u.id) o.id = u.id; return o; });
     const ins = norm.filter(x => !x.id).map(x => { delete x.id; return x; }), upd = norm.filter(x => x.id);
     if (ins.length) await db('dir_person', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(ins) });
@@ -139,40 +144,94 @@ async function importRows(list, bookIds, byName) {
 }
 
 /* ---------- אזור אישי (/dir/): קישור חתום למייל, ואז עדכון / מחיקה של המייל, והסרה מהשיחות ---------- */
+/* זהות בקישור: e:<מייל> (קישור שנשלח למייל) או p:<טלפון> (קוד שהוקרא בשיחה) */
 const sig = (e, exp) => crypto.createHmac('sha256', env('SUPABASE_SERVICE_ROLE_KEY') || 'myluach').update('dirme:' + e + ':' + exp).digest('hex').slice(0, 32);
 const mkTok = e => { const exp = Date.now() + 2 * 864e5; return Buffer.from(e).toString('base64url') + '.' + exp + '.' + sig(e, exp); };
-function readTok(t) { const [a, exp, s] = String(t || '').split('.'); let e = ''; try { e = Buffer.from(a || '', 'base64url').toString(); } catch (x) {} if (!e || !(+exp > Date.now()) || sig(e, exp) !== s) return null; return e; }
-async function mine(e) {
-  const P = (await db('dir_person?email=eq.' + encodeURIComponent(e) + '&select=id,title,first,last,city,phone,mobile,books&limit=20').catch(() => [])) || [];
-  const R = (await db('timer_recip?email=eq.' + encodeURIComponent(e) + '&select=id,slug,phone&limit=200').catch(() => [])) || [];
-  const phones = [...new Set(P.flatMap(p => [p.phone, p.mobile]).concat(R.map(r => r.phone)).filter(Boolean))];
+function readTok(t) { const [a, exp, s] = String(t || '').split('.'); let e = ''; try { e = Buffer.from(a || '', 'base64url').toString(); } catch (x) {} if (!e || !(+exp > Date.now()) || sig(e, exp) !== s) return null;
+  if (!/^[ep]:/.test(e)) e = 'e:' + e; return { kind: e[0], v: e.slice(2) }; }
+const EDIT = ['title', 'first', 'last', 'wife', 'father', 'fil', 'street', 'city', 'phone', 'mobile', 'email', 'lang'];
+async function mine(id) {
+  const P = (await db('dir_person?' + (id.kind === 'e' ? 'email=eq.' + encodeURIComponent(id.v) : 'or=(phone.eq.' + id.v + ',mobile.eq.' + id.v + ')') + '&select=*&limit=20').catch(() => [])) || [];
+  const R = (await db('timer_recip?' + (id.kind === 'e' ? 'email=eq.' + encodeURIComponent(id.v) : 'phone=eq.' + id.v) + '&select=id,slug,phone,email&limit=200').catch(() => [])) || [];
+  const phones = [...new Set(P.flatMap(p => [p.phone, p.mobile]).concat(R.map(r => r.phone)).concat(id.kind === 'p' ? [id.v] : []).filter(Boolean))];
   const B = await blockedSet(phones);
   return { P, R, phones, blocked: phones.filter(p => B.has(p)) };
 }
 const mask = p => p.slice(0, 3) + '-•••' + p.slice(-4);
+const hid = p => crypto.createHash('sha256').update(p).digest('hex').slice(0, 10);
+const nightOrHoly = async () => { const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()); if (hr < 8 || hr >= 22) return 'night'; try { if (await require('./_timer').holyAt(Date.now())) return 'shabbat'; } catch (e) {} return ''; };
 async function me(b) {
+  /* כניסה עם מייל: קישור אישי למייל */
   if (b.act === 'req') {
     const e = okMail(b.email); if (!e) return { status: 400, error: 'email' };
-    /* לכל מייל: קישור אחד בכל 10 דקות */
     const RQ = (await loadSetting('dirmereq').catch(() => null)) || {}, now0 = Date.now();
     Object.keys(RQ).forEach(k => { if (now0 - RQ[k] > 600e3) delete RQ[k]; });
     if (RQ[e]) return { ok: true };
     RQ[e] = now0; await saveSetting('dirmereq', RQ).catch(() => {});
-    const M = await mine(e);
+    const M = await mine({ kind: 'e', v: e });
     /* תמיד אותה תשובה (לא מגלים אם המייל קיים) */
-    if (M.P.length || M.R.length) {
-      const url = site() + '/dir/?t=' + mkTok(e);
-      await require('./_paid').send('dirme', e, {}, { url, text: url }, 'dirme').catch(err => console.error('dirme', err.message));
-    }
+    if (M.P.length || M.R.length) { const url = site() + '/dir/?t=' + mkTok('e:' + e); await require('./_paid').send('dirme', e, {}, { url, text: url }, 'dirme').catch(err => console.error('dirme', err.message)); }
     return { ok: true };
   }
-  const e = readTok(b.t); if (!e) return { status: 403, error: 'token' };
-  if (b.act === 'get') { const M = await mine(e); return { email: e, people: M.P.map(p => ({ name: nameOf(p), city: p.city || '' })), events: new Set(M.R.map(r => r.slug)).size, phones: M.phones.map(p => ({ p: mask(p), id: crypto.createHash('sha256').update(p).digest('hex').slice(0, 10), blocked: M.blocked.includes(p) })) }; }
-  const M = await mine(e), now = new Date().toISOString();
+  /* כניסה עם טלפון: שיחה שמקריאה קוד של 4 ספרות (לא בלילה ולא בשבת וחג). מספר אחד: פעם ב-10 דקות; בסך הכל עד 300 ביום */
+  if (b.act === 'preq') {
+    const p = ph(b.phone); if (!p) return { status: 400, error: 'phone' };
+    const w = await nightOrHoly(); if (w) return { status: 400, error: w };
+    const V = require('./_ivoice'); if (!(await V.ready().catch(() => false))) return { status: 503, error: 'voice' };
+    const C = (await loadSetting('dirmecode').catch(() => null)) || {}, now0 = Date.now(), day = new Date().toISOString().slice(0, 10);
+    Object.keys(C).forEach(k => { if (k !== '_' && now0 - C[k].at > 3600e3) delete C[k]; });
+    const D0 = C._ && C._.day === day ? C._ : { day, n: 0 }; if (D0.n >= 300) return { status: 429, error: 'busy' };
+    if (C[p] && now0 - C[p].at < 600e3) return { ok: true };
+    const M = await mine({ kind: 'p', v: p });
+    if ((M.P.length || M.R.length) && !M.blocked.includes(p)) {
+      const code = String(crypto.randomInt(1000, 10000)); C[p] = { c: code, at: now0, n: 0 }; D0.n++; C._ = D0; await saveSetting('dirmecode', C).catch(() => {});
+      const say = code.split('').join(' ');
+      await V.sendTTS([{ phone: p }], 'שלום. הקוד שלכם לכניסה לאזור האישי של מיי לוח הוא: ' + say + '. שוב: ' + say + '.').catch(e => console.error('dirme call', e.message));
+    } else { C[p] = { c: null, at: now0, n: 0 }; await saveSetting('dirmecode', C).catch(() => {}); }
+    return { ok: true };
+  }
+  if (b.act === 'pver') {
+    const p = ph(b.phone), C = (await loadSetting('dirmecode').catch(() => null)) || {}, x = p && C[p];
+    if (!x || !x.c || Date.now() - x.at > 900e3 || x.n >= 5) return { status: 403, error: 'code' };
+    if (String(b.code || '').trim() !== x.c) { x.n++; await saveSetting('dirmecode', C).catch(() => {}); return { status: 403, error: 'code' }; }
+    delete C[p]; await saveSetting('dirmecode', C).catch(() => {});
+    return { ok: true, t: mkTok('p:' + p) };
+  }
+  const id = readTok(b.t); if (!id) return { status: 403, error: 'token' };
+  const M = await mine(id), now = new Date().toISOString();
+  if (b.act === 'get') return { by: id.kind === 'e' ? 'email' : 'phone', who: id.kind === 'e' ? id.v : mask(id.v), events: new Set(M.R.map(r => r.slug)).size,
+    people: M.P.map(p => { const o = { id: p.id }; EDIT.forEach(k => { o[k] = p[k] || ''; }); o.lang = p.lang || ''; return o; }),
+    phones: M.phones.map(p => ({ p: mask(p), id: hid(p), blocked: M.blocked.includes(p) })) };
+  /* עריכת כל הפרטים של משפחה שלי במאגר. מה שנערך כאן לא נדרס בייבוא הבא */
+  if (b.act === 'pset') {
+    const cur = M.P.find(p => String(p.id) === String(b.id)); if (!cur) return { status: 403, error: 'id' };
+    const o = rowOf(b.p || {}), up = {}; EDIT.forEach(k => { up[k] = o[k]; });
+    if (!(up.first || up.last || up.wife)) return { status: 400, error: 'name' };
+    if (!(up.phone || up.mobile || up.email)) return { status: 400, error: 'contact' };
+    up.pkey = up.mobile || up.phone || 'm:' + up.email;
+    const alias = up.pkey !== cur.pkey ? [...new Set((cur.alias || []).concat([cur.pkey]))].slice(-10) : null;
+    if ((up.email || null) !== (cur.email || null)) up.email_src = up.email ? 'self' : 'deleted';
+    up.updated_at = now;
+    const B = await blockedSet([up.phone, up.mobile]); if ((up.phone && B.has(up.phone) && up.phone !== cur.phone && up.phone !== cur.mobile) || (up.mobile && B.has(up.mobile) && up.mobile !== cur.mobile && up.mobile !== cur.phone)) return { status: 400, error: 'blocked' };
+    const send = body => db('dir_person?id=eq.' + cur.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body) });
+    try { await send({ ...up, self_at: now, ...(alias ? { alias } : {}) }); }
+    catch (e) { if (/duplicate|23505|pkey/i.test(e.message)) return { status: 409, error: 'dup' }; try { await send(up); } catch (e2) { if (/duplicate|23505/i.test(e2.message)) return { status: 409, error: 'dup' }; throw e2; } }
+    /* המייל החדש גם ברשימות המוזמנים של האירועים שהגיעו מהמאגר */
+    if (up.email_src) await db('timer_recip?dir_id=eq.' + cur.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up.email ? { email: up.email, email_src: 'self' } : { email_src: 'deleted' }) }).catch(() => {});
+    return { ok: true };
+  }
+  /* מחיקה מספרי הטלפונים לגמרי */
+  if (b.act === 'pdel') {
+    const cur = M.P.find(p => String(p.id) === String(b.id)); if (!cur) return { status: 403, error: 'id' };
+    await db('dir_person?id=eq.' + cur.id, { method: 'DELETE' });
+    if (b.block) for (const p of [cur.phone, cur.mobile].filter(Boolean)) await block(p, 'self').catch(() => {});
+    return { ok: true };
+  }
   if (b.act === 'del' || b.act === 'set') {
-    const ne = b.act === 'set' ? okMail(b.email) : null; if (b.act === 'set' && !ne) return { status: 400, error: 'email' };
+    if (id.kind !== 'e') return { status: 400, error: 'act' };
+    const e = id.v, ne = b.act === 'set' ? okMail(b.email) : null; if (b.act === 'set' && !ne) return { status: 400, error: 'email' };
     await db('dir_person?email=eq.' + encodeURIComponent(e), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email: ne, email_src: ne ? 'self' : 'deleted', updated_at: now }) }).catch(() => {});
-    /* ברשימות של אירועים: מייל שמוחק → הסרה מרשימת התפוצה (לא שולחים לו יותר). עדכון → הכתובת החדשה */
+    /* ברשימות של אירועים: מייל שנמחק → הסרה מרשימת התפוצה. עדכון → הכתובת החדשה */
     for (const r of M.R) {
       if (ne) await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email: ne, email_src: 'self' }) }).catch(() => {});
       else await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(r.phone ? { email: 'sms-' + r.phone + '@phone.invalid', email_src: 'deleted' } : { status: 'unsub' }) }).catch(() => {});
@@ -180,7 +239,7 @@ async function me(b) {
     return { ok: true, email: ne };
   }
   if (b.act === 'block' || b.act === 'unblock') {
-    const p = M.phones.find(x => crypto.createHash('sha256').update(x).digest('hex').slice(0, 10) === String(b.id)); if (!p) return { status: 400, error: 'phone' };
+    const p = M.phones.find(x => hid(x) === String(b.id)); if (!p) return { status: 400, error: 'phone' };
     if (b.act === 'block') await block(p, 'self'); else await db('dir_block?phone=eq.' + p + '&why=in.(self,ivr)', { method: 'DELETE' }).catch(() => {});
     return { ok: true };
   }

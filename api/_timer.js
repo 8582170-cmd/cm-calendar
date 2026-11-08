@@ -381,6 +381,10 @@ async function guest(req, res, b) {
       (w || []).forEach(x => { if (x.noname) x.name = ''; });
       const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem,dir_id,email_src&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
       /* פרטיות: טלפון ומייל מספרי הטלפונים, ומייל שהמוזמן מסר בטלפון / באזור האישי, לא מוצגים לבעל האירוע (רק שיש) */
+      /* לזיהוי (כשיש שמות זהים): שם האב, החותן והכתובת מהמאגר */
+      const DI = [...new Set((R || []).map(x => x.dir_id).filter(Boolean))], DM = {};
+      for (let i = 0; i < DI.length; i += 200) ((await db('dir_person?id=in.(' + DI.slice(i, i + 200).join(',') + ')&select=id,father,fil,street,city&limit=200').catch(() => [])) || []).forEach(p => { DM[p.id] = p; });
+      (R || []).forEach(x => { const p = DM[x.dir_id]; if (p) x.dinfo = [p.father ? 'בן ' + p.father : '', p.fil ? 'חתן ' + p.fil : '', [p.street, p.city].filter(Boolean).join(', ')].filter(Boolean).join(' · '); });
       (R || []).forEach(x => { if (x.dir_id) { x.hp = x.phone ? 1 : 0; x.phone = null; x.dir = 1; }
         if ((x.dir_id || /^(phone|self|dir)$/.test(x.email_src || '')) && x.email && !/@phone\.invalid$/.test(x.email)) { x.hm = 1; x.email = 'hidden@mail.invalid'; }
         delete x.dir_id; delete x.email_src; });
