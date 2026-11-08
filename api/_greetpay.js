@@ -186,7 +186,7 @@ module.exports = async (req, res) => {
     /* מיד אחרי תשלום: הדפדפן שקנה מקבל את המפתח (רק בשעתיים הראשונות אחרי התשלום) */
     if (b.action === 'claim') {
       const rows = await db('orders?id=eq.' + id + '&select=status,plan');
-      if (!rows || !rows[0] || rows[0].plan !== 'greet' || rows[0].status !== 'paid') return json(res, 402, { error: 'not paid' });
+      if (!rows || !rows[0] || (rows[0].plan !== 'greet' && rows[0].plan !== 'wishd') || rows[0].status !== 'paid') return json(res, 402, { error: 'not paid' });
       let rec = await get(id); if (!rec) return json(res, 404, { error: 'not found' });
       if (!rec.paidAt) { await paid({ id, email: rec.email }); rec = await get(id); }
       if (now - Date.parse(rec.paidAt) > 2 * 3600e3) return json(res, 403, { error: 'old', message: 'הקישור נשלח למייל שלכם.' });

@@ -5,7 +5,7 @@
 const { db, PLAN_NAMES } = require('./_lib');
 const ilDay = t => new Date(t).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
 const r2 = n => Math.round(n * 100) / 100;
-const SPECIAL = { event: 'דף הזמנה לאירוע', greet: 'ברכה / הזמנה מעוצבת', donation: 'תרומה', gift: 'מתנות לאירועים (כסף של בעלי האירוע)' };
+const SPECIAL = { wishd: 'ברכה מעוצבת לאירוע (בלי חלק המתנה)', event: 'דף הזמנה לאירוע', greet: 'ברכה / הזמנה מעוצבת', donation: 'תרומה', gift: 'מתנות לאירועים (כסף של בעלי האירוע)' };
 const VIA = { bit: 'ביט', paypal: 'PayPal', sumit: 'SUMIT', nedarim: 'נדרים פלוס', free: 'חינם / מתנה מהניהול', other: 'לא ידוע' };
 
 function viaOf(o, cb) {
@@ -39,6 +39,10 @@ module.exports = async function (b) {
     const refunded = r2((cb.refunds || []).reduce((a, x) => a + (+x.amount || 0), 0)) + (o.status === 'refunded' && !(cb.refunds || []).length ? +o.amount || 0 : 0);
     rows.push({ id: o.id, day, plan: o.plan, name: PLAN_NAMES[o.plan] ? 'מסלול ' + PLAN_NAMES[o.plan] : SPECIAL[o.plan] || (/^(gsub|gpack|rsub):/.test(o.plan) ? require('./_subs').nameOf(o.plan, SUBS) : null) || o.plan, amount: +o.amount || 0, refunded: r2(refunded), status: o.status, via: viaOf(o, cb), coupon: o.coupon || '', email: String(o.email || '').toLowerCase(), admin: !!cb.admin });
   });
+  /* ברכה מעוצבת לאירוע (wishd): רק המחיר של העיצוב הוא הכנסה. החלק של המתנה הוא כסף של בעל האירוע */
+  const WD = rows.filter(o => o.plan === 'wishd');
+  if (WD.length) { const GG = await db('timer_gift?select=order_id,amount&order_id=in.(' + WD.map(o => o.id).join(',') + ')&limit=5000').catch(() => []); const m = {}; (GG || []).forEach(g => { m[g.order_id] = +g.amount || 0; });
+    WD.forEach(o => { const g = Math.min(o.amount, m[o.id] || 0); if (g) { o.amount = r2(o.amount - g); o.giftPart = g; } }); }
   const inc = rows.filter(o => o.plan !== 'gift');
   const S = { gross: 0, refunds: 0, net: 0, n: 0, paidN: 0, donations: 0, free: 0, customers: 0, avg: 0 };
   const byMonth = {}, byPlan = {}, byVia = {}, byCoupon = {}, byCust = {};

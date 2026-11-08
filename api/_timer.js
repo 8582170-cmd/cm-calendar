@@ -333,8 +333,8 @@ async function guest(req, res, b) {
       return json(res, 200, { ok: true });
     }
     /* תמונה אישית לברכה (מוקטנת בדפדפן), אם בעל האירוע אפשר */
-    if (b.act === 'wimg') {
-      if (!c.wl || !c.wim) return json(res, 403, { error: 'off' });
+    if (b.act === 'wimg' || b.act === 'wdes') {
+      if (!c.wl || (b.act === 'wimg' && !c.wim)) return json(res, 403, { error: 'off' });
       const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.img || '')); if (!m) return json(res, 400, { error: 'type' });
       const buf = Buffer.from(m[1], 'base64'); if (buf.length > 900000) return json(res, 413, { error: 'big' });
       if (await recent('timer_wall', s, meta.ip) >= 10) return json(res, 429, { error: 'rate' });
@@ -380,7 +380,7 @@ async function guest(req, res, b) {
       /* ברכה / מתנה שהנותן ביקש להסתיר את שמו גם מבעלי השמחה */
       (w || []).forEach(x => { if (x.noname) x.name = ''; });
       const R = await db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens,call_at,call_st,call_rem&order=id.asc&limit=10000').catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at,opened_at,last_open,opens&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err,grp,cnt,phone,token,nr_at,dr_at,ty_at,sms_at&order=id.asc&limit=10000')).catch(() => db('timer_recip?slug=eq.' + s + '&select=id,name,email,status,sent_at,err&order=id.asc&limit=10000').catch(() => null));
-      const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at,vis,noname&order=paid_at.desc&limit=2000').catch(() => db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=2000').catch(() => null));
+      const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&amount=gt.0&select=id,name,msg,amount,fee,net,payout,paid_at,vis,noname&order=paid_at.desc&limit=2000').catch(() => db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=id,name,msg,amount,fee,net,payout,paid_at&order=paid_at.desc&limit=2000').catch(() => null));
       (G || []).forEach(x => { if (x.noname) x.name = ''; });
       const EP = await require('./_eventpay').prices().catch(() => ({}));
       const stale = (R || []).filter(x => x.call_st === 'ממתין' && x.call_at && Date.now() - Date.parse(x.call_at) > 2 * 3600e3);

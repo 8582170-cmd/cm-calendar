@@ -286,6 +286,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
     <!-- 3. הורדה -->
     <section class="step" id="s3" aria-label="הורדה">
       <div class="card3">
+        <div class="paybox ok" id="wishBox" hidden></div>
         <div class="paybox" id="payBox" hidden></div>
         <div><h2>לאן זה הולך?</h2></div>
         <div class="f"><span class="lb">להדפסה</span><div class="sizes" id="szPrint"></div></div>
@@ -933,6 +934,7 @@ $('cmW').oninput = function(){ renderSizes(); };
 function pageCanvas(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale, watermark: clean() ? null : 'edit' }); }
 var fmtT = function(t){ return new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }); };
 function renderPay(){
+  wishBox();
   var box = $('payBox'), m = mode(); box.hidden = m === 'free'; box.className = 'paybox' + (m === 'edit' || m === 'dl' ? ' ok' : '');
   $('dl').textContent = m === 'unpaid' || m === 'expired' ? '⬇ הורדה לדוגמה (עם סימן מים)' : '⬇ הורדה';
   $('dl').className = 'big-btn' + (m === 'unpaid' ? ' ghost' : '');
@@ -976,6 +978,47 @@ function afterPaid(id){
     renderPay(); outPreview(); draw(); flash('✓ מוכן! עכשיו מורידים בלי סימן מים. הקישור נשלח גם למייל.');
   }).catch(function(){ if (++tries < 8) setTimeout(claim, 2500); else flash('הקישור לעיצוב נשלח למייל שלכם.'); }); })();
 }
+/* ברכה לקיר של אירוע (הגיעו מדף ההזמנה): תמונה של העיצוב עולה לקיר הברכות, עם מתנה אם רוצים. תשלום אחד על העיצוב ועל המתנה */
+var WISH = (function(){ var w = params.get('wish'); try { if (w && /^[a-z0-9-]{3,40}$/.test(w)) sessionStorage.setItem('brachot-wish', w); return sessionStorage.getItem('brachot-wish'); } catch (e) { return w && /^[a-z0-9-]{3,40}$/.test(w) ? w : null; } })(), WEV = null;
+function escH(x){ return String(x == null ? '' : x).replace(/[&<>"]/g, function(ch){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); }
+function wishBox(){
+  var B = $('wishBox'); if (!WISH || !B || ORD) return;
+  var draw = function(){ var c = WEV.cfg || {}, giftOk = WEV.gcOn && WEV.paid && c.gc, gm = Math.max(+c.gmin || 0, 1), pr = PRICE(), pub = c.wpub !== 0 || c.gpub !== 0;
+    B.hidden = false;
+    B.innerHTML = '<h2 style="margin:0 0 6px">📮 שליחה לקיר הברכות</h2><p>הברכה תעלה לדף ההזמנה של <b>' + escH(c.t || WISH) + '</b>' + (pr ? ', אחרי תשלום של ' + pr + ' ₪ על העיצוב' : '') + '.</p>' +
+      '<label class="f">השם שלכם<input type="text" id="wName" maxlength="80"></label>' +
+      (pub ? '<div class="f"><span class="lb">מי יראה?</span><label><input type="radio" name="wVis" value="all" checked> כולם, עם השם שלי</label>' + (c.wan ? '<label><input type="radio" name="wVis" value="anon"> כולם, בלי השם שלי</label>' : '') + '<label><input type="radio" name="wVis" value="host"> רק בעלי השמחה</label>' + (c.wsec ? '<label><input type="checkbox" id="wNo"> להסתיר את השם גם מבעלי השמחה</label>' : '') + '</div>' : '') +
+      (giftOk ? '<label class="f"><span><input type="checkbox" id="wG"> להוסיף מתנה באשראי</span></label><label class="f" id="wGA" hidden>סכום המתנה (₪, לפחות ' + gm + ')<input type="number" id="wGAm" min="' + gm + '" step="1" inputmode="numeric" dir="ltr"></label>' : '') +
+      '<div class="row2"><button class="big-btn" type="button" id="wGo">📮 שליחה לקיר הברכות</button></div><p class="info" id="wMsg"></p><p class="info"><a href="#" id="wCancel">לא לשלוח לאירוע (רק להוריד)</a></p>';
+    var g = $('wG'); if (g) g.onchange = function(){ $('wGA').hidden = !g.checked; };
+    $('wCancel').onclick = function(e){ e.preventDefault(); try { sessionStorage.removeItem('brachot-wish') } catch (x) {} WISH = null; B.hidden = true; };
+    $('wGo').onclick = wishSend; };
+  if (WEV) { draw(); return; }
+  fetch('/api/pricing?c=_timer&s=' + encodeURIComponent(WISH)).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ if (!j || !j.cfg || !j.cfg.wl) { B.hidden = true; return; } WEV = j; draw(); }).catch(function(){});
+}
+function wishSend(){
+  var M = $('wMsg'), b = $('wGo'), name = $('wName').value.trim(), c = WEV.cfg || {};
+  var visEl = document.querySelector('[name=wVis]:checked'), vis = visEl ? visEl.value : 'host', nn = !!($('wNo') && $('wNo').checked && vis !== 'all');
+  var gift = $('wG') && $('wG').checked ? +$('wGAm').value : 0, gm = Math.max(+c.gmin || 0, 1);
+  if (!name) { M.textContent = 'נא לכתוב את השם שלכם.'; $('wName').focus(); return; }
+  if ($('wG') && $('wG').checked && !(gift >= gm)) { M.textContent = 'סכום המתנה: לפחות ' + gm + ' ₪.'; $('wGAm').focus(); return; }
+  b.disabled = true; M.textContent = 'מכינים את התמונה…';
+  var post = function(body){ return fetch('/api/pricing?c=_timer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function(r){ return r.json().then(function(j){ if (!r.ok) throw new Error(j.error || r.status); return j; }); }); };
+  /* תמונה בלי סימן מים, ברוחב של עד 1000 פיקסלים (מוצגת רק בקיר, ורק אחרי תשלום אם יש) */
+  var cnv = document.createElement('canvas');
+  Promise.resolve(G.render(cnv, tpl, S, { scale: Math.min(1, 1000 / D().W), watermark: null })).then(function(cc){ cc = cc || cnv; var q = .86, d = cc.toDataURL('image/jpeg', q); while (d.length > 1150000 && q > .4) { q -= .12; d = cc.toDataURL('image/jpeg', q); } return post({ act: 'wdes', slug: WISH, img: d }); })
+    .then(function(up){
+      var pr = PRICE();
+      if (!pr && !gift) return post({ act: 'wish', slug: WISH, name: name, text: '', img: up.url, vis: vis, noname: nn, pub: vis !== 'host' }).then(function(){ wishDone(); });
+      M.textContent = '';
+      var go = function(){ window.MLPay.open({ title: '📮 ברכה לאירוע' + (gift ? ' + מתנה' : ''), sub: (pr ? 'עיצוב ' + pr + ' ₪' : '') + (pr && gift ? ' + ' : '') + (gift ? 'מתנה ' + gift + ' ₪' : '') + ' = ' + (pr + gift) + ' ₪',
+        body: { plan: 'wishd', slug: WISH, tpl: tpl.id, v: tpl.variantOf ? tpl.variant : -1, state: S, amount: gift, gname: name, gvis: vis, gnoname: nn, gimg: up.url },
+        onPaid: function(id){ wishDone(); if (pr) afterPaid(id); } }); b.disabled = false; };
+      if (window.MLPay) go(); else setTimeout(go, 600);
+    }).catch(function(){ b.disabled = false; M.textContent = 'לא הצלחנו לשלוח. נסו שוב.'; });
+}
+function wishDone(){ var B = $('wishBox'); try { sessionStorage.removeItem('brachot-wish') } catch (e) {} var s = WISH; WISH = null;
+  B.innerHTML = '<h2 style="margin:0 0 6px">✓ הברכה נשלחה!</h2><p>היא מופיעה בקיר הברכות של האירוע.</p><div class="row2"><a class="big-btn ghost" href="/t/' + encodeURIComponent(s) + '">חזרה לדף ההזמנה</a></div>'; }
 function startPay(){
   if (!window.MLPay) { flash('טוען…'); setTimeout(startPay, 500); return; }
   window.MLPay.open({ title: 'תשלום · ' + tpl.title, sub: PRICE() + ' ₪. אחרי התשלום: הורדה בלי סימן מים, ו־' + PAYCFG.editHours + ' שעות לשינויים.',

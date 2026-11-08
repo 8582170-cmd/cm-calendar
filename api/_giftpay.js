@@ -18,6 +18,16 @@ async function prepare(b) {
   const M = (() => { try { return require('./_r2').media(); } catch (e) { return null; } })(), img = M && String(b.gimg || '').indexOf(M.url + '/timers/wish/' + s + '/') === 0 ? String(b.gimg).slice(0, 300) : null;
   return { amount, fee, net: r2(amount - fee), slug: s, name: clean(b.gname, 80), msg: clean(b.gmsg, 1000), vis, noname, style, img, wall: !!c.wl, title: 'מתנה לאירוע (' + s + ')' };
 }
+/* ברכה מעוצבת מאתר הברכות לקיר של אירוע, עם או בלי מתנה (plan=wishd). בלי מתנה: שורה בסכום 0 שמחכה לתשלום על העיצוב */
+async function prepareWish(b) {
+  if (+b.amount > 0) { const g = await prepare(b); if (g.error) return g; return g; }
+  const T = require('./_timer'), s = String(b.slug || '').toLowerCase(), cur = await T.get(s).catch(() => null);
+  if (!cur || !(cur.cfg || {}).wl || cur.disabled) return { error: 'קיר הברכות לא פתוח באירוע הזה' };
+  const c = cur.cfg, clean = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
+  let vis = ['all', 'anon', 'host'].includes(b.gvis) ? b.gvis : 'all'; if (vis === 'anon' && !c.wan) vis = 'all';
+  const M = (() => { try { return require('./_r2').media(); } catch (e) { return null; } })(), img = M && String(b.gimg || '').indexOf(M.url + '/timers/wish/' + s + '/') === 0 ? String(b.gimg).slice(0, 300) : null;
+  return { amount: 0, fee: 0, net: 0, slug: s, name: clean(b.gname, 80), msg: clean(b.gmsg, 1000), vis, noname: !!b.gnoname && !!c.wsec && vis !== 'all', style: null, img, wall: true, title: 'ברכה לאירוע (' + s + ')' };
+}
 async function create(id, email, g, meta) {
   const row = { slug: g.slug, order_id: id, name: g.name, msg: g.msg, amount: g.amount, fee: g.fee, net: g.net, status: 'pending', vis: g.vis, noname: g.noname, style: g.style, img: g.img, wall: g.wall };
   await db('timer_gift', { meta: meta || null, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) })
@@ -29,8 +39,9 @@ async function paid(o) {
   /* המתנה (והברכה שנכתבה איתה) עולה לקיר עם הסכום, לפי מה שהנותן בחר לגבי מי רואה. בלי טקסט היא מופיעה רק באזור המתנות */
   { const vis = g.vis || 'all';
     await db('timer_wall', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ slug: g.slug, name: g.name || '', text: g.msg || '', public: vis !== 'host', vis, noname: !!g.noname, style: g.style || null, img: g.img || null, gift: +g.amount, gift_id: g.id }) }).catch(e => console.error('gift wall', e.message)); }
+  if (!(+g.amount > 0)) return;
   const cur = await require('./_timer').get(g.slug).catch(() => null), to = cur && cur.paid && cur.paid.email; if (!to) return;
   const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
   await require('./_paid').send('gift', to, { 'שם': g.noname ? 'אורח (ביקש לא לפרסם את שמו)' : (g.name || 'אורח'), 'סכום': (+g.amount) + ' ₪', 'ברכה': g.msg ? '\n\n"' + g.msg + '"' : '', 'נטו': (+g.net) + ' ₪' }, { url: site + '/invite?s=' + g.slug }, 'gift').catch(() => {});
 }
-module.exports = { prepare, create, paid };
+module.exports = { prepare, prepareWish, create, paid };

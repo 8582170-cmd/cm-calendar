@@ -30,6 +30,7 @@
   </header>
 
   <main>
+    <div id="wishBan" hidden style="background:var(--teal,#1f5c63);color:#fff;border-radius:14px;padding:12px 16px;margin:0 0 14px;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap"><span>🎨 בוחרים עיצוב לברכה שתישלח לקיר הברכות של האירוע. בוחרים עיצוב, כותבים, ובסוף לוחצים "שליחה לקיר הברכות".</span><button type="button" id="wishX" style="font:inherit;border:1px solid #fff;background:transparent;color:#fff;border-radius:999px;padding:4px 12px;cursor:pointer">ביטול</button></div>
     <div class="intro">
       <span class="eyebrow">ברכות והזמנות להדפסה</span>
       <h1>ברכה מעוצבת, מוכנה תוך דקות</h1>
@@ -55,6 +56,9 @@
   <footer>העיצובים מוצגים עם טקסט לדוגמה. בעורך כותבים את הטקסט שלכם, ובוחרים צבעים, גופנים וגדלים לכל שורה.</footer>
 </div>
 <script>
+/* הגיעו מדף הזמנה (?wish=כתובת האירוע): זוכרים את האירוע עד השליחה */
+(function(){ var w = new URLSearchParams(location.search).get('wish'); try { if (w && /^[a-z0-9-]{3,40}$/.test(w)) sessionStorage.setItem('brachot-wish', w); w = sessionStorage.getItem('brachot-wish'); } catch (e) { w = null; }
+  var b = document.getElementById('wishBan'); if (w && b) { b.hidden = false; document.getElementById('wishX').onclick = function(){ try { sessionStorage.removeItem('brachot-wish') } catch (e) {} b.hidden = true; }; } })();
 window.Greetings.load().then(function(){
 'use strict';
 var G = window.Greetings, gal = document.getElementById('gal'), fl = document.getElementById('filters');

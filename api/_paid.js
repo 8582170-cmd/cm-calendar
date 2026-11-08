@@ -64,7 +64,7 @@ function render(kind, vars, tpl, opt) {
 let SUBS = null; const SUBN = p => { try { return require('./_subs').nameOf(p, SUBS); } catch (e) { return null; } };
 function vars(o) {
   const isDon = o.plan === 'donation';
-  return { 'מסלול': isDon ? 'תרומה' : o.plan === 'greet' ? 'ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'דף הזמנה לאירוע' : o.plan === 'gift' ? 'מתנה לאירוע' : /^(gsub|gpack|rsub):/.test(o.plan) ? (SUBN(o.plan) || 'מנוי') : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan), 'סכום': +o.amount ? (+o.amount).toLocaleString('he-IL') + ' ₪' : 'בחינם',
+  return { 'מסלול': isDon ? 'תרומה' : o.plan === 'greet' ? 'ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'דף הזמנה לאירוע' : o.plan === 'gift' ? 'מתנה לאירוע' : o.plan === 'wishd' ? 'ברכה מעוצבת לאירוע' : /^(gsub|gpack|rsub):/.test(o.plan) ? (SUBN(o.plan) || 'מנוי') : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan), 'סכום': +o.amount ? (+o.amount).toLocaleString('he-IL') + ' ₪' : 'בחינם',
     'קופון': o.coupon ? ', קופון ' + o.coupon : '', 'הזמנה': String(o.id || '').slice(0, 8), 'מייל': o.email || 'לא ידוע', 'אמצעי': o.via || 'נדרים פלוס', 'סוג': isDon ? 'תרומה' : 'רכישה' };
 }
 
@@ -80,7 +80,8 @@ async function notify(o) {
   if (/^(gsub|gpack|rsub):/.test(o.plan || '')) { try { SUBS = await require('./_subs').cfg(); } catch (e) {} }
   const { sendMail } = require('./_mail'), tpl = (await loadConfig()).mailTpl, V = vars(o), isDon = o.plan === 'donation';
   /* ברכה מעוצבת: הלקוח מקבל מייל עם הקישור האישי לעיצוב (במקום אישור רכישה של מסלול) */
-  if (o.plan === 'greet') { try { await require('./_greetpay').paid(o); } catch (e) { console.error('greet paid', e.message); } }
+  if (o.plan === 'greet' || o.plan === 'wishd') { try { await require('./_greetpay').paid(o); } catch (e) { console.error('greet paid', e.message); } }
+  if (o.plan === 'wishd') { try { await require('./_giftpay').paid(o); } catch (e) { console.error('wishd gift', e.message); } }
   else if (o.plan === 'event') { try { await require('./_eventpay').paid(o); } catch (e) { console.error('event paid', e.message); } }
   if (o.plan === 'gift') { try { await require('./_giftpay').paid(o); } catch (e) { console.error('gift paid', e.message); } }
   else if (o.email && /^(gsub|gpack|rsub):/.test(o.plan || '')) { try { await sendMail({ to: o.email, ...subMail(o, V, tpl) }, 'purchase'); } catch (e) { console.error('sub mail', e.message); } }
