@@ -204,7 +204,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
 <script src="/assets/a11y.js?v=1" defer></script>
 <script src="/assets/greetings/greetings.js?v=59"></script>
 <script src="/assets/pay.js?v=4" defer></script>
-<script src="/assets/greetings/mine.js?v=6"></script>
+<script src="/assets/greetings/mine.js?v=7"></script>
 <script src="/assets/sitemsg.js?v=2" defer></script>
 </head>
 <body>
@@ -288,6 +288,7 @@ dialog.fp::backdrop{background:rgb(0 0 0 / .4)}
       <div class="card3">
         <div class="paybox ok" id="wishBox" hidden></div>
         <div class="paybox" id="payBox" hidden></div>
+        <div class="paybox ok" id="gmBox" hidden></div>
         <div><h2>לאן זה הולך?</h2></div>
         <div class="f"><span class="lb">להדפסה</span><div class="sizes" id="szPrint"></div></div>
         <div class="f" id="cmF" hidden><label for="cmW">רוחב בס״מ</label><input type="text" inputmode="decimal" id="cmW" value="50"><p class="info" id="cmInfo"></p></div>
@@ -934,7 +935,7 @@ $('cmW').oninput = function(){ renderSizes(); };
 function pageCanvas(scale){ var c = document.createElement('canvas'); return G.render(c, tpl, S, { scale: scale, watermark: clean() ? null : 'edit' }); }
 var fmtT = function(t){ return new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }); };
 function renderPay(){
-  wishBox();
+  wishBox(); gmBox();
   var box = $('payBox'), m = mode(); box.hidden = m === 'free'; box.className = 'paybox' + (m === 'edit' || m === 'dl' ? ' ok' : '');
   $('dl').textContent = m === 'unpaid' || m === 'expired' ? '⬇ הורדה לדוגמה (עם סימן מים)' : '⬇ הורדה';
   $('dl').className = 'big-btn' + (m === 'unpaid' ? ' ghost' : '');
@@ -977,6 +978,37 @@ function afterPaid(id){
     try { history.replaceState(null, '', '/brachot/edit.html?o=' + id + '&k=' + j.k + '#download') } catch (e) {}
     renderPay(); outPreview(); draw(); flash('✓ מוכן! עכשיו מורידים בלי סימן מים. הקישור נשלח גם למייל.');
   }).catch(function(){ if (++tries < 8) setTimeout(claim, 2500); else flash('הקישור לעיצוב נשלח למייל שלכם.'); }); })();
+}
+/* שליחת הברכה במייל לנמענים (כשזה פעיל בניהול): לעיצוב ששולם, או חינמי אם מותר. רק למחוברים */
+var GMC;
+function gmBox(){
+  var B = $('gmBox'); if (!B || !window.MyGreets || !window.MyGreets.ent) return;
+  var go = function(){ var m = mode(), C = GMC && GMC.gmail, ok = C && ((m === 'edit' || m === 'dl') || (m === 'free' && C.free));
+    if (!ok) { B.hidden = true; return; }
+    if (B.dataset.m === m && !B.hidden) return; B.dataset.m = m; B.hidden = false;
+    window.MyGreets.user().then(function(u){
+      if (!u) { B.innerHTML = '<h2 style="margin:0 0 6px">✉ שליחת הברכה במייל</h2><p>אפשר לשלוח את הברכה ישירות למייל של מי שתרצו. <a href="' + window.MyGreets.loginUrl() + '">כניסה לחשבון</a> כדי לשלוח.</p>'; return; }
+      B.innerHTML = '<h2 style="margin:0 0 6px">✉ שליחת הברכה במייל</h2><p class="info">הברכה תופיע בגוף המייל. המייל יוצא מהאתר בשמכם, ותשובה תגיע אליכם (' + escH(u.email) + '). עד ' + C.perDay + ' נמענים ביום.</p>' +
+        '<label class="f">כתובות מייל של הנמענים (אפשר כמה, מופרדות בפסיק או בשורה חדשה)<textarea id="gmTo" rows="2" dir="ltr" style="width:100%"></textarea></label>' +
+        '<label class="f">השם שלכם (כך זה יופיע: "קיבלת ברכה מ…")<input type="text" id="gmFrom" maxlength="60"></label>' +
+        '<label class="f">הודעה אישית (לא חובה)<textarea id="gmNote" rows="2" maxlength="600" style="width:100%"></textarea></label>' +
+        '<div class="row2"><button class="big-btn" type="button" id="gmGo">✉ שליחה</button></div><p class="info" id="gmMsg" role="status"></p>';
+      $('gmGo').onclick = gmSend; });
+  };
+  if (GMC !== undefined) { go(); return; }
+  GMC = null; window.MyGreets.ent().then(function(j){ GMC = j || {}; go(); }).catch(function(){ GMC = {}; });
+}
+function gmSend(){
+  var M = $('gmMsg'), b = $('gmGo'), to = $('gmTo').value.trim(), from = $('gmFrom').value.trim();
+  if (!/@/.test(to)) { M.textContent = 'נא לכתוב לפחות כתובת מייל אחת.'; $('gmTo').focus(); return; }
+  if (!from) { M.textContent = 'נא לכתוב את השם שלכם.'; $('gmFrom').focus(); return; }
+  b.disabled = true; M.textContent = 'מכינים את התמונה…';
+  var cnv = document.createElement('canvas'), paid = mode() !== 'free';
+  Promise.resolve(G.render(cnv, tpl, S, { scale: Math.min(1, 1000 / D().W), watermark: null })).then(function(cc){ cc = cc || cnv; var q = .86, d = cc.toDataURL('image/jpeg', q); while (d.length > 1150000 && q > .4) { q -= .12; d = cc.toDataURL('image/jpeg', q); }
+    M.textContent = 'שולחים…';
+    return window.MyGreets.mailSend(Object.assign({ to: to, from: from, note: $('gmNote').value.trim(), img: d }, paid && CRED ? { o: CRED.o, k: CRED.k } : { free: 1 })); })
+    .then(function(j){ b.disabled = false; M.textContent = '✓ נשלח ל־' + j.sent + ' נמענים' + (j.left != null ? '. אפשר לשלוח היום עוד ' + j.left + '.' : '.'); if (j.sent) $('gmTo').value = ''; })
+    .catch(function(e){ b.disabled = false; M.textContent = e.msg || 'לא הצלחנו לשלוח. נסו שוב.'; });
 }
 /* ברכה לקיר של אירוע (הגיעו מדף ההזמנה): תמונה של העיצוב עולה לקיר הברכות, עם מתנה אם רוצים. תשלום אחד על העיצוב ועל המתנה */
 var WISH = (function(){ var w = params.get('wish'); try { if (w && /^[a-z0-9-]{3,40}$/.test(w)) sessionStorage.setItem('brachot-wish', w); return sessionStorage.getItem('brachot-wish'); } catch (e) { return w && /^[a-z0-9-]{3,40}$/.test(w) ? w : null; } })(), WEV = null;
