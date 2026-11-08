@@ -613,7 +613,8 @@ async function ivr(req, res) {
       const e = require('./_dir').okMail(q.E); let msg = I.mailBad;
       if (e) { msg = I.mailSaved;
         const up = { email: e, email_src: 'phone', ...(r.status === 'new' || r.status === 'fail' || !r.status ? { status: 'queued' } : {}) };
-        const ok = await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up) }).then(() => true).catch(() => false);
+        const ok = await db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up) }).then(() => true)
+          .catch(() => { const u2 = { ...up }; delete u2.email_src; return db('timer_recip?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(u2) }).then(() => true).catch(() => false); });
         await require('./_dir').linkEmail(ph, e).catch(() => {});
         if (ok && up.status) await sendBatch(r.slug, cur, 5).catch(err => console.error('ivr mail', err.message)); }
       return out('read=' + say(msg + '. ' + askAll(false)) + '=B,no,1,1,10,NO,yes,no,,' + keys(false));
