@@ -563,4 +563,5 @@ EN = [
     ('<b>📒 ספרי טלפונים</b>', '<b>📒 Phone directories</b>'),
     ('בחירת מוזמנים מספרי הטלפונים זמינה במסלולים: <b>', 'Choosing guests from phone directories is available in these plans: <b>'),
     ('</b>. אפשר לשדרג בלשונית התשלום.', '</b>. You can upgrade in the payment tab.'),
+    ('❓ הסבר ושאלות', '❓ Help & FAQ (Hebrew)'),
 ]
