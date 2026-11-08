@@ -138,9 +138,10 @@ async function main(req, res) {
       const { loadSetting, saveSetting } = require('./_lib');
       const S = (await loadSetting('sched').catch(() => null)) || {};
       if (b.action === 'schedset' && (b.part === 'cal' || b.part === 'ev')) {
-        const hrs = v => [...new Set((Array.isArray(v) ? v : []).map(Number).filter(h => Number.isInteger(h) && h >= 0 && h <= 23))].sort((x, y) => x - y).slice(0, 12);
-        const d = b.data || {}, one = x => ({ hours: hrs((x || {}).hours), rep: !!(x || {}).rep });
-        S[b.part] = b.part === 'cal' ? { mail: one(d.mail), voice: one(d.voice) } : { mail: { hours: hrs((d.mail || {}).hours) }, voice: { on: !!(d.voice || {}).on, days: Math.max(0, Math.min(7, parseInt((d.voice || {}).days, 10) || 1)), hours: hrs((d.voice || {}).hours) } };
+        /* שעות מדויקות "HH:MM" (עד 12 לכל חלק) */
+        const hrs = v => [...new Set((Array.isArray(v) ? v : []).map(t => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t).trim()); return m && +m[1] < 24 && +m[2] < 60 ? String(+m[1]).padStart(2, '0') + ':' + m[2] : null; }).filter(Boolean))].sort().slice(0, 12);
+        const d = b.data || {}, one = x => ({ times: hrs((x || {}).times), rep: !!(x || {}).rep });
+        S[b.part] = b.part === 'cal' ? { mail: one(d.mail), voice: one(d.voice) } : { mail: { times: hrs((d.mail || {}).times) }, voice: { on: !!(d.voice || {}).on, days: Math.max(0, Math.min(7, parseInt((d.voice || {}).days, 10) || 1)), times: hrs((d.voice || {}).times) } };
         await saveSetting('sched', S);
       }
       return json(res, 200, { sched: S, hourlast: await loadSetting('hourlast').catch(() => null), cronlast: await loadSetting('cronlast').catch(() => null) });

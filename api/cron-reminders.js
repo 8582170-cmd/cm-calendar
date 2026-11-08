@@ -103,7 +103,10 @@ async function evMail(X) { return require('./_timer').autoMails(X.days, 300); }
 async function evVoice(X, S) { return require('./_timer').autoCalls(X.days, +((S.ev || {}).voice || {}).days || 1); }
 /* ההגדרה מהניהול. hours ריק = פעם ביום עם משימת הבוקר */
 async function sched() { const S = (await require('./_lib').loadSetting('sched').catch(() => null)) || {}; return S; }
-const hoursOf = (S, a, b) => { const x = ((S[a] || {})[b] || {}); return Array.isArray(x.hours) ? x.hours.filter(h => h >= 0 && h <= 23) : []; };
+/* השעות שנקבעו, בדקות מתחילת היום (times = "HH:MM"; hours = הגדרה ישנה בשעות שלמות) */
+const timesOf = (S, a, b) => { const x = ((S[a] || {})[b] || {}); const T = Array.isArray(x.times) ? x.times.map(t => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t)); return m ? +m[1] * 60 + +m[2] : -1; }) : (Array.isArray(x.hours) ? x.hours.map(h => +h * 60) : []);
+  return T.filter(t => t >= 0 && t < 1440).sort((p, q) => p - q); };
+const hoursOf = timesOf;
 const PARTS = [['cal', 'mail'], ['cal', 'voice'], ['ev', 'mail'], ['ev', 'voice']];
 async function runPart(a, b, X, S) {
   const rep = !!(((S[a] || {})[b] || {}).rep);
@@ -114,15 +117,19 @@ async function runPart(a, b, X, S) {
 }
 /* מהריצה השעתית (pricing?c=_timer&cron=1): מריץ את החלקים שנקבעה להם השעה הזאת, פעם אחת בשעה */
 async function slots() {
-  const S = await sched(), h = +new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem', hour: 'numeric', hourCycle: 'h23' });
-  const due = PARTS.filter(([a, b]) => hoursOf(S, a, b).includes(h)); try { await require('./_lib').saveSetting('hourlast', { at: new Date().toISOString(), h }); } catch (e) {}
+  /* רץ מה-Worker (כל 5 דקות, או כל שעה). חלק נשלח כשהגיעה אחת השעות שלו (עד 90 דקות אחורה, אם ריצה התפספסה), פעם אחת לכל שעה שנקבעה */
+  const S = await sched(), P = {}; new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date()).forEach(x => { P[x.type] = x.value; });
+  const h = +P.hour * 60 + +P.minute;
+  const D0 = (await require('./_lib').loadSetting('slotsdone').catch(() => null)) || {}, today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+  const pend = (a, b) => timesOf(S, a, b).filter(t => t <= h && h - t < 90 && !(D0.day === today && ((D0[a + '-' + b] || []).includes(t))));
+  const due = PARTS.filter(([a, b]) => pend(a, b).length); try { await require('./_lib').saveSetting('hourlast', { at: new Date().toISOString(), h }); } catch (e) {}
   if (!due.length) return { h, due: 0 };
   /* שבת וחג (כולל כניסת שבת ביום שישי): לא שולחים */
   const T = require('./_timer'); if (T.holyAt && await T.holyAt(Date.now())) return { h, skipped: 'shabbat' };
   const X = await ctxOf(); if (!X) return { h, skipped: 'shabbat' };
-  const { loadSetting, saveSetting } = require('./_lib'), D = (await loadSetting('slotsdone').catch(() => null)) || {}, done = D.date === X.tIso ? D : { date: X.tIso };
+  const { saveSetting } = require('./_lib'), done = D0.day === today ? D0 : { day: today };
   const out = { h };
-  for (const [a, b] of due) { const k = a + '-' + b; done[k] = done[k] || []; if (done[k].includes(h)) continue; done[k].push(h); await saveSetting('slotsdone', done);
+  for (const [a, b] of due) { const k = a + '-' + b, L = pend(a, b); done[k] = (done[k] || []).concat(L); await saveSetting('slotsdone', done);
     try { out[k] = await runPart(a, b, X, S); } catch (e) { out[k] = { error: String(e.message).slice(0, 120) }; console.error('slot', k, e.message); } }
   return out;
 }
