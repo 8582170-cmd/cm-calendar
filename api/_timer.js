@@ -49,6 +49,10 @@ async function mediaUp(req, res, b) {
   if (!cur.paid) { try { const { loadSetting, saveSetting } = require('./_lib'), M = (await loadSetting('mediapend')) || {}; M[path] = { s: sl, at: Date.now() }; await saveSetting('mediapend', M); } catch (e) { console.error('mediapend', e.message); } }
   return json(res, 200, { put: P.upload, url: P.url, ctype: b.type });
 }
+const agKey = h => { const [a, b] = String(h).split(':').map(Number); return (a < 5 ? a + 24 : a) * 60 + (b || 0); };  /* אחרי חצות נחשב המשך הערב */
+const clampI = (v, a, z, d) => { v = parseInt(v, 10); return isFinite(v) ? Math.max(a, Math.min(z, v)) : d; };
+/* לוח זמנים של תזכורות: [{d: ימים לפני האירוע, h: שעה ביום}] */
+function sched(L, max, maxD) { const seen = {}; return (Array.isArray(L) ? L : []).slice(0, max * 2).map(x => ({ d: clampI(x && x.d, 0, maxD, 0), h: clampI(x && x.h, 6, 22, 10) })).filter(x => { const k = x.d + ':' + x.h; if (seen[k]) return false; seen[k] = 1; return true; }).slice(0, max).sort((a, b) => b.d - a.d || a.h - b.h); }
 function clean(c) {
   c = c || {};
   return {
@@ -60,10 +64,10 @@ function clean(c) {
     p: okImg(c.p) ? c.p : '', ps: ['rect', 'wide'].includes(c.ps) ? c.ps : 'circle',
     /* דף הזמנה */
     inv: okImg(c.inv) ? c.inv : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
-    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, vm: ['tts', 'name', 'full'].includes(c.vm) ? c.vm : 'tts', wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
+    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), ...(c.trl != null ? { trl: str(c.trl, 30) } : {}), ...(Array.isArray(c.ag) ? { ag: c.ag.slice(0, 12).map(x => ({ h: /^\d{1,2}:\d{2}$/.test((x && x.h) || '') ? x.h : '', t: str(x && x.t, 60) })).filter(x => x.h && x.t) } : {}), bgm: ['glass', 'open'].includes(c.bgm) ? c.bgm : '', rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, vm: ['tts', 'name', 'full'].includes(c.vm) ? c.vm : 'tts', wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
     gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
-    nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600),
+    nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600), ...(Array.isArray(c.nrs) ? { nrs: sched(c.nrs, 5, 60) } : {}), ...(Array.isArray(c.drs) ? { drs: sched(c.drs, 3, 14) } : {}), tyd: clampI(c.tyd, 1, 14, 1), tyh: clampI(c.tyh, 6, 22, 10),
     qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 10).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 12).map(v => str(v, 40).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
     gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, ml: ['he', 'en', 'yi'].includes(c.ml) ? c.ml : '', vt: str(c.vt, 600).replace(/[<>]/g, ''), vrt: str(c.vrt, 600).replace(/[<>]/g, ''), clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
     bgi: okImg(c.bgi) ? c.bgi : '', bgv: okMedia(c.bgv, 'video') ? c.bgv : '', mus: okMedia(c.mus, 'audio') ? c.mus : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
@@ -71,6 +75,7 @@ function clean(c) {
 }
 async function get(s) {
   const R2 = require('./_r2'); if (!R2.on()) throw new Error('storage');
+  await loadFree();
   const r = await fetch(R2.presign('GET', key(s), 120)); if (r.status === 404) return null; if (!r.ok) throw new Error('r2 ' + r.status);
   return r.json();
 }
@@ -125,7 +130,10 @@ async function holyAt(ms) { const S = require('./_shabbat'), conf = { shabbat: {
 /* מסלול חינם (עם רישום): דף ההזמנה פתוח ו-20 מיילים. "מלא" = שולם */
 const isFull = cur => !!(cur && cur.paid && !cur.paid.free);
 /* יכולת במסלול של האירוע (rem, seat, gal, media, gift, voice, sms). אירוע ישן בלי רשימת יכולות: הכל פתוח */
-const feat = (cur, k) => isFull(cur) && (!cur.paid.feats || !!cur.paid.feats[k]);
+/* יכולות המסלול החינמי: נקבעות בניהול האירועים (נשמרות בזיכרון חצי דקה) */
+let FREEF = {}, FREEAT = 0;
+async function loadFree() { if (Date.now() - FREEAT < 30000) return; FREEAT = Date.now(); try { FREEF = (await require('./_eventpay').prices()).freeFeats || {}; } catch (e) {} }
+const feat = (cur, k) => !!(cur && cur.paid) && (isFull(cur) ? (!cur.paid.feats || !!cur.paid.feats[k]) : !!FREEF[k]);
 async function T_put_mail(s, cur, mail) { await put(s, { ...cur, mail }); cur.mail = mail; }
 /* ---------- מייל ההזמנה: דומה לדף האירוע ---------- */
 const THC = { classic: ['1e5a63', 'ffffff', 'eef4f4'], wedding: ['a8646f', 'fff8f6', 'f8e8e5'], barmitzvah: ['1f3a5f', 'f7f8fb', 'e6ecf5'], batmitzvah: ['b8487a', 'fff7fb', 'fbe3ef'], kids: ['e0663a', 'fffaf2', 'ffe3d3'], elegant: ['c9a227', '1d1a17', '2a2622'], digital: ['39e888', '0b0f0c', '111a14'], minimal: ['172126', 'ffffff', 'f3f5f4'] };
@@ -159,6 +167,7 @@ function inviteMail(slug, cur, r, site, mode) {
   const L = EN ? { rsvp: '✅ RSVP', wish: '✍️ Write a blessing', cal: '📅 Add to calendar', waze: '🚗 Waze', maps: '📍 Maps', gift: '🎁 ' + (c.gl || 'Gift'), rec: 'Reception', open: 'Open the invitation', un: 'Unsubscribe', me: 'Update or delete my email' }
                  : YI ? { rsvp: '✅ באשטעטיגן קומען', wish: '✍️ שרייבן א ברכה', cal: '📅 צולייגן צום קאלענדאר', waze: '🚗 וועיז', maps: '📍 מאפע', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'צו דער הזמנה', un: 'אראפנעמען פון דער ליסטע', me: 'טוישן אדער אויסמעקן מיין אימעיל' }
                  : { rsvp: '✅ אישור הגעה', wish: '✍️ כתיבת ברכה', cal: '📅 הוספה ליומן', waze: '🚗 וייז', maps: '📍 מפות', gift: '🎁 ' + (c.gl || 'מתנה'), rec: 'קבלת פנים', open: 'לדף ההזמנה', un: 'הסרה מרשימת התפוצה', me: 'עדכון או מחיקה של המייל שלי' };
+  const trl = c.trl != null ? c.trl : (/^(wed|eng|sheva)$/.test(c.et || '') ? L.rec : '');
   const row = x => '<tr><td style="padding:8px 18px;text-align:center">' + x + '</td></tr>';
   let h = '<!doctype html><html dir="' + dir + '"><body style="margin:0;padding:0;background:#f4f2ee"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:16px 8px">' +
     '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#' + bg + ';border-radius:16px;overflow:hidden;direction:' + dir + ';font-family:Arial,sans-serif;color:#' + ink + '">';
@@ -171,7 +180,7 @@ function inviteMail(slug, cur, r, site, mode) {
   h += row('<div style="font-size:22px;font-weight:bold;color:#' + acc + '">' + H(title) + '</div><div style="font-size:14px;color:#' + mute + ';margin-top:4px">' + H(when) + '</div>');
   const U = (c.u === 'm' ? ['months'] : c.u === 'w' ? ['weeks'] : []).concat(['days', 'hours', 'minutes', 'seconds']), UL = EN ? { months: 'months', weeks: 'weeks', days: 'days', hours: 'hours', minutes: 'minutes', seconds: 'seconds' } : YI ? { months: 'חדשים', weeks: 'וואכן', days: 'טעג', hours: 'שעות', minutes: 'מינוט', seconds: 'סעקונדעס' } : { months: 'חודשים', weeks: 'שבועות', days: 'ימים', hours: 'שעות', minutes: 'דקות', seconds: 'שניות' };
   if (mode !== 'ty' && c.clk !== 0) h += row('<a href="' + H(page) + '" target="_blank"><img src="' + H(img) + '" width="420" alt="" style="display:block;margin:0 auto;max-width:100%;height:auto;border:0"></a><table role="presentation" width="420" align="center" cellpadding="0" cellspacing="0" style="max-width:100%;direction:ltr;font-size:13px;color:#' + mute + ';text-align:center"><tr>' + U.map(k => '<td>' + UL[k] + '</td>').join('') + '</tr></table>');
-  if (loc || c.tr) h += row('<div style="font-size:15px">' + (c.venue ? '<b style="color:#' + acc + '">' + H(c.venue) + '</b><br>' : '') + (c.addr ? H(c.addr) + '<br>' : '') + (c.tr ? L.rec + ': ' + H(c.tr) + (c.h ? ' · ' + H(c.tl || (EN ? 'Ceremony' : 'חופה')) + ': ' + H(c.h) : '') : '') + '</div>' +
+  if (loc || c.tr || (c.ag && c.ag.length)) h += row('<div style="font-size:15px">' + (c.venue ? '<b style="color:#' + acc + '">' + H(c.venue) + '</b><br>' : '') + (c.addr ? H(c.addr) + '<br>' : '') + (Array.isArray(c.ag) ? c.ag.slice().sort((a, b) => agKey(a.h) - agKey(b.h)).map(x => H(x.h) + ' ' + H(x.t)).join('<br>') : (c.tr ? (trl ? H(trl) + ': ' : '') + H(c.tr) : '') + (c.tr && c.h && c.tl ? '<br>' : '') + (c.h && c.tl ? H(c.tl) + ': ' + H(c.h) : '')) + '</div>' +
     (c.addr ? '<div style="margin-top:6px">' + btn('https://waze.com/ul?q=' + encodeURIComponent(c.addr) + '&navigate=yes', L.waze) + btn('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc), L.maps) + '</div>' : ''));
   h += row((mode === 'ty' ? btn(page, L.open, true) + (c.gal ? btn(page + '&go=gal', EN ? '📷 Share your photos' : YI ? '📷 ארויפלייגן בילדער פון דער שמחה' : '📷 להעלאת תמונות מהאירוע') : '') : (c.rv && mode !== 'dr' ? btn(page + '&go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + btn(page + '&go=cal', L.cal)) + (c.wl ? btn(page + '&go=wish', L.wish) : '') + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
   h += '<tr><td style="padding:14px 18px 16px;text-align:center;font-size:11px;color:#' + mute + '"><a href="' + H(unsub) + '" style="color:#' + mute + '">' + L.un + '</a> · <a href="' + site + '/dir/" style="color:#' + mute + '">' + L.me + '</a> · <a href="' + site + '/invite" style="color:#' + mute + ';text-decoration:none">myluach.org</a></td></tr></table></td></tr></table></body></html>';
@@ -186,7 +195,8 @@ async function sendBatch(s, cur, n) {
   const Q = await db('timer_recip?slug=eq.' + s + '&status=eq.queued&select=id,name,email,token&order=id.asc&limit=' + n);
   if (!Q.length) return { done: true, left: 0 };
   const sentN = (await db('timer_recip?slug=eq.' + s + '&status=eq.sent&select=id&limit=10000')).length;
-  let room = Math.max(0, (+(cur.paid || {}).emails || 0) - sentN);
+  const per = ((await require('./_eventpay').prices().catch(() => ({}))).mailsPerGuest) || 2, xm = +(cur.paid || {}).xm || 0;
+  let room = Math.max(0, (+(cur.paid || {}).emails || 0) - sentN - Math.max(0, xm - (per - 1) * sentN));
   const ok = [], bad = []; let stop = '';
   for (const r of Q) {
     if (room <= 0) { stop = 'quota'; break; }
@@ -208,30 +218,54 @@ async function unsub(req, res, tok) {
 }
 /* מיילים אוטומטיים לפי בחירת בעל האירוע: תזכורת למי שלא ענה (nr ימים לפני), ביום האירוע למי שאישר, ותודה אחרי האירוע.
    cover = הימים שהריצה של היום מכסה (היום, ושבת/חג שאחריו). כל נמען מקבל כל סוג פעם אחת (nr_at/dr_at/ty_at) */
+/* תזכורות ומייל תודה אוטומטיים. כל אחד הוא "משימה" עם זמן: תאריך האירוע פחות N ימים, בשעה H (שעון ישראל).
+   משימה שהגיע זמנה (בחלון של 36 שעות) נשלחת פעם אחת למי שמתאים. מה שכבר נשלח נשמר באירוע (rjobs), כדי שלא יישלח פעמיים.
+   מקבלים: nr = מי שעוד לא ענה, dr = מי שאישר (לפני האירוע), ty = מי שאישר (אחרי האירוע).
+   מכסה: כל מוזמן שנשלחה לו הזמנה מקבל מייל נוסף אחד כלול (mailsPerGuest = 2 כולל ההזמנה). מעבר לזה כל מייל מנצל מייל מהחבילה. */
+const ILP = ms => { const p = {}; new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(ms)).forEach(x => { p[x.type] = x.value; }); return p; };
+const ilOff = x => { const p = ILP(x); return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute) - x; };
+const ilMs = (y, m, d, h, mi) => { const g = Date.UTC(y, m - 1, d, h, mi || 0); return g - ilOff(g - ilOff(g)); };
+function mailJobs(c) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(c.d || '')) return [];
+  const [y, m, d] = c.d.split('-').map(Number), hm = /^(\d{1,2}):(\d{2})$/.exec(c.h || '');
+  const start = hm ? ilMs(y, m, d, +hm[1], +hm[2]) : ilMs(y, m, d + 1, 0), jobs = [];
+  const nrs = Array.isArray(c.nrs) ? c.nrs : (c.nr > 0 ? [{ d: +c.nr, h: 10 }] : []);
+  const drs = Array.isArray(c.drs) ? c.drs : (c.dr ? [{ d: 0, h: 8 }] : []);
+  nrs.forEach(x => { if (c.rv) jobs.push({ key: 'nr:' + x.d + ':' + x.h, kind: 'nr', at: ilMs(y, m, d - x.d, x.h), end: start }); });
+  drs.forEach(x => jobs.push({ key: 'dr:' + x.d + ':' + x.h, kind: 'dr', at: ilMs(y, m, d - x.d, x.h), end: start }));
+  if (c.ty) jobs.push({ key: 'ty', kind: 'ty', at: ilMs(y, m, d + (c.tyd || 1), c.tyh == null ? 10 : c.tyh), end: Infinity });
+  return jobs;
+}
 async function autoMails(cover, max) {
-  const idx = (await require('./_lib').loadSetting('evpaid').catch(() => null)) || {}, { addD, iso, todayIL } = require('./_rem'), today = todayIL(), out = { nr: 0, dr: 0, ty: 0 };
-  const covered = cover.map(k => iso(addD(today, k))), site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
-  const { sendMail } = require('./_mail'); let budget = max;
+  const idx = (await require('./_lib').loadSetting('evpaid').catch(() => null)) || {}, out = { nr: 0, dr: 0, ty: 0 };
+  if (await holyAt(Date.now())) return { ...out, shabbat: true };
+  const now = Date.now(), lo = new Date(now - 20 * 864e5).toISOString().slice(0, 10), hi = new Date(now + 62 * 864e5).toISOString().slice(0, 10);
+  const site = (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, ''), { sendMail } = require('./_mail');
+  const per = ((await require('./_eventpay').prices().catch(() => ({}))).mailsPerGuest) || 2; let budget = max;
   for (const s of Object.keys(idx)) {
     if (budget <= 0) break;
-    const cur = await get(s).catch(() => null); if (!feat(cur, 'rem')) continue; const c = cur.cfg || {}; if (!/^\d{4}-\d{2}-\d{2}$/.test(c.d || '')) continue;
-    const [y, m, d] = c.d.split('-').map(Number), ev = new Date(y, m - 1, d, 12), dd = n => iso(addD(ev, n));
-    const jobs = [];
-    if (c.nr && c.rv && covered.includes(dd(-c.nr))) jobs.push('nr');
-    if (c.dr && covered.includes(dd(0))) jobs.push('dr');
-    if (c.ty && (covered.includes(dd(1)) || (iso(today) > dd(1) && iso(today) <= dd(4)))) jobs.push('ty');
-    if (!jobs.length) continue;
-    const R = await db('timer_recip?slug=eq.' + s + '&status=eq.sent&select=id,name,email,token,nr_at,dr_at,ty_at&limit=10000').catch(() => []);
+    if (!idx[s] || idx[s] < lo || idx[s] > hi) continue;
+    let cur = await get(s).catch(() => null); if (!feat(cur, 'rem') || cur.disabled) continue; const c = cur.cfg || {};
+    const rj = cur.rjobs || {}, due = mailJobs(c).filter(j => now >= j.at && now < j.at + 36 * 3600e3 && now < j.end && !(rj[j.key] && rj[j.key].done));
+    if (!due.length) continue;
+    const R = await db('timer_recip?slug=eq.' + s + '&status=eq.sent&select=id,name,email,token&limit=10000').catch(() => []);
     const ans = await db('timer_rsvp?slug=eq.' + s + '&rtok=not.is.null&select=rtok,status&limit=10000').catch(() => []), A = {}; (ans || []).forEach(x => { A[x.rtok] = x.status; });
-    let room = (+cur.paid.emails || 0) - R.length;
-    for (const job of jobs) {
-      const who = R.filter(r => !r[job + '_at'] && (job === 'nr' ? !A[r.token] : A[r.token] === 'yes'));
-      const done = [];
-      for (const r of who) { if (budget <= 0 || room <= 0) break; const mm = inviteMail(s, cur, r, site, job);
-        const ML = c.ml || c.lang || 'he', subj = { nr: (ML === 'en' ? 'Reminder: please RSVP · ' : ML === 'yi' ? 'דערמאנונג: ביטע באשטעטיגט · ' : 'תזכורת: נשמח לאישור הגעה · '), dr: (ML === 'en' ? 'Today! ' : ML === 'yi' ? 'היינט! ' : 'היום! '), ty: (ML === 'en' ? 'Thank you · ' : ML === 'yi' ? 'א דאנק · ' : 'תודה · ') }[job] + (c.t || '');
-        try { await sendMail({ to: r.email, subject: subj, html: mm.html, text: mm.text, replyTo: cur.paid.email || undefined, headers: { 'List-Unsubscribe': '<' + mm.unsub + '>' } }, 'invite-' + job); done.push(r.id); budget--; room--; out[job]++; }
-        catch (e) { if (/no mail provider/.test(e.message)) { budget = 0; break; } } }
-      if (done.length) await db('timer_recip?id=in.(' + done.join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ [job + '_at']: new Date().toISOString() }) });
+    const P = cur.paid, invited = R.length, incl = (per - 1) * invited;
+    for (const job of due) {
+      const st = rj[job.key] || { ids: [] }, did = new Set(st.ids), who = R.filter(r => !did.has(r.id) && (job.kind === 'nr' ? !A[r.token] : A[r.token] === 'yes'));
+      let extra = +P.xm || 0, over = Math.max(0, extra - incl), room = Math.max(0, incl - extra) + Math.max(0, (+P.emails || 0) - invited - over), sentNow = 0;
+      for (const r of who) {
+        if (budget <= 0 || room <= 0) break;
+        const mm = inviteMail(s, cur, r, site, job.kind), ML = c.ml || c.lang || 'he';
+        const subj = { nr: (ML === 'en' ? 'Reminder: please RSVP · ' : ML === 'yi' ? 'דערמאנונג: ביטע באשטעטיגט · ' : 'תזכורת: נשמח לאישור הגעה · '), dr: (ML === 'en' ? 'Reminder · ' : ML === 'yi' ? 'דערמאנונג · ' : 'תזכורת לאירוע · '), ty: (ML === 'en' ? 'Thank you · ' : ML === 'yi' ? 'א דאנק · ' : 'תודה · ') }[job.kind] + (c.t || '');
+        try { await sendMail({ to: r.email, subject: subj, html: mm.html, text: mm.text, replyTo: P.email || undefined, headers: { 'List-Unsubscribe': '<' + mm.unsub + '>' } }, 'invite-' + job.kind); did.add(r.id); budget--; room--; sentNow++; out[job.kind]++; }
+        catch (e) { if (/no mail provider/.test(e.message)) { budget = 0; break; } }
+      }
+      if (sentNow) await db('timer_recip?id=in.(' + [...did].slice(-sentNow).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ [job.kind + '_at']: new Date().toISOString() }) }).catch(() => {});
+      const finished = who.every(r => did.has(r.id));
+      rj[job.key] = { at: new Date().toISOString(), ids: finished ? [] : [...did], done: finished };
+      cur = { ...cur, rjobs: rj, paid: { ...P, xm: (+P.xm || 0) + sentNow } }; P.xm = cur.paid.xm;
+      await put(s, cur).catch(e => console.error('autoMails put', s, e.message));
     }
   }
   return out;
@@ -395,7 +429,7 @@ async function guest(req, res, b) {
       if (stale.length) { stale.forEach(x => { x.call_st = 'לא ענה'; }); const sid = stale.map(x => x.id); for (let i = 0; i < sid.length; i += 200) await db('timer_recip?slug=eq.' + s + '&call_st=eq.' + encodeURIComponent('ממתין') + '&id=in.(' + sid.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'לא ענה' }) }).catch(() => {}); }
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], flags: { giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP), defTy: require('./_ivoice').defText(c, 'ty', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], consent: cur.consent ? { at: cur.consent.at, v: cur.consent.v } : null, flags: { mpg: EP.mailsPerGuest || 2, giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP), defTy: require('./_ivoice').defText(c, 'ty', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, xm: +cur.paid.xm || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     /* ספרי טלפונים: המאגרים שמותרים לבעל האירוע, חיפוש (בלי טלפון ומייל), והוספה לרשימת המוזמנים */
@@ -456,6 +490,12 @@ async function guest(req, res, b) {
       return json(res, 200, { ok: true, added: add.length, skipped: L.length - add.length });
     }
     /* שליחה: מסמנים נמענים לשליחה (לפי היתרה), ושומרים את נושא המייל */
+    /* הצהרת בעל האירוע לפני שליחה: מכיר את כל הנמענים והם מכירים אותו, ושימוש רק להזמנות לאירוע שלו */
+    if (b.act === 'consent') {
+      const c2 = b.off ? null : { at: new Date().toISOString(), v: 1 };
+      await put(s, { ...cur, consent: c2 }); return json(res, 200, { ok: true, consent: c2 });
+    }
+    if (['send', 'smsnext', 'voice'].includes(b.act) && !(cur.consent && cur.consent.v >= 1)) return json(res, 400, { error: 'consent', message: 'לפני שליחה צריך לאשר את ההצהרה על הנמענים' });
     if (b.act === 'send') {
       if (!cur.paid) return json(res, 402, { error: 'unpaid' });
       const R = (await db('timer_recip?slug=eq.' + s + '&select=id,status,email&limit=10000')).filter(x => !/@phone\.invalid$/.test(x.email));
@@ -664,9 +704,9 @@ module.exports = async (req, res) => {
     /* שליחה מתוזמנת: ה-Worker קורא לזה כל שעה (עם CRON_SECRET) */
     if (req.method === 'GET' && q.cron) { const sec = require('./_lib').env('CRON_SECRET'); if (!sec || String(req.headers.authorization || '') !== 'Bearer ' + sec) return json(res, 401, { error: 'auth' });
       /* גם: תזכורות בשעות שנקבעו בניהול (מייל / שיחה, לוח / אירועים) */
-      const inv = await cronSend(120); let slots = null; try { slots = await require('./cron-reminders').slots(); } catch (e) { slots = { error: String(e.message).slice(0, 120) }; }
+      const inv = await cronSend(120); try { inv.auto = await autoMails(0, 60); } catch (e) { inv.autoErr = String(e.message).slice(0, 100); } let slots = null; try { slots = await require('./cron-reminders').slots(); } catch (e) { slots = { error: String(e.message).slice(0, 120) }; }
       return json(res, 200, { ...inv, slots }); }
-    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: (await require('./_dir').cfg().catch(() => ({}))).on ? E.FEATS : E.FEATS.filter(f => f[0] !== 'dir'), mailpk: E.MAILPK, freeEmails: P.freeEmails, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax }); }
+    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: (await require('./_dir').cfg().catch(() => ({}))).on ? E.FEATS : E.FEATS.filter(f => f[0] !== 'dir'), mailpk: E.MAILPK, freeEmails: P.freeEmails, agFree: P.agFree, agMax: P.agMax, freeFeats: P.freeFeats, freeName: P.freeName, freeDesc: P.freeDesc, mailsPerGuest: P.mailsPerGuest, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax, giftPct: P.giftPct, giftFixed: P.giftFixed }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
       /* קיר הברכות הציבורי */
@@ -679,8 +719,9 @@ module.exports = async (req, res) => {
       if (!o || o.reserved) return json(res, 404, { error: 'not found' });
       if (o.disabled) return json(res, 410, { error: 'disabled' });
       res.setHeader('Cache-Control', 'public, max-age=60');
-      let gcOn = false; if (feat(o, 'gift') && o.cfg && o.cfg.gc) { try { gcOn = !!(await require('./_eventpay').prices()).giftOn; } catch (e) {} }
-      return json(res, 200, { cfg: o.cfg, paid: !!o.paid, full: isFull(o), gal: feat(o, 'gal'), gcOn });
+      let gcOn = false, agL = 12; try { const EPx = await require('./_eventpay').prices(); agL = o.paid ? (isFull(o) ? EPx.agMax : EPx.agFree) : EPx.agMax; if (feat(o, 'gift') && o.cfg && o.cfg.gc) gcOn = !!EPx.giftOn; } catch (e) {}
+      const pubCfg = o.cfg && Array.isArray(o.cfg.ag) ? { ...o.cfg, ag: o.cfg.ag.slice(0, agL) } : o.cfg;
+      return json(res, 200, { cfg: pubCfg, paid: !!o.paid, full: isFull(o), gal: feat(o, 'gal'), gcOn });
     }
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });
     const b = readBody(req) || {};

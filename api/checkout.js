@@ -144,6 +144,32 @@ module.exports = async (req, res) => {
       ev = await require('./_eventpay').prepare(b);
       if (ev.error) return json(res, 400, { error: 'event', message: ev.error });
       amount = ev.amount; info = { amount, base: amount, off: 0, why: '' };
+      /* קופון והנחת לקוח חוזר (כמו בבונה הלוח). לא על ספר טלפונים */
+      if (!/^d\d+$/.test(ev.tier || '')) {
+        const EV = require('./_eventpay'), addon = [].concat(EV.MAILPK, EV.SMS, EV.VOICE).some(x => x[0] === ev.tier);
+        if (b.coupon) { coupon = await checkCoupon(cfg, b.coupon, 'event'); if (coupon && coupon.error) return json(res, 400, { error: 'coupon', message: coupon.error }); }
+        let renewP = 0; const R = cfg.renew || {}, rP = R.plans && R.plans.event != null ? +R.plans.event : +R.percent;
+        if (!addon && R.on && rP > 0 && (user || email)) {
+          try { const or = 'or=(' + [user ? 'user_id.eq.' + user.id : '', email ? 'email.eq.' + encodeURIComponent(email) : ''].filter(Boolean).join(',') + ')';
+            const prev = await db('orders?select=id&status=eq.paid&plan=in.(' + PAID.concat(['event', 'greet']).join(',') + ')&' + or + '&limit=1');
+            if (prev && prev.length) renewP = Math.min(100, rP); } catch (e) {}
+        }
+        const pct = Math.max(coupon ? coupon.percent : 0, renewP);
+        if (pct > 0) {
+          const base = amount, why = coupon && coupon.percent >= renewP ? 'coupon' : 'renew';
+          amount = Math.round(base * (100 - pct)) / 100; info = { amount, base, off: pct, why };
+          if (pct >= 100 || !(amount > 0)) {
+            /* חינם: מפעילים מיד, בלי תשלום */
+            const id = crypto.randomBytes(12).toString('hex');
+            await require('./_eventpay').create(id, email, ev);
+            const o = { id, plan: 'event', amount: 0, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: coupon ? coupon.code : null };
+            await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify(o) });
+            await require('./_paid').markPaid(o, {}, why === 'coupon' ? 'קופון ' + (coupon && coupon.code) : 'הנחה של 100%');
+            return json(res, 200, { id, amount: 0, free: true, plan: 'event', base, off: 100, why, coupon: coupon ? coupon.code : null });
+          }
+          if (amount < 1) { amount = 1; info.amount = 1; info.min = true; }
+        }
+      }
     } else {
       if (b.coupon) {
         coupon = await checkCoupon(cfg, b.coupon, plan);

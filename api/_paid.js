@@ -22,7 +22,7 @@ const DEFAULTS = {
     body: '{מסלול}\nסכום: {סכום}{קופון}\nלקוח: {מייל}\nאמצעי תשלום: {אמצעי}\nמספר הזמנה: {הזמנה}', button: 'לדף הניהול', foot: '' },
   /* מיילים של מוצרים נוספים (עד עכשיו הנוסח היה קבוע בקוד) */
   event: { subject: 'דף ההזמנה לאירוע פעיל ✓', title: 'תודה! דף ההזמנה פעיל',
-    body: 'דף ההזמנה בכתובת **{כתובת}** פתוח עכשיו לאורחים.{מיילים}\nאת הניהול (רשימת נמענים, שליחה, אישורי הגעה) עושים מאותו דפדפן שבו נשמרה הכתובת.', button: 'לניהול האירוע', foot: '' },
+    body: 'דף ההזמנה בכתובת **{כתובת}** פתוח עכשיו לאורחים.{מיילים}\nהאזור האישי שלכם (עריכת ההזמנה, רשימת מוזמנים, שליחה ומעקב אחרי אישורי הגעה, ברכות ומתנות) נפתח בכפתור למטה, מכל מכשיר. הקישור אישי: לא לשתף אותו.', button: 'לאזור האישי של ההזמנה', foot: 'שמרו את המייל הזה: הקישור שבו הוא המפתח לאזור האישי.' },
   gift: { subject: '🎁 קיבלתם מתנה: {שם} · {סכום}', title: 'קיבלתם מתנה 🎁',
     body: '**{שם}** שלח/ה מתנה של {סכום}{ברכה}\n\nמגיע לכם (אחרי עמלה): {נטו}', button: 'לניהול האירוע', foot: '' },
   greet: { subject: 'התשלום התקבל: {עיצוב} · MyLuach', title: 'העיצוב שלכם מוכן',
@@ -87,6 +87,7 @@ async function notify(o) {
   if (o.plan === 'wishd') { try { await require('./_giftpay').paid(o); } catch (e) { console.error('wishd gift', e.message); } }
   else if (o.plan === 'event') { try { await require('./_eventpay').paid(o); } catch (e) { console.error('event paid', e.message); } }
   if (o.plan === 'gift') { try { await require('./_giftpay').paid(o); } catch (e) { console.error('gift paid', e.message); } }
+  else if (o.plan === 'event' || o.plan === 'greet' || o.plan === 'wishd') { /* יש להם מייל ייעודי משלהם (קישור אישי), בלי מייל "לבונה הלוח" */ }
   else if (o.email && /^(gsub|gpack|rsub):/.test(o.plan || '')) { try { await sendMail({ to: o.email, ...subMail(o, V, tpl) }, 'purchase'); } catch (e) { console.error('sub mail', e.message); } }
   else if (o.email) { try { await sendMail({ to: o.email, ...render(isDon ? 'donation' : 'purchase', V, tpl) }, 'purchase'); } catch (e) { console.error('customer mail', e.message); } }
   const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');

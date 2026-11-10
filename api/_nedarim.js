@@ -24,15 +24,17 @@ async function mosad() {
   if (!ready()) return null;
   if (MI && Date.now() - MI.at < 6 * 3600e3) return MI.d;
   const c = await loadSetting('nedmosad').catch(() => null);
-  if (c && c.at && Date.now() - c.at < 6 * 3600e3) { MI = c; return c.d; }
+  if (c && c.at && c.v === 2 && Date.now() - c.at < 6 * 3600e3) { MI = c; return c.d; }
   try {
     const r = await fetch('https://www.matara.pro/nedarimplus/online/Files/Manage.aspx?Action=GetMosad&MosadId=' + encodeURIComponent(env('NEDARIM_MOSAD')));
     const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
-    const d = j && !j.Status ? { bit: !!j.Bit, keva: String(j.PayBt || '').charAt(2) === '1', name: j.MosadName || '' } : { bit: false, keva: false, err: String(t).slice(0, 100) };
-    MI = { at: Date.now(), d }; await saveSetting('nedmosad', MI).catch(() => {}); return d;
+    const yes = v => v === true || v === 1 || /^(true|1|yes|כן|on)$/i.test(String(v == null ? '' : v).trim());
+    const d = j && !j.Status ? { bit: yes(j.Bit), keva: String(j.PayBt || '').charAt(2) === '1', name: j.MosadName || '' } : { bit: false, keva: false, err: String(t).slice(0, 100) };
+    MI = { at: Date.now(), v: 2, d }; await saveSetting('nedmosad', MI).catch(() => {}); return d;
   } catch (e) { return { bit: false, keva: false }; }
 }
-async function bitOn() { const d = await mosad(); return !!(d && d.bit); }
+/* ביט מוצג רק אם נדרים פלוס מדווח שהוא פתוח למוסד, ואם לא כובה ידנית (בניהול: "לא להציע ביט", או NEDARIM_BIT=off) */
+async function bitOn() { if (/^(off|0|false)$/i.test(env('NEDARIM_BIT'))) return false; const d = await mosad(); if (!(d && d.bit)) return false; try { const cfg = await require('./_lib').loadConfig(); if (cfg && cfg.bitOff) return false; } catch (e) {} return true; }
 
 /* החזר כספי: עסקה מהיום (לפני השידור) מבטלים בלי עלות. אחרת זיכוי (מלא או חלקי) */
 async function refund(tid, amount, full) {

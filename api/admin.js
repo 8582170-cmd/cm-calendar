@@ -15,7 +15,7 @@ function okPass(given) {
 const fpts = p => { if (!Array.isArray(p) || p.length < 3) return undefined; return p.slice(0, 32).map(q => { q = Array.isArray(q) ? q : []; const f = v => { v = Number(v); return isFinite(v) ? Math.round(Math.max(-0.1, Math.min(1.1, v)) * 1000) / 1000 : 0.5; }; return q[2] ? [f(q[0]), f(q[1]), 1] : [f(q[0]), f(q[1])]; }); };
 const num = (v, lo, hi) => { if (v == null || v === '') return null; v = Number(v); return isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v * 100) / 100)) : null; };
 const date = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '';
-const planList = v => (Array.isArray(v) ? v : []).filter(x => PAID.indexOf(x) >= 0);
+const planList = v => (Array.isArray(v) ? v : []).filter(x => PAID.indexOf(x) >= 0 || x === 'event');
 
 /* מנקים את מה שהגיע מהדפדפן לפני שמירה */
 function clean(c) {
@@ -44,6 +44,7 @@ function clean(c) {
   out.payAfter = c.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
   out.ppAcct = !!c.ppAcct;
   out.ppGpay = !!c.ppGpay;
+  out.bitOff = !!c.bitOff;
   /* מסלולים קבועים שהוסתרו מהמכירה */
   out.off = (Array.isArray(c.off) ? c.off : []).filter(x => ['basic', 'family', 'full', 'cdbasic', 'cdfull'].includes(x));
   /* נוסח המיילים */
@@ -401,7 +402,7 @@ async function main(req, res) {
     if (req.method === 'POST' && (b.action === 'evpget' || b.action === 'evpset')) {
       const { loadSetting, saveSetting } = require('./_lib'), E = require('./_eventpay');
       if (b.action === 'evpset') { const P = {}; Object.keys(E.DEF).forEach(k => { const v = Number((b.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; });
-        await saveSetting('eventpay', { on: b.on === true, prices: P, plans: Array.isArray(b.plans) ? E.cleanPlans(b.plans) : ((await loadSetting('eventpay').catch(() => null)) || {}).plans, smsOn: b.smsOn === true, giftOn: b.giftOn === true, giftPct: +b.giftPct || 0, giftFixed: +b.giftFixed || 0, giftMin: +b.giftMin || 18, giftMax: +b.giftMax || 5000, voiceOn: b.voiceOn === true, freeEmails: +b.freeEmails, freeMax: +b.freeMax, mediaDays: +b.mediaDays, vFrom: +b.vFrom, vTo: +b.vTo, vTests: +b.vTests, voiceDirect: b.voiceDirect === true, vGiftPath: String(b.vGiftPath == null ? (((await loadSetting('eventpay').catch(() => null)) || {}).vGiftPath || '') : b.vGiftPath).replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30), voicePath: String(b.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30), voiceTpl: String(b.voiceTpl || '').replace(/\D/g, '').slice(0, 12), voiceTplRem: String(b.voiceTplRem || '').replace(/\D/g, '').slice(0, 12), ivrtxt: b.ivrtxt && typeof b.ivrtxt === 'object' ? E.ivrClean(b.ivrtxt) : ((await loadSetting('eventpay').catch(() => null)) || {}).ivrtxt, vtxt: b.vtxt && typeof b.vtxt === 'object' ? E.vtxtClean(b.vtxt) : ((await loadSetting('eventpay').catch(() => null)) || {}).vtxt, vkey: (await E.prices()).vkey || require('crypto').randomBytes(12).toString('hex') }); }
+        const OLD0 = ((await loadSetting('eventpay').catch(() => null)) || {}); await saveSetting('eventpay', { freeFeats: b.freeFeats && typeof b.freeFeats === 'object' ? E.cleanFeats(b.freeFeats) : OLD0.freeFeats, freeName: b.freeName != null ? String(b.freeName).replace(/[<>]/g, '').slice(0, 40) : OLD0.freeName, freeDesc: b.freeDesc != null ? String(b.freeDesc).replace(/[<>]/g, '').slice(0, 300) : OLD0.freeDesc, agFree: b.agFree != null && isFinite(+b.agFree) ? +b.agFree : OLD0.agFree, agMax: b.agMax != null && isFinite(+b.agMax) ? +b.agMax : OLD0.agMax, mailsPerGuest: b.mailsPerGuest != null && isFinite(+b.mailsPerGuest) ? +b.mailsPerGuest : OLD0.mailsPerGuest, on: b.on === true, prices: P, plans: Array.isArray(b.plans) ? E.cleanPlans(b.plans) : ((await loadSetting('eventpay').catch(() => null)) || {}).plans, smsOn: b.smsOn === true, giftOn: b.giftOn === true, giftPct: +b.giftPct || 0, giftFixed: +b.giftFixed || 0, giftMin: +b.giftMin || 18, giftMax: +b.giftMax || 5000, voiceOn: b.voiceOn === true, freeEmails: +b.freeEmails, freeMax: +b.freeMax, mediaDays: +b.mediaDays, vFrom: +b.vFrom, vTo: +b.vTo, vTests: +b.vTests, voiceDirect: b.voiceDirect === true, vGiftPath: String(b.vGiftPath == null ? (((await loadSetting('eventpay').catch(() => null)) || {}).vGiftPath || '') : b.vGiftPath).replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30), voicePath: String(b.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30), voiceTpl: String(b.voiceTpl || '').replace(/\D/g, '').slice(0, 12), voiceTplRem: String(b.voiceTplRem || '').replace(/\D/g, '').slice(0, 12), ivrtxt: b.ivrtxt && typeof b.ivrtxt === 'object' ? E.ivrClean(b.ivrtxt) : ((await loadSetting('eventpay').catch(() => null)) || {}).ivrtxt, vtxt: b.vtxt && typeof b.vtxt === 'object' ? E.vtxtClean(b.vtxt) : ((await loadSetting('eventpay').catch(() => null)) || {}).vtxt, vkey: (await E.prices()).vkey || require('crypto').randomBytes(12).toString('hex') }); }
       const x = await E.prices(); let vReady = false; try { vReady = !!(await require('./_voice').cfg()).token; } catch (e) {}
       return json(res, 200, { ...x, tiers: E.TIERS, feats: E.FEATS, mailpk: E.MAILPK, sms: E.SMS, voice: E.VOICE, smsReady: await require('./_sms').ready(), vReady, vtxtDef: require('./_ivoice').VTXT, ivrDef: require('./_ivoice').IVR, site: (require('./_lib').env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '') });
     }
@@ -618,6 +619,13 @@ async function main(req, res) {
       const h = new HDate(d), m = h.getMonth(), day = h.getDate(), leap = HDate.isLeapYear(h.getFullYear());
       return json(res, 200, { heb: h.renderGematriya(true), items: list.filter(e => e.d === day && (e.m === m || (!leap && m === 12 && e.m === 13))) });
     }
+    if (req.method === 'POST' && b.action === 'mailroute') {
+      /* ניתוב מיילים: אילו ספקים (לפי סדר) שולחים הזמנות, ואילו את שאר האתר, ומכסות לכל ספק */
+      const PN = ['resend', 'brevo', 'mailjet', 'ses'], nm = v => (Array.isArray(v) ? v : String(v || '').split(',')).map(x => String(x).trim().toLowerCase()).filter((k, i, a) => PN.includes(k) && a.indexOf(k) === i);
+      const caps = {}; PN.forEach(k => { const o = (b.caps || {})[k] || {}, c = {}; ['day', 'month', 'hour'].forEach(f => { if (o[f] !== '' && o[f] != null && isFinite(+o[f]) && +o[f] >= 0) c[f] = Math.min(10000000, Math.round(+o[f])); }); if (Object.keys(c).length) caps[k] = c; });
+      await saveSetting('mailroute', { inv: nm(b.inv), other: nm(b.other), caps });
+      return json(res, 200, { ok: true });
+    }
     if (req.method === 'POST' && b.action === 'mailtest') {
       const { sendMail, frame, configured } = require('./_mail');
       const to = String(b.to || '').trim(), prov = String(b.provider || '');
@@ -655,7 +663,7 @@ async function main(req, res) {
       const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
       const logs = await db('email_log?select=provider,kind,ok&created_at=gte.' + day + 'T00:00:00%2B03:00&limit=5000');
       const rem = await db('reminders?select=status&limit=20000');
-      mail = { providers: require('./_mail').configured(), today: {}, failed: 0, reminders: { active: 0, pending: 0, off: 0 } };
+      mail = { providers: require('./_mail').configured(), route: await require('./_mail').getRoute(), routeEnv: { inv: env('MAIL_INVITE_ORDER') || '', other: env('MAIL_OTHER_ORDER') || '' }, month: {}, today: {}, failed: 0, reminders: { active: 0, pending: 0, off: 0 } };
       (logs || []).forEach(l => { if (l.ok) mail.today[l.provider] = (mail.today[l.provider] || 0) + 1; else mail.failed++; });
       (rem || []).forEach(r => { mail.reminders[r.status] = (mail.reminders[r.status] || 0) + 1; });
       /* דוח: 30 ימים אחרונים לפי יום ושרת, ו-200 המיילים האחרונים */
@@ -664,6 +672,7 @@ async function main(req, res) {
       const byDay = {};
       (all || []).forEach(l => {
         const d = new Date(l.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+        if (l.ok && d.slice(0, 7) === day.slice(0, 7)) mail.month[l.provider] = (mail.month[l.provider] || 0) + 1;
         const o = byDay[d] = byDay[d] || { failed: 0 };
         if (l.ok) o[l.provider] = (o[l.provider] || 0) + 1; else o.failed++;
       });

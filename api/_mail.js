@@ -1,8 +1,9 @@
 /* שליחת מיילים עם מעבר אוטומטי בין ספקים.
-   הסדר: Resend (RESEND_API_KEY) → Brevo (BREVO_API_KEY) → Mailjet (MAILJET_API_KEY + MAILJET_SECRET_KEY).
+   הזמנות דיגיטליות (kind: invite*): ברירת מחדל Brevo בלבד. כל שאר האתר: Resend → Mailjet → Brevo (כשהמכסה היומית/חודשית מלאה). אפשר לשנות בדף הניהול או במשתנים.
+   ספקים: Resend (RESEND_API_KEY), Brevo (BREVO_API_KEY), Mailjet (MAILJET_API_KEY + MAILJET_SECRET_KEY), Amazon SES (SES_ACCESS_KEY_ID + SES_SECRET_ACCESS_KEY + SES_REGION).
    ספק שלא הוגדר מדולג. אם ספק נכשל (מגבלה, תקלה), עוברים לבא בתור. */
 'use strict';
-const { env, db } = require('./_lib');
+const { env, db, loadSetting } = require('./_lib');
 const FROM_EMAIL = () => env('MAIL_FROM') || 'noreply@myluach.org';
 const FROM_NAME = 'MyLuach';
 /* תשובות למיילים מגיעות לכתובת הזאת (ולא ל-noreply): MAIL_REPLY_TO, ואם אין: OWNER_EMAIL */
@@ -30,34 +31,76 @@ async function viaMailjet(m) {
   return 'mailjet';
 }
 
-const PROVIDERS = { resend: viaResend, brevo: viaBrevo, mailjet: viaMailjet };
+/* Amazon SES (API v2). חתימת SigV4 בלי ספרייה. משתנים: SES_ACCESS_KEY_ID, SES_SECRET_ACCESS_KEY, SES_REGION (למשל eu-west-1) */
+function sigV4(o) {
+  const c = require('crypto'), hash = x => c.createHash('sha256').update(x).digest('hex'), hmac = (k, d) => c.createHmac('sha256', k).update(d).digest();
+  const amz = o.amz || new Date().toISOString().replace(/[:-]|\.\d{3}/g, ''), date = amz.slice(0, 8);
+  const H = { host: o.host, 'x-amz-date': amz }; if (o.ctype) H['content-type'] = o.ctype;
+  const names = Object.keys(H).sort(), signed = names.join(';');
+  const canon = [o.method, o.path, o.query || '', names.map(n => n + ':' + H[n] + '\n').join(''), signed, hash(o.body || '')].join('\n');
+  const scope = date + '/' + o.region + '/' + o.service + '/aws4_request';
+  const kS = hmac(hmac(hmac(hmac('AWS4' + o.secret, date), o.region), o.service), 'aws4_request');
+  const sig = c.createHmac('sha256', kS).update(['AWS4-HMAC-SHA256', amz, scope, hash(canon)].join('\n')).digest('hex');
+  return { amz, auth: 'AWS4-HMAC-SHA256 Credential=' + o.key + '/' + scope + ', SignedHeaders=' + signed + ', Signature=' + sig };
+}
+async function viaSES(m) {
+  const key = env('SES_ACCESS_KEY_ID'), secret = env('SES_SECRET_ACCESS_KEY'); if (!key || !secret) return null;
+  const region = env('SES_REGION') || 'us-east-1', host = 'email.' + region + '.amazonaws.com', path = '/v2/email/outbound-emails', reply = m.replyTo || REPLY();
+  const hdrs = Object.entries(m.headers || {}).map(([Name, Value]) => ({ Name, Value: String(Value) }));
+  const body = JSON.stringify({ FromEmailAddress: FROM_NAME + ' <' + FROM_EMAIL() + '>', Destination: { ToAddresses: [m.to] }, ...(reply ? { ReplyToAddresses: [reply] } : {}),
+    Content: { Simple: { Subject: { Data: m.subject, Charset: 'UTF-8' }, Body: { Html: { Data: m.html, Charset: 'UTF-8' }, ...(m.text ? { Text: { Data: m.text, Charset: 'UTF-8' } } : {}) }, ...(hdrs.length ? { Headers: hdrs } : {}) } } });
+  const sg = sigV4({ method: 'POST', host, path, body, region, service: 'ses', key, secret, ctype: 'application/json' });
+  const r = await fetch('https://' + host + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Amz-Date': sg.amz, Authorization: sg.auth }, body });
+  if (!r.ok) throw new Error('ses ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  return 'ses';
+}
+
+const PROVIDERS = { resend: viaResend, brevo: viaBrevo, mailjet: viaMailjet, ses: viaSES };
 /* מכסה יומית חינמית של כל ספק (אפשר לשנות במשתני סביבה MAIL_CAP_RESEND וכו'). ספק שהגיע למכסה היום מדולג מראש */
-const CAPS = { resend: 100, brevo: 300, mailjet: 200 };
-const cap = k => +env('MAIL_CAP_' + k.toUpperCase()) || CAPS[k];
+const CAPS = { resend: 100, brevo: 300, mailjet: 200, ses: 1e9 };
+/* מכסה חודשית חינמית (MAIL_MONTH_RESEND וכו', או בדף הניהול). ספק שהגיע אליה מדולג עד תחילת החודש */
+const MONTH = { resend: 3000, mailjet: 6000 };
+const cap = k => { const v = env('MAIL_CAP_' + k.toUpperCase()); return v !== '' && v != null && !isNaN(+v) ? (+v || 1e9) : CAPS[k]; };  /* 0 = בלי מגבלה (חבילה בתשלום) */
 /* מגבלה לשעה (Mailjet מגביל כרגע ל-30 מיילים בשעה). אפשר לשנות במשתנה MAIL_HOURLY_MAILJET, או 0 לביטול */
 const HOURLY = { mailjet: 30 };
 const hourCap = k => { const v = env('MAIL_HOURLY_' + k.toUpperCase()); return v !== '' && v != null && !isNaN(+v) ? +v : (HOURLY[k] || 0); };
-async function sentToday() {
+/* הגדרות ניתוב מדף הניהול (settings.mailroute): { inv: [...], other: [...], caps: { ספק: { day, month, hour } } } */
+let ROUTE = null;
+async function getRoute() { if (ROUTE && Date.now() - ROUTE.at < 30000) return ROUTE.v; let v = {}; try { v = (await loadSetting('mailroute')) || {}; } catch (e) {} ROUTE = { at: Date.now(), v }; return v; }
+const names = v => String(Array.isArray(v) ? v.join(',') : (v || '')).split(',').map(x => x.trim().toLowerCase()).filter((k, i, a) => PROVIDERS[k] && a.indexOf(k) === i);
+const capOv = (R, k, f) => { const o = R && R.caps && R.caps[k]; return o && o[f] != null && isFinite(+o[f]) ? +o[f] : null; };
+const capDay = (R, k) => { const v = capOv(R, k, 'day'); return v == null ? cap(k) : (v || 1e9); };
+const capMonth = (R, k) => { const v = capOv(R, k, 'month'); if (v != null) return v || 1e9; const e = env('MAIL_MONTH_' + k.toUpperCase()); return e !== '' && e != null && !isNaN(+e) ? (+e || 1e9) : (MONTH[k] || 1e9); };
+const capHour = (R, k) => { const v = capOv(R, k, 'hour'); return v == null ? hourCap(k) : v; };
+/* כמה מיילים נשלחו (היום, החודש, בשעה האחרונה) לכל ספק. נשמר בזיכרון חצי דקה ומתעדכן בכל שליחה */
+let CNT = null;
+async function counts() {
+  if (CNT && Date.now() - CNT.at < 45000) return CNT;
+  const out = { at: Date.now(), n: {}, m: {}, h: {} };
   try {
-    const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }), hr = Date.now() - 3600e3;
-    const rows = await db('email_log?select=provider,created_at&ok=eq.true&created_at=gte.' + day + 'T00:00:00%2B03:00&limit=5000');
-    const n = {}, h = {}; (rows || []).forEach(r => { n[r.provider] = (n[r.provider] || 0) + 1; if (Date.parse(r.created_at) > hr) h[r.provider] = (h[r.provider] || 0) + 1; });
-    Object.defineProperty(n, 'hour', { value: h, enumerable: false }); return n;
-  } catch (e) { return {}; }
+    const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }), t0 = Date.parse(day + 'T00:00:00+03:00'), hr = Date.now() - 3600e3;
+    const rows = await db('email_log?select=provider,created_at&ok=eq.true&created_at=gte.' + day.slice(0, 7) + '-01T00:00:00%2B03:00&limit=20000');
+    (rows || []).forEach(r => { const t = Date.parse(r.created_at); out.m[r.provider] = (out.m[r.provider] || 0) + 1; if (t >= t0) out.n[r.provider] = (out.n[r.provider] || 0) + 1; if (t > hr) out.h[r.provider] = (out.h[r.provider] || 0) + 1; });
+  } catch (e) {}
+  return (CNT = out);
 }
 /* only: לשלוח דרך ספק אחד בלבד (לבדיקה מדף הניהול).
    אחרת: לפי הסדר; ספק שנכשל (מגבלה, חסימה, תקלה) — עוברים מיד לבא. אם כולם "מלאים" לפי הספירה, מנסים בכל זאת את כולם. */
 async function sendMail(m, kind, only) {
-  const errs = [];
-  let order = only ? [only] : ['resend', 'brevo', 'mailjet'];
+  const errs = [], R = await getRoute();
+  /* הפרדה: מיילים של ההזמנות הדיגיטליות (kind שמתחיל ב-invite) ושל שאר האתר יוצאים מרשימות ספקים נפרדות.
+     סדר העדיפות: דף הניהול ← משתנה סביבה (MAIL_INVITE_ORDER / MAIL_OTHER_ORDER) ← ברירת מחדל. ספקים: resend, brevo, mailjet, ses */
+  const inv = /^invite/.test(kind || '');
+  let order = only ? [only] : (names(R[inv ? 'inv' : 'other']).length ? names(R[inv ? 'inv' : 'other']) : names(env(inv ? 'MAIL_INVITE_ORDER' : 'MAIL_OTHER_ORDER') || (inv ? 'brevo' : 'resend,mailjet,brevo')));
+  if (!order.length) order = inv ? ['brevo'] : ['resend', 'mailjet', 'brevo'];
   if (!only) {
-    const n = await sentToday();
-    const H = n.hour || {}, free = order.filter(k => (n[k] || 0) < cap(k) && (!hourCap(k) || (H[k] || 0) < hourCap(k)));
+    const C = await counts();
+    const free = order.filter(k => (C.n[k] || 0) < capDay(R, k) && (C.m[k] || 0) < capMonth(R, k) && (!capHour(R, k) || (C.h[k] || 0) < capHour(R, k)));
     order = free.concat(order.filter(k => free.indexOf(k) < 0));
   }
   for (const k of order) {
     const fn = PROVIDERS[k]; if (!fn) continue;
-    try { const used = await fn(m); if (used) { await logMail(used, kind, true, m); return used; } }
+    try { const used = await fn(m); if (used) { if (CNT) { ['n', 'm', 'h'].forEach(x => { CNT[x][used] = (CNT[x][used] || 0) + 1; }); } await logMail(used, kind, true, m); return used; } }
     catch (e) { errs.push(e.message); console.error('mail fail', k, e.message); await logMail(k, kind, false, m, e.message); }
   }
   throw new Error('no mail provider succeeded: ' + (errs.join(' | ') || 'none configured'));
@@ -86,7 +129,7 @@ function frame({ title, body, button, url, foot, lang, size, accent, ink }) {
 const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function configured() {
-  return { resend: !!env('RESEND_API_KEY'), brevo: !!env('BREVO_API_KEY'), mailjet: !!(env('MAILJET_API_KEY') && env('MAILJET_SECRET_KEY')) };
+  return { resend: !!env('RESEND_API_KEY'), brevo: !!env('BREVO_API_KEY'), mailjet: !!(env('MAILJET_API_KEY') && env('MAILJET_SECRET_KEY')), ses: !!(env('SES_ACCESS_KEY_ID') && env('SES_SECRET_ACCESS_KEY')) };
 }
 /* טקסט רגיל שכותבים בדף הניהול: שורות, **מודגש**, וקישורים (כתובת מלאה או [טקסט](כתובת)) */
 function textToHtml(t) {
@@ -101,4 +144,4 @@ function textToHtml(t) {
 }
 /* הקיבולת היומית של הספקים המחוברים (לתחזית בניהול) */
 function capacity() { const c = configured(), out = {}; Object.keys(c).forEach(k => { if (c[k]) out[k] = { day: cap(k), hour: hourCap(k) || null }; }); return out; }
-module.exports = { sendMail, frame, escH, configured, textToHtml, capacity };
+module.exports = { sendMail, frame, escH, configured, textToHtml, capacity, getRoute, _sigV4: sigV4 };

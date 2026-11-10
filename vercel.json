@@ -82,6 +82,10 @@
    "destination": "/invite.html"
   },
   {
+   "source": "/invite-gifts",
+   "destination": "/invite-gifts.html"
+  },
+  {
    "source": "/timer-en",
    "destination": "/timer-en.html"
   },

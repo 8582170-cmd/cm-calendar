@@ -28,7 +28,7 @@ function open(opt){
   var saved = {}; try { saved = JSON.parse(localStorage.getItem('myluach-buyer') || '{}') || {} } catch (e) {}
   var back = document.createElement('div'); back.className = 'mlp-back';
   back.innerHTML = '<div class="mlp" role="dialog" aria-modal="true" aria-label="תשלום"><h3></h3><p class="hint" id="mlpSub"></p>' +
-    '<div class="who"><label>מייל <small style="font-weight:400">(' + esc(opt.mailNote || 'לשם יישלח הקישור לעיצוב') + ')</small><input type="email" id="mlpMail" dir="ltr" autocomplete="email"></label>' +
+    '<div class="who"><label>מייל <small style="font-weight:400">(' + esc(opt.mailNote || 'לשם יישלח הקישור לעיצוב') + ')</small><input type="email" id="mlpMail" dir="ltr" autocomplete="email"></label>' + (opt.coupon ? '<label>קוד קופון <small style="font-weight:400">(אם יש)</small><input type="text" id="mlpCp" dir="ltr" autocomplete="off" maxlength="30"></label>' : '') +
     '<label data-ned>שם מלא<input type="text" id="mlpName" autocomplete="name"></label><label data-ned>טלפון<input type="tel" id="mlpPhone" dir="ltr" autocomplete="tel"></label>' +
     '<label data-ned>תעודת זהות של בעל הכרטיס <small style="font-weight:400">(לכרטיס ישראלי)</small><input type="text" id="mlpZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label></div>' +
     '<div class="choose" id="mlpChoose" role="radiogroup" aria-label="דרך תשלום" hidden></div><p class="hint" id="mlpMsg"></p>' +
@@ -64,10 +64,10 @@ function open(opt){
 
   function mkOrder(){
     var mail = $('mlpMail').value.trim();
-    var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT, bitUI: 1 });
+    var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT, bitUI: 1 }); var cp = $('mlpCp') ? $('mlpCp').value.trim() : ''; if (cp) body.coupon = cp;
     return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify(body) })
-      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (!r.ok || !(j.tx || j.ppid || j.sumit || j.ppsub || j.bit)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
-      .then(function(j){ order = j; PROVS = j.provs || [j.provider]; setup(j.provider); return j; });
+      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (r.ok && j.free) return j; if (!r.ok || !(j.tx || j.ppid || j.sumit || j.ppsub || j.bit)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
+      .then(function(j){ order = j; if (j.free) { msg('הקופון הופעל, ההזמנה פעילה ✓'); go.hidden = true; setTimeout(done, 700); return j; } if (j.off > 0) $('mlpSub').textContent = (opt.sub || '') + ' · הנחה של ' + j.off + '%, לתשלום ' + j.amount + ' ₪'; PROVS = j.provs || [j.provider]; setup(j.provider); return j; });
   }
   function resetPay(){ var box = $('mlpBox'); box.innerHTML = ''; box.hidden = true; frame.hidden = true; if (NED_GO) go.onclick = NED_GO; go.hidden = false; go.disabled = true; ned(false); PROV = ''; ready = false; }
   function switchTo(pv, why, avoid){ if (stop) return; if (avoid) AVOID = avoid; WANT = pv || ''; resetPay(); msg(why || 'טוען…'); orderP = mkOrder(); orderP.catch(function(e){ msg(e.msg ? esc(e.msg) : 'התשלום באתר לא זמין כרגע. נסו שוב בעוד כמה דקות.', 1); }); }

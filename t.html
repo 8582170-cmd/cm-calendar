@@ -93,6 +93,14 @@ h2.sec{font:400 clamp(19px,4.6vw,24px)/1.3 var(--tfont);color:var(--acc);margin:
 .tbar{height:10px;border-radius:99px;background:var(--box);overflow:hidden;margin:6px auto;max-width:420px}.tbar i{display:block;height:100%;background:var(--acc)}
 #bgw{position:fixed;inset:0;z-index:-1;overflow:hidden}#bgw img,#bgw video{width:100%;height:100%;object-fit:cover;display:block}#bgw i{position:absolute;inset:0;background:#000}
 body.hasbg{background:transparent}
+body.bgm-glass .box2{background:color-mix(in srgb,var(--card) 60%,transparent);}
+body.bgm-open{--ink:#fff;--mute:#f0ece4}body.bgm-open .box2{background:transparent;border-color:transparent;color:#fff;text-shadow:0 1px 8px rgb(0 0 0 / .65)}body.bgm-open .box2 .bt{text-shadow:none}
+.fm.modal,.mapb{position:fixed;z-index:60;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,480px);max-height:90vh;overflow:auto;background:var(--card,#fff);color:var(--ink);border-radius:18px;padding:20px 16px 16px;box-shadow:0 20px 60px rgb(0 0 0 / .45);margin:0}
+.mapb{width:min(96vw,720px)}.mapf{height:min(60vh,420px);border-radius:12px;overflow:hidden;background:#eee}.mapf iframe{width:100%;height:100%;border:0}
+#mbk,.mapm{position:fixed;inset:0;z-index:55;background:rgb(0 0 0 / .5)}.mapm{display:block}
+.mx{position:absolute;top:6px;inset-inline-start:8px;border:0;background:none;font-size:22px;cursor:pointer;color:var(--mute);line-height:1}
+body.mopen{overflow:hidden}
+.wsl{display:inline-flex;align-items:center;gap:6px;font-weight:600}
 .mus{position:fixed;bottom:14px;inset-inline-start:14px;z-index:5;border-radius:999px;border:0;background:var(--acc);color:var(--card);font:inherit;font-weight:700;padding:10px 16px;cursor:pointer;box-shadow:0 6px 18px rgb(0 0 0 / .25)}
 /* מסגרות */
 .fr1 .u{background:transparent;border:2px solid var(--acc)}
@@ -200,7 +208,7 @@ body.hasbg{background:transparent}
       P2.forEach(function(p){var e=c.querySelector('[data-k="'+p[0]+'"]');if(e)e.textContent=String(p[1]).padStart(2,'0')});
     }
     document.title=(title||(EN?'Countdown':YI?'צייל־זייגער':'ספירה לאחור'))+' · MyLuach';
-    iv=setInterval(draw,1000);draw();
+    iv=setInterval(draw,1000);window.__iv=iv;draw();
     if(slug&&!document.body.classList.contains('embed'))invite(o,to,!!t,EN,title||(EN?'Countdown':YI?'צייל־זייגער':'ספירה לאחור'));
   }
 
@@ -208,7 +216,7 @@ body.hasbg{background:transparent}
   function invite(o,to,hasTime,EN,title){
     var on=o.et||o.n1||o.f1||o.inv||o.it||o.venue||o.addr||o.rv||o.rm||o.wl||o.tp||o.gift;if(!on)return;
     /* לפני תשלום: רק בעל האירוע (מהדפדפן שבו נשמרה הכתובת) רואה תצוגה מקדימה. האורחים רואים רק את השעון */
-    var isOwner=false;try{isOwner=!!JSON.parse(localStorage.getItem('myTimers')||'{}')[slug]}catch(e){}
+    var isOwner=!!window.__live;try{isOwner=isOwner||!!JSON.parse(localStorage.getItem('myTimers')||'{}')[slug]}catch(e){}
     if(!PAID&&!isOwner)return;
     var T=EN?{to:'Dear {name}, we would be delighted to celebrate with you!',venue:'Venue',rec:'Reception',main:'Ceremony',waze:'Waze',maps:'Google Maps',gcal:'Add to Google Calendar',ics:'Apple / Outlook calendar',rsvp:'RSVP',rem:'Remind me',wish:'Write a blessing',
         nm:'Your name',st:'Will you attend?',yes:'Yes, I\'ll be there',no:'Sorry, can\'t make it',maybe:'Maybe',ad:'Adults',kd:'Children',ph:'Phone (optional)',nt:'Note (optional)',send:'Send',thx:'Thank you! Your reply was received.',
@@ -224,10 +232,11 @@ body.hasbg{background:transparent}
         wt:'הברכה',who:'מי יראה את הברכה?',all:'כולם',host:'רק בעלי השמחה',wok:'תודה! הברכה התקבלה.',wall:'ברכות',err:'משהו השתבש. נסו שוב.',rate:'יותר מדי ניסיונות. נסו שוב מאוחר יותר.',done:'כבר שלחתם אישור. אפשר לשלוח שוב כדי לעדכן.',gal:'תמונות מהאירוע',gup:'הוספת תמונות',gok:'תודה! התמונה נוספה.',cg:'מתנה באשראי',cga:'סכום (₪)',cgm:'ברכה (לא חובה)',cgp:'המשך לתשלום',cgok:'תודה! המתנה התקבלה.',teh:'חלוקת ספר תהילים',tsub:'בוחרים פרקים לקרוא לקראת השמחה',tprog:'נלקחו {n} מתוך 150 פרקים',tround:'סבב {r}',tpick:'בחרו עד 10 פרקים, וכתבו את שמכם',ttake:'אני לוקח/ת את הפרקים',tgot:'תודה! הפרקים שלך:',tread:'לקריאה באתר ספריא',tremq:'רוצים תזכורת לקרוא?',ttaken:'הפרקים האלה נלקחו הרגע. בחרו פרקים אחרים.'};
     var page=document.createElement('div');page.id='pg';c.parentNode.insertBefore(page,c);document.body.classList.add('inv');
     /* קיר ברכות ומתנות: טקסטים */
-    var T2=EN?{sort:'Sort',sNew:'Newest',sOld:'Oldest',sAbc:'A–Z',sHi:'Highest gift',sLo:'Lowest gift',srch:'Search a name…',gifts:'Gifts',anon:'A guest',ready:'Ready-made blessings',bg:'Card style',myimg:'🖼 My own picture',gadd:'Add a gift by credit card',gamt:'Amount (₪)',gmin:'Minimum: {n} ₪',visq:'Who can see it?',vAll:'Everyone, with my name',vAnon:'Everyone, without my name',vHost:'Only the hosts',vNo:'Hide my name from the hosts too',gpay:'Continue to payment',gok:'Thank you! Your gift and blessing were received.',wdes:'🎨 A designed card',wantg:'I would like to give a gift',none:'No results',imgok:'Picture added ✓'}
+    var T2=EN?{sort:'Sort',sNew:'Newest first',sOld:'Oldest first',sAbc:'A–Z',sHi:'Highest gift',sLo:'Lowest gift',srch:'Search a name…',gifts:'Gifts',anon:'A guest',ready:'Ready-made blessings',bg:'Card style',myimg:'🖼 My own picture',gadd:'Add a gift by credit card',gamt:'Amount (₪)',gmin:'Minimum: {n} ₪',visq:'Who can see it?',vAll:'Everyone, with my name',vAnon:'Everyone, without my name',vHost:'Only the hosts',vNo:'Hide my name from the hosts too',gpay:'Continue to payment',gok:'Thank you! Your gift and blessing were received.',wdes:'🎨 A designed card',wantg:'I would like to give a gift',none:'No results',imgok:'Picture added ✓'}
       :YI?{sort:'סארטירן',sNew:'די נייסטע',sOld:'די עלטסטע',sAbc:'א־ב',sHi:'גרעסטע מתנה',sLo:'קלענסטע מתנה',srch:'זוכן א נאמען…',gifts:'מתנות',anon:'א גאסט',ready:'גרייטע ברכות',bg:'הינטערגרונט',myimg:'🖼 מיין אייגן בילד',gadd:'צולייגן א מתנה מיט א קרעדיט קארטל',gamt:'סכום (₪)',gmin:'מינימום: {n} ₪',visq:'ווער וועט זען?',vAll:'אלע, מיט מיין נאמען',vAnon:'אלע, אן מיין נאמען',vHost:'נאר די בעלי שמחה',vNo:'באהאלטן מיין נאמען אויך פון די בעלי שמחה',gpay:'ווייטער צו באצאלן',gok:'א דאנק! די מתנה און די ברכה זענען אנגעקומען.',wdes:'🎨 א באצירטע ברכה',wantg:'איך וויל געבן א מתנה',none:'גארנישט געפונען',imgok:'בילד צוגעלייגט ✓'}
-      :{sort:'מיון',sNew:'מהחדש',sOld:'מהישן',sAbc:'א־ב',sHi:'מתנה גבוהה',sLo:'מתנה נמוכה',srch:'חיפוש שם…',gifts:'מתנות',anon:'אורח/ת',ready:'נוסחים מוכנים',bg:'רקע לברכה',myimg:'🖼 תמונה משלי',gadd:'להוסיף מתנה באשראי',gamt:'סכום (₪)',gmin:'מינימום: {n} ₪',visq:'מי יראה?',vAll:'כולם, עם השם שלי',vAnon:'כולם, בלי השם שלי',vHost:'רק בעלי השמחה',vNo:'להסתיר את השם גם מבעלי השמחה',gpay:'להמשך לתשלום',gok:'תודה! המתנה והברכה התקבלו.',wdes:'🎨 ברכה מעוצבת מאתר הברכות',wantg:'אני רוצה לתת מתנה',none:'לא נמצא',imgok:'התמונה נוספה ✓'};
+      :{sort:'מיון',sNew:'מהחדש לישן',sOld:'מהישן לחדש',sAbc:'א־ב',sHi:'מתנה גבוהה',sLo:'מתנה נמוכה',srch:'חיפוש שם…',gifts:'מתנות',anon:'אורח/ת',ready:'נוסחים מוכנים',bg:'רקע לברכה',myimg:'🖼 תמונה משלי',gadd:'להוסיף מתנה באשראי',gamt:'סכום (₪)',gmin:'מינימום: {n} ₪',visq:'מי יראה?',vAll:'כולם, עם השם שלי',vAnon:'כולם, בלי השם שלי',vHost:'רק בעלי השמחה',vNo:'להסתיר את השם גם מבעלי השמחה',gpay:'להמשך לתשלום',gok:'תודה! המתנה והברכה התקבלו.',wdes:'🎨 ברכה מעוצבת מאתר הברכות',wantg:'אני רוצה לתת מתנה',none:'לא נמצא',imgok:'התמונה נוספה ✓'};
     for(var k2 in T2)T[k2]=T2[k2];
+    if(o.et==='oth'&&!EN&&!YI){T.host='רק בעל/ת האירוע';T.vHost='רק בעל/ת האירוע'}
     var READY=EN?['Mazal tov! Wishing you endless joy and blessing.','May you build a home full of peace, love and Torah.','So happy to celebrate with you. Mazal tov to the whole family!','Wishing you nachas and simchos always.']
       :YI?['מזל טוב! אסאך נחת און שמחה.','זאלט איר בויען א בית נאמן בישראל, מיט שלום און ליבשאפט.','מזל טוב די גאנצע משפחה! מיר פרייען זיך מיט אייך.','זאלט איר האבן נאר שמחות.']
       :['מזל טוב! שתזכו לרוב נחת ושמחה.','שתזכו לבנות בית נאמן בישראל, מלא שלום ואהבה.','מזל טוב לכל המשפחה! שמחים בשמחתכם.','שנזכה להמשיך לשמוח יחד בשמחות.','ברכת מזל טוב חמה, שיהיה בשעה טובה ומוצלחת!'];
@@ -245,13 +254,13 @@ body.hasbg{background:transparent}
     var okM=function(u){return /^https:\/\/[a-z0-9.-]+\/timers\/(media|img)\/[0-9]{6}\/[a-f0-9]{24}\.(mp4|webm|mp3|m4a|jpg)$/.test(u||'')};
     if(okM(o.bgv)||okM(o.bgi)){var bw=document.createElement('div');bw.id='bgw';bw.setAttribute('aria-hidden','true');
       bw.innerHTML=(okM(o.bgv)?'<video autoplay muted loop playsinline'+(okM(o.bgi)?' poster="'+esc(o.bgi)+'"':'')+' src="'+esc(o.bgv)+'"></video>':'<img src="'+esc(o.bgi)+'" alt="">')+'<i style="opacity:'+((+o.bgo||0)/100)+'"></i>';
-      document.body.prepend(bw);document.body.classList.add('hasbg');document.documentElement.style.setProperty('--bg','transparent')}
+      document.body.prepend(bw);document.body.classList.add('hasbg');if(o.bgm==='glass'||o.bgm==='open')document.body.classList.add('bgm-'+o.bgm);document.documentElement.style.setProperty('--bg','transparent')}
     if(okM(o.mus)){var au=new Audio(o.mus);au.loop=true;var mb=document.createElement('button');mb.type='button';mb.className='mus';mb.textContent=EN?'🎵 Play music':YI?'🎵 שפילן מוזיק':'🎵 הפעלת מוזיקה';
       var tg=function(){if(au.paused){au.play().then(function(){mb.textContent=EN?'⏸ Music':YI?'⏸ מוזיק':'⏸ מוזיקה'}).catch(function(){})}else{au.pause();mb.textContent=EN?'🎵 Play music':YI?'🎵 שפילן מוזיק':'🎵 הפעלת מוזיקה'}};
       mb.onclick=function(e){e.stopPropagation();tg()};document.body.appendChild(mb);
       /* נגיעה ראשונה בדף מפעילה את המוזיקה (דפדפנים לא מאפשרים לנגן לפני כן) */
       var first=function(e){document.removeEventListener('pointerdown',first);if(e.target!==mb&&au.paused)tg()};document.addEventListener('pointerdown',first)}
-    if(!PAID)page.insertAdjacentHTML('beforeend','<div class="box2" style="border:2px dashed var(--acc)"><b>'+(EN?'Preview: only you can see this page. Guests will see it after the invitation page is activated.':'תצוגה מקדימה: רק אתם רואים את הדף. האורחים יראו אותו אחרי הפעלת דף ההזמנה.')+'</b> <a href="/invite?s='+slug+'">'+(EN?'Activate':'להפעלה')+'</a></div>');
+    if(!PAID&&!window.__live)page.insertAdjacentHTML('beforeend','<div class="box2" style="border:2px dashed var(--acc)"><b>'+(EN?'Preview: only you can see this page. Guests will see it after the invitation page is activated.':'תצוגה מקדימה: רק אתם רואים את הדף. האורחים יראו אותו אחרי הפעלת דף ההזמנה.')+'</b> <a href="/invite?s='+slug+'">'+(EN?'Activate':'להפעלה')+'</a></div>');
     var ok=function(u){return /^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(u||'')||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(u||'')};
     var tn=(Q.get('to')||'').replace(/[<>]/g,'').trim().slice(0,60),pt=String(o.pt||'')||T.to;
     var h='';
@@ -269,12 +278,14 @@ body.hasbg{background:transparent}
     var nextDay=function(x){var q=new Date(x+'T12:00:00Z');q.setUTCDate(q.getUTCDate()+1);return q.toISOString().slice(0,10)};
     var dates=hasTime?fmt(to)+'/'+fmt(to+3*3600e3):d8(o.d)+'/'+d8(nextDay(o.d)),loc=[o.venue,o.addr].filter(Boolean).join(', ');
     var gcal='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+dates+'&details='+encodeURIComponent(url)+(loc?'&location='+encodeURIComponent(loc):'');
+    function agk(h){var p=String(h).split(':'),a=+p[0];return (a<5?a+24:a)*60+(+p[1]||0)}
+    var trl=o.trl!=null?o.trl:(/^(wed|eng|sheva)$/.test(o.et||'')?T.rec:'');
     var det='<div class="box2"><div class="det">'+(o.venue?'<div><b>'+T.venue+':</b> '+esc(o.venue)+'</div>':'')+(o.addr?'<div>'+esc(o.addr)+'</div>':'')+
-      (o.tr?'<div><b>'+T.rec+':</b> '+esc(o.tr)+'</div>':'')+(hasTime&&(o.tr||o.tl)?'<div><b>'+esc(o.tl||T.main)+':</b> '+esc(o.h)+'</div>':'')+'</div><div class="btns">'+
-      (o.addr?'<a class="bt" target="_blank" rel="noopener" href="https://waze.com/ul?q='+encodeURIComponent(o.addr)+'&navigate=yes">🚗 '+T.waze+'</a><a class="bt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(loc)+'">📍 '+T.maps+'</a>':'')+
+      (Array.isArray(o.ag)?o.ag.slice().sort(function(a,b){return agk(a.h)-agk(b.h)}).map(function(x){return '<div><b>'+esc(x.h)+'</b> '+esc(x.t)+'</div>'}).join(''):(o.tr?'<div>'+(trl?'<b>'+esc(trl)+':</b> ':'')+esc(o.tr)+'</div>':'')+(hasTime&&o.tl?'<div><b>'+esc(o.tl)+':</b> '+esc(o.h)+'</div>':''))+'</div><div class="btns">'+
+      (o.addr?'<button class="bt" type="button" data-map="waze">🚗 '+T.waze+'</button><button class="bt" type="button" data-map="gm">📍 '+T.maps+'</button>':'')+
       '<a class="bt" target="_blank" rel="noopener" href="'+gcal+'">📅 '+T.gcal+'</a><button class="bt" type="button" id="icsB">🗓 '+T.ics+'</button></div></div>';
     var gift=/^https:\/\/[^\s<>"']+$/.test(o.gift||'')?'<a class="bt" target="_blank" rel="noopener nofollow" href="'+esc(o.gift)+'">🎁 '+esc(o.gl||(EN?'Gift / donation':YI?'מתנה / צדקה':'מתנה / תרומה'))+'</a>':'';
-    var cgb=GCON&&PAID?'<button class="bt" type="button" data-p="wish" data-gift="1">💳 '+T.cg+'</button>':'';
+    var cgb=GCON&&PAID?'<button class="bt" type="button" data-p="wish" data-gift="1">💳 '+T.cg+'</button><a class="mute" style="font-size:13px;align-self:center" target="_blank" rel="noopener" href="/invite-gifts">'+(EN?'How does it work?':'איך זה עובד?')+'</a>':'';
     var qs=(o.qs||[]).map(function(q,i){return '<label>'+esc(q.q)+(q.o&&q.o.length?'<select name="q'+i+'">'+q.o.map(function(v){return '<option>'+esc(v)+'</option>'}).join('')+'</select>':'<input name="q'+i+'" maxlength="100">')+'</label>'}).join('');
     var act='<div class="box2"><div class="btns">'+gift+cgb+(o.rv?'<button class="bt pri" type="button" data-p="rsvp">✅ '+T.rsvp+'</button>':'')+(o.rm?'<button class="bt" type="button" data-p="rem">🔔 '+T.rem+'</button>':'')+(o.wl?'<button class="bt" type="button" data-p="wish">✍️ '+T.wish+'</button>':'')+'</div>'+
       (o.rv?'<form class="fm" id="f-rsvp" hidden><label>'+T.nm+'<input name="name" required maxlength="80" value="'+esc(tn)+'" autocomplete="name"></label><div class="opts" role="radiogroup" aria-label="'+T.st+'"><label><input type="radio" name="status" value="yes" checked>'+T.yes+'</label><label><input type="radio" name="status" value="no">'+T.no+'</label><label><input type="radio" name="status" value="maybe">'+T.maybe+'</label></div>'+
@@ -283,9 +294,18 @@ body.hasbg{background:transparent}
       (o.wl||cgb?wishForm(o,tn,!!cgb):'')+'</div>';
     var teh=o.tp?'<div class="box2" id="tehBox"><h2 class="sec">📖 '+T.teh+'</h2><div>'+esc(o.tpt||T.tsub)+'</div><div class="tbar"><i id="tBar" style="width:0"></i></div><div class="mute" id="tProg"></div>'+
       '<p style="margin:8px 0 0">'+T.tpick+'</p><div class="tgrid" id="tGrid"></div><form class="fm" id="f-teh"><label>'+T.nm+'<input name="name" required maxlength="80" value="'+esc(tn)+'" autocomplete="name"></label><button class="bt pri" type="submit">'+T.ttake+'</button><p class="msg" aria-live="polite"></p></form><div id="tMine"></div></div>':'';
-    var galH=o.gal&&GAL?'<div class="box2" id="galBox"><h2 class="sec">📷 '+T.gal+'</h2><input type="file" id="galF" accept="image/*" multiple hidden><button class="bt pri" type="button" id="galB">'+T.gup+'</button><p class="msg" id="galM" aria-live="polite"></p><div id="galG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px"></div></div>':'';
+    var galH=o.gal&&GAL&&Date.now()>=to?'<div class="box2" id="galBox"><h2 class="sec">📷 '+T.gal+'</h2><input type="file" id="galF" accept="image/*" multiple hidden><button class="bt pri" type="button" id="galB">'+T.gup+'</button><p class="msg" id="galM" aria-live="polite"></p><div id="galG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px"></div></div>':'';
     page.insertAdjacentHTML('beforeend',det+(o.rv||o.rm||o.wl||gift||cgb?act:'')+teh+galH+((o.wl||cgb)&&(o.wlay||'side')==='bottom'?'<div id="wgA"></div><div id="wgB"></div>':''));
-    page.addEventListener('click',function(e){var b=e.target.closest('[data-p]');if(!b)return;if(b.dataset.p==='wish'){var gc=document.getElementById('wGift');if(gc){var want=!!b.dataset.gift;if(want||!o.wl){gc.checked=true;gc.dispatchEvent(new Event('change'))}}}['rsvp','rem','wish','cg'].forEach(function(k){var f=document.getElementById('f-'+k);if(f)f.hidden=k!==b.dataset.p?true:!f.hidden});var f=document.getElementById('f-'+b.dataset.p);if(f&&!f.hidden){var i=f.querySelector('input:not([type=radio]):not([type=checkbox]),textarea');if(i&&!i.value)i.focus()}});
+    function closeM(){['rsvp','rem','wish','cg'].forEach(function(k){var f=document.getElementById('f-'+k);if(f)f.hidden=true});var m=document.querySelector('.mapm');if(m)m.remove();syncModal()}
+    function syncModal(){var open=null;['rsvp','rem','wish','cg'].forEach(function(k){var f=document.getElementById('f-'+k);if(!f)return;f.classList.toggle('modal',!f.hidden);if(!f.hidden){open=f;if(!f.querySelector('.mx')){var x=document.createElement('button');x.type='button';x.className='mx';x.setAttribute('aria-label',EN?'Close':'סגירה');x.textContent='✕';x.onclick=closeM;f.prepend(x)}}});
+      var bk=document.getElementById('mbk');if(open){if(!bk){bk=document.createElement('div');bk.id='mbk';bk.onclick=closeM;document.body.appendChild(bk)}document.body.classList.add('mopen')}else{if(bk)bk.remove();if(!document.querySelector('.mapm'))document.body.classList.remove('mopen')}}
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeM()});
+    function openMap(kind){var q=encodeURIComponent(loc),wz='https://waze.com/ul?q='+encodeURIComponent(o.addr)+'&navigate=yes',gz='https://www.google.com/maps/search/?api=1&query='+q;
+      var m=document.createElement('div');m.className='mapm';m.innerHTML='<div class="mapb"><button type="button" class="mx" aria-label="✕">✕</button><h2 class="sec" style="margin:0 0 8px">'+esc(o.venue||o.addr)+'</h2><div class="mapf">'+(EN?'Loading…':'טוען מפה…')+'</div><div class="btns"><a class="bt pri" target="_blank" rel="noopener" href="'+wz+'">🚗 '+(EN?'Navigate with Waze':'ניווט בוויז')+'</a><a class="bt" target="_blank" rel="noopener" href="'+gz+'">📍 '+(EN?'Open in Google Maps':'פתיחה בגוגל מפות')+'</a></div></div>';
+      m.onclick=function(e){if(e.target===m)closeM()};m.querySelector('.mx').onclick=closeM;document.body.appendChild(m);document.body.classList.add('mopen');var box=m.querySelector('.mapf');
+      var gmF=function(){box.innerHTML='<iframe title="map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q='+q+'&output=embed&hl='+(EN?'en':'he')+'"></iframe>'};
+      if(kind==='waze'){fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+q).then(function(r){return r.json()}).then(function(j){if(j&&j[0]&&j[0].lat){box.innerHTML='<iframe title="Waze" src="https://embed.waze.com/iframe?zoom=16&lat='+encodeURIComponent(j[0].lat)+'&lon='+encodeURIComponent(j[0].lon)+'&pin=1"></iframe>'}else gmF()}).catch(gmF)}else gmF()}
+    page.addEventListener('click',function(e){var mp=e.target.closest('[data-map]');if(mp){openMap(mp.dataset.map);return}var b=e.target.closest('[data-p]');if(!b)return;if(b.dataset.p==='wish'){var gc=document.getElementById('wGift');if(gc){var want=!!b.dataset.gift;if(want||!o.wl){gc.checked=true;gc.dispatchEvent(new Event('change',{bubbles:true}))}}}['rsvp','rem','wish','cg'].forEach(function(k){var f=document.getElementById('f-'+k);if(f)f.hidden=k!==b.dataset.p?true:!f.hidden});var f=document.getElementById('f-'+b.dataset.p);if(f&&!f.hidden){var i=f.querySelector('input:not([type=radio]):not([type=checkbox]),textarea');if(i&&!i.value)i.focus()}syncModal()});
     document.getElementById('icsB').onclick=function(){var dt=hasTime?'DTSTART:'+fmt(to)+'\r\nDTEND:'+fmt(to+3*3600e3):'DTSTART;VALUE=DATE:'+d8(o.d)+'\r\nDTEND;VALUE=DATE:'+d8(nextDay(o.d));
       var ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MyLuach//Event//HE\r\nBEGIN:VEVENT\r\nUID:'+slug+'@myluach.org\r\nDTSTAMP:'+fmt(Date.now())+'\r\n'+dt+'\r\nSUMMARY:'+title.replace(/[,;\\]/g,' ')+'\r\nLOCATION:'+loc.replace(/[,;\\]/g,' ')+'\r\nURL:'+url+'\r\nDESCRIPTION:'+url+'\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n';
       var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download=slug+'.ics';document.body.appendChild(a);a.click();a.remove()};
@@ -344,7 +364,7 @@ body.hasbg{background:transparent}
     /* קיר הברכות והמתנות: ברכות בצד אחד (נעות), מתנות בצד השני, או שניהם למטה. מיון וחיפוש */
     var WL=[],WS={sort:'new',q:''},lay=o.wlay||'side',hasW=!!o.wl&&o.wpub!==0,hasG=!!cgb&&o.gpub!==0;
     if(hasW||hasG){if(lay!=='bottom'){document.body.classList.add('wgs');if(lay==='left')document.body.classList.add('wgl');page.insertAdjacentHTML('beforeend','<div id="wgA"></div><div id="wgB"></div>')}
-      var bar=function(){return '<div class="wgbar"><select data-ws-sort aria-label="'+T.sort+'">'+[['new',T.sNew],['old',T.sOld],['abc',T.sAbc]].concat(hasG?[['hi',T.sHi],['lo',T.sLo]]:[]).map(function(x){return '<option value="'+x[0]+'"'+(WS.sort===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select><input type="search" data-ws-q placeholder="'+T.srch+'" aria-label="'+T.srch+'" value="'+esc(WS.q)+'"></div>'};
+      var bar=function(){return '<div class="wgbar"><label class="wsl"><span>'+T.sort+':</span> <select data-ws-sort aria-label="'+T.sort+'">'+[['new',T.sNew],['old',T.sOld],['abc',T.sAbc]].concat(hasG?[['hi',T.sHi],['lo',T.sLo]]:[]).map(function(x){return '<option value="'+x[0]+'"'+(WS.sort===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select></label><input type="search" data-ws-q placeholder="'+T.srch+'" aria-label="'+T.srch+'" value="'+esc(WS.q)+'"></div>'};
       var A=document.getElementById('wgA'),Bx=document.getElementById('wgB');
       if(hasW)A.outerHTML='<div class="box2" id="wgA" hidden><h2 class="sec">'+T.wall+'</h2>'+bar()+'<div class="wgp" id="wgW"></div></div>';else A.remove();
       if(hasG)Bx.outerHTML='<div class="box2" id="wgB" hidden><h2 class="sec">🎁 '+T.gifts+'</h2>'+bar()+'<div class="wgp scroll" id="wgG"></div></div>';else Bx.remove();
@@ -374,7 +394,14 @@ body.hasbg{background:transparent}
         B.disabled=true;post({act:'wish',slug:slug,name:name,text:txt,vis:vis,noname:nn,style:WSTY,img:WIMG,pub:vis!=='host'}).then(function(a){B.disabled=false;
           if(a[0]===200){M.className='msg';M.textContent=T.wok;fw.elements['text'].value='';WIMG='';var im2=document.getElementById('wImgM');if(im2)im2.textContent='';if(typeof loadWall==='function')loadWall()}else{M.className='msg no';M.textContent=a[0]===429?T.rate:T.err}}).catch(function(){B.disabled=false;M.className='msg no';M.textContent=T.err})}}
   }
-  if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){PAID=!!j.paid;FULL=!!j.full;GAL=FULL&&j.gal!==false;GCON=!!j.gcOn;start(j.cfg||{})}).catch(function(){start({})})}
+  function cleanup(){clearInterval(window.__iv);var pg=document.getElementById('pg');if(pg){pg.parentNode.insertBefore(c,pg);pg.remove()}var b=document.getElementById('bgw');if(b)b.remove();[].forEach.call(document.querySelectorAll('.mus,#mbk,.mapm'),function(e){e.remove()});document.body.className=Q.get('e')==='1'?'embed':'';document.documentElement.style.removeProperty('--bg')}
+  if(Q.get('pv')==='live'&&window.parent!==window){
+    /* תצוגה מקדימה חיה בבונה: ההגדרות מגיעות מהדף שמעל, בלי שמירה */
+    window.__live=1;var LC=null,FL=false,run=function(){if(!LC||!FL)return;if(window.__started)cleanup();window.__started=1;start(LC)};
+    window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||e.data.ml!=='cfg')return;LC=e.data.cfg||{};run()});
+    (slug&&slug!=='preview-draft'?fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).catch(function(){return {}}):Promise.resolve({})).then(function(j){PAID=!!j.paid;FULL=!!j.full;GAL=FULL&&j.gal!==false;GCON=!!j.gcOn;FL=true;run()});
+    window.parent.postMessage({ml:'ready'},location.origin)}
+  else if(slug){fetch('/api/pricing?c=_timer&s='+slug).then(function(r){return r.ok?r.json():{}}).then(function(j){PAID=!!j.paid;FULL=!!j.full;GAL=FULL&&j.gal!==false;GCON=!!j.gcOn;start(j.cfg||{})}).catch(function(){start({})})}
   else start({t:Q.get('t'),d:Q.get('d'),h:Q.get('h'),z:Q.get('z'),u:Q.get('u'),th:Q.get('th'),c:Q.get('c'),b:Q.get('b'),lang:Q.get('lang'),l:Q.get('l'),fr:Q.get('fr'),wp:Q.get('wp'),wd:Q.get('wd'),ww:Q.get('ww'),wt:Q.get('wt'),ns:Q.get('ns'),p:Q.get('p'),ps:Q.get('ps'),wh:Q.get('wh')});
 })();
 </script>
