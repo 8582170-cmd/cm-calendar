@@ -6,7 +6,7 @@
 'use strict';
 var CSS = '.mlp-back{position:fixed;inset:0;background:rgb(0 0 0 / .45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 12px}' +
   '.mlp{background:var(--sheet,#fff);color:var(--ink,#172126);border-radius:20px;max-width:540px;width:100%;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px -10px rgb(0 0 0 / .4);font-family:inherit}' +
-  '.mlp h3{margin:0;font-size:24px}.mlp .hint{margin:0;color:var(--mute,#5c686c);font-size:16px}.mlp .bad{color:#b3261e;font-weight:700}.mlp .ok{color:#1d7a3e;font-weight:700}' +
+  '.mlp.fix{--ink:#172126;--mute:#5c686c;--line:#dde2df;--paper:#f6f7f4;--sheet:#fff;color:#172126}.mlp h3{margin:0;font-size:24px}.mlp .hint{margin:0;color:var(--mute,#5c686c);font-size:16px}.mlp .bad{color:#b3261e;font-weight:700}.mlp .ok{color:#1d7a3e;font-weight:700}' +
   '.mlp label{display:flex;flex-direction:column;gap:5px;font-size:15px;font-weight:700}.mlp label[hidden]{display:none}' +
   '.mlp input,.mlp select{font:inherit;font-size:18px;font-weight:400;padding:10px 12px;border:1.5px solid var(--line,#dde2df);border-radius:12px;background:var(--paper,#f6f7f4);color:inherit}' +
   '.mlp .who{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mlp .who label:first-child{grid-column:1/-1}@media (max-width:520px){.mlp .who{grid-template-columns:1fr}}' +
@@ -35,6 +35,8 @@ function open(opt){
     '<iframe id="mlpFrame" title="טופס תשלום מאובטח" data-src="https://www.matara.pro/nedarimplus/iframe?language=he" hidden></iframe><div class="box" id="mlpBox" hidden></div>' +
     '<div class="row"><button class="btn primary" type="button" id="mlpGo">המשך לתשלום</button><button class="btn" type="button" id="mlpCancel">ביטול</button></div></div>';
   document.body.appendChild(back);
+  /* בדפים שלא מגדירים צבעי דף לבן (--sheet), למשל דף הזמנה בערכת צבעים כהה, החלון נשאר עם צבעים קבועים וקריאים */
+  try { if (!getComputedStyle(document.documentElement).getPropertyValue('--sheet').trim()) back.querySelector('.mlp').classList.add('fix'); } catch (e) {}
   var $ = function(id){ return back.querySelector('#' + id) }, frame = $('mlpFrame'), go = $('mlpGo');
   back.querySelector('h3').textContent = opt.title || 'תשלום';
   $('mlpSub').textContent = opt.sub || '';
