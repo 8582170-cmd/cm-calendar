@@ -84,6 +84,7 @@ async function paid(o) {
   else { P.sms = (+P.sms || 0) + smsOf(p.tier); P.calls = (+P.calls || 0) + voiceOf(p.tier); added.emails = mailOf(p.tier); P.emails = (+P.emails || 0) + added.emails; } P.orders = (P.orders || []).concat(o.id); P.email = P.email || p.email || o.email || ''; P.at = P.at || new Date().toISOString();
   await T.put(p.slug, { ...cur, paid: P });
   await index(p.slug, (cur.cfg || {}).d).catch(() => {});
+  if (P.email) await require('./_evowners').set(p.slug, P.email).catch(() => {});
   const site = (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
   /* הנוסח: בניהול ← המיילים שהלקוחות מקבלים ← event */
   if (o.email) await require('./_paid').send('event', o.email, { 'כתובת': site.replace(/^https?:\/\/(www\.)?/, '') + '/t/' + p.slug, 'מיילים': added.emails ? '\nנוספו ' + added.emails + ' מיילים לשליחת הזמנות.' : '' }, { url: site + '/invite?s=' + p.slug + (cur.token ? '#k=' + cur.token : '') }, 'invite-owner').catch(e => console.error('event paid mail', e.message));

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>האזור האישי: האירועים שלי · MyLuach</title>
+<meta name="description" content="כל האירועים ודפי ההזמנה שלכם במקום אחד, בכניסה עם מייל.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://www.myluach.org/invite-my">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@900&display=swap">
+<style>
+:root{--paper:#f6f7f4;--sheet:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--sheet:#152024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--sheet:#152024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:18px/1.75 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:820px;margin-inline:auto;padding-bottom:48px}
+a{color:var(--teal)}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-block:20px;border-bottom:1px solid var(--line)}
+.logo{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:26px;color:var(--ink);text-decoration:none;display:inline-flex;gap:10px;align-items:center;direction:ltr}
+.logo-img{display:inline-block;vertical-align:middle;flex:none}
+.cta{display:inline-flex;align-items:center;min-height:46px;padding:6px 20px;border-radius:999px;background:var(--teal);color:var(--teal-ink);font-weight:800;text-decoration:none}
+h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(30px,5vw,42px);line-height:1.15;margin:30px 0 8px}
+.lead{font-size:20px;color:var(--mute);margin:0 0 18px}
+.toc{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:14px 20px;margin:0 0 10px}
+.toc ol{margin:0;padding-inline-start:22px;columns:2;column-gap:28px}
+@media (max-width:600px){.toc ol{columns:1}}
+section{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:6px 22px 14px;margin:14px 0;scroll-margin-top:12px}
+h2{font-size:24px;margin:16px 0 6px}
+li{margin:3px 0}
+details{background:var(--sheet);border:1px solid var(--line);border-radius:14px;margin:8px 0;padding:0 18px}
+summary{cursor:pointer;font-weight:800;padding:12px 0;font-size:18px}
+details p{margin:0 0 14px}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:var(--mute)}
+
+</style><style>
+.evc{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--line,#dde2df);border-radius:16px;padding:14px 16px;margin:10px 0;background:var(--card,#fff)}
+.evc b{font-size:19px}.evc small{display:block;color:var(--mute,#5c686c);margin-top:2px}.evc .bdg{display:inline-block;border-radius:10px;padding:1px 9px;font-size:13px;background:#eee9df;margin-inline-start:6px}.evc .bdg.ok{background:#dff5e4}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.btnx{display:inline-block;border:1.5px solid var(--teal,#1f5c66);border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;text-decoration:none;color:var(--teal,#1f5c66);background:transparent;cursor:pointer}.btnx.pri{background:var(--teal,#1f5c66);color:#fff}
+#msg{color:var(--mute,#5c686c)}
+</style>
+</head>
+<body><div class="wrap">
+<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><a class="cta" href="/invite">לבניית דף הזמנה ←</a></header>
+<main>
+<h1>האזור האישי שלי</h1>
+<p class="lead">כל האירועים ודפי ההזמנה שלכם במקום אחד, מכל מכשיר. נכנסים עם המייל (קישור שנשלח אליו), ומשם פותחים אירוע, רואים סיכומים ושולחים הזמנות.</p>
+<div id="box"><p id="msg">טוען…</p></div>
+</main>
+<footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="/invite">בניית דף הזמנה</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a></footer>
+</div>
+<script src="/assets/config.js"></script>
+<script>
+(function(){
+var API='/api/pricing?c=_timer',KEY='myluach-auth',$=function(i){return document.getElementById(i)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function sess(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
+function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
+function remember(s,t){try{var o=store();o[s]=t;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
+/* טוקן תקף: אם פג, מרעננים אותו (Supabase refresh) */
+function tok(){var j=sess();if(!j)return Promise.resolve('');
+  if(j.access_token&&(!j.expires_at||j.expires_at*1000>Date.now()+60000))return Promise.resolve(j.access_token);
+  var C=window.MYLUACH_CFG||{};if(!j.refresh_token||!C.supabaseUrl)return Promise.resolve('');
+  return fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:j.refresh_token})})
+   .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at||Math.floor(Date.now()/1000)+(n.expires_in||3600)})))}catch(e){}return n.access_token}).catch(function(){return ''})}
+function post(t,body){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return [r.status,j]})})}
+function loginView(){$('box').innerHTML='<p>כדי לראות את האירועים שלכם צריך להיכנס לחשבון. הכניסה בחינם, עם כתובת מייל: שולחים לכם קישור, לוחצים עליו ונכנסים. אפשר גם עם סיסמה או חשבון Google.</p><div class="acts"><a class="btnx pri" href="/app.html#login&back='+encodeURIComponent('/invite-my')+'">כניסה עם מייל</a><a class="btnx" href="/invite">בניית דף הזמנה חדש</a></div><p class="mute" style="font-size:14px">יש לכם כבר דף הזמנה שנבנה בלי חשבון? אחרי הכניסה הוא יתחבר לחשבון אוטומטית כשתפתחו אותו מאותו דפדפן, או מהקישור האישי שבמייל הרכישה.</p>'}
+function fmt(d){return d?d.split('-').reverse().join('.'):'ללא תאריך'}
+function draw(j){var E=j.events||[],h='<p class="mute" style="margin:0 0 6px">מחוברים כ־<b>'+esc(j.email)+'</b></p><div class="acts"><a class="btnx pri" href="/invite">➕ אירוע חדש</a></div>';
+  if(!E.length)h+='<p>עוד אין אירועים בחשבון הזה. בנו דף הזמנה, והוא יופיע כאן. אם כבר בניתם אחד מהדפדפן הזה, פתחו אותו פעם אחת ("האירועים שלי" למעלה) והוא יתחבר לחשבון.</p>';
+  h+=E.map(function(e){return '<div class="evc"><div><b>'+esc(e.t||e.slug)+'</b><span class="bdg'+(e.paid?' ok':'')+'">'+(e.paid?(e.free?'מסלול חינם':'פעיל'):'עוד לא הופעל')+'</span><small>'+esc(fmt(e.d))+' · myluach.org/t/'+esc(e.slug)+'</small></div><div class="acts" style="margin:0"><a class="btnx pri" data-s="'+esc(e.slug)+'" data-k="'+esc(e.token)+'" href="/invite?s='+esc(e.slug)+'">פתיחה וניהול</a><a class="btnx" target="_blank" rel="noopener" href="/t/'+esc(e.slug)+'">צפייה בדף</a></div></div>'}).join('');
+  $('box').innerHTML=h}
+$('box').addEventListener('click',function(e){var a=e.target.closest('[data-k]');if(a)remember(a.dataset.s,a.dataset.k)});
+tok().then(function(t){if(!t){loginView();return}
+  var S=store(),ks=Object.keys(S);
+  /* אירועים שנבנו בדפדפן הזה מתחברים לחשבון */
+  return Promise.all(ks.map(function(s){return post(t,{act:'claim',slug:s,token:S[s]}).catch(function(){})})).then(function(){return post(t,{act:'mine'})}).then(function(a){
+    if(a[0]===401){loginView();return}if(a[0]!==200){$('box').innerHTML='<p>לא הצלחנו לטעון את האירועים. נסו לרענן.</p>';return}draw(a[1])})
+}).catch(function(){$('box').innerHTML='<p>לא הצלחנו לטעון. נסו לרענן.</p>'});
+})();
+</script>
+</body></html>

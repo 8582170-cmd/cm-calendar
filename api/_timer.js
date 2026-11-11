@@ -399,6 +399,7 @@ async function guest(req, res, b) {
       F[user.id] = mine.concat(s); await saveSetting('evfree', F);
       await put(s, { ...cur, paid: { free: true, emails: EPf.freeEmails || 20, sms: 0, email: user.email || '', orders: [], at: new Date().toISOString() } });
       await require('./_eventpay').index(s, c.d).catch(() => {});
+      await require('./_evowners').set(s, user.email).catch(() => {});
       return json(res, 200, { ok: true });
     }
     if (b.act === 'owner') {
@@ -727,6 +728,23 @@ module.exports = async (req, res) => {
     const b = readBody(req) || {};
     if (b.img) return upload(req, res, b);
     if (b.mup) return mediaUp(req, res, b);
+    /* אזור אישי: האירועים של החשבון (כניסה עם מייל). mine = הרשימה, claim = חיבור אירוע קיים לחשבון (בעזרת קוד העריכה) */
+    if (b.act === 'mine' || b.act === 'claim') {
+      const user = await require('./_lib').getUser(req).catch(() => null); if (!user) return json(res, 401, { error: 'login' });
+      const OW = require('./_evowners');
+      if (b.act === 'claim') {
+        const cs = str(b.slug, 40).toLowerCase(), cc = SLUG.test(cs) ? await get(cs).catch(() => null) : null;
+        if (!cc) return json(res, 404, { error: 'not found' }); if (!own(cc, b.token)) return json(res, 403, { error: 'token' });
+        await OW.set(cs, user.email); return json(res, 200, { ok: true });
+      }
+      const list = [];
+      for (const ms of (await OW.of(user.email)).slice(0, 80)) {
+        const mc = await get(ms).catch(() => null); if (!mc || mc.disabled) continue; const c = mc.cfg || {};
+        list.push({ slug: ms, token: mc.token, t: c.t || '', d: c.d || '', et: c.et || '', paid: !!mc.paid, free: !!(mc.paid && mc.paid.free) });
+      }
+      list.sort((a, b2) => String(b2.d).localeCompare(String(a.d)));
+      return json(res, 200, { email: user.email, events: list });
+    }
     if (b.act) return guest(req, res, b);
     const s = str(b.slug, 40).toLowerCase();
     if (!SLUG.test(s) || RESERVED.has(s)) return json(res, 400, { error: 'slug' });

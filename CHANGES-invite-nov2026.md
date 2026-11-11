@@ -17,3 +17,8 @@ MAIL_CAP_BREVO (0 = בלי מגבלה יומית), NEDARIM_BIT=off (כיבוי �
 - אפשר לשנות בדף הניהול (שמות ספקים לפי סדר + מכסות), או במשתנים MAIL_INVITE_ORDER / MAIL_OTHER_ORDER. סדר עדיפות: ניהול, משתנה, ברירת מחדל.
 - ספקים: resend, brevo, mailjet, ses (Amazon SES: SES_ACCESS_KEY_ID, SES_SECRET_ACCESS_KEY, SES_REGION).
 - מכסות: MAIL_CAP_<ספק> (יומית), MAIL_MONTH_<ספק> (חודשית), MAIL_HOURLY_<ספק> (לשעה); 0 = בלי הגבלה.
+
+## אזור אישי עם כניסה במייל
+- /invite-my: כל האירועים של החשבון. כניסה עם מייל דרך הכניסה הקיימת של האתר (app.html#login).
+- api/_evowners.js: קישור אירוע ← מייל (settings.evowners). נקשר אוטומטית בהפעלה (בתשלום או חינם), ובפתיחת האירוע בדפדפן עם התחברות (act: claim).
+- act mine = רשימת האירועים של החשבון.
