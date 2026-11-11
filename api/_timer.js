@@ -743,6 +743,14 @@ module.exports = async (req, res) => {
         list.push({ slug: ms, token: mc.token, t: c.t || '', d: c.d || '', et: c.et || '', paid: !!mc.paid, free: !!(mc.paid && mc.paid.free) });
       }
       list.sort((a, b2) => String(b2.d).localeCompare(String(a.d)));
+      /* סיכום לכל אירוע: נמענים, נשלחו, ותשובות */
+      const inl = list.map(x => x.slug).filter(x => SLUG.test(x)).join(',');
+      if (inl) {
+        const [RR, VV] = await Promise.all([db('timer_recip?slug=in.(' + inl + ')&select=slug,status&limit=20000').catch(() => []), db('timer_rsvp?slug=in.(' + inl + ')&select=slug,status,adults,kids&limit=20000').catch(() => [])]);
+        const C = {}; list.forEach(e => { C[e.slug] = e; Object.assign(e, { n: 0, sent: 0, yes: 0, yesP: 0, no: 0, maybe: 0 }); });
+        (RR || []).forEach(x => { const e = C[x.slug]; if (e) { e.n++; if (x.status === 'sent') e.sent++; } });
+        (VV || []).forEach(x => { const e = C[x.slug]; if (!e) return; if (x.status === 'yes') { e.yes++; e.yesP += (+x.adults || 0) + (+x.kids || 0); } else if (x.status === 'no') e.no++; else e.maybe++; });
+      }
       return json(res, 200, { email: user.email, events: list });
     }
     if (b.act) return guest(req, res, b);
