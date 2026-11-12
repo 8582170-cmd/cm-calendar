@@ -12,6 +12,15 @@ const RESERVED = new Set(['admin', 'api', 'new', 'edit', 'test', 'timer', 'mylua
 const key = s => 'timers/' + s + '.json';
 const str = (v, n) => String(v == null ? '' : v).slice(0, n);
 /* תמונה מותרת רק מהדלי הציבורי שלנו (שהועלתה דרך הבונה) */
+/* קישור חיצוני (https) לתמונה, סרטון או מוזיקה: רק לפי סיומת מוכרת, בלי פרטי התחברות בכתובת, בלי תווים מסוכנים.
+   הקובץ נטען מהאתר שלהם ולא נשמר אצלנו. בדף האורחים הוא נטען בלי שליחת כתובת הדף (no-referrer). */
+function extMedia(u, kind) {
+  u = String(u || '').trim(); if (u.length > 400 || !/^https:\/\//i.test(u) || /[\s"'<>`\\]/.test(u)) return false;
+  let x; try { x = new URL(u); } catch (e) { return false; }
+  if (x.username || x.password || /^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.|\[)/i.test(x.hostname) || !/\./.test(x.hostname)) return false;
+  const ext = ((x.pathname.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || '').toLowerCase();
+  return ({ img: ['jpg', 'jpeg', 'png', 'webp', 'gif'], video: ['mp4', 'webm'], audio: ['mp3', 'm4a', 'ogg'] }[kind] || []).indexOf(ext) >= 0;
+}
 function okImg(u) { u = String(u || ''); const M = (() => { try { return require('./_r2').media(); } catch (e) { return null; } })();
   return u.length < 300 && /\/timers\/img\/[0-9]{6}\/[a-f0-9]{24}\.jpg$/.test(u) && (u.startsWith('https://media.myluach.org/') || (M && u.startsWith(M.url + '/'))); }
 /* העלאת תמונה: עד 20 לשעה מכל כתובת IP, עד 400KB, רק JPEG (הדפדפן מקטין וממיר לפני ההעלאה) */
@@ -50,6 +59,8 @@ async function mediaUp(req, res, b) {
   return json(res, 200, { put: P.upload, url: P.url, ctype: b.type });
 }
 const agKey = h => { const [a, b] = String(h).split(':').map(Number); return (a < 5 ? a + 24 : a) * 60 + (b || 0); };  /* אחרי חצות נחשב המשך הערב */
+/* שם השולח במייל: שם בעל האירוע + "דרך MyLuach" (שלא ייראה כאילו האתר הוא השולח, ולא ייתכן התחזות לגוף אחר) */
+const senderName = c => (c && c.fn) ? c.fn + ' דרך MyLuach' : undefined;
 const clampI = (v, a, z, d) => { v = parseInt(v, 10); return isFinite(v) ? Math.max(a, Math.min(z, v)) : d; };
 /* לוח זמנים של תזכורות: [{d: ימים לפני האירוע, h: שעה ביום}] */
 function sched(L, max, maxD) { const seen = {}; return (Array.isArray(L) ? L : []).slice(0, max * 2).map(x => ({ d: clampI(x && x.d, 0, maxD, 0), h: clampI(x && x.h, 6, 22, 10) })).filter(x => { const k = x.d + ':' + x.h; if (seen[k]) return false; seen[k] = 1; return true; }).slice(0, max).sort((a, b) => b.d - a.d || a.h - b.h); }
@@ -63,14 +74,14 @@ function clean(c) {
     wp: ['bottom', 'none'].includes(c.wp) ? c.wp : 'top', wd: ['h', 'b'].includes(c.wd) ? c.wd : 'g', wh: ['o', 'c'].includes(c.wh) ? c.wh : 's', ww: String(c.ww) === '0' ? '0' : '1', wt: String(c.wt) === '0' ? '0' : '1', ns: String(c.ns) === '1' ? '1' : '0',
     p: okImg(c.p) ? c.p : '', ps: ['rect', 'wide'].includes(c.ps) ? c.ps : 'circle',
     /* דף הזמנה */
-    inv: okImg(c.inv) ? c.inv : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
-    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), ...(c.trl != null ? { trl: str(c.trl, 30) } : {}), ...(Array.isArray(c.ag) ? { ag: c.ag.slice(0, 12).map(x => ({ h: /^\d{1,2}:\d{2}$/.test((x && x.h) || '') ? x.h : '', t: str(x && x.t, 60) })).filter(x => x.h && x.t) } : {}), bgm: ['glass', 'open'].includes(c.bgm) ? c.bgm : '', rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, vm: ['tts', 'name', 'full'].includes(c.vm) ? c.vm : 'tts', wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
+    inv: okImg(c.inv) || extMedia(c.inv, 'img') ? String(c.inv).trim() : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
+    tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), ...(c.trl != null ? { trl: str(c.trl, 30) } : {}), wz: str(c.wz, 200), fn: String(str(c.fn, 40) || '').replace(/[^\p{L}\p{N} .'&\-]/gu, '').trim(), rvo: c.rvo === 'inv' ? 'inv' : '', ...(Array.isArray(c.ag) ? { ag: c.ag.slice(0, 12).map(x => ({ h: /^\d{1,2}:\d{2}$/.test((x && x.h) || '') ? x.h : '', t: str(x && x.t, 60) })).filter(x => x.h && x.t) } : {}), bgm: ['glass', 'open'].includes(c.bgm) ? c.bgm : '', rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, vm: ['tts', 'name', 'full'].includes(c.vm) ? c.vm : 'tts', wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
     gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600), ...(Array.isArray(c.nrs) ? { nrs: sched(c.nrs, 5, 60) } : {}), ...(Array.isArray(c.drs) ? { drs: sched(c.drs, 3, 14) } : {}), tyd: clampI(c.tyd, 1, 14, 1), tyh: clampI(c.tyh, 6, 22, 10),
     qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 10).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 12).map(v => str(v, 40).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
-    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, sms: c.sms ? 1 : 0, ml: ['he', 'en', 'yi'].includes(c.ml) ? c.ml : '', vt: str(c.vt, 600).replace(/[<>]/g, ''), vrt: str(c.vrt, 600).replace(/[<>]/g, ''), clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
-    bgi: okImg(c.bgi) ? c.bgi : '', bgv: okMedia(c.bgv, 'video') ? c.bgv : '', mus: okMedia(c.mus, 'audio') ? c.mus : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
+    gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, gt: /^[a-z0-9]{1,8}$/.test(String(c.gt || '')) ? String(c.gt) : '', sms: c.sms ? 1 : 0, ml: ['he', 'en', 'yi'].includes(c.ml) ? c.ml : '', vt: str(c.vt, 600).replace(/[<>]/g, ''), vrt: str(c.vrt, 600).replace(/[<>]/g, ''), clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
+    bgi: okImg(c.bgi) || extMedia(c.bgi, 'img') ? String(c.bgi).trim() : '', bgv: okMedia(c.bgv, 'video') || extMedia(c.bgv, 'video') ? String(c.bgv).trim() : '', mus: okMedia(c.mus, 'audio') || extMedia(c.mus, 'audio') ? String(c.mus).trim() : '', env: c.env ? 1 : 0, sd: c.sd === '2' ? '2' : '', sda: str(c.sda, 20), sdb: str(c.sdb, 20), sdf: c.sdf === 'b' ? 'b' : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
   };
 }
 async function get(s) {
@@ -201,7 +212,7 @@ async function sendBatch(s, cur, n) {
   for (const r of Q) {
     if (room <= 0) { stop = 'quota'; break; }
     const m = inviteMail(s, cur, r, site);
-    try { await sendMail({ to: r.email, subject: (cur.mail && cur.mail.subject) || 'הזמנה', html: m.html, text: m.text, replyTo: (cur.paid && cur.paid.email) || undefined, headers: { 'List-Unsubscribe': '<' + m.unsub + '>' } }, 'invite'); ok.push(r.id); room--; }
+    try { await sendMail({ to: r.email, subject: (cur.mail && cur.mail.subject) || 'הזמנה', html: m.html, text: m.text, replyTo: (cur.paid && cur.paid.email) || undefined, fromName: senderName(cur.cfg), headers: { 'List-Unsubscribe': '<' + m.unsub + '>' } }, 'invite'); ok.push(r.id); room--; }
     catch (e) { if (/no mail provider/.test(e.message)) { stop = 'limit'; break; } bad.push(r.id); }
   }
   const now = new Date().toISOString();
@@ -258,7 +269,7 @@ async function autoMails(cover, max) {
         if (budget <= 0 || room <= 0) break;
         const mm = inviteMail(s, cur, r, site, job.kind), ML = c.ml || c.lang || 'he';
         const subj = { nr: (ML === 'en' ? 'Reminder: please RSVP · ' : ML === 'yi' ? 'דערמאנונג: ביטע באשטעטיגט · ' : 'תזכורת: נשמח לאישור הגעה · '), dr: (ML === 'en' ? 'Reminder · ' : ML === 'yi' ? 'דערמאנונג · ' : 'תזכורת לאירוע · '), ty: (ML === 'en' ? 'Thank you · ' : ML === 'yi' ? 'א דאנק · ' : 'תודה · ') }[job.kind] + (c.t || '');
-        try { await sendMail({ to: r.email, subject: subj, html: mm.html, text: mm.text, replyTo: P.email || undefined, headers: { 'List-Unsubscribe': '<' + mm.unsub + '>' } }, 'invite-' + job.kind); did.add(r.id); budget--; room--; sentNow++; out[job.kind]++; }
+        try { await sendMail({ to: r.email, subject: subj, html: mm.html, text: mm.text, replyTo: P.email || undefined, fromName: senderName(c), headers: { 'List-Unsubscribe': '<' + mm.unsub + '>' } }, 'invite-' + job.kind); did.add(r.id); budget--; room--; sentNow++; out[job.kind]++; }
         catch (e) { if (/no mail provider/.test(e.message)) { budget = 0; break; } }
       }
       if (sentNow) await db('timer_recip?id=in.(' + [...did].slice(-sentNow).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ [job.kind + '_at']: new Date().toISOString() }) }).catch(() => {});
@@ -333,6 +344,8 @@ async function guest(req, res, b) {
   try {
     if (b.act === 'rsvp') {
       if (!c.rv) return json(res, 403, { error: 'off' });
+      /* בעל האירוע יכול להגביל אישורי הגעה למי שהגיע מהקישור האישי (מוזמן עם מייל או טלפון) */
+      if (c.rvo === 'inv') { const rt0 = /^[0-9a-f]{24}$/.test(String(b.r || '')) ? String(b.r) : '', okr = rt0 ? await db('timer_recip?slug=eq.' + s + '&token=eq.' + rt0 + '&select=id&limit=1').catch(() => []) : []; if (!okr.length) return json(res, 403, { error: 'invite-only', message: 'אישור הגעה זמין רק למוזמנים, מהקישור האישי שנשלח אליהם' }); }
       const name = clean1(b.name, 80); if (!name) return json(res, 400, { error: 'name' });
       if (await recent('timer_rsvp', s, meta.ip) >= 15) return json(res, 429, { error: 'rate' });
       const st = ['yes', 'no', 'maybe'].includes(b.status) ? b.status : 'yes', n = v => Math.max(0, Math.min(50, parseInt(v, 10) || 0));
@@ -430,7 +443,7 @@ async function guest(req, res, b) {
       if (stale.length) { stale.forEach(x => { x.call_st = 'לא ענה'; }); const sid = stale.map(x => x.id); for (let i = 0; i < sid.length; i += 200) await db('timer_recip?slug=eq.' + s + '&call_st=eq.' + encodeURIComponent('ממתין') + '&id=in.(' + sid.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ call_st: 'לא ענה' }) }).catch(() => {}); }
       const sent = (R || []).filter(x => x.status === 'sent').length;
       if (r) { const R2x = await db('timer_rsvp?slug=eq.' + s + '&select=id,rtok,ans,seat&limit=2000').catch(() => null); if (R2x) { const m = {}; R2x.forEach(x => { m[x.id] = x; }); r.forEach(x => Object.assign(x, m[x.id] || {})); } }
-      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], consent: cur.consent ? { at: cur.consent.at, v: cur.consent.v } : null, flags: { gMin: EP.giftMin, gMax: EP.giftMax, mpg: EP.mailsPerGuest || 2, giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP), defTy: require('./_ivoice').defText(c, 'ty', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, xm: +cur.paid.xm || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
+      return json(res, 200, { gifts: G, seat: cur.seat || null, gal: cur.cfg && cur.cfg.gal ? await galList(s).catch(() => []) : [], consent: cur.consent ? { at: cur.consent.at, v: cur.consent.v } : null, flags: { gMin: EP.giftMin, gMax: EP.giftMax, mpg: EP.mailsPerGuest || 2, giftOn: !!EP.giftOn, smsOn: !!EP.smsOn, giftPct: EP.giftPct, giftFixed: EP.giftFixed, gTracks: (EP.giftTracks || []).map(x => ({ id: x.id, name: x.name, price: x.price, pct: x.pct, fixed: x.fixed, on: !(x.price > 0) || ((cur.paid || {}).gts || []).includes(x.id) })), gtNow: require('./_eventpay').trackFor(cur, EP).id, voiceOn: !!EP.voiceOn, voiceInv: !!(EP.voiceTpl || EP.voicePath) }, vaudio: cur.vaudio || {}, vbridge: !!EP.voicePath, voice: cur.paid ? { calls: +cur.paid.calls || 0, used: +cur.paid.callsUsed || 0, tests: +cur.paid.vtests || 0, camps: (cur.calls || []).slice(0, 10), def: require('./_ivoice').defText(c, 'inv', EP), defRem: require('./_ivoice').defText(c, 'rem', EP), defTy: require('./_ivoice').defText(c, 'ty', EP) } : null, sms: cur.paid ? +cur.paid.sms || 0 : 0, rsvp: r, wall: w, teh: t, recip: R, paid: cur.paid ? { emails: +cur.paid.emails || 0, xm: +cur.paid.xm || 0, sent, at: cur.paid.at, free: !!cur.paid.free, plan: cur.paid.plan || '', planPrice: cur.paid.planPrice, feats: cur.paid.feats || null } : null, mail: cur.mail || null, setup: r === null || w === null, rsetup: R === null });
     }
     /* רשימת נמענים */
     /* ספרי טלפונים: המאגרים שמותרים לבעל האירוע, חיפוש (בלי טלפון ומייל), והוספה לרשימת המוזמנים */
@@ -519,12 +532,15 @@ async function guest(req, res, b) {
     /* הושבה: שולחנות (בקובץ האירוע) ושיבוץ לכל אישור הגעה */
     if (['tables', 'seatset', 'seatbulk'].includes(b.act) && !feat(cur, 'seat')) return json(res, 402, { error: 'full' });
     if (b.act === 'smsnext' && !feat(cur, 'sms')) return json(res, 402, { error: 'full' });
-    if (b.act === 'tables') { const T = (Array.isArray(b.tables) ? b.tables : []).slice(0, 200).map((x, i) => ({ id: str(x && x.id, 12).replace(/[^\w-]/g, '') || 't' + i, n: clean1(x && x.n, 40) || String(i + 1), c: Math.max(1, Math.min(50, parseInt(x && x.c, 10) || 10)) })); await put(s, { ...cur, seat: { tables: T } }); return json(res, 200, { ok: true, tables: T }); }
+    if (b.act === 'tables') { const T = (Array.isArray(b.tables) ? b.tables : []).slice(0, 200).map((x, i) => ({ id: str(x && x.id, 12).replace(/[^\w-]/g, '') || 't' + i, n: clean1(x && x.n, 40) || String(i + 1), c: Math.max(1, Math.min(50, parseInt(x && x.c, 10) || 10)) })); await put(s, { ...cur, seat: { ...(cur.seat || {}), tables: T } }); return json(res, 200, { ok: true, tables: T }); }
+    /* מספר מקום בשולחן לכל אורח: { nums: { rsvpId: מספר | null } }. נשמר באירוע (seat.nums) */
+    if (b.act === 'seatnums') { const N = { ...((cur.seat && cur.seat.nums) || {}) }; Object.entries(b.nums || {}).slice(0, 2000).forEach(([id, n]) => { id = String(parseInt(id, 10) || ''); if (!id) return; n = parseInt(n, 10); if (n >= 1 && n <= 99) N[id] = n; else delete N[id]; }); await put(s, { ...cur, seat: { ...(cur.seat || {}), nums: N } }); return json(res, 200, { ok: true, nums: N }); }
     /* שיבוץ של כמה אורחים ביחד (שיבוץ אוטומטי): { map: { rsvpId: tableId } } */
     if (b.act === 'seatbulk') { const by = {}; Object.entries(b.map || {}).slice(0, 2000).forEach(([id, t]) => { id = parseInt(id, 10); if (id) (by[str(t, 12) || ''] = by[str(t, 12) || ''] || []).push(id); });
       for (const t of Object.keys(by)) await db('timer_rsvp?slug=eq.' + s + '&id=in.(' + by[t].join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ seat: t || null }) });
+      if (cur.seat && cur.seat.nums) { const N = { ...cur.seat.nums }; let ch = false; Object.keys(b.map || {}).forEach(id => { if (N[id]) { delete N[id]; ch = true; } }); if (ch) await put(s, { ...cur, seat: { ...cur.seat, nums: N } }); }
       return json(res, 200, { ok: true }); }
-    if (b.act === 'seatset') { const id = parseInt(b.id, 10); if (!id) return json(res, 400, { error: 'id' }); await db('timer_rsvp?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ seat: str(b.seat, 12) || null }) }); return json(res, 200, { ok: true }); }
+    if (b.act === 'seatset') { const id = parseInt(b.id, 10); if (!id) return json(res, 400, { error: 'id' }); await db('timer_rsvp?id=eq.' + id + '&slug=eq.' + s, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ seat: str(b.seat, 12) || null }) }); if (cur.seat && cur.seat.nums && cur.seat.nums[id]) { const N = { ...cur.seat.nums }; delete N[id]; await put(s, { ...cur, seat: { ...cur.seat, nums: N } }); } return json(res, 200, { ok: true }); }
     if (b.act === 'galdel') { const k = str(b.key, 200); if (!k.startsWith('timers/gal/' + s + '/')) return json(res, 400, { error: 'key' }); const R2 = require('./_r2'), M = R2.media(); await fetch(R2.presign('DELETE', k, 120, null, M), { method: 'DELETE' }); return json(res, 200, { ok: true }); }
     /* מתנות באשראי: בקשה להעברת הכסף לבעל האירוע (מייל למנהל האתר) */
     if (b.act === 'payout') {
@@ -707,7 +723,7 @@ module.exports = async (req, res) => {
       /* גם: תזכורות בשעות שנקבעו בניהול (מייל / שיחה, לוח / אירועים) */
       const inv = await cronSend(120); try { inv.auto = await autoMails(0, 60); } catch (e) { inv.autoErr = String(e.message).slice(0, 100); } let slots = null; try { slots = await require('./cron-reminders').slots(); } catch (e) { slots = { error: String(e.message).slice(0, 120) }; }
       return json(res, 200, { ...inv, slots }); }
-    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: (await require('./_dir').cfg().catch(() => ({}))).on ? E.FEATS : E.FEATS.filter(f => f[0] !== 'dir'), mailpk: E.MAILPK, freeEmails: P.freeEmails, agFree: P.agFree, agMax: P.agMax, freeFeats: P.freeFeats, freeName: P.freeName, freeDesc: P.freeDesc, mailsPerGuest: P.mailsPerGuest, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftMin: P.giftMin, giftMax: P.giftMax, giftPct: P.giftPct, giftFixed: P.giftFixed }); }
+    if (req.method === 'GET' && q.prices) { const E = require('./_eventpay'), P = await E.prices(); return json(res, 200, { on: P.on, prices: P.prices, tiers: E.TIERS, plans: P.plans.filter(x => !x.hidden), feats: (await require('./_dir').cfg().catch(() => ({}))).on ? E.FEATS : E.FEATS.filter(f => f[0] !== 'dir'), mailpk: E.MAILPK, freeEmails: P.freeEmails, agFree: P.agFree, agMax: P.agMax, freeFeats: P.freeFeats, freeName: P.freeName, freeDesc: P.freeDesc, mailsPerGuest: P.mailsPerGuest, sms: E.SMS, smsOn: P.smsOn, voice: E.VOICE, voiceOn: !!P.voiceOn, giftOn: P.giftOn, giftTracks: P.giftTracks, giftMin: P.giftMin, giftMax: P.giftMax, giftPct: P.giftPct, giftFixed: P.giftFixed }); }
     if (req.method === 'GET') {
       const s = str(q.s, 40).toLowerCase(); if (!SLUG.test(s)) return json(res, 400, { error: 'slug' });
       /* קיר הברכות הציבורי */
@@ -721,7 +737,8 @@ module.exports = async (req, res) => {
       if (o.disabled) return json(res, 410, { error: 'disabled' });
       res.setHeader('Cache-Control', 'public, max-age=60');
       let gcOn = false, agL = 12; try { const EPx = await require('./_eventpay').prices(); agL = o.paid ? (isFull(o) ? EPx.agMax : EPx.agFree) : EPx.agMax; if (feat(o, 'gift') && o.cfg && o.cfg.gc) gcOn = !!EPx.giftOn; } catch (e) {}
-      const pubCfg = o.cfg && Array.isArray(o.cfg.ag) ? { ...o.cfg, ag: o.cfg.ag.slice(0, agL) } : o.cfg;
+      let pubCfg = o.cfg && Array.isArray(o.cfg.ag) ? { ...o.cfg, ag: o.cfg.ag.slice(0, agL) } : o.cfg;
+      if (pubCfg && !feat(o, 'media')) { const own = u => /\/timers\/(media|img)\//.test(u || ''); pubCfg = { ...pubCfg }; ['bgv', 'mus'].forEach(k => { if (pubCfg[k] && !own(pubCfg[k])) pubCfg[k] = ''; }); }
       return json(res, 200, { cfg: pubCfg, paid: !!o.paid, full: isFull(o), gal: feat(o, 'gal'), gcOn });
     }
     if (req.method !== 'POST') return json(res, 405, { error: 'method' });
@@ -729,7 +746,7 @@ module.exports = async (req, res) => {
     if (b.img) return upload(req, res, b);
     if (b.mup) return mediaUp(req, res, b);
     /* אזור אישי: האירועים של החשבון (כניסה עם מייל). mine = הרשימה, claim = חיבור אירוע קיים לחשבון (בעזרת קוד העריכה) */
-    if (b.act === 'mine' || b.act === 'claim') {
+    if (['mine', 'claim', 'cpool', 'cpadd', 'cpdel', 'cpsync', 'evrecip'].includes(b.act)) {
       const user = await require('./_lib').getUser(req).catch(() => null); if (!user) return json(res, 401, { error: 'login' });
       const OW = require('./_evowners');
       if (b.act === 'claim') {
@@ -737,8 +754,24 @@ module.exports = async (req, res) => {
         if (!cc) return json(res, 404, { error: 'not found' }); if (!own(cc, b.token)) return json(res, 403, { error: 'token' });
         await OW.set(cs, user.email); return json(res, 200, { ok: true });
       }
+      /* האירועים של החשבון: לפי הקישור לחשבון, ואירועים בתשלום שנרכשו באותו מייל */
+      const mySlugs = async () => { const a = await OW.of(user.email), te = await db('timer_event?email=eq.' + encodeURIComponent(String(user.email).toLowerCase()) + '&select=slug&limit=300').catch(() => []); return [...new Set(a.concat((te || []).map(x => x.slug)))].filter(x => SLUG.test(x)); };
+      /* מאגר אנשי הקשר של החשבון */
+      if (b.act === 'cpool') { const d = await OW.cget(user.email); return json(res, 200, { contacts: d.c }); }
+      if (b.act === 'cpadd') { const d = await OW.cget(user.email), r = OW.upsert(d, Array.isArray(b.list) ? b.list.slice(0, 5000) : []); if (d.c.length > 20000) return json(res, 400, { error: 'max' }); await OW.cput(user.email, d); return json(res, 200, { ok: true, ...r, total: d.c.length }); }
+      if (b.act === 'cpdel') { const ids = new Set((Array.isArray(b.ids) ? b.ids : []).map(String)), d = await OW.cget(user.email), n0 = d.c.length; d.c = d.c.filter(x => !ids.has(x.id)); await OW.cput(user.email, d); return json(res, 200, { ok: true, removed: n0 - d.c.length }); }
+      if (b.act === 'cpsync') {
+        const sl = (await mySlugs()).slice(0, 100); const d = await OW.cget(user.email); let r = { add: 0, upd: 0 };
+        if (sl.length) { const rows = await db('timer_recip?slug=in.(' + sl.join(',') + ')&status=neq.unsub&select=name,email,phone,grp&limit=20000').catch(() => []); r = OW.upsert(d, rows || []); await OW.cput(user.email, d); }
+        return json(res, 200, { ok: true, ...r, total: d.c.length });
+      }
+      if (b.act === 'evrecip') {
+        const es = str(b.slug, 40).toLowerCase(); if (!(await mySlugs()).includes(es)) return json(res, 403, { error: 'not yours' });
+        const rows = await db('timer_recip?slug=eq.' + es + '&status=neq.unsub&select=name,email,phone,grp,cnt&order=id.asc&limit=5000').catch(() => []);
+        return json(res, 200, { recipients: rows || [] });
+      }
       const list = [];
-      for (const ms of (await OW.of(user.email)).slice(0, 80)) {
+      for (const ms of (await mySlugs()).slice(0, 80)) {
         const mc = await get(ms).catch(() => null); if (!mc || mc.disabled) continue; const c = mc.cfg || {};
         list.push({ slug: ms, token: mc.token, t: c.t || '', d: c.d || '', et: c.et || '', paid: !!mc.paid, free: !!(mc.paid && mc.paid.free) });
       }

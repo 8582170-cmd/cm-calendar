@@ -10,7 +10,7 @@ async function prepare(b) {
   const E = await require('./_eventpay').prices(); if (!E.giftOn) return { error: 'המתנה באשראי לא זמינה כרגע' };
   const c = cur.cfg || {}, min = Math.max(E.giftMin, +c.gmin || 0);
   const amount = r2(Number(b.amount)); if (!(amount >= min && amount <= E.giftMax)) return { error: 'הסכום צריך להיות בין ' + min + ' ל־' + E.giftMax + ' ₪' };
-  const fee = Math.min(amount, r2(amount * E.giftPct / 100 + E.giftFixed));
+  const TK = require('./_eventpay').trackFor(cur, E), fee = Math.min(amount, r2(amount * TK.pct / 100 + TK.fixed));
   const clean = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
   /* מי רואה (כמו בברכה), עיצוב ותמונה. הברכה עצמה עולה לקיר אחרי התשלום */
   let vis = ['all', 'anon', 'host'].includes(b.gvis) ? b.gvis : 'all'; if (vis === 'anon' && !c.wan) vis = 'all';
