@@ -22,6 +22,16 @@ const PLAN=()=>{const p=PLAN0();if(SAMPLE||!p.watermark)return p;if(freeCd())ret
 window.addEventListener('beforeprint',()=>document.body.classList.toggle('free-cd',!!PLAN().freeCd));
 /* הדפסה שלא דרך הכפתורים באתר (Ctrl+P או תפריט הדפדפן): נרשמת בדף הניהול כ"הדפסה מהדפדפן" */
 let OURPRINT=false,BRPRINT_T=0;
+/* תמונות גדולות (למשל קולאז' בגודל A3): במקום להעתיק מחרוזת data: של כמה מגה-בייט בכל ציור מחדש של הלוח,
+   כל תמונה מקבלת פעם אחת כתובת blob קבועה. הדפדפן מפענח אותה פעם אחת וזוכר, והעמוד לא נתקע. התמונה השמורה לא משתנה */
+const BLOBU=new Map();
+function blobUrl(s){let u=BLOBU.get(s);if(u)return u;const i=s.indexOf(','),meta=s.slice(5,i),bin=/;base64/.test(meta)?atob(s.slice(i+1)):decodeURIComponent(s.slice(i+1)),a=new Uint8Array(bin.length);
+  for(let j=0;j<bin.length;j++)a[j]=bin.charCodeAt(j);u=URL.createObjectURL(new Blob([a],{type:meta.split(';')[0]||'image/jpeg'}));BLOBU.set(s,u);
+  /* לא יותר מ-120 בזיכרון (בעורך התמונות נוצרות הרבה גרסאות ביניים) */
+  if(BLOBU.size>120){const k=BLOBU.keys().next().value,o=BLOBU.get(k);BLOBU.delete(k);setTimeout(()=>{try{URL.revokeObjectURL(o)}catch(e){}},60000)}return u}
+const iu=s=>{if(typeof s==='string'&&s.length>150000&&s.startsWith('data:image/')){try{return blobUrl(s)}catch(e){}}return s};
+(function(){try{const d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');if(!d||!d.set||HTMLImageElement.prototype.__mlSrc)return;
+  Object.defineProperty(HTMLImageElement.prototype,'src',{configurable:true,enumerable:d.enumerable,get:d.get,set(v){d.set.call(this,iu(v))}});HTMLImageElement.prototype.__mlSrc=1}catch(e){}})();
 function ourPrint(){OURPRINT=true;try{window.print()}finally{setTimeout(()=>{OURPRINT=false},1500);try{if(window.MyLuachFeedback&&!SNAPVIEW)MyLuachFeedback.afterDownload({page:SIMPLE?'simple':CDMODE?'countdown':'app'})}catch(e){}}}
 window.addEventListener('beforeprint',()=>{if(OURPRINT||Date.now()-BRPRINT_T<5000)return;BRPRINT_T=Date.now();try{logDl('browser',{wm:PLAN().watermark?1:0})}catch(e){}});
 /* לוח ספירה בלי מסלול: היכולות של "ספירה בסיסית" (ספירה עד 40 יום בחינם לכולם) */
@@ -1370,7 +1380,7 @@ function cdPoster(ST){
     const im=cdDayIm(d,n,from),q=cdDayQ(d,n),first=(s.calType==='heb'?hd.getDate():d.getDate())===1||d.getTime()===from.getTime();
     const all=!!s.cdMonthAll,st=dStyle(),hT=gem(hd.getDate())+(first||all?' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())):''),gT=d.getDate()+(first||all?' '+GREG_MONTHS[d.getMonth()]:'');
     const dt=st==='hebOnly'?hT:st==='gregOnly'?gT:st.startsWith('greg')?gT+' · '+hT:hT+' · '+gT;
-    return '<div class="cdp-d'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+(n%7===0&&n?' wk':'')+(im?' has-im':'')+'" data-date="'+iso(d)+'">'+(im?'<img class="cd-im" alt="" src="'+im+'">':'')+'<span class="cdp-dt'+(first?' first':'')+'">'+esc(dt)+'</span><b>'+(n===0?ST.goal:n)+'</b>'+(()=>{const e=cdDayEvs(ev,d),z=cdZm(d);return (e.length?'<em class="cdp-e">'+esc(e.slice(0,2).join(' · '))+'</em>':'')+(z.length?'<em class="cdp-z">'+esc(z.join(' · '))+'</em>':'')})()+(q?'<em class="cdp-q">'+esc(q)+'</em>':'')+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}).join('')).join('');
+    return '<div class="cdp-d'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+(n%7===0&&n?' wk':'')+(im?' has-im':'')+'" data-date="'+iso(d)+'">'+(im?'<img class="cd-im" alt="" src="'+iu(im)+'">':'')+'<span class="cdp-dt'+(first?' first':'')+'">'+esc(dt)+'</span><b>'+(n===0?ST.goal:n)+'</b>'+(()=>{const e=cdDayEvs(ev,d),z=cdZm(d);return (e.length?'<em class="cdp-e">'+esc(e.slice(0,2).join(' · '))+'</em>':'')+(z.length?'<em class="cdp-z">'+esc(z.join(' · '))+'</em>':'')})()+(q?'<em class="cdp-q">'+esc(q)+'</em>':'')+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}).join('')).join('');
   p.appendChild(g);
   p.insertAdjacentHTML('beforeend','<div class="cdp-legend">המספר הגדול: כמה ימים נשארו. צובעים או מסמנים כל יום שעבר.</div>');
   addFootLine(p);emitExtras('cd-poster');
@@ -1383,7 +1393,7 @@ function cdBoard(ST){
   cdHead(p,title,(N-1)+' ימים · '+dateLong(to),'cd-board');
   const g=el('div','cdb-grid');g.style.gridTemplateColumns='repeat('+cols+',minmax(0,1fr))';g.style.gridTemplateRows='repeat('+Math.ceil(N/cols)+',minmax(0,1fr))';
   g.innerHTML=days.map(d=>{const n=cdN(to,d),hd=new HDate(d),q=cdDayQ(d,n),im=cdDayIm(d,n,from);
-    return '<div class="cdb-d'+(n===0?' goal':'')+(n%10===0&&n?' ten':'')+(im?' has-im':'')+'" data-date="'+iso(d)+'"'+(q?' title="'+esc(q)+'"':'')+'>'+(im?'<img class="cd-im" alt="" src="'+im+'">':'')+'<b>'+(n===0?ST.goal:n)+'</b><small>'+esc(dStyle().startsWith('greg')?d.getDate()+'.'+(d.getMonth()+1):gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'</small>'+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}).join('');
+    return '<div class="cdb-d'+(n===0?' goal':'')+(n%10===0&&n?' ten':'')+(im?' has-im':'')+'" data-date="'+iso(d)+'"'+(q?' title="'+esc(q)+'"':'')+'>'+(im?'<img class="cd-im" alt="" src="'+iu(im)+'">':'')+'<b>'+(n===0?ST.goal:n)+'</b><small>'+esc(dStyle().startsWith('greg')?d.getDate()+'.'+(d.getMonth()+1):gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'</small>'+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}).join('');
   p.appendChild(g);
   {const qs=days.map(d=>[cdN(to,d),cdDayQ(d,cdN(to,d))]).filter(x=>x[1]).slice(0,6).map(([n,q])=>'<span><b>'+n+':</b> '+esc(q)+'</span>');if(qs.length)p.insertAdjacentHTML('beforeend','<div class="cdb-q">'+qs.join('')+'</div>')}
   addFootLine(p);emitExtras('cd-board');
@@ -1395,7 +1405,7 @@ function cdScroll(ST){
   cdHead(p,title,dateLong(to),'cd-scroll');let h='<div class="cds-list">';let lastM='';
   for(const d of days){const [k,t]=cdMonthKey(d);if(k!==lastM){h+='<div class="cds-m">'+esc(t)+'</div>';lastM=k}
     const n=cdN(to,d),hd=new HDate(d),ev=eventsOn(d,hd).map(e=>eventLabel(e,d,hd)).concat(cdDayEvs(cev,d),cdZm(d));
-    const q=cdDayQ(d,n),im=cdDayIm(d,n,from);if(im)h+='<img class="cds-im" alt="" src="'+im+'" data-date="'+iso(d)+'">';
+    const q=cdDayQ(d,n),im=cdDayIm(d,n,from);if(im)h+='<img class="cds-im" alt="" src="'+iu(im)+'" data-date="'+iso(d)+'">';
     h+='<div class="cds-r'+(n===0?' goal':'')+(d.getDay()===6?' shabbat':'')+'" data-date="'+iso(d)+'"><b class="cds-n">'+(n===0?ST.goal:n)+'</b><span class="cds-dt">'+esc(WEEKDAYS[d.getDay()])+' '+esc(hebShort(hd))+'<small>'+esc(gregShort(d))+'</small></span><span class="cds-e">'+esc(n===0?'היום!':ev.join(' · '))+(q?'<em class="cd-q">'+esc(q)+'</em>':'')+'</span>'+(s.cdCheck&&n?'<i class="cd-chk"></i>':'')+'</div>'}
   p.insertAdjacentHTML('beforeend',h+'</div>');addFootLine(p);emitExtras('cd-scroll');
 }
@@ -1477,14 +1487,14 @@ function cdHead(p,title,sub,key){const h=el('div','cd-head');
 /* דף פתיחה ודף סיום: עמוד מלא עם התמונה, הכותרת והתאריך */
 function cdIntroPage(ST){const s=state.s,{to,from}=cdDays(),n=cdN(to,from),im=cdImg('first');
   const p=pageShell('דף פתיחה','cd-intro');cdSetup(p,ST,s);p.classList.add('cd-introp');
-  const box=el('div','cdi-in');box.innerHTML=(im?'<img class="cdi-im" alt="" src="'+im+'">':'');
+  const box=el('div','cdi-in');box.innerHTML=(im?'<img class="cdi-im" alt="" src="'+iu(im)+'">':'');
   box.appendChild(editable('cdi-title',s.cdTitle||'','לחצו לכתיבת כותרת',t=>{s.cdTitle=t;save();const x=$('#cdTitle');if(x)x.value=t}));
   box.insertAdjacentHTML('beforeend','<div class="cdi-big"><b>'+n+'</b><span>'+(n===1?'יום':n===2?'יומיים':'ימים')+'</span></div><div class="cdi-sub">'+esc(dateLong(to))+'</div>');
   box.appendChild(editable('cdi-txt',s.cdIntroText||'','לחצו להוספת משפט פתיחה (לא חובה)',t=>{s.cdIntroText=t;save();const x=$('#cdIntroText');if(x)x.value=t},true));p.appendChild(box);
   addFootLine(p);emitExtras('cd-intro')}
 function cdOutroPage(ST){const s=state.s,{to}=cdDays(),im=cdImg('goal');
   const p=pageShell('דף סיום','cd-outro');cdSetup(p,ST,s);p.classList.add('cd-introp','cd-outrop');
-  const box=el('div','cdi-in');box.innerHTML=(im?'<img class="cdi-im" alt="" src="'+im+'">':'<div class="cdi-goal">'+ST.goal+'</div>');
+  const box=el('div','cdi-in');box.innerHTML=(im?'<img class="cdi-im" alt="" src="'+iu(im)+'">':'<div class="cdi-goal">'+ST.goal+'</div>');
   box.appendChild(editable('cdi-title',s.cdOutroText||'הגענו! מזל טוב!','לחצו לכתיבת טקסט הסיום',t=>{s.cdOutroText=t;save();const x=$('#cdOutroText');if(x)x.value=t}));
   box.insertAdjacentHTML('beforeend','<div class="cdi-sub">'+esc(s.cdTitle||'')+(s.cdTitle?' · ':'')+esc(dateLong(to))+'</div>');p.appendChild(box);
   addFootLine(p);emitExtras('cd-outro')}
@@ -1525,7 +1535,7 @@ function cdBody(ST){
       const c2=el('div','cd-d'+(d.getDay()===6?' shabbat':'')+(n===0?' goal':'')+(n%7===0&&n?' wk':'')+(im?' has-im':'')+(q?' has-q':''));c2.dataset.date=iso(d);
       c2.innerHTML='<div class="cd-dt">'+cdDT(d,hd)+'</div><div class="cd-n">'+(n===0?ST.goal:n)+'</div><div class="cd-l">'+esc(n===0?'היום!':n===1?'מחר!':s.cdUnit==='weeks'&&n>=7?cdLeft(n).replace('עוד ',''):(n===2?'יומיים':'ימים'))+'</div>'+
         pers.map(e=>({text:eventLabel(e,d,hd)})).concat(its).slice(0,3).map(x=>'<div class="cd-e">'+esc(x.text)+'</div>').join('')+(zm.length?'<div class="cd-z">'+zm.map(esc).join(' · ')+'</div>':'')+(q?'<div class="cd-q">'+esc(q)+'</div>':'')+(s.cdCheck&&n?'<i class="cd-chk" aria-hidden="true"></i>':'');
-      if(im)c2.insertAdjacentHTML('afterbegin','<img class="cd-im" alt="" src="'+im+'">');
+      if(im)c2.insertAdjacentHTML('afterbegin','<img class="cd-im" alt="" src="'+iu(im)+'">');
       grid.appendChild(c2)}
     const tot=g.days[0].getDay()+g.days.length;for(let i=tot;i<Math.ceil(tot/7)*7;i++)grid.appendChild(el('div','cd-d pad'));
     p.appendChild(grid);
@@ -1849,7 +1859,7 @@ function weekStyled(p,days,evMap){
     const G='<div class="wks-gd">'+d.getDate()+(d.getDate()===1||I.dow===0?'<small>'+esc(GREG_MONTHS[d.getMonth()])+'</small>':'')+'</div>';
     const ev='<div class="wks-ev">'+other.map(it=>'<span class="e '+it.cls+'">'+esc(it.text)+'</span>').join('')+'</div>';
     const big=timed.length?'<div class="wks-big">'+timed.map(t=>'<span><small>'+esc(t.text.replace(t.time,'').trim())+'</small><b>'+esc(t.time)+'</b></span>').join('')+'</div>':'';
-    const img=I.img?'<div class="wks-img"><img alt="" src="'+esc(I.img.img)+'" style="object-fit:'+(I.img.imgFit==='contain'?'contain':'cover')+';object-position:50% '+(I.img.imgPos??50)+'%"></div>':'';
+    const img=I.img?'<div class="wks-img"><img alt="" src="'+esc(iu(I.img.img))+'" style="object-fit:'+(I.img.imgFit==='contain'?'contain':'cover')+';object-position:50% '+(I.img.imgPos??50)+'%"></div>':'';
     const dn='<div class="wks-dn">'+WEEKDAYS[I.dow]+'</div>';
     let h;
     if(st==='luach'||st==='soft')h=(showH?H:'<div></div>')+dn+'<div class="wks-z">'+zl(zm)+'</div><div class="wks-mid">'+ev+big+img+'</div><div class="wks-z">'+zl(ze)+'</div>'+(showG?G:'<div></div>');
@@ -2781,7 +2791,7 @@ async function openImageEditor(data,onSave,onRemove){
     }else if(tab==='stk'){
       const SL=window.MYLUACH_STICKERS||[],G={head:'על הראש',face:'על הפנים',neck:'בצוואר',deco:'קישוטים'};
       let h='<p class="hint" style="margin:0">לוחצים על מדבקה, והיא מתאימה את עצמה לראש בתמונה. אחר כך אפשר לגרור, להגדיל ולסובב.</p>'+
-        Object.entries(G).map(([g,t])=>'<div class="fld">'+t+'<div class="ie-stk">'+SL.filter(x=>x.g===g).map(x=>'<button type="button" class="ie-stk-b" data-stk="'+x.id+'" title="'+esc(x.n)+'"><img alt="" src="'+x.src+'"><span>'+esc(x.n)+'</span></button>').join('')+'</div></div>').join('')+
+        Object.entries(G).map(([g,t])=>'<div class="fld">'+t+'<div class="ie-stk">'+SL.filter(x=>x.g===g).map(x=>'<button type="button" class="ie-stk-b" data-stk="'+x.id+'" title="'+esc(x.n)+'"><img alt="" src="'+iu(x.src)+'"><span>'+esc(x.n)+'</span></button>').join('')+'</div></div>').join('')+
         '<p class="hint" id="ieStkMsg" aria-live="polite"></p>';
       if(L&&L.stk){h+='<div class="ie-sel"><b>המדבקה שנבחרה</b>'+slider('ieW2','גודל',4,150,Math.round(L.w*100))+slider('ieRotI','סיבוב',-60,60,L.rot||0)+
         '<div class="row"><button class="btn small" type="button" id="ieFit">🎯 התאמה לראש</button><button class="btn small" type="button" id="ieNextF">לפנים הבאות</button><button class="btn small" type="button" id="ieFx">היפוך</button><button class="btn small" type="button" id="ieFront">לקדמה</button><button class="btn small danger" type="button" id="ieDelI">מחיקה</button></div></div>'}
@@ -2906,11 +2916,21 @@ async function libPick(setter){
     try{const img=await urlToData(x.url,setter.maxPx||QPX('page'));m.remove();setter({img,edit:null,credit:x.credit||''})}
     catch(err){b.classList.remove('busy');alert('לא הצלחנו לטעון את התמונה. נסו שוב או בחרו תמונה אחרת.')}}}
 $('#fileOne').addEventListener('change',async e=>{const f=e.target.files[0];if(!f||!pendingSlot)return;const fn=pendingSlot;pendingSlot=null;fn({img:await compress(f,fn.maxPx),edit:null})});
-function compress(file,max){max=max||QPX('page');return new Promise(res=>{
-  const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+function compress(file,max){max=max||QPX('page');
+  /* פענוח מחוץ לעמוד (createImageBitmap) ושמירה אסינכרונית (toBlob), כדי שהוספת תמונות גדולות לא תקפיא את הדף.
+     JPEG שכבר בגודל המתאים נשמר כמו שהוא, בלי לדחוס שוב */
+  const viaReader=()=>new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
     const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
     c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-    try{res(c.toDataURL('image/jpeg',JQ))}catch(err){res(r.result)}};im.onerror=()=>res(r.result);im.src=r.result};r.readAsDataURL(file)})}
+    try{res(c.toDataURL('image/jpeg',JQ))}catch(err){res(r.result)}};im.onerror=()=>res(r.result);im.src=r.result};r.readAsDataURL(file)});
+  if(!window.createImageBitmap)return viaReader();
+  return (async()=>{try{
+    const bm=await createImageBitmap(file),W=bm.width,H=bm.height,k=Math.min(1,max/Math.max(W,H));
+    if(k===1&&/jpe?g/i.test(file.type||'')&&file.size<6e6){bm.close&&bm.close();return await blobToData(file)}
+    const c=document.createElement('canvas');c.width=Math.max(1,Math.round(W*k));c.height=Math.max(1,Math.round(H*k));
+    const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.imageSmoothingQuality='high';g.drawImage(bm,0,0,c.width,c.height);bm.close&&bm.close();
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',JQ));c.width=c.height=1;return b?await blobToData(b):await viaReader();
+  }catch(e){return viaReader()}})()}
 function imageLum(src){return new Promise(res=>{
   const im=new Image();im.onload=()=>{try{
     const c=document.createElement('canvas'),w=40,h=Math.max(6,Math.round(40*im.height/im.width));c.width=w;c.height=h;
@@ -2945,7 +2965,7 @@ function openImageOrganizer(){
   function draw(){
     grid.innerHTML=keys.map((k,i)=>'<div class="tile" draggable="'+(arr[i]?'true':'false')+'" data-i="'+i+'">'+
       '<div class="tile-n">'+(i+1)+'. '+esc(slotLabel(k))+'</div>'+
-      (arr[i]?'<img src="'+arr[i].img+'" alt="">':'<div class="tile-empty">ריק<br><span>גררו לכאן קובץ</span></div>')+
+      (arr[i]?'<img src="'+iu(arr[i].img)+'" alt="">':'<div class="tile-empty">ריק<br><span>גררו לכאן קובץ</span></div>')+
       '<div class="tile-ctl"><button type="button" class="x" data-mv="-1" data-i="'+i+'" aria-label="להזיז קודם"'+(i===0?' disabled':'')+'>→</button>'+
       (arr[i]?'<button type="button" class="x" data-rm="'+i+'" aria-label="הסרה">×</button>':'')+
       '<button type="button" class="x" data-mv="1" data-i="'+i+'" aria-label="להזיז אחרי"'+(i===keys.length-1?' disabled':'')+'>←</button></div></div>').join('');
@@ -3027,7 +3047,7 @@ function cdDayModal(date,dropImg){
     '<p class="hint">יום הולדת, יום שנה או אירוע אחר? <a href="#" id="cddEv">הוספת אירוע ליום</a></p>'+
     '<div class="row"><button class="btn primary" type="button" id="cddSave"'+(ok?'':' disabled')+'>שמירה</button><button class="btn" type="button" data-close>ביטול</button></div>');
   const q=x=>m.querySelector(x);
-  const draw=()=>{q('#cddImg').innerHTML=cur.img?'<img alt="" src="'+cur.img+'"><div class="row"><button class="btn small" type="button" data-a="ed">✎ עריכה</button><button class="btn small" type="button" data-a="pick">החלפה</button><button class="btn small danger" type="button" data-a="del">הסרה</button></div>':'<button class="btn small" type="button" data-a="pick">＋ הוספת תמונה</button>'};draw();
+  const draw=()=>{q('#cddImg').innerHTML=cur.img?'<img alt="" src="'+iu(cur.img)+'"><div class="row"><button class="btn small" type="button" data-a="ed">✎ עריכה</button><button class="btn small" type="button" data-a="pick">החלפה</button><button class="btn small danger" type="button" data-a="del">הסרה</button></div>':'<button class="btn small" type="button" data-a="pick">＋ הוספת תמונה</button>'};draw();
   q('#cddImg').addEventListener('click',e=>{const a=(e.target.closest('[data-a]')||{}).dataset;if(!a||!a.a)return;
     if(a.a==='del'){delete cur.img;delete cur.edit;draw()}
     else if(a.a==='ed')openImageEditor({img:cur.img,edit:cur.edit},v=>{cur.img=v.img;cur.edit=v.edit;draw()},()=>{delete cur.img;delete cur.edit;draw()});
@@ -3061,7 +3081,7 @@ function openEventEditor({date,id,img,kind}){
 
   const m=modal(
     '<h3>'+(editing?'עריכת אירוע':'הוספה ללוח')+(title?'<small>'+esc(title)+'</small>':'')+'</h3>'+
-    (existing.length?'<div class="listbox">'+existing.map(e=>'<div class="ev-item">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<button type="button" class="t" data-edit="'+e.id+'">'+esc(eventLabel(e,base,hd))+'<small>לחצו לעריכה</small></button></div>').join('')+'</div>':'')+
+    (existing.length?'<div class="listbox">'+existing.map(e=>'<div class="ev-item">'+(e.img?'<img src="'+iu(e.img)+'" alt="">':'')+'<button type="button" class="t" data-edit="'+e.id+'">'+esc(eventLabel(e,base,hd))+'<small>לחצו לעריכה</small></button></div>').join('')+'</div>':'')+
     '<div class="kinds" role="radiogroup" aria-label="סוג">'+Object.entries(KINDS).map(([k,v])=>'<label><input type="radio" name="mKind" value="'+k+'"'+(ev.kind===k?' checked':'')+'> '+v.label+'</label>').join('')+'</div>'+
     '<label class="fld"><span id="mAsk"></span><input id="mName"></label>'+
     '<label class="fld" id="mBmRow">בר / בת מצווה<select id="mBm"><option value="">לא לסמן</option><option value="bar">בר מצווה בגיל 13</option><option value="bat">בת מצווה בגיל 12</option></select></label>'+
@@ -3243,7 +3263,7 @@ function renderEvents(){
   const list=state.events.slice().sort((a,b)=>(a.rec==='once')-(b.rec==='once'));
   $('#evList').innerHTML=list.length?list.map(e=>{
     const when=e.rec==='daily'?'כל יום':e.rec==='weekly'?'כל יום '+WD_FULL[+e.wd||0]:e.rec==='heb'?gem(+e.day)+' '+hebMonthOpt(+e.month)+' · כל שנה':e.rec==='greg'?e.day+(EN?' ':' ב')+GREG_MONTHS[e.month-1]+' · כל שנה':(e.date?dateFromIso(e.date).toLocaleDateString('he-IL'):'');
-    return '<div class="ev-item">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<button type="button" class="t" data-edit="'+e.id+'">'+esc(e.name||'(תמונה)')+'<small>'+KINDS[e.kind].label+' · '+esc(when)+'</small></button><button class="x" type="button" data-edel="'+e.id+'" aria-label="מחיקה">×</button></div>'}).join('')
+    return '<div class="ev-item">'+(e.img?'<img src="'+iu(e.img)+'" alt="">':'')+'<button type="button" class="t" data-edit="'+e.id+'">'+esc(e.name||'(תמונה)')+'<small>'+KINDS[e.kind].label+' · '+esc(when)+'</small></button><button class="x" type="button" data-edel="'+e.id+'" aria-label="מחיקה">×</button></div>'}).join('')
     :'<p class="hint">עדיין אין אירועים. לחצו על יום בלוח כדי להוסיף את הראשון.</p>';
   $('#evCount').textContent=state.events.length||'';
 }
@@ -3824,7 +3844,7 @@ async function r2Pack(st){const imgs={};
   const walk=async v=>{if(typeof v==='string'){if(/^data:image\//.test(v)){const h=await imgHash(v);imgs[h]=v;return 'r2img:'+h}return v}
     if(Array.isArray(v)){const a=[];for(const x of v)a.push(await walk(x));return a}
     if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=await walk(v[k]);return o}return v};
-  const packed=await walk(JSON.parse(JSON.stringify(st)));return {body:JSON.stringify(packed),imgs}}
+  const packed=await walk(st);return {body:JSON.stringify(packed),imgs}}
 async function poolRun(items,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length){const j=i++;await fn(items[j],j)}}))}
 const blobToData=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)});
 async function r2Save(id){
@@ -4488,7 +4508,7 @@ function cdSyncCards(){const s=state.s,st=s.cdStyle||'classic',lay=s.cdLayout||'
     lc.querySelectorAll('[data-cdlay]').forEach(b=>{const on=b.dataset.cdlay===lay&&cdLayOk(lay)||(!cdLayOk(lay)&&b.dataset.cdlay==='months');b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));b.classList.toggle('pro',!cdLayOk(b.dataset.cdlay))})}
   const qc=$('#cdQChips');if(qc){qc.innerHTML=CD_QE.map(n=>'<button type="button" class="chip'+(n===qe?' on':'')+'" data-cdqe="'+n+'">'+(n===1?'כל יום':n===7?'כל שבוע':n)+'</button>').join('')+'<label class="chip-n">אחר <input type="number" id="cdQEvery" min="1" max="60" value="'+(CD_QE.includes(qe)?'':qe)+'" placeholder="#"></label>'}
   const sl=$('#cdSlots');if(sl){sl.innerHTML=[['first','תמונת פתיחה','בדף הפתיחה וביום הראשון'],['bg','תמונת רקע','מאחורי כל העמודים'],['goal','תמונת סיום','ביום היעד ובדף הסיום']].map(([k,n,d])=>{const im=cdImg(k);
-    return '<div class="cd-slot'+(im?' has':'')+'"><button type="button" class="cd-slot-b" data-cdimg="'+k+'" aria-label="'+(im?'החלפת ':'הוספת ')+n+'">'+(im?'<img alt="" src="'+im+'">':'<span class="plus">+</span>')+'</button><span class="nm">'+n+'</span><small>'+d+'</small>'+(im?'<button type="button" class="cd-slot-x" data-cdimgdel="'+k+'" aria-label="הסרת '+n+'">×</button>':'')+(im?'<button type="button" class="cd-slot-e" data-cdimged="'+k+'" aria-label="עריכת '+n+'">✎ עריכה</button>':'')+'</div>'}).join('')}
+    return '<div class="cd-slot'+(im?' has':'')+'"><button type="button" class="cd-slot-b" data-cdimg="'+k+'" aria-label="'+(im?'החלפת ':'הוספת ')+n+'">'+(im?'<img alt="" src="'+iu(im)+'">':'<span class="plus">+</span>')+'</button><span class="nm">'+n+'</span><small>'+d+'</small>'+(im?'<button type="button" class="cd-slot-x" data-cdimgdel="'+k+'" aria-label="הסרת '+n+'">×</button>':'')+(im?'<button type="button" class="cd-slot-e" data-cdimged="'+k+'" aria-label="עריכת '+n+'">✎ עריכה</button>':'')+'</div>'}).join('')}
   if($('#cdBgOpRow'))$('#cdBgOpRow').hidden=!cdImg('bg');
   if($('#cdIntroTxtRow')){$('#cdIntroTxtRow').hidden=!s.cdIntro;$('#cdOutroTxtRow').hidden=!s.cdOutro;if(document.activeElement!==$('#cdIntroText'))$('#cdIntroText').value=s.cdIntroText||'';if(document.activeElement!==$('#cdOutroText'))$('#cdOutroText').value=s.cdOutroText||''}
 }
@@ -4763,7 +4783,7 @@ function openDayImages(date){
       if(L.dir==='g21'){v.top='0';v.bottom=(100-L.gr)+'%'}else if(L.dir==='g12'){v.top=L.gr+'%';v.bottom='0'}
       split('di-row',{g:'c'},v);
     }
-    q('#diList').innerHTML=L.order.map((id,i)=>{const e=evs.find(x=>x.id===id),t=L.im[id]||{};return '<div class="di-it" data-id="'+id+'"><img src="'+e.img+'" alt=""><span class="di-n">'+(i+1)+'. '+esc(e.name||'תמונה')+'</span>'+
+    q('#diList').innerHTML=L.order.map((id,i)=>{const e=evs.find(x=>x.id===id),t=L.im[id]||{};return '<div class="di-it" data-id="'+id+'"><img src="'+iu(e.img)+'" alt=""><span class="di-n">'+(i+1)+'. '+esc(e.name||'תמונה')+'</span>'+
       '<button type="button" class="x" data-z="1" aria-label="הגדלה">＋</button><button type="button" class="x" data-z="-1" aria-label="הקטנה">−</button>'+
       '<label class="di-op" title="שקיפות: פחות = התמונה חלשה יותר, כמו רקע">◐<input type="range" min="10" max="100" step="5" data-op="1" value="'+Math.round((t.o??1)*100)+'" aria-label="שקיפות התמונה"><span>'+Math.round((t.o??1)*100)+'%</span></label>'+
       '<button type="button" class="x di-tg" data-ied="1" title="שיפור צבעים, חיתוך, טקסט על התמונה, מדבקות וגזירת דמות">✎ עריכה</button>'+
@@ -4902,7 +4922,7 @@ function trayShow(){const b=$('#tray');if(!b)return;const s=state.s,mode=s.uiMod
 function trayH(){const h=0;document.body.style.setProperty('--trayh',h+'px');try{fitSide()}catch(e){}}
 try{new ResizeObserver(()=>trayH()).observe($('#tray'))}catch(e){}
 function trayDraw(){const L=$('#trayList');if(!L)return;
-  L.innerHTML=TRAY.length?TRAY.map(t=>'<div class="tray-i'+(t.used?' used':'')+(TSEL===t.id?' sel':'')+'" draggable="true" data-ti="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(TSEL===t.id)+'" title="'+(t.from?'מאת '+esc(t.from)+' · ':'')+'גררו לחודש או ליום, או לחצו ואז בחרו מקום"><img src="'+t.th+'" alt="" draggable="false">'+(t.used?'<span class="tray-ok" aria-label="בשימוש">✓</span>':'')+(t.from?'<span class="tray-from">'+esc(t.from)+'</span>':'')+'<button type="button" class="tray-x" data-tx="'+t.id+'" aria-label="הסרה מהמגש">×</button></div>').join('')
+  L.innerHTML=TRAY.length?TRAY.map(t=>'<div class="tray-i'+(t.used?' used':'')+(TSEL===t.id?' sel':'')+'" draggable="true" data-ti="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(TSEL===t.id)+'" title="'+(t.from?'מאת '+esc(t.from)+' · ':'')+'גררו לחודש או ליום, או לחצו ואז בחרו מקום"><img src="'+iu(t.th)+'" alt="" draggable="false">'+(t.used?'<span class="tray-ok" aria-label="בשימוש">✓</span>':'')+(t.from?'<span class="tray-from">'+esc(t.from)+'</span>':'')+'<button type="button" class="tray-x" data-tx="'+t.id+'" aria-label="הסרה מהמגש">×</button></div>').join('')
     :'<div class="tray-empty"><b>המסלול המהיר:</b> ① מעלים את כל התמונות לכאן בבת אחת ② גוררים כל תמונה לחודש או ליום, או לוחצים "מילוי אוטומטי" ③ לוחצים על יום כדי להוסיף יום הולדת או אירוע</div>';
   const n=TRAY.filter(t=>!t.used).length;$('#trayTabN').textContent=n||'';$('#trayCount').textContent=TRAY.length?(n?n+' מחכות':'כולן בלוח ✓'):'';
   $('#trayFill').hidden=!TRAY.some(t=>!t.used);{const c=$('#trayByDate');if(c){c.checked=!!state.s.trayByDate;c.parentNode.hidden=$('#trayFill').hidden}}}
@@ -4989,7 +5009,7 @@ function quickEvent({date,img,trayId}){
   q('#qMore').onclick=()=>{const has=q('#qName').value.trim()||pic;if(!has){m.remove();openEventEditor({date,img:pic||undefined});return}const o=add();if(o){m.remove();openEventEditor({id:o.id})}};
   /* מה שכבר ביום הזה: הסרת התמונה, עריכה או מחיקה בלחיצה */
   const have=()=>{const L=eventsOn(base,hd),b=q('#qHave');if(!L.length){b.innerHTML='';b.hidden=true;return}b.hidden=false;
-    b.innerHTML='<b>כבר ביום הזה</b>'+L.map(e=>{const rec=e.rec&&e.rec!=='once';return '<div class="q-hv" data-qe="'+e.id+'">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span class="q-hn"><b>'+esc(e.name||(e.img?'תמונה':''))+'</b><small>'+esc((KINDS[e.kind]||{}).label||'')+(rec?' · כל שנה':'')+'</small></span>'+
+    b.innerHTML='<b>כבר ביום הזה</b>'+L.map(e=>{const rec=e.rec&&e.rec!=='once';return '<div class="q-hv" data-qe="'+e.id+'">'+(e.img?'<img src="'+iu(e.img)+'" alt="">':'')+'<span class="q-hn"><b>'+esc(e.name||(e.img?'תמונה':''))+'</b><small>'+esc((KINDS[e.kind]||{}).label||'')+(rec?' · כל שנה':'')+'</small></span>'+
       (e.img&&e.name?'<button type="button" class="btn small" data-qa="img">הסרת התמונה</button>':'')+(e.img&&!e.name?'':'<button type="button" class="btn small" data-qa="edit">עריכה</button>')+'<button type="button" class="btn small q-del" data-qa="del">'+(rec?'מחיקה (מכל השנים)':'מחיקה')+'</button></div>'}).join('')};
   q('#qHave').addEventListener('click',e=>{const bt=e.target.closest('[data-qa]');if(!bt)return;const id=bt.closest('[data-qe]').dataset.qe,ev=state.events.find(x=>x.id===id);if(!ev)return;const a=bt.dataset.qa;
     if(a==='edit'){m.remove();openEventEditor({id});return}
@@ -5432,7 +5452,7 @@ function cellInline(c){const date=c.dataset.date;if(!date)return;setTimeout(()=>
   box.innerHTML='<textarea class="ci-ta" rows="2" maxlength="300" aria-label="טקסט ליום '+esc(gem(hd.getDate())+' '+hebMonthName(hd.getMonth(),isLeap(hd.getFullYear())))+'" placeholder="כתבו כאן, ו־Enter לשמירה"></textarea>'+
     '<label class="ci-grow"><input type="checkbox" data-rowgrow'+(state.s.rowGrow?' checked':'')+'> להגדיל את השורה כשהטקסט לא נכנס (על חשבון שאר השורות)</label>'+
     '<div class="ci-style"><span>גודל</span><button type="button" data-cis="-1" aria-label="הקטנת הטקסט">א−</button><button type="button" data-cis="1" aria-label="הגדלת הטקסט">א+</button><span class="ci-sep"></span><span>צבע</span>'+CI_COLS.map(x=>'<button type="button" class="ci-col" data-cic="'+x+'" style="--c:'+(x||'var(--c-pers,#7a3b16)')+'" aria-label="'+(x?'צבע '+x:'צבע רגיל')+'"></button>').join('')+'<label class="ci-any" title="כל צבע"><input type="color" data-cicany aria-label="בחירת כל צבע"></label></div>'+
-    (others.length?'<div class="ci-have">'+others.map(e=>'<span class="ci-chip">'+(e.img?'<img src="'+e.img+'" alt="">':'')+'<span>'+esc(e.name||'תמונה')+'</span><button type="button" data-cidel="'+e.id+'" aria-label="מחיקה" title="'+(e.rec&&e.rec!=='once'?'מחיקה מכל השנים':'מחיקה')+'">×</button></span>').join('')+'</div>':'')+
+    (others.length?'<div class="ci-have">'+others.map(e=>'<span class="ci-chip">'+(e.img?'<img src="'+iu(e.img)+'" alt="">':'')+'<span>'+esc(e.name||'תמונה')+'</span><button type="button" data-cidel="'+e.id+'" aria-label="מחיקה" title="'+(e.rec&&e.rec!=='once'?'מחיקה מכל השנים':'מחיקה')+'">×</button></span>').join('')+'</div>':'')+
     '<div class="ci-bar"><button type="button" data-ci="more">＋ הוסף אירוע</button><button type="button" data-ci="img">＋ הוסף תמונה</button><button type="button" data-ci="ok" class="ci-ok">שמירה</button></div>';
   document.body.appendChild(box);
   const w=Math.min(innerWidth-16,Math.max(r.width+16,300));box.style.width=w+'px';
