@@ -806,6 +806,8 @@ module.exports = async (req, res) => {
       if (cur.paid) await require('./_eventpay').index(s, cfg.d).catch(() => {});
       return json(res, 200, { ok: true, slug: s, token: tok, updated: true });
     }
+    /* בדף ההזמנות לא יוצרים אירוע חדש בלי חשבון, והאירוע מקושר לחשבון מיד */
+    if (b.pg === 'invite') { const u = await require('./_lib').getUser(req).catch(() => null); if (!u || !u.email) return json(res, 401, { error: 'login' }); await require('./_evowners').set(s, u.email).catch(() => {}); }
     const token = crypto.randomBytes(16).toString('hex');
     await put(s, { cfg, token, created: new Date().toISOString(), ip: (require('./_lib').reqMeta(req) || {}).ip || null });
     return json(res, 200, { ok: true, slug: s, token });
