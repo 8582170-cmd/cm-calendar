@@ -6,6 +6,10 @@
  },
  "rewrites": [
   {
+   "source": "/api/yesh-callback",
+   "destination": "/api/nedarim-callback?via=yesh"
+  },
+  {
    "source": "/torah",
    "destination": "/api/pricing?pg=_torah"
   },
