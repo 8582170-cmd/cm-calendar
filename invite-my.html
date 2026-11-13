@@ -41,13 +41,29 @@ footer a{color:var(--mute)}
 .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
 .btnx{display:inline-block;border:1.5px solid var(--teal,#1f5c66);border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;text-decoration:none;color:var(--teal,#1f5c66);background:transparent;cursor:pointer}.btnx.pri{background:var(--teal,#1f5c66);color:#fff}
 #msg{color:var(--mute,#5c686c)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tabs button{font:inherit;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:7px 16px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 14px}
+.stat{background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:10px 14px;text-align:center}.stat b{display:block;font-size:30px;line-height:1.2}.stat span{color:var(--mute);font-size:14px}
+.card2{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:6px 18px 14px;margin:12px 0}.card2 h2{font-size:21px;margin:12px 0 8px}
+.card2 label{display:block;font-size:15px;font-weight:700;margin:6px 0}.card2 input,.card2 select,.card2 textarea{display:block;width:100%;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);margin-top:3px}
+.card2 input[type=checkbox]{display:inline-block;width:auto;margin:0}
+.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 12px}
+.tw{overflow-x:auto}.ctb{width:100%;border-collapse:collapse;font-size:16px}.ctb th,.ctb td{text-align:start;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}.ctb input:not([type=checkbox]){margin:0;padding:5px 8px;min-width:90px}.nw{white-space:nowrap}
+.btnx.sm{padding:4px 12px;font-size:15px}.btnx.danger{color:#b3261e;border-color:#b3261e}
+.flash{position:sticky;top:8px;z-index:5;background:#e3f3ea;color:#124d2d;border:1px solid #9fd3b6;border-radius:12px;padding:8px 14px;margin:8px 0}.flash.bad{background:#fde9e7;color:#8a1c14;border-color:#f0b3ad}
+
 </style>
 </head>
 <body><div class="wrap">
 <header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><a class="cta" href="/invite">לבניית דף הזמנה ←</a></header>
 <main>
 <h1>האזור האישי שלי</h1>
-<p class="lead">כל האירועים ודפי ההזמנה שלכם במקום אחד, מכל מכשיר. נכנסים עם המייל (קישור שנשלח אליו), ומשם פותחים אירוע, רואים סיכומים ושולחים הזמנות.</p>
+<p class="lead">החשבון שלכם במקום אחד: האירועים, אנשי הקשר והמאגרים, הרכישות והגדרות. נכנסים עם המייל, מכל מכשיר.</p>
+<div id="tabs" class="tabs" role="tablist" hidden>
+<button type="button" data-t="ov" role="tab">🏠 סקירה</button><button type="button" data-t="ev" role="tab">🎉 האירועים שלי</button><button type="button" data-t="ct" role="tab">👥 אנשי קשר ומאגרים</button><button type="button" data-t="pu" role="tab">🧾 רכישות</button><button type="button" data-t="st" role="tab">⚙️ הגדרות חשבון</button>
+</div>
 <div id="box"><p id="msg">טוען…</p></div>
 </main>
 <footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="/invite">בניית דף הזמנה</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a></footer>
@@ -60,25 +76,101 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return
 function sess(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
 function store(){try{return JSON.parse(localStorage.getItem('myTimers')||'{}')}catch(e){return {}}}
 function remember(s,t){try{var o=store();o[s]=t;localStorage.setItem('myTimers',JSON.stringify(o))}catch(e){}}
-/* טוקן תקף: אם פג, מרעננים אותו (Supabase refresh) */
 function tok(){var j=sess();if(!j)return Promise.resolve('');
   if(j.access_token&&(!j.expires_at||j.expires_at*1000>Date.now()+60000))return Promise.resolve(j.access_token);
   var C=window.MYLUACH_CFG||{};if(!j.refresh_token||!C.supabaseUrl)return Promise.resolve('');
   return fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:j.refresh_token})})
-   .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at||Math.floor(Date.now()/1000)+(n.expires_in||3600)})))}catch(e){}return n.access_token}).catch(function(){return ''})}
-function post(t,body){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return [r.status,j]})})}
-function loginView(){$('box').innerHTML='<p>כדי לראות את האירועים שלכם צריך להיכנס לחשבון. הכניסה בחינם, עם כתובת מייל: שולחים לכם קישור, לוחצים עליו ונכנסים. אפשר גם עם סיסמה או חשבון Google.</p><div class="acts"><a class="btnx pri" href="/app.html#login&back='+encodeURIComponent('/invite-my')+'">כניסה עם מייל</a><a class="btnx" href="/invite">בניית דף הזמנה חדש</a></div><p class="mute" style="font-size:14px">יש לכם כבר דף הזמנה שנבנה בלי חשבון? אחרי הכניסה הוא יתחבר לחשבון אוטומטית כשתפתחו אותו מאותו דפדפן, או מהקישור האישי שבמייל הרכישה.</p>'}
+   .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at})))}catch(e){}return n.access_token}).catch(function(){return ''})}
+var TK='';
+function call(url,body){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TK},body:JSON.stringify(body)}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){return [r.status,j]})})}
+function post(body){return call(API,body)}
 function fmt(d){return d?d.split('-').reverse().join('.'):'ללא תאריך'}
-function draw(j){var E=j.events||[],h='<p class="mute" style="margin:0 0 6px">מחוברים כ־<b>'+esc(j.email)+'</b></p><div class="acts"><a class="btnx pri" href="/invite">➕ אירוע חדש</a></div>';
-  if(!E.length)h+='<p>עוד אין אירועים בחשבון הזה. בנו דף הזמנה, והוא יופיע כאן. אם כבר בניתם אחד מהדפדפן הזה, פתחו אותו פעם אחת ("האירועים שלי" למעלה) והוא יתחבר לחשבון.</p>';
+function fmtT(d){try{return new Date(d).toLocaleDateString('he-IL')}catch(e){return ''}}
+var D={events:null,contacts:null,profile:null,orders:null,email:''},TAB='ov',CT={q:'',g:'',sel:{},edit:''};
+function loginView(){$('tabs').hidden=true;$('box').innerHTML='<p>כדי לראות את האזור האישי צריך להיכנס לחשבון. הכניסה בחינם, עם כתובת מייל: שולחים לכם קישור, לוחצים עליו ונכנסים. אפשר גם עם סיסמה או חשבון Google.</p><div class="acts"><a class="btnx pri" href="/app.html#login&back='+encodeURIComponent('/invite-my')+'">כניסה עם מייל</a><a class="btnx" href="/invite">בניית דף הזמנה חדש</a></div><p class="mute" style="font-size:14px">יש לכם כבר דף הזמנה שנבנה בלי חשבון? אחרי הכניסה הוא יתחבר לחשבון אוטומטית כשתפתחו אותו מאותו דפדפן, או מהקישור האישי שבמייל הרכישה.</p>'}
+function msg(t,ok){var m=$('flash');if(!m)return;m.textContent=t;m.className='flash'+(ok===false?' bad':'');m.hidden=false;clearTimeout(msg.t);msg.t=setTimeout(function(){m.hidden=true},4000)}
+/* ===== סקירה ===== */
+function vOv(){var E=D.events||[],C=D.contacts||[],gr={};C.forEach(function(c){if(c.g)gr[c.g]=1});
+  var yes=E.reduce(function(a,e){return a+(+e.yesP||0)},0),up=E.filter(function(e){return e.d&&e.d>=new Date().toISOString().slice(0,10)}).sort(function(a,b){return a.d<b.d?-1:1})[0];
+  var h='<p class="mute" style="margin:0 0 6px">מחוברים כ־<b>'+esc(D.email)+'</b></p><div class="stats"><div class="stat"><b>'+E.length+'</b><span>אירועים</span></div><div class="stat"><b>'+yes+'</b><span>מגיעים (בכל האירועים)</span></div><div class="stat"><b>'+C.length+'</b><span>אנשי קשר</span></div><div class="stat"><b>'+Object.keys(gr).length+'</b><span>מאגרים</span></div></div>';
+  if(up)h+='<div class="evc"><div><b>האירוע הקרוב: '+esc(up.t||up.slug)+'</b><small>'+esc(fmt(up.d))+' · '+(+up.n||0)+' נמענים · ✓ '+(+up.yesP||0)+' מגיעים</small></div><div class="acts" style="margin:0"><a class="btnx pri" data-s="'+esc(up.slug)+'" data-k="'+esc(up.token)+'" href="/invite?s='+esc(up.slug)+'">פתיחה וניהול</a></div></div>';
+  h+='<div class="acts"><a class="btnx pri" href="/invite">➕ אירוע חדש</a><button type="button" class="btnx" data-go="ct">👥 אנשי הקשר שלי</button><button type="button" class="btnx" data-go="st">⚙️ הגדרות חשבון</button></div>';
+  if(!E.length)h+='<p>עוד אין אירועים בחשבון הזה. בנו דף הזמנה והוא יופיע כאן.</p>';
+  $('box').innerHTML=h}
+/* ===== אירועים ===== */
+function vEv(){var E=D.events||[],h='<div class="acts"><a class="btnx pri" href="/invite">➕ אירוע חדש</a></div>';
+  if(!E.length)h+='<p>עוד אין אירועים בחשבון הזה. בנו דף הזמנה, והוא יופיע כאן. אם כבר בניתם אחד מהדפדפן הזה, פתחו אותו פעם אחת ("האירועים שלי" בבונה) והוא יתחבר לחשבון.</p>';
   h+=E.map(function(e){return '<div class="evc"><div><b>'+esc(e.t||e.slug)+'</b><span class="bdg'+(e.paid?' ok':'')+'">'+(e.paid?(e.free?'מסלול חינם':'פעיל'):'עוד לא הופעל')+'</span><small>'+esc(fmt(e.d))+' · '+(+e.n||0)+' נמענים · ✓ '+(+e.yesP||0)+' מגיעים · ✕ '+(+e.no||0)+' · ? '+(+e.maybe||0)+'</small></div><div class="acts" style="margin:0"><a class="btnx pri" data-s="'+esc(e.slug)+'" data-k="'+esc(e.token)+'" href="/invite?s='+esc(e.slug)+'">פתיחה וניהול</a><a class="btnx" target="_blank" rel="noopener" href="/t/'+esc(e.slug)+'">צפייה בדף</a></div></div>'}).join('');
   $('box').innerHTML=h}
-$('box').addEventListener('click',function(e){var a=e.target.closest('[data-k]');if(a)remember(a.dataset.s,a.dataset.k)});
-tok().then(function(t){if(!t){loginView();return}
+/* ===== אנשי קשר ומאגרים ===== */
+function groups(){var g={};(D.contacts||[]).forEach(function(c){if(c.g)g[c.g]=(g[c.g]||0)+1});return g}
+function filt(){var q=CT.q.trim().toLowerCase();return (D.contacts||[]).filter(function(c){if(CT.g==='__none'&&c.g)return false;if(CT.g&&CT.g!=='__none'&&c.g!==CT.g)return false;return !q||[c.n,c.e,c.p,c.g].join(' ').toLowerCase().indexOf(q)>=0})}
+function vCt(){var G=groups(),L=filt(),n=Object.keys(CT.sel).length;
+  var h='<div class="card2"><h2>הוספה וייבוא</h2><div class="g4"><label>שם<input id="cN" maxlength="80"></label><label>טלפון<input id="cP" inputmode="tel" dir="ltr"></label><label>מייל<input id="cE" type="email" dir="ltr"></label><label>מאגר (קבוצה)<input id="cG" list="gl" maxlength="40"></label></div><datalist id="gl">'+Object.keys(G).map(function(k){return '<option value="'+esc(k)+'">'}).join('')+'</datalist><div class="acts"><button type="button" class="btnx pri" id="cAdd">הוספה</button><button type="button" class="btnx" id="cImpT">ייבוא מטקסט או קובץ</button><button type="button" class="btnx" id="cSync" title="מוסיף את כל הנמענים מהאירועים שלכם">⟳ ייבוא מהאירועים שלי</button></div>'
+   +'<div id="impBox" hidden><p class="mute" style="font-size:15px;margin:4px 0">שורה לכל איש קשר: שם, טלפון, מייל, מאגר (מופרדים בפסיק או טאב). אפשר להדביק מאקסל, או לבחור קובץ CSV.</p><textarea id="impT" rows="6" style="width:100%" dir="auto"></textarea><div class="acts"><input type="file" id="impF" accept=".csv,.txt,text/csv,text/plain"><button type="button" class="btnx pri" id="impGo">ייבוא</button></div></div></div>'
+   +'<div class="card2"><h2>האנשים שלי ('+(D.contacts||[]).length+')</h2><div class="g3"><label>חיפוש<input id="cQ" value="'+esc(CT.q)+'" placeholder="שם, טלפון, מייל"></label><label>מאגר<select id="cF"><option value="">הכל</option><option value="__none"'+(CT.g==='__none'?' selected':'')+'>ללא מאגר</option>'+Object.keys(G).sort().map(function(k){return '<option value="'+esc(k)+'"'+(CT.g===k?' selected':'')+'>'+esc(k)+' ('+G[k]+')</option>'}).join('')+'</select></label><div class="acts" style="align-self:end"><button type="button" class="btnx" id="cExp">⬇ ייצוא ל־CSV</button></div></div>'
+   +'<div class="acts"><label style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="cAll"> בחירת כל המסוננים ('+L.length+')</label>'+(n?'<span class="mute">'+n+' נבחרו</span><input id="cBG" list="gl" placeholder="שם מאגר" style="max-width:150px" maxlength="40"><button type="button" class="btnx" id="cSetG">שיוך למאגר</button><button type="button" class="btnx danger" id="cDel">מחיקה</button>':'')+'</div>';
+  if(!L.length)h+='<p class="mute">'+((D.contacts||[]).length?'אין תוצאות לחיפוש הזה.':'עוד אין אנשי קשר. הוסיפו, ייבאו, או ייבאו מהאירועים שלכם.')+'</p>';
+  else h+='<div class="tw"><table class="ctb"><thead><tr><th></th><th>שם</th><th>טלפון</th><th>מייל</th><th>מאגר</th><th></th></tr></thead><tbody>'+L.slice(0,400).map(function(c){
+    if(CT.edit===c.id)return '<tr><td></td><td><input data-f="n" value="'+esc(c.n)+'"></td><td><input data-f="p" dir="ltr" value="'+esc(c.p)+'"></td><td><input data-f="e" dir="ltr" value="'+esc(c.e)+'"></td><td><input data-f="g" list="gl" value="'+esc(c.g)+'"></td><td class="nw"><button type="button" class="btnx pri sm" data-sv="'+esc(c.id)+'">שמירה</button> <button type="button" class="btnx sm" data-cx="1">ביטול</button></td></tr>';
+    return '<tr><td><input type="checkbox" data-sel="'+esc(c.id)+'"'+(CT.sel[c.id]?' checked':'')+'></td><td>'+esc(c.n||'ללא שם')+'</td><td dir="ltr">'+esc(c.p)+'</td><td dir="ltr">'+esc(c.e)+'</td><td>'+esc(c.g)+'</td><td class="nw"><button type="button" class="btnx sm" data-ed="'+esc(c.id)+'">עריכה</button></td></tr>'}).join('')+'</tbody></table></div>'+(L.length>400?'<p class="mute">מוצגים 400 הראשונים. צמצמו עם חיפוש או מאגר.</p>':'');
+  h+='</div>';$('box').innerHTML=h}
+function parseImp(t){var out=[];String(t||'').split(/\r?\n/).forEach(function(l,i){l=l.trim();if(!l)return;var p=l.indexOf('\t')>=0?l.split('\t'):l.split(/[,;]/);p=p.map(function(x){return x.trim().replace(/^"|"$/g,'')});
+  var o={name:'',phone:'',email:'',grp:''};p.forEach(function(x,k){if(/@/.test(x))o.email=x;else if(/^[\d+\-\s()]{7,}$/.test(x))o.phone=x;else if(!o.name&&k===0)o.name=x;else if(o.name&&!o.grp&&x&&k>=1)o.grp=x});
+  if(i===0&&!o.email&&!o.phone)return;if(o.email||o.phone)out.push(o)});return out}
+function reloadCt(m){return post({act:'cpool'}).then(function(a){if(a[0]===200)D.contacts=a[1].contacts||[];CT.sel={};CT.edit='';if(TAB==='ct')vCtR();if(m)msg(m)})}
+function csvOut(L){var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'};return '﻿'+['שם','טלפון','מייל','מאגר'].map(q).join(',')+'\n'+L.map(function(c){return [c.n,c.p,c.e,c.g].map(q).join(',')}).join('\n')}
+/* ===== רכישות ===== */
+var PN={base:'בסיסית',event:'דף הזמנה לאירוע',greet:'ברכה / הזמנה מעוצבת',gift:'מתנה',wishd:'ברכה מעוצבת'};
+function vPu(){if(D.orders===null){$('box').innerHTML='<p>טוען…</p>';return}var O=D.orders;
+  $('box').innerHTML=O.length?'<div class="tw"><table class="ctb"><thead><tr><th>תאריך</th><th>מה נרכש</th><th>סכום</th><th>מספר</th></tr></thead><tbody>'+O.map(function(o){return '<tr><td>'+esc(fmtT(o.paid_at))+'</td><td>'+esc(PN[o.plan]||o.plan)+'</td><td>'+(+o.amount?(+o.amount).toLocaleString('he-IL')+' ₪':'חינם')+'</td><td dir="ltr">'+esc(o.id)+'</td></tr>'}).join('')+'</tbody></table></div><p class="mute" style="font-size:15px">קבלות נשלחות למייל בעת התשלום. לא מצאתם? כתבו לנו מהמייל הזה דרך עמוד התמיכה.</p>':'<p>עוד אין רכישות בחשבון הזה.</p>'}
+/* ===== הגדרות ===== */
+function vSt(){var P=D.profile||{};
+  $('box').innerHTML='<div class="card2"><h2>פרטי החשבון</h2><p class="mute" style="margin:0 0 8px">כתובת המייל להתחברות: <b dir="ltr">'+esc(D.email)+'</b></p><div class="g3"><label>שם מלא<input id="sNm" maxlength="60" value="'+esc(P.name)+'"></label><label>טלפון לקשר<input id="sPh" dir="ltr" maxlength="20" value="'+esc(P.phone)+'"></label><label>שפת ברירת מחדל לאירועים<select id="sLg"><option value="he">עברית</option><option value="en"'+(P.lang==='en'?' selected':'')+'>English</option><option value="yi"'+(P.lang==='yi'?' selected':'')+'>אידיש</option></select></label></div>'
+   +'<label>שם השולח במיילים לאורחים (ברירת מחדל)<input id="sFn" maxlength="40" value="'+esc(P.fn)+'" placeholder="למשל: משפחת כהן"></label><p class="mute" style="font-size:14px;margin:4px 0">יופיע כ"שם דרך MyLuach". בכל אירוע אפשר לשנות.</p><div class="acts"><button type="button" class="btnx pri" id="sSave">שמירה</button></div></div>'
+   +'<div class="card2"><h2>אבטחה והתחברות</h2><p>ההתחברות היא עם קישור שנשלח למייל, או עם סיסמה או חשבון Google. לשינוי סיסמה או לקבלת קישור חדש:</p><div class="acts"><a class="btnx" href="/app.html#login&back='+encodeURIComponent('/invite-my')+'">קישור כניסה / שינוי סיסמה</a><button type="button" class="btnx" id="sOut">התנתקות</button></div></div>'
+   +'<div class="card2"><h2>הנתונים שלי</h2><p>אנשי הקשר: <b>'+(D.contacts||[]).length+'</b>. אפשר לייצא אותם, או למחוק את כולם (האירועים והנמענים באירועים נשארים).</p><div class="acts"><button type="button" class="btnx" id="sExp">⬇ ייצוא אנשי קשר</button><button type="button" class="btnx danger" id="sClr">מחיקת כל אנשי הקשר</button></div><p class="mute" style="font-size:14px">למחיקת החשבון ושל כל האירועים כתבו לתמיכה מהמייל הזה.</p></div>'}
+function go(t){TAB=t;try{history.replaceState(null,'','#'+t)}catch(e){}
+  [].forEach.call($('tabs').querySelectorAll('[data-t]'),function(b){b.setAttribute('aria-selected',b.dataset.t===t)});
+  $('box').innerHTML='<div id="flash" class="flash" hidden></div><div id="tv"></div>';var real=$('box');
+  var f={ov:vOv,ev:vEv,ct:vCt,pu:vPu,st:vSt}[t]||vOv;
+  /* הציור כותב ל-#box; כדי לשמור את ההודעה הצפה מציירים לתוך #tv */
+  var keep=$('box');var tv=$('tv');var orig=$;$=function(i){return i==='box'?tv:orig(i)};try{f()}finally{$=orig}
+  if(t==='pu'&&D.orders===null)loadOrders()}
+function loadOrders(){call('/api/me',{}).then(function(a){D.orders=a[0]===200?(a[1].orders||[]):[];if(TAB==='pu')go('pu')})}
+document.addEventListener('click',function(e){var x=e.target;
+  var a=x.closest&&x.closest('[data-k]');if(a)remember(a.dataset.s,a.dataset.k);
+  var t=x.closest&&x.closest('#tabs [data-t]');if(t){go(t.dataset.t);return}
+  var g=x.closest&&x.closest('[data-go]');if(g){go(g.dataset.go);return}
+  var id=x.id;
+  if(id==='cAdd'){var o={name:$('cN').value,phone:$('cP').value,email:$('cE').value,grp:$('cG').value};if(!o.phone.trim()&&!o.email.trim()){msg('צריך טלפון או מייל',false);return}post({act:'cpadd',list:[o]}).then(function(r){if(r[0]!==200){msg('לא נשמר',false);return}reloadCt(r[1].add?'נוסף':'כבר קיים ברשימה')})}
+  else if(id==='cImpT'){$('impBox').hidden=!$('impBox').hidden}
+  else if(id==='impGo'){var L=parseImp($('impT').value);if(!L.length){msg('לא נמצאו שורות תקינות (צריך טלפון או מייל)',false);return}post({act:'cpadd',list:L}).then(function(r){if(r[0]!==200){msg('הייבוא נכשל',false);return}reloadCt('נוספו '+r[1].add+', עודכנו '+r[1].upd)})}
+  else if(id==='cSync'){post({act:'cpsync'}).then(function(r){if(r[0]!==200){msg('לא הצלחנו',false);return}reloadCt('נוספו '+r[1].add+' מהאירועים')})}
+  else if(id==='cExp'||id==='sExp'){var L2=id==='cExp'?filt():(D.contacts||[]),b=new Blob([csvOut(L2)],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(b),l=document.createElement('a');l.href=u;l.download='myluach-contacts.csv';document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},1000)}
+  else if(id==='cDel'){var ids=Object.keys(CT.sel);if(ids.length&&confirm('למחוק '+ids.length+' אנשי קשר? אי אפשר לשחזר.'))post({act:'cpdel',ids:ids}).then(function(){reloadCt('נמחקו '+ids.length)})}
+  else if(id==='cSetG'){var ids2=Object.keys(CT.sel);post({act:'cpgrp',ids:ids2,g:$('cBG').value}).then(function(){reloadCt('עודכן')})}
+  else if(id==='sSave'){post({act:'prset',profile:{name:$('sNm').value,phone:$('sPh').value,lang:$('sLg').value,fn:$('sFn').value}}).then(function(r){if(r[0]===200){D.profile=r[1].profile;msg('נשמר')}else msg('לא נשמר',false)})}
+  else if(id==='sOut'){try{localStorage.removeItem(KEY)}catch(e){}location.reload()}
+  else if(id==='sClr'){if(confirm('למחוק את כל אנשי הקשר? אי אפשר לשחזר.')&&confirm('בטוחים? זה ימחק את כולם.'))post({act:'cpclear'}).then(function(){reloadCt('כל אנשי הקשר נמחקו')})}
+  var ed=x.closest&&x.closest('[data-ed]');if(ed){CT.edit=ed.dataset.ed;vCtR()}
+  if(x.closest&&x.closest('[data-cx]')){CT.edit='';vCtR()}
+  var sv=x.closest&&x.closest('[data-sv]');if(sv){var row=sv.closest('tr'),c={};[].forEach.call(row.querySelectorAll('[data-f]'),function(i){c[i.dataset.f]=i.value});post({act:'cpedit',id:sv.dataset.sv,c:c}).then(function(r){if(r[0]===200)reloadCt('נשמר');else msg(r[1].error||'לא נשמר',false)})}
+});
+function vCtR(){var tv=$('tv');var orig=$;$=function(i){return i==='box'?tv:orig(i)};try{vCt()}finally{$=orig}}
+document.addEventListener('input',function(e){var x=e.target;
+  if(x.id==='cQ'){CT.q=x.value;var p=x.selectionStart;vCtR();var n=document.getElementById('cQ');if(n){n.focus();try{n.setSelectionRange(p,p)}catch(e2){}}}
+  if(x.id==='impF'&&x.files&&x.files[0]){var r=new FileReader();r.onload=function(){$('impT').value=String(r.result||'').replace(/^﻿/,'')};r.readAsText(x.files[0],'utf-8')}});
+document.addEventListener('change',function(e){var x=e.target;
+  if(x.id==='cF'){CT.g=x.value;vCtR()}
+  if(x.dataset&&x.dataset.sel){if(x.checked)CT.sel[x.dataset.sel]=1;else delete CT.sel[x.dataset.sel];vCtR()}
+  if(x.id==='cAll'){var L=filt();CT.sel={};if(x.checked)L.forEach(function(c){CT.sel[c.id]=1});vCtR()}});
+tok().then(function(t){TK=t;if(!t){loginView();return}
   var S=store(),ks=Object.keys(S);
-  /* אירועים שנבנו בדפדפן הזה מתחברים לחשבון */
-  return Promise.all(ks.map(function(s){return post(t,{act:'claim',slug:s,token:S[s]}).catch(function(){})})).then(function(){return post(t,{act:'mine'})}).then(function(a){
-    if(a[0]===401){loginView();return}if(a[0]!==200){$('box').innerHTML='<p>לא הצלחנו לטעון את האירועים. נסו לרענן.</p>';return}draw(a[1])})
+  return Promise.all(ks.map(function(s){return post({act:'claim',slug:s,token:S[s]}).catch(function(){})})).then(function(){return Promise.all([post({act:'mine'}),post({act:'cpool'}),post({act:'prget'})])}).then(function(R){
+    if(R[0][0]===401){loginView();return}if(R[0][0]!==200){$('box').innerHTML='<p>לא הצלחנו לטעון. נסו לרענן.</p>';return}
+    D.events=R[0][1].events||[];D.email=R[0][1].email||(R[2][1]&&R[2][1].email)||'';D.contacts=R[1][0]===200?(R[1][1].contacts||[]):[];D.profile=R[2][0]===200?(R[2][1].profile||{}):{};
+    $('tabs').hidden=false;var h=(location.hash||'').slice(1);go(['ov','ev','ct','pu','st'].indexOf(h)>=0?h:'ov')})
 }).catch(function(){$('box').innerHTML='<p>לא הצלחנו לטעון. נסו לרענן.</p>'});
 })();
 </script>
