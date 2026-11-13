@@ -27,16 +27,16 @@ async function providers(cfg, isDon, avoid) {
   const ned = !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), pp = require('./_paypal').ready();
   /* דף התרומות בנוי על הטופס של נדרים פלוס */
   if (isDon) return ned ? ['nedarim'] : [];
-  const ok = { nedarim: ned, paypal: pp, sumit: require('./_sumit').ready() };
+  const ok = { nedarim: ned, paypal: pp, sumit: require('./_sumit').ready(), yesh: require('./_yesh').ready() };
   if (avoid && ok[avoid] != null) ok[avoid] = false;
-  const ALL = ['nedarim', 'paypal', 'sumit'], first = ALL.includes(cfg.pay) ? cfg.pay : 'nedarim';
+  const ALL = ['nedarim', 'paypal', 'sumit', 'yesh'], first = ALL.includes(cfg.pay) ? cfg.pay : 'nedarim';
   const list = [first, ...(Array.isArray(cfg.payAlso) ? cfg.payAlso : [])].filter((x, i, a) => ALL.includes(x) && a.indexOf(x) === i);
   if (ok.sumit && list.includes('sumit')) { /* המכסה בפעולות: כל סליקה = sumitOps פעולות (סליקה + קבלה = 2). עוברים לדרך השנייה כשהסליקה הבאה כבר לא נכנסת */
     const cap = +(cfg.sumitCap || 0), per = Math.max(1, +cfg.sumitOps || 2); if (cap > 0 && (await sumitCount(cfg) + 1) * per > cap) ok.sumit = false; }
   let av = list.filter(x => ok[x]);
   const after = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
   if (list.includes('sumit') && !ok.sumit && ok[after] && av.indexOf(after) < 0) av.unshift(after);
-  if (!av.length) av = ['paypal', 'nedarim', 'sumit'].filter(x => ok[x]).slice(0, 1);
+  if (!av.length) av = ['paypal', 'nedarim', 'sumit', 'yesh'].filter(x => ok[x]).slice(0, 1);
   return av;
 }
 
@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
       if (o.status !== 'pending') return json(res, 400, { error: 'state', message: 'ההזמנה כבר לא פתוחה לתשלום. סגרו את החלון ונסו שוב.' });
       const name = String(b.name || '').trim().slice(0, 80), email = (o.email || String(b.email || '').trim().toLowerCase()).slice(0, 200);
       if (!o.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { o.email = email; await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ email }) }); }
-      const c = await require('./_sumit').charge({ token, amount: +o.amount, name, email: o.email, ref: id, desc: o.plan === 'donation' ? 'MyLuach · תרומה' : o.plan === 'greet' ? 'MyLuach · ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'MyLuach · דף הזמנה לאירוע' : o.plan === 'gift' ? 'MyLuach · מתנה לאירוע' : o.plan === 'wishd' ? 'MyLuach · ברכה לאירוע' : /^(gsub|gpack|rsub):/.test(o.plan) ? 'MyLuach · מנוי / חבילה' : 'MyLuach · מסלול ' + PLAN_NAMES[o.plan] });
+      const c = await require('./_sumit').charge({ token, amount: +o.amount, name, email: o.email, ref: id, send: !(cfg.rcpt && cfg.rcpt.sumit && cfg.rcpt.sumit.send === false), desc: o.plan === 'donation' ? 'MyLuach · תרומה' : o.plan === 'greet' ? 'MyLuach · ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'MyLuach · דף הזמנה לאירוע' : o.plan === 'gift' ? 'MyLuach · מתנה לאירוע' : o.plan === 'wishd' ? 'MyLuach · ברכה לאירוע' : /^(gsub|gpack|rsub):/.test(o.plan) ? 'MyLuach · מנוי / חבילה' : 'MyLuach · מסלול ' + PLAN_NAMES[o.plan] });
       if (!c.ok && c.system) { console.error('sumit system error', JSON.stringify(c.raw)); return json(res, 503, { error: 'provider', fallback: true, message: 'מערכת התשלום לא זמינה כרגע. עוברים לדרך תשלום אחרת…' }); }
       if (!c.ok) { await db('orders?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ callback: { sumit: c.raw } }) }); return json(res, 402, { error: 'payment', message: c.message ? 'התשלום לא אושר: ' + c.message : 'התשלום לא אושר. בדקו את פרטי הכרטיס ונסו שוב.' }); }
       await require('./_paid').markPaid(o, { txn: String(c.paymentId || ''), callback: { sumit: c.raw } }, 'SUMIT');
@@ -241,7 +241,19 @@ module.exports = async (req, res) => {
     if (prov === 'sumit') {
       const charge = isDon || gift ? amount : (Number(env('SUMIT_TEST_AMOUNT')) || amount);
       await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
-      return json(res, 200, { id, amount: charge, provider: 'sumit', provs, sumit: require('./_sumit').pub(), email: email || '', ...extra });
+      return json(res, 200, { id, amount: charge, provider: 'sumit', provs, sumit: require('./_sumit').pub(), rcpt: !(cfg.rcpt && cfg.rcpt.sumit && cfg.rcpt.sumit.send === false), email: email || '', ...extra });
+    }
+    /* יש חשבונית: דף התשלום שלהם (בתוך החלון באתר). העדכון מגיע ל-/api/yesh-callback, והדפדפן מחכה עד שההזמנה מסומנת כשולמה */
+    if (prov === 'yesh') {
+      const charge = isDon || gift ? amount : (Number(env('YESH_TEST_AMOUNT')) || amount);
+      await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
+      let url;
+      try { url = await require('./_yesh').createPayment({ id, amount: charge, desc: desc + ' · ' + id.slice(0, 8), email, name: String(b.name || '').trim(), phone: String(b.phone || '').trim(), cfg, donation: isDon }); }
+      catch (e) { console.error('yesh create', e.message); await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'failed', callback: { yesh: { error: e.message } } }) }).catch(() => {});
+        return json(res, 503, { error: 'provider', fallback: true, message: 'מערכת התשלום לא זמינה כרגע. עוברים לדרך תשלום אחרת…' }); }
+      await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { yesh: { url } } }) });
+      const R = require('./_yesh').rcptOf(cfg);
+      return json(res, 200, { id, amount: charge, provider: 'yesh', provs, yesh: url, rcpt: R.create && R.send && !!email, email: email || '', ...extra });
     }
     if (prov === 'paypal') {
       const charge = isDon || gift ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);

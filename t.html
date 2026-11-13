@@ -354,7 +354,7 @@ body.mopen{overflow:hidden}
     var fcg=document.getElementById('f-cg');
     if(fcg)fcg.onsubmit=function(e){e.preventDefault();var M=fcg.querySelector('.msg'),amt=+fcg.elements['amount'].value;if(!(amt>0)){M.className='msg no';M.textContent=T.err;return}
       var go2=function(){window.MLPay.open({title:'🎁 '+T.cg,sub:title+' · '+amt+' ₪',mailNote:EN?'for the receipt':YI?'אהין וועט מען שיקן די קבלה':'לשם תישלח הקבלה',body:{plan:'gift',slug:slug,amount:amt,gname:fcg.elements['name'].value,gmsg:fcg.elements['msg'].value},onPaid:function(){M.className='msg';M.textContent=T.cgok;fcg.reset()}})};
-      if(window.MLPay)go2();else{var sc=document.createElement('script');sc.src='/assets/pay.js?v=4';sc.onload=go2;document.head.appendChild(sc)}};
+      if(window.MLPay)go2();else{var sc=document.createElement('script');sc.src='/assets/pay.js?v=5';sc.onload=go2;document.head.appendChild(sc)}};
     /* מעקב פתיחה: נכנסו מהקישור האישי (פעם אחת בכל ביקור) */
     var rt=Q.get('r');if(PAID&&rt&&/^[0-9a-f]{24}$/.test(rt)&&!isOwner){var sk='op-'+slug+rt;var seen=false;try{seen=!!sessionStorage.getItem(sk);sessionStorage.setItem(sk,'1')}catch(e){}if(!seen)post({act:'open',slug:slug,r:rt}).catch(function(){})}
     /* קישור מהמייל: ?go=rsvp / wish / cal */
@@ -389,7 +389,7 @@ body.mopen{overflow:hidden}
         var vis=(fw.querySelector('[name=vis]:checked')||fw.querySelector('input[type=hidden][name=vis]')||{}).value||'all',nn=!!(fw.elements['noname']&&fw.elements['noname'].checked&&vis!=='all'),name=fw.elements['name'].value;
         if(gc&&gc.checked){var amt=+fw.elements['amount'].value,gm=Math.max(+o.gmin||0,1);if(!(amt>=gm)){M.className='msg no';M.textContent=T.gmin.replace('{n}',gm);fw.elements['amount'].focus();return}
           var go2=function(){window.MLPay.open({title:'🎁 '+T.cg,sub:title+' · '+amt+' ₪',mailNote:EN?'for the receipt':YI?'אהין וועט מען שיקן די קבלה':'לשם תישלח הקבלה',body:{plan:'gift',slug:slug,amount:amt,gname:name,gmsg:txt,gvis:vis,gnoname:nn,gstyle:WSTY,gimg:WIMG},onPaid:function(){M.className='msg';M.textContent=T.gok;if(fw.elements['text'])fw.elements['text'].value='';setTimeout(function(){if(typeof loadWall==='function')loadWall()},2500)}})};
-          if(window.MLPay)go2();else{var sc=document.createElement('script');sc.src='/assets/pay.js?v=4';sc.onload=go2;document.head.appendChild(sc)}return}
+          if(window.MLPay)go2();else{var sc=document.createElement('script');sc.src='/assets/pay.js?v=5';sc.onload=go2;document.head.appendChild(sc)}return}
         if(!txt&&!WIMG){M.className='msg no';M.textContent=T.wt;fw.elements['text']&&fw.elements['text'].focus();return}
         B.disabled=true;post({act:'wish',slug:slug,name:name,text:txt,vis:vis,noname:nn,style:WSTY,img:WIMG,pub:vis!=='host'}).then(function(a){B.disabled=false;
           if(a[0]===200){M.className='msg';M.textContent=T.wok;fw.elements['text'].value='';WIMG='';var im2=document.getElementById('wImgM');if(im2)im2.textContent='';if(typeof loadWall==='function')loadWall()}else{M.className='msg no';M.textContent=a[0]===429?T.rate:T.err}}).catch(function(){B.disabled=false;M.className='msg no';M.textContent=T.err})}}

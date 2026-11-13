@@ -66,17 +66,17 @@ function open(opt){
 
   function mkOrder(){
     var mail = $('mlpMail').value.trim();
-    var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT, bitUI: 1 }); var cp = $('mlpCp') ? $('mlpCp').value.trim() : ''; if (cp) body.coupon = cp;
+    var body = Object.assign({}, opt.body || {}, { email: mail, avoid: AVOID, prov: WANT, bitUI: 1, name: $('mlpName').value.trim(), phone: $('mlpPhone').value.trim() }); var cp = $('mlpCp') ? $('mlpCp').value.trim() : ''; if (cp) body.coupon = cp;
     return fetch('/api/checkout', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authH()), body: JSON.stringify(body) })
-      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (r.ok && j.free) return j; if (!r.ok || !(j.tx || j.ppid || j.sumit || j.ppsub || j.bit)) throw Object.assign(new Error(j.error || r.status), { msg: j.message }); return j; }); })
+      .then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ if (r.ok && j.free) return j; if (!r.ok || !(j.tx || j.ppid || j.sumit || j.ppsub || j.bit || j.yesh)) throw Object.assign(new Error(j.error || r.status), { msg: j.message, fb: !!j.fallback }); return j; }); })
       .then(function(j){ order = j; if (j.free) { msg('הקופון הופעל, ההזמנה פעילה ✓'); go.hidden = true; setTimeout(done, 700); return j; } if (j.off > 0) $('mlpSub').textContent = (opt.sub || '') + ' · הנחה של ' + j.off + '%, לתשלום ' + j.amount + ' ₪'; PROVS = j.provs || [j.provider]; setup(j.provider); return j; });
   }
   function resetPay(){ var box = $('mlpBox'); box.innerHTML = ''; box.hidden = true; frame.hidden = true; if (NED_GO) go.onclick = NED_GO; go.hidden = false; go.disabled = true; ned(false); PROV = ''; ready = false; }
-  function switchTo(pv, why, avoid){ if (stop) return; if (avoid) AVOID = avoid; WANT = pv || ''; resetPay(); msg(why || 'טוען…'); orderP = mkOrder(); orderP.catch(function(e){ msg(e.msg ? esc(e.msg) : 'התשלום באתר לא זמין כרגע. נסו שוב בעוד כמה דקות.', 1); }); }
+  function switchTo(pv, why, avoid){ if (stop) return; if (avoid) AVOID = avoid; WANT = pv || ''; resetPay(); msg(why || 'טוען…'); orderP = mkOrder(); orderP.catch(function(e){ if (e.fb && AVOID !== (WANT || 'yesh')) { switchTo('', e.msg, WANT || 'yesh'); return; } msg(e.msg ? esc(e.msg) : 'התשלום באתר לא זמין כרגע. נסו שוב בעוד כמה דקות.', 1); }); }
   function drawChoose(){
     var c = $('mlpChoose'), L = PROVS.slice(); if (L.length < 2) { c.hidden = true; return; }
-    var N = { nedarim: '💳 כרטיס אשראי', sumit: '💳 כרטיס אשראי', paypal: 'PayPal / כרטיס מחו״ל', bit: 'ביט' };
-    c.hidden = false; c.innerHTML = L.map(function(k){ return '<button type="button" role="radio" aria-checked="' + (k === PROV) + '" data-pv="' + k + '">' + (L.filter(function(x){ return x !== 'paypal' && x !== 'bit' }).length > 1 && k !== 'paypal' && k !== 'bit' ? (k === 'sumit' ? '💳 כרטיס (SUMIT)' : '💳 כרטיס (נדרים פלוס)') : N[k]) + '</button>'; }).join('');
+    var N = { nedarim: '💳 כרטיס אשראי', sumit: '💳 כרטיס אשראי', yesh: '💳 כרטיס אשראי', paypal: 'PayPal / כרטיס מחו״ל', bit: 'ביט' };
+    c.hidden = false; c.innerHTML = L.map(function(k){ return '<button type="button" role="radio" aria-checked="' + (k === PROV) + '" data-pv="' + k + '">' + (L.filter(function(x){ return x !== 'paypal' && x !== 'bit' }).length > 1 && k !== 'paypal' && k !== 'bit' ? (k === 'sumit' ? '💳 כרטיס (SUMIT)' : k === 'yesh' ? '💳 כרטיס (יש חשבונית)' : '💳 כרטיס (נדרים פלוס)') : N[k]) + '</button>'; }).join('');
     c.querySelectorAll('[data-pv]').forEach(function(b){ b.onclick = function(){ if (b.dataset.pv !== PROV) switchTo(b.dataset.pv); }; });
   }
   function setup(pv){
@@ -93,7 +93,7 @@ function open(opt){
       box.innerHTML = '<form id="mlpSm" onsubmit="return false" dir="rtl" style="display:flex;flex-direction:column;gap:10px"><label>מספר כרטיס<input type="text" data-og="cardnumber" inputmode="numeric" autocomplete="cc-number" dir="ltr" maxlength="19"></label>' +
         '<div class="cf2"><label>חודש<select data-og="expirationmonth">' + Array.from({ length: 12 }, function(_, i){ return '<option>' + String(i + 1).padStart(2, '0') + '</option>' }).join('') + '</select></label><label>שנה<select data-og="expirationyear">' + Array.from({ length: 12 }, function(_, i){ var y = new Date().getFullYear() + i; return '<option value="' + y + '">' + y + '</option>' }).join('') + '</select></label></div>' +
         '<div class="cf2"><label>3 ספרות בגב הכרטיס<input type="text" data-og="cvv" inputmode="numeric" autocomplete="cc-csc" dir="ltr" maxlength="4"></label><label>תעודת זהות<input type="text" data-og="citizenid" inputmode="numeric" dir="ltr" maxlength="9"></label></div></form>';
-      msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום. הקבלה תישלח למייל.');
+      msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.' + (order && order.rcpt === false ? '' : ' הקבלה תישלח למייל.'));
       var fallback = function(why){ if (PROV === 'sumit') switchTo('', why || 'עוברים לדרך תשלום אחרת…', 'sumit'); };
       var libs = (window.jQuery ? Promise.resolve() : load('https://code.jquery.com/jquery-3.7.1.min.js')).then(function(){ return window.OfficeGuy ? null : load('https://app.sumit.co.il/scripts/payments.js'); });
       libs.catch(function(){ fallback('טופס התשלום לא נטען. עוברים לדרך תשלום אחרת…'); });
@@ -110,6 +110,16 @@ function open(opt){
           .then(function(x){ if (x.fallback) { fallback(x.message); return; } if (x.status === 'paid') { done(); return; } fail(x.message || 'התשלום לא אושר.'); })
           .catch(function(e){ if (e && e.sys) { fallback(); return; } fail(e.message || 'התשלום נכשל. נסו שוב.'); });
       };
+      return;
+    }
+    /* יש חשבונית: דף התשלום המאובטח שלהם בתוך החלון. כשהתשלום עובר, יש חשבונית מעדכנים את השרת, והחלון מחכה לאישור */
+    if (PROV === 'yesh') {
+      ready = true; ned(false); go.hidden = true;
+      var yb = $('mlpBox'); yb.hidden = false;
+      yb.innerHTML = '<iframe id="mlpYesh" title="טופס תשלום מאובטח" allow="payment" style="height:560px"></iframe>';
+      var yf = yb.querySelector('iframe'); yf.src = order.yesh;
+      msg('ממלאים את פרטי הכרטיס בטופס המאובטח.' + (order.rcpt ? ' הקבלה תישלח למייל.' : '') + ' החלון יתעדכן לבד כשהתשלום יעבור.');
+      waitPaid();
       return;
     }
     /* ביט (דרך נדרים פלוס): שם וטלפון, ואז מעבר לביט. האישור מגיע כשהלקוח מאשר באפליקציה */
@@ -185,7 +195,7 @@ function open(opt){
     (function poll(){ if (stop || !order) return;
       fetch('/api/order?id=' + order.id).then(function(r){ return r.json() }).then(function(o){
         if (o.status === 'paid') { done(); return; }
-        if (Date.now() - t0 > 90000) { msg('התשלום התקבל, אבל האישור מתעכב. הקישור לעיצוב יישלח למייל שלכם.'); setTimeout(poll, 15000); return; }
+        if (PROV !== 'yesh' && Date.now() - t0 > 90000) { msg('התשלום התקבל, אבל האישור מתעכב. הקישור לעיצוב יישלח למייל שלכם.'); setTimeout(poll, 15000); return; }
         setTimeout(poll, 2500);
       }).catch(function(){ setTimeout(poll, 5000); });
     })();
@@ -196,7 +206,7 @@ function open(opt){
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { msg('נא למלא כתובת מייל תקינה. לשם יישלח הקישור לעיצוב.', 1); $('mlpMail').focus(); return; }
     try { var sv = JSON.parse(localStorage.getItem('myluach-buyer') || '{}') || {}; sv.mail = mail; localStorage.setItem('myluach-buyer', JSON.stringify(sv)); } catch (e) {}
     $('mlpMail').readOnly = true; go.disabled = true; msg('טוען טופס תשלום מאובטח…');
-    orderP = mkOrder(); orderP.catch(function(e){ go.disabled = false; $('mlpMail').readOnly = false; msg(e.msg ? esc(e.msg) : 'התשלום באתר עדיין לא פעיל. נסו שוב בקרוב.', 1); });
+    orderP = mkOrder(); orderP.catch(function(e){ if (e.fb) { switchTo('', e.msg, 'yesh'); return; } go.disabled = false; $('mlpMail').readOnly = false; msg(e.msg ? esc(e.msg) : 'התשלום באתר עדיין לא פעיל. נסו שוב בקרוב.', 1); });
   };
   setTimeout(function(){ $('mlpMail').focus() }, 50);
 }

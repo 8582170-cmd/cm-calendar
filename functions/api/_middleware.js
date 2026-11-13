@@ -2,7 +2,7 @@
    הרשימה נשמרת בהגדרות (settings → ipblock) ונפתחת בדף הניהול, באזור "אבטחה".
    /api/admin לא נחסם כאן (יש לו הגבלת ניסיונות משלו), כדי שבעל האתר תמיד יוכל להיכנס ולפתוח חסימה. */
 import SEC from '../../api/_sec.js';
-const FREE = /^\/api\/(admin|nedarim-callback|cron-reminders)(\/|$)/;
+const FREE = /^\/api\/(admin|nedarim-callback|yesh-callback|cron-reminders)(\/|$)/;
 const LIMIT = 240, WINDOW = 60e3, AUTO_MS = 3600e3;
 let cache = { at: 0, list: {} };
 const hits = new Map();

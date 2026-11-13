@@ -14,13 +14,13 @@ async function call(path, body) {
     return await r.json().catch(() => ({}));
   } catch (e) { console.error('sumit', e.message); return {}; }
 }
-/* חיוב חד־פעמי. מחזיר {ok, message, paymentId, documentId, raw} */
-async function charge({ token, amount, name, email, ref, desc }) {
+/* חיוב חד־פעמי. send=false: הקבלה מופקת ב-SUMIT אבל לא נשלחת ללקוח (לפי ההגדרה בניהול). מחזיר {ok, message, paymentId, documentId, raw} */
+async function charge({ token, amount, name, email, ref, desc, send }) {
   const j = await call('/billing/payments/charge/', {
     Customer: { ExternalIdentifier: String(email || ref), SearchMode: 2, Name: String(name || email || 'לקוח MyLuach').slice(0, 80), EmailAddress: email || '' },
     SingleUseToken: token,
     Items: [{ Item: { Name: String(desc || 'MyLuach').slice(0, 100), Description: 'הזמנה ' + String(ref).slice(0, 8) }, Quantity: 1, UnitPrice: Math.round(amount * 100) / 100, Currency: 0 }],
-    VATIncluded: true, OnlyDocument: false, DocumentLanguage: 0, SendDocumentByEmail: !!email
+    VATIncluded: true, OnlyDocument: false, DocumentLanguage: 0, SendDocumentByEmail: !!email && send !== false
   });
   const D = j && j.Data || {}, P = D.Payment || j.Payment || {};
   const fw = j.Status === 0 || j.Status === 'Success';

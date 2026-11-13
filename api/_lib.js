@@ -7,6 +7,9 @@
    NEDARIM_GROUPE                          — אופציונלי: הקטגוריה (Groupe) שתופיע בנדרים פלוס לכל עסקה
    NEDARIM_GROUPE_DONATION                 — אופציונלי: קטגוריה אחרת לתרומות (אם ריק, אותה קטגוריה)
    NEDARIM_CALLBACK_IPS                    — אופציונלי: רשימת כתובות IP מותרות לקריאה החוזרת, מופרדות בפסיק
+   YESH_SECRET, YESH_USERKEY               — יש חשבונית: מפתח API מהחשבון (דף תשלום + קבלה אוטומטית; צריך מסוף סליקה מחובר אצלם)
+   YESH_TEST_AMOUNT                        — אופציונלי: לבדיקה, כל חיוב ביש חשבונית יהיה בסכום הזה
+   YESH_LOGO_URL                           — אופציונלי: לוגו (https) שיוצג בדף התשלום של יש חשבונית
    SITE_URL                                — אופציונלי, ברירת מחדל https://www.myluach.org */
 'use strict';
 /* המחירים נקראים מאותו קובץ שהאתר מציג (assets/plans.js), כך שיש מקור אחד בלבד למחירים ולמבצעים. */
@@ -60,7 +63,7 @@ function publicPricing(cfg) {
   });
   const s = cfg.sale;
   const sale = s && s.on && +s.percent > 0 && live(s) ? { percent: +s.percent, plans: s.plans && s.plans.length ? s.plans : PAID, until: s.until || '', label: s.label || '' } : null;
-  return { plans, sale, off: (cfg.off || []).slice(), extra: (cfg.extra || []).map(x => ({ id: x.id, name: x.name, base: x.base, ils: x.ils, usd: x.usd, downloads: x.downloads, events: x.events, tagline: x.tagline, bullets: x.bullets, cd: !!x.cd, on: !!x.on })), pay: ['paypal', 'sumit'].includes(cfg.pay) ? cfg.pay : 'nedarim', ppAcct: !!cfg.ppAcct, ppGpay: !!cfg.ppGpay, ppMode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppc: env('PAYPAL_CLIENT_ID') || '', renew: cfg.renew && cfg.renew.on && +cfg.renew.percent > 0 ? +cfg.renew.percent : 0, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
+  return { plans, sale, off: (cfg.off || []).slice(), extra: (cfg.extra || []).map(x => ({ id: x.id, name: x.name, base: x.base, ils: x.ils, usd: x.usd, downloads: x.downloads, events: x.events, tagline: x.tagline, bullets: x.bullets, cd: !!x.cd, on: !!x.on })), pay: ['paypal', 'sumit', 'yesh'].includes(cfg.pay) ? cfg.pay : 'nedarim', ppAcct: !!cfg.ppAcct, ppGpay: !!cfg.ppGpay, ppMode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppc: env('PAYPAL_CLIENT_ID') || '', renew: cfg.renew && cfg.renew.on && +cfg.renew.percent > 0 ? +cfg.renew.percent : 0, snapImg: cfg.sampleImgRate == null ? 20 : +cfg.sampleImgRate, snapPx: +cfg.sampleImgPx || 220, snapQ: +cfg.sampleImgQ || 55, torah: !!(cfg.torah && cfg.torah.on) };
 }
 
 /* קופון בתוקף? מחזיר את הקופון או הודעת שגיאה */

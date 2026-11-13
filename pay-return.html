@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>תשלום · MyLuach</title>
+<!-- הדף שיש חשבונית מחזירים אליו בסוף התשלום (בתוך חלון התשלום באתר). האישור עצמו מגיע לשרת בנפרד, והחלון שבאתר מתעדכן לבד. -->
+<style>body{margin:0;font-family:Assistant,Heebo,Arial,sans-serif;background:#fff;color:#1a232c;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;text-align:center}
+h1{font-size:24px;margin:0 0 8px}p{color:#5d6873;font-size:17px;margin:0}.ok h1{color:#1d7a3e}.bad h1{color:#b3261e}</style>
+</head><body><main id="m"><h1></h1><p></p></main>
+<script>
+(function(){
+  var ok = new URLSearchParams(location.search).get('ok') === '1', m = document.getElementById('m');
+  m.className = ok ? 'ok' : 'bad';
+  m.querySelector('h1').textContent = ok ? 'התשלום התקבל ✓' : 'התשלום לא הושלם';
+  m.querySelector('p').textContent = ok ? 'מאשרים את התשלום. החלון יתעדכן לבד בעוד כמה שניות.' : 'לא חויבתם. אפשר לסגור את החלון ולנסות שוב, או לבחור דרך תשלום אחרת.';
+  /* נפתח מחוץ לחלון התשלום (למשל בכרטיסייה נפרדת): חוזרים לאתר */
+  if (window.top === window) { var a = document.createElement('p'); a.innerHTML = '<a href="/">חזרה לאתר</a>'; m.appendChild(a); }
+})();
+</script></body></html>
