@@ -12,7 +12,7 @@ import remConfirm from '../../api/rem-confirm.js';
 import remSubscribe from '../../api/rem-subscribe.js';
 import ticker from '../../api/ticker.js';
 import user from '../../api/user.js';
-import yeshCallback from '../../api/yesh-callback.js';
+import yeshCallback from '../../api/_yesh_callback.js';
 const H = { admin, checkout, 'cron-reminders': cronReminders, ical, me, 'nedarim-callback': nedarimCallback, order, pricing, 'rem-confirm': remConfirm, 'rem-subscribe': remSubscribe, ticker, user, 'yesh-callback': yeshCallback };
 export async function onRequest(context) {
   const h = H[context.params.name];

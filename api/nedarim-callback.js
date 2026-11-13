@@ -5,7 +5,9 @@
 'use strict';
 const { env, db, readBody, json } = require('./_lib');
 
+/* יש חשבונית (api/_yesh_callback.js): מנותב לכאן כדי לא לעבור את מגבלת 12 הפונקציות בוורסל (rewrite ב-vercel.json) */
 module.exports = async (req, res) => {
+  if ((req.query || {}).via === 'yesh') return require('./_yesh_callback')(req, res);
   const p = readBody(req);
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
   console.log('nedarim callback', ip, JSON.stringify(p).slice(0, 1500));
