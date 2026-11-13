@@ -28,10 +28,25 @@ function cleanPlans(L) {
   }).filter(x => x.name);
 }
 const emailsOf = t => (TIERS.find(x => x[0] === t) || [0, 0])[1], smsOf = t => (SMS.find(x => x[0] === t) || [0, 0])[1], voiceOf = t => (VOICE.find(x => x[0] === t) || [0, 0])[1];
+/* מסלולי עמלה למתנות: ברירת המחדל (אחוז וסכום קבוע מההגדרות הרגילות) + מסלולים נוספים מהניהול, חלקם בתשלום חד פעמי לאירוע */
+function cleanTracks(L) {
+  const seen = {}, n = (v, a, z) => { v = Number(v); return isFinite(v) ? Math.max(a, Math.min(z, Math.round(v * 100) / 100)) : 0; };
+  return (Array.isArray(L) ? L : []).slice(0, 6).map(x => {
+    let id = String((x && x.id) || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8); if (!id || seen[id]) id = 't' + Math.random().toString(36).slice(2, 7); seen[id] = 1;
+    return { id, name: String((x && x.name) || '').replace(/[<>]/g, '').trim().slice(0, 30) || id, price: n(x && x.price, 0, 5000), pct: n(x && x.pct, 0, 30), fixed: n(x && x.fixed, 0, 100) };
+  });
+}
+/* המסלול שחל בפועל באירוע: מה שבעל האירוע בחר, ורק אם הוא חינם או שכבר שילם עליו. אחרת ברירת המחדל */
+function trackFor(cur, E) {
+  const def = { id: '', name: 'רגיל', price: 0, pct: E.giftPct, fixed: E.giftFixed }, id = String(((cur && cur.cfg) || {}).gt || '');
+  const t = id && (E.giftTracks || []).find(x => x.id === id);
+  if (t && (!(t.price > 0) || ((cur.paid || {}).gts || []).includes(t.id))) return t;
+  return def;
+}
 async function prices() { const s = (await loadSetting('eventpay').catch(() => null)) || {}, P = { ...DEF }; Object.keys(DEF).forEach(k => { const v = Number((s.prices || {})[k]); if (isFinite(v) && v >= 0 && v <= 100000) P[k] = v; });
   const num = (v, a, z, d) => { v = Number(v); return isFinite(v) && v >= a && v <= z ? v : d; };
   const plans = Array.isArray(s.plans) && s.plans.length ? cleanPlans(s.plans) : defaultPlans(P);
-  return { plans, prices: P, on: s.on === true, smsOn: s.smsOn === true, giftOn: s.giftOn === true, giftPct: num(s.giftPct, 0, 30, 0), giftFixed: num(s.giftFixed, 0, 100, 0), giftMin: num(s.giftMin, 1, 10000, 18), giftMax: num(s.giftMax, 10, 100000, 5000), voiceOn: s.voiceOn === true, freeEmails: num(s.freeEmails, 0, 1000, 20), freeMax: num(s.freeMax, 0, 100, 3), agFree: num(s.agFree, 0, 12, 1), agMax: num(s.agMax, 1, 12, 8), freeFeats: cleanFeats(s.freeFeats), freeName: String(s.freeName || '').replace(/[<>]/g, '').trim().slice(0, 40) || 'מסלול חינמי', freeDesc: String(s.freeDesc || '').replace(/[<>]/g, '').trim().slice(0, 300), mailsPerGuest: num(s.mailsPerGuest, 1, 10, 2), mediaDays: num(s.mediaDays, 1, 90, 7), vFrom: num(s.vFrom, 0, 23, 8), vTo: num(s.vTo, 1, 24, 22), vTests: num(s.vTests, 0, 50, 5), voiceDirect: s.voiceDirect === true, voicePath: String(s.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, ''), voiceTpl: String(s.voiceTpl || '').replace(/\D/g, ''), voiceTplRem: String(s.voiceTplRem || '').replace(/\D/g, ''), vkey: String(s.vkey || ''), vtxt: vtxtClean(s.vtxt), ivrtxt: ivrClean(s.ivrtxt), vGiftPath: String(s.vGiftPath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30) }; }
+  return { plans, prices: P, on: s.on === true, smsOn: s.smsOn === true, giftOn: s.giftOn === true, giftTracks: cleanTracks(s.giftTracks), giftPct: num(s.giftPct, 0, 30, 0), giftFixed: num(s.giftFixed, 0, 100, 0), giftMin: num(s.giftMin, 1, 10000, 18), giftMax: num(s.giftMax, 10, 100000, 5000), voiceOn: s.voiceOn === true, freeEmails: num(s.freeEmails, 0, 1000, 20), freeMax: num(s.freeMax, 0, 100, 3), agFree: num(s.agFree, 0, 12, 1), agMax: num(s.agMax, 1, 12, 8), freeFeats: cleanFeats(s.freeFeats), freeName: String(s.freeName || '').replace(/[<>]/g, '').trim().slice(0, 40) || 'מסלול חינמי', freeDesc: String(s.freeDesc || '').replace(/[<>]/g, '').trim().slice(0, 300), mailsPerGuest: num(s.mailsPerGuest, 1, 10, 2), mediaDays: num(s.mediaDays, 1, 90, 7), vFrom: num(s.vFrom, 0, 23, 8), vTo: num(s.vTo, 1, 24, 22), vTests: num(s.vTests, 0, 50, 5), voiceDirect: s.voiceDirect === true, voicePath: String(s.voicePath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, ''), voiceTpl: String(s.voiceTpl || '').replace(/\D/g, ''), voiceTplRem: String(s.voiceTplRem || '').replace(/\D/g, ''), vkey: String(s.vkey || ''), vtxt: vtxtClean(s.vtxt), ivrtxt: ivrClean(s.ivrtxt), vGiftPath: String(s.vGiftPath || '').replace(/[^0-9/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 30) }; }
 function ivrClean(v) { const o = {}; ['he', 'yi'].forEach(l => { const s = (v || {})[l] || {}, x = {}; Object.keys(require('./_ivoice').IVR[l]).forEach(k => { const t = String(s[k] || '').replace(/[<>=&]/g, ' ').trim().slice(0, 300); if (t) x[k] = t; }); if (Object.keys(x).length) o[l] = x; }); return o; }
 /* נוסחי ההודעה הקולית מהניהול (ריק = הנוסח הרגיל ב-_ivoice) */
 function vtxtClean(v) { const o = {}; ['inv', 'ivr', 'rem', 'ty'].forEach(k => { const t = String((v || {})[k] || '').replace(/[<>]/g, '').trim().slice(0, 400); if (t) o[k] = t; }); return o; }
@@ -49,6 +64,15 @@ async function prepare(b) {
     const D = require('./_dir'), x = await D.forEvent(cur, +tier.slice(1)); if (!x) return { error: 'המאגר לא זמין לאירוע הזה' };
     if (!(x.price > 0)) return { error: 'המאגר הזה בלי תשלום' }; if (x.open) return { error: 'המאגר כבר פתוח לאירוע הזה' };
     return { amount: x.price, slug: s, tier, title: 'ספר טלפונים: ' + x.name + ' (' + s + ')' };
+  }
+  /* קנייה חד פעמית של מסלול עמלה נמוכה למתנות (tier = gt_<מזהה>) */
+  if (/^gt_[a-z0-9]{1,8}$/.test(tier)) {
+    const cur = await T.get(s).catch(() => null); if (!cur) return { error: 'הכתובת של האירוע לא נמצאה. שמרו אותה קודם.' };
+    if (!T.own(cur, b.token)) return { error: 'אפשר לשלם רק מהדפדפן שבו נשמרה הכתובת.' };
+    const E0 = await prices(); if (!E0.on) return { error: 'הרכישה סגורה כרגע' };
+    const t = (E0.giftTracks || []).find(x => 'gt_' + x.id === tier); if (!t || !(t.price > 0)) return { error: 'המסלול לא נמצא' };
+    if (((cur.paid || {}).gts || []).includes(t.id)) return { error: 'המסלול כבר פעיל באירוע הזה' };
+    return { amount: t.price, slug: s, tier, title: 'מסלול מתנות: ' + t.name + ' (' + s + ')' };
   }
   const isSms = SMS.some(x => x[0] === tier), isVoice = VOICE.some(x => x[0] === tier), isMail = MAILPK.some(x => x[0] === tier);
   const E = await prices(), plan = E.plans.find(x => x.id === tier && !x.hidden);
@@ -76,6 +100,7 @@ async function paid(o) {
   if ((P.orders || []).includes(o.id)) return;
   /* פתיחת מאגר: לא משנה את המסלול (גם אירוע חינמי נשאר חינמי) */
   if (/^d\d+$/.test(p.tier)) { P.dirs = [...new Set((P.dirs || []).concat(+p.tier.slice(1)))]; P.orders = (P.orders || []).concat(o.id); await T.put(p.slug, { ...cur, paid: P }); return; }
+  if (/^gt_/.test(p.tier)) { P.gts = [...new Set((P.gts || []).concat(p.tier.slice(3)))]; P.orders = (P.orders || []).concat(o.id); await T.put(p.slug, { ...cur, paid: P, cfg: { ...(cur.cfg || {}), gt: p.tier.slice(3) } }); return; }
   delete P.free;
   const E = await prices(), plan = E.plans.find(x => x.id === p.tier); let added = { emails: 0 };
   if (plan) { const was = curQuota(cur, E); added = { emails: Math.max(0, plan.emails - (was.emails || 0)), sms: Math.max(0, plan.sms - (was.sms || 0)), calls: Math.max(0, plan.calls - (was.calls || 0)) };
@@ -92,4 +117,4 @@ async function paid(o) {
 /* רשימת האירועים ששולמו (לשליחות האוטומטיות היומיות): כתובת ← תאריך. אירוע שעבר לפני יותר מחודש יוצא מהרשימה */
 async function index(slug, date) { const { loadSetting, saveSetting } = require('./_lib'), I = (await loadSetting('evpaid').catch(() => null)) || {}; I[slug] = date || I[slug] || '';
   const cut = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10); Object.keys(I).forEach(k => { if (I[k] && I[k] < cut) delete I[k]; }); await saveSetting('evpaid', I); }
-module.exports = { cleanFeats, vtxtClean, ivrClean, TIERS, SMS, VOICE, MAILPK, FEATS, cleanPlans, voiceOf, DEF, prices, prepare, create, paid, emailsOf, index };
+module.exports = { cleanTracks, trackFor, cleanFeats, vtxtClean, ivrClean, TIERS, SMS, VOICE, MAILPK, FEATS, cleanPlans, voiceOf, DEF, prices, prepare, create, paid, emailsOf, index };

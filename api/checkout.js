@@ -145,7 +145,7 @@ module.exports = async (req, res) => {
       if (ev.error) return json(res, 400, { error: 'event', message: ev.error });
       amount = ev.amount; info = { amount, base: amount, off: 0, why: '' };
       /* קופון והנחת לקוח חוזר (כמו בבונה הלוח). לא על ספר טלפונים */
-      if (!/^d\d+$/.test(ev.tier || '')) {
+      if (!/^(d\d+|gt_[a-z0-9]+)$/.test(ev.tier || '')) {
         const EV = require('./_eventpay'), addon = [].concat(EV.MAILPK, EV.SMS, EV.VOICE).some(x => x[0] === ev.tier);
         if (b.coupon) { coupon = await checkCoupon(cfg, b.coupon, 'event'); if (coupon && coupon.error) return json(res, 400, { error: 'coupon', message: coupon.error }); }
         let renewP = 0; const R = cfg.renew || {}, rP = R.plans && R.plans.event != null ? +R.plans.event : +R.percent;
