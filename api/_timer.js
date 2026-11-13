@@ -746,7 +746,7 @@ module.exports = async (req, res) => {
     if (b.img) return upload(req, res, b);
     if (b.mup) return mediaUp(req, res, b);
     /* אזור אישי: האירועים של החשבון (כניסה עם מייל). mine = הרשימה, claim = חיבור אירוע קיים לחשבון (בעזרת קוד העריכה) */
-    if (['mine', 'claim', 'cpool', 'cpadd', 'cpdel', 'cpsync', 'evrecip'].includes(b.act)) {
+    if (['mine', 'claim', 'cpool', 'cpadd', 'cpdel', 'cpsync', 'evrecip', 'cpedit', 'cpgrp', 'cpclear', 'prget', 'prset'].includes(b.act)) {
       const user = await require('./_lib').getUser(req).catch(() => null); if (!user) return json(res, 401, { error: 'login' });
       const OW = require('./_evowners');
       if (b.act === 'claim') {
@@ -760,6 +760,12 @@ module.exports = async (req, res) => {
       if (b.act === 'cpool') { const d = await OW.cget(user.email); return json(res, 200, { contacts: d.c }); }
       if (b.act === 'cpadd') { const d = await OW.cget(user.email), r = OW.upsert(d, Array.isArray(b.list) ? b.list.slice(0, 5000) : []); if (d.c.length > 20000) return json(res, 400, { error: 'max' }); await OW.cput(user.email, d); return json(res, 200, { ok: true, ...r, total: d.c.length }); }
       if (b.act === 'cpdel') { const ids = new Set((Array.isArray(b.ids) ? b.ids : []).map(String)), d = await OW.cget(user.email), n0 = d.c.length; d.c = d.c.filter(x => !ids.has(x.id)); await OW.cput(user.email, d); return json(res, 200, { ok: true, removed: n0 - d.c.length }); }
+      if (b.act === 'cpedit') { const d = await OW.cget(user.email), r = OW.edit(d, b.id, b.c || {}); if (!r) return json(res, 404, { error: 'not found' }); if (r.error) return json(res, 400, { error: r.error }); await OW.cput(user.email, d); return json(res, 200, { ok: true }); }
+      /* שיוך כמה אנשי קשר לקבוצה (מאגר): g ריק מוציא מהקבוצה */
+      if (b.act === 'cpgrp') { const ids = new Set((Array.isArray(b.ids) ? b.ids : []).map(String)), g = str(b.g, 40).trim(), d = await OW.cget(user.email); let n = 0; d.c.forEach(x => { if (ids.has(x.id)) { x.g = g; n++; } }); await OW.cput(user.email, d); return json(res, 200, { ok: true, changed: n }); }
+      if (b.act === 'cpclear') { await OW.cput(user.email, { c: [] }); return json(res, 200, { ok: true }); }
+      if (b.act === 'prget') return json(res, 200, { email: user.email, profile: await OW.pget(user.email).catch(() => ({})) });
+      if (b.act === 'prset') return json(res, 200, { ok: true, profile: await OW.pput(user.email, b.profile || {}) });
       if (b.act === 'cpsync') {
         const sl = (await mySlugs()).slice(0, 100); const d = await OW.cget(user.email); let r = { add: 0, upd: 0 };
         if (sl.length) { const rows = await db('timer_recip?slug=in.(' + sl.join(',') + ')&status=neq.unsub&select=name,email,phone,grp&limit=20000').catch(() => []); r = OW.upsert(d, rows || []); await OW.cput(user.email, d); }

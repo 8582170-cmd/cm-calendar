@@ -39,3 +39,25 @@ function upsert(doc, list) {
   return { add, upd };
 }
 module.exports.cget = cget; module.exports.cput = cput; module.exports.upsert = upsert;
+
+/* ===== פרטי החשבון (שם, שם שולח ברירת מחדל, שפה, טלפון): timers/accounts/<hash>.json ===== */
+const pkey = email => 'timers/accounts/' + crypto.createHash('sha256').update(norm(email)).digest('hex').slice(0, 40) + '.json';
+async function pget(email) {
+  const R2 = require('./_r2'); const r = await fetch(R2.presign('GET', pkey(email), 120));
+  if (r.status === 404) return {}; if (!r.ok) throw new Error('r2 ' + r.status); return r.json();
+}
+async function pput(email, o) {
+  const clean = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
+  const doc = { name: clean(o.name, 60), fn: clean(o.fn, 40), lang: ['he', 'en', 'yi'].includes(o.lang) ? o.lang : 'he', phone: clean(o.phone, 20).replace(/[^\d+\-\s]/g, ''), updated: new Date().toISOString() };
+  const R2 = require('./_r2'); const r = await fetch(R2.presign('PUT', pkey(email), 120), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(doc) });
+  if (!r.ok) throw new Error('r2 put ' + r.status); return doc;
+}
+/* עריכת איש קשר אחד */
+function edit(doc, id, x) {
+  const c = doc.c.find(y => y.id === String(id)); if (!c) return null;
+  const e = mailn(x.e), p = phn(x.p);
+  if (!e && !p) return { error: 'צריך מייל או טלפון תקינים' };
+  const dup = doc.c.find(y => y.id !== c.id && ((e && y.e === e) || (p && y.p === p))); if (dup) return { error: 'כבר יש איש קשר עם המייל או הטלפון האלה' };
+  c.n = String(x.n || '').trim().slice(0, 80); c.e = e; c.p = p; c.g = String(x.g || '').trim().slice(0, 40); return { ok: true };
+}
+module.exports.pget = pget; module.exports.pput = pput; module.exports.edit = edit;
