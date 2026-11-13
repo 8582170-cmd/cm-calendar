@@ -88,4 +88,4 @@ function parse(p) {
 /* אילו מסופי סליקה מחוברים לחשבון ביש חשבונית (לבדיקה מהניהול) */
 async function plugins() { const j = await call('v1/getCreditCardPlugin', {}); return Array.isArray(j.ReturnValue) ? j.ReturnValue : []; }
 
-module.exports = { ready, createPayment, sigOk, parse, plugins, rcptOf, DOC_TYPES };
+module.exports = { ready, call, createPayment, sigOk, parse, plugins, rcptOf, DOC_TYPES };

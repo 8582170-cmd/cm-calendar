@@ -40,7 +40,10 @@ function clean(c) {
   out.payAlso = (Array.isArray(c.payAlso) ? c.payAlso : []).filter((x, i, l) => ['nedarim', 'paypal', 'sumit', 'yesh'].includes(x) && x !== out.pay && l.indexOf(x) === i);
   /* קבלות ללקוח, לכל חברת תשלום שמאפשרת לשלוט בזה מהאתר: SUMIT (לשלוח או לא), יש חשבונית (להפיק, לשלוח, סוג מסמך) */
   { const R = c.rcpt || {}, S = R.sumit || {}, Y = R.yesh || {};
-    out.rcpt = { sumit: { send: S.send !== false }, yesh: { create: Y.create !== false, send: Y.send !== false, doc: [6, 9, 11].includes(+Y.doc) ? +Y.doc : 6 } }; }
+    const other = k => { const X = R[k] || {}; return { by: ['sumit', 'yesh'].includes(X.by) ? X.by : '', send: X.send !== false }; };
+    /* נדרים פלוס, ביט ו-PayPal לא מפיקים קבלה דרך האתר: אפשר להפיק להם קבלה ב-SUMIT או ביש חשבונית אחרי התשלום */
+    out.rcpt = { sumit: { send: S.send !== false }, yesh: { create: Y.create !== false, send: Y.send !== false, doc: [6, 9, 11].includes(+Y.doc) ? +Y.doc : 6 },
+      nedarim: other('nedarim'), bit: other('bit'), paypal: other('paypal'), sumitDoc: +R.sumitDoc === 1 ? 1 : 2 }; }
   out.sumitCap = Math.max(0, Math.min(100000, parseInt(c.sumitCap, 10) || 0));
   out.sumitOps = Math.max(1, Math.min(20, parseInt(c.sumitOps, 10) || 2));
   out.sumitPeriod = c.sumitPeriod === 'rolling' ? 'rolling' : 'month';
@@ -659,7 +662,8 @@ async function main(req, res) {
     const orders = (await db('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at,callback&order=created_at.desc&limit=100') || []).map(o => {
       const cb = o.callback && typeof o.callback === 'object' ? o.callback : {};
       const via = cb.paypal ? 'paypal' : cb.sumit ? 'sumit' : cb.yesh ? 'yesh' : cb.bit ? 'bit' : !(+o.amount) ? 'free' : Object.keys(cb).some(k => /^[A-Z]/.test(k)) ? 'nedarim' : '';
-      const refunded = (cb.refunds || []).reduce((a, r) => a + (+r.amount || 0), 0); delete o.callback; return { ...o, via, refunded };
+      const refunded = (cb.refunds || []).reduce((a, r) => a + (+r.amount || 0), 0), rc = cb.receipt || null;
+      const rcpt = rc ? { by: rc.by, ok: !rc.error, err: rc.error || '', num: rc.number || '' } : null; delete o.callback; return { ...o, via, refunded, rcpt };
     });
     const uses = {};
     (orders || []).forEach(o => { if (o.coupon && o.status === 'paid') uses[o.coupon] = (uses[o.coupon] || 0) + 1; });

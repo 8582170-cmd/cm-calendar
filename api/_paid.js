@@ -77,6 +77,8 @@ async function markPaid(o, extra, via) {
   const upd = { ...(extra || {}), status: 'paid', paid_at: first ? new Date().toISOString() : o.paid_at };
   await db('orders?id=eq.' + o.id, { method: 'PATCH', body: JSON.stringify(upd) });
   if (first) await notify({ ...o, ...upd, via: via || 'נדרים פלוס' }).catch(e => console.error('paid mail', e.message));
+  /* קבלה ללקוח דרך SUMIT / יש חשבונית, לאמצעים שלא מפיקים קבלה בעצמם (לפי ההגדרה בניהול) */
+  if (first) await require('./_receipt').issue({ ...o, ...upd }, via || 'נדרים פלוס').catch(e => console.error('receipt', e.message));
   return first;
 }
 async function notify(o) {

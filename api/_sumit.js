@@ -29,4 +29,4 @@ async function charge({ token, amount, name, email, ref, desc, send }) {
   const system = !ok && (!fw || !P || P.ID == null && P.Status == null);
   return { ok, system, message: (P.StatusDescription || j.UserErrorMessage || '').toString().slice(0, 200), paymentId: P.ID || null, documentId: D.DocumentID || null, amount: +(P.Amount || amount), raw: { Status: j.Status, Payment: { ID: P.ID, Status: P.Status, ValidPayment: P.ValidPayment, StatusDescription: P.StatusDescription }, DocumentID: D.DocumentID, CustomerID: D.CustomerID } };
 }
-module.exports = { ready, pub, charge };
+module.exports = { ready, pub, charge, call };
