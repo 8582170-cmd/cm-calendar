@@ -50,8 +50,8 @@ async function status(now, P, conf) {
     else if (cur) { blocks.push(cur); cur = null; }
   }
   if (cur) blocks.push(cur);
-  const on = blocks.find(b => now >= b.start && now < b.end), nx = blocks.find(b => b.start > now);
-  return { on: true, closed: !!on, kind: on ? on.kind : null, end: on ? on.end : null, next: nx ? nx.start : null, nextEnd: nx ? nx.end : null, tz: P.tz };
+  const on = blocks.find(b => now >= b.start && now < b.end), nx = blocks.find(b => b.start > now), last = blocks.filter(b => b.end <= now).map(b => b.end).pop() || null;
+  return { on: true, last, closed: !!on, kind: on ? on.kind : null, end: on ? on.end : null, next: nx ? nx.start : null, nextEnd: nx ? nx.end : null, tz: P.tz };
 }
 /* המיקום לפי הבקשה: פרמטרים lat/lng/tz/il, ואם אין, לפי ה-IP (כותרות Vercel), ואם אין, ירושלים */
 function placeOf(req) {

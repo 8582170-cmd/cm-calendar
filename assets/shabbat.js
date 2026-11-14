@@ -1,5 +1,5 @@
 /* אתר שומר שבת: בשבת ובחג (מהשקיעה עד צאת הכוכבים, לפי מיקום הגולש) האתר סגור.
-   התשובה נשמרת בדפדפן עד תחילת השבת הבאה, כך שבימי חול אין המתנה. */
+   התשובה נשמרת בדפדפן לזמן קצר: עד שעה בימי חול (כדי ששינוי בהגדרות בניהול יגיע מהר), ו-5 דקות בשעות שאחרי צאת השבת והחג. */
 (function(){
   'use strict';
   if (window.__mlShabbat) return; window.__mlShabbat = true;
@@ -34,11 +34,12 @@
     var u = '/api/pricing?c=_shabbat' + (gk ? '&lat=' + geo.lat + '&lng=' + geo.lng + (geo.tz ? '&tz=' + encodeURIComponent(geo.tz) : '') + (geo.il != null ? '&il=' + (geo.il ? 1 : 0) : '') : '');
     fetch(u, { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null }).then(function(d){
       if (!d) return; var now = Date.now();
-      put(KEY, { gk: gk, on: d.on, closed: d.closed, kind: d.kind, end: d.end, next: d.next, tz: d.tz, until: d.closed ? d.end : Math.min(d.next || now + 864e5, now + 6 * 3600e3), at: now });
+      var soon = d.last && now - d.last < 4 * 3600e3 ? 5 * 60e3 : 3600e3;
+      put(KEY, { v: 3, gk: gk, on: d.on, closed: d.closed, kind: d.kind, end: d.end, next: d.next, tz: d.tz, until: d.closed ? Math.min(d.end, now + 3600e3) : Math.min(d.next || now + 864e5, now + soon), at: now });
       if (d.closed) close(d); else arm(d);
     }).catch(function(){});
   }
   var c = get(KEY), now = Date.now();
-  if (c && c.gk === gk && now < c.until && now - c.at < 864e5) { if (c.closed && now < c.end) close(c); else if (c.on !== false) arm(c); }
+  if (c && c.v === 3 && c.gk === gk && now < c.until && now - c.at < 864e5) { if (c.closed && now < c.end) close(c); else if (c.on !== false) arm(c); }
   else check();
 })();
