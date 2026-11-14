@@ -28,6 +28,9 @@
     if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
     if (d.end) setTimeout(function(){ location.reload() }, Math.min(Math.max(30e3, d.end - Date.now() + 5e3), 2147483000));
   }
+  /* השרת אמר שכבר פתוח (למשל בגלל שינוי בהגדרות): מורידים את המסך */
+  function reopen(){ var x = document.getElementById('ml-shabbat'); if (!x) return; x.remove(); document.documentElement.style.overflow = '';
+    Array.prototype.forEach.call(document.body.children, function(n){ n.removeAttribute('aria-hidden'); n.inert = false }) }
   function arm(d){ /* דף שנשאר פתוח: נסגר כשמתחילה השבת */
     if (d.next && d.next - Date.now() < 864e5) setTimeout(check, Math.max(1e3, d.next - Date.now() + 1e3));
   }
@@ -37,10 +40,11 @@
       if (!d) return; var now = Date.now();
       var soon = d.last && now - d.last < 4 * 3600e3 ? 5 * 60e3 : 3600e3;
       put(KEY, { v: 3, gk: gk, on: d.on, closed: d.closed, kind: d.kind, end: d.end, next: d.next, tz: d.tz, until: d.closed ? Math.min(d.end, now + 3600e3) : Math.min(d.next || now + 864e5, now + soon), at: now });
-      if (d.closed) close(d); else arm(d);
+      if (d.closed) close(d); else { reopen(); arm(d); }
     }).catch(function(){});
   }
   var c = get(KEY), now = Date.now();
-  if (c && c.v === 3 && c.gk === gk && now < c.until && now - c.at < 864e5) { if (c.closed && now < c.end) close(c); else if (c.on !== false) arm(c); }
-  else check();
+  /* "סגור" שמור: מציגים מיד (בלי הבהוב של האתר), אבל תמיד שואלים שוב את השרת, כדי ששינוי בהגדרות או ברענון ייפתח בזמן */
+  if (c && c.v === 3 && c.gk === gk && now < c.until && now - c.at < 864e5 && !(c.closed && now < c.end)) { if (c.on !== false) arm(c); }
+  else { if (c && c.v === 3 && c.gk === gk && c.closed && now < c.end) close(c); check(); }
 })();

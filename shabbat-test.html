@@ -10,9 +10,10 @@
   w('skip as bot',String(re.test(ua)||!!navigator.webdriver)+(re.test(ua)?' (matched "'+ua.match(re)[0]+'")':''));
   var g=null,c=null;try{g=localStorage.getItem('myluach-geo');c=localStorage.getItem('myluach-shabbat')}catch(e){w('localStorage','ERROR '+e.message)}
   w('saved place',g||'none');w('saved shabbat answer',c||'none');
-  var A=document.createElement('script');A.src='/assets/a11y.js?v=3';A.onload=function(){w('a11y.js','loaded');setTimeout(function(){
+  window.__mlShabbat=true; /* בדף הבדיקה לא מציגים את מסך השבת */
+  var A=document.createElement('script');A.src='/assets/a11y.js?v=4';A.onload=function(){w('a11y.js','loaded');setTimeout(function(){
     w('shabbat.js tag',[].map.call(document.scripts,function(s){return s.src}).filter(function(s){return /shabbat/.test(s)}).join(' ')||'MISSING');
-    w('__mlShabbat',String(!!window.__mlShabbat));w('overlay shown',String(!!document.getElementById('ml-shabbat')));
+    
     var gj=null;try{gj=JSON.parse(g||'null')}catch(e){}
     var u='/api/pricing?c=_shabbat'+(gj&&isFinite(gj.lat)?'&lat='+gj.lat+'&lng='+gj.lng+(gj.tz?'&tz='+encodeURIComponent(gj.tz):'')+(gj.il!=null?'&il='+(gj.il?1:0):''):'');
     fetch(u,{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){w('api '+u,t)}).catch(function(e){w('api','ERROR '+e.message)});
