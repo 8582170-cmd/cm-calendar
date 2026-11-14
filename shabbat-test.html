@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>בדיקת סגירה בשבת</title>
+<style>body{font:17px/1.6 Arial,sans-serif;max-width:720px;margin:20px auto;padding:0 16px}pre{background:#f3f4f6;padding:10px;border-radius:8px;white-space:pre-wrap;word-break:break-all;direction:ltr;text-align:left}</style></head>
+<body><h1>בדיקת סגירה בשבת</h1><p>העתיקו את כל מה שמופיע בתיבה ושלחו.</p><pre id="o">בודק…</pre>
+<script>
+(function(){
+  var o=document.getElementById('o'),L=[];function w(k,v){L.push(k+': '+v);o.textContent=L.join('\n')}
+  var ua=navigator.userAgent||'';w('time',new Date().toString());w('ua',ua);w('webdriver',String(navigator.webdriver));
+  var re=/bot|crawl|spider|slurp|google|bingpreview|mediapartners|lighthouse|pagespeed|headlesschrome|yandex|duckduck|baidu|facebookexternalhit|whatsapp|telegram|ptst|gtmetrix|semrush|ahrefs|validator|preview/i;
+  w('skip as bot',String(re.test(ua)||!!navigator.webdriver)+(re.test(ua)?' (matched "'+ua.match(re)[0]+'")':''));
+  var g=null,c=null;try{g=localStorage.getItem('myluach-geo');c=localStorage.getItem('myluach-shabbat')}catch(e){w('localStorage','ERROR '+e.message)}
+  w('saved place',g||'none');w('saved shabbat answer',c||'none');
+  var A=document.createElement('script');A.src='/assets/a11y.js?v=3';A.onload=function(){w('a11y.js','loaded');setTimeout(function(){
+    w('shabbat.js tag',[].map.call(document.scripts,function(s){return s.src}).filter(function(s){return /shabbat/.test(s)}).join(' ')||'MISSING');
+    w('__mlShabbat',String(!!window.__mlShabbat));w('overlay shown',String(!!document.getElementById('ml-shabbat')));
+    var gj=null;try{gj=JSON.parse(g||'null')}catch(e){}
+    var u='/api/pricing?c=_shabbat'+(gj&&isFinite(gj.lat)?'&lat='+gj.lat+'&lng='+gj.lng+(gj.tz?'&tz='+encodeURIComponent(gj.tz):'')+(gj.il!=null?'&il='+(gj.il?1:0):''):'');
+    fetch(u,{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){w('api '+u,t)}).catch(function(e){w('api','ERROR '+e.message)});
+  },2500)};A.onerror=function(){w('a11y.js','FAILED TO LOAD')};document.head.appendChild(A);
+  window.addEventListener('error',function(e){w('js error',e.message+' @ '+(e.filename||'')+':'+e.lineno)});
+})();
+</script></body></html>
