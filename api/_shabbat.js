@@ -25,7 +25,8 @@ function ymdIn(t, tz) {
 const addDays = ([y, m, d], n) => { const x = new Date(Date.UTC(y, m - 1, d + n)); return [x.getUTCFullYear(), x.getUTCMonth() + 1, x.getUTCDate()]; };
 let HD = null;
 async function holyFn(il, yt) {
-  if (!HD) HD = (await import('./_hdate/index.js')).HDate;
+  /* אם ספריית התאריך העברי לא נטענת, לפחות שבת נסגרת (בלי ימים טובים) */
+  if (!HD && yt) { try { HD = (await import('./_hdate/index.js')).HDate; } catch (e) { console.error('shabbat hdate', e.message); yt = false; } }
   return ([y, m, d]) => {
     const dt = new Date(y, m - 1, d, 12); if (dt.getDay() === 6) return 'shabbat';
     if (!yt) return null;

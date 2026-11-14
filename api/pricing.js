@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
   if (cp === '_shabbat') {
     res.setHeader('Cache-Control', 'private, no-store');
     try { const S = require('./_shabbat'); return json(res, 200, await S.status(Date.now(), S.placeOf(req), await loadConfig())); }
-    catch (e) { console.error('shabbat', e.message); return json(res, 200, { on: false, closed: false }); }
+    catch (e) { console.error('shabbat', e.message); return json(res, 200, { on: false, closed: false, err: String(e.message || e).slice(0, 160) }); }
   }
   /* המיקום המשוער של הגולש לפי הרשת (בלי לשאול), להצעת עיר בבונה. לא נשמר בשום מקום */
   if (cp === '_ipgeo') {
