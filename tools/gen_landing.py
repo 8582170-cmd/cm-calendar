@@ -28,7 +28,7 @@ HEAD = '''<!doctype html>
 <link rel="stylesheet" href="/assets/articles.css?v=2">
 <style>.lp-hero{{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 6px}}.lp-hero .art-btn{{font-size:19px;padding:11px 22px}}.lp-faq details{{border-bottom:1px solid var(--line);padding:8px 0}}.lp-faq summary{{cursor:pointer;font-weight:700}}.lp-faq p{{margin:6px 0 0}}</style>
 <script type="application/ld+json">{ld}</script>
-<script src="/assets/a11y.js?v=2" defer></script>
+<script src="/assets/a11y.js?v=3" defer></script>
 <script src="/assets/cms.js?v=1" defer></script>
 </head>
 <body>

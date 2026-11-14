@@ -24,7 +24,7 @@ HEAD = '''<!doctype html>
 <link rel="stylesheet" href="/assets/articles.css?v=2">
 <style>.lp-hero{{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 6px}}.lp-hero .art-btn{{font-size:19px;padding:11px 22px}}.lp-faq details{{border-bottom:1px solid var(--line);padding:8px 0}}.lp-faq summary{{font-weight:700;cursor:pointer}}.yi-cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}}.yi-card{{border:1px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:inherit;display:block}}.yi-card b{{display:block;font-size:19px;margin-bottom:4px}}.yi-card:hover{{border-color:currentColor}}</style>
 <script type="application/ld+json">{ld}</script>
-<script src="/assets/a11y.js?v=2" defer></script>
+<script src="/assets/a11y.js?v=3" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">צום אינהאלט</a>

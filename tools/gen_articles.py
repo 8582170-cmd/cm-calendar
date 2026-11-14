@@ -37,7 +37,7 @@ HEAD = '''<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/articles.css?v=2">
 <script type="application/ld+json">{ld}</script>
-<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/a11y.js?v=3" defer></script>
 <script src="/assets/cms.js?v=1" defer></script>
 </head>
 <body>

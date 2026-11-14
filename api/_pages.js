@@ -64,7 +64,7 @@ ${p.published ? '' : '<meta name="robots" content="noindex">'}
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/articles.css?v=2">
 ${ld ? '<script type="application/ld+json">' + ld.replace(/</g, '\\u003c') + '</script>' : ''}
-<script src="/assets/a11y.js?v=1" defer></script>
+<script src="/assets/a11y.js?v=3" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
