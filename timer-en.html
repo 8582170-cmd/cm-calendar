@@ -191,6 +191,7 @@ summary{cursor:pointer;font-weight:700}
       <div id="etF" hidden>
       <div class="two"><label id="n1L"><span></span><input id="n1" maxlength="60"></label><label id="n2L"><span></span><input id="n2" maxlength="60"></label></div>
       <div class="two"><label id="f1L"><span></span><input id="f1" maxlength="120"></label><label id="f2L"><span></span><input id="f2" maxlength="120"></label></div>
+      <button type="button" id="f2B" hidden style="background:none;border:0;color:#b8860b;font:inherit;cursor:pointer;padding:2px 0;text-align:start"></button>
       <label id="hsL" hidden>מי מזמין בדף ההזמנה?<select id="hs"><option value="">שני הצדדים</option><option value="1">צד א׳ בלבד</option><option value="2">צד ב׳ בלבד</option></select></label>
       </div>
       </div>
@@ -753,11 +754,11 @@ summary{cursor:pointer;font-weight:700}
   var EVA={t:true,it:'',tl:'',trl:''};
   function etTitle(e){var n=[$('n1').value.trim(),$('n2').value.trim()].filter(Boolean),f=$('f1').value.trim(),p=e[8],L0=document.documentElement.lang,J=L0==='yi'?' און ':L0==='en'?' & ':' ו';
     if(n.length&&/(של|ל|פון|פאר|of|for)$/.test(p))return p+(/\sל$/.test(p)?'':' ')+n.join(J);if(n.length)return (p?p+' · ':'')+n.join(J);if(/(של|\sל|פון|פאר|of|for)$/.test(p))p=e[2];return p+(f&&p?' · '+f:f)}
-  function etSet(k,user){var e=EVT.filter(function(x){return x[0]===k})[0];$('et').value=e?k:'';
+  var f2Open=false,f2Cur='';function etSet(k,user){if(k!==f2Cur){f2Cur=k;f2Open=false}var e=EVT.filter(function(x){return x[0]===k})[0];$('et').value=e?k:'';
     [].forEach.call($('etg').children,function(b){b.setAttribute('aria-checked',b.dataset.et===k)});$('etF').hidden=!e;if(!e)return;
     [['n1L',3],['n2L',4],['f1L',5],['f2L',6]].forEach(function(x){var L=$(x[0]);L.hidden=!e[x[1]];L.querySelector('span').textContent=e[x[1]];if(!e[x[1]])L.querySelector('input').value=''});
     /* מי מזמין: רק באירוע עם שני צדדים (למשל הורי החתן והורי הכלה) */
-    var two=!!(e[5]&&e[6]),cl=function(v){return String(v||'').replace(/\s*\(.*\)\s*$/,'')};$('hsL').hidden=!two;if(two){$('f1L').querySelector('span').textContent='צד א׳ · '+e[5];$('f2L').querySelector('span').textContent='צד ב׳ · '+e[6]}if(!two)$('hs').value='';else{$('hs').options[0].text='שני הצדדים';$('hs').options[1].text='צד א׳ בלבד ('+cl(e[5])+')';$('hs').options[2].text='צד ב׳ בלבד ('+cl(e[6])+')'}
+    var opt2=/לא חובה/.test(e[6]||''),show2=!!e[6]&&(!opt2||f2Open||!!$('f2').value.trim());$('f2L').hidden=!show2;if(!show2)$('f2').value='';var fb=$('f2B');fb.hidden=!(opt2&&!show2);fb.textContent='+ הוספת צד שני ('+String(e[6]||'').replace(/\s*\(.*\)\s*$/,'')+')';var two=!!(e[5]&&show2),cl=function(v){return String(v||'').replace(/\s*\(.*\)\s*$/,'')};$('hsL').hidden=!two;if(two){$('f1L').querySelector('span').textContent='צד א׳ · '+e[5];$('f2L').querySelector('span').textContent='צד ב׳ · '+e[6]}if(!two)$('hs').value='';else{$('hs').options[0].text='שני הצדדים';$('hs').options[1].text='צד א׳ בלבד ('+cl(e[5])+')';$('hs').options[2].text='צד ב׳ בלבד ('+cl(e[6])+')'}
     $('n1L').parentNode.hidden=!e[3]&&!e[4];
     if(!user)return;
     if(!$('it').value.trim()||$('it').value===EVA.it){$('it').value=e[9];EVA.it=e[9]}
@@ -766,7 +767,7 @@ summary{cursor:pointer;font-weight:700}
   function etAuto(){var e=EVT.filter(function(x){return x[0]===$('et').value})[0];if(!e||!EVA.t)return;var v=etTitle(e);if(v&&v!==$('t').value){$('t').value=v;$('t').dispatchEvent(new Event('input'))}}
   $('etg').innerHTML=EVT.map(function(e){return '<button type="button" role="radio" aria-checked="false" data-et="'+e[0]+'"><i aria-hidden="true">'+e[1]+'</i>'+e[2]+'</button>'}).join('');
   $('etg').addEventListener('click',function(ev){var b=ev.target.closest('[data-et]');if(b)etSet(b.dataset.et,true)});
-  ['n1','n2','f1','f2'].forEach(function(k){$(k).addEventListener('input',function(){etAuto();upd()})});$('hs').addEventListener('change',upd);
+  ['n1','n2','f1','f2'].forEach(function(k){$(k).addEventListener('input',function(){etAuto();upd()})});$('hs').addEventListener('change',upd);$('f2B').addEventListener('click',function(){f2Open=true;etSet($('et').value);$('f2').focus();upd()});$('f2').addEventListener('input',function(){if($('f2').value.trim()&&$('f2L').hidden)etSet($('et').value)});
   $('t').addEventListener('input',function(e){if(e.isTrusted)EVA.t=!$('t').value.trim()});
   function invLayout(){var f=$('f'),tl=$('t').closest('label'),dt=$('d').closest('.two');
     var sm=$('invD').querySelector('summary');
