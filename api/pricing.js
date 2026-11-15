@@ -95,6 +95,19 @@ module.exports = async (req, res) => {
   if (cp === '_share') return require('./_share').pub(req, res);
   /* לוח ציבורי מהלוח המקוון: myluach.org/<שם> */
   if (cp === '_pubcal') return require('./_pubcal').read(req, res);
+  /* UPAY: הודעת שרת על תשלום (קישור לעדכון שרת / IPN). בשלב הבדיקה רק נרשם, כדי לראות מה הם שולחים */
+  if (cp === '_upayipn') {
+    try {
+      const { loadSetting, saveSetting, readBody } = require('./_lib');
+      const b = readBody(req); delete b.c;
+      const h = {}; ['content-type', 'user-agent', 'x-forwarded-for', 'cf-connecting-ip', 'x-real-ip'].forEach(k => { if (req.headers[k]) h[k] = String(req.headers[k]).slice(0, 200); });
+      const raw = typeof req.body === 'string' ? req.body : Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
+      const log = await loadSetting('upaylog'); const L = Array.isArray(log.items) ? log.items : [];
+      L.unshift({ at: new Date().toISOString(), method: req.method, data: Object.fromEntries(Object.entries(b).slice(0, 80).map(([k, v]) => [String(k).slice(0, 60), typeof v === 'object' ? JSON.stringify(v).slice(0, 800) : String(v).slice(0, 800)])), raw: raw.slice(0, 3000), h });
+      await saveSetting('upaylog', { items: L.slice(0, 40) });
+    } catch (e) { console.error('upayipn', e.message); }
+    res.statusCode = 200; res.setHeader('Content-Type', 'text/plain'); res.setHeader('Cache-Control', 'no-store'); return res.end('OK');
+  }
   /* עריכת דפים: אילו דפים נערכו (כדי שכל דף לא יפנה לשרת סתם) */
   if (cp === '_cmsix') {
     const { loadSetting } = require('./_lib');
