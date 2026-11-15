@@ -74,7 +74,7 @@ function clean(c) {
     wp: ['bottom', 'none'].includes(c.wp) ? c.wp : 'top', wd: ['h', 'b'].includes(c.wd) ? c.wd : 'g', wh: ['o', 'c'].includes(c.wh) ? c.wh : 's', ww: String(c.ww) === '0' ? '0' : '1', wt: String(c.wt) === '0' ? '0' : '1', ns: String(c.ns) === '1' ? '1' : '0',
     p: okImg(c.p) ? c.p : '', ps: ['rect', 'wide'].includes(c.ps) ? c.ps : 'circle',
     /* דף הזמנה */
-    inv: okImg(c.inv) || extMedia(c.inv, 'img') ? String(c.inv).trim() : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), hs: c.hs === '1' || c.hs === '2' ? c.hs : '', it: str(c.it, 1500), pt: str(c.pt, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
+    inv: okImg(c.inv) || extMedia(c.inv, 'img') ? String(c.inv).trim() : '', et: /^[a-z]{2,5}$/.test(c.et || '') ? c.et : '', n1: str(c.n1, 60), n2: str(c.n2, 60), f1: str(c.f1, 120), f2: str(c.f2, 120), hs: c.hs === '1' || c.hs === '2' ? c.hs : '', it: str(c.it, 1500), pt: str(c.pt, 300), hp: str(c.hp, 30).replace(/[<>]/g, ''), hx: str(c.hx, 30).replace(/[<>]/g, ''), rb: c.rb ? 1 : 0, sg: str(c.sg, 300), venue: str(c.venue, 120), addr: str(c.addr, 200),
     tr: /^\d{1,2}:\d{2}$/.test(c.tr || '') ? c.tr : '', tl: str(c.tl, 40), ...(c.trl != null ? { trl: str(c.trl, 30) } : {}), wz: str(c.wz, 200), fn: String(str(c.fn, 40) || '').replace(/[^\p{L}\p{N} .'&\-]/gu, '').trim(), rvo: c.rvo === 'inv' ? 'inv' : '', ...(Array.isArray(c.ag) ? { ag: c.ag.slice(0, 12).map(x => ({ h: /^\d{1,2}:\d{2}$/.test((x && x.h) || '') ? x.h : '', t: str(x && x.t, 60) })).filter(x => x.h && x.t) } : {}), bgm: ['glass', 'open'].includes(c.bgm) ? c.bgm : '', rv: c.rv ? 1 : 0, rm: c.rm ? 1 : 0, wl: c.wl ? 1 : 0, vm: ['tts', 'name', 'full'].includes(c.vm) ? c.vm : 'tts', wan: c.wan ? 1 : 0, wsec: c.wsec ? 1 : 0, wim: c.wim ? 1 : 0, wmv: c.wmv === 0 || c.wmv === '0' ? 0 : 1, wpub: c.wpub === 0 || c.wpub === '0' ? 0 : 1, gpub: c.gpub === 0 || c.gpub === '0' ? 0 : 1, wlay: ['side', 'left', 'bottom'].includes(c.wlay) ? c.wlay : 'side', gmin: Math.max(0, Math.min(100000, Math.round(+c.gmin || 0))), tp: c.tp ? 1 : 0, tpt: str(c.tpt, 120),
     gift: /^https:\/\/[^\s<>"']{6,300}$/.test(String(c.gift || '')) ? String(c.gift) : '', gl: str(c.gl, 40),
     /* אפשרויות לבחירת בעל האירוע: תזכורת למי שלא ענה (ימים לפני), תזכורת ביום האירוע, תודה אחרי, שאלות נוספות, גלריה, מתנה באשראי, SMS */
@@ -159,6 +159,15 @@ function sunsetH(y, m, d, tz) { const c = LLs[tz] || LLs['Asia/Jerusalem'], lat 
   if (ch > 1 || ch < -1) return null; const Hh = Math.acos(ch) / R / 15, T = Hh + RA - .06571 * t - 6.622; return ((T - lh + off) % 24 + 48) % 24; }
 const H = v => String(v == null ? '' : v).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 const YWD = ['זונטאג', 'מאנטאג', 'דינסטאג', 'מיטוואך', 'דאנערשטאג', 'פרייטאג', 'שבת קודש'], YMO = ['יאנואר', 'פעברואר', 'מערץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אויגוסט', 'סעפטעמבער', 'אקטאבער', 'נאוועמבער', 'דעצעמבער'];
+/* תואר לכל מוזמן: ברירת המחדל של האירוע (לפני השם / אחריו) מתווספת רק למי שאין לו כבר תואר בשם עצמו */
+const HON_PRE = /^(הרב|הרה["״][גחצ]|הר["״]ר|ר['׳]|מו["״]ה|מוה["״]ר|כ["״]ק|הגאון|האדמו["״]ר|מרן|מר |מרת|גב['׳]|הבחור|הב['׳]|החתן|משפחת|ד["״]ר|פרופ|rabbi|rav|reb|mr|mrs|ms|dr)/i, HON_SUF = /(שליט["״]א|הי["״]ו|נ["״]י|שיחי['׳]?|תחי['׳]?|ני["״]ו|יצ["״]ו)\s*$/;
+function honor(name, c) {
+  name = String(name || '').trim(); if (!name) return '';
+  const hp = String((c && c.hp) || '').trim(), hx = String((c && c.hx) || '').trim();
+  /* משפחה, זוג ("דוד ושרה") או שם שאינו בעברית: בלי תואר אוטומטי */
+  if (/^משפחת/.test(name) || /\sו\S/.test(name) || !/[א-ת]/.test(name)) return name;
+  return (hp && !HON_PRE.test(name) ? hp + ' ' : '') + name + (hx && !HON_SUF.test(name) ? ' ' + hx : '');
+}
 function inviteMail(slug, cur, r, site, mode) {
   const c = cur.cfg || {}, th = THC[c.th] || THC.classic, acc = /^[0-9a-f]{6}$/i.test(c.c || '') ? c.c : th[0], bg = /^[0-9a-f]{6}$/i.test(c.b || '') ? c.b : th[1], dark = c.th === 'elegant' || c.th === 'digital';
   const ink = dark ? 'f3efe6' : '1a232c', mute = dark ? 'b8ae9c' : '5d6873', ML = c.ml || c.lang || 'he', EN = ML === 'en', YI = ML === 'yi', page = site + '/t/' + slug + '?' + (r.name ? 'to=' + encodeURIComponent(r.name) + '&' : '') + 'r=' + r.token;
@@ -171,7 +180,7 @@ function inviteMail(slug, cur, r, site, mode) {
       let hd = EN ? p.day + ' ' + p.month + ' ' + p.year : gemN(+p.day) + (YI ? ' ' : ' ב') + p.month + ' ' + gemN(+p.year); if (after && c.wh === 'o') hd = (EN ? 'Eve of ' : 'אור ל') + hd;
       when = c.wd === 'h' ? hd : when + ' · ' + hd; } } catch (e) {}
   if (c.h) when += (EN || YI ? ' · ' : ' · בשעה ') + c.h;
-  const greet = r.name ? String(c.pt || (EN ? 'Dear {name}, we would be delighted to celebrate with you!' : YI ? 'לכבוד {שם}, מיר וועלן זיך זייער פרייען אייך צו זען ביי אונזער שמחה!' : 'לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!')).replace(/\{(שם|name)\}/g, r.name) : '';
+  const greet = r.name ? String(c.pt || (EN ? 'Dear {name}, we would be delighted to celebrate with you!' : YI ? 'לכבוד {שם}, מיר וועלן זיך זייער פרייען אייך צו זען ביי אונזער שמחה!' : 'לכבוד {שם}, נשמח מאוד לראותך בשמחתנו!')).replace(/\{(שם|name)\}/g, honor(r.name, c)) : '';
   const img = site + '/api/pricing?c=_cdimg&d=' + c.d + (c.h ? '&h=' + encodeURIComponent(c.h) : '') + '&u=' + (c.u || 'd') + '&fg=' + acc + '&bg=' + bg + (c.z && c.z !== 'Asia/Jerusalem' ? '&z=' + encodeURIComponent(c.z) : '') + '&a=1';
   const btn = (href, label, pri) => '<a href="' + H(href) + '" target="_blank" style="display:inline-block;margin:4px;padding:10px 18px;border-radius:999px;border:2px solid #' + acc + ';' + (pri ? 'background:#' + acc + ';color:#' + bg : 'color:#' + acc) + ';font-weight:bold;text-decoration:none;font-family:Arial,sans-serif;font-size:15px">' + label + '</a>';
   const loc = [c.venue, c.addr].filter(Boolean).join(', '), dir = EN ? 'ltr' : 'rtl', unsub = site + '/api/pricing?c=_timer&unsub=' + r.token;
@@ -194,6 +203,8 @@ function inviteMail(slug, cur, r, site, mode) {
   if (loc || c.tr || (c.ag && c.ag.length)) h += row('<div style="font-size:15px">' + (c.venue ? '<b style="color:#' + acc + '">' + H(c.venue) + '</b><br>' : '') + (c.addr ? H(c.addr) + '<br>' : '') + (Array.isArray(c.ag) ? c.ag.slice().sort((a, b) => agKey(a.h) - agKey(b.h)).map(x => H(x.h) + ' ' + H(x.t)).join('<br>') : (c.tr ? (trl ? H(trl) + ': ' : '') + H(c.tr) : '') + (c.tr && c.h && c.tl ? '<br>' : '') + (c.h && c.tl ? H(c.tl) + ': ' + H(c.h) : '')) + '</div>' +
     (c.addr ? '<div style="margin-top:6px">' + btn('https://waze.com/ul?q=' + encodeURIComponent(c.addr) + '&navigate=yes', L.waze) + btn('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc), L.maps) + '</div>' : ''));
   h += row((mode === 'ty' ? btn(page, L.open, true) + (c.gal ? btn(page + '&go=gal', EN ? '📷 Share your photos' : YI ? '📷 ארויפלייגן בילדער פון דער שמחה' : '📷 להעלאת תמונות מהאירוע') : '') : (c.rv && mode !== 'dr' ? btn(page + '&go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + btn(page + '&go=cal', L.cal)) + (mode !== 'ty' && r.token && /^\d{4}-\d{2}-\d{2}$/.test(c.d || '') ? btn(site + '/api/rem-confirm?ev=' + slug + '&r=' + encodeURIComponent(r.token), EN ? '🔔 Remind me on the day' : YI ? '🔔 דערמאנען מיך אינעם טאג פון דער שמחה' : '🔔 תזכורת ביום השמחה') : '') + (c.wl ? btn(page + '&go=wish', L.wish) : '') + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
+  if (c.rb && mode !== 'ty' && cur.paid && cur.paid.email) h += row('<div style="font-size:15px;white-space:pre-line">' + H(EN ? 'If you cannot make it, we would love to receive your good wishes. Simply reply to this email and your blessing will reach us.' : YI ? 'אויב עס איז אייך שווער צו קומען, וועלן מיר זיך זייער פרייען צו באקומען פון אייך א ברכת מזל טוב. מען קען פשוט ענטפערן אויף דעם אימעיל, און די ברכה וועט אנקומען צו אונז.' : 'אם ירחק ממך הדרך, או שתהיה מניעה אחרת, נשמח לקבל ממך איחולים וברכת מזל טוב. אפשר פשוט להשיב למייל הזה, והברכה תגיע אלינו.') + '</div>');
+  if (c.sg) h += row('<div style="font-size:15px;font-weight:bold;white-space:pre-line;color:#' + acc + '">' + H(c.sg) + '</div>');
   h += '<tr><td style="padding:14px 18px 16px;text-align:center;font-size:11px;color:#' + mute + '"><a href="' + H(unsub) + '" style="color:#' + mute + '">' + L.un + '</a> · <a href="' + site + '/dir/" style="color:#' + mute + '">' + L.me + '</a> · <a href="' + site + '/invite" style="color:#' + mute + ';text-decoration:none">myluach.org</a></td></tr></table></td></tr></table></body></html>';
   const text = (greet ? greet + '\n\n' : '') + title + '\n' + when + (loc ? '\n' + loc : '') + '\n\n' + page + '\n\n' + L.un + ': ' + unsub;
   return { html: h, text, unsub };
@@ -816,4 +827,4 @@ module.exports = async (req, res) => {
 
 module.exports.ivr = ivr; module.exports.feat = feat; module.exports.evIndex = evIndex; module.exports.key = key; module.exports.ivrcb = ivrcb; module.exports.get = get; module.exports.put = put; module.exports.own = own; module.exports.isFull = isFull;
 module.exports.cronSend = cronSend; module.exports.autoCalls = autoCalls; module.exports.holyAt = holyAt; module.exports.inviteMail = inviteMail;
-module.exports.autoMails = autoMails; module.exports.cleanMedia = cleanMedia;
+module.exports.autoMails = autoMails; module.exports.honor = honor; module.exports.clean = clean; module.exports.cleanMedia = cleanMedia;

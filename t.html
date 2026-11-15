@@ -273,6 +273,8 @@ body.envon>*:not(.envo):not(#bgw):not(.mus){visibility:hidden}
     if(!PAID&&!window.__live)page.insertAdjacentHTML('beforeend','<div class="box2" style="border:2px dashed var(--acc)"><b>'+(EN?'Preview: only you can see this page. Guests will see it after the invitation page is activated.':'תצוגה מקדימה: רק אתם רואים את הדף. האורחים יראו אותו אחרי הפעלת דף ההזמנה.')+'</b> <a href="/invite?s='+slug+'">'+(EN?'Activate':'להפעלה')+'</a></div>');
     var ok=function(u){return /^https:\/\/(media|www)\.myluach\.org\/[^"'<>\s]+\.jpg$/.test(u||'')||/^https:\/\/[a-z0-9.-]+\.r2\.dev\/timers\/img\/[^"'<>\s]+\.jpg$/.test(u||'')};
     var tn=(Q.get('to')||'').replace(/[<>]/g,'').trim().slice(0,60),pt=String(o.pt||'')||T.to;
+    /* תואר ברירת מחדל של האירוע: רק למי שאין לו כבר תואר בשם */
+    var tnH=tn;if(tn){var hp=String(o.hp||'').trim(),hx=String(o.hx||'').trim();if(!(/^משפחת/.test(tn)||/\sו\S/.test(tn)||!/[א-ת]/.test(tn)))tnH=(hp&&!/^(הרב|הרה["״][גחצ]|הר["״]ר|ר['׳]|מו["״]ה|מוה["״]ר|כ["״]ק|הגאון|האדמו["״]ר|מרן|מר |מרת|גב['׳]|הבחור|הב['׳]|החתן|משפחת|ד["״]ר|פרופ|rabbi|rav|reb|mr|mrs|ms|dr)/i.test(tn)?hp+' ':'')+tn+(hx&&!/(שליט["״]א|הי["״]ו|נ["״]י|שיחי['׳]?|תחי['׳]?|ני["״]ו|יצ["״]ו)\s*$/.test(tn)?' '+hx:'')}
     var h='';
     if(ok(o.inv)||/^https:\/\/[^\s"'<>`\\]{4,400}\.(jpg|jpeg|png|webp|gif)(\?[^\s"'<>`\\]{0,200})?$/i.test(o.inv||''))h+='<img class="invimg" src="'+esc(o.inv)+'" alt="'+esc(title)+'" referrerpolicy="no-referrer">';
     var ES={wed:['מתחתנים','הורי החתן','הורי הכלה','Getting married'],eng:['מתארסים','הורי החתן','הורי הכלה','Engaged'],sheva:['שבע ברכות','המארחים','','Sheva Brachot'],bar:['בר מצווה','ההורים','הסבים','Bar Mitzvah'],bat:['בת מצווה','ההורים','הסבים','Bat Mitzvah'],brit:['ברית מילה','ההורים','הסבים','Brit Milah'],zbd:['שמחת בת','ההורים','הסבים','Simchat Bat'],pid:['פדיון הבן','ההורים','הסבים','Pidyon Haben'],chl:['חלאקה','ההורים','הסבים','Upsherin'],sfr:['הכנסת ספר תורה','המזמינים','','Hachnasat Sefer Torah'],bd:['יום הולדת','המזמינים','','Birthday'],oth:['','המזמינים','','']}[o.et];
@@ -280,9 +282,9 @@ body.envon>*:not(.envo):not(#bgw):not(.mus){visibility:hidden}
     if(ES&&EN){ES=[ES[3],/הורי/.test(ES[1])?(o.et==='wed'||o.et==='eng'?"Groom's parents":'Parents'):ES[1]?'Hosts':'',ES[2]?(/הורי/.test(ES[2])?"Bride's parents":'Grandparents'):'']}
     var nm=[o.n1,o.n2].filter(Boolean).map(esc).join(' &amp; ');
     if(ES&&(nm||o.f1||ES[0])){var par=[[ES[1],o.f1,'1'],[ES[2],o.f2,'2']].filter(function(x){return x[1]&&(!o.hs||o.hs===x[2])});
-      h+='<div class="box2 hd">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(nm?'<h2 class="nm">'+nm+'</h2>':'')+(ES[0]?'<p class="sub">'+ES[0]+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+
+      h+='<div class="box2 hd">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tnH))+'</p>':'')+(nm?'<h2 class="nm">'+nm+'</h2>':'')+(ES[0]?'<p class="sub">'+ES[0]+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+
         (par.length?'<div class="par">'+par.map(function(x){return '<div>'+(x[0]?'<small>'+x[0]+'</small>':'')+'<b>'+esc(x[1])+'</b></div>'}).join('')+'</div>':'')+'</div>'}
-    else if(tn||o.it)h+='<div class="box2">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+'</div>';
+    else if(tn||o.it)h+='<div class="box2">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tnH))+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+'</div>';
     page.insertAdjacentHTML('beforeend',h);page.appendChild(c);
     var url=location.origin+'/t/'+slug,fmt=function(ms){return new Date(ms).toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'')},d8=function(x){return x.replace(/-/g,'')};
     var nextDay=function(x){var q=new Date(x+'T12:00:00Z');q.setUTCDate(q.getUTCDate()+1);return q.toISOString().slice(0,10)};
