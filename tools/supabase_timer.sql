@@ -138,3 +138,7 @@ create index if not exists dir_person_alias on public.dir_person using gin (alia
 notify pgrst, 'reload schema';
 alter table public.dir_book add column if not exists price jsonb default '{}';
 notify pgrst, 'reload schema';
+
+-- פעילות אחרונה של משתמשים (כרטיס לקוח בניהול). כבר הוחל במסד הנתונים
+create table if not exists public.user_seen (user_id uuid primary key, email text, seen_at timestamptz default now(), first_at timestamptz default now(), page text);
+alter table public.user_seen enable row level security;

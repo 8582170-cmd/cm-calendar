@@ -127,7 +127,7 @@ details p{margin:0 0 14px}
 footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
 footer a{color:var(--mute)}
 </style>
-<script src="/assets/a11y.js?v=4" defer></script>
+<script src="/assets/a11y.js?v=5" defer></script>
 <script src="/assets/sitemsg.js?v=3" defer></script>
 <script type="application/ld+json">%s</script>
 </head>

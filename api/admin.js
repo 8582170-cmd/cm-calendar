@@ -79,7 +79,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|health|alog|maintget)$/;
+const ALOG_RO = /^(dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();

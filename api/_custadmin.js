@@ -36,8 +36,13 @@ async function search(q0) {
   return { q, items };
 }
 
+async function act(email, n) {
+  return db('rpc/admin_user_activity', { method: 'POST', body: JSON.stringify({ p_email: email, p_limit: n || 1 }) }).catch(e => { console.error('activity', e.message); return null; });
+}
 module.exports = async function (b) {
   if (b.action === 'cu_search') return search(b.q);
+  /* פעילות אחרונה של משתמשים רשומים: הרשמה, כניסה אחרונה, והפעם האחרונה שהאתר היה פתוח אצלם (מחוברים) */
+  if (b.action === 'cu_recent') return { rows: (await act(null, Math.min(300, parseInt(b.n, 10) || 60))) || [] };
   const em = str(b.email, 200).trim().toLowerCase();
   if (!EM.test(em)) return { error: 'כתובת מייל לא תקינה' };
   const M = (await loadSetting('custmeta').catch(() => ({}))) || {}, me = M[em] || {};
@@ -107,7 +112,8 @@ module.exports = async function (b) {
   /* שימוש בקופונים האלה בהזמנות */
   let used = {}; if (coupons.length) { const R = await db('orders?select=coupon&status=eq.paid&coupon=in.(' + coupons.map(c => encodeURIComponent(c.code)).join(',') + ')').catch(() => []); (R || []).forEach(o => { used[o.coupon] = (used[o.coupon] || 0) + 1; }); }
   let ent = null; try { const SB = require('./_subs'), S = await SB.cfg(), who = { id: uid, email: em }; ent = { g: await SB.greetEnt(who, S), r: await SB.remEnt(who, S), names: {} }; } catch (e) {}
-  return { email: em, ent, meta: me, events, reminders: rem || [], voice: vrem || [], feedback: fb, coupons: coupons.map(c => ({ ...c, used: used[c.code] || 0 })), plans: PAID.map(id => [id, PLAN_NAMES[id] || id]) };
+  const actv = ((await act(em, 1)) || [])[0] || null;
+  return { email: em, activity: actv, ent, meta: me, events, reminders: rem || [], voice: vrem || [], feedback: fb, coupons: coupons.map(c => ({ ...c, used: used[c.code] || 0 })), plans: PAID.map(id => [id, PLAN_NAMES[id] || id]) };
 };
 
 /* חסימה: getUser ב-_lib בודק כאן (עם זיכרון של דקה), כך שלקוח חסום לא מזוהה בשרת: לא קונה, לא מוריד ולא שומר */

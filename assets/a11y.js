@@ -4,6 +4,21 @@
   if (window.__mlA11y) return; window.__mlA11y = true;
   /* אתר שומר שבת */
   try { var sh = document.createElement('script'); sh.src = '/assets/shabbat.js?v=5'; sh.async = true; (document.head || document.documentElement).appendChild(sh); } catch (e) {}
+  /* פעילות אחרונה של משתמש מחובר (לכרטיס הלקוח בניהול): כשהדף נפתח וכשחוזרים ללשונית, לכל היותר פעם ב-10 דקות. רק זמן ודף */
+  (function(){
+    function seen(){ try {
+      if (/\/admin/.test(location.pathname) || document.visibilityState === 'hidden') return;
+      var raw = localStorage.getItem('myluach-auth'); if (!raw) return; var t = JSON.parse(raw) || {}, s = t.currentSession || t, tok = s.access_token;
+      if (!tok || (s.expires_at && s.expires_at * 1000 < Date.now() + 30e3)) return;
+      if (Date.now() - (+localStorage.getItem('ml-seen') || 0) < 600e3) return;
+      localStorage.setItem('ml-seen', String(Date.now()));
+      fetch('/api/user?fn=seen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ p: location.pathname }), keepalive: true })
+        .then(function(r){ if (!r.ok) localStorage.removeItem('ml-seen'); }).catch(function(){ try { localStorage.removeItem('ml-seen') } catch (e) {} });
+    } catch (e) {} }
+    /* פעמיים: אחרי 4 שניות, ושוב אחרי 25 (אם החיבור היה צריך להתחדש) */
+    function go(){ setTimeout(seen, 4e3); setTimeout(seen, 25e3); }
+    go(); document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') go(); });
+  })();
   var KEY = 'myluach-a11y', st = {};
   try { st = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch (e) {}
   var css = '' +
