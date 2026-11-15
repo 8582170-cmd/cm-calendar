@@ -4,7 +4,7 @@
 (function(){
   'use strict';
   var PAGE = (document.documentElement.getAttribute('data-cms') || location.pathname.replace(/^\/|\.html$/g, '') || 'index');
-  var SEL = 'h1,h2,h3,h4,p,li,summary,a,button,label,small,figcaption,td,th,span.eyebrow,span.k,span.fine,span.tag,.lead,.fine';
+  var SEL = 'h1,h2,h3,h4,p,li,summary,a,button,label,small,figcaption,td,th,span.eyebrow,span.k,span.fine,span.tag,.lead,.fine,[data-cms-t]';
   var INLINE = { B:1, STRONG:1, I:1, EM:1, A:1, BR:1, SPAN:1, SMALL:1, S:1, U:1 };
   var KEY = 'myluach-cms-' + PAGE;
   function norm(t){ return String(t || '').replace(/\s+/g, ' ').trim() }

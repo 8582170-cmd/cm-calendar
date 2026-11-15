@@ -38,7 +38,7 @@ HEAD = '''<!doctype html>
 <link rel="stylesheet" href="/assets/articles.css?v=2">
 <script type="application/ld+json">{ld}</script>
 <script src="/assets/a11y.js?v=5" defer></script>
-<script src="/assets/cms.js?v=2" defer></script>
+<script src="/assets/cms.js?v=3" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>

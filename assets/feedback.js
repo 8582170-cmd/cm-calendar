@@ -48,7 +48,7 @@
   }
   function plan() { try { return (window.MyLuachPlans && window.MyLuachPlans.current && window.MyLuachPlans.current().id) || ''; } catch (e) { return ''; } }
   function stars(k) {
-    var h = '<div class="mlfb-r"><span>' + T[k] + '</span><div class="mlfb-st" role="radiogroup" aria-label="' + esc(T[k]) + '">';
+    var h = '<div class="mlfb-r"><span data-cms-t>' + T[k] + '</span><div class="mlfb-st" data-cms-skip role="radiogroup" aria-label="' + esc(T[k]) + '">';
     for (var i = 1; i <= 5; i++) h += '<button type="button" role="radio" aria-checked="false" data-k="' + k + '" data-v="' + i + '" aria-label="' + i + T.stars + '">★</button>';
     return h + '</div></div>';
   }
@@ -57,8 +57,8 @@
     var R = {};
     el.classList.add('mlfb');
     el.innerHTML = '<h3>' + esc(o.title || T.title) + '</h3><p class="mlfb-sub">' + T.sub + '</p>' + stars('opt') + stars('design') + stars('ease') +
-      '<label>' + T.sugg + '<textarea rows="3" maxlength="2000" data-f="text" placeholder="' + esc(T.ph) + '"></textarea></label>' +
-      '<label>' + T.mail + '<input type="email" maxlength="120" data-f="email" dir="ltr" autocomplete="email"></label>' +
+      '<label><span data-cms-t>' + T.sugg + '</span><textarea rows="3" maxlength="2000" data-f="text" placeholder="' + esc(T.ph) + '"></textarea></label>' +
+      '<label><span data-cms-t>' + T.mail + '</span><input type="email" maxlength="120" data-f="email" dir="ltr" autocomplete="email"></label>' +
       '<input class="mlfb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" data-f="hp">' +
       '<div class="mlfb-row"><button type="button" class="mlfb-go">' + T.send + '</button>' + (o.later ? '<button type="button" class="mlfb-later">' + T.later + '</button>' : '') + '<span class="mlfb-msg" aria-live="polite"></span></div>';
     var q = function (s) { return el.querySelector(s); };
@@ -100,9 +100,9 @@
     el.innerHTML = '<h3>' + T.ctitle + '</h3><p class="mlfb-sub">' + T.csub + '</p><div class="mlfb-row"><button type="button" class="mlfb-go mlfb-open">' + T.copen + '</button></div>';
     el.querySelector('.mlfb-open').onclick = function () {
       el.innerHTML = '<h3>' + T.ctitle + '</h3><p class="mlfb-sub">' + T.csub + '</p>' +
-        '<label>' + T.name + '<input maxlength="80" data-f="name" autocomplete="name"></label>' +
+        '<label><span data-cms-t>' + T.name + '</span><input maxlength="80" data-f="name" autocomplete="name"></label>' +
         '<div class="mlfb-two"><label>' + T.cmail + ' <b aria-hidden="true">*</b><input type="email" maxlength="120" data-f="email" dir="ltr" autocomplete="email" required aria-required="true"></label><label>' + T.cphone + '<input type="tel" maxlength="30" data-f="phone" dir="ltr" autocomplete="tel" inputmode="tel"></label></div>' +
-        '<label>' + T.msg + '<textarea rows="4" maxlength="2000" data-f="text"></textarea></label>' +
+        '<label><span data-cms-t>' + T.msg + '</span><textarea rows="4" maxlength="2000" data-f="text"></textarea></label>' +
         '<input class="mlfb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" data-f="hp">' +
         '<div class="mlfb-row"><button type="button" class="mlfb-go mlfb-send">' + T.send + '</button><span class="mlfb-msg" aria-live="polite"></span></div>';
       var q = function (s) { return el.querySelector(s); };
