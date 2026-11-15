@@ -9,24 +9,34 @@ const FROM_NAME = 'MyLuach';
 /* תשובות למיילים מגיעות לכתובת הזאת (ולא ל-noreply): MAIL_REPLY_TO, ואם אין: OWNER_EMAIL */
 const REPLY = () => env('MAIL_REPLY_TO') || env('OWNER_EMAIL') || '';
 
+/* קובץ מצורף (m.attach = { url, name, type }): Resend ו-Brevo מושכים אותו מהכתובת; ל-Mailjet מורידים וממירים ל-base64 (נשמר בזיכרון לזמן קצר, כי אותו קובץ נשלח לכל הנמענים).
+   ב-SES (שליחה פשוטה) אין קבצים מצורפים: המייל יוצא עם קישור ההורדה שבגוף המייל בלבד. */
+const ATT = new Map();
+async function attB64(a) {
+  const c = ATT.get(a.url); if (c && Date.now() - c.at < 600000) return c.b;
+  const r = await fetch(a.url); if (!r.ok) throw new Error('attach ' + r.status);
+  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 6e6) throw new Error('attach size');
+  const b = buf.toString('base64'); if (ATT.size > 20) ATT.clear(); ATT.set(a.url, { at: Date.now(), b }); return b;
+}
 async function viaResend(m) {
   const k = env('RESEND_API_KEY'); if (!k) return null;
   const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: (m.fromName || FROM_NAME) + ' <' + FROM_EMAIL() + '>', to: [m.to], subject: m.subject, html: m.html, text: m.text, headers: m.headers || {}, ...((m.replyTo || REPLY()) ? { reply_to: m.replyTo || REPLY() } : {}) }) });
+    body: JSON.stringify({ from: (m.fromName || FROM_NAME) + ' <' + FROM_EMAIL() + '>', to: [m.to], subject: m.subject, html: m.html, text: m.text, headers: m.headers || {}, ...(m.attach ? { attachments: [{ path: m.attach.url, filename: m.attach.name }] } : {}), ...((m.replyTo || REPLY()) ? { reply_to: m.replyTo || REPLY() } : {}) }) });
   if (!r.ok) throw new Error('resend ' + r.status + ' ' + (await r.text()).slice(0, 200));
   return 'resend';
 }
 async function viaBrevo(m) {
   const k = env('BREVO_API_KEY'); if (!k) return null;
   const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': k, 'Content-Type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ sender: { name: m.fromName || FROM_NAME, email: FROM_EMAIL() }, to: [{ email: m.to }], subject: m.subject, htmlContent: m.html, textContent: m.text, headers: m.headers || undefined, ...((m.replyTo || REPLY()) ? { replyTo: { email: m.replyTo || REPLY() } } : {}) }) });
+    body: JSON.stringify({ sender: { name: m.fromName || FROM_NAME, email: FROM_EMAIL() }, to: [{ email: m.to }], subject: m.subject, htmlContent: m.html, textContent: m.text, headers: m.headers || undefined, ...(m.attach ? { attachment: [{ url: m.attach.url, name: m.attach.name }] } : {}), ...((m.replyTo || REPLY()) ? { replyTo: { email: m.replyTo || REPLY() } } : {}) }) });
   if (!r.ok) throw new Error('brevo ' + r.status + ' ' + (await r.text()).slice(0, 200));
   return 'brevo';
 }
 async function viaMailjet(m) {
   const k = env('MAILJET_API_KEY'), s = env('MAILJET_SECRET_KEY'); if (!k || !s) return null;
+  const att = m.attach ? [{ ContentType: m.attach.type, Filename: m.attach.name, Base64Content: await attB64(m.attach) }] : null;
   const r = await fetch('https://api.mailjet.com/v3.1/send', { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(k + ':' + s).toString('base64'), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Messages: [{ From: { Email: FROM_EMAIL(), Name: m.fromName || FROM_NAME }, To: [{ Email: m.to }], Subject: m.subject, HTMLPart: m.html, TextPart: m.text, Headers: m.headers || undefined, ...((m.replyTo || REPLY()) ? { ReplyTo: { Email: m.replyTo || REPLY() } } : {}) }] }) });
+    body: JSON.stringify({ Messages: [{ From: { Email: FROM_EMAIL(), Name: m.fromName || FROM_NAME }, To: [{ Email: m.to }], Subject: m.subject, HTMLPart: m.html, TextPart: m.text, Headers: m.headers || undefined, ...(att ? { Attachments: att } : {}), ...((m.replyTo || REPLY()) ? { ReplyTo: { Email: m.replyTo || REPLY() } } : {}) }] }) });
   if (!r.ok) throw new Error('mailjet ' + r.status + ' ' + (await r.text()).slice(0, 200));
   return 'mailjet';
 }

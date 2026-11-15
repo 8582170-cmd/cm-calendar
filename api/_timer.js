@@ -43,7 +43,7 @@ async function upload(req, res, b) {
 }
 /* סרטון ומוזיקה לדף ההזמנה: מהדלי הציבורי שלנו בלבד */
 function okMedia(u, kind) { u = String(u || ''); const M = (() => { try { return require('./_r2').media(); } catch (e) { return null; } })();
-  return u.length < 300 && new RegExp('/timers/media/[0-9]{6}/[a-f0-9]{24}\\.(' + (kind === 'video' ? 'mp4|webm' : 'mp3|m4a') + ')$').test(u) && (u.startsWith('https://media.myluach.org/') || !!(M && u.startsWith(M.url + '/'))); }
+  return u.length < 300 && new RegExp('/timers/media/[0-9]{6}/[a-f0-9]{24}\\.(' + (kind === 'video' ? 'mp4|webm' : kind === 'doc' ? 'pdf|jpg|png' : 'mp3|m4a') + ')$').test(u) && (u.startsWith('https://media.myluach.org/') || !!(M && u.startsWith(M.url + '/'))); }
 /* העלאה ישירה מהדפדפן ל-R2 (קובץ גדול): השרת רק נותן כתובת העלאה חתומה. רק למשתמש רשום */
 async function mediaUp(req, res, b) {
   const R2 = require('./_r2'); if (!R2.media()) return json(res, 503, { error: 'storage' });
@@ -51,7 +51,9 @@ async function mediaUp(req, res, b) {
   /* סרטון ומוזיקה: רק לבעל אירוע שמור. אם האירוע לא שולם תוך שבוע, הקובץ נמחק (במשימה היומית) */
   const sl = str(b.slug, 40).toLowerCase(), cur = SLUG.test(sl) ? await get(sl).catch(() => null) : null;
   if (!cur || !own(cur, b.token)) return json(res, 403, { error: 'owner' });
-  const T = { 'video/mp4': ['mp4', 'video', 20e6], 'video/webm': ['webm', 'video', 20e6], 'audio/mpeg': ['mp3', 'audio', 10e6], 'audio/mp4': ['m4a', 'audio', 10e6], 'audio/x-m4a': ['m4a', 'audio', 10e6], 'audio/aac': ['m4a', 'audio', 10e6] }[String(b.type || '')];
+  const T = { 'video/mp4': ['mp4', 'video', 20e6], 'video/webm': ['webm', 'video', 20e6], 'audio/mpeg': ['mp3', 'audio', 10e6], 'audio/mp4': ['m4a', 'audio', 10e6], 'audio/x-m4a': ['m4a', 'audio', 10e6], 'audio/aac': ['m4a', 'audio', 10e6],
+    /* קובץ הזמנה לצירוף למייל */
+    'application/pdf': ['pdf', 'doc', 5e6], 'image/jpeg': ['jpg', 'doc', 3e6], 'image/png': ['png', 'doc', 3e6] }[String(b.type || '')];
   if (!T) return json(res, 400, { error: 'type' }); if (!(+b.size > 0) || +b.size > T[2]) return json(res, 413, { error: 'size', max: T[2] });
   const path = 'timers/media/' + new Date().toISOString().slice(0, 7).replace('-', '') + '/' + crypto.randomBytes(12).toString('hex') + '.' + T[0];
   const P = R2.mediaPut(path);
@@ -81,7 +83,7 @@ function clean(c) {
     nr: Math.max(0, Math.min(30, parseInt(c.nr, 10) || 0)), dr: c.dr ? 1 : 0, ty: c.ty ? 1 : 0, tyt: str(c.tyt, 600), ...(Array.isArray(c.nrs) ? { nrs: sched(c.nrs, 5, 60) } : {}), ...(Array.isArray(c.drs) ? { drs: sched(c.drs, 3, 14) } : {}), tyd: clampI(c.tyd, 1, 14, 1), tyh: clampI(c.tyh, 6, 22, 10),
     qs: (Array.isArray(c.qs) ? c.qs : []).slice(0, 10).map(x => ({ q: str(x && x.q, 80).replace(/[<>]/g, ''), o: (Array.isArray(x && x.o) ? x.o : []).slice(0, 12).map(v => str(v, 40).replace(/[<>]/g, '')).filter(Boolean) })).filter(x => x.q),
     gal: c.gal ? 1 : 0, gc: c.gc ? 1 : 0, gt: /^[a-z0-9]{1,8}$/.test(String(c.gt || '')) ? String(c.gt) : '', sms: c.sms ? 1 : 0, ml: ['he', 'en', 'yi'].includes(c.ml) ? c.ml : '', vt: str(c.vt, 600).replace(/[<>]/g, ''), vrt: str(c.vrt, 600).replace(/[<>]/g, ''), clk: c.clk === 0 || c.clk === '0' ? 0 : 1,
-    bgi: okImg(c.bgi) || extMedia(c.bgi, 'img') ? String(c.bgi).trim() : '', bgv: okMedia(c.bgv, 'video') || extMedia(c.bgv, 'video') ? String(c.bgv).trim() : '', mus: okMedia(c.mus, 'audio') || extMedia(c.mus, 'audio') ? String(c.mus).trim() : '', env: c.env ? 1 : 0, sd: c.sd === '2' ? '2' : '', sda: str(c.sda, 20), sdb: str(c.sdb, 20), sdf: c.sdf === 'b' ? 'b' : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
+    bgi: okImg(c.bgi) || extMedia(c.bgi, 'img') ? String(c.bgi).trim() : '', bgv: okMedia(c.bgv, 'video') || extMedia(c.bgv, 'video') ? String(c.bgv).trim() : '', mus: okMedia(c.mus, 'audio') || extMedia(c.mus, 'audio') ? String(c.mus).trim() : '', af: okMedia(c.af, 'doc') ? String(c.af).trim() : '', env: c.env ? 1 : 0, sd: c.sd === '2' ? '2' : '', sda: str(c.sda, 20), sdb: str(c.sdb, 20), sdf: c.sdf === 'b' ? 'b' : '', bgo: Math.max(0, Math.min(80, parseInt(c.bgo, 10) || 0))
   };
 }
 async function get(s) {
@@ -206,10 +208,14 @@ function inviteMail(slug, cur, r, site, mode) {
     (c.addr ? '<div style="margin-top:6px">' + btn('https://waze.com/ul?q=' + encodeURIComponent(c.addr) + '&navigate=yes', L.waze) + btn('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc), L.maps) + '</div>' : ''));
   h += row((mode === 'ty' ? btn(page, L.open, true) + (c.gal ? btn(page + '&go=gal', EN ? '📷 Share your photos' : YI ? '📷 ארויפלייגן בילדער פון דער שמחה' : '📷 להעלאת תמונות מהאירוע') : '') : (c.rv && mode !== 'dr' ? btn(page + '&go=rsvp', L.rsvp, true) : btn(page, L.open, true)) + btn(page + '&go=cal', L.cal)) + (mode !== 'ty' && r.token && /^\d{4}-\d{2}-\d{2}$/.test(c.d || '') ? btn(site + '/api/rem-confirm?ev=' + slug + '&r=' + encodeURIComponent(r.token), EN ? '🔔 Remind me on the day' : YI ? '🔔 דערמאנען מיך אינעם טאג פון דער שמחה' : '🔔 תזכורת ביום השמחה') : '') + (c.wl ? btn(page + '&go=wish', L.wish) : '') + (/^https:\/\//.test(c.gift || '') ? btn(c.gift, L.gift) : ''));
   if (c.rb && mode !== 'ty' && cur.paid && cur.paid.email) h += row('<div style="font-size:15px;white-space:pre-line">' + H(EN ? 'If you cannot make it, we would love to receive your good wishes. Simply reply to this email and your blessing will reach us.' : YI ? 'אויב עס איז אייך שווער צו קומען, וועלן מיר זיך זייער פרייען צו באקומען פון אייך א ברכת מזל טוב. מען קען פשוט ענטפערן אויף דעם אימעיל, און די ברכה וועט אנקומען צו אונז.' : 'אם ירחק ממך הדרך, או שתהיה מניעה אחרת, נשמח לקבל ממך איחולים וברכת מזל טוב. אפשר פשוט להשיב למייל הזה, והברכה תגיע אלינו.') + '</div>');
+  /* קובץ ההזמנה: מצורף למייל ההזמנה עצמו (לא לתזכורות), ויש גם כפתור הורדה למקרה שספק המייל לא מצרף */
+  const afx = !mode && c.af && (/\.(pdf|jpg|png)$/.exec(c.af) || [])[1];
+  const attach = afx ? { url: c.af, name: 'invitation.' + afx, type: afx === 'pdf' ? 'application/pdf' : afx === 'png' ? 'image/png' : 'image/jpeg' } : null;
+  if (attach) h += row(btn(c.af, EN ? '📎 Download the invitation' : YI ? '📎 אראפנעמען די הזמנה' : '📎 להורדת ההזמנה'));
   if (c.sg) h += row('<div style="font-size:15px;font-weight:bold;white-space:pre-line;color:#' + acc + '">' + H(c.sg) + '</div>');
   h += '<tr><td style="padding:14px 18px 16px;text-align:center;font-size:11px;color:#' + mute + '"><a href="' + H(unsub) + '" style="color:#' + mute + '">' + L.un + '</a> · <a href="' + site + '/dir/" style="color:#' + mute + '">' + L.me + '</a> · <a href="' + site + '/invite" style="color:#' + mute + ';text-decoration:none">myluach.org</a></td></tr></table></td></tr></table></body></html>';
   const text = (greet ? greet + '\n\n' : '') + title + '\n' + when + (loc ? '\n' + loc : '') + '\n\n' + page + '\n\n' + L.un + ': ' + unsub;
-  return { html: h, text, unsub };
+  return { html: h, text, unsub, attach };
 }
 /* שליחת המיילים שבתור, כמה בכל פעם (מגבלות השרת והספקים). נקרא מהדפדפן בלולאה, ומהמשימה היומית */
 async function sendBatch(s, cur, n) {
@@ -225,7 +231,7 @@ async function sendBatch(s, cur, n) {
   for (const r of Q) {
     if (room <= 0) { stop = 'quota'; break; }
     const m = inviteMail(s, cur, r, site);
-    try { await sendMail({ to: r.email, subject: (cur.mail && cur.mail.subject) || 'הזמנה', html: m.html, text: m.text, replyTo: (cur.paid && cur.paid.email) || undefined, fromName: senderName(cur.cfg), headers: { 'List-Unsubscribe': '<' + m.unsub + '>' } }, 'invite'); ok.push(r.id); room--; }
+    try { await sendMail({ to: r.email, subject: (cur.mail && cur.mail.subject) || 'הזמנה', html: m.html, text: m.text, replyTo: (cur.paid && cur.paid.email) || undefined, fromName: senderName(cur.cfg), ...(m.attach ? { attach: m.attach } : {}), headers: { 'List-Unsubscribe': '<' + m.unsub + '>' } }, 'invite'); ok.push(r.id); room--; }
     catch (e) { if (/no mail provider/.test(e.message)) { stop = 'limit'; break; } bad.push(r.id); }
   }
   const now = new Date().toISOString();
@@ -326,7 +332,7 @@ async function cleanMedia() {
     const cur = await get(x.s).catch(() => null);
     if (feat(cur, 'media')) { delete M[path]; changed = true; kept++; continue; }
     try { await fetch(R2.presign('DELETE', path, 120, null, MB), { method: 'DELETE' }); del++; } catch (e) { continue; }
-    if (cur && cur.cfg) { const u = MB.url + '/' + path, c = { ...cur.cfg }; let ch = false; ['bgv', 'mus'].forEach(k => { if (c[k] === u) { c[k] = ''; ch = true; } }); if (ch) await put(x.s, { ...cur, cfg: c }).catch(() => {}); }
+    if (cur && cur.cfg) { const u = MB.url + '/' + path, c = { ...cur.cfg }; let ch = false; ['bgv', 'mus', 'af'].forEach(k => { if (c[k] === u) { c[k] = ''; ch = true; } }); if (ch) await put(x.s, { ...cur, cfg: c }).catch(() => {}); }
     delete M[path]; changed = true;
   }
   if (changed) await saveSetting('mediapend', M);
