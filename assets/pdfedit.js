@@ -58,6 +58,14 @@ var HAS_LS = 'letterSpacing' in mctx;
 var SYS = ['Arial', 'David', 'Miriam', 'Miriam Fixed', 'Narkisim', 'FrankRuehl', 'Rod', 'Gisha', 'Aharoni', 'Levenim MT', 'Guttman Yad-Brush', 'Tahoma', 'Times New Roman', 'Courier New', 'Segoe UI', 'Calibri', 'Arial Hebrew', 'Helvetica', 'Lucida Grande'];
 var WEB = ['Assistant', 'Heebo', 'Rubik', 'Noto Sans Hebrew', 'Arimo', 'Alef', 'Varela Round', 'IBM Plex Sans Hebrew', 'Frank Ruhl Libre', 'David Libre', 'Noto Serif Hebrew', 'Tinos', 'Bellefair', 'Miriam Libre', 'Cousine', 'Secular One', 'Suez One', 'Noto Rashi Hebrew'];
 var LOCAL = [], webState = { Assistant: 1, 'Frank Ruhl Libre': 1 };
+/* אוסף הגופנים של האתר (אותו קטלוג של הברכות): [מזהה, קובץ, תווית, סוג, מוצג, קובץ מודגש, יצרן] */
+var MY = {}, MYL = [], catDone = false;
+function loadCatalog(){
+  return fetch('/assets/greetings/fonts/catalog.json?v=3').then(function(r){ return r.json() }).then(function(list){
+    list.forEach(function(c){ MY[c[0]] = { label: c[2] || c[0], url: '/assets/greetings/fonts/' + c[1] + '?v=2', b: c[5] ? '/assets/greetings/fonts/' + c[5] + '?v=2' : null, st: null } });
+    MYL = Object.keys(MY).sort(function(a, b){ return MY[a].label.localeCompare(MY[b].label, 'he') });
+  }).catch(function(){}).then(function(){ catDone = true; fillFonts(); updateProps() });
+}
 function hasFont(n){
   var T = 'אבגדהmmwwii10', a, b;
   mctx.font = '72px monospace'; a = mctx.measureText(T).width; mctx.font = '72px "' + n + '",monospace'; b = mctx.measureText(T).width; if (a !== b) return true;
@@ -66,14 +74,19 @@ function hasFont(n){
 var SYS_OK = [];
 function fillFonts(){
   var s = $('fFont'), cur = s.value || DEF.font; s.textContent = '';
-  function grp(label, list){ if (!list.length) return; var g = document.createElement('optgroup'); g.label = label; list.forEach(function(n){ var o = document.createElement('option'); o.value = n; o.textContent = n; g.appendChild(o) }); s.appendChild(g) }
+  function grp(label, list){ if (!list.length) return; var g = document.createElement('optgroup'); g.label = label; list.forEach(function(n){ var o = document.createElement('option'); o.value = n; o.textContent = MY[n] ? MY[n].label : n; g.appendChild(o) }); s.appendChild(g) }
   SYS_OK = SYS.filter(hasFont);
-  grp('גופנים מהמחשב', SYS_OK); grp('גופנים נוספים', WEB); grp('כל הגופנים שבמחשב', LOCAL);
-  if (!allFonts().includes(cur)) cur = SYS_OK[0] || WEB[0];
-  s.value = cur; if (!allFonts().includes(DEF.font)) DEF.font = cur;
+  grp('גופנים מהמחשב', SYS_OK); grp('גופנים נוספים', WEB); grp('הגופנים של האתר', MYL); grp('כל הגופנים שבמחשב', LOCAL);
+  if (!allFonts().includes(cur)) cur = allFonts().includes(DEF.font) ? DEF.font : (SYS_OK[0] || WEB[0]);
+  s.value = cur; if (catDone && !allFonts().includes(DEF.font)) DEF.font = cur;
 }
-function allFonts(){ return SYS_OK.concat(WEB, LOCAL) }
+function allFonts(){ return SYS_OK.concat(WEB, MYL, LOCAL) }
 function ensureFont(n){
+  var m = MY[n];
+  if (m && window.FontFace && document.fonts) {
+    if (!m.st) m.st = Promise.all([m.url, m.b].map(function(u, i){ return u ? new FontFace(n, 'url(' + u + ')', { weight: i ? '700' : '400' }).load().then(function(f){ document.fonts.add(f) }) : null })).catch(function(){});
+    return m.st;
+  }
   if (WEB.indexOf(n) < 0 || !document.fonts) return Promise.resolve();
   if (!webState[n]) { webState[n] = 1; var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(n).replace(/%20/g, '+') + ':ital,wght@0,400;0,700&display=swap';
     l.onerror = function(){ l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(n).replace(/%20/g, '+') + '&display=swap'; l.onerror = null }; document.head.appendChild(l) }
@@ -322,7 +335,7 @@ function updateProps(){
   $('pText').hidden = !!(o && t !== 'text') || (!o && DRAW[S.tool]);
   $('pFill').hidden = !fillT; $('pStroke').hidden = !strokeT; $('pObj').hidden = !o;
   var s = t === 'text' ? o : DEF;
-  if (allFonts().indexOf(s.font) < 0 && s.font) { LOCAL.push(s.font); fillFonts() }
+  if (catDone && allFonts().indexOf(s.font) < 0 && s.font) { LOCAL.push(s.font); fillFonts() }
   $('fFont').value = s.font; $('fSize').value = r1(s.size); $('fColor').value = s.color; $('fAlign').value = s.align; $('fLs').value = r1(s.ls);
   $('fB').setAttribute('aria-pressed', s.bold ? 'true' : 'false'); $('fI').setAttribute('aria-pressed', s.italic ? 'true' : 'false');
   if (fillT) $('cFill').value = o.fill;
@@ -713,7 +726,7 @@ async function doDl(){
 
 /* ---------- חיבור הכפתורים ---------- */
 function init(){
-  fillFonts();
+  fillFonts(); loadCatalog();
   if (!HAS_LS) $('lsWrap').hidden = true;
   $('pick').onclick = function(){ $('file').click() };
   $('file').onchange = function(){ openFile(this.files[0]); this.value = '' };
