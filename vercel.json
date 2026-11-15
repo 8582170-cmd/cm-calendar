@@ -82,6 +82,10 @@
    "destination": "/timer.html"
   },
   {
+   "source": "/pdf",
+   "destination": "/pdf.html"
+  },
+  {
    "source": "/invite",
    "destination": "/invite.html"
   },

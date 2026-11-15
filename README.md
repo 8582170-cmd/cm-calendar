@@ -13,6 +13,7 @@
 | `assets/plans.js` | הגדרת המסלולים והמגבלות. מקור אחד לדף הבית ולבונה |
 | `data-src/yz-data.js` | מאגר האירועים בדברי ימי ישראל (המקור לעריכה; לא עולה לאתר) |
 | `assets/yz.js` | המאגר המוצפן שעולה לאתר. נבנה מחדש ב־`python3 tools/build_yz.py` |
+| `pdf.html`, `assets/pdfedit.js` | עורך PDF חינמי (myluach.org/pdf). פועל כולו בדפדפן: PDF.js להצגה ו-pdf-lib לשמירה |
 | `tools/artifact_page.py` | הכנת עותק של דף הבית לתצוגה מקדימה |
 
 האתר סטטי ואין בו שלב בנייה. אפשר לפתוח את `index.html` ישירות בדפדפן, או להעלות לכל אחסון סטטי (Vercel, Netlify, Cloudflare Pages).
