@@ -148,13 +148,17 @@ function nextStep(E){
   if(act){var m=(+act.n||0)-ans(act);return {k:'הצעד הבא',h:m+' אורחים עוד לא ענו',p:'באירוע "'+esc(act.t||act.slug)+'". בדף הניהול אפשר לשלוח תזכורת רק למי שלא ענה.',a:open(act,'פתיחה ושליחת תזכורת')}}
   if(up[0])return {k:'הכול מסודר',h:esc(up[0].t||up[0].slug)+': '+dlTxt(up[0]).replace(/<[^>]+>/g,''),p:'כל הנמענים ענו. אפשר לבדוק את הרשימה לאולם.',a:open(up[0],'פתיחה וניהול')};
   return {k:'אין אירוע קרוב',h:'מתכננים את השמחה הבאה?',p:'האירועים הקודמים נשמרים כאן.',a:'<a class="btnx pri" href="/invite">אירוע חדש</a>'}}
-function vOv(){var E=D.events||[],C=D.contacts||[],gr={};C.forEach(function(c){if(c.g)gr[c.g]=1});
-  var yes=E.reduce(function(a,e){return a+(+e.yesP||0)},0),ns=nextStep(E),
-      up=E.filter(function(e){var k=daysTo(e.d);return k!==null&&k>=0}).sort(function(a,b){return a.d<b.d?-1:1}).slice(0,3);
-  var h='<div class="hero"><small>'+ns.k+'</small><h2>'+ns.h+'</h2><p>'+ns.p+'</p><div class="acts">'+ns.a+'</div></div>'
-   +'<div class="stats"><div class="stat"><b>'+E.length+'</b><span>אירועים</span></div><div class="stat"><b>'+yes+'</b><span>מגיעים (בכל האירועים)</span></div><div class="stat"><b>'+C.length+'</b><span>אנשי קשר</span></div><div class="stat"><b>'+Object.keys(gr).length+'</b><span>מאגרים</span></div></div>';
-  if(up.length)h+='<div class="sec"><h2>האירועים הקרובים</h2><button type="button" class="btnx sm" data-go="ev">הכל</button></div>'+up.map(evCard).join('');
-  h+='<div class="acts"><button type="button" class="btnx" data-go="ct">אנשי הקשר שלי</button><button type="button" class="btnx" data-go="st">הגדרות חשבון</button></div>';
+function vOv(){var E=D.events||[],ns=nextStep(E),
+      up=E.filter(function(e){var k=daysTo(e.d);return k!==null&&k>=0}).sort(function(a,b){return a.d<b.d?-1:1}),f=up[0];
+  var h='<div class="hero"><small>'+ns.k+'</small><h2>'+ns.h+'</h2><p>'+ns.p+'</p><div class="acts">'+ns.a+'</div></div>';
+  /* כל אירוע בפני עצמו: המספרים הם של האירוע הקרוב בלבד, בלי סיכום של כמה אירועים יחד */
+  if(f){var n=+f.n||0,k=daysTo(f.d);
+    h+='<div class="sec"><h2>'+esc(f.t||f.slug)+'</h2><span class="mute">'+esc(fmt(f.d))+'</span></div>'
+     +'<div class="stats"><div class="stat"><b>'+(k===0?'היום':k)+'</b><span>'+(k===0?'האירוע':'ימים לאירוע')+'</span></div><div class="stat"><b>'+n+'</b><span>נמענים</span></div><div class="stat"><b>'+(+f.yesP||0)+'</b><span>מגיעים</span></div><div class="stat"><b>'+Math.max(0,n-ans(f))+'</b><span>טרם ענו</span></div></div>'
+     +evCard(f)}
+  if(up.length>1)h+='<div class="sec"><h2>אירועים קרובים נוספים</h2><button type="button" class="btnx sm" data-go="ev">כל האירועים</button></div>'+up.slice(1,3).map(evCard).join('');
+  else if(E.length>1)h+='<div class="acts"><button type="button" class="btnx" data-go="ev">כל האירועים ('+E.length+')</button></div>';
+  h+='<div class="acts"><button type="button" class="btnx" data-go="ct">אנשי הקשר שלי ('+(D.contacts||[]).length+')</button><button type="button" class="btnx" data-go="st">הגדרות חשבון</button></div>';
   $('box').innerHTML=h}
 /* ===== אירועים ===== */
 var EV={q:'',f:'all'};
