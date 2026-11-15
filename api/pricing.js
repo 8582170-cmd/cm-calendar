@@ -100,7 +100,7 @@ module.exports = async (req, res) => {
     const { loadSetting } = require('./_lib');
     const all = await loadSetting('content').catch(() => null), P = (all && all.pages) || {};
     res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60');
-    return json(res, 200, { pages: Object.keys(P).filter(k => P[k] && (Object.keys(P[k].texts || {}).length || Object.keys(P[k].vars || {}).length)) });
+    return json(res, 200, { pages: Object.keys(P).filter(k => P[k] && (Object.keys(P[k].texts || {}).length || Object.keys(P[k].vars || {}).length || Object.keys(P[k].styles || {}).length || Object.keys(P[k].page || {}).length)) });
   }
   if (cp) {
     const { loadSetting } = require('./_lib');

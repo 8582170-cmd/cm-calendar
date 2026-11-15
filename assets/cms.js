@@ -52,15 +52,46 @@
     }) })(d);
     return d.innerHTML;
   }
+  /* גופן, גודל, הדגשה, צבע ויישור לכל טקסט, וגופן לכל הדף */
+  var FONTS = ['Assistant','Heebo','Rubik','Varela Round','Alef','Secular One','Suez One','Frank Ruhl Libre','David Libre','Noto Serif Hebrew','Bellefair','Miriam Libre','Karantina','Amatic SC'];
+  var SERIF = { 'Frank Ruhl Libre':1, 'David Libre':1, 'Noto Serif Hebrew':1, 'Bellefair':1 };
+  function fam(f){ return "'" + f + "'," + (SERIF[f] ? 'serif' : 'sans-serif') }
+  function font(f){ if (FONTS.indexOf(f) < 0) return; var id = 'cmsf-' + f.replace(/\W/g, ''); if (document.getElementById(id)) return;
+    var l = document.createElement('link'); l.id = id; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + ':wght@400;700&display=swap'; document.head.appendChild(l) }
+  function css(o){ o = o || {}; var r = [];
+    if (FONTS.indexOf(o.ff) >= 0) { font(o.ff); r.push('font-family:' + fam(o.ff)) }
+    if (+o.fs >= 8 && +o.fs <= 120) r.push('font-size:' + Math.round(+o.fs) + 'px');
+    if (o.fw === 'b' || o.fw === 'n') r.push('font-weight:' + (o.fw === 'b' ? 700 : 400));
+    if (o.fi === 'i' || o.fi === 'n') r.push('font-style:' + (o.fi === 'i' ? 'italic' : 'normal'));
+    if (/^#[0-9a-f]{3,8}$/i.test(o.c || '')) r.push('color:' + o.c);
+    if (/^(right|center|left)$/.test(o.al || '')) r.push('text-align:' + o.al + (o.al === 'center' ? '' : ''));
+    return r.join(';') }
+  function setSt(el, o){ var c = css(o); if (el.dataset.cmsStyle === c) return;
+    if (el.dataset.cmsBase == null) el.dataset.cmsBase = el.getAttribute('style') || '';
+    el.setAttribute('style', el.dataset.cmsBase + (el.dataset.cmsBase && c ? ';' : '') + c); el.dataset.cmsStyle = c;
+    if (/text-align/.test(c) && getComputedStyle(el).display === 'inline') el.style.display = 'inline-block' }
+  function stApply(data, roots){ var S = data.styles || {}, ks = Object.keys(S); if (!ks.length) return;
+    nodes().forEach(function(el){ if (S[el.dataset.cmsk]) setSt(el, S[el.dataset.cmsk]) });
+    document.querySelectorAll('[data-cmstx]').forEach(function(el){ var k = el.getAttribute('data-cmstx'); if (S[k]) setSt(el, S[k]) });
+    if (EDIT || !ks.some(function(k){ return k.indexOf('tx-') === 0 })) return;
+    (roots || [document.body]).forEach(function(r){ txNodes(r).forEach(function(n){ var k = txKey(n), p = n.parentNode; if (!S[k] || !p) return;
+      if (!(p.getAttribute && p.getAttribute('data-cmss') === k)) { var sp = document.createElement('span'); sp.setAttribute('data-cmss', k); p.insertBefore(sp, n); sp.appendChild(n); p = sp }
+      setSt(p, S[k]) }) }) }
+  function pgApply(data){ var g = data.page || {}, st = document.getElementById('cms-font'), c = '', NOT = ':not(.mla-p *):not(.mla-p):not(.sheet-wrap *):not([data-cms-skip] *)';
+    function sel(L){ return L.map(function(t){ return 'body ' + t + NOT }).join(',') }
+    if (FONTS.indexOf(g.ff) >= 0) { font(g.ff); c += 'body{font-family:' + fam(g.ff) + '}' + sel(['p','li','label','button','input','textarea','select','td','th','a','span','small','div','summary','figcaption','strong','b']) + '{font-family:' + fam(g.ff) + '}' }
+    if (FONTS.indexOf(g.hf) >= 0) { font(g.hf); c += sel(['h1','h2','h3','h4','h1 *','h2 *','h3 *','h4 *']) + '{font-family:' + fam(g.hf) + '}' }
+    if (c) { if (!st) { st = document.createElement('style'); st.id = 'cms-font'; document.head.appendChild(st) } st.textContent = c }
+    else if (st) st.remove() }
   function apply(data, roots){
     if (!data) return;
     var t = data.texts || {};
     if (roots) { nodes().forEach(function(el){ var k = keyOf(el); if (t[k] != null && el.dataset.cmsApplied !== t[k]) { el.innerHTML = clean(t[k]); el.dataset.cmsApplied = t[k] } });
       phNodes().forEach(function(el){ var k = phKey(el); if (t[k] != null && el.placeholder !== t[k]) el.placeholder = String(t[k]).replace(/<[^>]*>/g, '') });
-      roots.forEach(function(r){ txApply(t, r) }); return }
+      roots.forEach(function(r){ txApply(t, r) }); stApply(data, roots); return }
     nodes().forEach(function(el){ var k = keyOf(el); if (t[k] != null && el.dataset.cmsApplied !== t[k]) { el.innerHTML = clean(t[k]); el.dataset.cmsApplied = t[k] } });
     phNodes().forEach(function(el){ var k = phKey(el); if (t[k] != null && el.placeholder !== t[k]) el.placeholder = String(t[k]).replace(/<[^>]*>/g, '') });
-    txApply(t);
+    txApply(t); stApply(data); pgApply(data);
     var v = data.vars || {}, st = document.getElementById('cms-vars');
     var css = Object.keys(v).filter(function(k){ return /^--[\w-]+$/.test(k) && /^#[0-9a-f]{3,8}$/i.test(v[k]) }).map(function(k){ return k + ':' + v[k] }).join(';');
     if (css) { if (!st) { st = document.createElement('style'); st.id = 'cms-vars'; document.head.appendChild(st) } st.textContent = ':root,:root:not([data-theme]){' + css + '}' }
@@ -94,7 +125,7 @@
   }
   /* מצב עריכה (בתוך דף הניהול) */
   function startEdit(){
-    var data = { texts: {}, vars: {} };
+    var data = { texts: {}, vars: {}, styles: {}, page: {} };
     var s = document.createElement('style'); s.textContent = '[data-cmsk],[data-cmstx]{outline:1px dashed rgba(29,78,216,.35);outline-offset:2px;cursor:text}[data-cmsk]:hover,[data-cmstx]:hover{outline:2px solid #1d4ed8}[data-cmsk]:focus,[data-cmstx]:focus{outline:2px solid #f59e0b;background:rgba(245,158,11,.08)}';
     document.head.appendChild(s);
     function arm(){ nodes().forEach(function(el){ keyOf(el); el.contentEditable = 'true'; el.spellcheck = false });
@@ -102,6 +133,7 @@
       txApply(data.texts || {});
       txNodes().forEach(function(n){ if (!n.parentNode) return; var sp = document.createElement('span'); sp.setAttribute('data-cmstx', txKey(n)); sp.contentEditable = 'true'; sp.spellcheck = false;
         n.parentNode.insertBefore(sp, n); sp.appendChild(n) });
+      stApply(data);
       /* שדות: לוחצים, והטקסט האפור נהיה ניתן לעריכה. ביציאה מהשדה הוא חוזר להיות טקסט אפור */
       phNodes().forEach(function(el){ if (el.dataset.cmsArmed) return; el.dataset.cmsArmed = 1; phKey(el); el.style.outline = '1px dashed rgba(29,78,216,.5)'; el.title = 'לחצו כדי לערוך את הטקסט האפור';
         el.addEventListener('focus', function(){ el.value = el.placeholder; el.style.background = 'rgba(245,158,11,.08)' });
@@ -117,10 +149,49 @@
     document.addEventListener('click', function(e){ if (e.target.closest && e.target.closest('label')) e.preventDefault() }, true);
     window.addEventListener('message', function(e){
       if (e.origin !== location.origin) return; var m = e.data || {};
-      if (m.type === 'cms-load') { data = { texts: (m.data && m.data.texts) || {}, vars: (m.data && m.data.vars) || {} }; apply(data); arm(); parent.postMessage({ type: 'cms-ready', page: PAGE, vars: pageVars() }, location.origin) }
+      if (m.type === 'cms-load') { data = { texts: (m.data && m.data.texts) || {}, vars: (m.data && m.data.vars) || {}, styles: (m.data && m.data.styles) || {}, page: (m.data && m.data.page) || {} }; apply(data); arm(); parent.postMessage({ type: 'cms-ready', page: PAGE, vars: pageVars(), fonts: FONTS, pg: data.page }, location.origin) }
+      if (m.type === 'cms-page') { data.page[m.name] = m.value; pgApply(data) }
       if (m.type === 'cms-var') { data.vars[m.name] = m.value; apply(data) }
       if (m.type === 'cms-collect') parent.postMessage({ type: 'cms-data', page: PAGE, data: data }, location.origin);
     });
+    /* סרגל עיצוב: מופיע מעל הטקסט שעורכים */
+    var tb = document.createElement('div'), cur = null; tb.setAttribute('data-cms-skip', ''); tb.dir = 'rtl';
+    tb.style.cssText = 'position:fixed;z-index:2147483647;display:none;gap:4px;align-items:center;background:#1f2937;color:#fff;padding:5px 6px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.3);font:13px Assistant,Arial,sans-serif;flex-wrap:wrap;max-width:96vw';
+    var bs = 'background:#374151;color:#fff;border:0;border-radius:6px;padding:4px 8px;font:inherit;cursor:pointer;min-width:28px';
+    tb.innerHTML = '<select data-a="ff" title="גופן" style="' + bs + ';max-width:130px"><option value="">גופן רגיל</option>' + FONTS.map(function(f){ return '<option value="' + f + '" style="font-family:' + fam(f).replace(/'/g, '&quot;') + '">' + f + '</option>' }).join('') + '</select>' +
+      '<button data-a="dn" title="הקטנה" style="' + bs + '">A-</button><span data-a="sz" style="min-width:34px;text-align:center"></span><button data-a="up" title="הגדלה" style="' + bs + '">A+</button>' +
+      '<button data-a="b" title="מודגש" style="' + bs + ';font-weight:700">B</button><button data-a="i" title="נטוי" style="' + bs + ';font-style:italic">I</button>' +
+      '<input data-a="c" type="color" title="צבע" style="width:30px;height:26px;border:0;padding:0;background:none;cursor:pointer">' +
+      '<button data-a="right" title="יישור לימין" style="' + bs + '">⇥</button><button data-a="center" title="מרכוז" style="' + bs + '">≡</button><button data-a="left" title="יישור לשמאל" style="' + bs + '">⇤</button>' +
+      '<button data-a="x" title="החזרת העיצוב למקור" style="' + bs + '">↺ מקור</button>';
+    document.body.appendChild(tb);
+    function kOf(el){ return el.getAttribute('data-cmsk') || el.getAttribute('data-cmstx') }
+    function hex(c){ var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ''); return m ? '#' + [m[1], m[2], m[3]].map(function(x){ return ('0' + (+x).toString(16)).slice(-2) }).join('') : '#000000' }
+    function place(){ if (!cur) return; var r = cur.getBoundingClientRect(); tb.style.display = 'flex';
+      var top = r.top - tb.offsetHeight - 6; if (top < 4) top = r.bottom + 6; tb.style.top = top + 'px';
+      tb.style.left = Math.max(4, Math.min(innerWidth - tb.offsetWidth - 4, r.right - tb.offsetWidth)) + 'px';
+      var o = data.styles[kOf(cur)] || {}, cs = getComputedStyle(cur);
+      tb.querySelector('[data-a=ff]').value = o.ff || ''; tb.querySelector('[data-a=sz]').textContent = Math.round(parseFloat(cs.fontSize)) + 'px';
+      tb.querySelector('[data-a=c]').value = o.c || hex(cs.color);
+      /* יישור רק לשורה שלמה (כותרת, פסקה, כפתור), לא לקטע בתוך שורה */
+      var tx = cur.hasAttribute('data-cmstx'); ['right','center','left'].forEach(function(a){ tb.querySelector('[data-a=' + a + ']').style.display = tx ? 'none' : '' }) }
+    function upd(fn){ if (!cur) return; var k = kOf(cur), o = data.styles[k] || {}; fn(o, getComputedStyle(cur));
+      Object.keys(o).forEach(function(x){ if (o[x] === '' || o[x] == null) delete o[x] });
+      if (Object.keys(o).length) data.styles[k] = o; else delete data.styles[k];
+      document.querySelectorAll('[data-cmsk="' + k + '"],[data-cmstx="' + k + '"]').forEach(function(el){ setSt(el, o) }); place() }
+    tb.addEventListener('mousedown', function(e){ if (!/SELECT|INPUT/.test(e.target.tagName)) e.preventDefault() });
+    tb.addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; var a = b.getAttribute('data-a');
+      upd(function(o, cs){ var fs = parseFloat(cs.fontSize) || 16;
+        if (a === 'up') o.fs = Math.min(120, Math.round(fs + (fs < 20 ? 1 : 2)));
+        if (a === 'dn') o.fs = Math.max(8, Math.round(fs - (fs <= 20 ? 1 : 2)));
+        if (a === 'b') o.fw = (+cs.fontWeight >= 600) ? 'n' : 'b';
+        if (a === 'i') o.fi = cs.fontStyle === 'italic' ? 'n' : 'i';
+        if (/^(right|center|left)$/.test(a)) o.al = o.al === a ? '' : a;
+        if (a === 'x') Object.keys(o).forEach(function(x){ delete o[x] }) }) });
+    tb.querySelector('[data-a=ff]').addEventListener('change', function(e){ var v = e.target.value; upd(function(o){ o.ff = v }) });
+    tb.querySelector('[data-a=c]').addEventListener('input', function(e){ var v = e.target.value; upd(function(o){ o.c = v }) });
+    document.addEventListener('focusin', function(e){ if (tb.contains(e.target)) return; var el = e.target.closest && e.target.closest('[data-cmsk],[data-cmstx]'); cur = el || null; if (cur) place(); else tb.style.display = 'none' });
+    addEventListener('scroll', function(){ if (cur) place() }, true); addEventListener('resize', function(){ if (cur) place() });
     parent.postMessage({ type: 'cms-hello', page: PAGE }, location.origin);
     setTimeout(arm, 800); setTimeout(arm, 2500); setTimeout(arm, 6000);
   }

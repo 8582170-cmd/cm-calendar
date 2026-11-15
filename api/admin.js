@@ -337,7 +337,12 @@ async function main(req, res) {
         const d = b.data || {}, texts = {}, vars = {};
         Object.entries(d.texts || {}).slice(0, 2000).forEach(([k, v]) => { if (/^[a-z0-9]+-[a-z0-9]+$/.test(k)) texts[k] = String(v).replace(/<\/?(script|style|iframe|object|embed)[^>]*>/gi, '').replace(/\son\w+="[^"]*"/gi, '').slice(0, 5000); });
         Object.entries(d.vars || {}).slice(0, 60).forEach(([k, v]) => { if (/^--[\w-]+$/.test(k) && /^#[0-9a-f]{3,8}$/i.test(v)) vars[k] = v; });
-        all.pages[page] = { texts, vars, updated: new Date().toISOString() }; await saveSetting('content', all);
+        const styles = {}, pg = {}, FN = /^[A-Za-z ]{2,30}$/;
+        Object.entries(d.styles || {}).slice(0, 2000).forEach(([k, o]) => { if (!/^[a-z0-9]+-[a-z0-9]+$/.test(k) || !o || typeof o !== 'object') return; const x = {};
+          if (FN.test(o.ff || '')) x.ff = o.ff; if (+o.fs >= 8 && +o.fs <= 120) x.fs = Math.round(+o.fs); if (o.fw === 'b' || o.fw === 'n') x.fw = o.fw; if (o.fi === 'i' || o.fi === 'n') x.fi = o.fi;
+          if (/^#[0-9a-f]{3,8}$/i.test(o.c || '')) x.c = o.c; if (/^(right|center|left)$/.test(o.al || '')) x.al = o.al; if (Object.keys(x).length) styles[k] = x; });
+        if (d.page && FN.test(d.page.ff || '')) pg.ff = d.page.ff; if (d.page && FN.test(d.page.hf || '')) pg.hf = d.page.hf;
+        all.pages[page] = { texts, vars, styles, page: pg, updated: new Date().toISOString() }; await saveSetting('content', all);
       }
       if (b.action === 'contentreset') { delete all.pages[page]; await saveSetting('content', all); }
       return json(res, 200, { data: all.pages[page] || null });
