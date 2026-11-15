@@ -11,7 +11,7 @@
   var g=null,c=null;try{g=localStorage.getItem('myluach-geo');c=localStorage.getItem('myluach-shabbat')}catch(e){w('localStorage','ERROR '+e.message)}
   w('saved place',g||'none');w('saved shabbat answer',c||'none');
   window.__mlShabbat=true; /* בדף הבדיקה לא מציגים את מסך השבת */
-  var A=document.createElement('script');A.src='/assets/a11y.js?v=6';A.onload=function(){w('a11y.js','loaded');setTimeout(function(){
+  var A=document.createElement('script');A.src='/assets/a11y.js?v=7';A.onload=function(){w('a11y.js','loaded');setTimeout(function(){
     w('shabbat.js tag',[].map.call(document.scripts,function(s){return s.src}).filter(function(s){return /shabbat/.test(s)}).join(' ')||'MISSING');
     
     var gj=null;try{gj=JSON.parse(g||'null')}catch(e){}

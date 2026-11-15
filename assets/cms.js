@@ -18,7 +18,7 @@
     return leaf(el) && norm(el.textContent) && !el.closest(SKIP) && !(el.parentElement && el.parentElement.closest(SEL) && leaf(el.parentElement.closest(SEL))) }) }
   /* טקסט שבתוך שדה (placeholder): "מה היה חסר?" וכדומה. המפתח לפי הטקסט המקורי */
   function phNodes(){ return Array.prototype.filter.call(document.querySelectorAll('input[placeholder],textarea[placeholder]'), function(el){
-    return norm(el.getAttribute('data-cmsph') || el.placeholder) && !el.closest(SKIP) && !/^(password|hidden|number|date|time|datetime-local|range|color)$/.test(el.type || '') }) }
+    return norm(el.getAttribute('data-cmsph') || el.placeholder) && !(el.parentElement && el.parentElement.closest(SKIP)) && !/^(password|hidden|number|date|time|datetime-local|range|color)$/.test(el.type || '') }) }
   function phKey(el){ if (!el.dataset.cmsph) el.dataset.cmsph = el.placeholder; return 'ph-' + hash(norm(el.dataset.cmsph)) }
   function keyOf(el){ if (!el.dataset.cmsk) el.dataset.cmsk = el.tagName.toLowerCase() + '-' + hash(norm(el.textContent)); return el.dataset.cmsk }
   /* כל שאר הטקסטים בדף (טקסט שלא נמצא בכותרת/פסקה/כפתור רגילים): לפי צומת הטקסט עצמו */

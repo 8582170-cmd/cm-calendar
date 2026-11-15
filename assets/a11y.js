@@ -5,7 +5,7 @@
   /* אתר שומר שבת */
   try { var sh = document.createElement('script'); sh.src = '/assets/shabbat.js?v=5'; sh.async = true; (document.head || document.documentElement).appendChild(sh); } catch (e) {}
   /* עריכת טקסטים מדף הניהול: בכל דף באתר (חוץ מדפי הניהול) */
-  try { if (!/^\/admin/.test(location.pathname) && !document.querySelector('script[src*="/assets/cms.js"]')) { var cm = document.createElement('script'); cm.src = '/assets/cms.js?v=4'; cm.async = true; (document.head || document.documentElement).appendChild(cm); } } catch (e) {}
+  try { if (!/^\/admin/.test(location.pathname) && !document.querySelector('script[src*="/assets/cms.js"]')) { var cm = document.createElement('script'); cm.src = '/assets/cms.js?v=5'; cm.async = true; (document.head || document.documentElement).appendChild(cm); } } catch (e) {}
   /* פעילות אחרונה של משתמש מחובר (לכרטיס הלקוח בניהול): כשהדף נפתח וכשחוזרים ללשונית, לכל היותר פעם ב-10 דקות. רק זמן ודף */
   (function(){
     function seen(){ try {
