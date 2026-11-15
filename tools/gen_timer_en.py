@@ -141,6 +141,7 @@ T = [
     # JS
     ("'קלאסי'", "'Classic'"), ("'חתונה'", "'Wedding'"), ("'בר מצווה'", "'Bar mitzvah'"), ("'בת מצווה'", "'Bat mitzvah'"),
     ("'ילדים'", "'Kids'"), ("'אלגנטי'", "'Elegant'"), ("'דיגיטלי'", "'Digital'"), ("'מינימלי'", "'Minimal'"),
+    ("'קלף'", "'Parchment'"), ("'היכל'", "'Heichal'"), ("'בורדו'", "'Bordeaux'"), ("'אזמרגד'", "'Emerald'"), ("'ליל כוכבים'", "'Starry night'"), ("'אבן ותכלת'", "'Stone and blue'"), ("'מרווה'", "'Sage'"), ("'שיש'", "'Marble'"),
     ('אפשר לבחור רק קובץ תמונה.', 'Please choose an image file.'),
     ('מכין את התמונה…', 'Preparing the photo…'), ('מעלה…', 'Uploading…'),
     ('התמונה נוספה ✓', 'Photo added ✓'),

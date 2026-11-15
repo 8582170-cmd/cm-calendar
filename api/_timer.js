@@ -147,7 +147,9 @@ async function loadFree() { if (Date.now() - FREEAT < 30000) return; FREEAT = Da
 const feat = (cur, k) => !!(cur && cur.paid) && (isFull(cur) ? (!cur.paid.feats || !!cur.paid.feats[k]) : !!FREEF[k]);
 async function T_put_mail(s, cur, mail) { await put(s, { ...cur, mail }); cur.mail = mail; }
 /* ---------- מייל ההזמנה: דומה לדף האירוע ---------- */
-const THC = { classic: ['1e5a63', 'ffffff', 'eef4f4'], wedding: ['a8646f', 'fff8f6', 'f8e8e5'], barmitzvah: ['1f3a5f', 'f7f8fb', 'e6ecf5'], batmitzvah: ['b8487a', 'fff7fb', 'fbe3ef'], kids: ['e0663a', 'fffaf2', 'ffe3d3'], elegant: ['c9a227', '1d1a17', '2a2622'], digital: ['39e888', '0b0f0c', '111a14'], minimal: ['172126', 'ffffff', 'f3f5f4'] };
+const THC = { classic: ['1e5a63', 'ffffff', 'eef4f4'], wedding: ['a8646f', 'fff8f6', 'f8e8e5'], barmitzvah: ['1f3a5f', 'f7f8fb', 'e6ecf5'], batmitzvah: ['b8487a', 'fff7fb', 'fbe3ef'], kids: ['e0663a', 'fffaf2', 'ffe3d3'], elegant: ['c9a227', '1d1a17', '2a2622'], digital: ['39e888', '0b0f0c', '111a14'], minimal: ['172126', 'ffffff', 'f3f5f4'],
+  klaf: ['7a5a14', 'fbf5e6', 'f3e9d0'], heichal: ['d4b36a', '0e131b', '161d2a'], bordeaux: ['e8c98a', '4a0f1f', '5c1729'], emerald: ['ddbe7a', '0e3b2e', '14493a'], laila: ['c9d6f2', '0f1a3a', '182652'], tchelet: ['2c5e8c', 'f4eee2', 'e8dfcc'], marva: ['3f5e4a', 'f3f6f0', 'e3ece3'], shayish: ['9a5f4f', 'fbfaf8', 'f1eeea'] };
+const THD = { klaf: ['16213a', '6a6250'], heichal: ['f1e9d6', 'a9a08c'], bordeaux: ['fbefe0', 'd9b9b0'], emerald: ['f3eedd', 'b5c4b5'], laila: ['eef2ff', 'a3b0d6'], tchelet: ['1f2d3d', '6b6558'], marva: ['22362b', '5f7366'], shayish: ['2a2a2e', '6c6a70'] }; /* צבע טקסט וטקסט משני לערכות היוקרה */
 const gemN = n => { const o = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'], t = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'], h = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק']; n %= 1000; let r = h[Math.floor(n / 100)] || ''; n %= 100; r += n === 15 ? 'טו' : n === 16 ? 'טז' : t[Math.floor(n / 10)] + o[n % 10]; return r.length > 1 ? r.slice(0, -1) + '״' + r.slice(-1) : r + '׳'; };
 const LLs = { 'Asia/Jerusalem': [31.778, 35.235], 'America/New_York': [40.71, -74], 'Europe/London': [51.51, -0.13], 'Europe/Paris': [48.86, 2.35], 'America/Los_Angeles': [34.05, -118.24], 'America/Chicago': [41.88, -87.63] };
 /* שעת השקיעה המקומית (כמו בדף האירוע), כדי לדעת אם האירוע כבר ביום העברי הבא */
@@ -170,7 +172,7 @@ function honor(name, c) {
 }
 function inviteMail(slug, cur, r, site, mode) {
   const c = cur.cfg || {}, th = THC[c.th] || THC.classic, acc = /^[0-9a-f]{6}$/i.test(c.c || '') ? c.c : th[0], bg = /^[0-9a-f]{6}$/i.test(c.b || '') ? c.b : th[1], dark = c.th === 'elegant' || c.th === 'digital';
-  const ink = dark ? 'f3efe6' : '1a232c', mute = dark ? 'b8ae9c' : '5d6873', ML = c.ml || c.lang || 'he', EN = ML === 'en', YI = ML === 'yi', page = site + '/t/' + slug + '?' + (r.name ? 'to=' + encodeURIComponent(r.name) + '&' : '') + 'r=' + r.token;
+  const ink = THD[c.th] ? THD[c.th][0] : dark ? 'f3efe6' : '1a232c', mute = THD[c.th] ? THD[c.th][1] : dark ? 'b8ae9c' : '5d6873', ML = c.ml || c.lang || 'he', EN = ML === 'en', YI = ML === 'yi', page = site + '/t/' + slug + '?' + (r.name ? 'to=' + encodeURIComponent(r.name) + '&' : '') + 'r=' + r.token;
   const title = c.t || (EN ? 'You are invited' : YI ? 'הזמנה' : 'הזמנה');
   let when = c.d; try { const d = new Date(c.d + 'T12:00:00Z');
     when = YI ? (c.ww !== '0' ? YWD[d.getUTCDay()] + ', ' : '') + d.getUTCDate() + 'טן ' + YMO[d.getUTCMonth()] + ' ' + d.getUTCFullYear()

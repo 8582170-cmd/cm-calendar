@@ -360,7 +360,8 @@ summary{cursor:pointer;font-weight:700}
   var $=function(i){return document.getElementById(i)},SITE='https://www.myluach.org',API='/api/pricing?c=_timer';
   /* העיצובים (זהים לדף הצפייה t.html). fg/bg = צבעי התמונה למייל, lab = צבע התוויות במייל */
   var TH=[['classic','Classic','1e5a63','ffffff','5d6873'],['wedding','Wedding','a8646f','fff8f6','8b6b70'],['barmitzvah','Bar mitzvah','1f3a5f','f7f8fb','5a6a82'],['batmitzvah','Bat mitzvah','b8487a','fff7fb','8f6177'],
-           ['kids','Kids','e0663a','fffaf2','7a6252'],['elegant','Elegant','c9a227','1d1a17','b8ae9c'],['digital','Digital','39e888','0b0f0c','7fa58d'],['minimal','Minimal','172126','ffffff','6b7679']];
+           ['kids','Kids','e0663a','fffaf2','7a6252'],['elegant','Elegant','c9a227','1d1a17','b8ae9c'],['digital','Digital','39e888','0b0f0c','7fa58d'],['minimal','Minimal','172126','ffffff','6b7679'],
+           ['klaf','Parchment','7a5a14','fbf5e6','6a6250'],['heichal','Heichal','d4b36a','0e131b','a9a08c'],['bordeaux','Bordeaux','e8c98a','4a0f1f','d9b9b0'],['emerald','Emerald','ddbe7a','0e3b2e','b5c4b5'],['laila','Starry night','c9d6f2','0f1a3a','a3b0d6'],['tchelet','Stone and blue','2c5e8c','f4eee2','6b6558'],['marva','Sage','3f5e4a','f3f6f0','5f7366'],['shayish','Marble','9a5f4f','fbfaf8','6c6a70']];
   var SZ={full:['100%',260],l:[800,300],m:[560,240],s:[360,210]};
   var PG=document.documentElement.dataset.pg||'timer';
   /* העלאת תמונות: רק למשתמש רשום. החיבור הוא של האתר (אותו חשבון כמו בבונה הלוח) */
@@ -1123,7 +1124,7 @@ summary{cursor:pointer;font-weight:700}
   document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var x=$(b.dataset.copy);x.select();try{navigator.clipboard.writeText(x.value)}catch(er){document.execCommand('copy')}var o=b.textContent;b.textContent='Copied ✓';setTimeout(function(){b.textContent=o},1500)});
   /* בדף השעון: בלי דף ההזמנה (הוא בדף נפרד). ספירה שמורה עם דף הזמנה נשמרת עם כל ההגדרות שלה */
   if(PG==='timer'){$('invD').hidden=true;['rv','rm','wl','dr'].forEach(function(k){$(k).checked=false});$('nr').value='0';NRS=[];DRS=[]}else{$('invPromo').hidden=true;$('invD').open=true;$('wd').value='b';invLayout()}
-  showMine();setTheme('classic');
+  showMine();setTheme(PG==='invite'?'klaf':'classic');
   /* עריכת ספירה שנשמרה: /timer?s=<כתובת> */
   var es=(Q.get('s')||'').toLowerCase();
   var hk=/^#k=([0-9a-f]{32})$/.exec(location.hash);if(hk&&valid(es)){remember(es,hk[1]);try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}

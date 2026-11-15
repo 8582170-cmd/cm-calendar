@@ -11,7 +11,7 @@
 <meta property="og:image" content="https://www.myluach.org/assets/gallery/scholar-1.webp">
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Bellefair&family=Orbitron:wght@600;800&family=Rubik:wght@600;800&family=Secular+One&family=Suez+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@400;700&family=David+Libre:wght@400;700&family=Noto+Serif+Hebrew:wght@400;700&family=Heebo:wght@300;400;700&family=Bellefair&family=Orbitron:wght@600;800&family=Rubik:wght@600;800&family=Secular+One&family=Suez+One&display=swap" rel="stylesheet">
 <style>
 :root{--acc:#1e5a63;--bg:#f6f4ef;--card:#ffffff;--ink:#1a232c;--mute:#5d6873;--line:#e2ddd2;--box:#f3f6f6;--bline:transparent;--nfont:Orbitron,'Courier New',monospace;--tfont:'Secular One',Assistant,sans-serif}
 *{box-sizing:border-box}
@@ -114,6 +114,30 @@ body.envon>*:not(.envo):not(#bgw):not(.mus){visibility:hidden}
 .fr2 .clock,.fr2 .top{border:2px solid var(--acc);border-radius:16px;padding:8px 6px}
 .fr2 .u{background:transparent;border-color:transparent}
 .fr2.stack .clock{margin-top:10px}
+/* ערכות יוקרה: מסגרת פנימית, קו מפריד מעוטר, ורקע לכל ערכה */
+.lux .box2,.lux .card{border-color:var(--bline)}
+.lux .hd{position:relative;padding:36px 22px 28px}
+.lux .hd::before{content:"";position:absolute;inset:8px;border:1px solid var(--bline);border-radius:12px;pointer-events:none}
+.lux .hd .nm::after{content:"";display:block;width:170px;max-width:60%;height:10px;margin:14px auto 0;background:linear-gradient(var(--acc),var(--acc)) left center/calc(50% - 12px) 1px no-repeat,linear-gradient(var(--acc),var(--acc)) right center/calc(50% - 12px) 1px no-repeat,radial-gradient(circle,var(--acc) 3px,transparent 3.6px) center/10px 10px no-repeat}
+.lux .bt{padding:9px 20px;min-height:44px}
+.lux .u{border-color:var(--bline)}
+.lux .par{border-top-color:var(--bline)}
+.th-klaf:not(.hasbg):not(.embed){background:radial-gradient(900px 500px at 50% 0,#fffaf0 0,#efe4c8 70%)}
+.th-klaf .hd::before{border:3px double var(--bline);border-radius:6px}.th-klaf .box2{border-radius:10px}
+.th-heichal:not(.hasbg):not(.embed){background:radial-gradient(1100px 600px at 50% -10%,#1b2740 0,#0a0e15 62%)}
+.th-heichal .hd{box-shadow:0 0 0 1px #d4b36a55,0 18px 50px rgb(0 0 0 / .45)}.th-heichal .hd::before{box-shadow:inset 0 0 0 3px var(--card),inset 0 0 0 4px #d4b36a66}
+.th-bordeaux:not(.hasbg):not(.embed){background:linear-gradient(160deg,#35091a,#5a1426)}
+.th-bordeaux .box2{border-radius:6px}.th-bordeaux .hd::before{border-radius:2px;border-width:2px}.th-bordeaux .bt{border-radius:6px}
+.th-emerald:not(.hasbg):not(.embed){background:linear-gradient(160deg,#08281f,#12483a)}
+.th-emerald .hd::before{inset:10px;border-radius:14px 2px 14px 2px}.th-emerald .box2{border-radius:18px 4px 18px 4px}
+.th-laila:not(.hasbg):not(.embed){background:radial-gradient(1.5px 1.5px at 12% 18%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 28% 62%,#dfe6ff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 46% 9%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 63% 41%,#dfe6ff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 81% 14%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 91% 70%,#dfe6ff 50%,transparent 51%),radial-gradient(1px 1px at 7% 84%,#fff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 72% 88%,#fff 50%,transparent 51%),linear-gradient(180deg,#070d24,#16245a);background-attachment:fixed}
+.th-laila .box2{background:color-mix(in srgb,var(--card) 82%,transparent);border-radius:22px}.th-laila .hd::before{display:none}.th-laila .n{text-shadow:0 0 14px #c9d6f255}
+.th-tchelet:not(.hasbg):not(.embed){background:linear-gradient(180deg,#e9dfc9,#f4eee2 40%,#e6dbc2)}
+.th-tchelet .hd{border-radius:240px 240px 18px 18px / 150px 150px 18px 18px;padding-top:64px}.th-tchelet .hd::before{border-radius:232px 232px 12px 12px / 142px 142px 12px 12px;border-width:2px}
+.th-marva:not(.hasbg):not(.embed){background:linear-gradient(180deg,#e4ede6 0,#f7f1e4 45%,#faf6ee)}
+.th-marva .box2{border-radius:28px;border-color:transparent;box-shadow:0 14px 34px rgb(47 74 60 / .12)}.th-marva .hd::before{display:none}.th-marva .u{border-radius:20px;border-color:transparent}
+.th-shayish:not(.hasbg):not(.embed){background:linear-gradient(115deg,transparent 38%,rgb(0 0 0 / .045) 39%,transparent 41.5%),linear-gradient(72deg,transparent 61%,rgb(0 0 0 / .035) 62%,transparent 65%),linear-gradient(140deg,transparent 12%,rgb(0 0 0 / .03) 13%,transparent 15%),#f4f2ee;background-attachment:fixed}
+.th-shayish .box2{border-radius:2px}.th-shayish .hd::before{border-radius:0;inset:10px}.th-shayish .hd .nm,.th-shayish h1,.th-shayish .to,.th-shayish .hd .sub,.th-shayish h2.sec{font-weight:300;letter-spacing:.04em}.th-shayish .bt{border-radius:2px;border-width:1px}.th-shayish .u{border-radius:2px}
 /* עיצובים */
 .th-wedding .u{border-radius:999px 999px 14px 14px}
 .th-digital .n{text-shadow:0 0 12px color-mix(in srgb,var(--acc) 60%,transparent)}
@@ -135,6 +159,15 @@ body.envon>*:not(.envo):not(#bgw):not(.mus){visibility:hidden}
     kids:{acc:'#e0663a',card:'#fffaf2',box:'#ffe3d3',ink:'#3b2a20',mute:'#7a6252',bline:'transparent',nf:"Rubik,sans-serif",tf:"Rubik,sans-serif"},
     elegant:{acc:'#c9a227',card:'#1d1a17',box:'#2a2622',ink:'#f3efe6',mute:'#b8ae9c',bline:'#4a4135',nf:"Bellefair,serif",tf:"Bellefair,serif"},
     digital:{acc:'#39e888',card:'#0b0f0c',box:'#111a14',ink:'#d9f5e3',mute:'#7fa58d',bline:'#1f3327',nf:"Orbitron,monospace",tf:"Orbitron,'Secular One',sans-serif"},
+    /* ערכות יוקרה לדף ההזמנה */
+    klaf:{acc:'#7a5a14',card:'#fbf5e6',box:'#f3e9d0',ink:'#16213a',mute:'#6a6250',bline:'#c9a961',nf:"'Noto Serif Hebrew',serif",tf:"'Noto Serif Hebrew',serif",lux:1},
+    heichal:{acc:'#d4b36a',card:'#0e131b',box:'#161d2a',ink:'#f1e9d6',mute:'#a9a08c',bline:'#5a4a22',nf:"'Frank Ruhl Libre',serif",tf:"'Frank Ruhl Libre',serif",lux:1},
+    bordeaux:{acc:'#e8c98a',card:'#4a0f1f',box:'#5c1729',ink:'#fbefe0',mute:'#d9b9b0',bline:'#8a5a3a',nf:"'David Libre',serif",tf:"'David Libre',serif",lux:1},
+    emerald:{acc:'#ddbe7a',card:'#0e3b2e',box:'#14493a',ink:'#f3eedd',mute:'#b5c4b5',bline:'#5e7b5a',nf:"'Suez One',serif",tf:"'Suez One',serif",lux:1},
+    laila:{acc:'#c9d6f2',card:'#0f1a3a',box:'#182652',ink:'#eef2ff',mute:'#a3b0d6',bline:'#3a4a80',nf:"Bellefair,serif",tf:"Bellefair,serif",lux:1},
+    tchelet:{acc:'#2c5e8c',card:'#f4eee2',box:'#e8dfcc',ink:'#1f2d3d',mute:'#6b6558',bline:'#b9a27a',nf:"'David Libre',serif",tf:"'David Libre',serif",lux:1},
+    marva:{acc:'#3f5e4a',card:'#f3f6f0',box:'#e3ece3',ink:'#22362b',mute:'#5f7366',bline:'#c9b88a',nf:"Heebo,sans-serif",tf:"'Frank Ruhl Libre',serif",lux:1},
+    shayish:{acc:'#9a5f4f',card:'#fbfaf8',box:'#f1eeea',ink:'#2a2a2e',mute:'#6c6a70',bline:'#d9c7bd',nf:"Heebo,sans-serif",tf:"Heebo,sans-serif",lux:1},
     minimal:{acc:'#172126',card:'#ffffff',box:'#ffffff',ink:'#172126',mute:'#6b7679',bline:'#dde2df',nf:"Assistant,sans-serif",tf:"Assistant,sans-serif"}
   };
   /* שקיעה (נוסחת NOAA המקוצרת), בשעות מקומיות. המיקום לפי אזור הזמן שנבחר (העיר הראשית שלו) */
@@ -174,7 +207,7 @@ body.envon>*:not(.envo):not(#bgw):not(.mus){visibility:hidden}
   function start(o){
     var EN=o.lang==='en';YI=o.lang==='yi';var title=String(o.t||'').slice(0,90),d=o.d||'',hm=o.h||'',tz=/^[A-Za-z_]+(\/[A-Za-z_+-]+){0,2}$/.test(o.z||'')?o.z:'Asia/Jerusalem',unit=['d','w','m'].indexOf(o.u)>=0?o.u:'d';
     var th=TH[o.th]||TH.classic,R=document.documentElement.style,hex=function(v){return /^[0-9a-f]{6}$/i.test(v||'')?'#'+v:null};
-    document.body.classList.add('th-'+(TH[o.th]?o.th:'classic'));
+    document.body.classList.add('th-'+(TH[o.th]?o.th:'classic'));if(th.lux)document.body.classList.add('lux');
     R.setProperty('--acc',hex(o.c)||th.acc);R.setProperty('--card',th.card);R.setProperty('--box',th.box);R.setProperty('--ink',th.ink);R.setProperty('--mute',th.mute);R.setProperty('--bline',th.bline);R.setProperty('--nfont',th.nf);R.setProperty('--tfont',th.tf);
     R.setProperty('--bg',document.body.classList.contains('embed')?'transparent':th.card);R.setProperty('--line',th.bline==='transparent'?'#e2ddd2':th.bline);
     if(o.b==='none'){R.setProperty('--card','transparent');R.setProperty('--line','transparent')}else if(hex(o.b)){R.setProperty('--card',hex(o.b));if(!document.body.classList.contains('embed'))R.setProperty('--bg',hex(o.b))}
