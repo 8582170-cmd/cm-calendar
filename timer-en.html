@@ -190,7 +190,7 @@ summary{cursor:pointer;font-weight:700}
       <div class="etg" id="etg" role="radiogroup" aria-label="סוג האירוע"></div><input type="hidden" id="et">
       <div id="etF" hidden>
       <div class="two"><label id="n1L"><span></span><input id="n1" maxlength="60"></label><label id="n2L"><span></span><input id="n2" maxlength="60"></label></div>
-      <div id="njB" hidden><label>בין החתן לכלה<select id="nj"><option value="">עב״ג, שם בכל שורה (כמקובל אצל חסידים)</option><option value="a">&amp; באותה שורה</option><option value="v">ו׳ באותה שורה (דוד ושרה)</option></select></label>
+      <div id="njB" hidden><label>בין החתן לכלה<select id="nj"><option value="">עב״ג, שם בכל שורה (כמקובל אצל חסידים)</option><option value="s">עב״ג, זה לצד זה (החתן מימין, הכלה משמאל)</option><option value="a">&amp; באותה שורה</option><option value="v">ו׳ באותה שורה (דוד ושרה)</option></select></label>
       <div class="two" id="ndB"><label>שורה מעל שם החתן (לא חובה)<input id="nd1" maxlength="50" list="nd1L" placeholder="למשל: הבחור החתן המופלג"></label><label>שורה מעל שם הכלה (לא חובה)<input id="nd2" maxlength="50" list="nd2L" placeholder="למשל: הכלה הבתולה המהוללה"></label></div><datalist id="nd1L"><option value="הבחור החתן המופלג"><option value="החתן המופלג"><option value="החתן"></datalist><datalist id="nd2L"><option value="הכלה הבתולה המהוללה"><option value="הכלה המהוללה"><option value="הכלה"></datalist><p class="mute" style="font-size:13px;margin:-4px 0 8px">אפשר לסיים את השם ב־נ"י או תחי', והסיומת תופיע באות קטנה.</p></div>
       <div class="two"><label id="f1L"><span></span><input id="f1" maxlength="120"></label><label id="f2L"><span></span><input id="f2" maxlength="120"></label></div>
       <button type="button" id="f2B" hidden style="background:none;border:0;color:#b8860b;font:inherit;cursor:pointer;padding:2px 0;text-align:start"></button>
@@ -763,7 +763,7 @@ summary{cursor:pointer;font-weight:700}
     /* מי מזמין: רק באירוע עם שני צדדים (למשל הורי החתן והורי הכלה) */
     var opt2=/לא חובה/.test(e[6]||''),show2=!!e[6]&&(!opt2||f2Open||!!$('f2').value.trim());$('f2L').hidden=!show2;if(!show2)$('f2').value='';var fb=$('f2B');fb.hidden=!(opt2&&!show2);fb.textContent='+ הוספת צד שני ('+String(e[6]||'').replace(/\s*\(.*\)\s*$/,'')+')';var two=!!(e[5]&&show2),cl=function(v){return String(v||'').replace(/\s*\(.*\)\s*$/,'')};$('hsL').hidden=!two;if(two){$('f1L').querySelector('span').textContent='צד א׳ · '+e[5];$('f2L').querySelector('span').textContent='צד ב׳ · '+e[6]}if(!two)$('hs').value='';else{$('hs').options[0].text='שני הצדדים';$('hs').options[1].text='צד א׳ בלבד ('+cl(e[5])+')';$('hs').options[2].text='צד ב׳ בלבד ('+cl(e[6])+')'}
     $('n1L').parentNode.hidden=!e[3]&&!e[4];
-    $('njB').hidden=!(e[3]&&e[4]);if($('njB').hidden){$('nj').value='';$('nd1').value='';$('nd2').value=''}$('ndB').hidden=!!$('nj').value;
+    $('njB').hidden=!(e[3]&&e[4]);if($('njB').hidden){$('nj').value='';$('nd1').value='';$('nd2').value=''}$('ndB').hidden=/^[av]$/.test($('nj').value);
     if(!user)return;
     if(!$('it').value.trim()||$('it').value===EVA.it){$('it').value=e[9];EVA.it=e[9]}
     if(AGAUTO||!AG.length){AG=[];if(/^(wed|eng|sheva)$/.test(k))AG.push({h:'',t:'קבלת פנים'});if(e[7])AG.push({h:'',t:e[7]});AGAUTO=true;agDraw()}
@@ -771,7 +771,7 @@ summary{cursor:pointer;font-weight:700}
   function etAuto(){var e=EVT.filter(function(x){return x[0]===$('et').value})[0];if(!e||!EVA.t)return;var v=etTitle(e);if(v&&v!==$('t').value){$('t').value=v;$('t').dispatchEvent(new Event('input'))}}
   $('etg').innerHTML=EVT.map(function(e){return '<button type="button" role="radio" aria-checked="false" data-et="'+e[0]+'"><i aria-hidden="true">'+e[1]+'</i>'+e[2]+'</button>'}).join('');
   $('etg').addEventListener('click',function(ev){var b=ev.target.closest('[data-et]');if(b)etSet(b.dataset.et,true)});
-  ['n1','n2','f1','f2'].forEach(function(k){$(k).addEventListener('input',function(){etAuto();upd()})});$('hs').addEventListener('change',upd);$('nj').addEventListener('change',function(){$('ndB').hidden=!!$('nj').value;upd()});['nd1','nd2'].forEach(function(k){$(k).addEventListener('input',upd)});
+  ['n1','n2','f1','f2'].forEach(function(k){$(k).addEventListener('input',function(){etAuto();upd()})});$('hs').addEventListener('change',upd);$('nj').addEventListener('change',function(){$('ndB').hidden=/^[av]$/.test($('nj').value);upd()});['nd1','nd2'].forEach(function(k){$(k).addEventListener('input',upd)});
   /* פנייה אישית: שני שדות הפתיח (בקישורים המהירים ובשליחה) מסונכרנים */
   if($('pt2')){$('pt2').addEventListener('input',function(){$('pt').value=$('pt2').value;upd()});$('pt').addEventListener('input',function(){$('pt2').value=$('pt').value});$('ptP').addEventListener('change',function(){if(!this.value)return;$('pt').value=$('pt2').value=this.value;this.value='';upd()});['hp','hx','sg'].forEach(function(k){$(k).addEventListener('input',upd)});$('rb').addEventListener('change',upd)}$('f2B').addEventListener('click',function(){f2Open=true;etSet($('et').value);$('f2').focus();upd()});$('f2').addEventListener('input',function(){if($('f2').value.trim()&&$('f2L').hidden)etSet($('et').value)});
   $('t').addEventListener('input',function(e){if(e.isTrusted)EVA.t=!$('t').value.trim()});
