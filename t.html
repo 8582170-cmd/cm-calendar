@@ -279,7 +279,7 @@ body.envon>*:not(.envo):not(#bgw):not(.mus){visibility:hidden}
     if(ES&&YI)ES={wed:['חתונה','עלטערן פונעם חתן','עלטערן פון דער כלה'],eng:['ווארט','עלטערן פונעם חתן','עלטערן פון דער כלה'],sheva:['שבע ברכות','די מכבדים',''],bar:['בר מצוה','עלטערן','זיידע און באבע'],bat:['בת מצוה','עלטערן','זיידע און באבע'],brit:['ברית מילה','עלטערן','זיידע און באבע'],zbd:['קידוש לכבוד דער נייגעבוירענער טאכטער','עלטערן','זיידע און באבע'],pid:['פדיון הבן','עלטערן','זיידע און באבע'],chl:['אפשערן','עלטערן','זיידע און באבע'],sfr:['הכנסת ספר תורה','די מכבדים',''],bd:['געבורטסטאג','די מכבדים',''],oth:['','די מכבדים','']}[o.et];
     if(ES&&EN){ES=[ES[3],/הורי/.test(ES[1])?(o.et==='wed'||o.et==='eng'?"Groom's parents":'Parents'):ES[1]?'Hosts':'',ES[2]?(/הורי/.test(ES[2])?"Bride's parents":'Grandparents'):'']}
     var nm=[o.n1,o.n2].filter(Boolean).map(esc).join(' &amp; ');
-    if(ES&&(nm||o.f1||ES[0])){var par=[[ES[1],o.f1],[ES[2],o.f2]].filter(function(x){return x[1]});
+    if(ES&&(nm||o.f1||ES[0])){var par=[[ES[1],o.f1,'1'],[ES[2],o.f2,'2']].filter(function(x){return x[1]&&(!o.hs||o.hs===x[2])});
       h+='<div class="box2 hd">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(nm?'<h2 class="nm">'+nm+'</h2>':'')+(ES[0]?'<p class="sub">'+ES[0]+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+
         (par.length?'<div class="par">'+par.map(function(x){return '<div>'+(x[0]?'<small>'+x[0]+'</small>':'')+'<b>'+esc(x[1])+'</b></div>'}).join('')+'</div>':'')+'</div>'}
     else if(tn||o.it)h+='<div class="box2">'+(tn?'<p class="to">'+esc(pt.replace(/\{(שם|name)\}/g,tn))+'</p>':'')+(o.it?'<p class="it">'+esc(o.it)+'</p>':'')+'</div>';
