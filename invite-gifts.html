@@ -74,4 +74,5 @@ fetch('/api/pricing?c=_timer&prices=1').then(function(r){return r.json()}).then(
   document.getElementById('fee').textContent=p.length?'העמלה כרגע: '+p.join(' + ')+'.':'כרגע אין עמלה על מתנות.';
   document.getElementById('lim').textContent='סכום המתנה: בין '+(j.giftMin||18)+' ל־'+(j.giftMax||5000)+' ₪ (בעל השמחה יכול להגדיר מינימום גבוה יותר).'}).catch(function(){document.getElementById('fee').textContent='גובה העמלה מופיע בעמוד המחירים ובדף ההגדרות של ההזמנה.'});
 </script>
+<script src="/assets/cms.js?v=4" defer></script>
 </body></html>

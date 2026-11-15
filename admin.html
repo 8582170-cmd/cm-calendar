@@ -171,21 +171,24 @@ function tickerList(items,head){const t=C.ticker,sel=t.mode==='selected';const b
   box.innerHTML=(head?'<p><b>'+esc(head)+'</b> · '+items.length+' אירועים</p>':'')+(items.length?items.map(e=>{const on=sel?t.ids.includes(e.id):!t.hide.includes(e.id);
     return '<label class="tk-i"><input type="checkbox" data-tk="'+e.id+'"'+(on?' checked':'')+'> <span>'+(e.y?'<b>'+esc(e.y)+'</b> · ':'')+esc(e.t)+'</span></label>'}).join(''):'<p>לא נמצאו אירועים.</p>');
   box.querySelectorAll('[data-tk]').forEach(c=>c.onchange=()=>{const id=+c.dataset.tk,L=sel?t.ids:t.hide,want=sel?c.checked:!c.checked,i=L.indexOf(id);if(want&&i<0)L.push(id);if(!want&&i>=0)L.splice(i,1)})}
-const CMS_P={index:'דף הבית',en:'דף הבית באנגלית',new:'דף הבית: תצוגה חדשה',gallery:'גלריה',pricing:'מחירים ומסלולים',donate:'תרומה',terms:'תנאי שימוש',privacy:'פרטיות',accessibility:'הצהרת נגישות'};
+const CMS_P={index:'דף הבית',en:'דף הבית באנגלית',new:'דף הבית: תצוגה חדשה',gallery:'גלריה',pricing:'מחירים ומסלולים',donate:'תרומה',terms:'תנאי שימוש',privacy:'פרטיות',accessibility:'הצהרת נגישות',app:'בונה הלוח',simple:'בונה הלוח: מצב פשוט',countdown:'בונה לוח ספירה לאחור',online:'הלוח המקוון',timer:'הזמנות דיגיטליות: דף הבנייה',invite:'הזמנות דיגיטליות: דף ההסבר','invite-help':'הזמנות: שאלות ותשובות','invite-gifts':'הזמנות: מתנות','invite-my':'הזמנות: ההזמנות שלי',t:'דף אירוע (לאורחים)',dir:'מאגרים: האזור האישי',brachot:'ברכות מעוצבות',share:'שיתוף לוח',nf404:'דף "לא נמצא"',_url:'➕ דף אחר לפי כתובת…'};
+const CMS_U={app:'/app.html',online:'/online/',dir:'/dir/',brachot:'/brachot/',nf404:'/404.html'};
 const VAR_N={'--teal':'צבע ראשי','--acc':'צבע ראשי','--ink':'צבע טקסט','--mute':'טקסט משני','--paper':'רקע','--bg':'רקע','--sheet':'רקע כרטיסים','--card':'רקע כרטיסים','--line':'קווים','--gold':'זהב','--accent':'צבע הדגשה','--teal-ink':'טקסט על הצבע הראשי','--teal-soft':'רקע עדין','--chag':'צבע חגים','--chag-soft':'רקע חגים','--acc-soft':'רקע עדין','--warm':'רקע חם','--warm-ink':'טקסט חם','--lav':'רקע סגול','--lav-ink':'טקסט סגול','--bad':'צבע שגיאה','--teal-dark':'צבע ראשי כהה'};
 (window.MYLUACH_ARTICLES||[]).forEach(([k,t])=>{CMS_P['art-'+k]='מאמר: '+t});
-const cmsUrl=p=>p.startsWith('art-')?'/articles/'+(p==='art-index'?'index':p.slice(4))+'.html':'/'+p+'.html';
+const cmsUrl=p=>CMS_U[p]?CMS_U[p]:p.startsWith('art-')?'/articles/'+(p==='art-index'?'index':p.slice(4))+'.html':'/'+p+'.html';
 let CMS={page:'index',data:null};
-function cmsSection(){return '<section><h2>עריכת דפים</h2><p class="sub">בוחרים דף, לוחצים על כל טקסט בתצוגה ומקלידים. בצד משנים צבעים. בסוף לוחצים "שמירת הדף". (מחירים ומסלולים נערכים למעלה, ולא כאן.)</p>'+
+function cmsSection(){return '<section><h2>עריכת דפים</h2><p class="sub">בוחרים דף, לוחצים על כל טקסט בתצוגה ומקלידים. כל טקסט שמסומן במסגרת מקווקוות ניתן לעריכה, גם כפתורים, תוויות וטקסט אפור בתוך שדות. דף שלא ברשימה: בוחרים "דף אחר לפי כתובת" ומדביקים את הכתובת שלו. בצד משנים צבעים. בסוף לוחצים "שמירת הדף". (מחירים ומסלולים נערכים למעלה, ולא כאן.)</p>'+
   '<div class="row"><select id="cmsP">'+Object.entries(CMS_P).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><button class="btn primary" type="button" id="cmsSave">שמירת הדף</button><button class="btn danger" type="button" id="cmsReset">החזרת הדף למקור</button><span id="cmsMsg"></span></div>'+
   '<div class="cms-wrap"><iframe id="cmsF" title="עריכת הדף"></iframe><div id="cmsVars" class="cms-vars"></div></div></section>'}
-function cmsOpen(){const f=$('#cmsF');$('#cmsVars').innerHTML='';$('#cmsMsg').textContent='טוען…';f.src=cmsUrl(CMS.page)+'?cmsedit=1&t='+Date.now()}
+function cmsOpen(){const f=$('#cmsF');if(CMS.page==='_url'||CMS.page==='t'){const u=prompt(CMS.page==='t'?'הדביקו קישור לאירוע כלשהו (myluach.org/t/…). השינויים יחולו על דפי כל האירועים':'הדביקו את כתובת הדף באתר (למשל myluach.org/online/zmanim/jerusalem)',CMS.url||'');if(!u){$('#cmsMsg').textContent='';return}
+    let path;try{path=new URL(/^https?:/.test(u)?u:'https://myluach.org/'+u.replace(/^\/+/,'')).pathname}catch(e){path=''}if(!path||/^\/admin/.test(path)){$('#cmsMsg').textContent='❌ כתובת לא תקינה';return}
+    CMS.url=path;$('#cmsVars').innerHTML='';$('#cmsMsg').textContent='טוען…';f.src=path+(path.includes('?')?'&':'?')+'cmsedit=1&t='+Date.now();return}$('#cmsVars').innerHTML='';$('#cmsMsg').textContent='טוען…';f.src=cmsUrl(CMS.page)+'?cmsedit=1&t='+Date.now()}
 window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const m=e.data||{},f=$('#cmsF');if(!f)return;
-  if(m.type==='cms-hello'){api({action:'contentget',page:CMS.page}).then(r=>{CMS.data=r.data;f.contentWindow.postMessage({type:'cms-load',data:r.data},location.origin)})}
+  if(m.type==='cms-hello'){CMS.cur=m.page||CMS.page;api({action:'contentget',page:CMS.cur}).then(r=>{CMS.data=r.data;f.contentWindow.postMessage({type:'cms-load',data:r.data},location.origin)})}
   if(m.type==='cms-ready'){$('#cmsMsg').textContent='';const V=m.vars||{},cur=(CMS.data&&CMS.data.vars)||{};
     $('#cmsVars').innerHTML='<b>צבעים</b>'+(Object.keys(V).length?Object.keys(V).map(k=>'<label>'+esc(VAR_N[k]||k)+' <input type="color" data-var="'+esc(k)+'" value="'+esc(cur[k]||V[k])+'"></label>').join(''):'<p class="sub">לדף הזה אין צבעים לעריכה.</p>');
     $('#cmsVars').querySelectorAll('[data-var]').forEach(i=>i.oninput=()=>f.contentWindow.postMessage({type:'cms-var',name:i.dataset.var,value:i.value},location.origin))}
-  if(m.type==='cms-data'){api({action:'contentsave',page:CMS.page,data:m.data}).then(r=>{CMS.data=r.data;$('#cmsMsg').textContent='✅ נשמר. הדף באתר מתעדכן תוך דקה.'}).catch(err=>{$('#cmsMsg').textContent='❌ '+err.message})}});
+  if(m.type==='cms-data'){api({action:'contentsave',page:m.page||CMS.cur||CMS.page,data:m.data}).then(r=>{CMS.data=r.data;$('#cmsMsg').textContent='✅ נשמר. הדף באתר מתעדכן תוך דקה.'}).catch(err=>{$('#cmsMsg').textContent='❌ '+err.message})}});
 const DB_T={profiles:'משתמשים (מייל וטלפון)',reminders:'תזכורות במייל',voice_reminders:'תזכורות קוליות',appointments:'פגישות ביומן',orders:'הזמנות ותשלומים',downloads:'הורדות והדפסות',free_lite:'מימוש הלוח החינמי',email_log:'מיילים שנשלחו'};
 const DB_C={email:'מייל',phone:'טלפון',phone_verified_at:'טלפון אומת',created_at:'נוצר',ip:'IP',ip_geo:'מיקום',ua:'דפדפן ומכשיר',updated_at:'עודכן',name:'שם',rule:'מתי',notice:'התראה (ימים לפני)',status:'מצב',last_sent:'נשלח לאחרונה',plan:'מסלול',amount:'סכום',coupon:'קופון',paid_at:'שולם',id:'מספר',used_at:'מומש',snap:'דוגמית',kind:'סוג',cal:'לוח',view:'תצוגה',size:'גודל',pages:'עמודים',page:'מאיזה דף',date:'תאריך',start_t:'שעה',title:'כותרת',place:'מקום',notify:'תזכורת',to_email:'נמען',subject:'נושא',provider:'שרת',ok:'הצליח',error:'שגיאה'};
 let DBS={name:'profiles',q:'',offset:0};
@@ -870,7 +873,7 @@ function bind(){
     $('#inMsg').innerHTML=L.map(x=>'<div>'+x.replace(/</g,'&lt;')+'</div>').join('')}).catch(e=>{$('#inMsg').textContent='❌ '+e.message})};
   if($('#cmsP')){$('#cmsP').value=CMS.page;$('#cmsP').onchange=e=>{CMS.page=e.target.value;cmsOpen()};
     $('#cmsSave').onclick=()=>{$('#cmsMsg').textContent='שומר…';$('#cmsF').contentWindow.postMessage({type:'cms-collect'},location.origin)};
-    $('#cmsReset').onclick=e=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח? כל השינויים בדף יימחקו';return}api({action:'contentreset',page:CMS.page}).then(()=>{b.dataset.sure='';b.textContent='החזרת הדף למקור';cmsOpen()})};cmsOpen()}
+    $('#cmsReset').onclick=e=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='בטוח? כל השינויים בדף יימחקו';return}api({action:'contentreset',page:CMS.cur||CMS.page}).then(()=>{b.dataset.sure='';b.textContent='החזרת הדף למקור';cmsOpen()})};cmsOpen()}
   if($('#vBox'))voiceLoad();
   if($('#libBox'))libLoad();
   if($('#pgList'))pgLoad();
