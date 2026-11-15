@@ -755,7 +755,7 @@ summary{cursor:pointer;font-weight:700}
     [].forEach.call($('etg').children,function(b){b.setAttribute('aria-checked',b.dataset.et===k)});$('etF').hidden=!e;if(!e)return;
     [['n1L',3],['n2L',4],['f1L',5],['f2L',6]].forEach(function(x){var L=$(x[0]);L.hidden=!e[x[1]];L.querySelector('span').textContent=e[x[1]];if(!e[x[1]])L.querySelector('input').value=''});
     /* מי מזמין: רק באירוע עם שני צדדים (למשל עלטערן פונעם חתן ועלטערן פון דער כלה) */
-    var two=!!(e[5]&&e[6]),cl=function(v){return String(v||'').replace(/\s*\(.*\)\s*$/,'')};$('hsL').hidden=!two;if(!two)$('hs').value='';else{$('hs').options[0].text='שני הצדדים';$('hs').options[1].text=cl(e[5])+' בלבד';$('hs').options[2].text=cl(e[6])+' בלבד'}
+    var two=!!(e[5]&&e[6]),cl=function(v){return String(v||'').replace(/\s*\(.*\)\s*$/,'')};$('hsL').hidden=!two;if(two){$('f1L').querySelector('span').textContent='צד א׳ · '+e[5];$('f2L').querySelector('span').textContent='צד ב׳ · '+e[6]}if(!two)$('hs').value='';else{$('hs').options[0].text='שני הצדדים';$('hs').options[1].text='צד א׳ בלבד ('+cl(e[5])+')';$('hs').options[2].text='צד ב׳ בלבד ('+cl(e[6])+')'}
     $('n1L').parentNode.hidden=!e[3]&&!e[4];
     if(!user)return;
     if(!$('it').value.trim()||$('it').value===EVA.it){$('it').value=e[9];EVA.it=e[9]}
