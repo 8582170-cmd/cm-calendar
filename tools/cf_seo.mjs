@@ -1,9 +1,11 @@
 /* בנייה ל-Cloudflare Pages: שיפורי קידום שלא משנים את מראה האתר.
    1. בדפי זמני השבת וזמני היום של כל עיר: הכותרת והתיאור בתוצאות החיפוש כוללים את זמני השבת הקרובה (הדלקת נרות, צאת השבת, פרשה).
-      הזמנים מחושבים כמו בלוח המקוון (אשכנזים: הדלקה לפי העיר, צאת שבת 8.5°). האתר נבנה מחדש כל שבוע, כך שהזמנים מתעדכנים.
+      הזמנים מחושבים כמו בלוח המקוון (אשכנזים: הדלקה לפי העיר, צאת שבת 8.5°).
+      בנוסף נשמרת לכל עיר טבלת זמנים לשנתיים קדימה (online/st/<עיר>.json), ופונקציה ב-functions/online מעדכנת לפיה את הכותרת בכל כניסה,
+      כך שאין צורך לבנות את האתר מחדש כל שבוע.
    2. נתונים מובנים (JSON-LD) בלתי נראים: פירורי לחם בדפי הלוח המקוון.
    אם משהו נכשל (למשל אין אינטרנט בזמן הבנייה), הדפים נשארים כמו שהם. */
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
 
@@ -42,6 +44,22 @@ function upcoming(H, c) {
   };
 }
 
+/* כל השבתות והחגים לשנתיים קדימה: [הדלקה, יציאה (מילישניות), הדלקה עברית, אנגלית, יציאה עברית, אנגלית, יום עברית, אנגלית, פרשה עברית, אנגלית] */
+function table(H, c) {
+  const { HebrewCalendar, Location } = H;
+  const loc = new Location(c.lat, c.lng, !!c.il, c.tz, c.en, '', undefined, c.el || 0);
+  const now = new Date(), start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1), end = new Date(start.getTime() + 740 * 864e5);
+  const ev = HebrewCalendar.calendar({ start, end, location: loc, candlelighting: true, candleLightingMins: c.candle || 18, havdalahDeg: 8.5, il: !!c.il, sedrot: true });
+  const PF = (H.flags && H.flags.PARSHA_HASHAVUA) || 0;
+  const t = (d, he) => new Intl.DateTimeFormat(he ? 'he-IL' : 'en-US', { timeZone: c.tz, hour: 'numeric', minute: '2-digit', hour12: !he }).format(d);
+  const day = (d, he) => new Intl.DateTimeFormat(he ? 'he-IL' : 'en-US', { timeZone: c.tz, weekday: 'long', day: 'numeric', month: he ? 'numeric' : 'short' }).format(d);
+  const C = ev.filter(e => /Candle lighting/i.test(e.getDesc()) && e.eventTime), V = ev.filter(e => /Havdalah/i.test(e.getDesc()) && e.eventTime), P = ev.filter(e => PF ? (e.getFlags() & PF) : /^Parashat /.test(e.getDesc()));
+  return C.map(cand => {
+    const hav = V.find(e => e.eventTime > cand.eventTime), par = P.find(e => e.getDate().greg() >= cand.getDate().greg());
+    return [cand.eventTime.getTime(), hav ? hav.eventTime.getTime() : 0, t(cand.eventTime, true), t(cand.eventTime, false), hav ? t(hav.eventTime, true) : '', hav ? t(hav.eventTime, false) : '',
+      day(cand.eventTime, true), day(cand.eventTime, false), par ? par.render('he-x-NoNikud').replace(/^פרשת\s*/, '') : '', par ? par.render('en').replace(/^Parashat\s*/, '') : ''];
+  });
+}
 function setHead(html, title, desc) {
   if (title) html = html.replace(/<title>[^<]*<\/title>/, '<title>' + esc(title) + '</title>').replace(/(<meta property="og:title" content=")[^"]*/, '$1' + esc(title));
   if (desc) html = html.replace(/(<meta name="description" content=")[^"]*/, '$1' + esc(desc)).replace(/(<meta property="og:description" content=")[^"]*/, '$1' + esc(desc));
@@ -54,9 +72,10 @@ async function main() {
   const cf = join(DIST, 'online/cities.js'); if (!existsSync(cf)) return log('no cities');
   const src = readFileSync(cf, 'utf8'), C = JSON.parse(src.slice(src.indexOf('['), src.lastIndexOf(']') + 1));
   let H = null; try { H = await loadHebcal(); } catch (e) { log('hebcal unavailable, titles unchanged:', e.message); }
-  let n = 0, nl = 0;
+  let n = 0, nl = 0, nt = 0;
   for (const c of C) {
     let u = null; if (H) { try { u = upcoming(H, c); } catch (e) { if (!main.err) log('city', c.id, e.message); main.err = (main.err || 0) + 1; } }
+    if (H) { try { mkdirSync(join(DIST, 'online/st'), { recursive: true }); writeFileSync(join(DIST, 'online/st', c.id + '.json'), JSON.stringify({ he: c.he, en: c.en, t: table(H, c) })); nt++; } catch (e) { if (!main.terr) log('table', c.id, e.message); main.terr = 1; } }
     for (const [dir, kind, en] of [['online/shabbat', 'shabbat', false], ['online/en/shabbat', 'shabbat', true], ['online/zmanim', 'zmanim', false], ['online/en/zmanim', 'zmanim', true]]) {
       const p = join(DIST, dir, c.id + '.html'); if (!existsSync(p)) continue;
       let h = readFileSync(p, 'utf8'); const name = en ? c.en : c.he;
@@ -103,6 +122,6 @@ async function main() {
       const m = /<title>([^<]*)<\/title>/.exec(h); if (m && m[1].includes(from) && !m[1].includes(yt)) { h = h.replace(m[0], '<title>' + m[1].replace(from, to) + '</title>'); writeFileSync(p, h); }
     }
   } catch (e) { log('year titles', e.message); } }
-  log('times in titles:', n, 'pages · breadcrumbs:', nl, 'pages');
+  log('times in titles:', n, 'pages · breadcrumbs:', nl, 'pages · time tables:', nt, 'cities');
 }
 main().catch(e => log('failed (pages unchanged):', e.message));

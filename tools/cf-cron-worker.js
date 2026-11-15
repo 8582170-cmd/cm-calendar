@@ -13,7 +13,7 @@ export default {
     if (g('weekday') === 'Sat' || YT.includes(g('year').slice(2) + g('month') + g('day'))) return console.log('shabbat/yom tov: skipped');
     /* כל שעה: רק הזמנות מתוזמנות (האתר בודק בעצמו גם את שעות כניסת השבת והחג) */
     if (event.cron !== '0 4 * * *') return ctx.waitUntil(fetch((env.SITE || 'https://www.myluach.org') + '/api/pricing?c=_timer&cron=1', { headers: { Authorization: 'Bearer ' + env.CRON_SECRET } }).then(r => r.text()).then(t => console.log('invites', t.slice(0, 200))));
-    /* פעם בשבוע (ראשון): בנייה מחדש של האתר, כדי שזמני השבת בכותרות של דפי הערים יתעדכנו. DEPLOY_HOOK = כתובת ה-Deploy hook של Pages */
+    /* לא חובה (כבר לא צריך: זמני השבת בכותרות דפי הערים מתעדכנים בכל כניסה, ראו functions/_stitle.js). אם מוגדר DEPLOY_HOOK, בונה את האתר מחדש כל ראשון */
     if (g('weekday') === 'Sun' && env.DEPLOY_HOOK) ctx.waitUntil(fetch(env.DEPLOY_HOOK, { method: 'POST' }).then(r => console.log('deploy hook', r.status)));
     ctx.waitUntil(fetch((env.SITE || 'https://www.myluach.org') + '/api/cron-reminders', { headers: { Authorization: 'Bearer ' + env.CRON_SECRET } })
       .then(r => r.text()).then(t => console.log('cron', t.slice(0, 300))));
