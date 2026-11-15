@@ -28,23 +28,35 @@
     if (r.nodeType === 3) r = r.parentNode; if (!r || r.nodeType !== 1) return out;
     if (r !== document.body && r.closest && r.closest(SKIP + ',[data-cmsk],[data-cmstx]')) return out;
     var w = document.createTreeWalker(r, 5, { acceptNode: function(n){
-      if (n.nodeType === 1) return (n.matches(SKIP) || n.hasAttribute('data-cmsk') || n.hasAttribute('data-cmstx')) ? 2 : 3;
+      if (n.nodeType === 1) return (n.matches(SKIP) || n.hasAttribute('data-cmsk') || n.hasAttribute('data-cmstx') || n.hasAttribute('data-cmsh')) ? 2 : 3;
       return LETTER.test(n.nodeValue) ? 1 : 3 } });
     for (var n; (n = w.nextNode());) if (n.nodeType === 3) out.push(n);
     return out;
   }
   function txOrig(n){ var o = ORIG.get(n); if (o != null && LAST.get(n) === n.nodeValue) return o; ORIG.delete(n); return n.nodeValue }
   function txKey(n){ return 'tx-' + hash(norm(txOrig(n))) }
-  function txSet(n, v){ var o = txOrig(n), m = /^(\s*)[\s\S]*?(\s*)$/.exec(o), nv = m[1] + String(v).replace(/<[^>]*>/g, '') + m[2];
+  function txSet(n, v, k){ var o = txOrig(n), m = /^(\s*)[\s\S]*?(\s*)$/.exec(o);
+    /* טקסט עם עיצוב לחלק ממנו (למשל מילה מוקטנת): מחליפים את הקטע בתיבה עם העיצוב */
+    if (/<[a-z]/i.test(v) && n.parentNode) { var p = n.parentNode, sp = document.createElement('span');
+      if (EDIT) { sp.setAttribute('data-cmstx', k); sp.contentEditable = 'true'; sp.spellcheck = false } else { sp.setAttribute('data-cmsh', k); sp.setAttribute('data-cmss', k) }
+      sp.innerHTML = clean(v); if (m[1]) p.insertBefore(document.createTextNode(m[1]), n); p.insertBefore(sp, n); if (m[2]) p.insertBefore(document.createTextNode(m[2]), n); p.removeChild(n); return }
+    var nv = m[1] + String(v).replace(/<[^>]*>/g, '') + m[2];
     if (n.nodeValue !== nv) { ORIG.set(n, o); n.nodeValue = nv; LAST.set(n, nv) } }
   function txApply(t, root){ if (!Object.keys(t).some(function(k){ return k.indexOf('tx-') === 0 })) return;
-    txNodes(root).forEach(function(n){ var k = txKey(n); if (t[k] != null) txSet(n, t[k]) }) }
+    txNodes(root).forEach(function(n){ var k = txKey(n); if (t[k] != null) txSet(n, t[k], k) }) }
   /* רק תגיות טקסט בסיסיות */
   function clean(html){
     var d = document.createElement('div'); d.innerHTML = String(html || '');
     (function walk(n){ Array.prototype.slice.call(n.childNodes).forEach(function(c){
       if (c.nodeType === 1) {
-        var ok = { B:1, STRONG:1, I:1, EM:1, BR:1, A:1, U:1, S:1 }[c.tagName];
+        var ok = { B:1, STRONG:1, I:1, EM:1, BR:1, A:1, U:1, S:1, SPAN:1 }[c.tagName];
+        if (c.tagName === 'SPAN') { var st = c.style, keep = [];
+          if (/^\d+(\.\d+)?px$/.test(st.fontSize) && parseFloat(st.fontSize) >= 6 && parseFloat(st.fontSize) <= 120) keep.push('font-size:' + Math.round(parseFloat(st.fontSize)) + 'px');
+          var ff = FONTS.filter(function(f){ return st.fontFamily.indexOf(f) >= 0 })[0]; if (ff) { keep.push('font-family:' + fam(ff)); font(ff) }
+          if (/^(400|700|normal|bold)$/.test(st.fontWeight)) keep.push('font-weight:' + st.fontWeight);
+          if (/^(italic|normal)$/.test(st.fontStyle)) keep.push('font-style:' + st.fontStyle);
+          if (/^(#[0-9a-f]{3,8}|rgba?\([\d.,\s%]+\))$/i.test(st.color)) keep.push('color:' + st.color);
+          if (!keep.length) ok = 0; else { Array.prototype.slice.call(c.attributes).forEach(function(a){ c.removeAttribute(a.name) }); c.setAttribute('style', keep.join(';')); walk(c); return } }
         if (!ok) { walk(c); while (c.firstChild) n.insertBefore(c.firstChild, c); n.removeChild(c); return }
         Array.prototype.slice.call(c.attributes).forEach(function(a){ if (!(c.tagName === 'A' && a.name === 'href' && /^(https?:|\/|#|[\w.-]+\.html)/.test(a.value))) c.removeAttribute(a.name) });
         walk(c);
@@ -141,8 +153,9 @@
         el.addEventListener('blur', function(){ el.placeholder = el.value; el.value = ''; el.style.background = '' }) }) }
     document.addEventListener('click', function(e){ var a = e.target.closest('a,button'); if (a) e.preventDefault() }, true);
     document.addEventListener('submit', function(e){ e.preventDefault() }, true);
-    document.addEventListener('input', function(e){ var x = e.target.closest && e.target.closest('[data-cmstx]'); if (x) { data.texts[x.getAttribute('data-cmstx')] = x.textContent.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim(); return }
-      var el = e.target.closest && e.target.closest('[data-cmsk]'); if (el) data.texts[el.dataset.cmsk] = clean(el.innerHTML) }, true);
+    function save(el){ if (el.hasAttribute('data-cmsk')) { data.texts[el.dataset.cmsk] = clean(el.innerHTML); return }
+      var k = el.getAttribute('data-cmstx'); data.texts[k] = el.querySelector('span,b,i,strong,em') ? clean(el.innerHTML).replace(/^\s+|\s+$/g, '') : el.textContent.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim() }
+    document.addEventListener('input', function(e){ var x = e.target.closest && e.target.closest('[data-cmstx],[data-cmsk]'); if (x) save(x) }, true);
     /* בתיבת טקסט פשוט: Enter לא מוסיף שורה */
     document.addEventListener('keydown', function(e){ if (e.key === 'Enter' && e.target.closest && e.target.closest('[data-cmstx]')) e.preventDefault() }, true);
     /* לחיצה על תווית לא תסמן/תפתח את השדה שלה */
@@ -170,7 +183,8 @@
     function place(){ if (!cur) return; var r = cur.getBoundingClientRect(); tb.style.display = 'flex';
       var top = r.top - tb.offsetHeight - 6; if (top < 4) top = r.bottom + 6; tb.style.top = top + 'px';
       tb.style.left = Math.max(4, Math.min(innerWidth - tb.offsetWidth - 4, r.right - tb.offsetWidth)) + 'px';
-      var o = data.styles[kOf(cur)] || {}, cs = getComputedStyle(cur);
+      var rf = cur; if (LR && !LR.collapsed && cur.contains(LR.commonAncestorContainer)) { rf = LR.commonAncestorContainer; if (rf.nodeType === 3) rf = rf.parentNode }
+      var o = data.styles[kOf(cur)] || {}, cs = getComputedStyle(rf);
       tb.querySelector('[data-a=ff]').value = o.ff || ''; tb.querySelector('[data-a=sz]').textContent = Math.round(parseFloat(cs.fontSize)) + 'px';
       tb.querySelector('[data-a=c]').value = o.c || hex(cs.color);
       /* יישור רק לשורה שלמה (כותרת, פסקה, כפתור), לא לקטע בתוך שורה */
@@ -180,7 +194,25 @@
       if (Object.keys(o).length) data.styles[k] = o; else delete data.styles[k];
       document.querySelectorAll('[data-cmsk="' + k + '"],[data-cmstx="' + k + '"]').forEach(function(el){ setSt(el, o) }); place() }
     tb.addEventListener('mousedown', function(e){ if (!/SELECT|INPUT/.test(e.target.tagName)) e.preventDefault() });
+    /* עיצוב לחלק מסומן בלבד */
+    var LR = null;
+    document.addEventListener('selectionchange', function(){ var sl = getSelection(); if (!cur || !sl.rangeCount) return; var r = sl.getRangeAt(0); if (cur.contains(r.commonAncestorContainer)) LR = r.cloneRange() });
+    function fmt(fn){ var r = LR; if (!cur || !r || r.collapsed || !cur.contains(r.commonAncestorContainer)) return false;
+      var t = r.toString(); if (!t.trim() || norm(t) === norm(cur.textContent)) return false;
+      var anc = r.commonAncestorContainer; if (anc.nodeType === 3) anc = anc.parentNode;
+      var sp = (anc !== cur && anc.tagName === 'SPAN' && !anc.hasAttribute('data-cmstx') && norm(anc.textContent) === norm(t)) ? anc : null;
+      if (!sp) { sp = document.createElement('span'); sp.appendChild(r.extractContents()); r.insertNode(sp) }
+      fn(sp.style, getComputedStyle(sp));
+      if (!sp.getAttribute('style')) { var pp = sp.parentNode; while (sp.firstChild) pp.insertBefore(sp.firstChild, sp); pp.removeChild(sp); sp = null }
+      if (sp) { var nr = document.createRange(); nr.selectNodeContents(sp); var sl = getSelection(); sl.removeAllRanges(); sl.addRange(nr); LR = nr.cloneRange() } else LR = null;
+      save(cur); place(); return true }
+    function step(cs, d){ var fs = parseFloat(cs.fontSize) || 16; return Math.max(6, Math.min(120, Math.round(fs + d * (fs < 20 ? 1 : 2)))) + 'px' }
     tb.addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; var a = b.getAttribute('data-a');
+      if (fmt(function(st, cs){
+        if (a === 'up' || a === 'dn') st.fontSize = step(cs, a === 'up' ? 1 : -1);
+        else if (a === 'b') st.fontWeight = (+cs.fontWeight >= 600) ? '400' : '700';
+        else if (a === 'i') st.fontStyle = cs.fontStyle === 'italic' ? 'normal' : 'italic';
+        else if (a === 'x') st.cssText = '' })) return;
       upd(function(o, cs){ var fs = parseFloat(cs.fontSize) || 16;
         if (a === 'up') o.fs = Math.min(120, Math.round(fs + (fs < 20 ? 1 : 2)));
         if (a === 'dn') o.fs = Math.max(8, Math.round(fs - (fs <= 20 ? 1 : 2)));
@@ -188,9 +220,9 @@
         if (a === 'i') o.fi = cs.fontStyle === 'italic' ? 'n' : 'i';
         if (/^(right|center|left)$/.test(a)) o.al = o.al === a ? '' : a;
         if (a === 'x') Object.keys(o).forEach(function(x){ delete o[x] }) }) });
-    tb.querySelector('[data-a=ff]').addEventListener('change', function(e){ var v = e.target.value; upd(function(o){ o.ff = v }) });
-    tb.querySelector('[data-a=c]').addEventListener('input', function(e){ var v = e.target.value; upd(function(o){ o.c = v }) });
-    document.addEventListener('focusin', function(e){ if (tb.contains(e.target)) return; var el = e.target.closest && e.target.closest('[data-cmsk],[data-cmstx]'); cur = el || null; if (cur) place(); else tb.style.display = 'none' });
+    tb.querySelector('[data-a=ff]').addEventListener('change', function(e){ var v = e.target.value; if (fmt(function(st){ if (v) { font(v); st.fontFamily = fam(v) } else st.fontFamily = '' })) return; upd(function(o){ o.ff = v }) });
+    tb.querySelector('[data-a=c]').addEventListener('input', function(e){ var v = e.target.value; if (fmt(function(st){ st.color = v })) return; upd(function(o){ o.c = v }) });
+    document.addEventListener('focusin', function(e){ if (tb.contains(e.target)) return; var el = e.target.closest && e.target.closest('[data-cmsk],[data-cmstx]'); if (el !== cur) LR = null; cur = el || null; if (cur) place(); else tb.style.display = 'none' });
     addEventListener('scroll', function(){ if (cur) place() }, true); addEventListener('resize', function(){ if (cur) place() });
     parent.postMessage({ type: 'cms-hello', page: PAGE }, location.origin);
     setTimeout(arm, 800); setTimeout(arm, 2500); setTimeout(arm, 6000);
