@@ -12,6 +12,10 @@
   function leaf(el){ for (var c = el.firstElementChild; c; c = c.nextElementSibling) if (!INLINE[c.tagName]) return false; return true }
   function nodes(){ return Array.prototype.filter.call(document.querySelectorAll(SEL), function(el){
     return leaf(el) && norm(el.textContent) && !el.closest('script,style,.mla-p,.mla-btn,[data-cms-skip]') && !(el.parentElement && el.parentElement.closest(SEL) && leaf(el.parentElement.closest(SEL))) }) }
+  /* טקסט שבתוך שדה (placeholder): "מה היה חסר?" וכדומה. המפתח לפי הטקסט המקורי */
+  function phNodes(){ return Array.prototype.filter.call(document.querySelectorAll('input[placeholder],textarea[placeholder]'), function(el){
+    return norm(el.getAttribute('data-cmsph') || el.placeholder) && !el.closest('.mla-p,[data-cms-skip]') && !/^(password|hidden|number|date|time|datetime-local|range|color)$/.test(el.type || '') }) }
+  function phKey(el){ if (!el.dataset.cmsph) el.dataset.cmsph = el.placeholder; return 'ph-' + hash(norm(el.dataset.cmsph)) }
   function keyOf(el){ if (!el.dataset.cmsk) el.dataset.cmsk = el.tagName.toLowerCase() + '-' + hash(norm(el.textContent)); return el.dataset.cmsk }
   /* רק תגיות טקסט בסיסיות */
   function clean(html){
@@ -30,6 +34,7 @@
     if (!data) return;
     var t = data.texts || {};
     nodes().forEach(function(el){ var k = keyOf(el); if (t[k] != null && el.dataset.cmsApplied !== t[k]) { el.innerHTML = clean(t[k]); el.dataset.cmsApplied = t[k] } });
+    phNodes().forEach(function(el){ var k = phKey(el); if (t[k] != null && el.placeholder !== t[k]) el.placeholder = String(t[k]).replace(/<[^>]*>/g, '') });
     var v = data.vars || {}, st = document.getElementById('cms-vars');
     var css = Object.keys(v).filter(function(k){ return /^--[\w-]+$/.test(k) && /^#[0-9a-f]{3,8}$/i.test(v[k]) }).map(function(k){ return k + ':' + v[k] }).join(';');
     if (css) { if (!st) { st = document.createElement('style'); st.id = 'cms-vars'; document.head.appendChild(st) } st.textContent = ':root,:root:not([data-theme]){' + css + '}' }
@@ -48,14 +53,21 @@
     if (cached && !EDIT) apply(cached);
     if (EDIT) return startEdit();
     fetch('/api/pricing?c=' + encodeURIComponent(PAGE)).then(function(r){ return r.ok ? r.json() : null }).then(function(d){
-      var c = d && d.content; if (!c) return; try { localStorage.setItem(KEY, JSON.stringify(c)) } catch (e) {} apply(c) }).catch(function(){});
+      var c = d && d.content; if (!c) return; try { localStorage.setItem(KEY, JSON.stringify(c)) } catch (e) {} cached = c; apply(c) }).catch(function(){});
+    /* חלקים שנוספים לדף אחר כך (למשל טופס המשוב): מחילים גם עליהם */
+    try { var mt; new MutationObserver(function(){ if (!cached) return; clearTimeout(mt); mt = setTimeout(function(){ apply(cached) }, 150) }).observe(document.body, { childList: true, subtree: true }) } catch (e) {}
   }
   /* מצב עריכה (בתוך דף הניהול) */
   function startEdit(){
     var data = { texts: {}, vars: {} };
     var s = document.createElement('style'); s.textContent = '[data-cmsk]{outline:1px dashed rgba(29,78,216,.35);outline-offset:2px;cursor:text}[data-cmsk]:hover{outline:2px solid #1d4ed8}[data-cmsk]:focus{outline:2px solid #f59e0b;background:rgba(245,158,11,.08)}';
     document.head.appendChild(s);
-    function arm(){ nodes().forEach(function(el){ keyOf(el); el.contentEditable = 'true'; el.spellcheck = false }) }
+    function arm(){ nodes().forEach(function(el){ keyOf(el); el.contentEditable = 'true'; el.spellcheck = false });
+      /* שדות: לוחצים, והטקסט האפור נהיה ניתן לעריכה. ביציאה מהשדה הוא חוזר להיות טקסט אפור */
+      phNodes().forEach(function(el){ if (el.dataset.cmsArmed) return; el.dataset.cmsArmed = 1; phKey(el); el.style.outline = '1px dashed rgba(29,78,216,.5)'; el.title = 'לחצו כדי לערוך את הטקסט האפור';
+        el.addEventListener('focus', function(){ el.value = el.placeholder; el.style.background = 'rgba(245,158,11,.08)' });
+        el.addEventListener('input', function(){ data.texts[phKey(el)] = el.value.replace(/[<>]/g, '') });
+        el.addEventListener('blur', function(){ el.placeholder = el.value; el.value = ''; el.style.background = '' }) }) }
     document.addEventListener('click', function(e){ var a = e.target.closest('a,button'); if (a) e.preventDefault() }, true);
     document.addEventListener('submit', function(e){ e.preventDefault() }, true);
     document.addEventListener('input', function(e){ var el = e.target.closest('[data-cmsk]'); if (el) data.texts[el.dataset.cmsk] = clean(el.innerHTML) }, true);
@@ -66,7 +78,7 @@
       if (m.type === 'cms-collect') parent.postMessage({ type: 'cms-data', page: PAGE, data: data }, location.origin);
     });
     parent.postMessage({ type: 'cms-hello', page: PAGE }, location.origin);
-    setTimeout(arm, 800);
+    setTimeout(arm, 800); setTimeout(arm, 2500);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
