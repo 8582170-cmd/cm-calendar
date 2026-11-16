@@ -35,6 +35,7 @@ const MSG = {
   menuPkg: ['תפריט ראשי: חבילה', 'לרכישת חבילה הקישו {מקש}'],
   menuProd: ['תפריט ראשי: בחירת מוצרים', 'לבחירת כרטיסים לפי מספר מוצר הקישו {מקש}'],
   menuAll: ['תפריט ראשי: כל המוצרים', 'לשמיעת כל המוצרים ברצף הקישו {מקש}'],
+  listMore: ['אחרי כל קבוצת מוצרים ברשימה', 'להמשך הרשימה הקישו 1, לחזרה לתפריט הקישו 2, לבחירת מוצר הקישו 3'],
   prodAsk: ['בקשת מספר מוצר', 'הקישו את מספר המוצר וסולמית'],
   prodChosen: ['אחרי הקשת מספר מוצר', 'בחרתם מוצר {מוצר}'],
   prodConfirm: ['אישור המוצר שנבחר', 'לאישור הקישו 1 לבחירת מוצר אחר הקישו 2'],
@@ -110,6 +111,12 @@ function replay(s, R, ans, saved) {
   const hear = () => { const out = []; if (st.pkg) out.push(T('חבילה ' + st.pkg.name)); st.cart.forEach(x => { const p = s.products.find(y => y.id === x.p); if (p) out.push(T(x.n + ' כרטיסים למוצר ' + p.num + ' ' + p.name)); });
     if (!out.length) out.push(T('הסל ריק')); else { const q = quote(); if (!q.error) out.push(T('סך הכל ' + q.count + ' כרטיסים בסכום ' + nis(q.amount))); } return out; };
   st.hear = hear;
+  const listChunk = () => {
+    const n = Math.max(3, Math.min(30, +(((s.cfg || {}).ivr || {}).listChunk) || 10)), from = st.allAt || 0;
+    prods.slice(from, from + n).forEach(p => st.msg.push(...prodSay(s, p)));
+    st.allAt = from + n;
+    if (st.allAt >= prods.length) { st.msg.push(T('זה סוף רשימת המוצרים')); st.phase = 'menu'; }
+  };
   for (const v0 of ans) {
     const v = String(v0 == null ? '' : v0).replace(/\D/g, ''); st.msg = [];
     if (st.phase === 'repA' || st.phase === 'repB') {
@@ -128,11 +135,16 @@ function replay(s, R, ans, saved) {
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
+    /* רשימת כל המוצרים בקבוצות, כדי שהתשובה לימות לא תהיה ארוכה מדי כשיש הרבה מוצרים */
+    if (st.phase === 'allp') {
+      if (v === '1') listChunk(); else if (v === '2') st.phase = 'menu'; else if (v === '3') st.phase = 'prod'; else st.msg.push(T('בחירה לא תקינה'));
+      continue;
+    }
     if (st.phase === 'menu') {
       const mk = menuKeys();
       if (v === mk.pkg) st.phase = 'pkg';
       else if (v === mk.prod) st.phase = 'prod';
-      else if (v === mk.all) { st.msg.push(T('המוצרים במכירה')); prods.forEach(p => st.msg.push(...prodSay(s, p))); }
+      else if (v === mk.all) { st.msg.push(T('המוצרים במכירה')); st.allAt = 0; st.phase = 'allp'; listChunk(); }
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
@@ -264,6 +276,7 @@ module.exports = async (req, res) => {
       case 'editq': return rd([M(s, 'editQty')], 3, 1);
       case 'menu': { const mk = st.menuKeys(); return rd((mk.pkg ? [M(s, 'menuPkg', { 'מקש': mk.pkg })] : []).concat(M(s, 'menuProd', { 'מקש': mk.prod }), M(s, 'menuAll', { 'מקש': mk.all })), 1, 1, (mk.pkg ? mk.pkg + '.' : '') + mk.prod + '.' + mk.all); }
       case 'pkg': return rd(pkgs.map((k, i) => T('ל' + k.name + ' במחיר ' + nis(k.price) + ' הקישו ' + pkgKey(k, i))), 1, 1);
+      case 'allp': return rd([M(s, 'listMore')], 1, 1, '1.2.3');
       case 'prod': return rd([M(s, 'prodAsk')], 5, 1);
       case 'prodok': return rd([M(s, 'prodConfirm')], 1, 1, '1.2');
       case 'qty': return rd([M(s, 'qtyAsk')], 3, 1);

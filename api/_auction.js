@@ -236,6 +236,7 @@ function cleanCfg(old, b) {
     c.ivr = { ...v0, cc }; delete b.ivr.cc; }
   if (b.ivr && typeof b.ivr === 'object') { const v = { ...(c.ivr || {}) }; if (!v.key) v.key = crypto.randomBytes(8).toString('hex');
     if (b.ivr.path != null) v.path = String(b.ivr.path).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (b.ivr.payPath != null) v.payPath = String(b.ivr.payPath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
+    if (b.ivr.listChunk != null) v.listChunk = Math.max(3, Math.min(30, Math.floor(+b.ivr.listChunk) || 10));
     if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') { const nm = String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60), o = v.hold || {}; v.hold = { on: !!b.ivr.hold.on, name: nm, folder: holdFolder(b.ivr.hold.folder != null ? b.ivr.hold.folder : o.folder) }; if (o.url) { v.hold.url = o.url; if (o.y) v.hold.y = true; } } if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
   return c;
 }
