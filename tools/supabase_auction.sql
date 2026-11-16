@@ -157,3 +157,17 @@ alter table public.auction_customer enable row level security;
 alter table public.auction_order enable row level security;
 alter table public.auction_ticket enable row level security;
 alter table public.auction_draw enable row level security;
+
+-- סל שמור בטלפון: המתקשר שומר כרטיסים להתקשרות הבאה, שומע, עורך ומוסיף.
+-- base = מצב הסל בתחילת השיחה הנוכחית (call_id), כדי שכל בקשה באותה שיחה תתחיל מאותה נקודה
+create table if not exists public.auction_cart (
+  sale_id bigint not null references public.auction_sale(id) on delete cascade,
+  phone text not null,
+  pkg_id bigint,
+  items jsonb default '[]'::jsonb,
+  base jsonb,
+  call_id text,
+  updated_at timestamptz default now(),
+  primary key (sale_id, phone)
+);
+alter table public.auction_cart enable row level security;

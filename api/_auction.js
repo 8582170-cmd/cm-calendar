@@ -25,7 +25,7 @@ async function all(path) {
   return out;
 }
 /* הגדרות האגף (בעל האתר): open = כל משתמש יכול לפתוח מכירה, sitePay / kehilot = ספקי סליקה נוספים */
-async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilot === true, note: String(s.note || '') }; }
+async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilot === true, cancel: s.cancel === true, note: String(s.note || '') }; }
 const admins = () => [env('OWNER_EMAIL'), ...env('AUCTION_ADMINS').split(',')].map(s => s.trim().toLowerCase()).filter(Boolean);
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 
@@ -200,6 +200,8 @@ function cleanCfg(old, b) {
   if (b.goal != null) c.goal = Math.max(0, Math.min(1e9, +b.goal || 0));
   ['repWeb', 'repPhone', 'repWins', 'priceMode'].forEach(k => { if (b[k] != null) c[k] = clean(b[k], 10); });
   if (b.repSkip != null) c.repSkip = !!b.repSkip;
+  if (b.allowCancel != null) c.allowCancel = !!b.allowCancel;
+  if (b.phoneCart != null) c.phoneCart = !!b.phoneCart;
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
     if (b.pay.mosad != null) p.mosad = String(b.pay.mosad).replace(/\D/g, '').slice(0, 10); if (b.pay.apiValid != null) p.apiValid = clean(b.pay.apiValid, 60); if (b.pay.groupe != null) p.groupe = clean(b.pay.groupe, 60); c.pay = p; }
@@ -384,7 +386,7 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
-      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilot: !!b.set.kehilot, note: clean(b.set.note, 1000) }); }
+      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilot: !!b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000) }); }
       const R = await db('auction_order?txn=not.is.null&select=callback&order=paid_at.desc.nullslast&limit=300').catch(() => []);
       const ips = [...new Set((R || []).map(o => o.callback && o.callback._ip).filter(Boolean))];
       return json(res, 200, { site: await site(), siteNed: !!PAY.siteNed(), ips, ipsSet: env('NEDARIM_CALLBACK_IPS') });
@@ -449,6 +451,7 @@ module.exports = async (req, res) => {
       if (b.do === 'paid') { if (o.status === 'paid') return json(res, 409, { error: 'already' }); const r = await markPaid(id, { txn: 'manual:' + clean(b.note, 80), callback: { manual: true, by: u.email, note: clean(b.note, 300) } }); drop(s.slug); return json(res, 200, r); }
       if (b.do === 'kcheck') { try { const r = await kesherPaid(s, id, b.tn); return json(res, r.status, r); } catch (e) { return json(res, 502, { error: 'kesher', message: String(e.message).slice(0, 160) }); } }
       if (b.do === 'refund') { if (o.status !== 'paid') return json(res, 409, { error: 'not paid' });
+        if (!((await site()).cancel && (s.cfg || {}).allowCancel === true)) return json(res, 403, { error: 'nocancel', message: 'ביטול הזמנות לא מאופשר במכירה הזאת' });
         const D = await db('auction_draw?sale_id=eq.' + s.id + '&select=ticket_id&limit=5000'), T = await db('auction_ticket?order_id=eq.' + id + '&select=id&limit=5000');
         const won = new Set((D || []).map(d => d.ticket_id)); if ((T || []).some(t => won.has(t.id))) return json(res, 409, { error: 'won', message: 'אחד הכרטיסים בהזמנה כבר זכה בהגרלה' });
         await db('auction_ticket?order_id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ void: true }) });

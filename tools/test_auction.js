@@ -78,7 +78,18 @@ s1 = IVR.replay(SALE, RP, ['0', '1', '1', '102', '3', '2', '1', '55', '0']); ass
 s1 = IVR.replay(SALE, RP, ['0', '2', '999']); assert.strictEqual(s1.phase, 'prod');
 s1 = IVR.replay(SALE, RP, ['0', '2', '102', '6']); assert.strictEqual(s1.phase, 'qty', 'מעבר למגבלה למוצר');
 s1 = IVR.replay(SALE, RP, ['0', '1', '2', '2']); assert.deepStrictEqual([s1.phase, s1.quote.amount, s1.quote.count], ['sum', 30, 2]);
-s1 = IVR.replay(SALE, RP, ['0', '2', '101', '1', '2', '2']); assert.deepStrictEqual([s1.phase, s1.cart.length], ['menu', 0]);
+s1 = IVR.replay(SALE, RP, ['0', '2', '101', '1', '2', '3']); assert.deepStrictEqual([s1.phase, s1.cart.length], ['menu', 0]);
+s1 = IVR.replay(SALE, RP, ['0', '2', '101', '1', '2', '2']); assert.deepStrictEqual([s1.phase, s1.cart.length], ['more', 1]);
 s1 = IVR.replay(SALE, RP, ['11', '22']); assert.strictEqual(s1.phase, 'menu', 'שני קודים שגויים: ממשיכים בלי');
 s1 = IVR.replay({ ...SALE, cfg: { ...SALE.cfg, repSkip: false } }, RP, ['0', '11', '22', '33']); assert.strictEqual(s1.phase, 'bye');
+/* סל שמור: ממשיכים, עורכים, מוסיפים */
+const SV = { pkg_id: null, items: [{ p: 1, n: 2 }, { p: 2, n: 1 }, { p: 99, n: 4 }] };
+s1 = IVR.replay(SALE, RP, ['0'], SV); assert.deepStrictEqual([s1.phase, s1.cart.length, s1.quote.amount], ['saved', 2, 90], 'מוצר שלא קיים מושמט');
+s1 = IVR.replay(SALE, RP, ['0', '1', '1', '101', '3'], SV); assert.deepStrictEqual([s1.phase, s1.cart.find(x => x.p === 1).n, s1.cart.length], ['more', 5, 2], 'הוספה למוצר שכבר בסל מתאחדת');
+s1 = IVR.replay(SALE, RP, ['0', '1', '5', '102', '0'], SV); assert.deepStrictEqual([s1.phase, s1.cart.length], ['more', 1], 'הסרה');
+s1 = IVR.replay(SALE, RP, ['0', '1', '5', '101', '4'], SV); assert.strictEqual(s1.cart.find(x => x.p === 1).n, 4);
+s1 = IVR.replay(SALE, RP, ['0', '1', '5', '102', '6'], SV); assert.strictEqual(s1.phase, 'editq', 'מעבר למגבלה');
+s1 = IVR.replay(SALE, RP, ['0', '1', '4'], SV); assert.strictEqual(s1.phase, 'store');
+s1 = IVR.replay(SALE, RP, ['0', '3'], SV); assert.deepStrictEqual([s1.phase, s1.cart.length], ['menu', 0]);
+s1 = IVR.replay({ ...SALE, cfg: { ...SALE.cfg, phoneCart: false } }, RP, ['0'], SV); assert.strictEqual(s1.phase, 'menu', 'כשהסל כבוי לא טוענים');
 console.log('auction ivr: all tests passed');
