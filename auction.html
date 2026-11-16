@@ -117,6 +117,7 @@ if(!SLUG){closed('לא נמצאה מכירה');return}
 if(Q.get('rep'))return repView();
 if(Q.get('view')==='progress')return progView();
 if(Q.get('view')==='terms')return termsView();
+if(Q.get('view')==='reps')return repLogin();
 buyView();
 
 /* ===== דף הרכישה ===== */
@@ -152,6 +153,7 @@ function buyView(){
     h+='<aside class="sum" id="sum" aria-live="polite"></aside></div>';
     if(c.faq&&c.faq.length)h+='<section class="sec faq"><h2>שאלות ותשובות</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>';
     if(c.terms)h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></p>';
+    h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-admin?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
     h+='</main>';
     app.innerHTML=h;
     drawPkgs();drawGrid();drawSum();
@@ -318,6 +320,17 @@ function termsView(){get({a:'sale',s:SLUG,preview:Q.get('preview')||''}).then(fu
    +'<p><a href="?s='+SLUG+'">חזרה לדף המכירה</a></p></div>'}).catch(function(){closed('לא הצלחנו לטעון')})}
 
 /* ===== הזמנה שהנציג רושם עבור רוכש (תשלום במזומן / צ'ק) ===== */
+function pinOf(){try{return sessionStorage.getItem('arpin-'+Q.get('rep'))||''}catch(e){return ''}}
+function repLogin(){
+  document.title='כניסת נציגים';
+  app.innerHTML='<header class="top"><div class="t"><div class="kick">מכירה סינית</div><h1>כניסת נציגים</h1><div class="sub">הדף האישי: רישום הזמנות לרוכשים ומעקב אחרי מה שגייסת</div></div></header>'
+   +'<div class="repw"><section class="card"><div class="fields"><label class="f" for="lc">קוד הנציג<input id="lc" inputmode="numeric" dir="ltr"></label><label class="f" for="lp">קוד כניסה<input id="lp" inputmode="numeric" type="password" dir="ltr" maxlength="6"></label></div><p class="msg" id="lm" aria-live="polite">את קוד הכניסה מקבלים ממנהל המכירה.</p><button type="button" class="go" id="lg">כניסה</button></section></div>';
+  $('lg').onclick=function(){var b=this,m=$('lm');b.disabled=true;
+    post({a:'repLogin',s:SLUG,code:$('lc').value,pin:$('lp').value}).then(function(x){b.disabled=false;
+      if(!x.t){m.textContent=x.message||'הפרטים שגויים';m.className='msg bad';return}
+      try{sessionStorage.setItem('arpin-'+x.t,$('lp').value.replace(/\D/g,''))}catch(e){}
+      location.href='?s='+SLUG+'&rep='+x.t}).catch(function(){b.disabled=false;m.textContent='אין חיבור לשרת.';m.className='msg bad'})};
+}
 function repForm(j){
   var st={paid:'שולם',pending:'ממתין לאישור',failed:'נכשל',refunded:'בוטל'};
   return '<section class="card"><h2 style="font-size:18px;font-family:Heebo">הזמנה עבור רוכש</h2><p class="msg" style="margin:0">'+(j.canOrder==='paid'?'לרוכש שמשלם לך במזומן או בצ\'ק. הכרטיסים מקבלים מספרים מיד.':'לרוכש שמשלם לך במזומן או בצ\'ק. ההזמנה תיכנס להגרלה אחרי שמנהל המכירה יאשר שהתשלום התקבל.')+'</p>'
@@ -325,6 +338,7 @@ function repForm(j){
    +(j.pkgs.length?'<label class="f" for="rk">חבילה<select id="rk" style="height:46px;border:1px solid var(--line2);border-radius:10px;padding:0 10px"><option value="">ללא חבילה</option>'+j.pkgs.map(function(k){return '<option value="'+k.id+'">'+esc(k.name)+' · '+nis(k.price)+'</option>'}).join('')+'</select></label>':'')
    +'<div style="display:flex;flex-direction:column;gap:6px">'+j.products.map(function(p){return '<label class="row" style="align-items:center" for="rq'+p.id+'"><span>'+p.num+' · '+esc(p.name)+' · '+nis(p.price)+'</span><input id="rq'+p.id+'" data-rq="'+p.id+'" inputmode="numeric" placeholder="0" style="width:70px;height:40px;text-align:center;border:1px solid var(--line2);border-radius:8px"></label>'}).join('')+'</div>'
    +'<div class="fields"><label class="f" for="rh">אמצעי תשלום<select id="rh" style="height:46px;border:1px solid var(--line2);border-radius:10px;padding:0 10px"><option>מזומן</option><option>צ\'ק</option><option>העברה בנקאית</option><option>אחר</option></select></label><label class="f" for="rt">הערה<input id="rt"></label></div>'
+   +(j.needPin&&!pinOf()?'<label class="f" for="rpin">קוד הכניסה שלך (קיבלת אותו ממנהל המכירה)<input id="rpin" inputmode="numeric" type="password" dir="ltr" maxlength="6" autocomplete="off"></label>':'')
    +'<div class="tot"><span>לגבייה</span><b id="rtot">0 ₪</b></div><p class="msg" id="rmsg" aria-live="polite"></p><button type="button" class="go" id="rgo">רישום ההזמנה</button></section>'
    +(j.mine.length?'<section class="sec"><h2 style="font-size:18px;font-family:Heebo">הזמנות שרשמת</h2>'+j.mine.map(function(o){return '<div class="card" style="flex-direction:row;justify-content:space-between;padding:12px 14px;gap:10px"><span>'+esc(o.name)+' · '+o.n+' כרטיסים · '+esc(o.method)+'</span><span><b>'+nis(o.amount)+'</b> · '+(st[o.status]||esc(o.status))+'</span></div>'}).join('')+'</section>':'');
 }
@@ -335,9 +349,11 @@ function wireRepForm(j){
   document.querySelector('.repw').addEventListener('input',upd);if($('rk'))$('rk').onchange=upd;
   $('rgo').onclick=function(){var b=this,r=upd(),m=$('rmsg');
     if(r.error){m.textContent=r.error==='empty'?'בוחרים כרטיסים.':r.message;m.className='msg bad';return}
+    var pin=pinOf()||($('rpin')?$('rpin').value.replace(/\D/g,''):'');if(j.needPin&&!pin){m.textContent='צריך קוד כניסה.';m.className='msg bad';return}
     b.disabled=true;m.textContent='רושמים…';m.className='msg';
-    post({a:'repOrder',s:SLUG,t:Q.get('rep'),name:$('rn').value,phone:$('rp').value,email:$('rm').value,city:$('rc').value,pkg:pk()?pk().id:null,items:its(),method:$('rh').value,note:$('rt').value}).then(function(x){
-      b.disabled=false;if(!x.id){m.textContent=x.message||'לא נרשם.';m.className='msg bad';return}
+    post({a:'repOrder',s:SLUG,t:Q.get('rep'),pin:pin,name:$('rn').value,phone:$('rp').value,email:$('rm').value,city:$('rc').value,pkg:pk()?pk().id:null,items:its(),method:$('rh').value,note:$('rt').value}).then(function(x){
+      b.disabled=false;if(!x.id){if(x.error==='pin'){try{sessionStorage.removeItem('arpin-'+Q.get('rep'))}catch(e){}}m.textContent=x.message||'לא נרשם.';m.className='msg bad';return}
+      try{if(pin)sessionStorage.setItem('arpin-'+Q.get('rep'),pin)}catch(e){}
       alert('ההזמנה נרשמה: '+x.count+' כרטיסים, '+nis(x.amount)+(x.tickets&&x.tickets.length?'\nמספרי הכרטיסים: '+x.tickets.map(function(t){return t.num+': '+t.serials.join(', ')}).join(' · '):'\nממתינה לאישור מנהל המכירה'));location.reload();
     }).catch(function(){b.disabled=false;m.textContent='אין חיבור לשרת.';m.className='msg bad'});
   };
@@ -352,7 +368,7 @@ function repView(){
     app.innerHTML='<header class="top"><div class="t"><div class="kick">המכירה הסינית של '+esc(j.sale.title)+'</div><h1>הדף של '+esc(j.rep.name||'מגייס')+'</h1><div class="sub">כל רכישה דרך הקישור, הקוד או הקו האישי נרשמת כאן</div></div></header>'
      +'<div class="repw"><section class="card"><div class="row"><span>גויס עד כה</span>'+(j.rep.goal?'<span>היעד: '+nis(j.rep.goal)+'</span>':'')+'</div><div style="font-size:34px;font-weight:700">'+nis(j.amount)+'</div>'
      +(j.rep.goal?'<div class="lb"><div class="t" role="img" aria-label="'+pct+' אחוז מהיעד" style="height:12px"><i style="width:'+pct+'%"></i></div></div>':'')
-     +'<div class="row"><span>'+j.orders+' רכישות</span><span>'+j.tickets+' כרטיסים</span></div></section>'
+     +'<div class="row"><span>'+j.orders+' רכישות</span><span>'+j.tickets+' כרטיסים</span></div>'+(j.pending?'<div class="row"><span>ממתין לאישור מנהל המכירה</span><b>'+nis(j.pending)+'</b></div>':'')+'</section>'
      +'<section class="card"><h2 style="font-size:18px;font-family:Heebo">הקישור האישי</h2><div class="lnk" id="lnk">'+esc(j.link)+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button type="button" class="go" style="height:46px;font-size:15px" id="cp">העתקת הקישור</button><a class="ghost" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:inherit" href="mailto:?subject='+encodeURIComponent('המכירה הסינית של '+j.sale.title)+'&body='+encodeURIComponent(j.link)+'">שליחה במייל</a></div></section>'
      +'<section class="card" style="background:var(--cream);border-color:var(--cream-line)"><h2 style="font-size:18px;font-family:Heebo;color:var(--cream-ink)">למי שקונה בטלפון</h2><div class="row"><span style="color:var(--cream-ink)">קוד הנציג שלך</span><span class="code">'+esc(j.rep.code)+'</span></div>'
      +(j.sale.phoneLine?'<p style="margin:0;color:var(--cream-ink);font-size:14px">מתקשרים ל־'+esc(j.sale.phoneLine)+' ומקישים את הקוד כשהמערכת מבקשת קוד נציג. אפשר להקיש אותו גם ברכישה באתר.</p>':'')+'</section>'

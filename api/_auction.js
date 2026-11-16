@@ -25,7 +25,7 @@ async function all(path) {
   return out;
 }
 /* הגדרות האגף (בעל האתר): open = כל משתמש יכול לפתוח מכירה, sitePay / kehilot = ספקי סליקה נוספים */
-async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilot === true, cancel: s.cancel === true, note: String(s.note || '') }; }
+async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, cancel: s.cancel === true, note: String(s.note || '') }; }
 const admins = () => [env('OWNER_EMAIL'), ...env('AUCTION_ADMINS').split(',')].map(s => s.trim().toLowerCase()).filter(Boolean);
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 
@@ -182,10 +182,17 @@ async function kesherPaid(s, id, num) {
 }
 
 /* ===== ניהול ===== */
+/* מי מנהל את המכירה: מי שפתח אותה, המיילים שבעל האתר / המנהל הוסיף (cfg.managers), ובעלי האתר */
+const managersOf = s => (Array.isArray((s.cfg || {}).managers) ? s.cfg.managers : []).map(mailN).filter(Boolean);
+const canManage = (s, u) => !!u && (s.user_id === u.id || isAdmin(u) || managersOf(s).includes(String(u.email || '').toLowerCase()));
+async function inviteManagers(s, list, by) {
+  const { sendMail, frame, escH } = require('./_mail'), c = cfgOf(s);
+  for (const m of list) await sendMail({ to: m, subject: 'הוזמנתם לנהל את המכירה הסינית של ' + c.title, html: frame({ title: 'ניהול המכירה הסינית', body: '<p>' + escH(by || 'מנהל האתר') + ' הוסיף אתכם כמנהלים של המכירה הסינית <b>' + escH(c.title) + '</b>.</p><p>הכניסה לניהול היא עם כתובת המייל הזאת (' + escH(m) + '): בכניסה הראשונה שולחים לכם קישור למייל, ואפשר גם לקבוע סיסמה.</p>', button: 'לניהול המכירה', url: SITE() + '/auction-admin?s=' + s.slug }) }, 'auction').catch(e => console.error('invite', m, e.message));
+}
 async function mineOr403(req, res, b) {
   const u = await getUser(req); if (!u) { json(res, 401, { error: 'login' }); return null; }
   const s = await load(b.s, true); if (!s) { json(res, 404, { error: 'no sale' }); return null; }
-  if (s.user_id !== u.id && !isAdmin(u)) { json(res, 403, { error: 'not yours' }); return null; }
+  if (!canManage(s, u)) { json(res, 403, { error: 'not yours' }); return null; }
   return { u, s };
 }
 /* ההגדרות כפי שמנהל המכירה רואה אותן (בלי הטוקן של ימות) */
@@ -194,7 +201,7 @@ function mgrView(s, S) {
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
-    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), site: S };
+    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), site: S, managers: managersOf(s), ivrDefaults: require('./_auction_ivr').MSG };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
@@ -208,6 +215,7 @@ function cleanCfg(old, b) {
   if (b.allowCancel != null) c.allowCancel = !!b.allowCancel;
   if (b.phoneCart != null) c.phoneCart = !!b.phoneCart;
   if (b.allowUnpaid != null) c.allowUnpaid = !!b.allowUnpaid;
+  if (b.ivrtxt && typeof b.ivrtxt === 'object') { const K = require('./_auction_ivr').MSG, o = {}; Object.keys(K).forEach(k => { const v = clean(b.ivrtxt[k], 400).replace(/[.=&"<>-]/g, ' ').trim(); if (v) o[k] = v; }); c.ivrtxt = o; }
   if (b.repOrders != null) c.repOrders = ['pending', 'paid'].includes(b.repOrders) ? b.repOrders : 'off';
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
@@ -263,7 +271,11 @@ const mkPkg = (x, i) => {
 };
 const mkRep = x => {
   const code = String(x.code || '').replace(/\D/g, ''); if (!(code.length >= 2 && code.length <= 8)) return { error: 'קוד נציג: 2 עד 8 ספרות' };
-  return { code, name: clean(x.name, 80) || null, phone: phoneN(x.phone) || null, email: mailN(x.email) || null, grp: clean(x.grp, 60) || null, goal: Math.max(0, +x.goal || 0), active: x.active !== false, ...(x.id ? {} : { token: crypto.randomBytes(12).toString('hex') }) };
+  const pin = String(x.pin || '').replace(/\D/g, '');
+  if (pin && (pin.length < 4 || pin.length > 6)) return { error: 'קוד כניסה של נציג: 4 עד 6 ספרות' };
+  return { code, name: clean(x.name, 80) || null, phone: phoneN(x.phone) || null, email: mailN(x.email) || null, grp: clean(x.grp, 60) || null, goal: Math.max(0, +x.goal || 0), active: x.active !== false,
+    perm: ['off', 'pending', 'paid'].includes(x.perm) ? x.perm : null,
+    ...(pin ? { pin } : x.id ? {} : { pin: String(1000 + crypto.randomBytes(2).readUInt16BE(0) % 9000) }), ...(x.id ? {} : { token: crypto.randomBytes(12).toString('hex') }) };
 };
 
 /* ===== דוחות ===== */
@@ -372,6 +384,18 @@ module.exports = async (req, res) => {
       const S2 = await db('auction_sale?id=eq.' + o.sale_id + '&select=slug&limit=1'), s = S2 && S2[0] && await load(S2[0].slug);
       return json(res, 200, { status: o.status, amount: +o.amount, tickets: o.status === 'paid' && s ? await ticketsOf(o, s) : [] });
     }
+    /* בקשה לפתיחת מכירה (כשפתיחה עצמית סגורה): נשמרת לבעל האתר ונשלחת אליו במייל */
+    if (a === 'request') {
+      if (req.method !== 'POST') return json(res, 405, {});
+      const x = { id: crypto.randomBytes(6).toString('hex'), org: clean(b.org, 120), name: clean(b.name, 80), phone: phoneN(b.phone) || clean(b.phone, 20), email: mailN(b.email), note: clean(b.note, 1500), at: new Date().toISOString() };
+      if (!x.org || !x.name || !(x.email || x.phone)) return json(res, 400, { error: 'details', message: 'צריך שם ארגון, שם איש קשר, ומייל או טלפון' });
+      const R0 = await loadSetting('auctionreq').catch(() => []), RL = (Array.isArray(R0) ? R0 : []).slice(-299);
+      if (RL.filter(r => r.email && r.email === x.email && Date.now() - Date.parse(r.at) < 3600e3).length >= 3) return json(res, 429, { error: 'many', message: 'הבקשה כבר נשלחה' });
+      RL.push(x); await saveSetting('auctionreq', RL);
+      const to = admins()[0]; const { sendMail, frame, escH } = require('./_mail');
+      if (to) await sendMail({ to, subject: 'בקשה לפתיחת מכירה סינית: ' + x.org, html: frame({ title: 'בקשה לפתיחת מכירה', body: '<p><b>' + escH(x.org) + '</b></p><p>' + escH(x.name) + ' · ' + escH(x.phone || '') + ' · ' + escH(x.email || '') + '</p>' + (x.note ? '<p style="white-space:pre-line">' + escH(x.note) + '</p>' : ''), button: 'לבקשות', url: SITE() + '/auction-admin' }) }, 'auction').catch(() => {});
+      return json(res, 200, { ok: true });
+    }
     if (a === 'kcheck') {
       res.setHeader('Cache-Control', 'private, no-store');
       const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' });
@@ -387,30 +411,40 @@ module.exports = async (req, res) => {
         groups: c.progress.groups ? top(R.groups.filter(g => g.grp !== 'ללא קבוצה'), 'amount').map(g => ({ grp: g.grp, amount: c.progress.amount ? g.amount : null })) : [],
         products: c.progress.products ? R.products.slice().sort((x, y) => y.tickets - x.tickets).slice(0, 10).map(p => ({ num: p.num, name: p.name, tickets: p.tickets })) : [] });
     }
+    if (a === 'repLogin') {
+      if (req.method !== 'POST') return json(res, 405, {});
+      const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' });
+      const code = String(b.code || '').replace(/\D/g, ''), pin = String(b.pin || '').replace(/\D/g, '');
+      const L = code && pin ? await db('auction_rep?sale_id=eq.' + s.id + '&code=eq.' + code + '&active=is.true&select=token,pin&limit=1').catch(() => []) : [];
+      const r = L && L[0]; if (!r || !r.pin || r.pin !== pin) return json(res, 403, { error: 'bad', message: 'קוד הנציג או קוד הכניסה שגויים' });
+      return json(res, 200, { t: r.token });
+    }
     if (a === 'rep' || a === 'repOrder') {
       res.setHeader('Cache-Control', 'private, no-store');
       const s = await load(b.s, a === 'repOrder'); const t = String(b.t || ''); if (!s || !/^[0-9a-f]{24}$/.test(t)) return json(res, 404, { error: 'no' });
-      const L = await db('auction_rep?sale_id=eq.' + s.id + '&token=eq.' + t + '&active=is.true&select=id,code,name,grp,goal&limit=1'), r = L && L[0]; if (!r) return json(res, 404, { error: 'no' });
-      const c = cfgOf(s);
+      const L = await db('auction_rep?sale_id=eq.' + s.id + '&token=eq.' + t + '&active=is.true&select=id,code,name,grp,goal,perm,pin&limit=1'), r = L && L[0]; if (!r) return json(res, 404, { error: 'no' });
+      const c = cfgOf(s), perm = ['off', 'pending', 'paid'].includes(r.perm) ? r.perm : c.repOrders;
       /* נציג רושם הזמנה עבור רוכש שמשלם לו במזומן / צ'ק (אם מנהל המכירה איפשר) */
       if (a === 'repOrder') {
         if (req.method !== 'POST') return json(res, 405, {});
-        if (c.repOrders === 'off') return json(res, 403, { error: 'off', message: 'רישום הזמנות על ידי נציגים לא מאופשר במכירה הזאת' });
+        if (perm === 'off') return json(res, 403, { error: 'off', message: 'אין לך הרשאה לרשום הזמנות במכירה הזאת' });
+        if (r.pin && String(b.pin || '').replace(/\D/g, '') !== r.pin) return json(res, 403, { error: 'pin', message: 'קוד הכניסה שגוי' });
         if (!clean(b.name, 80) || !(phoneN(b.phone) || mailN(b.email))) return json(res, 400, { error: 'details', message: 'צריך שם, וטלפון או מייל של הרוכש' });
         const R = await makeOrder(s, { ...b, rep: '', link: '', repId: r.id, repSrc: 'rep' }, 'rep', reqMeta(req)); if (R.error) return json(res, 400, R);
         const how = clean(b.method, 30) || 'מזומן', note = clean(b.note, 300);
         await db('auction_order?id=eq.' + R.order.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { byRep: r.id, method: how, note } }) }).catch(() => {});
         let tickets = [];
-        if (c.repOrders === 'paid') { await markPaid(R.order.id, { txn: 'rep:' + r.code + ':' + how, callback: { byRep: r.id, method: how, note } }); tickets = await ticketsOf(R.order, s); }
+        if (perm === 'paid') { await markPaid(R.order.id, { txn: 'rep:' + r.code + ':' + how, callback: { byRep: r.id, method: how, note } }); tickets = await ticketsOf(R.order, s); }
         else notify(s, 'נציג רשם הזמנה', '<p>' + require('./_mail').escH(r.name || r.code) + ' רשם הזמנה עבור ' + require('./_mail').escH(R.order.name || '') + ': ' + R.price.count + ' כרטיסים בסך ' + (+R.order.amount) + ' ₪ (' + require('./_mail').escH(how) + '). ההזמנה ממתינה לאישור קבלת התשלום בדף ההזמנות.</p>').catch(() => {});
-        return json(res, 200, { id: R.order.id, amount: R.order.amount, count: R.price.count, paid: c.repOrders === 'paid', tickets });
+        return json(res, 200, { id: R.order.id, amount: R.order.amount, count: R.price.count, paid: perm === 'paid', tickets });
       }
       const O = await all('auction_order?rep_id=eq.' + r.id + '&status=eq.paid&select=amount,lines,channel,name,paid_at&order=paid_at.desc');
-      const mine = c.repOrders !== 'off' ? await db('auction_order?rep_id=eq.' + r.id + '&channel=eq.rep&select=id,name,phone,amount,status,lines,created_at,callback&order=created_at.desc&limit=200').catch(() => []) : [];
+      const mine = perm !== 'off' ? await db('auction_order?rep_id=eq.' + r.id + '&channel=eq.rep&select=id,name,phone,amount,status,lines,created_at,callback&order=created_at.desc&limit=200').catch(() => []) : [];
       return json(res, 200, { sale: { title: c.title, slug: s.slug, phoneLine: c.phoneLine, open: isOpen(s) }, rep: { name: r.name || '', code: r.code, grp: r.grp || '', goal: +r.goal || 0 },
         amount: r2(O.reduce((t, o) => t + +o.amount, 0)), orders: O.length, tickets: O.reduce((t, o) => t + (o.lines || []).reduce((x, L) => x + +L.n, 0), 0),
         recent: O.slice(0, 20).map(o => ({ name: String(o.name || '').split(' ')[0] || 'רוכש', amount: +o.amount, channel: o.channel, at: o.paid_at })), link: SITE() + '/auction?s=' + s.slug + '&m=' + r.code,
-        canOrder: c.repOrders, products: c.repOrders !== 'off' ? s.products.filter(p => p.active !== false).map(pubProd) : [], pkgs: c.repOrders !== 'off' ? s.pkgs.filter(pkgLive).map(pubPkg) : [],
+        canOrder: perm, needPin: !!r.pin, products: perm !== 'off' ? s.products.filter(p => p.active !== false).map(pubProd) : [], pkgs: perm !== 'off' ? s.pkgs.filter(pkgLive).map(pubPkg) : [],
+        pending: r2((mine || []).filter(o => o.status === 'pending').reduce((x, o) => x + +o.amount, 0)),
         mine: (mine || []).map(o => ({ id: o.id.slice(2, 10), name: o.name || '', phone: o.phone || '', amount: +o.amount, status: o.status, n: (o.lines || []).reduce((x, L) => x + +L.n, 0), method: (o.callback || {}).method || '', at: o.created_at })) });
     }
     /* --- מנהל המכירה --- */
@@ -418,29 +452,47 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
-      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilot: !!b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000) }); }
+      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: !b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000) }); }
+      if (b.reqDone != null) { const R0 = await loadSetting('auctionreq').catch(() => []); const RL = Array.isArray(R0) ? R0 : []; const x = RL.find(r => r.id === b.reqDone); if (x) { x.done = x.done || 'נסגר'; await saveSetting('auctionreq', RL); } }
+      const RQ = await loadSetting('auctionreq').catch(() => []);
       const R = await db('auction_order?txn=not.is.null&select=callback&order=paid_at.desc.nullslast&limit=300').catch(() => []);
       const ips = [...new Set((R || []).map(o => o.callback && o.callback._ip).filter(Boolean))];
-      return json(res, 200, { site: await site(), siteNed: !!PAY.siteNed(), ips, ipsSet: env('NEDARIM_CALLBACK_IPS') });
+      return json(res, 200, { site: await site(), siteNed: !!PAY.siteNed(), ips, ipsSet: env('NEDARIM_CALLBACK_IPS'), requests: (Array.isArray(RQ) ? RQ : []).slice(-100).reverse() });
+    }
+    /* בעל האתר: כל המכירות, כמה הזמנות, כמה כסף ובאיזה אמצעי תשלום */
+    if (a === 'siteStats') {
+      const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
+      const [SL, OL] = await Promise.all([all('auction_sale?select=id,slug,name,status,cfg,email,created_at&order=created_at.desc'), all('auction_order?select=sale_id,amount,status,channel,txn,callback')]);
+      const how = o => { const x = String(o.txn || ''), cb = o.callback || {}; if (/^K-/.test(x)) return 'kehilot'; if (/^YM-/.test(x)) return 'phonecc'; if (/^rep:/.test(x) || cb.byRep) return 'rep'; if (/^manual:/.test(x)) return cb.later ? 'later' : 'manual'; if (cb.via === 'site') return 'site'; return 'nedarim'; };
+      const by = {}; SL.forEach(s => { by[s.id] = { slug: s.slug, name: s.name, status: s.status, open: isOpen(s), owner: s.email || '', managers: managersOf(s), pay: ((s.cfg || {}).pay || {}).prov || 'nedarim', orders: 0, amount: 0, pending: 0, pendingAmount: 0, tickets: 0, m: {} }; });
+      OL.forEach(o => { const x = by[o.sale_id]; if (!x) return; if (o.status === 'paid') { x.orders++; x.amount += +o.amount; const k = how(o); x.m[k] = r2((x.m[k] || 0) + +o.amount); } else if (o.status === 'pending') { x.pending++; x.pendingAmount += +o.amount; } });
+      const out = Object.values(by).map(x => ({ ...x, amount: r2(x.amount), pendingAmount: r2(x.pendingAmount) }));
+      const tot = out.reduce((t, x) => { t.amount += x.amount; t.orders += x.orders; Object.keys(x.m).forEach(k => { t.m[k] = r2((t.m[k] || 0) + x.m[k]); }); return t; }, { amount: 0, orders: 0, m: {} });
+      return json(res, 200, { sales: out, total: { ...tot, amount: r2(tot.amount), sales: out.length, open: out.filter(x => x.open).length } });
     }
     if (a === 'mine') {
       const u = await getUser(req); if (!u) return json(res, 401, { error: 'login' });
-      const L = await db('auction_sale?' + (isAdmin(u) && b.all ? '' : 'user_id=eq.' + u.id + '&') + 'select=id,slug,name,status,cfg,created_at&order=created_at.desc&limit=200');
-      return json(res, 200, { sales: (L || []).map(s => ({ slug: s.slug, name: s.name, status: s.status, open: isOpen(s), closeAt: (s.cfg || {}).closeAt || '' })), admin: isAdmin(u), site: await site(), email: u.email });
+      const L = await all('auction_sale?select=id,slug,name,status,cfg,user_id,created_at&order=created_at.desc');
+      const mine = L.filter(s => (isAdmin(u) && b.all) || s.user_id === u.id || managersOf(s).includes(String(u.email || '').toLowerCase()));
+      return json(res, 200, { sales: mine.map(s => ({ slug: s.slug, name: s.name, status: s.status, open: isOpen(s), closeAt: (s.cfg || {}).closeAt || '', own: s.user_id === u.id })), admin: isAdmin(u), site: await site(), email: u.email });
     }
     if (a === 'create') {
       const u = await getUser(req); if (!u) return json(res, 401, { error: 'login' });
       const S = await site(); if (!S.open && !isAdmin(u)) return json(res, 403, { error: 'closed', message: 'פתיחת מכירות חדשות עוד לא פתוחה לציבור' });
       const slug = String(b.slug || '').toLowerCase().trim(); if (!SLUG.test(slug)) return json(res, 400, { error: 'slug', message: 'כתובת: 3 עד 40 אותיות באנגלית, ספרות ומקף' });
       const name = clean(b.name, 120); if (!name) return json(res, 400, { error: 'name', message: 'חסר שם' });
-      try { await db('auction_sale', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ slug, name, user_id: u.id, email: u.email, status: 'draft', cfg: { title: name, ivr: { key: crypto.randomBytes(8).toString('hex') } } }) }); }
+      const mg = [...new Set((Array.isArray(b.managers) ? b.managers : [b.managers]).map(mailN).filter(Boolean))].slice(0, 5);
+      try { await db('auction_sale', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ slug, name, user_id: u.id, email: u.email, status: 'draft', cfg: { title: name, managers: mg, notify: mg.slice(0, 4), ivr: { key: crypto.randomBytes(8).toString('hex') } } }) }); }
       catch (e) { if (/duplicate|23505/.test(e.message)) return json(res, 409, { error: 'taken', message: 'הכתובת הזאת תפוסה' }); throw e; }
+      if (mg.length) { const s1 = await load(slug, true); await inviteManagers(s1, mg.filter(m => m !== u.email), u.email); }
+      if (b.req != null) { const R0 = await loadSetting('auctionreq').catch(() => []); const RL = Array.isArray(R0) ? R0 : []; const x = RL.find(r => r.id === b.req); if (x) { x.done = slug; await saveSetting('auctionreq', RL).catch(() => {}); } }
       return json(res, 200, { slug });
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
     if (a === 'get') return json(res, 200, mgrView(s, await site()));
     if (a === 'save') {
-      const up = { cfg: cleanCfg(s.cfg, b.cfg || {}), updated_at: new Date().toISOString() }; if (b.name != null && clean(b.name, 120)) up.name = clean(b.name, 120);
+      const before = managersOf(s), up = { cfg: cleanCfg(s.cfg, b.cfg || {}), updated_at: new Date().toISOString() };
+      if (Array.isArray((b.cfg || {}).managers)) { up.cfg.managers = [...new Set(b.cfg.managers.map(mailN).filter(Boolean))].slice(0, 5); const added = up.cfg.managers.filter(m => !before.includes(m) && m !== u.email); if (added.length) inviteManagers({ ...s, cfg: up.cfg }, added, u.email).catch(() => {}); } if (b.name != null && clean(b.name, 120)) up.name = clean(b.name, 120);
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up) }); drop(s.slug);
       return json(res, 200, mgrView(await load(s.slug, true), await site()));
     }
@@ -455,6 +507,7 @@ module.exports = async (req, res) => {
     if (a === 'reps') {
       if (b.list) { const errs = await saveList('auction_rep', s, b.list, mkRep); if (errs.length) return json(res, 200, { errors: errs, reps: await db('auction_rep?sale_id=eq.' + s.id + '&select=*&order=code.asc&limit=2000') }); }
       const L = await db('auction_rep?sale_id=eq.' + s.id + '&select=*&order=code.asc&limit=2000');
+      for (const r of (L || []).filter(r => !r.pin)) { r.pin = String(1000 + crypto.randomBytes(2).readUInt16BE(0) % 9000); await db('auction_rep?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pin: r.pin }) }).catch(() => {}); }
       return json(res, 200, { reps: (L || []).map(r => ({ ...r, link: SITE() + '/auction?s=' + s.slug + '&m=' + r.code, page: SITE() + '/auction?s=' + s.slug + '&rep=' + r.token })) });
     }
     if (a === 'customers') {

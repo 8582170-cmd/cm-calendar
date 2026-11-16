@@ -23,6 +23,41 @@ function prodSay(s, p, full) {
   if (full !== false) out.push(T('מחיר כרטיס ' + nis(p.price) + ((+p.draws || 1) > 1 ? ' ' + p.draws + ' הגרלות' : '')));
   return out;
 }
+/* הנוסחים שמושמעים בשיחה. מנהל המכירה יכול לשנות כל אחד בלשונית "שלוחה טלפונית" (cfg.ivrtxt). {מכירה} {סכום} {כרטיסים} {חבילה} מתמלאים */
+const MSG = {
+  welcome: ['פתיחה', 'שלום וברוכים הבאים למכירה הסינית של {מכירה}'],
+  closed: ['כשהמכירה סגורה', 'המכירה הסינית של {מכירה} סגורה כרגע'],
+  shabbat: ['בשבת ובחג', 'המכירה סגורה בשבת ובחג'],
+  repAsk: ['בקשת קוד נציג', 'אם יש בידכם קוד נציג הקישו אותו וסולמית'],
+  repSkip: ['דילוג על קוד נציג', 'לדילוג הקישו אפס וסולמית'],
+  savedHead: ['למי שיש סל שמור', 'יש לכם סל שמור מההתקשרות הקודמת'],
+  savedMenu: ['תפריט הסל השמור', 'להמשך עם הסל להוספה ולתשלום הקישו 1 לשמיעת הסל שוב הקישו 2 לריקון הסל ולהתחלה מחדש הקישו 3'],
+  menuPkg: ['תפריט ראשי: חבילה', 'לרכישת חבילה הקישו 1'],
+  menuProd: ['תפריט ראשי: בחירת מוצרים', 'לבחירת כרטיסים לפי מספר מוצר הקישו 2'],
+  menuAll: ['תפריט ראשי: כל המוצרים', 'לשמיעת כל המוצרים ברצף הקישו 3'],
+  prodAsk: ['בקשת מספר מוצר', 'הקישו את מספר המוצר וסולמית'],
+  qtyAsk: ['בקשת כמות', 'כמה כרטיסים הקישו את המספר וסולמית'],
+  moreMenu: ['אחרי הוספת כרטיסים', 'למוצר נוסף הקישו 1 לסיום ולתשלום הקישו 2 לשמיעת הסל הקישו 3'],
+  moreSave: ['אפשרות שמירת הסל', 'לשמירת הסל להתקשרות הבאה הקישו 4'],
+  moreEdit: ['אפשרות עריכת הסל', 'לשינוי כמות או הסרה של מוצר הקישו 5'],
+  editAsk: ['עריכה: בקשת מוצר', 'הקישו את מספר המוצר שתרצו לשנות וסולמית'],
+  editQty: ['עריכה: כמות חדשה', 'הקישו את הכמות החדשה וסולמית להסרת המוצר מהסל הקישו אפס וסולמית'],
+  sum: ['סיכום ההזמנה', 'בחרתם {כרטיסים} כרטיסים{חבילה} הסכום לתשלום {סכום}'],
+  sumMenu: ['תפריט הסיכום', 'לאישור ולתשלום הקישו 1 לחזרה לסל הקישו 2 לביטול הבחירה ולהתחלה מחדש הקישו 3'],
+  payhow: ['תשלום עכשיו או מאוחר', 'לתשלום עכשיו בכרטיס אשראי הקישו 1 להזמנה ותשלום מאוחר יותר הקישו 2'],
+  toPay: ['מעבר לתשלום', 'הסכום לתשלום {סכום} מעבירים אתכם לתשלום מאובטח'],
+  paidOk: ['התשלום התקבל', 'התשלום התקבל תודה רבה'],
+  payFail: ['התשלום נכשל', 'התשלום לא עבר הכרטיסים שבחרתם נשמרו בסל ואפשר להתקשר שוב ולנסות שוב'],
+  payCancel: ['התשלום בוטל', 'התשלום בוטל הכרטיסים שבחרתם נשמרו בסל להתקשרות הבאה'],
+  later: ['הזמנה לתשלום מאוחר', 'ההזמנה נרשמה הסכום {סכום} הכרטיסים יקבלו מספרים אחרי התשלום לנציגי המכירה תודה רבה ובהצלחה'],
+  pending: ['הזמנה שממתינה לנציג', 'ההזמנה נרשמה הסכום {סכום} נציג המכירה יחזור אליכם להשלמת התשלום תודה רבה ובהצלחה'],
+  stored: ['הסל נשמר', 'הסל נשמר בהתקשרות הבאה מהטלפון הזה תוכלו לשמוע אותו לערוך ולהוסיף עליו ולהשלים את הרכישה להתראות'],
+  end: ['סיום אחרי תשלום', 'בהצלחה']
+};
+function M(s, key, V) {
+  const own = (((s.cfg || {}).ivrtxt) || {})[key], txt = String(own || '').trim() || MSG[key][1];
+  return T(txt.replace(/\{(מכירה|סכום|כרטיסים|חבילה)\}/g, (x, k) => (V && V[k] != null ? V[k] : k === 'מכירה' ? A().cfgOf(s).title : '')));
+}
 const pkgKey = (k, i) => String(+((k.cfg || {}).key) || i + 1);
 
 /* השחזור: מצב השיחה אחרי כל ההקשות.
@@ -161,29 +196,29 @@ module.exports = async (req, res) => {
         if (!o0) { const st0 = replay(s, await reps(s), ans0, saved); await saveCart(s, ph, call, row, st0).catch(e => console.error('cart save', e.message)); } }
       return out('');
     }
-    if (await require('./_shabbat').closedNow(req, await require('./_lib').loadConfig())) return bye(T('המכירה סגורה בשבת ובחג'));
+    if (await require('./_shabbat').closedNow(req, await require('./_lib').loadConfig())) return bye(M(s, 'shabbat'));
     const c = A().cfgOf(s);
-    if (!A().isOpen(s)) return bye(T('המכירה הסינית של ' + c.title + ' סגורה כרגע'));
+    if (!A().isOpen(s)) return bye(M(s, 'closed'));
     const ans = []; for (let i = 1; i <= 400 && q['X' + i] != null; i++) ans.push(q['X' + i]);
     const st = replay(s, await reps(s), ans, saved), next = 'X' + (ans.length + 1);
-    const pre = ans.length ? st.msg : [T('שלום וברוכים הבאים למכירה הסינית של ' + c.title)];
+    const pre = ans.length ? st.msg : [M(s, 'welcome')];
     const rd = (parts, max, min, ok) => out('read=' + pre.concat(parts).join('.') + '=' + next + ',no,' + max + ',' + min + ',10,NO,yes,no,,' + (ok || ''));
     const pkgs = s.pkgs.filter(A().pkgLive);
     /* חזרה מסליקת האשראי: ההזמנה של השיחה כבר קיימת (והסל כבר עבר אליה), אז הולכים ישר לטיפול בתשלום */
     switch (q.CreditCard_CODE != null ? 'pay' : st.phase) {
       case 'bye': return bye(pre.concat(T('להתראות')));
-      case 'repA': case 'repB': return rd([T('אם יש בידכם קוד נציג הקישו אותו וסולמית' + (c.repSkip ? ' לדילוג הקישו אפס וסולמית' : ''))], 8, 1);
-      case 'saved': return rd([T('יש לכם סל שמור מההתקשרות הקודמת')].concat(st.hear()).concat(T('להמשך עם הסל להוספה ולתשלום הקישו 1 לשמיעת הסל שוב הקישו 2 לריקון הסל ולהתחלה מחדש הקישו 3')), 1, 1, '1.2.3');
-      case 'store': await saveCart(s, ph, call, row, st); return bye(pre.concat(T('הסל נשמר בהתקשרות הבאה מהטלפון הזה תוכלו לשמוע אותו לערוך ולהוסיף עליו ולהשלים את הרכישה להתראות')));
-      case 'payhow': return rd([T('לתשלום עכשיו בכרטיס אשראי הקישו 1 להזמנה ותשלום מאוחר יותר הקישו 2')], 1, 1, '1.2');
-      case 'edit': return rd([T('הקישו את מספר המוצר שתרצו לשנות וסולמית')], 5, 1);
-      case 'editq': return rd([T('הקישו את הכמות החדשה וסולמית להסרת המוצר מהסל הקישו אפס וסולמית')], 3, 1);
-      case 'menu': return rd([T((pkgs.length ? 'לרכישת חבילה הקישו 1 ' : '') + 'לבחירת כרטיסים לפי מספר מוצר הקישו 2 לשמיעת כל המוצרים ברצף הקישו 3')], 1, 1, pkgs.length ? '1.2.3' : '2.3');
+      case 'repA': case 'repB': return rd([M(s, 'repAsk')].concat(c.repSkip ? [M(s, 'repSkip')] : []), 8, 1);
+      case 'saved': return rd([M(s, 'savedHead')].concat(st.hear()).concat(M(s, 'savedMenu')), 1, 1, '1.2.3');
+      case 'store': await saveCart(s, ph, call, row, st); return bye(pre.concat(M(s, 'stored')));
+      case 'payhow': return rd([M(s, 'payhow')], 1, 1, '1.2');
+      case 'edit': return rd([M(s, 'editAsk')], 5, 1);
+      case 'editq': return rd([M(s, 'editQty')], 3, 1);
+      case 'menu': return rd((pkgs.length ? [M(s, 'menuPkg')] : []).concat(M(s, 'menuProd'), M(s, 'menuAll')), 1, 1, pkgs.length ? '1.2.3' : '2.3');
       case 'pkg': return rd(pkgs.map((k, i) => T('ל' + k.name + ' במחיר ' + nis(k.price) + ' הקישו ' + pkgKey(k, i))), 1, 1);
-      case 'prod': return rd([T('הקישו את מספר המוצר וסולמית')], 5, 1);
-      case 'qty': return rd([T('כמה כרטיסים הקישו את המספר וסולמית')], 3, 1);
-      case 'more': { const ed = st.cart.length > 0; return rd([T('למוצר נוסף הקישו 1 לסיום ולתשלום הקישו 2 לשמיעת הסל הקישו 3' + (cartOn ? ' לשמירת הסל להתקשרות הבאה הקישו 4' : '') + (ed ? ' לשינוי כמות או הסרה של מוצר הקישו 5' : ''))], 1, 1, '1.2.3' + (cartOn ? '.4' : '') + (ed ? '.5' : '')); }
-      case 'sum': { const Q = st.quote; return rd([T('בחרתם ' + Q.count + ' כרטיסים' + (st.pkg ? ' בחבילת ' + st.pkg.name : '') + ' הסכום לתשלום ' + nis(Q.amount)), T('לאישור ולתשלום הקישו 1 לחזרה לסל הקישו 2 לביטול הבחירה ולהתחלה מחדש הקישו 3')], 1, 1, '1.2.3'); }
+      case 'prod': return rd([M(s, 'prodAsk')], 5, 1);
+      case 'qty': return rd([M(s, 'qtyAsk')], 3, 1);
+      case 'more': { const ed = st.cart.length > 0; return rd([M(s, 'moreMenu')].concat(cartOn ? [M(s, 'moreSave')] : [], ed ? [M(s, 'moreEdit')] : []), 1, 1, '1.2.3' + (cartOn ? '.4' : '') + (ed ? '.5' : '')); }
+      case 'sum': { const Q = st.quote; return rd([M(s, 'sum', { 'כרטיסים': Q.count, 'חבילה': st.pkg ? ' בחבילת ' + st.pkg.name : '', 'סכום': nis(Q.amount) }), M(s, 'sumMenu')], 1, 1, '1.2.3'); }
       case 'later': case 'pay': {
         const payLater = st.phase === 'later' && q.CreditCard_CODE == null;
         /* ההזמנה נוצרת פעם אחת לכל שיחה (המזהה נגזר ממזהה השיחה, כך שבקשה חוזרת לא יוצרת כפילות) */
@@ -199,26 +234,26 @@ module.exports = async (req, res) => {
         }
         const said = o2 => { const L = o2.serials || []; return !L.length ? [] : L.length === 1 ? [T('מספר הכרטיס שלכם'), 'n-' + L[0]] : [T('מספרי הכרטיסים שלכם מ'), 'n-' + L[0], T('עד'), 'n-' + L[L.length - 1]]; };
         const serials = async () => ((await db('auction_ticket?order_id=eq.' + o.id + '&select=serial&order=serial.asc&limit=5000').catch(() => [])) || []).map(x => x.serial);
-        if (o.status === 'paid') return bye(pre.concat(T('ההזמנה שולמה תודה רבה')).concat(said({ serials: await serials() })).concat(T('בהצלחה')));
+        if (o.status === 'paid') return bye(pre.concat(T('ההזמנה שולמה תודה רבה')).concat(said({ serials: await serials() })).concat(M(s, 'end')));
         /* חזרה מסליקת האשראי של ימות: CreditCard_CODE */
         const cc = iv.cc || {};
         if (q.CreditCard_CODE != null && cc.on) {
           const code = String(q.CreditCard_CODE).trim(), okL = String(cc.okCodes || '000,OK').toLowerCase().split(',').filter(Boolean);
           const rec = { ...(o.callback || {}), phonecc: { code, all: String(q.CreditCard_All || '').slice(0, 500), at: new Date().toISOString() } };
           if (code === 'GoBack') { await db('auction_order?id=eq.' + o.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'failed', callback: rec }) }).catch(() => {});
-            if (cartOn) { await saveCart(s, ph, call + ':f', null, { cart: o.items || [], pkg: o.pkg_id ? { id: o.pkg_id } : null }).catch(() => {}); return bye(T('התשלום בוטל הכרטיסים שבחרתם נשמרו בסל להתקשרות הבאה')); }
+            if (cartOn) { await saveCart(s, ph, call + ':f', null, { cart: o.items || [], pkg: o.pkg_id ? { id: o.pkg_id } : null }).catch(() => {}); return bye(M(s, 'payCancel')); }
             return bye(T('התשלום בוטל ההזמנה נשמרה ונציג המכירה יחזור אליכם')); }
           if (okL.includes(code.toLowerCase())) {
             await A().markPaid(o.id, { txn: 'YM-' + (code + '-' + call).slice(0, 60), callback: rec });
-            return bye([T('התשלום התקבל תודה רבה')].concat(said({ serials: await serials() })).concat(T('בהצלחה')));
+            return bye([M(s, 'paidOk')].concat(said({ serials: await serials() })).concat(M(s, 'end')));
           }
           await db('auction_order?id=eq.' + o.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'failed', callback: rec }) }).catch(() => {});
-          if (cartOn) { await saveCart(s, ph, call + ':f', null, { cart: o.items || [], pkg: o.pkg_id ? { id: o.pkg_id } : null }).catch(() => {}); return bye(T('התשלום לא עבר הכרטיסים שבחרתם נשמרו בסל ואפשר להתקשר שוב ולנסות שוב')); }
+          if (cartOn) { await saveCart(s, ph, call + ':f', null, { cart: o.items || [], pkg: o.pkg_id ? { id: o.pkg_id } : null }).catch(() => {}); return bye(M(s, 'payFail')); }
           return bye(T('התשלום לא עבר ההזמנה נשמרה ונציג המכירה יחזור אליכם'));
         }
         /* סליקת אשראי בטלפון דרך מודול הסליקה של ימות (credit_card) עם הסכום הקבוע של ההזמנה */
         if (payLater) { await db('auction_order?id=eq.' + o.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { ...(o.callback || {}), later: true } }) }).catch(() => {}); }
-        if (payLater) return bye(pre.concat(T('ההזמנה נרשמה הסכום ' + nis(o.amount) + ' הכרטיסים יקבלו מספרים אחרי התשלום לנציגי המכירה תודה רבה ובהצלחה')));
+        if (payLater) return bye(pre.concat(M(s, 'later', { 'סכום': nis(o.amount) })));
         if (cc.on && cc.type) {
           const sum = Number.isInteger(+o.amount) ? String(+o.amount) : (+o.amount).toFixed(2);
           const P = (s.cfg || {}).pay || {}, K = P.kesher || {};
@@ -227,14 +262,14 @@ module.exports = async (req, res) => {
             : cc.type === 'kesherhk' ? { term: cc.terminal || K.userName || '', pass: cc.password || K.password || '', reg: cc.register || '', user: cc.user || '' }
             : { term: cc.terminal || '', pass: cc.password || '', reg: cc.register || '', user: cc.user || '' };
           const v = [cc.type, sum, f.reg, '1', '1', '', f.user, f.term, f.pass, 'all', '', '', '', '', 'GoBack'].map(x => String(x).replace(/[,&=]/g, ''));
-          return out('id_list_message=' + pre.concat(T('הסכום לתשלום ' + nis(o.amount) + ' מעבירים אתכם לתשלום מאובטח')).join('.') + '&credit_card=' + v.join(','));
+          return out('id_list_message=' + pre.concat(M(s, 'toPay', { 'סכום': nis(o.amount) })).join('.') + '&credit_card=' + v.join(','));
         }
         /* מעבר לשלוחת סליקה של הארגון (אם הוגדרה). אחרת ההזמנה נשארת ממתינה, ומנהל המכירה משלים אותה */
         if (iv.payPath) return out('id_list_message=' + pre.concat(T('ההזמנה נרשמה הסכום לתשלום ' + nis(o.amount) + ' מעבירים אתכם לתשלום מאובטח')).join('.') + '&go_to_folder=/' + iv.payPath);
-        return bye(pre.concat(T('ההזמנה נרשמה הסכום ' + nis(o.amount) + ' נציג המכירה יחזור אליכם להשלמת התשלום תודה רבה ובהצלחה')));
+        return bye(pre.concat(M(s, 'pending', { 'סכום': nis(o.amount) })));
       }
     }
     return bye(T('שגיאה'));
   } catch (e) { console.error('auction ivr', e.message); return bye(T('אירעה תקלה נסו שוב מאוחר יותר')); }
 };
-module.exports.replay = replay;
+module.exports.replay = replay; module.exports.MSG = MSG;

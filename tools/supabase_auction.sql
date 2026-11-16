@@ -171,3 +171,6 @@ create table if not exists public.auction_cart (
   primary key (sale_id, phone)
 );
 alter table public.auction_cart enable row level security;
+
+-- הרשאה לכל נציג לרשום הזמנות (ריק = לפי הגדרת המכירה; off / pending / paid), וקוד אישי לכניסה ולרישום
+alter table public.auction_rep add column if not exists perm text, add column if not exists pin text;
