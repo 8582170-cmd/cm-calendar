@@ -201,7 +201,7 @@ function mgrView(s, S) {
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
-    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), site: S, managers: managersOf(s), ivrDefaults: require('./_auction_ivr').MSG };
+    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: require('./_auction_ivr').MSG };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
