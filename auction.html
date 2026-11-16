@@ -69,6 +69,11 @@ label.f small{font-weight:400;color:var(--mute);font-size:13px}
 iframe.pay{width:100%;border:0;min-height:430px}
 .done{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:12px;max-width:720px}
 .done table{border-collapse:collapse;width:100%}.done td{padding:8px 10px;border-bottom:1px solid #EEF0F4;font-size:15px}.done td.s{direction:ltr;text-align:left;font-weight:700}
+.hero{width:100%;max-height:420px;object-fit:cover;display:block;background:#E4E7EF}
+.vid{max-width:900px;width:100%;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:16/9}.vid video,.vid iframe{width:100%;height:100%;border:0;display:block}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 16px}.faq summary{cursor:pointer;font-weight:700;padding:14px 0;min-height:44px}.faq details p{margin:0 0 14px;white-space:pre-line;color:#2B3349}
+.agr{display:flex;gap:8px;align-items:flex-start;font-size:14px}.agr input{width:20px;height:20px;margin-top:2px}
+.terms{max-width:820px;margin:0 auto;padding:28px 6% 56px;display:flex;flex-direction:column;gap:20px}.terms .txt{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;white-space:pre-line;line-height:1.75}
 .cen{max-width:640px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center}
 /* דף התקדמות */
 .pg header.top{flex-direction:column;align-items:stretch}
@@ -111,6 +116,7 @@ function closed(t){app.innerHTML='<div class="cen"><h1 style="font-size:28px;mar
 if(!SLUG){closed('לא נמצאה מכירה');return}
 if(Q.get('rep'))return repView();
 if(Q.get('view')==='progress')return progView();
+if(Q.get('view')==='terms')return termsView();
 buyView();
 
 /* ===== דף הרכישה ===== */
@@ -137,12 +143,15 @@ function buyView(){
     if(S.rep)h+='<div class="band">הגעתם דרך הקישור של <b>'+esc(S.rep.name||('נציג '+S.rep.code))+'</b> · הרכישה תיזקף לזכותו</div>';
     if(!S.open)h+='<div class="band bad">'+(S.status==='closed'?'המכירה הסתיימה. תודה לכל המשתתפים!':c.openAt&&new Date(c.openAt)>new Date()?'המכירה תיפתח ב־'+new Date(c.openAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'}):'המכירה סגורה כרגע')+'</div>';
     else if(c.closeAt)h+='<div class="band">המכירה פתוחה עד '+new Date(c.closeAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'})+'</div>';
+    if(c.banner)h+='<img class="hero" src="'+esc(c.banner)+'" alt="">';
     h+='<main id="main">';
+    if(c.video)h+='<section class="sec"><div class="vid">'+vidHtml(c.video)+'</div></section>';
     if(S.open&&(rw==='start'||rw==='both')&&!S.rep)h+='<section class="sec" style="max-width:420px">'+repField('rep1')+'</section>';
     if(S.pkgs.length){h+='<section class="sec"><h2>חבילות</h2><div class="pkgs" id="pkgs"></div></section>'}
     h+='<div class="cols"><section class="sec prods"><h2>המוצרים בהגרלה</h2><div class="grid" id="grid"></div></section>';
     h+='<aside class="sum" id="sum" aria-live="polite"></aside></div>';
-    if(c.terms)h+='<section class="sec"><h2 style="font-size:20px">תקנון</h2><div class="msg" style="white-space:pre-line">'+esc(c.terms)+'</div></section>';
+    if(c.faq&&c.faq.length)h+='<section class="sec faq"><h2>שאלות ותשובות</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>';
+    if(c.terms)h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></p>';
     h+='</main>';
     app.innerHTML=h;
     drawPkgs();drawGrid();drawSum();
@@ -193,6 +202,7 @@ function buyView(){
       +'<label class="f" for="bc">עיר<input id="bc" autocomplete="address-level2" value="'+esc(b.city||'')+'"></label>'
       +(KH||NP?'':'<label class="f" for="bz">תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input id="bz" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label>')+'</div>'
       +(KH||NP?'':'<iframe class="pay" id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>')
+      +(c.terms&&c.termsAgree?'<label class="agr" for="agr"><input type="checkbox" id="agr"><span>קראתי ואני מסכים/ה ל<a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></span></label>':'')
       +'<p class="msg" id="pmsg">'+(NP?'ממלאים את הפרטים ולוחצים על ההזמנה. התשלום יתבצע מול מארגני המכירה.':KH?'בלחיצה על התשלום תעברו לדף התשלום המאובטח של קשר, ובסיום תחזרו לכאן.':'טוען טופס תשלום מאובטח…')+'</p>'+(NP?'':'<button type="button" class="go" id="go" disabled>לתשלום</button>')+(S.later?'<button type="button" class="'+(NP?'go':'ghost')+'" id="later">הזמנה ותשלום מאוחר יותר</button>':'')+'<p class="fine">'+(KH?'התשלום בכרטיס אשראי דרך קשר (קהילות).':'התשלום בכרטיס אשראי דרך נדרים פלוס.')+' מספרי הכרטיסים נשלחים במייל.</p></div>';
     if(NP){}else if(KH){ready=true;wireKesher()}else wirePay();updGo();if(S.later)wireLater();
   }
@@ -205,7 +215,8 @@ function buyView(){
       if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){$('bm').focus();return msg('כתובת המייל לא תקינה.',1)}
       try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:city}))}catch(e){}
       busy=true;updGo();msg('פותחים את דף התשלום…');
-      post({a:'checkout',s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
+      if(!agreeOk()){busy=false;updGo();var lb=$('later');if(lb)lb.disabled=false;$('agr').focus();return msg('צריך לאשר את תקנון המכירה.',1)}
+      post({a:'checkout',agree:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
         if(!j.url){busy=false;updGo();msg(j.message||'לא הצלחנו לפתוח את דף התשלום. נסו שוב.',1);return}
         try{sessionStorage.setItem('auction-amt-'+j.id,String(j.amount))}catch(e){}
         location.href=j.url;
@@ -228,12 +239,14 @@ function buyView(){
       if(!/^0\d{8,9}$/.test(phone.replace(/\D/g,''))&&!mail){$('bp').focus();return msg('נא למלא טלפון או מייל.',1)}
       try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:city}))}catch(e){}
       busy=true;updGo();this.disabled=true;msg('רושמים את ההזמנה…');var btn=this;
-      post({a:'checkout',later:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
+      if(!agreeOk()){busy=false;updGo();var lb=$('later');if(lb)lb.disabled=false;$('agr').focus();return msg('צריך לאשר את תקנון המכירה.',1)}
+      post({a:'checkout',agree:true,later:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
         busy=false;btn.disabled=false;updGo();if(!j.later){msg(j.message||'לא הצלחנו לרשום את ההזמנה.',1);return}
         $('main').innerHTML='<div class="done" role="status"><h2 style="font-size:28px">ההזמנה נרשמה</h2><p>הזמנתם '+j.count+' כרטיסים בסך <b>'+nis(j.amount)+'</b>. מספר הזמנה: '+esc(j.id.slice(2,10))+'</p><p>הכרטיסים יקבלו מספרים ויכנסו להגרלה אחרי שהתשלום יתקבל אצל מארגני המכירה.</p><p><a href="'+location.pathname+'?s='+SLUG+'">להזמנה נוספת</a></p></div>';window.scrollTo(0,0);
       }).catch(function(){busy=false;btn.disabled=false;updGo();msg('אין חיבור לשרת. נסו שוב.',1)});
     };
   }
+  function agreeOk(){var a=$('agr');return !a||a.checked}
   function msg(t,bad){var m=$('pmsg');if(m){m.textContent=t;m.className='msg'+(bad?' bad':'')}}
   function updGo(){var g=$('go');if(!g)return;g.disabled=!ready||!(amount>0)||busy;g.textContent=busy?'מעבד…':amount>0?'לתשלום '+nis(amount):'בוחרים כרטיסים כדי לשלם'}
   function wirePay(){
@@ -253,7 +266,8 @@ function buyView(){
       if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){$('bm').focus();return msg('כתובת המייל לא תקינה.',1)}
       try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:city}))}catch(e){}
       busy=true;updGo();msg('מעבד את התשלום…');
-      post({a:'checkout',s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
+      if(!agreeOk()){busy=false;updGo();var lb=$('later');if(lb)lb.disabled=false;$('agr').focus();return msg('צריך לאשר את תקנון המכירה.',1)}
+      post({a:'checkout',agree:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
         if(!j.tx){busy=false;updGo();msg(j.message||'לא הצלחנו להתחיל את התשלום. נסו שוב.',1);return}
         orderId=j.id;postF({Name:'FinishTransaction2',Value:Object.assign({},j.tx,{Zeout:zeout,FirstName:name,LastName:'',Phone:phone,Mail:mail})});
       }).catch(function(){busy=false;updGo();msg('אין חיבור לשרת. נסו שוב.',1)});
@@ -289,6 +303,19 @@ function progView(){
   }).catch(function(){})}
   load();setInterval(load,30000);
 }
+
+/* סרטון: קובץ (וידאו רגיל) או קישור ליוטיוב / וימאו */
+function vidHtml(u){var y=u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/),v=u.match(/vimeo\.com\/(\d+)/);
+  if(y)return '<iframe src="https://www.youtube-nocookie.com/embed/'+y[1]+'" title="סרטון המכירה" allowfullscreen></iframe>';
+  if(v)return '<iframe src="https://player.vimeo.com/video/'+v[1]+'" title="סרטון המכירה" allowfullscreen></iframe>';
+  return '<video src="'+esc(u)+'" controls preload="metadata" playsinline></video>'}
+/* ===== תקנון ושאלות ===== */
+function termsView(){get({a:'sale',s:SLUG,preview:Q.get('preview')||''}).then(function(j){
+  if(j._st===404||!j.cfg){closed('המכירה לא נמצאה');return}var c=j.cfg;document.title='תקנון: '+c.title;
+  app.innerHTML='<header class="top"><div class="t"><div class="kick">מכירה סינית</div><h1>'+esc(c.title)+'</h1><div class="sub">תקנון ושאלות</div></div>'+(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="">':'')+'</header>'
+   +'<div class="terms">'+(c.faq&&c.faq.length?'<section class="sec faq"><h2>שאלות ותשובות</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>':'')
+   +(c.terms?'<section class="sec"><h2>תקנון המכירה</h2><div class="txt">'+esc(c.terms)+'</div></section>':'<p class="msg">לא פורסם תקנון למכירה הזאת.</p>')
+   +'<p><a href="?s='+SLUG+'">חזרה לדף המכירה</a></p></div>'}).catch(function(){closed('לא הצלחנו לטעון')})}
 
 /* ===== הזמנה שהנציג רושם עבור רוכש (תשלום במזומן / צ'ק) ===== */
 function repForm(j){

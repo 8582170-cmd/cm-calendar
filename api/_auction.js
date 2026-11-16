@@ -50,7 +50,8 @@ function cfgOf(s) {
     repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
     allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
     progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
-    color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '' };
+    color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '',
+    banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false };
 }
 /* מה שהציבור רואה על מוצר / חבילה */
 const pubProd = p => ({ id: p.id, num: p.num, name: p.name, descr: p.descr || '', price: +p.price, draws: +p.draws || 1, img: p.img || '', audio: p.audio || '', maxPer: +((p.cfg || {}).maxPer) || 0, sponsor: (p.cfg || {}).sponsor || '' });
@@ -197,7 +198,9 @@ function mgrView(s, S) {
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
-  str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 3000); str('color', 7); str('logo', 300);
+  str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 20000); str('color', 7); str('logo', 400); str('banner', 400); str('video', 400);
+  if (b.termsAgree != null) c.termsAgree = !!b.termsAgree;
+  if (Array.isArray(b.faq)) c.faq = b.faq.map(x => ({ q: clean(x && x.q, 300), a: clean(x && x.a, 3000) })).filter(x => x.q && x.a).slice(0, 60);
   iso('openAt'); iso('closeAt');
   if (b.goal != null) c.goal = Math.max(0, Math.min(1e9, +b.goal || 0));
   ['repWeb', 'repPhone', 'priceMode'].forEach(k => { if (b[k] != null) c[k] = clean(b[k], 10); });
@@ -338,7 +341,7 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s || s.status === 'draft' && !b.preview) return json(res, 404, { error: 'no sale' });
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
-      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, progress: c.progress.on },
+      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on },
         open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
@@ -347,6 +350,7 @@ module.exports = async (req, res) => {
       const s = await load(b.s, true); if (!s) return json(res, 404, { error: 'no sale' });
       if (await require('./_shabbat').closedNow(req, await require('./_lib').loadConfig())) return json(res, 423, { error: 'shabbat', message: 'האתר סגור בשבת ובחג' });
       if (!clean(b.name, 80) || !(phoneN(b.phone) || mailN(b.email))) return json(res, 400, { error: 'details', message: 'צריך שם, וטלפון או מייל' });
+      { const c0 = cfgOf(s); if (c0.terms && c0.termsAgree && !b.agree) return json(res, 400, { error: 'agree', message: 'צריך לאשר את תקנון המכירה' }); }
       const S = await site(), later = !!b.later;
       if (later && !cfgOf(s).allowUnpaid) return json(res, 403, { error: 'later', message: 'במכירה הזאת אפשר להזמין רק עם תשלום' });
       if (!later && !PAY.provs(s, S).length) return json(res, 409, { error: 'pay', message: 'התשלום באתר עוד לא הוגדר במכירה הזאת' });
@@ -505,6 +509,13 @@ module.exports = async (req, res) => {
       const W = await db('auction_draw?sale_id=eq.' + s.id + '&select=*&order=id.asc&limit=5000') || [];
       const cnt = await all('auction_ticket?sale_id=eq.' + s.id + '&void=is.false&select=product_id'), by = {}; cnt.forEach(t => { by[t.product_id] = (by[t.product_id] || 0) + 1; });
       return json(res, 200, { open: isOpen(s), draws: await withWho(s, W), counts: by });
+    }
+    if (a === 'mediaUrl') {
+      /* העלאת תמונה / לוגו / סרטון / תמונת מוצר ישירות מהדפדפן לאחסון הציבורי של האתר */
+      const K = { logo: /^(png|jpe?g|webp|svg)$/, banner: /^(png|jpe?g|webp)$/, product: /^(png|jpe?g|webp)$/, video: /^(mp4|webm|mov)$/ }, kind = String(b.kind || ''), ext = String(b.ext || '').toLowerCase();
+      if (!K[kind] || !K[kind].test(ext)) return json(res, 400, { error: 'type', message: 'סוג קובץ לא נתמך' });
+      const M = require('./_r2').mediaPut('auction/' + s.id + '/' + kind + '-' + Date.now().toString(36) + crypto.randomBytes(3).toString('hex') + '.' + ext);
+      if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
     }
     if (a === 'audioUrl') {
       const p = s.products.find(x => String(x.id) === String(b.product)); if (!p) return json(res, 404, { error: 'product' });
