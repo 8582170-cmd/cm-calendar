@@ -1,7 +1,7 @@
 {
  "functions": {
   "api/*.js": {
-   "includeFiles": "{assets/plans.js,assets/yz.js,api/_hdate/**,sitemap.xml}"
+   "includeFiles": "{assets/plans.js,assets/auction-price.js,assets/yz.js,api/_hdate/**,sitemap.xml}"
   }
  },
  "rewrites": [
@@ -104,6 +104,10 @@
   {
    "source": "/t/:slug",
    "destination": "/t.html"
+  },
+  {
+   "source": "/auction/:slug",
+   "destination": "/auction.html"
   }
  ],
  "redirects": [

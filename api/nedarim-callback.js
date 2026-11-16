@@ -32,6 +32,8 @@ module.exports = async (req, res) => {
       return json(res, 200, { ok: true });
     }
 
+    /* מכירה סינית: ההזמנות שם מתחילות ב-au (טבלה נפרדת) */
+    if (/^au[0-9a-f]{22}$/.test(String(p.Param1 || p.param1 || ''))) return json(res, 200, await require('./_auction').nedPaid(p));
     /* מספר ההזמנה: Param1 (טופס התשלום) או Param2 (ביט) */
     const id = [p.Param1, p.param1, p.Param2, p.param2].map(x => String(x || '')).find(x => /^[0-9a-f]{24}$/.test(x)) || '';
     if (!id) return json(res, 200, { ok: true, skipped: 'no order' });

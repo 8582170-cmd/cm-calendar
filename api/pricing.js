@@ -63,6 +63,9 @@ module.exports = async (req, res) => {
   if (cp === '_unblock') return require('./_sec').unblockPage(req, res);
   if (cp === '_cdimg') return require('./_cdimg')(req, res);
   if (cp === '_timer') return require('./_timer')(req, res);
+  /* מכירה סינית: הדפים והניהול, ושלוחת הטלפון בימות המשיח */
+  if (cp === '_auction') return require('./_auction')(req, res);
+  if (cp === '_auctionivr') return require('./_auction_ivr')(req, res);
   if (cp === '_ivr') return require('./_timer').ivr(req, res);
   if (cp === '_ivrcb') return require('./_timer').ivrcb(req, res);
   if (cp === '_contact') {

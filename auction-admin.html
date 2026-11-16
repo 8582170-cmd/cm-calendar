@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ניהול מכירה סינית · MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
+<style>
+:root{--navy:#15203B;--gold:#C9A24B;--gold2:#E6C36F;--cream:#FBF4DF;--cream-line:#E8D9A8;--cream-ink:#4A3A0E;--bg:#F3F4F7;--ink:#1B2338;--mute:#505869;--line:#DFE2EA;--line2:#C5CAD6;--bad:#A3261B;--good:#1C7A56}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Heebo,Arial,sans-serif}
+h1,h2,h3{margin:0}h1{font-family:"Frank Ruhl Libre",serif;font-size:28px}h2{font-size:19px}h3{font-size:16px}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:#8A6516}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+nav.side{flex:1 1 220px;max-width:260px;background:var(--navy);color:#fff;padding:24px 14px;display:flex;flex-direction:column;gap:4px}
+nav.side .ttl{font-family:"Frank Ruhl Libre",serif;font-size:21px;font-weight:700;padding:0 10px}
+nav.side .org{font-size:13px;color:var(--gold2);padding:0 10px 12px}
+nav.side button,nav.side a{display:block;text-align:right;width:100%;padding:10px 12px;border-radius:8px;border:0;background:transparent;color:#D5DAE6;font-size:15px;cursor:pointer;text-decoration:none;min-height:42px}
+nav.side button[aria-current="page"]{background:var(--gold2);color:var(--navy);font-weight:700}
+nav.side button:hover{background:#1F2C4D}nav.side button[aria-current="page"]:hover{background:var(--gold2)}
+main{flex:999 1 560px;min-width:0;padding:28px 32px 60px;display:flex;flex-direction:column;gap:22px}
+.hd{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column}.kpi span{font-size:13px;color:var(--mute)}.kpi b{font-size:24px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:500}
+label.f small,.hint{font-weight:400;color:var(--mute);font-size:13px}
+input[type=text],input[type=number],input[type=tel],input[type=email],input[type=datetime-local],input[type=date],input:not([type]),select,textarea{height:42px;border:1px solid var(--line2);border-radius:8px;padding:0 10px;background:#fff;width:100%}
+textarea{height:auto;min-height:80px;padding:8px 10px;resize:vertical}
+label.ck{display:flex;gap:8px;align-items:center;font-size:14px;min-height:32px;cursor:pointer}label.ck input{width:18px;height:18px}
+.btn{height:42px;padding:0 16px;border-radius:8px;border:1px solid var(--line2);background:#fff;cursor:pointer;font-size:14px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}
+.btn.pri{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+.btn.dark{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.bad{color:var(--bad);border-color:#E3B3AD}
+.btn:disabled{opacity:.5;cursor:default}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tw{background:#fff;border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:right}
+th{background:#F8F9FB;color:var(--mute);font-weight:500;padding:10px 12px;white-space:nowrap}
+td{padding:8px 12px;border-top:1px solid #EEF0F4;vertical-align:top}
+td input,td select{height:38px;min-width:70px}
+tr.click{cursor:pointer}tr.click:hover{background:#FAFAF6}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:#E4E7EF}
+.pill.ok{background:#DDF1E7;color:#145A3F}.pill.wait{background:var(--cream);color:var(--cream-ink)}.pill.bad{background:#FBE9E7;color:var(--bad)}
+.flash{position:fixed;bottom:18px;left:18px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;z-index:9;max-width:420px}
+.flash.bad{background:var(--bad)}
+.note{background:var(--cream);border:1px solid var(--cream-line);color:var(--cream-ink);border-radius:10px;padding:12px 14px;font-size:14px}
+.mono{direction:ltr;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:13px;word-break:break-all}
+.two{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}.two>*{flex:1 1 320px;min-width:0}
+.drawbox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.win{width:100%;max-width:560px;background:var(--navy);color:#fff;border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;text-align:right}
+.win .s{font-size:36px;font-weight:700;letter-spacing:3px;direction:ltr}.win small{color:#D5DAE6}.win .k{color:var(--gold2);font-size:13px}
+.drawgo{min-height:62px;padding:0 40px;border:0;border-radius:14px;background:var(--gold);color:var(--navy);font-size:21px;font-weight:700;cursor:pointer}
+.prodlist{display:flex;flex-direction:column;gap:8px}
+.prodlist button{min-height:52px;padding:8px 12px;border-radius:10px;border:2px solid var(--line);background:#fff;text-align:right;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.prodlist button[aria-pressed="true"]{border-color:var(--gold);background:var(--cream)}
+.full{position:fixed;inset:0;background:var(--navy);color:#fff;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:30px}
+.full .p{font-family:"Frank Ruhl Libre",serif;font-size:clamp(36px,6vw,70px)}.full .s{font-size:clamp(60px,12vw,150px);font-weight:700;letter-spacing:6px;color:var(--gold2);direction:ltr}.full .n{font-size:clamp(28px,4vw,50px)}
+.shuf{font-size:clamp(40px,8vw,110px);font-weight:700;direction:ltr;color:#D5DAE6;letter-spacing:4px}
+:focus-visible{outline:3px solid #2A5BD7;outline-offset:2px}
+@media print{nav.side,.noprint,.flash{display:none!important}main{padding:0}body{background:#fff}}
+</style>
+<script src="/assets/config.js"></script>
+<script src="/assets/auction-price.js?v=1"></script>
+</head>
+<body>
+<div class="app"><nav class="side noprint" id="nav" aria-label="ניהול המכירה"></nav><main id="box"><p>טוען…</p></main></div>
+<div class="flash" id="flash" role="status" hidden></div>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)},box=$('box'),nav=$('nav');
+var API='/api/pricing?c=_auction',KEY='myluach-auth',TK='';
+var Q=new URLSearchParams(location.search),SLUG=Q.get('s')||'',TAB=Q.get('t')||'ov';
+var S=null,REPS=null,CUST=null,ORD=null,REP=null,DRAWS=null,SEL=null,ME={};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function nis(n){return (Math.round(+n*100)/100).toLocaleString('he-IL')+' ₪'}
+function dt(d){try{return d?new Date(d).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):''}catch(e){return ''}}
+function flash(t,bad){var m=$('flash');m.textContent=t;m.className='flash'+(bad?' bad':'');m.hidden=false;clearTimeout(flash.t);flash.t=setTimeout(function(){m.hidden=true},4500)}
+function sess(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
+function tok(){var j=sess();if(!j)return Promise.resolve('');
+  if(j.access_token&&(!j.expires_at||j.expires_at*1000>Date.now()+60000))return Promise.resolve(j.access_token);
+  var C=window.MYLUACH_CFG||{};if(!j.refresh_token||!C.supabaseUrl)return Promise.resolve('');
+  return fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:j.refresh_token})})
+   .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at})))}catch(e){}return n.access_token}).catch(function(){return ''})}
+function call(b){return tok().then(function(t){TK=t;return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TK},body:JSON.stringify(Object.assign({s:SLUG},b))})}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;if(r.status===401)login();if(j.error==='setup')flash(j.message,1);return j})})}
+function login(){nav.innerHTML='';box.innerHTML='<div class="card" style="max-width:560px"><h1>ניהול מכירה סינית</h1><p>כדי לנהל מכירה צריך להיכנס לחשבון באתר. הכניסה בחינם, עם כתובת מייל.</p><div class="acts"><a class="btn pri" href="/app.html#login&back='+encodeURIComponent(location.pathname+location.search)+'">כניסה לחשבון</a></div></div>'}
+function go(t,s){var u=new URL(location.href);if(s!==undefined){u.searchParams.set('s',s);SLUG=s}u.searchParams.set('t',t);history.replaceState(null,'',u);TAB=t;show()}
+function csv(name,head,rows){var e=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  var t='﻿'+[head].concat(rows).map(function(r){return r.map(e).join(',')}).join('\r\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));a.download=name+'.csv';a.click()}
+function table(head,rows,cls){return '<div class="tw"><table><thead><tr>'+head.map(function(h){return '<th scope="col">'+esc(h)+'</th>'}).join('')+'</tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="'+head.length+'" class="hint">אין נתונים</td></tr>')+'</tbody></table></div>'}
+function pill(st){return {paid:'<span class="pill ok">שולם</span>',pending:'<span class="pill wait">ממתין</span>',failed:'<span class="pill bad">נכשל</span>',underpaid:'<span class="pill bad">שולם חלקית</span>',refunded:'<span class="pill">זוכה</span>'}[st]||esc(st)}
+function chName(c){return {web:'אתר',phone:'טלפון',manual:'ידני'}[c]||c}
+var PUB=location.origin+'/auction?s=';
+
+tok().then(function(t){TK=t;if(!t)return login();SLUG?loadSale().then(show):listView()});
+
+/* ===== רשימת המכירות ===== */
+function listView(){nav.innerHTML='<div class="ttl">מכירה סינית</div><div class="org">ניהול</div>';
+  call({a:'mine'}).then(function(j){if(j._st!==200)return;ME=j;
+    var h='<div class="hd"><h1>המכירות שלי</h1></div>';
+    h+=table(['שם','כתובת','מצב',''],j.sales.map(function(s){return '<tr><td>'+esc(s.name)+'</td><td class="mono">'+esc(s.slug)+'</td><td>'+(s.open?'<span class="pill ok">פתוחה</span>':s.status==='draft'?'<span class="pill wait">טיוטה</span>':'<span class="pill">סגורה</span>')+'</td><td><button class="btn dark" data-open="'+esc(s.slug)+'">ניהול</button></td></tr>'}));
+    if(j.site.open||j.admin)h+='<div class="card" style="max-width:620px"><h2>מכירה חדשה</h2><div class="two"><label class="f" for="nn">שם הארגון / המכירה<input id="nn"></label><label class="f" for="ns">כתובת הדף (באנגלית)<input id="ns" dir="ltr" placeholder="beit-chinuch"><small>הדף יהיה myluach.org/auction?s=<span id="nsv">…</span></small></label></div><div class="acts"><button class="btn pri" id="mk">יצירת המכירה</button></div></div>';
+    else h+='<div class="note">פתיחת מכירות חדשות עוד לא פתוחה לציבור.</div>';
+    if(j.admin)h+='<div class="card" style="max-width:620px"><h2>הגדרות האגף (בעל האתר)</h2><label class="ck"><input type="checkbox" id="so"'+(j.site.open?' checked':'')+'> כל משתמש רשום יכול לפתוח מכירה</label><label class="ck"><input type="checkbox" id="sp"'+(j.site.sitePay?' checked':'')+'> סליקה דרך האתר (חשבון נדרים פלוס של MyLuach)</label><label class="ck"><input type="checkbox" id="sk"'+(j.site.kehilot?' checked':'')+'> סליקת קהילות</label><p class="hint">סליקת קהילות תעבוד רק אחרי שיחובר ה-API שלהם. סליקה דרך האתר: הכסף נכנס לחשבון של האתר, וההעברה לארגון ידנית.</p><label class="f" for="snote">הערות פנימיות<textarea id="snote">'+esc(j.site.note)+'</textarea></label><div class="acts"><button class="btn dark" id="ssave">שמירה</button><label class="ck"><input type="checkbox" id="sall"> הצגת כל המכירות באתר</label></div></div>';
+    box.innerHTML=h;
+    box.onclick=function(e){var b=e.target.closest('[data-open]');if(b){location.href='?s='+b.dataset.open}};
+    if($('ns'))$('ns').oninput=function(){this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'');$('nsv').textContent=this.value||'…'};
+    if($('mk'))$('mk').onclick=function(){call({a:'create',name:$('nn').value,slug:$('ns').value}).then(function(r){if(r.slug)location.href='?s='+r.slug+'&t=set';else flash(r.message||'לא נוצר',1)})};
+    if($('ssave'))$('ssave').onclick=function(){call({a:'site',set:{open:$('so').checked,sitePay:$('sp').checked,kehilot:$('sk').checked,note:$('snote').value}}).then(function(r){flash(r.site?'נשמר':'לא נשמר',!r.site)})};
+    if($('sall'))$('sall').onchange=function(){if(this.checked)call({a:'mine',all:1}).then(function(r){box.querySelector('tbody').innerHTML=r.sales.map(function(s){return '<tr><td>'+esc(s.name)+'</td><td class="mono">'+esc(s.slug)+'</td><td>'+esc(s.status)+'</td><td><button class="btn dark" data-open="'+esc(s.slug)+'">ניהול</button></td></tr>'}).join('')})};
+  })}
+
+/* ===== מכירה אחת ===== */
+function loadSale(){return call({a:'get'}).then(function(j){if(j._st!==200){box.innerHTML='<div class="card"><p>'+(j._st===403?'אין לך הרשאה למכירה הזאת.':'המכירה לא נמצאה.')+'</p><a class="btn" href="?">לרשימת המכירות</a></div>';throw 0}S=j;return j})}
+var TABS=[['ov','סקירה'],['set','הגדרות'],['pay','סליקה'],['prod','מוצרים'],['pkg','חבילות'],['rep','מגייסים ונציגים'],['ord','הזמנות'],['cus','לקוחות ותורמים'],['rpt','דוחות'],['ivr','שלוחה טלפונית'],['draw','ביצוע ההגרלות']];
+function show(){
+  box.onclick=null;box.onchange=null;box.oninput=null;
+  nav.innerHTML='<div class="ttl">ניהול המכירה</div><div class="org">'+esc(S.eff.title||S.name)+'</div>'+TABS.map(function(t){return '<button type="button" data-t="'+t[0]+'"'+(TAB===t[0]?' aria-current="page"':'')+'>'+t[1]+'</button>'}).join('')+'<a href="'+PUB+S.slug+(S.status==='draft'?'&preview=1':'')+'" target="_blank" rel="noopener">דף המכירה ↗</a><a href="?">כל המכירות</a>';
+  nav.onclick=function(e){var b=e.target.closest('[data-t]');if(b)go(b.dataset.t)};
+  ({ov:ov,set:set,pay:pay,prod:prod,pkg:pkgs,rep:reps,ord:orders,cus:cust,rpt:rpt,ivr:ivr,draw:draw}[TAB]||ov)();
+}
+function saveCfg(cfg,extra){return call(Object.assign({a:'save',cfg:cfg},extra||{})).then(function(j){if(j._st===200){S=j;flash('נשמר');show()}else flash(j.message||'לא נשמר',1)})}
+
+function ov(){box.innerHTML='<h1>סקירה</h1><p>טוען…</p>';call({a:'report'}).then(function(R){var T=R.totals||{};
+  var chk=[[S.provs.length>0,'סליקה מוגדרת','pay'],[S.products.length>0,'יש מוצרים','prod'],[!!(S.cfg.ivr&&S.cfg.ivr.key),'שלוחה טלפונית (לא חובה)','ivr']];
+  box.innerHTML='<div class="hd"><h1>'+esc(S.eff.title)+'</h1><div class="acts">'+(S.status==='open'?'<span class="pill ok">המכירה פתוחה</span><button class="btn bad" id="cl">סגירת המכירה</button>':'<span class="pill">'+(S.status==='draft'?'טיוטה':'סגורה')+'</span><button class="btn pri" id="op">פתיחת המכירה</button>')+'</div></div>'
+   +'<div class="grid"><div class="kpi"><span>גויס</span><b>'+nis(T.amount||0)+'</b></div><div class="kpi"><span>יעד</span><b>'+(T.goal?nis(T.goal):'—')+'</b></div><div class="kpi"><span>הזמנות ששולמו</span><b>'+(T.orders||0)+'</b></div><div class="kpi"><span>כרטיסים</span><b>'+(T.tickets||0)+'</b></div><div class="kpi"><span>רוכשים</span><b>'+(T.buyers||0)+'</b></div><div class="kpi"><span>ממתינות לתשלום</span><b>'+(T.pending||0)+'</b></div></div>'
+   +'<div class="card"><h2>לפני הפתיחה</h2>'+chk.map(function(c){return '<div class="acts"><span class="pill '+(c[0]?'ok':'wait')+'">'+(c[0]?'מוכן':'חסר')+'</span> <button class="btn" data-t="'+c[2]+'">'+c[1]+'</button></div>'}).join('')+'</div>'
+   +'<div class="card"><h2>קישורים</h2><div><b>דף המכירה:</b> <span class="mono">'+esc(PUB+S.slug)+'</span></div><div><b>דף התקדמות המכירה:</b> <span class="mono">'+esc(PUB+S.slug+'&view=progress')+'</span>'+(S.eff.progress.on?'':' <span class="pill wait">כבוי בהגדרות</span>')+'</div></div>';
+  box.onclick=function(e){var b=e.target.closest('[data-t]');if(b)go(b.dataset.t)};
+  if($('op'))$('op').onclick=function(){call({a:'open'}).then(function(r){if(r.status){S.status='open';flash('המכירה נפתחה');loadSale().then(show)}else flash(r.message||'לא נפתחה',1)})};
+  if($('cl'))$('cl').onclick=function(){if(!confirm('לסגור את המכירה? אחרי הסגירה אי אפשר לרכוש, ורשימת הכרטיסים ננעלת להגרלה.'))return;call({a:'close'}).then(function(){loadSale().then(show)})};
+})}
+
+function iso2local(s){if(!s)return '';var d=new Date(s);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
+function set(){var c=S.eff;
+  box.innerHTML='<h1>הגדרות</h1><div class="card"><h2>פרטי המכירה</h2><div class="two"><label class="f" for="t1">שם הארגון / כותרת<input id="t1" value="'+esc(c.title)+'"></label><label class="f" for="t3">מועד ההגרלה (טקסט חופשי)<input id="t3" value="'+esc(c.drawAt)+'" placeholder="מוצאי שבת פרשת ויצא, בשעה 21:00"></label></div>'
+   +'<label class="f" for="t2">תיאור<textarea id="t2">'+esc(c.sub)+'</textarea></label>'
+   +'<div class="two"><label class="f" for="t4">פתיחת המכירה (לא חובה)<input id="t4" type="datetime-local" value="'+iso2local(c.openAt)+'"></label><label class="f" for="t5">סגירת המכירה<input id="t5" type="datetime-local" value="'+iso2local(c.closeAt)+'"><small>אחרי המועד אי אפשר לרכוש, באתר ובטלפון</small></label></div>'
+   +'<div class="two"><label class="f" for="t6">מספר הקו הטלפוני להצגה<input id="t6" dir="ltr" value="'+esc(c.phoneLine)+'"></label><label class="f" for="t7">יעד הגיוס (₪)<input id="t7" type="number" min="0" value="'+(c.goal||'')+'"></label></div>'
+   +'<div class="two"><label class="f" for="t8">צבע ראשי<input id="t8" type="color" value="'+(c.color||'#15203B')+'" style="height:42px"></label><label class="f" for="t9">כתובת לוגו (https)<input id="t9" dir="ltr" value="'+esc(c.logo)+'"></label></div>'
+   +'<label class="f" for="t10">תקנון (יוצג בתחתית הדף)<textarea id="t10">'+esc(c.terms)+'</textarea></label></div>'
+   +'<div class="card"><h2>קוד נציג</h2><div class="two"><label class="f" for="r1">באתר<select id="r1">'+opt([['start','בתחילת הרכישה'],['end','בסיום הרכישה'],['both','בשניהם'],['off','לא לשאול']],c.repWeb)+'</select></label><label class="f" for="r2">בטלפון<select id="r2">'+opt([['start','בתחילת השיחה'],['pay','לפני התשלום'],['both','בשניהם (אם לא הוקש בהתחלה)'],['off','לא לשאול']],c.repPhone)+'</select></label></div>'
+   +'<label class="ck"><input type="checkbox" id="r3"'+(c.repSkip?' checked':'')+'> אפשר לדלג על קוד הנציג (באתר: להשאיר ריק, בטלפון: להקיש אפס)</label>'
+   +'<label class="f" for="r4">כשהרוכש הגיע מקישור של מגייס וגם הקיש קוד אחר<select id="r4">'+opt([['code','הקוד שהוקש גובר'],['link','הקישור גובר']],c.repWins)+'</select></label></div>'
+   +'<div class="card"><h2>דף התקדמות המכירה</h2><label class="ck"><input type="checkbox" id="p1"'+(c.progress.on?' checked':'')+'> הדף פעיל (מתאים גם להקרנה על מסך)</label><label class="ck"><input type="checkbox" id="p2"'+(c.progress.amount?' checked':'')+'> להציג סכומים ויעד</label><label class="ck"><input type="checkbox" id="p3"'+(c.progress.reps?' checked':'')+'> להציג מגייסים מובילים</label><label class="ck"><input type="checkbox" id="p4"'+(c.progress.groups?' checked':'')+'> להציג קבוצות</label><label class="ck"><input type="checkbox" id="p5"'+(c.progress.products?' checked':'')+'> להציג את המוצרים המבוקשים</label></div>'
+   +'<div class="acts"><button class="btn pri" id="sv">שמירת ההגדרות</button></div>';
+  $('sv').onclick=function(){var L=function(i){var v=$(i).value;return v?new Date(v).toISOString():''};
+    saveCfg({title:$('t1').value,sub:$('t2').value,drawAt:$('t3').value,openAt:L('t4'),closeAt:L('t5'),phoneLine:$('t6').value,goal:+$('t7').value||0,color:$('t8').value,logo:$('t9').value,terms:$('t10').value,
+      repWeb:$('r1').value,repPhone:$('r2').value,repSkip:$('r3').checked,repWins:$('r4').value,progress:{on:$('p1').checked,amount:$('p2').checked,reps:$('p3').checked,groups:$('p4').checked,products:$('p5').checked}},{name:$('t1').value})}}
+function opt(L,v){return L.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+(o[2]?' disabled':'')+'>'+o[1]+'</option>'}).join('')}
+
+function pay(){var p=S.cfg.pay||{},site=S.site||{};
+  box.innerHTML='<h1>סליקה</h1><div class="card"><label class="f" for="pv">חברת הסליקה<select id="pv">'+opt([['nedarim','נדרים פלוס (חשבון הארגון)'],['kehilot','קהילות (בקרוב)',!site.kehilot],['site','סליקה דרך האתר (בקרוב)',!site.sitePay]],p.prov||'nedarim')+'</select><small>הכסף נכנס ישירות לחשבון הארגון. האתר לא נוגע בכסף.</small></label>'
+   +'<div class="two"><label class="f" for="pm">מספר מוסד בנדרים פלוס<input id="pm" inputmode="numeric" dir="ltr" value="'+esc(p.mosad||'')+'"></label><label class="f" for="pa">קוד אימות לטופס (ApiValid)<input id="pa" dir="ltr" value="'+esc(p.apiValid||'')+'"><small>בממשק הניהול של נדרים פלוס, תחת "מפתחות API"</small></label></div>'
+   +'<label class="f" for="pg">קטגוריה בנדרים פלוס (Groupe, לא חובה)<input id="pg" value="'+esc(p.groupe||'')+'"></label>'
+   +'<div class="note">'+(S.provs.length?'הסליקה מוגדרת ופעילה.':'הסליקה עוד לא מוגדרת. בלי סליקה אי אפשר לפתוח את המכירה לרכישה באתר.')+'<br>הקבלות נשלחות לרוכשים מנדרים פלוס, לפי ההגדרות בחשבון הארגון.</div>'
+   +'<div class="acts"><button class="btn pri" id="sv">שמירה</button></div></div>';
+  $('sv').onclick=function(){saveCfg({pay:{prov:$('pv').value,mosad:$('pm').value,apiValid:$('pa').value,groupe:$('pg').value}})}}
+
+/* --- מוצרים --- */
+function prod(){var L=S.products.map(function(p){return Object.assign({},p,{cfg:Object.assign({},p.cfg||{})})});
+  function row(p,i){var c=p.cfg||{};return '<tr data-i="'+i+'"><td><input type="number" data-k="num" value="'+(p.num||'')+'" style="width:80px" aria-label="מק&quot;ט"></td><td><input data-k="name" value="'+esc(p.name||'')+'" style="min-width:160px" aria-label="שם"></td><td><input type="number" data-k="price" min="0" value="'+(p.price!=null?p.price:'')+'" style="width:80px" aria-label="מחיר כרטיס"></td><td><input type="number" data-k="draws" min="1" value="'+(p.draws||1)+'" style="width:70px" aria-label="מספר הגרלות"></td>'
+    +'<td><input type="number" data-c="maxPer" min="0" value="'+(c.maxPer||'')+'" style="width:70px" placeholder="ללא" aria-label="מגבלה לרוכש"></td><td><input type="number" data-c="reserves" min="0" value="'+(c.reserves||'')+'" style="width:60px" aria-label="זוכי מילואים"></td><td><label class="ck"><input type="checkbox" data-c="repeatWin"'+(c.repeatWin?' checked':'')+'> כן</label></td>'
+    +'<td><input data-k="descr" value="'+esc(p.descr||'')+'" aria-label="תיאור"><input data-c="sponsor" value="'+esc(c.sponsor||'')+'" placeholder="בחסות" style="margin-top:4px" aria-label="בחסות"><input data-k="img" dir="ltr" value="'+esc(p.img||'')+'" placeholder="https://… תמונה" style="margin-top:4px" aria-label="תמונה"></td>'
+    +'<td>'+(p.id?'<button class="btn" data-au="'+p.id+'">'+(p.audio?'החלפת שמע':'העלאת שמע')+'</button>'+(p.audio?'<br><audio controls src="'+esc(p.audio)+'" style="width:160px;margin-top:4px"></audio>'+(c.y?'<br><span class="pill ok">בטלפון</span>':'<br><span class="pill wait">רק באתר</span>'):''):'<span class="hint">שומרים קודם</span>')+'</td>'
+    +'<td><label class="ck"><input type="checkbox" data-k="active"'+(p.active!==false?' checked':'')+'> פעיל</label><button class="btn bad" data-del="'+i+'" style="margin-top:4px">מחיקה</button></td></tr>'}
+  function draw(){box.innerHTML='<div class="hd"><h1>מוצרים</h1><div class="acts"><button class="btn" id="add">+ מוצר</button><button class="btn" id="one">מחיר אחיד לכולם</button><button class="btn pri" id="sv">שמירה</button></div></div>'
+    +'<p class="hint">מק"ט = המספר שמקישים בטלפון ומופיע על המוצר. מספר הגרלות: כמה זוכים במוצר (כשיותר מ-1, זה מוצג ללקוח). שמע: מושמע בטלפון אחרי הקשת המק"ט, וכשמבקשים לשמוע את כל המוצרים.</p>'
+    +table(['מק"ט','שם','מחיר כרטיס','הגרלות','מקסימום לרוכש','מילואים','אותו אדם יזכה פעמיים','תיאור, חסות ותמונה','שמע לטלפון',''],L.map(function(p,i){return p.del?'':row(p,i)}))
+    +'<input type="file" id="af" accept="audio/*" hidden>';
+    $('add').onclick=function(){sync();var mx=L.reduce(function(m,p){return Math.max(m,+p.num||0)},100);L.push({num:mx+1,name:'',price:'',draws:1,cfg:{},active:true});draw()};
+    $('one').onclick=function(){var v=prompt('מחיר כרטיס לכל המוצרים (₪):');if(v==null||isNaN(+v))return;sync();L.forEach(function(p){p.price=+v});draw()};
+    $('sv').onclick=function(){sync();call({a:'products',list:L}).then(function(j){if(j.products){S.products=j.products;if(j.errors.length)flash(j.errors.map(function(e){return e.error}).join(' · '),1);else flash('נשמר');prod()}else flash(j.message||'לא נשמר',1)})};
+    box.onclick=function(e){var d=e.target.closest('[data-del]');if(d){sync();var p=L[+d.dataset.del];if(!p.id)L.splice(+d.dataset.del,1);else if(confirm('למחוק את המוצר? (מחיקה תתבצע בשמירה)'))p.del=true;draw();return}
+      var a=e.target.closest('[data-au]');if(a){$('af').dataset.p=a.dataset.au;$('af').click()}};
+    $('af').onchange=function(){var f=this.files[0],pid=this.dataset.p;this.value='';if(!f)return;if(f.size>15e6)return flash('הקובץ גדול מדי (עד 15MB)',1);
+      var ext=(f.name.split('.').pop()||'mp3').toLowerCase();flash('מעלה…');
+      call({a:'audioUrl',product:pid,ext:ext}).then(function(u){if(!u.upload)throw new Error(u.message||'אין אחסון');return fetch(u.upload,{method:'PUT',body:f}).then(function(r){if(!r.ok)throw new Error('העלאה נכשלה');return u.url})})
+       .then(function(url){return call({a:'audioSet',product:pid,url:url})}).then(function(r){flash(r.warn||'הקובץ הועלה',!!r.warn);return loadSale()}).then(prod).catch(function(e){flash(e.message||'שגיאה',1)})};
+  }
+  function sync(){[].forEach.call(box.querySelectorAll('tr[data-i]'),function(tr){var p=L[+tr.dataset.i];[].forEach.call(tr.querySelectorAll('[data-k]'),function(x){p[x.dataset.k]=x.type==='checkbox'?x.checked:x.value});[].forEach.call(tr.querySelectorAll('[data-c]'),function(x){p.cfg[x.dataset.c]=x.type==='checkbox'?x.checked:x.value})})}
+  draw()}
+
+/* --- חבילות --- */
+function pkgs(){var L=S.pkgs.map(function(k){return Object.assign({},k,{cfg:Object.assign({},k.cfg||{})})}),P=S.products;
+  function card(k,i){var all=!k.products||!k.products.length,cm={};(k.comp||[]).forEach(function(c){cm[c.p]=c.n});
+    return '<div class="card" data-i="'+i+'"><div class="two"><label class="f">שם החבילה<input data-k="name" value="'+esc(k.name||'')+'"></label><label class="f">סוג<select data-k="kind">'+opt([['free','כרטיסים לחלוקה חופשית'],['fixed','הרכב קבוע'],['credit','לפי שווי']],k.kind||'free')+'</select></label></div>'
+     +'<div class="two"><label class="f">מחיר החבילה (₪)<input type="number" min="0" data-k="price" value="'+(k.price!=null?k.price:'')+'"></label>'
+     +(k.kind==='credit'?'<label class="f">שווי לניצול (₪)<input type="number" min="0" data-k="credit" value="'+(k.credit||'')+'"></label>':k.kind==='fixed'?'<div class="hint">ההרכב: כמה כרטיסים מכל מוצר (ריק = כרטיס אחד בכל מוצר שהחבילה חלה עליו)</div>':'<label class="f">מספר כרטיסים<input type="number" min="1" data-k="qty" value="'+(k.qty||'')+'"></label>')+'</div>'
+     +'<label class="f">תיאור (לא חובה)<input data-k="descr" value="'+esc(k.descr||'')+'"></label>'
+     +'<details><summary>על אילו מוצרים החבילה חלה'+(all?' (כל המוצרים)':' ('+k.products.length+')')+'</summary><label class="ck"><input type="checkbox" data-allp'+(all?' checked':'')+'> כל המוצרים</label><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px">'+P.map(function(p){return '<label class="ck"><input type="checkbox" data-pp="'+p.id+'"'+(!all&&k.products.indexOf(p.id)>=0?' checked':'')+'> '+p.num+' · '+esc(p.name)+'</label>'}).join('')+'</div></details>'
+     +(k.kind==='fixed'?'<details><summary>ההרכב הקבוע</summary><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px">'+P.map(function(p){return '<label class="f" style="font-weight:400">'+p.num+' · '+esc(p.name)+'<input type="number" min="0" data-cm="'+p.id+'" value="'+(cm[p.id]||'')+'"></label>'}).join('')+'</div></details>':'')
+     +'<div class="two"><label class="f">בתוקף עד (לא חובה)<input type="date" data-c="until" value="'+esc(k.cfg.until||'')+'"></label><label class="f">ההקשה בטלפון<input type="number" min="1" max="9" data-c="key" value="'+(k.cfg.key||i+1)+'"></label></div>'
+     +'<div class="acts"><label class="ck"><input type="checkbox" data-k="active"'+(k.active!==false?' checked':'')+'> פעילה</label><button class="btn bad" data-del="'+i+'">מחיקה</button></div></div>'}
+  function draw(){box.innerHTML='<div class="hd"><h1>חבילות</h1><div class="acts"><button class="btn" id="add">+ חבילה</button><button class="btn pri" id="sv">שמירה</button></div></div><p class="hint">שלושה סוגים: כרטיסים לחלוקה חופשית (למשל 40 כרטיסים בין כל המוצרים), הרכב קבוע (למשל כרטיס אחד בכל מוצר), או לפי שווי (למשל כרטיסים בשווי 1,000 ₪ ב-750 ₪). כרטיסים מעבר לחבילה בתשלום רגיל.</p><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(360px,1fr))">'+L.map(function(k,i){return k.del?'':card(k,i)}).join('')+'</div>';
+    $('add').onclick=function(){sync();L.push({name:'',kind:'free',price:'',qty:40,cfg:{},active:true});draw()};
+    $('sv').onclick=function(){sync();call({a:'pkgs',list:L}).then(function(j){if(j.pkgs){S.pkgs=j.pkgs;flash(j.errors.length?j.errors.map(function(e){return e.error}).join(' · '):'נשמר',!!j.errors.length);pkgs()}else flash(j.message||'לא נשמר',1)})};
+    box.onchange=function(e){if(e.target.dataset.k==='kind'){sync();draw()}};
+    box.onclick=function(e){var d=e.target.closest('[data-del]');if(d){sync();var k=L[+d.dataset.del];if(!k.id)L.splice(+d.dataset.del,1);else if(confirm('למחוק את החבילה?'))k.del=true;draw()}}}
+  function sync(){[].forEach.call(box.querySelectorAll('.card[data-i]'),function(el){var k=L[+el.dataset.i];
+    [].forEach.call(el.querySelectorAll('[data-k]'),function(x){k[x.dataset.k]=x.type==='checkbox'?x.checked:x.value});[].forEach.call(el.querySelectorAll('[data-c]'),function(x){k.cfg[x.dataset.c]=x.value});
+    var all=el.querySelector('[data-allp]');k.products=all&&all.checked?null:[].map.call(el.querySelectorAll('[data-pp]:checked'),function(x){return +x.dataset.pp});
+    var cm=el.querySelectorAll('[data-cm]');if(cm.length)k.comp=[].filter.call(cm,function(x){return +x.value>0}).map(function(x){return {p:+x.dataset.cm,n:+x.value}})})}
+  draw()}
+
+/* --- מגייסים --- */
+function reps(){box.innerHTML='<h1>מגייסים ונציגים</h1><p>טוען…</p>';call({a:'reps'}).then(function(j){var L=j.reps||[];REPS=L;
+  function draw(){box.innerHTML='<div class="hd"><h1>מגייסים ונציגים</h1><div class="acts"><button class="btn" id="add">+ מגייס</button><button class="btn" id="imp">ייבוא מאקסל</button><button class="btn" id="ex">ייצוא</button><button class="btn pri" id="sv">שמירה</button></div></div>'
+    +'<p class="hint">לכל מגייס: קוד להקשה באתר ובטלפון, קישור אישי שהרכישות דרכו נזקפות לו, ודף אישי עם מעקב. הקבוצה מאפשרת יעד משותף ודירוג קבוצות.</p>'
+    +'<div id="impbox" hidden class="card"><label class="f" for="impt">מדביקים שורות מאקסל: קוד, שם, טלפון, מייל, קבוצה, יעד<textarea id="impt" rows="6" dir="auto"></textarea></label><div class="acts"><button class="btn dark" id="impgo">הוספה לרשימה</button></div></div>'
+    +table(['קוד','שם','טלפון','מייל','קבוצה','יעד ₪','פעיל','קישורים',''],L.map(function(r,i){return r.del?'':'<tr data-i="'+i+'"><td><input data-k="code" inputmode="numeric" value="'+esc(r.code||'')+'" style="width:90px" aria-label="קוד"></td><td><input data-k="name" value="'+esc(r.name||'')+'" aria-label="שם"></td><td><input data-k="phone" dir="ltr" value="'+esc(r.phone||'')+'" aria-label="טלפון"></td><td><input data-k="email" dir="ltr" value="'+esc(r.email||'')+'" aria-label="מייל"></td><td><input data-k="grp" value="'+esc(r.grp||'')+'" aria-label="קבוצה"></td><td><input type="number" data-k="goal" value="'+(r.goal||'')+'" style="width:90px" aria-label="יעד"></td><td><input type="checkbox" data-k="active"'+(r.active!==false?' checked':'')+' aria-label="פעיל"></td>'
+      +'<td>'+(r.link?'<button class="btn" data-cp="'+esc(r.link)+'">קישור לרכישה</button> <button class="btn" data-cp="'+esc(r.page)+'">הדף האישי</button>':'<span class="hint">אחרי שמירה</span>')+'</td><td><button class="btn bad" data-del="'+i+'">מחיקה</button></td></tr>'}));
+    $('add').onclick=function(){sync();var mx=L.reduce(function(m,r){return Math.max(m,+r.code||0)},1000);L.push({code:String(mx+1),active:true});draw()};
+    $('imp').onclick=function(){$('impbox').hidden=false;$('impt').focus()};
+    $('impgo').onclick=function(){sync();$('impt').value.split(/\r?\n/).forEach(function(line){var c=line.split(/\t|,/).map(function(x){return x.trim()});if(!c[0]||!/\d/.test(c[0]))return;L.push({code:c[0].replace(/\D/g,''),name:c[1]||'',phone:c[2]||'',email:c[3]||'',grp:c[4]||'',goal:+c[5]||0,active:true})});draw()};
+    $('ex').onclick=function(){csv('מגייסים',['קוד','שם','טלפון','מייל','קבוצה','יעד','קישור','דף אישי'],L.map(function(r){return [r.code,r.name,r.phone,r.email,r.grp,r.goal,r.link,r.page]}))};
+    $('sv').onclick=function(){sync();call({a:'reps',list:L}).then(function(r){if(r.errors&&r.errors.length)flash(r.errors.map(function(e){return e.error}).join(' · '),1);else flash('נשמר');reps()})};
+    box.onclick=function(e){var c=e.target.closest('[data-cp]');if(c){navigator.clipboard&&navigator.clipboard.writeText(c.dataset.cp).then(function(){flash('הקישור הועתק')});return}
+      var d=e.target.closest('[data-del]');if(d){sync();var r=L[+d.dataset.del];if(!r.id)L.splice(+d.dataset.del,1);else if(confirm('למחוק את המגייס?'))r.del=true;draw()}}}
+  function sync(){[].forEach.call(box.querySelectorAll('tr[data-i]'),function(tr){var r=L[+tr.dataset.i];[].forEach.call(tr.querySelectorAll('[data-k]'),function(x){r[x.dataset.k]=x.type==='checkbox'?x.checked:x.value})})}
+  draw()})}
+
+/* --- הזמנות --- */
+function orders(st){box.innerHTML='<h1>הזמנות</h1><p>טוען…</p>';Promise.all([call({a:'orders',status:st||''}),REPS?Promise.resolve({reps:REPS}):call({a:'reps'})]).then(function(R){var L=R[0].orders||[];REPS=R[1].reps||[];
+  var rn={};REPS.forEach(function(r){rn[r.id]=r.name||r.code});var pn={};S.products.forEach(function(p){pn[p.id]=p});var kn={};S.pkgs.forEach(function(k){kn[k.id]=k.name});
+  var desc=function(o){return (o.pkg_id?'חבילה: '+(kn[o.pkg_id]||'')+' · ':'')+(o.lines||[]).map(function(l){return l.n+'×'+((pn[l.p]||{}).num||'')}).join(', ')};
+  box.innerHTML='<div class="hd"><h1>הזמנות</h1><div class="acts"><select id="fs" aria-label="סינון לפי מצב">'+opt([['','הכול'],['paid','שולמו'],['pending','ממתינות'],['failed','נכשלו'],['refunded','זוכו']],st||'')+'</select><button class="btn" id="ex">ייצוא</button><button class="btn pri" id="man">+ הזמנה ידנית</button></div></div>'
+   +'<div id="manbox"></div>'
+   +'<p class="hint">הזמנות טלפון ממתינות: כשהרוכש סיים בטלפון ועוד לא שילם. אחרי שגביתם (למשל בטלפון או במזומן), מסמנים "שולם" והכרטיסים מקבלים מספרים.</p>'
+   +table(['תאריך','שם','טלפון','ערוץ','פירוט','מגייס','סכום','מצב',''],L.map(function(o){return '<tr><td>'+dt(o.created_at)+'</td><td>'+esc(o.name||'')+'</td><td dir="ltr">'+esc(o.phone||'')+'</td><td>'+chName(o.channel)+'</td><td>'+esc(desc(o))+'</td><td>'+esc(rn[o.rep_id]||'')+'</td><td>'+nis(o.amount)+'</td><td>'+pill(o.status)+'</td><td class="acts">'
+     +(o.status==='pending'||o.status==='failed'?'<button class="btn" data-pd="'+o.id+'">שולם</button>':'')+(o.status==='paid'?'<button class="btn" data-tk="'+o.id+'">כרטיסים</button><button class="btn bad" data-rf="'+o.id+'">ביטול</button>':'')+'</td></tr>'}));
+  $('fs').onchange=function(){orders(this.value)};
+  $('ex').onclick=function(){csv('הזמנות',['תאריך','מספר','שם','טלפון','מייל','ערוץ','פירוט','מגייס','סכום','מצב'],L.map(function(o){return [dt(o.created_at),o.id.slice(2,10),o.name,o.phone,o.email,chName(o.channel),desc(o),rn[o.rep_id]||'',o.amount,o.status]}))};
+  $('man').onclick=manual;
+  box.onclick=function(e){var b=e.target.closest('button');if(!b)return;
+    if(b.dataset.pd){var n=prompt('הערה (למשל: שולם במזומן, צ\'ק מספר…):','');if(n==null)return;call({a:'order',id:b.dataset.pd,do:'paid',note:n}).then(function(r){flash(r.ok?'סומן כשולם':'לא עודכן',!r.ok);orders(st)})}
+    if(b.dataset.rf){var n2=prompt('לבטל את ההזמנה? הכרטיסים יוצאו מההגרלה. את החזר הכסף עושים בנדרים פלוס.\nהערה:','');if(n2==null)return;call({a:'order',id:b.dataset.rf,do:'refund',note:n2}).then(function(r){flash(r.ok?'ההזמנה בוטלה':(r.message||'לא בוטל'),!r.ok);orders(st)})}
+    if(b.dataset.tk){call({a:'order',id:b.dataset.tk}).then(function(r){alert((r.tickets||[]).map(function(t){return t.num+' '+t.name+': '+t.serials.join(', ')}).join('\n')||'אין כרטיסים')})}}})}
+function manual(){var el=$('manbox'),pk=null,q={};
+  function upd(){var it=Object.keys(q).filter(function(k){return q[k]>0}).map(function(k){return {p:+k,n:q[k]}}),r=AuctionPrice.price(S.products,pk,it);$('mt').textContent=r.error?(r.error==='empty'?'—':r.message):nis(r.amount)+' · '+r.count+' כרטיסים';return it}
+  el.innerHTML='<div class="card"><h2>הזמנה ידנית</h2><div class="grid"><label class="f">שם<input id="m1"></label><label class="f">טלפון<input id="m2" dir="ltr"></label><label class="f">מייל<input id="m3" dir="ltr"></label><label class="f">עיר<input id="m4"></label><label class="f">קוד נציג<input id="m5" inputmode="numeric"></label><label class="f">חבילה<select id="m6"><option value="">ללא</option>'+S.pkgs.map(function(k){return '<option value="'+k.id+'">'+esc(k.name)+'</option>'}).join('')+'</select></label></div>'
+   +'<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">'+S.products.filter(function(p){return p.active!==false}).map(function(p){return '<label class="f" style="font-weight:400">'+p.num+' · '+esc(p.name)+'<input type="number" min="0" data-mq="'+p.id+'"></label>'}).join('')+'</div>'
+   +'<div class="grid"><label class="f">אמצעי תשלום<select id="m7"><option>מזומן</option><option>צ\'ק</option><option>העברה בנקאית</option><option>אשראי במסוף</option><option>אחר</option></select></label><label class="f">הערה<input id="m8"></label><label class="ck"><input type="checkbox" id="m9" checked> כבר שולם</label></div>'
+   +'<div class="acts"><b id="mt">—</b><button class="btn pri" id="mgo">רישום ההזמנה</button></div></div>';
+  el.oninput=function(e){if(e.target.dataset.mq){q[e.target.dataset.mq]=+e.target.value||0;upd()}if(e.target.id==='m6'){pk=S.pkgs.filter(function(k){return String(k.id)===e.target.value})[0]||null;upd()}};
+  el.onchange=el.oninput;
+  $('mgo').onclick=function(){var it=upd();call({a:'manual',name:$('m1').value,phone:$('m2').value,email:$('m3').value,city:$('m4').value,rep:$('m5').value,pkg:$('m6').value||null,items:it,method:$('m7').value,note:$('m8').value,paid:$('m9').checked}).then(function(r){if(r.id){flash('ההזמנה נרשמה');orders()}else flash(r.message||'לא נרשם',1)})}}
+
+/* --- לקוחות --- */
+function cust(){box.innerHTML='<h1>לקוחות ותורמים</h1><p>טוען…</p>';Promise.all([call({a:'customers'}),REPS?Promise.resolve({reps:REPS}):call({a:'reps'})]).then(function(R){CUST=R[0].customers||[];REPS=R[1].reps||[];var rn={};REPS.forEach(function(r){rn[r.id]=r.name||r.code});var f='all',q='';
+  function list(){var L=CUST.filter(function(c){if(f==='buy'&&!c.orders)return false;if(f==='pend'&&!(c.pending&&!c.orders))return false;if(q){var s=[c.name,c.phone,c.email,c.city].join(' ').toLowerCase();if(s.indexOf(q)<0)return false}return true});
+    $('ct').innerHTML=table(['שם','טלפון','עיר','רכישות','סה"כ','כרטיסים','מגייס','ערוץ'],L.slice(0,1000).map(function(c){return '<tr class="click" data-c="'+c.id+'" tabindex="0"><td>'+esc(c.name||'')+'</td><td dir="ltr">'+esc(c.phone||'')+'</td><td>'+esc(c.city||'')+'</td><td>'+c.orders+'</td><td>'+nis(c.amount)+'</td><td>'+c.tickets+'</td><td>'+esc(rn[c.rep]||'')+'</td><td>'+c.ch.map(chName).join(', ')+(c.pending&&!c.orders?' <span class="pill wait">לא השלים</span>':'')+'</td></tr>'}));
+    $('cn').textContent=L.length+' לקוחות';return L}
+  box.innerHTML='<div class="hd"><h1>לקוחות ותורמים</h1><div class="acts"><button class="btn" id="ex">ייצוא</button></div></div><div class="acts"><label class="sr" for="cq" style="position:absolute;width:1px;height:1px;overflow:hidden">חיפוש</label><input id="cq" placeholder="חיפוש לפי שם, טלפון, מייל או עיר" style="max-width:360px"><select id="cf" aria-label="סינון">'+opt([['all','כל הלקוחות'],['buy','רכשו'],['pend','התחילו ולא שילמו']],'all')+'</select><span class="hint" id="cn"></span></div><div class="two"><div id="ct"></div><div id="cd"></div></div>';
+  $('cq').oninput=function(){q=this.value.trim().toLowerCase();list()};$('cf').onchange=function(){f=this.value;list()};
+  $('ex').onclick=function(){csv('לקוחות',['שם','טלפון','מייל','עיר','כתובת','רכישות','סה"כ','כרטיסים','מגייס','הערות','תגיות'],list().map(function(c){return [c.name,c.phone,c.email,c.city,c.addr,c.orders,c.amount,c.tickets,rn[c.rep]||'',c.note,(c.tags||[]).join(' ')]}))};
+  $('ct').onclick=$('ct').onkeydown=function(e){if(e.type==='keydown'&&e.key!=='Enter')return;var tr=e.target.closest('[data-c]');if(tr)detail(+tr.dataset.c)};
+  list()})}
+function detail(id){var el=$('cd');el.innerHTML='<div class="card">טוען…</div>';call({a:'customer',id:id}).then(function(j){var c=j.customer,pn={};S.products.forEach(function(p){pn[p.id]=p});
+  el.innerHTML='<div class="card"><h2>'+esc(c.name||'לקוח')+'</h2><div class="grid"><label class="f">שם<input id="d1" value="'+esc(c.name||'')+'"></label><label class="f">טלפון<input id="d2" dir="ltr" value="'+esc(c.phone||'')+'"></label><label class="f">מייל<input id="d3" dir="ltr" value="'+esc(c.email||'')+'"></label><label class="f">עיר<input id="d4" value="'+esc(c.city||'')+'"></label></div><label class="f">כתובת<input id="d5" value="'+esc(c.addr||'')+'"></label><label class="f">תגיות (מופרדות בפסיק)<input id="d6" value="'+esc((c.tags||[]).join(', '))+'"></label><label class="f">הערות<textarea id="d7">'+esc(c.note||'')+'</textarea></label><div class="acts"><button class="btn dark" id="dsv">שמירה</button></div>'
+   +'<h3>היסטוריית רכישות</h3>'+(j.orders.length?j.orders.map(function(o){return '<div class="acts" style="justify-content:space-between;border:1px solid #EEF0F4;border-radius:8px;padding:8px 10px"><span>'+dt(o.created_at)+' · '+chName(o.channel)+' · '+(o.lines||[]).reduce(function(t,l){return t+l.n},0)+' כרטיסים</span><span>'+nis(o.amount)+' '+pill(o.status)+'</span></div>'}).join(''):'<p class="hint">אין</p>')
+   +'<h3>כרטיסים</h3><p class="mono" style="direction:rtl;text-align:right">'+(j.tickets.length?j.tickets.map(function(t){return (pn[t.product_id]||{}).num+': '+t.serial}).join(' · '):'אין')+'</p></div>';
+  $('dsv').onclick=function(){call({a:'customer',id:id,set:{name:$('d1').value,phone:$('d2').value,email:$('d3').value,city:$('d4').value,addr:$('d5').value,tags:$('d6').value.split(',').map(function(x){return x.trim()}).filter(Boolean),note:$('d7').value}}).then(function(r){flash(r.customer?'נשמר':'לא נשמר',!r.customer);if(r.customer){var i=CUST.findIndex(function(x){return x.id===id});if(i>=0)Object.assign(CUST[i],r.customer)}})}})}
+
+/* --- דוחות --- */
+function rpt(){box.innerHTML='<h1>דוחות</h1><p>טוען…</p>';call({a:'report'}).then(function(R){REP=R;var T=R.totals;
+  var sec=function(id,title,head,rows,raw){return '<section class="card"><div class="hd"><h2>'+title+'</h2><button class="btn" data-x="'+id+'">אקסל</button></div>'+table(head,rows.map(function(r){return '<tr>'+r.map(function(v){return '<td>'+esc(v)+'</td>'}).join('')+'</tr>'}))+'</section>'};
+  var D={
+    prod:[['מק"ט','מוצר','הגרלות','כרטיסים','רוכשים','באתר','בטלפון','ידני','מחבילות','הכנסה ישירה'],R.products.map(function(p){return [p.num,p.name,p.draws,p.tickets,p.buyers,p.web||0,p.phone||0,p.manual||0,p.pkg,p.revenue]})],
+    reps:[['קוד','מגייס','קבוצה','גויס','הזמנות','כרטיסים','יעד','אחוז מהיעד'],R.reps.map(function(r){return [r.code,r.name||'',r.grp||'',r.amount,r.orders,r.tickets,r.goal||'',r.goal?Math.round(r.amount/r.goal*100)+'%':'']})],
+    grp:[['קבוצה','גויס','הזמנות','מגייסים','יעד משותף'],R.groups.map(function(g){return [g.grp,g.amount,g.orders,g.reps,g.goal||'']})],
+    pkg:[['חבילה','נמכרו','הכנסה','כרטיסים שלא נוצלו','שווי שלא נוצל'],R.pkgs.map(function(k){return [k.name,k.sold,k.amount,k.leftTickets,k.leftCredit]})],
+    ch:[['ערוץ','הזמנות','סכום'],R.channels.map(function(c){return [chName(c.channel),c.orders,c.amount]})],
+    day:[['יום','הזמנות','סכום'],R.days.map(function(d){return [d.day.split('-').reverse().join('.'),d.orders,d.amount]})],
+    city:[['עיר','רוכשים','הזמנות','סכום'],R.cities.map(function(c){return [c.city,c.buyers,c.orders,c.amount]})]};
+  box.innerHTML='<div class="hd"><h1>דוחות</h1><div class="acts"><button class="btn" id="tk">רשימת כל הכרטיסים (אקסל)</button><button class="btn" onclick="print()">הדפסה</button></div></div>'
+   +'<div class="grid"><div class="kpi"><span>גויס</span><b>'+nis(T.amount)+'</b></div><div class="kpi"><span>הזמנות</span><b>'+T.orders+'</b></div><div class="kpi"><span>כרטיסים</span><b>'+T.tickets+'</b></div><div class="kpi"><span>רוכשים</span><b>'+T.buyers+'</b></div><div class="kpi"><span>בלי מגייס</span><b>'+nis(T.noRep.amount)+'</b></div><div class="kpi"><span>ממתינות / נכשלו / זוכו</span><b>'+T.pending+' / '+T.failed+' / '+T.refunded+'</b></div></div>'
+   +sec('prod','כרטיסים לפי מוצר',D.prod[0],D.prod[1])+sec('reps','מגייסים',D.reps[0],D.reps[1])+sec('grp','קבוצות',D.grp[0],D.grp[1])+sec('pkg','חבילות',D.pkg[0],D.pkg[1])+'<div class="two">'+sec('ch','אתר מול טלפון',D.ch[0],D.ch[1])+sec('city','ערים',D.city[0],D.city[1])+'</div>'+sec('day','קצב המכירה לפי ימים',D.day[0],D.day[1]);
+  box.onclick=function(e){var b=e.target.closest('[data-x]');if(b){var d=D[b.dataset.x];csv(b.closest('section').querySelector('h2').textContent,d[0],d[1])}};
+  $('tk').onclick=function(){flash('מכין…');call({a:'tickets'}).then(function(j){csv('כרטיסים',['מספר כרטיס','מק"ט','מוצר','שם','טלפון','עיר','הזמנה','מחבילה'],j.tickets.map(function(t){return [t.serial,t.num,t.product,t.name,t.phone,t.city,t.order,t.pkg?'כן':'']}))})}})}
+
+/* --- טלפון --- */
+function ivr(){var v=S.cfg.ivr||{};
+  box.innerHTML='<h1>שלוחה טלפונית (ימות המשיח)</h1><div class="card"><label class="ck"><input type="checkbox" id="i0"'+(v.on!==false?' checked':'')+'> השלוחה פעילה</label>'
+   +'<label class="f">הכתובת לשלוחה בימות<div class="mono" style="background:#F3F4F7;padding:10px;border-radius:8px">'+esc(S.ivrUrl)+'</div></label>'
+   +'<div class="note">בימות המשיח, בקובץ ext.ini של השלוחה:<div class="mono" style="margin-top:6px">type=api<br>api_link='+esc(S.ivrUrl)+'</div>הכתובת כוללת מפתח סודי. אם הוא דלף, יוצרים מפתח חדש ומעדכנים בימות.</div>'
+   +'<div class="two"><label class="f" for="i1">מספר השלוחה (לקבצי השמע של המוצרים)<input id="i1" dir="ltr" value="'+esc(v.path||'')+'" placeholder="5"><small>התיקייה בימות שאליה יועלו קבצי השמע</small></label><label class="f" for="i2">טוקן ימות המשיח של הארגון<input id="i2" dir="ltr" placeholder="'+(v.hasToken?'שמור. להחלפה מקלידים חדש':'')+'"><small>נשמר בשרת ולא מוצג שוב. משמש רק להעלאת קבצי השמע</small></label></div>'
+   +'<label class="f" for="i3">שלוחת הסליקה הטלפונית (לא חובה)<input id="i3" dir="ltr" value="'+esc(v.payPath||'')+'"><small>אם מוגדרת: בסיום הרכישה המתקשר מועבר אליה לתשלום. אם לא: ההזמנה נרשמת כממתינה, ונציג חוזר להשלמת התשלום.</small></label>'
+   +'<div class="acts"><button class="btn pri" id="sv">שמירה</button><button class="btn" id="nk">מפתח חדש</button>'+(v.hasToken?'<button class="btn bad" id="ct">מחיקת הטוקן</button>':'')+'</div></div>'
+   +'<div class="card"><h2>מהלך השיחה</h2><ol style="margin:0;padding-inline-start:20px;line-height:1.9"><li>פתיחה: "שלום וברוכים הבאים למכירה הסינית של '+esc(S.eff.title)+'"</li><li>קוד נציג (לפי ההגדרות: בהתחלה, לפני התשלום, או בשניהם. אפס לדילוג)</li><li>תפריט: 1 חבילה · 2 בחירת כרטיסים לפי מספר מוצר · 3 שמיעת כל המוצרים ברצף</li><li>מספר מוצר וסולמית: מושמע קובץ השמע של המוצר (או הקראת השם), המחיר ומספר ההגרלות</li><li>כמות כרטיסים · ואז 1 מוצר נוסף, 2 סיום, 3 שמיעת הבחירה</li><li>סיכום הסכום ואישור</li><li>מעבר לתשלום</li></ol><p class="hint">קבצי השמע של המוצרים מועלים בלשונית "מוצרים". השלוחה סגורה בשבת ובחג.</p></div>';
+  $('sv').onclick=function(){var o={on:$('i0').checked,path:$('i1').value,payPath:$('i3').value};if($('i2').value.trim())o.token=$('i2').value.trim();saveCfg({ivr:o})};
+  $('nk').onclick=function(){if(confirm('ליצור מפתח חדש? הכתובת הישנה תפסיק לעבוד, וצריך לעדכן אותה בימות.'))saveCfg({ivr:{newKey:true}})};
+  if($('ct'))$('ct').onclick=function(){saveCfg({ivr:{clearToken:true}})}}
+
+/* --- הגרלות --- */
+function draw(){box.innerHTML='<h1>ביצוע ההגרלות</h1><p>טוען…</p>';call({a:'draws'}).then(function(j){DRAWS=j;var P=S.products.filter(function(p){return (j.counts[p.id]||0)>0||p.active!==false});
+  if(!SEL||!P.some(function(p){return p.id===SEL}))SEL=P[0]&&P[0].id;
+  var by=function(pid,k){return j.draws.filter(function(d){return d.product_id===pid&&d.kind===k})};
+  var done=P.filter(function(p){return by(p.id,'win').length>=(p.draws||1)}).length,cur=P.filter(function(p){return p.id===SEL})[0];
+  var h='<div class="hd noprint"><h1>ביצוע ההגרלות</h1><div class="acts"><button class="btn" id="fs">תצוגת מסך מלא לאירוע</button><button class="btn" id="pr">הדפסת פרוטוקול</button></div></div>';
+  if(j.open)h+='<div class="note noprint">המכירה עדיין פתוחה. כדי שרשימת הכרטיסים תינעל, סוגרים את המכירה לפני ההגרלה. <button class="btn bad" id="cl">סגירת המכירה עכשיו</button></div>';
+  h+='<div class="two noprint"><div><h2 style="margin-bottom:8px">המוצרים · הושלמו '+done+' מתוך '+P.length+'</h2><div class="prodlist">'+P.map(function(p){var n=by(p.id,'win').length,d=p.draws||1;return '<button type="button" data-p="'+p.id+'" aria-pressed="'+(p.id===SEL)+'"><span><b>'+p.num+'</b> · '+esc(p.name)+'</span><span class="pill '+(n>=d?'ok':'')+'">'+(n>=d?'הוגרל':n?n+' מתוך '+d:d>1?d+' הגרלות':'ממתין')+'</span></button>'}).join('')+'</div></div>';
+  if(cur){var W=by(cur.id,'win'),RS=by(cur.id,'reserve'),d=cur.draws||1,rf=(cur.cfg||{}).reserves||0;
+    h+='<div class="drawbox" id="db"><span class="hint">מוצר '+cur.num+'</span><h2 style="font-family:Frank Ruhl Libre,serif;font-size:34px">'+esc(cur.name)+'</h2><span>'+(j.counts[cur.id]||0)+' כרטיסים משתתפים'+(d>1?' · '+d+' הגרלות':'')+'</span>'
+      +W.map(function(w){return winBox(w,d>1?'זוכה בהגרלה '+w.round+' מתוך '+d:'הכרטיס הזוכה')}).join('')
+      +RS.map(function(w){return winBox(w,'זוכה מילואים '+w.round)}).join('')
+      +(W.length<d?'<button type="button" class="drawgo" id="dg"'+(j.open?' disabled':'')+'>3 ערבובים והגרלה'+(d>1?' '+(W.length+1)+' מתוך '+d:'')+'</button>':'')
+      +(W.length>=d&&(!rf||RS.length<rf)?'<button type="button" class="btn" id="dr">הגרלת זוכה מילואים</button>':'')
+      +'<p class="hint" style="max-width:560px">לכל כרטיס ששולם יש מספר סידורי. לפני כל הגרלה רשימת הכרטיסים של המוצר מעורבבת שלוש פעמים, ורק אז מוגרל כרטיס אחד, בשרת, עם מחולל אקראיות קריפטוגרפי. במוצר עם כמה הגרלות כל הגרלה נעשית בנפרד. כל תוצאה נשמרת עם טביעת אצבע של רשימת הכרטיסים, ואי אפשר למחוק אותה.</p></div>'}
+  h+='</div><div id="proto" style="display:none"></div>';
+  box.innerHTML=h;
+  box.onclick=function(e){var b=e.target.closest('[data-p]');if(b){SEL=+b.dataset.p;draw()}};
+  if($('cl'))$('cl').onclick=function(){if(confirm('לסגור את המכירה עכשיו?'))call({a:'close'}).then(function(){loadSale().then(function(){draw()})})};
+  if($('dg'))$('dg').onclick=function(){run('win')};
+  if($('dr'))$('dr').onclick=function(){run('reserve')};
+  $('fs').onclick=function(){full(cur)};
+  $('pr').onclick=function(){proto();setTimeout(print,50)};
+  function run(kind){var b=$('dg')||$('dr');if(b)b.disabled=true;var ov=animate(cur);
+    call({a:'draw',product:cur.id,kind:kind}).then(function(r){setTimeout(function(){ov.stop(r.draw);if(!r.draw)flash(r.message||'ההגרלה לא בוצעה',1);setTimeout(function(){draw()},r.draw?0:0)},2400)})}
+})}
+function winBox(w,lab){return '<div class="win"><div><div class="k">'+esc(lab)+'</div><div style="font-family:Frank Ruhl Libre,serif;font-size:24px;font-weight:700">'+esc(w.name||w.phone||'—')+'</div><small>'+esc([w.city,w.channel?'נרכש '+(w.channel==='phone'?'בטלפון':w.channel==='manual'?'ידנית':'באתר'):'',w.rep?'מגייס: '+w.rep:''].filter(Boolean).join(' · '))+'</small></div><div style="text-align:center"><small>כרטיס מספר</small><div class="s">'+w.serial+'</div></div></div>'}
+/* אנימציה של ערבוב במסך מלא, בזמן שההגרלה רצה בשרת */
+function animate(p){var el=document.createElement('div');el.className='full';el.innerHTML='<div class="p">'+esc(p.num+' · '+p.name)+'</div><div class="n" id="ph">ערבוב ראשון…</div><div class="shuf" id="sh">—</div>';document.body.appendChild(el);
+  var n=0,t=setInterval(function(){$('sh').textContent=Math.floor(Math.random()*9000+1);n++;if(n===8)$('ph').textContent='ערבוב שני…';if(n===16)$('ph').textContent='ערבוב שלישי…';if(n===24)$('ph').textContent='מגרילים…'},90);
+  return {stop:function(d){clearInterval(t);if(!d){el.remove();return}el.innerHTML='<div class="p">'+esc(p.num+' · '+p.name)+'</div><div class="n">'+(d.kind==='reserve'?'זוכה מילואים':'הכרטיס הזוכה')+'</div><div class="s">'+d.serial+'</div><div class="n">'+esc(d.name||d.phone||'')+'</div><div style="font-size:22px;color:#D5DAE6">'+esc(d.city||'')+'</div><button class="btn pri" style="margin-top:20px;font-size:18px;height:52px" id="cx">סגירה</button>';$('cx').onclick=function(){el.remove()};$('cx').focus()}}}
+function full(cur){var el=document.createElement('div');el.className='full';var W=DRAWS.draws.filter(function(d){return d.product_id===cur.id&&d.kind==='win'});
+  el.innerHTML='<div class="p">'+esc(cur.num+' · '+cur.name)+'</div>'+(W.length?W.map(function(w){return '<div><div class="s" style="font-size:clamp(50px,9vw,110px)">'+w.serial+'</div><div class="n">'+esc(w.name||'')+'</div></div>'}).join(''):'<div class="n">ממתין להגרלה</div>')+'<button class="btn pri" id="cx" style="font-size:18px;height:52px">סגירה</button>';document.body.appendChild(el);$('cx').onclick=function(){el.remove()};$('cx').focus()}
+function proto(){var pn={};S.products.forEach(function(p){pn[p.id]=p});var el=$('proto');el.style.display='block';
+  el.innerHTML='<h1>פרוטוקול הגרלות: '+esc(S.eff.title)+'</h1><p>הופק ב־'+new Date().toLocaleString('he-IL')+'</p>'+table(['מוצר','הגרלה','כרטיס','זוכה','עיר','טלפון','כרטיסים בהגרלה','ערבובים','בוצע ב','על ידי','טביעת אצבע של רשימת הכרטיסים'],DRAWS.draws.map(function(d){var p=pn[d.product_id]||{};return '<tr><td>'+p.num+' · '+esc(p.name||'')+'</td><td>'+(d.kind==='reserve'?'מילואים ':'')+d.round+'</td><td><b>'+d.serial+'</b></td><td>'+esc(d.name)+'</td><td>'+esc(d.city)+'</td><td dir="ltr">'+esc(d.phone)+'</td><td>'+d.pool+'</td><td>'+d.shuffles+'</td><td>'+dt(d.created_at)+'</td><td>'+esc(d.by_email||'')+'</td><td class="mono" style="font-size:10px">'+esc(d.pool_hash)+'</td></tr>'}))}
+})();
+</script>
+</body>
+</html>
