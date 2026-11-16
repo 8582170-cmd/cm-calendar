@@ -643,7 +643,7 @@ async function main(req, res) {
     }
     if (req.method === 'POST' && b.action === 'mailroute') {
       /* ניתוב מיילים: אילו ספקים (לפי סדר) שולחים הזמנות, ואילו את שאר האתר, ומכסות לכל ספק */
-      const PN = ['resend', 'brevo', 'mailjet', 'ses'], nm = v => (Array.isArray(v) ? v : String(v || '').split(',')).map(x => String(x).trim().toLowerCase()).filter((k, i, a) => PN.includes(k) && a.indexOf(k) === i);
+      const PN = ['resend', 'brevo', 'mailjet', 'ses', 'cloudflare'], nm = v => (Array.isArray(v) ? v : String(v || '').split(',')).map(x => String(x).trim().toLowerCase()).filter((k, i, a) => PN.includes(k) && a.indexOf(k) === i);
       const caps = {}; PN.forEach(k => { const o = (b.caps || {})[k] || {}, c = {}; ['day', 'month', 'hour'].forEach(f => { if (o[f] !== '' && o[f] != null && isFinite(+o[f]) && +o[f] >= 0) c[f] = Math.min(10000000, Math.round(+o[f])); }); if (Object.keys(c).length) caps[k] = c; });
       await saveSetting('mailroute', { inv: nm(b.inv), other: nm(b.other), caps });
       return json(res, 200, { ok: true });

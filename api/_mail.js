@@ -1,6 +1,6 @@
 /* שליחת מיילים עם מעבר אוטומטי בין ספקים.
    הזמנות דיגיטליות (kind: invite*): ברירת מחדל Brevo בלבד. כל שאר האתר: Resend → Mailjet → Brevo (כשהמכסה היומית/חודשית מלאה). אפשר לשנות בדף הניהול או במשתנים.
-   ספקים: Resend (RESEND_API_KEY), Brevo (BREVO_API_KEY), Mailjet (MAILJET_API_KEY + MAILJET_SECRET_KEY), Amazon SES (SES_ACCESS_KEY_ID + SES_SECRET_ACCESS_KEY + SES_REGION).
+   ספקים: Resend (RESEND_API_KEY), Brevo (BREVO_API_KEY), Mailjet (MAILJET_API_KEY + MAILJET_SECRET_KEY), Amazon SES (SES_ACCESS_KEY_ID + SES_SECRET_ACCESS_KEY + SES_REGION), Cloudflare (CF_EMAIL_TOKEN + CF_ACCOUNT_ID).
    ספק שלא הוגדר מדולג. אם ספק נכשל (מגבלה, תקלה), עוברים לבא בתור. */
 'use strict';
 const { env, db, loadSetting, saveSetting } = require('./_lib');
@@ -65,9 +65,21 @@ async function viaSES(m) {
   return 'ses';
 }
 
-const PROVIDERS = { resend: viaResend, brevo: viaBrevo, mailjet: viaMailjet, ses: viaSES };
+/* Cloudflare Email Sending (REST). דורש מסלול Workers בתשלום ודומיין שליחה מאומת ב-Cloudflare.
+   משתנים: CF_EMAIL_TOKEN (טוקן API עם הרשאת Email Sending), CF_ACCOUNT_ID.
+   קובץ מצורף לא נשלח דרך הספק הזה (פורמט הקבצים ב-REST לא מתועד עדיין); המייל יוצא עם כפתור ההורדה שבגוף המייל. */
+async function viaCloudflare(m) {
+  const k = env('CF_EMAIL_TOKEN'), acc = env('CF_ACCOUNT_ID'); if (!k || !acc) return null;
+  const reply = m.replyTo || REPLY();
+  const r = await fetch('https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(acc) + '/email/sending/send', { method: 'POST', headers: { Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: { email: FROM_EMAIL(), name: m.fromName || FROM_NAME }, to: m.to, subject: m.subject, html: m.html, text: m.text, ...(reply ? { replyTo: reply } : {}), ...(m.headers ? { headers: m.headers } : {}) }) });
+  const t = await r.text(); let j = {}; try { j = JSON.parse(t); } catch (e) {}
+  if (!r.ok || j.success === false) throw new Error('cloudflare ' + r.status + ' ' + t.slice(0, 200));
+  return 'cloudflare';
+}
+const PROVIDERS = { resend: viaResend, brevo: viaBrevo, mailjet: viaMailjet, ses: viaSES, cloudflare: viaCloudflare };
 /* מכסה יומית חינמית של כל ספק (אפשר לשנות במשתני סביבה MAIL_CAP_RESEND וכו'). ספק שהגיע למכסה היום מדולג מראש */
-const CAPS = { resend: 100, brevo: 300, mailjet: 200, ses: 1e9 };
+const CAPS = { resend: 100, brevo: 300, mailjet: 200, ses: 1e9, cloudflare: 1e9 };
 /* מכסה חודשית חינמית (MAIL_MONTH_RESEND וכו', או בדף הניהול). ספק שהגיע אליה מדולג עד תחילת החודש */
 const MONTH = { resend: 3000, mailjet: 6000 };
 const cap = k => { const v = env('MAIL_CAP_' + k.toUpperCase()); return v !== '' && v != null && !isNaN(+v) ? (+v || 1e9) : CAPS[k]; };  /* 0 = בלי מגבלה (חבילה בתשלום) */
@@ -99,7 +111,7 @@ async function counts() {
 async function sendMail(m, kind, only) {
   const errs = [], R = await getRoute();
   /* הפרדה: מיילים של ההזמנות הדיגיטליות (kind שמתחיל ב-invite) ושל שאר האתר יוצאים מרשימות ספקים נפרדות.
-     סדר העדיפות: דף הניהול ← משתנה סביבה (MAIL_INVITE_ORDER / MAIL_OTHER_ORDER) ← ברירת מחדל. ספקים: resend, brevo, mailjet, ses */
+     סדר העדיפות: דף הניהול ← משתנה סביבה (MAIL_INVITE_ORDER / MAIL_OTHER_ORDER) ← ברירת מחדל. ספקים: resend, brevo, mailjet, ses, cloudflare */
   const inv = /^invite/.test(kind || '');
   let order = only ? [only] : (names(R[inv ? 'inv' : 'other']).length ? names(R[inv ? 'inv' : 'other']) : names(env(inv ? 'MAIL_INVITE_ORDER' : 'MAIL_OTHER_ORDER') || (inv ? 'brevo' : 'resend,mailjet,brevo')));
   if (!order.length) order = inv ? ['brevo'] : ['resend', 'mailjet', 'brevo'];
@@ -166,7 +178,7 @@ function frame({ title, body, button, url, foot, lang, size, accent, ink }) {
 const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function configured() {
-  return { resend: !!env('RESEND_API_KEY'), brevo: !!env('BREVO_API_KEY'), mailjet: !!(env('MAILJET_API_KEY') && env('MAILJET_SECRET_KEY')), ses: !!(env('SES_ACCESS_KEY_ID') && env('SES_SECRET_ACCESS_KEY')) };
+  return { resend: !!env('RESEND_API_KEY'), brevo: !!env('BREVO_API_KEY'), mailjet: !!(env('MAILJET_API_KEY') && env('MAILJET_SECRET_KEY')), ses: !!(env('SES_ACCESS_KEY_ID') && env('SES_SECRET_ACCESS_KEY')), cloudflare: !!(env('CF_EMAIL_TOKEN') && env('CF_ACCOUNT_ID')) };
 }
 /* טקסט רגיל שכותבים בדף הניהול: שורות, **מודגש**, וקישורים (כתובת מלאה או [טקסט](כתובת)) */
 function textToHtml(t) {

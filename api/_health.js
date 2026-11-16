@@ -13,7 +13,7 @@ async function run() {
   let dbOk = true;
   try { await db('settings?select=key&limit=1'); add('sys', 'db', 'ok', 'מסד הנתונים (Supabase) מחובר'); }
   catch (e) { dbOk = false; add('sys', 'db', 'bad', 'אין חיבור למסד הנתונים', String(e.message || e).slice(0, 160), 'לבדוק את SUPABASE_URL ו־SUPABASE_SERVICE_ROLE_KEY בהגדרות השרת'); }
-  const mailKeys = ['RESEND_API_KEY', 'BREVO_API_KEY', 'MAILJET_API_KEY'].filter(k => env(k));
+  const mailKeys = ['RESEND_API_KEY', 'BREVO_API_KEY', 'MAILJET_API_KEY', 'SES_ACCESS_KEY_ID', 'CF_EMAIL_TOKEN'].filter(k => env(k));
   if (!mailKeys.length) add('sys', 'mail', 'bad', 'אין ספק מיילים מוגדר', 'לא יוצאים מיילים בכלל (אישורים, תזכורות, הזמנות)', 'להוסיף מפתח של Resend, Brevo או Mailjet בהגדרות השרת');
   else add('sys', 'mail', mailKeys.length === 1 ? 'info' : 'ok', 'ספקי מיילים: ' + mailKeys.length, mailKeys.length === 1 ? 'יש ספק אחד בלבד: כשהוא מגיע למגבלה היומית, המיילים מחכים למחר' : '');
   if (!env('OWNER_EMAIL') && !env('ALERT_EMAIL')) add('sys', 'owner', 'warn', 'לא מוגדר מייל לבעל האתר', 'לא תקבל הודעות על רכישות והתראות', 'להוסיף OWNER_EMAIL (או ALERT_EMAIL) בהגדרות השרת');
