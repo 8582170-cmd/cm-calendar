@@ -235,7 +235,7 @@ function cleanCfg(old, b) {
     c.ivr = { ...v0, cc }; delete b.ivr.cc; }
   if (b.ivr && typeof b.ivr === 'object') { const v = { ...(c.ivr || {}) }; if (!v.key) v.key = crypto.randomBytes(8).toString('hex');
     if (b.ivr.path != null) v.path = String(b.ivr.path).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (b.ivr.payPath != null) v.payPath = String(b.ivr.payPath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
-    if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') v.hold = { on: !!b.ivr.hold.on, name: String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60) }; if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
+    if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') { const nm = String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60), o = v.hold || {}; v.hold = { on: !!b.ivr.hold.on, name: nm }; if (o.url && o.name === nm) { v.hold.url = o.url; if (o.y) v.hold.y = true; } } if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
   return c;
 }
 /* מוצרים / חבילות / מגייסים: שמירה של כל הרשימה. שורה בלי id נוצרת, שורה עם del נמחקת (רק אם אין עליה כרטיסים) */
@@ -608,6 +608,25 @@ module.exports = async (req, res) => {
       const p = s.products.find(x => String(x.id) === String(b.product)); if (!p) return json(res, 404, { error: 'product' });
       const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', R = require('./_r2'), M = R.mediaPut('auction/' + s.id + '/p' + p.num + '-' + Date.now().toString(36) + '.' + ext);
       if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
+    }
+    /* מוזיקת המתנה לשרת: מועלית באתר, ומשם לתיקיית השלוחה בימות (שם הקובץ נרשם אוטומטית ב-ext.ini) */
+    if (a === 'holdUrl' || a === 'holdSet') {
+      if (a === 'holdUrl') {
+        const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', M = require('./_r2').mediaPut('auction/' + s.id + '/hold-' + Date.now().toString(36) + '.' + ext);
+        if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
+      }
+      const MD = require('./_r2').media(), url = String(b.url || ''), iv = { ...((s.cfg || {}).ivr || {}) }; let warn = '';
+      if (url && !(MD && url.indexOf(MD.url + '/auction/' + s.id + '/') === 0)) return json(res, 400, { error: 'url' });
+      if (!url) iv.hold = { on: false, name: '' };
+      else {
+        const nm = 'hold' + s.id; iv.hold = { on: true, name: nm, url };
+        if (iv.token && iv.path) {
+          try { const f = await fetch(url, { signal: AbortSignal.timeout(30000) }); if (!f.ok) throw new Error('fetch ' + f.status); await ymUpload(iv.token, 'ivr2:/' + iv.path + '/' + nm + '.wav', await f.arrayBuffer()); iv.hold.y = true; }
+          catch (e) { warn = 'ההעלאה לימות המשיח נכשלה: ' + String(e.message).slice(0, 120); }
+        } else warn = 'הקובץ נשמר באתר. כדי שיועלה לימות, צריך להזין בהגדרות הטלפון את הטוקן ואת מספר השלוחה, ולהעלות שוב';
+      }
+      await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, ivr: iv }, updated_at: new Date().toISOString() }) }); drop(s.slug);
+      return json(res, 200, { ok: true, warn, hold: iv.hold });
     }
     /* הקלטה להודעת שיחה: לחלק קבוע (idx), או אחת לכל ההודעה (idx='all', מחליפה את כל הטקסט). אפשר גם לסמן "בלי טקסט" (mute) */
     if (a === 'msgAudioUrl' || a === 'msgAudioSet') {
