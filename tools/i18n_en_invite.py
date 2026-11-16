@@ -2,6 +2,25 @@
 """English translations for invite-en.html (on top of the timer-en translations in gen_timer_en.py). Run: python3 tools/gen_invite_en.py"""
 
 EN = [
+    # ---- דף הכניסה
+    ('ההזמנה לשמחה שלכם, <em>מכובדת כמו בדפוס</em>, ונשלחת ברגע', 'Your simcha invitation, <em>as dignified as print</em>, sent in a moment'),
+    ('בוחרים עיצוב, כותבים את הנוסח המקובל אצלכם, ושולחים לכל מוזמן הזמנה אישית עם התואר שלו. הכול מוכן בכמה דקות.', 'Choose a design, write the wording your community uses, and send every guest a personal invitation with the right title. Ready in a few minutes.'),
+    ('יצירת הזמנה עכשיו', 'Create an invitation now'),
+    ('איך זה עובד', 'How it works'),
+    ('מתחילים בחינם · בלי התחייבות · אפשר לערוך בכל רגע', 'Free to start · No commitment · Edit any time'),
+    ('פנייה אישית עם תואר לכל מוזמן', 'A personal greeting with a title for every guest'),
+    ('לא נשלח בשבת ובחג', 'Nothing is sent on Shabbat or Yom Tov'),
+    ('עברית, יידיש ואנגלית', 'Hebrew, Yiddish and English'),
+    ('16 עיצובים לבחירה', '16 designs to choose from'),
+    ('צירוף ההזמנה המודפסת', 'Attach your printed invitation'),
+    ('סוג האירוע, השמות, התאריך העברי והאולם.', 'Event type, names, Hebrew date and hall.'),
+    ('בוחרים ערכת עיצוב, פתיח אישי וחתימה, ורואים הכול בתצוגה מקדימה.', 'Pick a design, a personal opening and a signature, and see it all in the live preview.'),
+    ('שולחים במייל או בקישור אישי, ורואים מי אישר הגעה ומי שלח ברכה.', 'Send by email or personal link, and see who confirmed and who sent a blessing.'),
+    ('>פרטי השמחה</b>', '>Event details</b>'),
+    ('>עיצוב ונוסח</b>', '>Design and wording</b>'),
+    ('>שליחה ומעקב</b>', '>Send and track</b>'),
+    ('יוצרים את ההזמנה', 'Create your invitation'),
+    ('תזכורת ביום השמחה</div>', 'Remind me on the day</div>'),
     ('הזמנה דיגיטלית לאירוע עם אישורי הגעה · לחתונה ולבר מצווה | MyLuach', 'Digital Event Invitation with RSVP · for Weddings and Bar Mitzvahs | MyLuach'),
     ('דף הזמנה דיגיטלי לחתונה, לבר מצווה ולכל שמחה: ההזמנה, מיקום עם וייז, הוספה ליומן, אישורי הגעה, תזכורות לאורחים, קיר ברכות, חלוקת תהילים, הושבה ושליחה לרשימת מוזמנים.', 'A digital invitation page for a wedding, bar mitzvah or any simcha: the invitation, location with Waze, add to calendar, RSVP, guest reminders, blessings wall, Tehillim division, seating and sending to your guest list.'),
     ('הזמנה דיגיטלית לאירוע · MyLuach', 'Digital Event Invitation · MyLuach'),

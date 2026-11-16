@@ -141,7 +141,54 @@ summary{cursor:pointer;font-weight:700}
 <body><div class="wrap">
 <header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><nav class="nl"><a href="invite-help">❓ הסבר ושאלות</a><a href="timer">שעון ספירה פשוט</a><a href="countdown.html">לוח ספירה להדפסה</a><a class="lsw" href="invite-en" hreflang="en" lang="en">English</a><a class="lsw" href="invite-yi" hreflang="yi" lang="yi">אידיש</a></nav></header>
 <main>
-<h1>הזמנה דיגיטלית לאירוע</h1>
+<style>
+.lhero{margin:18px 0 26px;border-radius:30px;padding:clamp(26px,5vw,56px);background:radial-gradient(900px 500px at 85% -10%,#263763 0,transparent 60%),linear-gradient(140deg,#0e1526 0,#16223f 100%);color:#f4eede;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(20px,4vw,56px);align-items:center;border:1px solid #2b3a63;overflow:hidden}
+.lhero .ey{font-size:14px;letter-spacing:.12em;color:#d4b36a;font-weight:700;margin:0 0 10px}
+.lhero h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(32px,5.2vw,56px);line-height:1.12;margin:0 0 14px;color:#fff8ea}
+.lhero h1 em{font-style:normal;color:#d4b36a}
+.lhero .ld{font-size:clamp(17px,2.1vw,20px);line-height:1.65;color:#cfd5e4;margin:0 0 22px;max-width:560px}
+.lhero .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.lhero .go{display:inline-flex;align-items:center;min-height:56px;padding:0 34px;border-radius:999px;background:linear-gradient(180deg,#e4c57e,#c9a455);color:#141b30;font-weight:800;font-size:20px;text-decoration:none;box-shadow:0 10px 30px rgb(212 179 106 / .32)}
+.lhero .go:hover{filter:brightness(1.06)}.lhero .go:focus-visible,.lhero .how:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.lhero .how{display:inline-flex;align-items:center;min-height:56px;padding:0 24px;border-radius:999px;border:1.5px solid #5a6a94;color:#f4eede;font-weight:700;text-decoration:none}
+.lhero .sm{font-size:14.5px;color:#a9b2c9;margin:0 0 20px}
+.lhero ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.lhero li{font-size:14.5px;padding:7px 14px;border-radius:999px;background:#1c2a4d;border:1px solid #2f4070;color:#e6e0cf}
+.lph{justify-self:center;width:min(100%,300px);border-radius:38px;padding:9px;background:#05080f;box-shadow:0 30px 70px rgb(0 0 0 / .5),0 0 0 1px #33426b;transform:rotate(-2.5deg)}
+.lph>div{border-radius:30px;background:radial-gradient(500px 300px at 50% 0,#fffaf0 0,#efe4c8 75%);color:#16213a;padding:22px 16px 18px;text-align:center;font-family:"Frank Ruhl Libre",serif}
+.lph .fr{border:3px double #c9a961;border-radius:8px;padding:16px 10px 14px;background:#fbf5e6}
+.lph small{display:block;font:400 12px/1.5 Assistant,sans-serif;color:#6a6250}
+.lph .to{font-size:14px;color:#7a5a14;margin:6px 0 10px;line-height:1.45}
+.lph b{display:block;font-weight:900;font-size:30px;line-height:1.1}
+.lph i{display:block;font-style:normal;color:#7a5a14;font-size:15px;margin:3px 0}
+.lph .dt{font:700 13.5px/1.5 Assistant,sans-serif;margin-top:10px}
+.lph .ck{display:flex;gap:5px;justify-content:center;margin:12px 0 10px;direction:ltr}
+.lph .ck span{flex:1;max-width:58px;border:1px solid #c9a961;border-radius:9px;background:#f3e9d0;padding:6px 0 4px;font-weight:900;font-size:19px;color:#7a5a14}
+.lph .ck span small{font-size:10px}
+.lph .bt{border-radius:999px;background:#7a5a14;color:#fbf5e6;font:700 14.5px/1 Assistant,sans-serif;padding:12px}
+.lsteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 30px}
+.lsteps div{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 18px 16px}
+.lsteps b{display:flex;gap:10px;align-items:center;font-size:18px;margin-bottom:4px}
+.lsteps b span{width:30px;height:30px;border-radius:50%;background:#16223f;color:#d4b36a;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+.lsteps p{margin:0;color:var(--mute);font-size:15.5px;line-height:1.55}
+#start{scroll-margin-top:16px;font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(26px,4vw,34px);margin:0 0 6px}
+@media (max-width:800px){.lhero{grid-template-columns:1fr}.lph{transform:none;width:min(100%,270px)}.lsteps{grid-template-columns:1fr}.lhero .go{width:100%;justify-content:center}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+<section class="lhero" id="lhero" aria-labelledby="lh1">
+<div>
+<p class="ey">הזמנה דיגיטלית לאירוע</p>
+<h1 id="lh1">ההזמנה לשמחה שלכם, <em>מכובדת כמו בדפוס</em>, ונשלחת ברגע</h1>
+<p class="ld">בוחרים עיצוב, כותבים את הנוסח המקובל אצלכם, ושולחים לכל מוזמן הזמנה אישית עם התואר שלו. הכול מוכן בכמה דקות.</p>
+<div class="cta"><a class="go" href="#start" id="lgo">יצירת הזמנה עכשיו</a><a class="how" href="invite-help">איך זה עובד</a></div>
+<p class="sm">מתחילים בחינם · בלי התחייבות · אפשר לערוך בכל רגע</p>
+<ul><li>פנייה אישית עם תואר לכל מוזמן</li><li>לא נשלח בשבת ובחג</li><li>עברית, יידיש ואנגלית</li><li>16 עיצובים לבחירה</li><li>צירוף ההזמנה המודפסת</li></ul>
+</div>
+<div class="lph" aria-hidden="true"><div><small>בס״ד</small><p class="to">לכבוד ידידי הרב יעקב גולדשטיין שליט״א</p><div class="fr"><small>החתן המופלג</small><b>יוסף</b><i>עב״ג</i><small>הכלה המהוללה</small><b>רחל</b><p class="dt">יום שלישי, כ״ד באדר א׳</p></div><div class="ck"><span>27<small>ימים</small></span><span>05<small>שעות</small></span><span>42<small>דקות</small></span></div><div class="bt">תזכורת ביום השמחה</div></div></div>
+</section>
+<div class="lsteps" id="lsteps"><div><b><span>1</span>פרטי השמחה</b><p>סוג האירוע, השמות, התאריך העברי והאולם.</p></div><div><b><span>2</span>עיצוב ונוסח</b><p>בוחרים ערכת עיצוב, פתיח אישי וחתימה, ורואים הכול בתצוגה מקדימה.</p></div><div><b><span>3</span>שליחה ומעקב</b><p>שולחים במייל או בקישור אישי, ורואים מי אישר הגעה ומי שלח ברכה.</p></div></div>
+<script>(function(){if(/[?&]s=/.test(location.search)){document.getElementById('lhero').hidden=true;document.getElementById('lsteps').hidden=true}document.getElementById('lgo').addEventListener('click',function(){setTimeout(function(){var b=document.querySelector('#etg button');if(b)b.focus({preventScroll:true})},500)})})();</script>
+<h2 id="start">יוצרים את ההזמנה</h2>
 <p class="mute">דף אחד לכל השמחה: ההזמנה שלכם, המקום עם וייז וגוגל מפות, הוספה ליומן, אישורי הגעה, תזכורות לאורחים, קיר ברכות, חלוקת תהילים, מתנות, ואם רוצים גם שעון שסופר לאחור. שולחים לכל מוזמן קישור אישי בוואטסאפ, במייל או ב־SMS.</p><p class="mute" style="font-size:15px"><b>איך מתחילים:</b> עוברים בין הלשוניות: <b>פרטים</b> (סוג האירוע, שמות, תאריך וכתובת לדף), <b>עיצוב</b> (צבעים, תמונת ההזמנה, רקע ומוזיקה), <b>ההזמנה</b> (נוסח, מקום ומה להפעיל), ושומרים. אחר כך מוסיפים את ה<b>מוזמנים</b> ושולחים, וב<b>מעקב</b> רואים מי פתח ומי מגיע. בצד רואים בכל רגע איך הדף נראה.</p>
 
 <div class="grid">
