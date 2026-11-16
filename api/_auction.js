@@ -609,6 +609,20 @@ module.exports = async (req, res) => {
       const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', R = require('./_r2'), M = R.mediaPut('auction/' + s.id + '/p' + p.num + '-' + Date.now().toString(36) + '.' + ext);
       if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
     }
+    /* כתיבת הגדרות השלוחה (ext.ini) בימות ישירות מהאתר. מחליף את כל הקובץ הקיים */
+    if (a === 'ivrApply') {
+      const iv = (s.cfg || {}).ivr || {}, hd = iv.hold || {};
+      if (!iv.token || !iv.path) return json(res, 400, { error: 'ivr', message: 'צריך להזין קודם את הטוקן ואת מספר השלוחה, ולשמור' });
+      if (!iv.key) return json(res, 400, { error: 'key', message: 'חסר מפתח שלוחה, יש לשמור את הגדרות הטלפון' });
+      const lines = ['type=api', 'api_link=' + SITE() + '/api/pricing?c=_auctionivr', 'api_add_0=s=' + s.slug, 'api_add_1=k=' + iv.key];
+      if (hd.on) { lines.push('api_wait_answer_music_on_hold=yes', 'api_wait_answer_music_on_hold_continue_all_sends=yes'); if (hd.name) lines.push('api_wait_answer_music_on_hold_different=' + hd.name); }
+      const fd = new URLSearchParams({ token: iv.token, what: 'ivr2:/' + String(iv.path).replace(/^\/+|\/+$/g, '') + '/ext.ini', contents: lines.join('\n') });
+      try {
+        const r = await fetch('https://www.call2all.co.il/ym/api/UploadTextFile', { method: 'POST', body: fd, signal: AbortSignal.timeout(20000) }), t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+        if (!j || (j.responseStatus && j.responseStatus !== 'OK')) return json(res, 502, { error: 'yemot', message: 'ימות המשיח החזירה שגיאה: ' + String((j && (j.message || j.responseStatus)) || t).slice(0, 140) });
+      } catch (e) { return json(res, 502, { error: 'yemot', message: 'לא הצלחנו להגיע לימות המשיח: ' + String(e.message).slice(0, 100) }); }
+      return json(res, 200, { ok: true, lines });
+    }
     /* מוזיקת המתנה לשרת: מועלית באתר, ומשם לתיקיית השלוחה בימות (שם הקובץ נרשם אוטומטית ב-ext.ini) */
     if (a === 'holdUrl' || a === 'holdSet') {
       if (a === 'holdUrl') {
