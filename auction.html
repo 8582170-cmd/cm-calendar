@@ -75,6 +75,10 @@ iframe.pay{width:100%;border:0;min-height:430px}
 .cdb span{min-width:70px;background:#fff;border:1px solid var(--cream-line,#EADFC0);border-radius:12px;padding:8px 6px;display:flex;flex-direction:column;align-items:center}
 .cdb b{font:700 32px/1.1 'Secular One',Heebo,sans-serif;font-variant-numeric:tabular-nums}.cdb i{font-style:normal;font-size:13px;opacity:.75}
 @media(max-width:420px){.cdb span{min-width:60px}.cdb b{font-size:26px}}
+.wins{display:flex;flex-direction:column;gap:10px}
+.win{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line,#E4E7EF);border-radius:14px;padding:12px 14px}
+.win img{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#E4E7EF}
+.win .pn{font-weight:700}.win ul{list-style:none;margin:4px 0 0;padding:0}.win li{padding:2px 0}.win small{opacity:.7}
 .hero{width:100%;max-height:420px;object-fit:cover;display:block;background:#E4E7EF}
 .vid{max-width:900px;width:100%;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:16/9}.vid video,.vid iframe{width:100%;height:100%;border:0;display:block}
 .faq details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 16px}.faq summary{cursor:pointer;font-weight:700;padding:14px 0;min-height:44px}.faq details p{margin:0 0 14px;white-space:pre-line;color:#2B3349}
@@ -131,12 +135,22 @@ function cdRun(){clearInterval(CDT);var el=document.getElementById('cdb');if(!el
     var d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);
     el.innerHTML=[[d,'ימים'],[h,'שעות'],[m,'דקות'],[s,'שניות']].filter(function(x,i){return i>0||d>0}).map(function(x){return '<span><b>'+(x[0]<10&&x[1]!=='ימים'?'0':'')+x[0]+'</b><i>'+x[1]+'</i></span>'}).join('')};
   tick();CDT=setInterval(tick,1000)}
+/* רשימת המוצרים והזוכים */
+function winList(j){return '<div class="wins">'+j.products.map(function(p){return '<div class="win">'+(p.img?'<img src="'+esc(p.img)+'" alt="">':'')+'<div><div class="pn">'+p.num+' · '+esc(p.name)+'</div><ul>'+p.winners.map(function(w){return '<li>'+(p.draws>1?'<small>הגרלה '+w.round+': </small>':'')+'<b>'+esc(w.name)+'</b>'+(w.city?', '+esc(w.city):'')+' <small>· כרטיס '+w.serial+'</small></li>'}).join('')+'</ul></div></div>'}).join('')+'</div>'}
+function winView(){get({a:'winners',s:SLUG}).then(function(j){
+  if(j._st!==200){closed('רשימת הזוכים לא פורסמה');return}
+  document.title='הזוכים · '+j.title;
+  app.innerHTML='<header class="top"><div class="t"><div class="kick">המכירה הסינית של '+esc(j.title)+'</div><h1>הזוכים בהגרלות</h1><div class="sub">מזל טוב לכל הזוכים, ותודה לכל המשתתפים!</div></div>'+(j.logo?'<img class="logo" src="'+esc(j.logo)+'" alt="">':'')+'</header>'
+   +'<main class="wrap" style="max-width:820px;margin:0 auto;padding:18px 16px">'+(j.products.length?winList(j):'<p class="msg">ההגרלות עוד לא התקיימו. רשימת הזוכים תופיע כאן אחרי ההגרלה.</p>')
+   +'<p class="msg" style="text-align:center;margin-top:20px"><a href="?s='+SLUG+'" style="color:inherit">לדף המכירה</a></p></main>';
+}).catch(function(){closed('לא הצלחנו לטעון')})}
 function closed(t){app.innerHTML='<div class="cen"><h1 style="font-size:28px;margin-bottom:10px">'+esc(t)+'</h1><p class="msg">אם הגעתם מקישור, בדקו שהוא שלם.</p></div>'}
 if(!SLUG){closed('לא נמצאה מכירה');return}
 if(Q.get('rep'))return repView();
 if(Q.get('view')==='progress')return progView();
 if(Q.get('view')==='terms')return termsView();
 if(Q.get('view')==='reps')return repLogin();
+if(Q.get('view')==='winners')return winView();
 buyView();
 
 /* ===== דף הרכישה ===== */
@@ -176,6 +190,7 @@ function buyView(){
     h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-manage?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
     h+='</main>';
     app.innerHTML=h;cdRun();
+    if(!S.open&&c.winners)get({a:'winners',s:SLUG}).then(function(w){if(w._st!==200||!w.products.length)return;var m=document.querySelector('main')||app,sec=document.createElement('section');sec.className='sec';sec.innerHTML='<h2>הזוכים בהגרלות</h2>'+winList(w)+'<p class="msg"><a href="?s='+SLUG+'&view=winners" style="color:inherit">לדף הזוכים</a></p>';m.insertBefore(sec,m.firstChild)});
     drawPkgs();drawGrid();drawSum();
     app.addEventListener('input',function(e){if(e.target.classList.contains('repin')){typed=e.target.value.replace(/\D/g,'');[].forEach.call(document.querySelectorAll('.repin'),function(x){if(x!==e.target)x.value=typed})}
       if(e.target.dataset.q){var v=Math.max(0,Math.min(999,parseInt(e.target.value,10)||0));qty[e.target.dataset.q]=v;drawSum(true)}});

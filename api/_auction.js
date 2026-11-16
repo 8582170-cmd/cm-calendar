@@ -45,7 +45,7 @@ function isOpen(s) { if (!s || s.status !== 'open') return false; const c = s.cf
 /* ההגדרות עם ברירות מחדל */
 function cfgOf(s) {
   const c = s.cfg || {};
-  return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', drawTime: c.drawTime || '', cd: { open: !(c.cd && c.cd.open === false), close: !(c.cd && c.cd.close === false), draw: !(c.cd && c.cd.draw === false) }, openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
+  return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', drawTime: c.drawTime || '', winners: c.winners !== false, cd: { open: !(c.cd && c.cd.open === false), close: !(c.cd && c.cd.close === false), draw: !(c.cd && c.cd.draw === false) }, openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
     repWeb: ['start', 'end', 'both', 'off'].includes(c.repWeb) ? c.repWeb : 'end', repPhone: ['start', 'pay', 'both', 'off'].includes(c.repPhone) ? c.repPhone : 'pay',
     repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
     allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
@@ -209,6 +209,7 @@ function cleanCfg(old, b) {
   if (b.termsAgree != null) c.termsAgree = !!b.termsAgree;
   if (Array.isArray(b.faq)) c.faq = b.faq.map(x => ({ q: clean(x && x.q, 300), a: clean(x && x.a, 3000) })).filter(x => x.q && x.a).slice(0, 60);
   iso('openAt'); iso('closeAt'); iso('drawTime');
+  if (b.winners != null) c.winners = !!b.winners;
   if (b.cd && typeof b.cd === 'object') c.cd = { open: b.cd.open !== false, close: b.cd.close !== false, draw: b.cd.draw !== false };
   if (b.goal != null) c.goal = Math.max(0, Math.min(1e9, +b.goal || 0));
   ['repWeb', 'repPhone', 'priceMode'].forEach(k => { if (b[k] != null) c[k] = clean(b[k], 10); });
@@ -354,7 +355,7 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s || s.status === 'draft' && !b.preview) return json(res, 404, { error: 'no sale' });
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
-      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on },
+      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on },
         open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
@@ -402,6 +403,23 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' });
       const id = String(b.id || ''); if (!/^au[0-9a-f]{22}$/.test(id)) return json(res, 400, { error: 'id' });
       try { const r = await kesherPaid(s, id, b.tn); return json(res, r.status, r); } catch (e) { console.error('kcheck', e.message); return json(res, 502, { error: 'kesher', message: 'לא הצלחנו לבדוק את התשלום מול קשר. נסו שוב בעוד רגע' }); }
+    }
+    /* רשימת הזוכים לציבור: אות ראשונה של השם הפרטי, שם משפחה ועיר. בלי טלפון ומייל */
+    if (a === 'winners') {
+      const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' });
+      const c = cfgOf(s); if (!c.winners) return json(res, 404, { error: 'off' });
+      const W = await db('auction_draw?sale_id=eq.' + s.id + "&kind=eq.win&select=product_id,round,serial,customer_id,created_at&order=round.asc&limit=5000").catch(() => []) || [];
+      if (!W.length) return json(res, 200, { title: c.title, logo: c.logo, products: [] });
+      const ids = [...new Set(W.map(w => w.customer_id).filter(Boolean))];
+      const CU = ids.length ? await db('auction_customer?id=in.(' + ids.join(',') + ')&select=id,name,city,phone') : [];
+      const cu = new Map((CU || []).map(x => [x.id, x]));
+      const short = x => { const n = String((x && x.name) || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+        if (n.length >= 2) return n[0].charAt(0) + '. ' + n.slice(1).join(' ');
+        if (n.length === 1) return n[0];
+        const ph = String((x && x.phone) || ''); return ph ? 'רוכש בטלפון (מסתיים ב־' + ph.slice(-3) + ')' : 'רוכש'; };
+      const by = {}; W.forEach(w => { (by[w.product_id] = by[w.product_id] || []).push({ round: w.round, serial: w.serial, name: short(cu.get(w.customer_id)), city: (cu.get(w.customer_id) || {}).city || '' }); });
+      const products = s.products.filter(p => by[p.id]).sort((x, y) => x.num - y.num).map(p => ({ num: p.num, name: p.name, img: p.img || '', draws: +p.draws || 1, winners: by[p.id] }));
+      return json(res, 200, { title: c.title, logo: c.logo, last: W.reduce((m, w) => w.created_at > m ? w.created_at : m, ''), products });
     }
     if (a === 'progress') {
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=20');
