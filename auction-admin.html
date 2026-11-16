@@ -386,13 +386,18 @@ function draw(){box.innerHTML='<h1>ביצוע ההגרלות</h1><p>טוען…<
   if(cur){var W=by(cur.id,'win'),RS=by(cur.id,'reserve'),d=cur.draws||1,rf=(cur.cfg||{}).reserves||0;
     h+='<div class="drawbox" id="db"><span class="hint">מוצר '+cur.num+'</span><h2 style="font-family:Frank Ruhl Libre,serif;font-size:34px">'+esc(cur.name)+'</h2><span>'+(j.counts[cur.id]||0)+' כרטיסים משתתפים'+(d>1?' · '+d+' הגרלות':'')+'</span>'
       +W.map(function(w){return winBox(w,d>1?'זוכה בהגרלה '+w.round+' מתוך '+d:'הכרטיס הזוכה')}).join('')
-      +RS.map(function(w){return winBox(w,'זוכה חלופי '+w.round)}).join('')
+      +RS.map(function(w){var ap=(j.altPub||{})[w.id];return winBox(w,'זוכה חלופי '+w.round)
+        +'<div class="note" style="margin-top:-4px">'+(ap?'<b>אושר ומפורסם ברשימת הזוכים</b> במקום הזוכה'+(d>1?' בהגרלה '+ap.r:'')+' <small>('+esc(ap.by||'')+')</small> <button type="button" class="btn" data-alt="'+w.id+'" data-r="0">ביטול הפרסום</button>'
+          :'לא מפורסם. אם הזוכה לא קיבל את הפרס: '+(d>1?'<select data-altr="'+w.id+'" aria-label="במקום איזו הגרלה">'+W.map(function(x){return '<option value="'+x.round+'">במקום הזוכה בהגרלה '+x.round+'</option>'}).join('')+'</select> ':'')+'<button type="button" class="btn dark" data-alt="'+w.id+'">אישור ופרסום במקום הזוכה</button>')+'</div>'}).join('')
       +(W.length<d?'<button type="button" class="drawgo" id="dg"'+(j.open?' disabled':'')+'>3 ערבובים והגרלה'+(d>1?' '+(W.length+1)+' מתוך '+d:'')+'</button>':'')
       +(W.length>=d&&(!rf||RS.length<rf)?'<button type="button" class="btn" id="dr">הגרלת זוכה חלופי</button>':'')
       +'<p class="hint" style="max-width:560px">לכל כרטיס ששולם יש מספר סידורי. לפני כל הגרלה רשימת הכרטיסים של המוצר מעורבבת שלוש פעמים, ורק אז מוגרל כרטיס אחד, בשרת, עם מחולל אקראיות קריפטוגרפי. במוצר עם כמה הגרלות כל הגרלה נעשית בנפרד. כל תוצאה נשמרת עם טביעת אצבע של רשימת הכרטיסים, ואי אפשר למחוק אותה.</p>'+(W.length>=d?'<p class="hint" style="max-width:560px">זוכה חלופי מקבל את הפרס רק אם הזוכה לא נמצא, מוותר או לא עומד בתנאים, לפי הסדר: חלופי 1, אחריו חלופי 2 וכן הלאה.</p>':'')+'</div>'}
   h+='</div><div id="proto" style="display:none"></div>';
   box.innerHTML=h;
-  box.onclick=function(e){var b=e.target.closest('[data-p]');if(b){SEL=+b.dataset.p;draw()}};
+  box.onclick=function(e){var b=e.target.closest('[data-p]');if(b){SEL=+b.dataset.p;draw();return}
+    var a=e.target.closest('[data-alt]');if(a){var sel=box.querySelector('[data-altr="'+a.dataset.alt+'"]'),r=a.dataset.r!=null?0:(sel?+sel.value:1);
+      if(r&&!confirm('לפרסם את הזוכה החלופי ברשימת הזוכים, במקום הזוכה המקורי? הזוכה המקורי יוסר מהרשימה הציבורית.'))return;
+      call({a:'altPub',id:+a.dataset.alt,round:r}).then(function(x){if(x.altPub){flash(r?'פורסם':'הפרסום בוטל');draw()}else flash(x.message||'לא נשמר',1)})}};
   if($('cl'))$('cl').onclick=function(){if(confirm('לסגור את המכירה עכשיו?'))call({a:'close'}).then(function(){loadSale().then(function(){draw()})})};
   if($('dg'))$('dg').onclick=function(){run('win')};
   if($('dr'))$('dr').onclick=function(){run('reserve')};

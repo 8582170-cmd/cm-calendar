@@ -408,7 +408,11 @@ module.exports = async (req, res) => {
     if (a === 'winners') {
       const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' });
       const c = cfgOf(s); if (!c.winners) return json(res, 404, { error: 'off' });
-      const W = await db('auction_draw?sale_id=eq.' + s.id + "&kind=eq.win&select=product_id,round,serial,customer_id,created_at&order=round.asc&limit=5000").catch(() => []) || [];
+      const ap = (s.cfg || {}).altPub || {};
+      const W0 = await db('auction_draw?sale_id=eq.' + s.id + "&select=id,kind,product_id,round,serial,customer_id,created_at&order=round.asc&limit=5000").catch(() => []) || [];
+      /* זוכה חלופי שאושר מחליף את הזוכה בהגרלה שנבחרה. חלופי שלא אושר לא מתפרסם */
+      const alt = {}; W0.filter(w => w.kind === 'reserve' && ap[w.id]).forEach(w => { alt[w.product_id + ':' + ap[w.id].r] = w; });
+      const W = W0.filter(w => w.kind === 'win').map(w => { const x = alt[w.product_id + ':' + w.round]; return x ? { ...x, round: w.round, alt: true } : w; });
       if (!W.length) return json(res, 200, { title: c.title, logo: c.logo, products: [] });
       const ids = [...new Set(W.map(w => w.customer_id).filter(Boolean))];
       const CU = ids.length ? await db('auction_customer?id=in.(' + ids.join(',') + ')&select=id,name,city,phone') : [];
@@ -417,7 +421,7 @@ module.exports = async (req, res) => {
         if (n.length >= 2) return n[0].charAt(0) + '. ' + n.slice(1).join(' ');
         if (n.length === 1) return n[0];
         const ph = String((x && x.phone) || ''); return ph ? 'רוכש בטלפון (מסתיים ב־' + ph.slice(-3) + ')' : 'רוכש'; };
-      const by = {}; W.forEach(w => { (by[w.product_id] = by[w.product_id] || []).push({ round: w.round, serial: w.serial, name: short(cu.get(w.customer_id)), city: (cu.get(w.customer_id) || {}).city || '' }); });
+      const by = {}; W.forEach(w => { (by[w.product_id] = by[w.product_id] || []).push({ round: w.round, serial: w.serial, alt: !!w.alt, name: short(cu.get(w.customer_id)), city: (cu.get(w.customer_id) || {}).city || '' }); });
       const products = s.products.filter(p => by[p.id]).sort((x, y) => x.num - y.num).map(p => ({ num: p.num, name: p.name, img: p.img || '', draws: +p.draws || 1, winners: by[p.id] }));
       return json(res, 200, { title: c.title, logo: c.logo, last: W.reduce((m, w) => w.created_at > m ? w.created_at : m, ''), products });
     }
@@ -580,7 +584,18 @@ module.exports = async (req, res) => {
     if (a === 'draws') {
       const W = await db('auction_draw?sale_id=eq.' + s.id + '&select=*&order=id.asc&limit=5000') || [];
       const cnt = await all('auction_ticket?sale_id=eq.' + s.id + '&void=is.false&select=product_id'), by = {}; cnt.forEach(t => { by[t.product_id] = (by[t.product_id] || 0) + 1; });
-      return json(res, 200, { open: isOpen(s), draws: await withWho(s, W), counts: by });
+      return json(res, 200, { open: isOpen(s), draws: await withWho(s, W), counts: by, altPub: (s.cfg || {}).altPub || {} });
+    }
+    /* זוכה חלופי מתפרסם ברשימת הזוכים רק אחרי אישור מפורש של המנהל, ובמקום הזוכה בהגרלה שבחר */
+    if (a === 'altPub') {
+      const id = +b.id, round = Math.max(0, +b.round || 0);
+      const D = await db('auction_draw?sale_id=eq.' + s.id + '&id=eq.' + id + '&kind=eq.reserve&select=id,product_id&limit=1'), d = D && D[0];
+      if (!d) return json(res, 404, { error: 'no' });
+      const p = s.products.find(x => x.id === d.product_id); if (round && (!p || round > (+p.draws || 1))) return json(res, 400, { error: 'round' });
+      const ap = { ...((s.cfg || {}).altPub || {}) };
+      if (round) { Object.keys(ap).forEach(k => { if (ap[k].p === d.product_id && ap[k].r === round) delete ap[k]; }); ap[id] = { p: d.product_id, r: round, by: u.email, at: new Date().toISOString() }; } else delete ap[id];
+      await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, altPub: ap }, updated_at: new Date().toISOString() }) }); drop(s.slug);
+      return json(res, 200, { altPub: ap });
     }
     if (a === 'mediaUrl') {
       /* העלאת תמונה / לוגו / סרטון / תמונת מוצר ישירות מהדפדפן לאחסון הציבורי של האתר */
