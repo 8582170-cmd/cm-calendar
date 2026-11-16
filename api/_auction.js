@@ -153,7 +153,7 @@ const notifyList = s => (Array.isArray((s.cfg || {}).notify) ? s.cfg.notify : []
 async function notify(s, subject, body) {
   const to = notifyList(s); if (!to.length) return;
   const { sendMail, frame } = require('./_mail'), c = cfgOf(s);
-  const html = frame({ title: subject, body: body + '<p style="color:#666;font-size:13px">המכירה הסינית של ' + require('./_mail').escH(c.title) + '</p>', button: 'לניהול המכירה', url: SITE() + '/auction-admin?s=' + s.slug });
+  const html = frame({ title: subject, body: body + '<p style="color:#666;font-size:13px">המכירה הסינית של ' + require('./_mail').escH(c.title) + '</p>', button: 'לניהול המכירה', url: SITE() + '/auction-manage?s=' + s.slug });
   for (const m of to) await sendMail({ to: m, subject: subject + ' · ' + c.title, html }, 'auction').catch(e => console.error('notify', m, e.message));
 }
 async function notifyBySale(saleId, subject, body) { const S = await db('auction_sale?id=eq.' + saleId + '&select=slug&limit=1'); const s = S && S[0] && await load(S[0].slug); if (s) await notify(s, subject, body); }
@@ -187,7 +187,7 @@ const managersOf = s => (Array.isArray((s.cfg || {}).managers) ? s.cfg.managers 
 const canManage = (s, u) => !!u && (s.user_id === u.id || isAdmin(u) || managersOf(s).includes(String(u.email || '').toLowerCase()));
 async function inviteManagers(s, list, by) {
   const { sendMail, frame, escH } = require('./_mail'), c = cfgOf(s);
-  for (const m of list) await sendMail({ to: m, subject: 'הוזמנתם לנהל את המכירה הסינית של ' + c.title, html: frame({ title: 'ניהול המכירה הסינית', body: '<p>' + escH(by || 'מנהל האתר') + ' הוסיף אתכם כמנהלים של המכירה הסינית <b>' + escH(c.title) + '</b>.</p><p>הכניסה לניהול היא עם כתובת המייל הזאת (' + escH(m) + '): בכניסה הראשונה שולחים לכם קישור למייל, ואפשר גם לקבוע סיסמה.</p>', button: 'לניהול המכירה', url: SITE() + '/auction-admin?s=' + s.slug }) }, 'auction').catch(e => console.error('invite', m, e.message));
+  for (const m of list) await sendMail({ to: m, subject: 'הוזמנתם לנהל את המכירה הסינית של ' + c.title, html: frame({ title: 'ניהול המכירה הסינית', body: '<p>' + escH(by || 'מנהל האתר') + ' הוסיף אתכם כמנהלים של המכירה הסינית <b>' + escH(c.title) + '</b>.</p><p>הכניסה לניהול היא עם כתובת המייל הזאת (' + escH(m) + '): בכניסה הראשונה שולחים לכם קישור למייל, ואפשר גם לקבוע סיסמה.</p>', button: 'לניהול המכירה', url: SITE() + '/auction-manage?s=' + s.slug }) }, 'auction').catch(e => console.error('invite', m, e.message));
 }
 async function mineOr403(req, res, b) {
   const u = await getUser(req); if (!u) { json(res, 401, { error: 'login' }); return null; }

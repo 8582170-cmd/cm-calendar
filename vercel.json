@@ -105,7 +105,8 @@
    "source": "/t/:slug",
    "destination": "/t.html"
   },
-  {
+  { "source": "/auction-manage", "destination": "/auction-admin.html" },
+    {
    "source": "/auction/:slug",
    "destination": "/auction.html"
   }

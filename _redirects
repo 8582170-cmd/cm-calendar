@@ -3,3 +3,4 @@
 /online.html /online/ 301
 /t/* /t 200
 /auction/* /auction 200
+/auction-manage /auction-admin 200
