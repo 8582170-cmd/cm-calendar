@@ -113,10 +113,12 @@ async function markPaid(id, extra) {
     for (let i = 0; i < T.length; i += 500) await db('auction_ticket', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(T.slice(i, i + 500)) });
   }
   mailBuyer(o).catch(e => console.error('auction mail', e.message));
+  notifyPaid(o).catch(e => console.error('auction notify', e.message));
   return { ok: true, order: o };
 }
 /* עדכון מנדרים פלוס (מנותב מ-nedarim-callback.js כש-Param1 מתחיל ב-au) */
-async function nedPaid(p) {
+async function nedPaid(p, ip) {
+  if (ip) p = { ...p, _ip: ip };
   const id = String(p.Param1 || p.param1 || ''); if (!/^au[0-9a-f]{22}$/.test(id)) return { skipped: 'id' };
   const L = await db('auction_order?id=eq.' + id + '&select=id,amount,status,sale_id&limit=1'); const o = L && L[0]; if (!o) return { error: 'no order' };
   if (o.status === 'paid') return { already: true };
@@ -124,6 +126,7 @@ async function nedPaid(p) {
   const txn = String(p.TransactionId || p.TransactionID || p.Id || p.ID || '');
   if (ok && (!paid || paid + 0.001 >= +o.amount)) return markPaid(id, { txn, callback: p });
   await db('auction_order?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: ok ? 'underpaid' : 'failed', txn, callback: p }) });
+  if (ok) notifyBySale(o.sale_id, 'תשלום חלקי במכירה', '<p>התקבל תשלום חלקי (' + (+paid) + ' ₪ מתוך ' + (+o.amount) + ' ₪) בהזמנה ' + id.slice(2, 10) + '. ההזמנה לא סומנה כשולמה.</p>').catch(() => {});
   return { ok: true, failed: true };
 }
 /* המספרים הסידוריים של הכרטיסים בהזמנה, לפי מוצר */
@@ -142,6 +145,39 @@ async function mailBuyer(o) {
   await sendMail({ to: o.email, subject: 'הכרטיסים שלכם במכירה הסינית של ' + c.title, html: frame({ title: 'הכרטיסים שלכם', body, button: 'לדף המכירה', url: SITE() + '/auction?s=' + s.slug }) }, 'auction');
 }
 
+/* ===== התראות למנהלי המכירה (עד 4 כתובות בהגדרות) ===== */
+const notifyList = s => (Array.isArray((s.cfg || {}).notify) ? s.cfg.notify : []).map(mailN).filter(Boolean).slice(0, 4);
+async function notify(s, subject, body) {
+  const to = notifyList(s); if (!to.length) return;
+  const { sendMail, frame } = require('./_mail'), c = cfgOf(s);
+  const html = frame({ title: subject, body: body + '<p style="color:#666;font-size:13px">המכירה הסינית של ' + require('./_mail').escH(c.title) + '</p>', button: 'לניהול המכירה', url: SITE() + '/auction-admin?s=' + s.slug });
+  for (const m of to) await sendMail({ to: m, subject: subject + ' · ' + c.title, html }, 'auction').catch(e => console.error('notify', m, e.message));
+}
+async function notifyBySale(saleId, subject, body) { const S = await db('auction_sale?id=eq.' + saleId + '&select=slug&limit=1'); const s = S && S[0] && await load(S[0].slug); if (s) await notify(s, subject, body); }
+async function notifyPaid(o) {
+  const S = await db('auction_sale?id=eq.' + o.sale_id + '&select=slug&limit=1'); const s = S && S[0] && await load(S[0].slug); if (!s || !notifyList(s).length) return;
+  const { escH } = require('./_mail'), n = (o.lines || []).reduce((t, L) => t + (+L.n || 0), 0);
+  const rep = o.rep_id ? (await db('auction_rep?id=eq.' + o.rep_id + '&select=name,code&limit=1').catch(() => []))[0] : null;
+  const pk = o.pkg_id ? s.pkgs.find(k => k.id === o.pkg_id) : null;
+  const lines = (o.lines || []).map(L => { const p = s.products.find(x => x.id === +L.p) || {}; return L.n + ' × ' + p.num + ' ' + escH(p.name || ''); }).join('<br>');
+  await notify(s, 'רכישה חדשה: ' + (+o.amount) + ' ₪', '<p><b>' + escH(o.name || o.phone || 'רוכש') + '</b> · ' + ({ web: 'באתר', phone: 'בטלפון', manual: 'ידנית' }[o.channel] || '') + '</p><p>סכום: <b>' + (+o.amount) + ' ₪</b> · ' + n + ' כרטיסים' + (pk ? ' · חבילה: ' + escH(pk.name) : '') + (rep ? ' · מגייס: ' + escH(rep.name || rep.code) : '') + '</p><p style="font-size:14px">' + lines + '</p>' + (o.phone ? '<p>טלפון: ' + escH(o.phone) + '</p>' : '') + (o.email ? '<p>מייל: ' + escH(o.email) + '</p>' : ''));
+}
+
+/* קשר / קהילות: בדיקת עסקה שחזרה מדף התשלום, וסימון ההזמנה כשולמה */
+async function kesherPaid(s, id, num) {
+  const L = await db('auction_order?id=eq.' + enc(id) + '&sale_id=eq.' + s.id + '&select=id,amount,status,callback&limit=1'), o = L && L[0];
+  if (!o) return { status: 404, error: 'no order' };
+  if (o.status === 'paid') return { status: 200, already: true };
+  num = String(num || '').replace(/\D/g, ''); if (!num) return { status: 400, error: 'num', message: 'חסר מספר עסקה' };
+  const used = await db('auction_order?txn=eq.K-' + num + '&select=id&limit=1').catch(() => []);
+  if (used && used[0] && used[0].id !== o.id) return { status: 409, error: 'used', message: 'העסקה הזאת כבר שויכה להזמנה אחרת' };
+  const r = await PAY.kesherCheck(s, num);
+  if (!r.ok) return { status: 402, error: 'notpaid', message: r.msg || 'העסקה לא אושרה בקשר' };
+  if (r.amount + 0.01 < +o.amount) return { status: 402, error: 'amount', message: 'הסכום בעסקה (' + r.amount + ' ₪) קטן מסכום ההזמנה' };
+  const m = await markPaid(o.id, { txn: 'K-' + r.num, callback: { ...(o.callback || {}), kesher: r.raw } });
+  return { status: 200, ok: true, ...m };
+}
+
 /* ===== ניהול ===== */
 async function mineOr403(req, res, b) {
   const u = await getUser(req); if (!u) { json(res, 401, { error: 'login' }); return null; }
@@ -152,6 +188,8 @@ async function mineOr403(req, res, b) {
 /* ההגדרות כפי שמנהל המכירה רואה אותן (בלי הטוקן של ימות) */
 function mgrView(s, S) {
   const c = { ...(s.cfg || {}) }, iv = { ...(c.ivr || {}) }; const hasTok = !!iv.token; delete iv.token; c.ivr = { ...iv, hasToken: hasTok };
+  if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
+  if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
     ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), site: S };
 }
@@ -165,6 +203,17 @@ function cleanCfg(old, b) {
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
     if (b.pay.mosad != null) p.mosad = String(b.pay.mosad).replace(/\D/g, '').slice(0, 10); if (b.pay.apiValid != null) p.apiValid = clean(b.pay.apiValid, 60); if (b.pay.groupe != null) p.groupe = clean(b.pay.groupe, 60); c.pay = p; }
+  if (Array.isArray(b.notify)) c.notify = [...new Set(b.notify.map(mailN).filter(Boolean))].slice(0, 4);
+  if (b.pay && b.pay.kesher && typeof b.pay.kesher === 'object') { const k = { ...((c.pay || {}).kesher || {}) }, K = b.pay.kesher;
+    if (K.pageUrl != null) k.pageUrl = /^https:\/\/[^\s"<>]+$/.test(String(K.pageUrl).trim()) ? String(K.pageUrl).trim().slice(0, 400) : '';
+    if (K.pageId != null) k.pageId = String(K.pageId).replace(/[^\w-]/g, '').slice(0, 40); if (K.userName != null) k.userName = clean(K.userName, 80);
+    if (K.password) k.password = String(K.password).trim().slice(0, 200); if (K.clearPassword) delete k.password;
+    c.pay = { ...(c.pay || {}), kesher: k }; }
+  if (b.ivr && b.ivr.cc && typeof b.ivr.cc === 'object') { const v0 = { ...(c.ivr || {}) }, cc = { ...(v0.cc || {}) }, X = b.ivr.cc;
+    if (X.on != null) cc.on = !!X.on; ['type', 'register', 'user', 'terminal', 'okCodes'].forEach(k => { if (X[k] != null) cc[k] = String(X[k]).replace(/[,&=\s]/g, k === 'okCodes' ? '' : '').replace(/[^\w.:;|-]/g, k === 'okCodes' ? ',' : '').slice(0, 60); });
+    if (X.okCodes != null) cc.okCodes = String(X.okCodes).split(/[,\s]+/).map(x => x.replace(/[^\w-]/g, '')).filter(Boolean).slice(0, 10).join(',');
+    if (X.password) cc.password = String(X.password).trim().replace(/[,&=]/g, '').slice(0, 120); if (X.clearPassword) delete cc.password;
+    c.ivr = { ...v0, cc }; delete b.ivr.cc; }
   if (b.ivr && typeof b.ivr === 'object') { const v = { ...(c.ivr || {}) }; if (!v.key) v.key = crypto.randomBytes(8).toString('hex');
     if (b.ivr.path != null) v.path = String(b.ivr.path).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (b.ivr.payPath != null) v.payPath = String(b.ivr.payPath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
     if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
@@ -260,7 +309,9 @@ async function doDraw(s, u, b) {
   const row = { sale_id: s.id, product_id: p.id, round: kind === 'win' ? wins.length + 1 : res.length + 1, kind, ticket_id: t.id, serial: t.serial, customer_id: t.customer_id, pool: d.pool, pool_hash: d.hash, shuffles: d.shuffles, by_email: u.email };
   try { await db('auction_draw', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) }); }
   catch (e) { if (/duplicate|23505/.test(e.message)) return { status: 409, error: 'race', message: 'ההגרלה הזאת כבר בוצעה עכשיו ממקום אחר. רעננו את הדף' }; throw e; }
-  return { status: 200, draw: await withWho(s, [row]).then(L => L[0]) };
+  const W1 = await withWho(s, [row]).then(L => L[0]);
+  notify(s, 'הגרלה בוצעה: ' + p.num + ' ' + p.name, '<p>' + (kind === 'win' ? 'זוכה בהגרלה ' + row.round + ' מתוך ' + draws : 'זוכה מילואים ' + row.round) + ': כרטיס <b>' + row.serial + '</b> · ' + require('./_mail').escH(W1.name || W1.phone || '') + (W1.city ? ' · ' + require('./_mail').escH(W1.city) : '') + '</p><p style="font-size:13px;color:#666">' + d.pool + ' כרטיסים השתתפו · 3 ערבובים · בוצע על ידי ' + u.email + '</p>').catch(() => {});
+  return { status: 200, draw: W1 };
 }
 async function withWho(s, rows) {
   const cids = [...new Set(rows.map(r => r.customer_id).filter(Boolean))], tids = rows.map(r => r.ticket_id);
@@ -282,7 +333,7 @@ module.exports = async (req, res) => {
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
       return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, progress: c.progress.on },
-        open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0 });
+        open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '' });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
     if (a === 'checkout') {
@@ -292,7 +343,9 @@ module.exports = async (req, res) => {
       if (!clean(b.name, 80) || !(phoneN(b.phone) || mailN(b.email))) return json(res, 400, { error: 'details', message: 'צריך שם, וטלפון או מייל' });
       const S = await site(); if (!PAY.provs(s, S).length) return json(res, 409, { error: 'pay', message: 'התשלום באתר עוד לא הוגדר במכירה הזאת' });
       const r = await makeOrder(s, b, 'web', reqMeta(req)); if (r.error) return json(res, 400, r);
-      const tx = PAY.webTx(s, r.order, S, 'מכירה סינית: ' + cfgOf(s).title);
+      let tx = null; try { tx = await PAY.webTx(s, r.order, S, 'מכירה סינית: ' + cfgOf(s).title); }
+      catch (e) { console.error('auction pay', e.message); return json(res, 502, { error: 'pay', message: 'לא הצלחנו לפתוח את דף התשלום: ' + String(e.message).slice(0, 120) }); }
+      if (!tx) return json(res, 409, { error: 'pay', message: 'התשלום באתר עוד לא הוגדר במכירה הזאת' });
       return json(res, 200, { id: r.order.id, amount: r.order.amount, count: r.price.count, ...tx });
     }
     if (a === 'status') {
@@ -300,6 +353,12 @@ module.exports = async (req, res) => {
       const L = await db('auction_order?id=eq.' + id + '&select=id,sale_id,status,amount&limit=1'); const o = L && L[0]; if (!o) return json(res, 404, { error: 'no order' });
       const S2 = await db('auction_sale?id=eq.' + o.sale_id + '&select=slug&limit=1'), s = S2 && S2[0] && await load(S2[0].slug);
       return json(res, 200, { status: o.status, amount: +o.amount, tickets: o.status === 'paid' && s ? await ticketsOf(o, s) : [] });
+    }
+    if (a === 'kcheck') {
+      res.setHeader('Cache-Control', 'private, no-store');
+      const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' });
+      const id = String(b.id || ''); if (!/^au[0-9a-f]{22}$/.test(id)) return json(res, 400, { error: 'id' });
+      try { const r = await kesherPaid(s, id, b.tn); return json(res, r.status, r); } catch (e) { console.error('kcheck', e.message); return json(res, 502, { error: 'kesher', message: 'לא הצלחנו לבדוק את התשלום מול קשר. נסו שוב בעוד רגע' }); }
     }
     if (a === 'progress') {
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=20');
@@ -326,7 +385,9 @@ module.exports = async (req, res) => {
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
       if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilot: !!b.set.kehilot, note: clean(b.set.note, 1000) }); }
-      return json(res, 200, { site: await site(), kehilotReady: PAY.kehilotReady(), siteNed: !!PAY.siteNed() });
+      const R = await db('auction_order?txn=not.is.null&select=callback&order=paid_at.desc.nullslast&limit=300').catch(() => []);
+      const ips = [...new Set((R || []).map(o => o.callback && o.callback._ip).filter(Boolean))];
+      return json(res, 200, { site: await site(), siteNed: !!PAY.siteNed(), ips, ipsSet: env('NEDARIM_CALLBACK_IPS') });
     }
     if (a === 'mine') {
       const u = await getUser(req); if (!u) return json(res, 401, { error: 'login' });
@@ -352,6 +413,7 @@ module.exports = async (req, res) => {
     if (a === 'open' || a === 'close') {
       if (a === 'open') { const S = await site(); if (!PAY.provs(s, S).length && !b.force) return json(res, 409, { error: 'pay', message: 'לפני הפתיחה צריך להגדיר סליקה (מספר מוסד וקוד אימות של נדרים פלוס)' }); if (!s.products.some(p => p.active !== false)) return json(res, 409, { error: 'products', message: 'אין מוצרים במכירה' }); }
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: a === 'open' ? 'open' : 'closed', updated_at: new Date().toISOString() }) }); drop(s.slug);
+      notify(s, a === 'open' ? 'המכירה נפתחה' : 'המכירה נסגרה', '<p>' + (a === 'open' ? 'המכירה נפתחה לרכישה' : 'המכירה נסגרה. אי אפשר לרכוש, ורשימת הכרטיסים נעולה להגרלה') + ' (על ידי ' + u.email + ').</p>').catch(() => {});
       return json(res, 200, { status: a === 'open' ? 'open' : 'closed' });
     }
     if (a === 'products') { const errs = await saveList('auction_product', s, b.list, mkProduct); return json(res, 200, { errors: errs, products: (await load(s.slug, true)).products }); }
@@ -385,11 +447,13 @@ module.exports = async (req, res) => {
       const id = String(b.id || ''); if (!/^au[0-9a-f]{22}$/.test(id)) return json(res, 400, { error: 'id' });
       const L = await db('auction_order?id=eq.' + id + '&sale_id=eq.' + s.id + '&select=*&limit=1'), o = L && L[0]; if (!o) return json(res, 404, { error: 'no' });
       if (b.do === 'paid') { if (o.status === 'paid') return json(res, 409, { error: 'already' }); const r = await markPaid(id, { txn: 'manual:' + clean(b.note, 80), callback: { manual: true, by: u.email, note: clean(b.note, 300) } }); drop(s.slug); return json(res, 200, r); }
+      if (b.do === 'kcheck') { try { const r = await kesherPaid(s, id, b.tn); return json(res, r.status, r); } catch (e) { return json(res, 502, { error: 'kesher', message: String(e.message).slice(0, 160) }); } }
       if (b.do === 'refund') { if (o.status !== 'paid') return json(res, 409, { error: 'not paid' });
         const D = await db('auction_draw?sale_id=eq.' + s.id + '&select=ticket_id&limit=5000'), T = await db('auction_ticket?order_id=eq.' + id + '&select=id&limit=5000');
         const won = new Set((D || []).map(d => d.ticket_id)); if ((T || []).some(t => won.has(t.id))) return json(res, 409, { error: 'won', message: 'אחד הכרטיסים בהזמנה כבר זכה בהגרלה' });
         await db('auction_ticket?order_id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ void: true }) });
         await db('auction_order?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'refunded', callback: { ...(o.callback || {}), refund: { by: u.email, at: new Date().toISOString(), note: clean(b.note, 300) } } }) });
+        notify(s, 'הזמנה בוטלה', '<p>ההזמנה ' + id.slice(2, 10) + ' (' + require('./_mail').escH(o.name || o.phone || '') + ', ' + (+o.amount) + ' ₪) בוטלה על ידי ' + u.email + '. הכרטיסים הוצאו מההגרלה.</p>').catch(() => {});
         return json(res, 200, { ok: true }); }
       const tk = o.status === 'paid' ? await ticketsOf(o, s) : []; delete o.ua; return json(res, 200, { order: o, tickets: tk });
     }
@@ -444,4 +508,4 @@ async function ymUpload(token, path, buf) {
   const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
   if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 80));
 }
-module.exports.nedPaid = nedPaid; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;
+module.exports.nedPaid = nedPaid; module.exports.notify = notify; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;

@@ -140,9 +140,13 @@ create unique index if not exists auction_draw_once on public.auction_draw(produ
 
 -- הקצאת מספרים סידוריים לכרטיסים, בלי כפילויות גם כשכמה רכישות מגיעות יחד. מחזיר את המספר הראשון
 create or replace function public.auction_serials(p_sale bigint, p_n int) returns int
-language sql as $$
+language sql set search_path = public as $$
   update public.auction_sale set next_serial = next_serial + p_n where id = p_sale returning next_serial - p_n;
 $$;
+
+-- רק השרת יכול להקצות מספרים (לא גולשים דרך ה-API הציבורי)
+revoke execute on function public.auction_serials(bigint, int) from public, anon, authenticated;
+grant execute on function public.auction_serials(bigint, int) to service_role;
 
 -- הטבלאות נגישות רק לשרת (service role)
 alter table public.auction_sale enable row level security;

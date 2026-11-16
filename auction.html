@@ -122,10 +122,11 @@ function buyView(){
     if(S.cfg.color)document.documentElement.style.setProperty('--navy',S.cfg.color);
     try{var sv=JSON.parse(localStorage.getItem('auction-buyer')||'{}');S._buyer=sv}catch(e){S._buyer={}}
     render();
+    if(Q.get('kp'))kesherBack();
   }).catch(function(){closed('לא הצלחנו לטעון את המכירה. נסו לרענן.')});
   function repField(id){return '<label class="f" for="'+id+'">קוד נציג'+(S.cfg.repSkip?' (לא חובה)':'')+'<input id="'+id+'" class="repin" inputmode="numeric" maxlength="8" value="'+esc(typed)+'" placeholder="למשל 2417"><small>אם נציג או מגייס נתן לכם קוד, הקלידו אותו כאן והרכישה תירשם על שמו</small></label>'}
   function render(){
-    var c=S.cfg,rw=c.repWeb,h='';
+    var c=S.cfg,rw=c.repWeb,h='';KH=S.payVia==='kehilot';
     h+='<header class="top"><div class="t"><div class="kick">מכירה סינית</div><h1>'+esc(c.title)+'</h1>'+(c.sub?'<div class="sub">'+esc(c.sub)+'</div>':'')+(c.drawAt?'<div class="sub">ההגרלה: '+esc(c.drawAt)+'</div>':'')+'</div>'
      +(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="">':'')
      +(c.phoneLine?'<div class="phonecard"><span>רכישה בטלפון</span><b>'+esc(c.phoneLine)+'</b><span>מקישים את מספר המוצר שמופיע על כל מוצר, ואת כמות הכרטיסים</span></div>':'')+'</header>';
@@ -185,10 +186,34 @@ function buyView(){
       +'<label class="f" for="bp">טלפון<input id="bp" type="tel" autocomplete="tel" dir="ltr" value="'+esc(b.phone||'')+'"></label>'
       +'<label class="f" for="bm">מייל (לקבלת מספרי הכרטיסים)<input id="bm" type="email" autocomplete="email" dir="ltr" value="'+esc(b.mail||'')+'"></label>'
       +'<label class="f" for="bc">עיר<input id="bc" autocomplete="address-level2" value="'+esc(b.city||'')+'"></label>'
-      +'<label class="f" for="bz">תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input id="bz" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label></div>'
-      +'<iframe class="pay" id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>'
-      +'<p class="msg" id="pmsg">טוען טופס תשלום מאובטח…</p><button type="button" class="go" id="go" disabled>לתשלום</button><p class="fine">התשלום בכרטיס אשראי דרך נדרים פלוס. מספרי הכרטיסים נשלחים במייל.</p></div>';
-    wirePay();updGo();
+      +(KH?'':'<label class="f" for="bz">תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input id="bz" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label>')+'</div>'
+      +(KH?'':'<iframe class="pay" id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>')
+      +'<p class="msg" id="pmsg">'+(KH?'בלחיצה על התשלום תעברו לדף התשלום המאובטח של קשר, ובסיום תחזרו לכאן.':'טוען טופס תשלום מאובטח…')+'</p><button type="button" class="go" id="go" disabled>לתשלום</button><p class="fine">'+(KH?'התשלום בכרטיס אשראי דרך קשר (קהילות).':'התשלום בכרטיס אשראי דרך נדרים פלוס.')+' מספרי הכרטיסים נשלחים במייל.</p></div>';
+    if(KH){ready=true;wireKesher()}else wirePay();updGo();
+  }
+  var KH=false;
+  function wireKesher(){
+    $('go').onclick=function(){
+      if(busy)return;var name=$('bn').value.trim(),phone=$('bp').value.trim(),mail=$('bm').value.trim(),city=$('bc').value.trim();
+      if(name.split(/\s+/).length<2){$('bn').focus();return msg('נא למלא שם פרטי ושם משפחה.',1)}
+      if(!/^0\d{8,9}$/.test(phone.replace(/\D/g,''))&&!mail){$('bp').focus();return msg('נא למלא טלפון או מייל.',1)}
+      if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){$('bm').focus();return msg('כתובת המייל לא תקינה.',1)}
+      try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:city}))}catch(e){}
+      busy=true;updGo();msg('פותחים את דף התשלום…');
+      post({a:'checkout',s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
+        if(!j.url){busy=false;updGo();msg(j.message||'לא הצלחנו לפתוח את דף התשלום. נסו שוב.',1);return}
+        try{sessionStorage.setItem('auction-amt-'+j.id,String(j.amount))}catch(e){}
+        location.href=j.url;
+      }).catch(function(){busy=false;updGo();msg('אין חיבור לשרת. נסו שוב.',1)});
+    };
+  }
+  /* חזרה מדף התשלום של קשר */
+  function kesherBack(){
+    var id=Q.get('kp'),tn=Q.get('transactionNumber')||Q.get('TransactionNumber')||'';
+    try{amount=+sessionStorage.getItem('auction-amt-'+id)||0}catch(e){}
+    if(Q.get('kf')){var m=$('main');m.insertAdjacentHTML('afterbegin','<div class="band bad" role="alert">התשלום לא הושלם'+(Q.get('errorText')?': '+esc(Q.get('errorText')):'')+'. אפשר לנסות שוב.</div>');return}
+    orderId=id;thanks(true);
+    post({a:'kcheck',s:SLUG,id:id,tn:tn}).then(function(j){if(j._st!==200&&!j.already)$('tk').innerHTML='<p class="msg bad">'+esc(j.message||'לא הצלחנו לאשר את התשלום מול קשר.')+' אם חויבתם, פנו למארגני המכירה עם מספר ההזמנה.</p>'});
   }
   function msg(t,bad){var m=$('pmsg');if(m){m.textContent=t;m.className='msg'+(bad?' bad':'')}}
   function updGo(){var g=$('go');if(!g)return;g.disabled=!ready||!(amount>0)||busy;g.textContent=busy?'מעבד…':amount>0?'לתשלום '+nis(amount):'בוחרים כרטיסים כדי לשלם'}
@@ -216,7 +241,7 @@ function buyView(){
     };
   }
   function thanks(){
-    var m=$('main');m.innerHTML='<div class="done" role="status"><h2 style="font-size:28px">תודה רבה!</h2><p>התשלום על סך <b>'+nis(amount)+'</b> התקבל. מספר הזמנה: '+esc(orderId.slice(2,10))+'</p><div id="tk"><p class="msg">מקבלים את מספרי הכרטיסים…</p></div><p><a href="'+location.pathname+'?s='+SLUG+'">לרכישה נוספת</a></p></div>';
+    var m=$('main');m.innerHTML='<div class="done" role="status"><h2 style="font-size:28px">תודה רבה!</h2><p>'+(amount?'התשלום על סך <b>'+nis(amount)+'</b> התקבל. ':'')+'מספר הזמנה: '+esc(orderId.slice(2,10))+'</p><div id="tk"><p class="msg">מקבלים את מספרי הכרטיסים…</p></div><p><a href="'+location.pathname+'?s='+SLUG+'">לרכישה נוספת</a></p></div>';
     window.scrollTo(0,0);var n=0;(function poll(){get({a:'status',id:orderId}).then(function(j){
       if(j.status==='paid'&&j.tickets&&j.tickets.length){$('tk').innerHTML='<p><b>מספרי הכרטיסים שלכם:</b></p><table>'+j.tickets.map(function(t){return '<tr><td><b>'+t.num+'</b> · '+esc(t.name)+'</td><td class="s">'+t.serials.join(', ')+'</td></tr>'}).join('')+'</table><p class="msg">שלחנו אותם גם למייל, אם מילאתם כתובת.</p>';return}
       if(++n<15)setTimeout(poll,2500);else $('tk').innerHTML='<p class="msg">מספרי הכרטיסים יישלחו אליכם במייל ברגע שהתשלום יאושר סופית.</p>'}).catch(function(){if(++n<15)setTimeout(poll,2500)})})();

@@ -120,14 +120,37 @@ module.exports = async (req, res) => {
         /* ההזמנה נוצרת פעם אחת לכל שיחה (המזהה נגזר ממזהה השיחה, כך שבקשה חוזרת לא יוצרת כפילות) */
         const call = String(q.ApiCallId || ''), id = 'au' + crypto.createHash('sha256').update((call || crypto.randomBytes(8).toString('hex')) + ':' + s.slug).digest('hex').slice(0, 22);
         const ph = String(q.ApiPhone || '').replace(/\D/g, '');
-        let o = (await db('auction_order?id=eq.' + id + '&select=id,amount,status&limit=1').catch(() => []))[0];
+        let o = (await db('auction_order?id=eq.' + id + '&select=id,amount,status,callback&limit=1').catch(() => []))[0];
         if (!o) {
           const r = await A().makeOrder(s, { pkg: st.pkg ? st.pkg.id : null, items: st.cart, repId: st.rep ? st.rep.id : null, repSrc: 'code', phone: ph, name: '' }, 'phone', null, id);
           if (r.error) return bye(pre.concat(T(r.message || 'לא הצלחנו לרשום את ההזמנה')));
           o = r.order;
+          A().notify(s, 'הזמנה חדשה בטלפון', '<p>מתקשר ' + ph + ' הזמין ' + (st.quote.count || '') + ' כרטיסים בסך ' + (+o.amount) + ' ₪.' + (iv.cc && iv.cc.on ? ' מועבר לתשלום בטלפון.' : ' ההזמנה ממתינה לתשלום: צריך לחזור אליו ולסמן "שולם" אחרי הגבייה.') + '</p>').catch(() => {});
         }
-        const num = o.id.slice(2, 8).replace(/\D/g, '') || o.id.slice(2, 6);
-        /* מעבר לשלוחת הסליקה של הארגון (אם הוגדרה). אחרת ההזמנה נשארת ממתינה, ומנהל המכירה משלים אותה */
+        const said = o2 => { const L = o2.serials || []; return !L.length ? [] : L.length === 1 ? [T('מספר הכרטיס שלכם'), 'n-' + L[0]] : [T('מספרי הכרטיסים שלכם מ'), 'n-' + L[0], T('עד'), 'n-' + L[L.length - 1]]; };
+        const serials = async () => ((await db('auction_ticket?order_id=eq.' + o.id + '&select=serial&order=serial.asc&limit=5000').catch(() => [])) || []).map(x => x.serial);
+        if (o.status === 'paid') return bye(pre.concat(T('ההזמנה שולמה תודה רבה')).concat(said({ serials: await serials() })).concat(T('בהצלחה')));
+        /* חזרה מסליקת האשראי של ימות: CreditCard_CODE */
+        const cc = iv.cc || {};
+        if (q.CreditCard_CODE != null && cc.on) {
+          const code = String(q.CreditCard_CODE).trim(), okL = String(cc.okCodes || '000,0,OK,Success').toLowerCase().split(',').filter(Boolean);
+          const rec = { ...(o.callback || {}), phonecc: { code, all: String(q.CreditCard_All || '').slice(0, 500), at: new Date().toISOString() } };
+          if (code === 'GoBack') { await db('auction_order?id=eq.' + o.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: rec }) }).catch(() => {});
+            return bye(T('התשלום בוטל ההזמנה נשמרה ונציג המכירה יחזור אליכם')); }
+          if (okL.includes(code.toLowerCase())) {
+            await A().markPaid(o.id, { txn: 'YM-' + (code + '-' + call).slice(0, 60), callback: rec });
+            return bye([T('התשלום התקבל תודה רבה')].concat(said({ serials: await serials() })).concat(T('בהצלחה')));
+          }
+          await db('auction_order?id=eq.' + o.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'failed', callback: rec }) }).catch(() => {});
+          return bye(T('התשלום לא עבר ההזמנה נשמרה ונציג המכירה יחזור אליכם'));
+        }
+        /* סליקת אשראי בטלפון דרך מודול הסליקה של ימות (credit_card) עם הסכום הקבוע של ההזמנה */
+        if (cc.on && cc.type) {
+          const sum = Number.isInteger(+o.amount) ? String(+o.amount) : (+o.amount).toFixed(2);
+          const v = [cc.type, sum, cc.register || '', '1', '1', '', cc.user || '', cc.terminal || '', cc.password || '', 'all', '', '', '', '', 'GoBack'].map(x => String(x).replace(/[,&=]/g, ''));
+          return out('id_list_message=' + pre.concat(T('הסכום לתשלום ' + nis(o.amount) + ' מעבירים אתכם לתשלום מאובטח')).join('.') + '&credit_card=' + v.join(','));
+        }
+        /* מעבר לשלוחת סליקה של הארגון (אם הוגדרה). אחרת ההזמנה נשארת ממתינה, ומנהל המכירה משלים אותה */
         if (iv.payPath) return out('id_list_message=' + pre.concat(T('ההזמנה נרשמה הסכום לתשלום ' + nis(o.amount) + ' מעבירים אתכם לתשלום מאובטח')).join('.') + '&go_to_folder=/' + iv.payPath);
         return bye(pre.concat(T('ההזמנה נרשמה הסכום ' + nis(o.amount) + ' נציג המכירה יחזור אליכם להשלמת התשלום תודה רבה ובהצלחה')));
       }
