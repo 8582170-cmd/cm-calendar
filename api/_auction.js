@@ -201,7 +201,7 @@ function mgrView(s, S) {
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
-    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], /\{(סכום|כרטיסים|חבילה|מוצר)\}/.test(v[1])]])) };
+    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
@@ -235,7 +235,7 @@ function cleanCfg(old, b) {
     c.ivr = { ...v0, cc }; delete b.ivr.cc; }
   if (b.ivr && typeof b.ivr === 'object') { const v = { ...(c.ivr || {}) }; if (!v.key) v.key = crypto.randomBytes(8).toString('hex');
     if (b.ivr.path != null) v.path = String(b.ivr.path).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (b.ivr.payPath != null) v.payPath = String(b.ivr.payPath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
-    if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
+    if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') v.hold = { on: !!b.ivr.hold.on, name: String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60) }; if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
   return c;
 }
 /* מוצרים / חבילות / מגייסים: שמירה של כל הרשימה. שורה בלי id נוצרת, שורה עם del נמחקת (רק אם אין עליה כרטיסים) */
@@ -609,23 +609,24 @@ module.exports = async (req, res) => {
       const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', R = require('./_r2'), M = R.mediaPut('auction/' + s.id + '/p' + p.num + '-' + Date.now().toString(36) + '.' + ext);
       if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
     }
-    /* קובץ שמע להודעת שיחה (במקום הטקסט). רק להודעות בלי פרטים משתנים */
+    /* הקלטה לחלק קבוע בהודעת שיחה. הודעה עם משתנים (סכום, כמות...) מחולקת לחלקים, והמשתנה מושמע אוטומטית בין ההקלטות */
     if (a === 'msgAudioUrl' || a === 'msgAudioSet') {
-      const K = require('./_auction_ivr').MSG, key = String(b.key || ''), def = K[key];
-      if (!def || /\{(סכום|כרטיסים|חבילה|מוצר)\}/.test(def[1])) return json(res, 400, { error: 'key', message: 'להודעה הזאת אי אפשר להעלות שמע, כי היא כוללת פרטים שמשתנים בכל שיחה' });
+      const IV = require('./_auction_ivr'), key = String(b.key || ''), def = IV.MSG[key], idx = Math.floor(+b.idx || 0), part = def && IV.partsOf(def[1])[idx];
+      if (!part || !part.s) return json(res, 400, { error: 'key', message: 'אי אפשר להעלות שמע לחלק הזה' });
+      const ak = key + '#' + idx;
       if (a === 'msgAudioUrl') {
-        const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', M = require('./_r2').mediaPut('auction/' + s.id + '/m-' + key + '-' + Date.now().toString(36) + '.' + ext);
+        const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', M = require('./_r2').mediaPut('auction/' + s.id + '/m-' + key + idx + '-' + Date.now().toString(36) + '.' + ext);
         if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
       }
       const MD = require('./_r2').media(), url = String(b.url || '');
       if (url && !(MD && url.indexOf(MD.url + '/auction/' + s.id + '/') === 0)) return json(res, 400, { error: 'url' });
       const ia = { ...((s.cfg || {}).ivrAudio || {}) }, iv = (s.cfg || {}).ivr || {}; let warn = '';
-      if (!url) delete ia[key];
+      if (!url) { delete ia[ak]; if (idx === 0) delete ia[key]; }
       else if (iv.token && iv.path) {
-        try { const f = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (!f.ok) throw new Error('fetch ' + f.status); const buf = await f.arrayBuffer(), nm = 'am' + s.id + key.toLowerCase();
-          await ymUpload(iv.token, 'ivr2:/' + iv.path + '/' + nm + '.wav', buf); ia[key] = { url, y: nm }; }
-        catch (e) { warn = 'ההעלאה לימות המשיח נכשלה: ' + String(e.message).slice(0, 120); ia[key] = { url }; }
-      } else { ia[key] = { url }; warn = 'הקובץ נשמר באתר. כדי שיושמע בטלפון, צריך להזין בהגדרות הטלפון את הטוקן של ימות ואת מספר השלוחה'; }
+        try { const f = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (!f.ok) throw new Error('fetch ' + f.status); const buf = await f.arrayBuffer(), nm = 'am' + s.id + key.toLowerCase() + idx;
+          await ymUpload(iv.token, 'ivr2:/' + iv.path + '/' + nm + '.wav', buf); ia[ak] = { url, y: nm }; if (idx === 0) delete ia[key]; }
+        catch (e) { warn = 'ההעלאה לימות המשיח נכשלה: ' + String(e.message).slice(0, 120); ia[ak] = { url }; }
+      } else { ia[ak] = { url }; warn = 'הקובץ נשמר באתר. כדי שיושמע בטלפון, צריך להזין בהגדרות הטלפון את הטוקן של ימות ואת מספר השלוחה'; }
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, ivrAudio: ia }, updated_at: new Date().toISOString() }) }); drop(s.slug);
       return json(res, 200, { ok: true, warn, ivrAudio: ia });
     }

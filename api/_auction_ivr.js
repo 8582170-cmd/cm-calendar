@@ -59,12 +59,24 @@ const MSG = {
   stored: ['הסל נשמר', 'הסל נשמר בהתקשרות הבאה מהטלפון הזה תוכלו לשמוע אותו לערוך ולהוסיף עליו ולהשלים את הרכישה להתראות'],
   end: ['סיום אחרי תשלום', 'בהצלחה']
 };
+/* פירוק הודעה לחלקים: טקסט קבוע, ומשתנה שמושמע אוטומטית באמצע (סכום, כמות, שם מוצר...). לכל חלק קבוע אפשר להעלות הקלטה */
+const PH_RE = /(\{(?:מכירה|סכום|כרטיסים|חבילה|מקש|מוצר)\})/;
+function partsOf(text) { return String(text).split(PH_RE).map(x => { const m = /^\{(.+)\}$/.exec(x); return m ? { v: m[1] } : { s: x.trim() }; }); }
 function M(s, key, V) {
-  /* קובץ שמע שהועלה להודעה: מושמע במקום הטקסט (רק להודעות בלי פרטים משתנים כמו סכום) */
-  const au = (((s.cfg || {}).ivrAudio) || {})[key], ivp = ((s.cfg || {}).ivr || {}).path;
-  if (au && au.y && ivp) return 'f-/' + ivp + '/' + au.y;
-  const own = (((s.cfg || {}).ivrtxt) || {})[key], txt = String(own || '').trim() || MSG[key][1];
-  return T(txt.replace(/\{(מכירה|סכום|כרטיסים|חבילה|מקש|מוצר)\}/g, (x, k) => (V && V[k] != null ? V[k] : k === 'מכירה' ? A().cfgOf(s).title : '')));
+  const cfg = s.cfg || {}, ia = cfg.ivrAudio || {}, ivp = (cfg.ivr || {}).path, P = partsOf(MSG[key][1]);
+  const au = i => { const a = ia[key + '#' + i] || (i === 0 ? ia[key] : null); return a && a.y ? a : null; };
+  const val = k => V && V[k] != null ? V[k] : k === 'מכירה' ? A().cfgOf(s).title : '';
+  /* אם הועלתה הקלטה לחלק כלשהו: החלקים הקבועים בלי הקלטה מושמעים כטקסט, והמשתנים (סכום, כמות...) מושמעים אוטומטית */
+  if (ivp && P.some((x, i) => x.s && au(i))) {
+    const out = [];
+    P.forEach((x, i) => {
+      if (x.v) { const v = val(x.v); if (v !== '' && v != null) out.push(x.v === 'כרטיסים' || x.v === 'מקש' ? 'n-' + v : T(v)); }
+      else if (x.s) out.push(au(i) ? 'f-/' + ivp + '/' + au(i).y : T(x.s));
+    });
+    return out.join('.');
+  }
+  const own = ((cfg.ivrtxt) || {})[key], txt = String(own || '').trim() || MSG[key][1];
+  return T(txt.replace(/\{(מכירה|סכום|כרטיסים|חבילה|מקש|מוצר)\}/g, (x, k) => val(k)));
 }
 const pkgKey = (k, i) => String(+((k.cfg || {}).key) || i + 1);
 
@@ -307,4 +319,4 @@ module.exports = async (req, res) => {
     return bye(T('שגיאה'));
   } catch (e) { console.error('auction ivr', e.message); return bye(T('אירעה תקלה נסו שוב מאוחר יותר')); }
 };
-module.exports.replay = replay; module.exports.MSG = MSG;
+module.exports.replay = replay; module.exports.MSG = MSG; module.exports.partsOf = partsOf;
