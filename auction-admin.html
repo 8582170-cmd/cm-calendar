@@ -80,6 +80,10 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return
 function nis(n){return (Math.round(+n*100)/100).toLocaleString('he-IL')+' ₪'}
 function dt(d){try{return d?new Date(d).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):''}catch(e){return ''}}
 function flash(t,bad){var m=$('flash');m.textContent=t;m.className='flash'+(bad?' bad':'');m.hidden=false;clearTimeout(flash.t);flash.t=setTimeout(function(){m.hidden=true},4500)}
+function meMail(){var j=sess();if(!j)return '';if(j.user&&j.user.email)return j.user.email;try{var p=(j.access_token||'').split('.')[1];return JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/g,'+').replace(/_/g,'/'))))).email||''}catch(e){return ''}}
+function switchAcct(){try{localStorage.removeItem(KEY)}catch(e){}TK='';var a=$('acct');if(a)a.remove();login()}
+function acctBar(){var m=meMail(),a=$('acct');if(!m){if(a)a.remove();return}if(!a){a=document.createElement('div');a.id='acct';a.style.cssText='position:fixed;bottom:8px;left:8px;z-index:20;background:#fff;border:1px solid #ccc;border-radius:8px;padding:4px 10px;font-size:12px;box-shadow:0 1px 4px rgba(0,0,0,.15)';document.body.appendChild(a)}
+  a.innerHTML='מחובר כ־<b dir="ltr">'+esc(m)+'</b> · <a href="#" id="acs">החלפת חשבון</a>';$('acs').onclick=function(e){e.preventDefault();switchAcct()}}
 function sess(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
 function tok(){var j=sess();if(!j)return Promise.resolve('');
   if(j.access_token&&(!j.expires_at||j.expires_at*1000>Date.now()+60000))return Promise.resolve(j.access_token);
@@ -110,7 +114,7 @@ function chName(c){return {web:'אתר',phone:'טלפון',manual:'ידני',rep
 var PUB=location.origin+'/auction?s=';
 document.addEventListener('click',function(e){var b=e.target.closest('[data-cpw]');if(b&&navigator.clipboard)navigator.clipboard.writeText(b.dataset.cpw).then(function(){flash('הקישור הועתק')})});
 
-tok().then(function(t){TK=t;if(!t)return login();SLUG?loadSale().then(show):listView()});
+tok().then(function(t){TK=t;if(!t)return login();acctBar();SLUG?loadSale().then(show):listView()});
 
 /* ===== רשימת המכירות ===== */
 function listView(){nav.innerHTML='<div class="ttl">מכירה סינית</div><div class="org">ניהול</div>';
@@ -148,7 +152,7 @@ function siteStats(){call({a:'siteStats'}).then(function(r){if(!r.sales||!$('sta
   $('stx').onclick=function(){csv('כל המכירות',['מכירה','כתובת','מצב','מנהל','הזמנות','סך הכל'].concat(Object.keys(MN).map(function(k){return MN[k]})).concat(['ממתינות','סכום ממתין']),r.sales.map(function(x){return [x.name,x.slug,x.status,[x.owner].concat(x.managers).join(' '),x.orders,x.amount].concat(Object.keys(MN).map(function(k){return x.m[k]||0})).concat([x.pending,x.pendingAmount])}))}})}
 
 /* ===== מכירה אחת ===== */
-function loadSale(){return call({a:'get'}).then(function(j){if(j._st!==200){box.innerHTML='<div class="card"><p>'+(j._st===403?'אין לך הרשאה למכירה הזאת.':'המכירה לא נמצאה.')+'</p><a class="btn" href="?">לרשימת המכירות</a></div>';throw 0}S=j;return j})}
+function loadSale(){return call({a:'get'}).then(function(j){if(j._st!==200){box.innerHTML='<div class="card"><p>'+(j._st===403?'אין הרשאה למכירה הזאת עם החשבון <b dir="ltr">'+esc(meMail())+'</b>. אפשר להיכנס עם מייל אחר, או לבקש ממנהל המכירה להוסיף את המייל הזה.':'המכירה לא נמצאה.')+'</p><div class="acts">'+(j._st===403?'<button class="btn pri" type="button" id="sw">כניסה עם מייל אחר</button>':'')+'<a class="btn" href="?">לרשימת המכירות שלי</a></div></div>';if($('sw'))$('sw').onclick=switchAcct;void 0;throw 0}S=j;return j})}
 var TABS=[['ov','סקירה'],['set','הגדרות'],['pay','סליקה'],['prod','מוצרים'],['pkg','חבילות'],['rep','מגייסים ונציגים'],['ord','הזמנות'],['cus','לקוחות ותורמים'],['rpt','דוחות'],['ivr','שלוחה טלפונית'],['draw','ביצוע ההגרלות']];
 function show(){
   box.onclick=null;box.onchange=null;box.oninput=null;
