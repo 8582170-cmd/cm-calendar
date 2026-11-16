@@ -47,7 +47,7 @@ function cfgOf(s) {
   const c = s.cfg || {};
   return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
     repWeb: ['start', 'end', 'both', 'off'].includes(c.repWeb) ? c.repWeb : 'end', repPhone: ['start', 'pay', 'both', 'off'].includes(c.repPhone) ? c.repPhone : 'pay',
-    repSkip: c.repSkip !== false, repWins: c.repWins === 'link' ? 'link' : 'code', priceMode: c.priceMode === 'one' ? 'one' : 'each',
+    repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
     progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '' };
 }
@@ -57,12 +57,13 @@ const pubPkg = k => ({ id: k.id, name: k.name, descr: k.descr || '', kind: k.kin
 const pkgLive = k => k.active !== false && (!(k.cfg || {}).until || (k.cfg.until + 'T23:59:59+02:00') >= new Date().toISOString());
 
 async function repBy(saleId, code) { code = String(code || '').replace(/\D/g, ''); if (!code) return null; const L = await db('auction_rep?sale_id=eq.' + saleId + '&code=eq.' + code + '&active=is.true&select=id,code,name,grp&limit=1').catch(() => []); return (L && L[0]) || null; }
-/* מי מקבל את הרכישה: הקישור של המגייס או הקוד שהוקש, לפי ההגדרה (repWins) */
+/* מי מקבל את הרכישה: מי שהגיע מקישור של מגייס, הרכישה שלו בכל מקרה (אי אפשר להחליף בקוד אחר). אחרת: הקוד שהוקש */
 async function pickRep(s, link, typed) {
-  const c = cfgOf(s), a = link ? await repBy(s.id, link) : null, b = typed ? await repBy(s.id, typed) : null;
+  const a = link ? await repBy(s.id, link) : null;
+  if (a) return { rep: a, src: 'link' };
+  const b = typed ? await repBy(s.id, typed) : null;
   if (typed && !b) return { error: 'rep', message: 'קוד הנציג לא נמצא' };
-  if (a && b) return c.repWins === 'link' ? { rep: a, src: 'link' } : { rep: b, src: 'code' };
-  if (b) return { rep: b, src: 'code' }; if (a) return { rep: a, src: 'link' }; return { rep: null };
+  return b ? { rep: b, src: 'code' } : { rep: null };
 }
 /* לקוח לפי טלפון או מייל במכירה. אין: נוצר */
 async function customer(s, o, meta) {
@@ -198,7 +199,7 @@ function cleanCfg(old, b) {
   str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 3000); str('color', 7); str('logo', 300);
   iso('openAt'); iso('closeAt');
   if (b.goal != null) c.goal = Math.max(0, Math.min(1e9, +b.goal || 0));
-  ['repWeb', 'repPhone', 'repWins', 'priceMode'].forEach(k => { if (b[k] != null) c[k] = clean(b[k], 10); });
+  ['repWeb', 'repPhone', 'priceMode'].forEach(k => { if (b[k] != null) c[k] = clean(b[k], 10); });
   if (b.repSkip != null) c.repSkip = !!b.repSkip;
   if (b.allowCancel != null) c.allowCancel = !!b.allowCancel;
   if (b.phoneCart != null) c.phoneCart = !!b.phoneCart;

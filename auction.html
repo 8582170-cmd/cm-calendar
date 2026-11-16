@@ -115,10 +115,14 @@ buyView();
 
 /* ===== דף הרכישה ===== */
 function buyView(){
-  var S=null,pkg=null,qty={},rep=Q.get('m')||'',typed='',busy=false,ready=false,orderId=null,amount=0;
+  /* קישור של מגייס נשמר בדפדפן ל-30 יום, כדי שגם כניסה חוזרת לדף (בלי הקישור) תיזקף לו */
+  var RK='auction-rep-'+SLUG,rep=(Q.get('m')||'').replace(/\D/g,'');
+  try{if(!rep){var sr=JSON.parse(localStorage.getItem(RK)||'null');if(sr&&sr.at>Date.now()-30*864e5)rep=sr.code||''}}catch(e){}
+  var S=null,pkg=null,qty={},typed='',busy=false,ready=false,orderId=null,amount=0;
   get({a:'sale',s:SLUG,m:rep,preview:Q.get('preview')||''}).then(function(j){
     if(j._st===404||!j.products){closed('המכירה לא נמצאה');return}
-    S=j;document.title=(S.cfg.title||'מכירה סינית')+' · מכירה סינית';
+    S=j;try{if(S.rep)localStorage.setItem(RK,JSON.stringify({code:S.rep.code,at:Date.now()}));else if(rep)localStorage.removeItem(RK)}catch(e){}
+    document.title=(S.cfg.title||'מכירה סינית')+' · מכירה סינית';
     if(S.cfg.color)document.documentElement.style.setProperty('--navy',S.cfg.color);
     try{var sv=JSON.parse(localStorage.getItem('auction-buyer')||'{}');S._buyer=sv}catch(e){S._buyer={}}
     render();
