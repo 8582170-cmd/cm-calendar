@@ -201,7 +201,7 @@ function mgrView(s, S) {
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
-    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: require('./_auction_ivr').MSG };
+    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], /\{(סכום|כרטיסים|חבילה|מוצר)\}/.test(v[1])]])) };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
@@ -608,6 +608,26 @@ module.exports = async (req, res) => {
       const p = s.products.find(x => String(x.id) === String(b.product)); if (!p) return json(res, 404, { error: 'product' });
       const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', R = require('./_r2'), M = R.mediaPut('auction/' + s.id + '/p' + p.num + '-' + Date.now().toString(36) + '.' + ext);
       if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
+    }
+    /* קובץ שמע להודעת שיחה (במקום הטקסט). רק להודעות בלי פרטים משתנים */
+    if (a === 'msgAudioUrl' || a === 'msgAudioSet') {
+      const K = require('./_auction_ivr').MSG, key = String(b.key || ''), def = K[key];
+      if (!def || /\{(סכום|כרטיסים|חבילה|מוצר)\}/.test(def[1])) return json(res, 400, { error: 'key', message: 'להודעה הזאת אי אפשר להעלות שמע, כי היא כוללת פרטים שמשתנים בכל שיחה' });
+      if (a === 'msgAudioUrl') {
+        const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', M = require('./_r2').mediaPut('auction/' + s.id + '/m-' + key + '-' + Date.now().toString(36) + '.' + ext);
+        if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
+      }
+      const MD = require('./_r2').media(), url = String(b.url || '');
+      if (url && !(MD && url.indexOf(MD.url + '/auction/' + s.id + '/') === 0)) return json(res, 400, { error: 'url' });
+      const ia = { ...((s.cfg || {}).ivrAudio || {}) }, iv = (s.cfg || {}).ivr || {}; let warn = '';
+      if (!url) delete ia[key];
+      else if (iv.token && iv.path) {
+        try { const f = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (!f.ok) throw new Error('fetch ' + f.status); const buf = await f.arrayBuffer(), nm = 'am' + s.id + key.toLowerCase();
+          await ymUpload(iv.token, 'ivr2:/' + iv.path + '/' + nm + '.wav', buf); ia[key] = { url, y: nm }; }
+        catch (e) { warn = 'ההעלאה לימות המשיח נכשלה: ' + String(e.message).slice(0, 120); ia[key] = { url }; }
+      } else { ia[key] = { url }; warn = 'הקובץ נשמר באתר. כדי שיושמע בטלפון, צריך להזין בהגדרות הטלפון את הטוקן של ימות ואת מספר השלוחה'; }
+      await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, ivrAudio: ia }, updated_at: new Date().toISOString() }) }); drop(s.slug);
+      return json(res, 200, { ok: true, warn, ivrAudio: ia });
     }
     if (a === 'audioSet') {
       const p = s.products.find(x => String(x.id) === String(b.product)); if (!p) return json(res, 404, { error: 'product' });

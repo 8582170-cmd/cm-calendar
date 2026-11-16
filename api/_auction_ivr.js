@@ -60,6 +60,9 @@ const MSG = {
   end: ['סיום אחרי תשלום', 'בהצלחה']
 };
 function M(s, key, V) {
+  /* קובץ שמע שהועלה להודעה: מושמע במקום הטקסט (רק להודעות בלי פרטים משתנים כמו סכום) */
+  const au = (((s.cfg || {}).ivrAudio) || {})[key], ivp = ((s.cfg || {}).ivr || {}).path;
+  if (au && au.y && ivp) return 'f-/' + ivp + '/' + au.y;
   const own = (((s.cfg || {}).ivrtxt) || {})[key], txt = String(own || '').trim() || MSG[key][1];
   return T(txt.replace(/\{(מכירה|סכום|כרטיסים|חבילה|מקש|מוצר)\}/g, (x, k) => (V && V[k] != null ? V[k] : k === 'מכירה' ? A().cfgOf(s).title : '')));
 }
