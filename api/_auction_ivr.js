@@ -38,6 +38,9 @@ const MSG = {
   prodAsk: ['בקשת מספר מוצר', 'הקישו את מספר המוצר וסולמית'],
   prodChosen: ['אחרי הקשת מספר מוצר', 'בחרתם מוצר {מוצר}'],
   prodConfirm: ['אישור המוצר שנבחר', 'לאישור הקישו 1 לבחירת מוצר אחר הקישו 2'],
+  qtyChosen: ['אחרי הקשת כמות: פתיחה (אחריה מושמעת הכמות כמספר)', 'בחרתם'],
+  qtyUnit: ['אחרי הקשת כמות: המשך', 'כרטיסים למוצר {מוצר}'],
+  qtyConfirm: ['אישור הכמות שנבחרה', 'לאישור הקישו 1 לתיקון הכמות הקישו 2'],
   qtyAsk: ['בקשת כמות', 'כמה כרטיסים הקישו את המספר וסולמית'],
   moreMenu: ['אחרי הוספת כרטיסים', 'למוצר נוסף הקישו 1 לסיום ולתשלום הקישו 2 לשמיעת הסל הקישו 3'],
   moreSave: ['אפשרות שמירת הסל', 'לשמירת הסל להתקשרות הבאה הקישו 4'],
@@ -137,6 +140,12 @@ function replay(s, R, ans, saved) {
       const n = +v, p = st.cur, have = qtyOf(p.id), mx = +((p.cfg || {}).maxPer) || 0;
       if (!(n > 0 && n <= 999)) { st.msg.push(T('כמות לא תקינה')); continue; }
       if (mx && have + n > mx) { st.msg.push(T('אפשר לקנות עד ' + mx + ' כרטיסים למוצר הזה')); continue; }
+      st.pend = n; st.msg.push(M(s, 'qtyChosen'), 'n-' + n, M(s, 'qtyUnit', { 'מוצר': p.num + ' ' + p.name })); st.phase = 'qtyok'; continue;
+    }
+    if (st.phase === 'qtyok') {
+      const n = st.pend, p = st.cur, have = qtyOf(p.id);
+      if (v === '2') { st.phase = 'qty'; continue; }
+      if (v !== '1') { st.msg.push(T('בחירה לא תקינה')); continue; }
       setQty(p.id, have + n); st.phase = 'more';
       const q = quote(); st.msg.push(T('נוספו ' + n + ' כרטיסים למוצר ' + p.num));
       if (q.left && q.left.tickets != null && st.pkg) st.msg.push(T(q.left.tickets ? 'נותרו לכם ' + q.left.tickets + ' כרטיסים לחלוקה' : 'ניצלתם את כל הכרטיסים בחבילה'));
@@ -161,6 +170,14 @@ function replay(s, R, ans, saved) {
       const n = +v, p = st.cur, mx = +((p.cfg || {}).maxPer) || 0;
       if (!(n >= 0 && n <= 999) || v === '') { st.msg.push(T('כמות לא תקינה')); continue; }
       if (mx && n > mx) { st.msg.push(T('אפשר לקנות עד ' + mx + ' כרטיסים למוצר הזה')); continue; }
+      st.pend = n; st.phase = 'editok';
+      if (n) st.msg.push(M(s, 'qtyChosen'), 'n-' + n, M(s, 'qtyUnit', { 'מוצר': p.num + ' ' + p.name })); else st.msg.push(T('הסרת מוצר ' + p.num + ' מהסל'));
+      continue;
+    }
+    if (st.phase === 'editok') {
+      const n = st.pend, p = st.cur;
+      if (v === '2') { st.phase = 'editq'; continue; }
+      if (v !== '1') { st.msg.push(T('בחירה לא תקינה')); continue; }
       setQty(p.id, n); st.phase = 'more'; st.msg.push(T(n ? 'עודכן ל ' + n + ' כרטיסים למוצר ' + p.num : 'מוצר ' + p.num + ' הוסר מהסל'));
       continue;
     }
@@ -231,6 +248,7 @@ module.exports = async (req, res) => {
       case 'prod': return rd([M(s, 'prodAsk')], 5, 1);
       case 'prodok': return rd([M(s, 'prodConfirm')], 1, 1, '1.2');
       case 'qty': return rd([M(s, 'qtyAsk')], 3, 1);
+      case 'qtyok': case 'editok': return rd([M(s, 'qtyConfirm')], 1, 1, '1.2');
       case 'more': { const ed = st.cart.length > 0; return rd([M(s, 'moreMenu')].concat(cartOn ? [M(s, 'moreSave')] : [], ed ? [M(s, 'moreEdit')] : []), 1, 1, '1.2.3' + (cartOn ? '.4' : '') + (ed ? '.5' : '')); }
       case 'sum': { const Q = st.quote; return rd([M(s, 'sum', { 'כרטיסים': Q.count, 'חבילה': st.pkg ? ' בחבילת ' + st.pkg.name : '', 'סכום': nis(Q.amount) }), M(s, 'sumMenu')], 1, 1, '1.2.3'); }
       case 'later': case 'pay': {
