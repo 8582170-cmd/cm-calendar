@@ -324,7 +324,7 @@ async function doDraw(s, u, b) {
   const W = await db('auction_draw?product_id=eq.' + p.id + '&select=*&order=id.asc&limit=500') || [];
   const wins = W.filter(w => w.kind === 'win'), res = W.filter(w => w.kind === 'reserve'), draws = +p.draws || 1, rf = +((p.cfg || {}).reserves) || 0;
   if (kind === 'win' && wins.length >= draws) return { status: 409, error: 'done', message: 'כל ההגרלות במוצר הזה כבר בוצעו' };
-  if (kind === 'reserve' && rf && res.length >= rf) return { status: 409, error: 'done', message: 'כל זוכי המילואים כבר הוגרלו' };
+  if (kind === 'reserve' && rf && res.length >= rf) return { status: 409, error: 'done', message: 'כל הזוכים החלופיים כבר הוגרלו' };
   const T = await all('auction_ticket?product_id=eq.' + p.id + '&void=is.false&select=id,serial,customer_id&order=serial.asc');
   const E = C.eligible(T, W, !!(p.cfg || {}).repeatWin);
   const d = C.draw(E.map(t => t.serial), 3); if (!d) return { status: 409, error: 'empty', message: 'אין כרטיסים שמשתתפים בהגרלה הזאת' };
@@ -333,7 +333,7 @@ async function doDraw(s, u, b) {
   try { await db('auction_draw', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) }); }
   catch (e) { if (/duplicate|23505/.test(e.message)) return { status: 409, error: 'race', message: 'ההגרלה הזאת כבר בוצעה עכשיו ממקום אחר. רעננו את הדף' }; throw e; }
   const W1 = await withWho(s, [row]).then(L => L[0]);
-  notify(s, 'הגרלה בוצעה: ' + p.num + ' ' + p.name, '<p>' + (kind === 'win' ? 'זוכה בהגרלה ' + row.round + ' מתוך ' + draws : 'זוכה מילואים ' + row.round) + ': כרטיס <b>' + row.serial + '</b> · ' + require('./_mail').escH(W1.name || W1.phone || '') + (W1.city ? ' · ' + require('./_mail').escH(W1.city) : '') + '</p><p style="font-size:13px;color:#666">' + d.pool + ' כרטיסים השתתפו · 3 ערבובים · בוצע על ידי ' + u.email + '</p>').catch(() => {});
+  notify(s, 'הגרלה בוצעה: ' + p.num + ' ' + p.name, '<p>' + (kind === 'win' ? 'זוכה בהגרלה ' + row.round + ' מתוך ' + draws : 'זוכה חלופי ' + row.round) + ': כרטיס <b>' + row.serial + '</b> · ' + require('./_mail').escH(W1.name || W1.phone || '') + (W1.city ? ' · ' + require('./_mail').escH(W1.city) : '') + '</p><p style="font-size:13px;color:#666">' + d.pool + ' כרטיסים השתתפו · 3 ערבובים · בוצע על ידי ' + u.email + '</p>').catch(() => {});
   return { status: 200, draw: W1 };
 }
 async function withWho(s, rows) {
