@@ -16,10 +16,10 @@ const nis = n => { n = Math.round(+n * 100) / 100; return (Number.isInteger(n) ?
 const REPS = new Map();
 async function reps(s) { const c = REPS.get(s.id); if (c && Date.now() - c.at < 20000) return c.v; const L = await db('auction_rep?sale_id=eq.' + s.id + '&active=is.true&select=id,code,name&limit=5000').catch(() => []); const v = new Map((L || []).map(r => [r.code, r])); REPS.set(s.id, { at: Date.now(), v }); return v; }
 
-function prodSay(s, p, full) {
+function prodSay(s, p, full, nameSaid) {
   const iv = (s.cfg || {}).ivr || {}, y = (p.cfg || {}).y, out = [];
   if (y && iv.path) out.push('f-/' + iv.path + '/' + y);
-  else out.push(T('מוצר ' + p.num + ' ' + p.name));
+  else if (!nameSaid) out.push(T('מוצר ' + p.num + ' ' + p.name));
   if (full !== false) out.push(T('מחיר כרטיס ' + nis(p.price) + ((+p.draws || 1) > 1 ? ' ' + p.draws + ' הגרלות' : '')));
   return out;
 }
@@ -32,10 +32,12 @@ const MSG = {
   repSkip: ['דילוג על קוד נציג', 'לדילוג הקישו אפס וסולמית'],
   savedHead: ['למי שיש סל שמור', 'יש לכם סל שמור מההתקשרות הקודמת'],
   savedMenu: ['תפריט הסל השמור', 'להמשך עם הסל להוספה ולתשלום הקישו 1 לשמיעת הסל שוב הקישו 2 לריקון הסל ולהתחלה מחדש הקישו 3'],
-  menuPkg: ['תפריט ראשי: חבילה', 'לרכישת חבילה הקישו 1'],
-  menuProd: ['תפריט ראשי: בחירת מוצרים', 'לבחירת כרטיסים לפי מספר מוצר הקישו 2'],
-  menuAll: ['תפריט ראשי: כל המוצרים', 'לשמיעת כל המוצרים ברצף הקישו 3'],
+  menuPkg: ['תפריט ראשי: חבילה', 'לרכישת חבילה הקישו {מקש}'],
+  menuProd: ['תפריט ראשי: בחירת מוצרים', 'לבחירת כרטיסים לפי מספר מוצר הקישו {מקש}'],
+  menuAll: ['תפריט ראשי: כל המוצרים', 'לשמיעת כל המוצרים ברצף הקישו {מקש}'],
   prodAsk: ['בקשת מספר מוצר', 'הקישו את מספר המוצר וסולמית'],
+  prodChosen: ['אחרי הקשת מספר מוצר', 'בחרתם מוצר {מוצר}'],
+  prodConfirm: ['אישור המוצר שנבחר', 'לאישור הקישו 1 לבחירת מוצר אחר הקישו 2'],
   qtyAsk: ['בקשת כמות', 'כמה כרטיסים הקישו את המספר וסולמית'],
   moreMenu: ['אחרי הוספת כרטיסים', 'למוצר נוסף הקישו 1 לסיום ולתשלום הקישו 2 לשמיעת הסל הקישו 3'],
   moreSave: ['אפשרות שמירת הסל', 'לשמירת הסל להתקשרות הבאה הקישו 4'],
@@ -56,7 +58,7 @@ const MSG = {
 };
 function M(s, key, V) {
   const own = (((s.cfg || {}).ivrtxt) || {})[key], txt = String(own || '').trim() || MSG[key][1];
-  return T(txt.replace(/\{(מכירה|סכום|כרטיסים|חבילה)\}/g, (x, k) => (V && V[k] != null ? V[k] : k === 'מכירה' ? A().cfgOf(s).title : '')));
+  return T(txt.replace(/\{(מכירה|סכום|כרטיסים|חבילה|מקש|מוצר)\}/g, (x, k) => (V && V[k] != null ? V[k] : k === 'מכירה' ? A().cfgOf(s).title : '')));
 }
 const pkgKey = (k, i) => String(+((k.cfg || {}).key) || i + 1);
 
@@ -72,6 +74,9 @@ function replay(s, R, ans, saved) {
   }
   st.hadSaved = !!(st.cart.length || st.pkg);
   const home = () => st.hadSaved ? 'saved' : 'menu';
+  /* מספרי המקשים בתפריט הראשי: בלי חבילות התפריט מתחיל ב-1 */
+  const menuKeys = () => pkgs.length ? { pkg: '1', prod: '2', all: '3' } : { pkg: null, prod: '1', all: '2' };
+  st.menuKeys = menuKeys;
   st.phase = repAsk('start') ? 'repA' : home();
   const quote = () => C.price(s.products, st.pkg, st.cart);
   const ccOn = !!(((s.cfg || {}).ivr || {}).cc || {}).on, laterOn = c.allowUnpaid && ccOn;
@@ -102,9 +107,10 @@ function replay(s, R, ans, saved) {
       continue;
     }
     if (st.phase === 'menu') {
-      if (v === '1' && pkgs.length) st.phase = 'pkg';
-      else if (v === '2') st.phase = 'prod';
-      else if (v === '3') { st.msg.push(T('המוצרים במכירה')); prods.forEach(p => st.msg.push(...prodSay(s, p))); }
+      const mk = menuKeys();
+      if (v === mk.pkg) st.phase = 'pkg';
+      else if (v === mk.prod) st.phase = 'prod';
+      else if (v === mk.all) { st.msg.push(T('המוצרים במכירה')); prods.forEach(p => st.msg.push(...prodSay(s, p))); }
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
@@ -119,7 +125,13 @@ function replay(s, R, ans, saved) {
     if (st.phase === 'prod') {
       const p = prods.find(x => String(x.num) === v);
       if (!p) { st.msg.push(T('מוצר ' + v + ' לא נמצא')); continue; }
-      st.cur = p; st.msg.push(...prodSay(s, p)); if (qtyOf(p.id)) st.msg.push(T('יש כבר בסל ' + qtyOf(p.id) + ' כרטיסים למוצר הזה')); st.phase = 'qty'; continue;
+      st.cur = p; st.msg.push(M(s, 'prodChosen', { 'מוצר': p.num + ' ' + p.name })); st.msg.push(...prodSay(s, p, true, true)); st.phase = 'prodok'; continue;
+    }
+    if (st.phase === 'prodok') {
+      if (v === '1') { const p = st.cur; if (qtyOf(p.id)) st.msg.push(T('יש כבר בסל ' + qtyOf(p.id) + ' כרטיסים למוצר הזה')); st.phase = 'qty'; }
+      else if (v === '2') st.phase = 'prod';
+      else st.msg.push(T('בחירה לא תקינה'));
+      continue;
     }
     if (st.phase === 'qty') {
       const n = +v, p = st.cur, have = qtyOf(p.id), mx = +((p.cfg || {}).maxPer) || 0;
@@ -202,7 +214,8 @@ module.exports = async (req, res) => {
     const ans = []; for (let i = 1; i <= 400 && q['X' + i] != null; i++) ans.push(q['X' + i]);
     const st = replay(s, await reps(s), ans, saved), next = 'X' + (ans.length + 1);
     const pre = ans.length ? st.msg : [M(s, 'welcome')];
-    const rd = (parts, max, min, ok) => out('read=' + pre.concat(parts).join('.') + '=' + next + ',no,' + max + ',' + min + ',10,NO,yes,no,,' + (ok || ''));
+    /* הערך ה-15 של מודול ה-API בימות: "no" = בלי בקשת אישור אחרי כל הקשה ("לאישור הקישו 1, להקשה מחודשת הקישו 2") */
+    const rd = (parts, max, min, ok) => out('read=' + pre.concat(parts).join('.') + '=' + [next, 'no', max, min, 10, 'NO', 'yes', 'no', '', ok || '', '', '', '', '', 'no'].join(','));
     const pkgs = s.pkgs.filter(A().pkgLive);
     /* חזרה מסליקת האשראי: ההזמנה של השיחה כבר קיימת (והסל כבר עבר אליה), אז הולכים ישר לטיפול בתשלום */
     switch (q.CreditCard_CODE != null ? 'pay' : st.phase) {
@@ -213,9 +226,10 @@ module.exports = async (req, res) => {
       case 'payhow': return rd([M(s, 'payhow')], 1, 1, '1.2');
       case 'edit': return rd([M(s, 'editAsk')], 5, 1);
       case 'editq': return rd([M(s, 'editQty')], 3, 1);
-      case 'menu': return rd((pkgs.length ? [M(s, 'menuPkg')] : []).concat(M(s, 'menuProd'), M(s, 'menuAll')), 1, 1, pkgs.length ? '1.2.3' : '2.3');
+      case 'menu': { const mk = st.menuKeys(); return rd((mk.pkg ? [M(s, 'menuPkg', { 'מקש': mk.pkg })] : []).concat(M(s, 'menuProd', { 'מקש': mk.prod }), M(s, 'menuAll', { 'מקש': mk.all })), 1, 1, (mk.pkg ? mk.pkg + '.' : '') + mk.prod + '.' + mk.all); }
       case 'pkg': return rd(pkgs.map((k, i) => T('ל' + k.name + ' במחיר ' + nis(k.price) + ' הקישו ' + pkgKey(k, i))), 1, 1);
       case 'prod': return rd([M(s, 'prodAsk')], 5, 1);
+      case 'prodok': return rd([M(s, 'prodConfirm')], 1, 1, '1.2');
       case 'qty': return rd([M(s, 'qtyAsk')], 3, 1);
       case 'more': { const ed = st.cart.length > 0; return rd([M(s, 'moreMenu')].concat(cartOn ? [M(s, 'moreSave')] : [], ed ? [M(s, 'moreEdit')] : []), 1, 1, '1.2.3' + (cartOn ? '.4' : '') + (ed ? '.5' : '')); }
       case 'sum': { const Q = st.quote; return rd([M(s, 'sum', { 'כרטיסים': Q.count, 'חבילה': st.pkg ? ' בחבילת ' + st.pkg.name : '', 'סכום': nis(Q.amount) }), M(s, 'sumMenu')], 1, 1, '1.2.3'); }
