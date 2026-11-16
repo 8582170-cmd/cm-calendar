@@ -87,7 +87,20 @@ function tok(){var j=sess();if(!j)return Promise.resolve('');
   return fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:j.refresh_token})})
    .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at})))}catch(e){}return n.access_token}).catch(function(){return ''})}
 function call(b){return tok().then(function(t){TK=t;return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TK},body:JSON.stringify(Object.assign({s:SLUG},b))})}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;if(r.status===401)login();if(j.error==='setup')flash(j.message,1);return j})})}
-function login(){nav.innerHTML='';box.innerHTML='<div class="card" style="max-width:560px"><h1>ניהול מכירה סינית</h1><p>כדי לנהל מכירה צריך להיכנס לחשבון באתר. הכניסה בחינם, עם כתובת מייל.</p><div class="acts"><a class="btn pri" href="/app.html#login&back='+encodeURIComponent(location.pathname+location.search)+'">כניסה לחשבון</a></div></div>'}
+function login(){nav.innerHTML='';var back='/app.html#login&back='+encodeURIComponent(location.pathname+location.search);
+  box.innerHTML='<div class="card" style="max-width:420px"><h1>ניהול מכירה סינית</h1><p class="hint" style="margin:0 0 8px">כניסה עם החשבון באתר, באותו מייל שהוגדר למנהל המכירה.</p>'
+   +'<label class="f" for="lgm">מייל<input id="lgm" type="email" dir="ltr" autocomplete="email"></label><label class="f" for="lgp">סיסמה<input id="lgp" type="password" dir="ltr" autocomplete="current-password"></label>'
+   +'<div class="acts"><button class="btn pri" type="button" id="lgi">כניסה</button></div><p class="hint" id="lgx" style="margin:6px 0 0"></p>'
+   +'<p class="hint" style="margin:10px 0 0">אין סיסמה, שכחתם אותה, או רוצים להיכנס עם Google או עם קישור במייל? <a href="'+back+'">כניסה בדרך אחרת</a> (עוברים דרך דף הלוח וחוזרים לכאן).</p></div>';
+  var go=function(){var m=$('lgm').value.trim(),pw=$('lgp').value,C=window.MYLUACH_CFG||{},x=$('lgx');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)||!pw){x.textContent='נא למלא מייל וסיסמה.';return}
+    if(!C.supabaseUrl){x.textContent='הכניסה לא זמינה כרגע. אפשר להיכנס בדרך אחרת.';return}
+    x.textContent='נכנסים…';$('lgi').disabled=true;
+    fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({email:m,password:pw})})
+     .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})}).then(function(o){
+       if(!o.ok||!o.j.access_token){$('lgi').disabled=false;x.textContent=/invalid|credentials/i.test(JSON.stringify(o.j))?'המייל או הסיסמה לא נכונים. אם נרשמתם בלי סיסמה, השתמשו ב"כניסה בדרך אחרת".':'הכניסה נכשלה. נסו שוב.';return}
+       try{localStorage.setItem(KEY,JSON.stringify(o.j))}catch(e){}location.reload()}).catch(function(){$('lgi').disabled=false;x.textContent='תקלת תקשורת. נסו שוב.'})};
+  $('lgi').onclick=go;$('lgp').onkeydown=function(e){if(e.key==='Enter')go()}}
 function go(t,s){var u=new URL(location.href);if(s!==undefined){u.searchParams.set('s',s);SLUG=s}u.searchParams.set('t',t);history.replaceState(null,'',u);TAB=t;show()}
 function csv(name,head,rows){var e=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   var t='﻿'+[head].concat(rows).map(function(r){return r.map(e).join(',')}).join('\r\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));a.download=name+'.csv';a.click()}
