@@ -48,6 +48,7 @@ function cfgOf(s) {
   return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
     repWeb: ['start', 'end', 'both', 'off'].includes(c.repWeb) ? c.repWeb : 'end', repPhone: ['start', 'pay', 'both', 'off'].includes(c.repPhone) ? c.repPhone : 'pay',
     repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
+    allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
     progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '' };
 }
@@ -161,7 +162,7 @@ async function notifyPaid(o) {
   const rep = o.rep_id ? (await db('auction_rep?id=eq.' + o.rep_id + '&select=name,code&limit=1').catch(() => []))[0] : null;
   const pk = o.pkg_id ? s.pkgs.find(k => k.id === o.pkg_id) : null;
   const lines = (o.lines || []).map(L => { const p = s.products.find(x => x.id === +L.p) || {}; return L.n + ' × ' + p.num + ' ' + escH(p.name || ''); }).join('<br>');
-  await notify(s, 'רכישה חדשה: ' + (+o.amount) + ' ₪', '<p><b>' + escH(o.name || o.phone || 'רוכש') + '</b> · ' + ({ web: 'באתר', phone: 'בטלפון', manual: 'ידנית' }[o.channel] || '') + '</p><p>סכום: <b>' + (+o.amount) + ' ₪</b> · ' + n + ' כרטיסים' + (pk ? ' · חבילה: ' + escH(pk.name) : '') + (rep ? ' · מגייס: ' + escH(rep.name || rep.code) : '') + '</p><p style="font-size:14px">' + lines + '</p>' + (o.phone ? '<p>טלפון: ' + escH(o.phone) + '</p>' : '') + (o.email ? '<p>מייל: ' + escH(o.email) + '</p>' : ''));
+  await notify(s, 'רכישה חדשה: ' + (+o.amount) + ' ₪', '<p><b>' + escH(o.name || o.phone || 'רוכש') + '</b> · ' + ({ web: 'באתר', phone: 'בטלפון', manual: 'ידנית', rep: 'דרך נציג' }[o.channel] || '') + '</p><p>סכום: <b>' + (+o.amount) + ' ₪</b> · ' + n + ' כרטיסים' + (pk ? ' · חבילה: ' + escH(pk.name) : '') + (rep ? ' · מגייס: ' + escH(rep.name || rep.code) : '') + '</p><p style="font-size:14px">' + lines + '</p>' + (o.phone ? '<p>טלפון: ' + escH(o.phone) + '</p>' : '') + (o.email ? '<p>מייל: ' + escH(o.email) + '</p>' : ''));
 }
 
 /* קשר / קהילות: בדיקת עסקה שחזרה מדף התשלום, וסימון ההזמנה כשולמה */
@@ -203,6 +204,8 @@ function cleanCfg(old, b) {
   if (b.repSkip != null) c.repSkip = !!b.repSkip;
   if (b.allowCancel != null) c.allowCancel = !!b.allowCancel;
   if (b.phoneCart != null) c.phoneCart = !!b.phoneCart;
+  if (b.allowUnpaid != null) c.allowUnpaid = !!b.allowUnpaid;
+  if (b.repOrders != null) c.repOrders = ['pending', 'paid'].includes(b.repOrders) ? b.repOrders : 'off';
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
     if (b.pay.mosad != null) p.mosad = String(b.pay.mosad).replace(/\D/g, '').slice(0, 10); if (b.pay.apiValid != null) p.apiValid = clean(b.pay.apiValid, 60); if (b.pay.groupe != null) p.groupe = clean(b.pay.groupe, 60); c.pay = p; }
@@ -336,7 +339,7 @@ module.exports = async (req, res) => {
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
       return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, progress: c.progress.on },
-        open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '' });
+        open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
     if (a === 'checkout') {
@@ -344,8 +347,16 @@ module.exports = async (req, res) => {
       const s = await load(b.s, true); if (!s) return json(res, 404, { error: 'no sale' });
       if (await require('./_shabbat').closedNow(req, await require('./_lib').loadConfig())) return json(res, 423, { error: 'shabbat', message: 'האתר סגור בשבת ובחג' });
       if (!clean(b.name, 80) || !(phoneN(b.phone) || mailN(b.email))) return json(res, 400, { error: 'details', message: 'צריך שם, וטלפון או מייל' });
-      const S = await site(); if (!PAY.provs(s, S).length) return json(res, 409, { error: 'pay', message: 'התשלום באתר עוד לא הוגדר במכירה הזאת' });
+      const S = await site(), later = !!b.later;
+      if (later && !cfgOf(s).allowUnpaid) return json(res, 403, { error: 'later', message: 'במכירה הזאת אפשר להזמין רק עם תשלום' });
+      if (!later && !PAY.provs(s, S).length) return json(res, 409, { error: 'pay', message: 'התשלום באתר עוד לא הוגדר במכירה הזאת' });
       const r = await makeOrder(s, b, 'web', reqMeta(req)); if (r.error) return json(res, 400, r);
+      /* הזמנה בלי תשלום: נשמרת כממתינה. הכרטיסים מקבלים מספרים רק אחרי שמנהל המכירה מסמן שולם */
+      if (later) {
+        await db('auction_order?id=eq.' + r.order.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { later: true } }) }).catch(() => {});
+        notify(s, 'הזמנה בלי תשלום', '<p>' + require('./_mail').escH(r.order.name || '') + ' (' + require('./_mail').escH(r.order.phone || r.order.email || '') + ') הזמין ' + r.price.count + ' כרטיסים בסך ' + (+r.order.amount) + ' ₪, לתשלום מאוחר יותר. אחרי הגבייה מסמנים "שולם" בדף ההזמנות.</p>').catch(() => {});
+        return json(res, 200, { id: r.order.id, amount: r.order.amount, count: r.price.count, later: true });
+      }
       let tx = null; try { tx = await PAY.webTx(s, r.order, S, 'מכירה סינית: ' + cfgOf(s).title); }
       catch (e) { console.error('auction pay', e.message); return json(res, 502, { error: 'pay', message: 'לא הצלחנו לפתוח את דף התשלום: ' + String(e.message).slice(0, 120) }); }
       if (!tx) return json(res, 409, { error: 'pay', message: 'התשלום באתר עוד לא הוגדר במכירה הזאת' });
@@ -372,16 +383,32 @@ module.exports = async (req, res) => {
         groups: c.progress.groups ? top(R.groups.filter(g => g.grp !== 'ללא קבוצה'), 'amount').map(g => ({ grp: g.grp, amount: c.progress.amount ? g.amount : null })) : [],
         products: c.progress.products ? R.products.slice().sort((x, y) => y.tickets - x.tickets).slice(0, 10).map(p => ({ num: p.num, name: p.name, tickets: p.tickets })) : [] });
     }
-    if (a === 'rep') {
+    if (a === 'rep' || a === 'repOrder') {
       res.setHeader('Cache-Control', 'private, no-store');
-      const s = await load(b.s); const t = String(b.t || ''); if (!s || !/^[0-9a-f]{24}$/.test(t)) return json(res, 404, { error: 'no' });
-      const L = await db('auction_rep?sale_id=eq.' + s.id + '&token=eq.' + t + '&select=id,code,name,grp,goal&limit=1'), r = L && L[0]; if (!r) return json(res, 404, { error: 'no' });
+      const s = await load(b.s, a === 'repOrder'); const t = String(b.t || ''); if (!s || !/^[0-9a-f]{24}$/.test(t)) return json(res, 404, { error: 'no' });
+      const L = await db('auction_rep?sale_id=eq.' + s.id + '&token=eq.' + t + '&active=is.true&select=id,code,name,grp,goal&limit=1'), r = L && L[0]; if (!r) return json(res, 404, { error: 'no' });
+      const c = cfgOf(s);
+      /* נציג רושם הזמנה עבור רוכש שמשלם לו במזומן / צ'ק (אם מנהל המכירה איפשר) */
+      if (a === 'repOrder') {
+        if (req.method !== 'POST') return json(res, 405, {});
+        if (c.repOrders === 'off') return json(res, 403, { error: 'off', message: 'רישום הזמנות על ידי נציגים לא מאופשר במכירה הזאת' });
+        if (!clean(b.name, 80) || !(phoneN(b.phone) || mailN(b.email))) return json(res, 400, { error: 'details', message: 'צריך שם, וטלפון או מייל של הרוכש' });
+        const R = await makeOrder(s, { ...b, rep: '', link: '', repId: r.id, repSrc: 'rep' }, 'rep', reqMeta(req)); if (R.error) return json(res, 400, R);
+        const how = clean(b.method, 30) || 'מזומן', note = clean(b.note, 300);
+        await db('auction_order?id=eq.' + R.order.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { byRep: r.id, method: how, note } }) }).catch(() => {});
+        let tickets = [];
+        if (c.repOrders === 'paid') { await markPaid(R.order.id, { txn: 'rep:' + r.code + ':' + how, callback: { byRep: r.id, method: how, note } }); tickets = await ticketsOf(R.order, s); }
+        else notify(s, 'נציג רשם הזמנה', '<p>' + require('./_mail').escH(r.name || r.code) + ' רשם הזמנה עבור ' + require('./_mail').escH(R.order.name || '') + ': ' + R.price.count + ' כרטיסים בסך ' + (+R.order.amount) + ' ₪ (' + require('./_mail').escH(how) + '). ההזמנה ממתינה לאישור קבלת התשלום בדף ההזמנות.</p>').catch(() => {});
+        return json(res, 200, { id: R.order.id, amount: R.order.amount, count: R.price.count, paid: c.repOrders === 'paid', tickets });
+      }
       const O = await all('auction_order?rep_id=eq.' + r.id + '&status=eq.paid&select=amount,lines,channel,name,paid_at&order=paid_at.desc');
-      return json(res, 200, { sale: { title: cfgOf(s).title, slug: s.slug, phoneLine: cfgOf(s).phoneLine }, rep: { name: r.name || '', code: r.code, grp: r.grp || '', goal: +r.goal || 0 },
+      const mine = c.repOrders !== 'off' ? await db('auction_order?rep_id=eq.' + r.id + '&channel=eq.rep&select=id,name,phone,amount,status,lines,created_at,callback&order=created_at.desc&limit=200').catch(() => []) : [];
+      return json(res, 200, { sale: { title: c.title, slug: s.slug, phoneLine: c.phoneLine, open: isOpen(s) }, rep: { name: r.name || '', code: r.code, grp: r.grp || '', goal: +r.goal || 0 },
         amount: r2(O.reduce((t, o) => t + +o.amount, 0)), orders: O.length, tickets: O.reduce((t, o) => t + (o.lines || []).reduce((x, L) => x + +L.n, 0), 0),
-        recent: O.slice(0, 20).map(o => ({ name: String(o.name || '').split(' ')[0] || 'רוכש', amount: +o.amount, channel: o.channel, at: o.paid_at })), link: SITE() + '/auction?s=' + s.slug + '&m=' + r.code });
+        recent: O.slice(0, 20).map(o => ({ name: String(o.name || '').split(' ')[0] || 'רוכש', amount: +o.amount, channel: o.channel, at: o.paid_at })), link: SITE() + '/auction?s=' + s.slug + '&m=' + r.code,
+        canOrder: c.repOrders, products: c.repOrders !== 'off' ? s.products.filter(p => p.active !== false).map(pubProd) : [], pkgs: c.repOrders !== 'off' ? s.pkgs.filter(pkgLive).map(pubPkg) : [],
+        mine: (mine || []).map(o => ({ id: o.id.slice(2, 10), name: o.name || '', phone: o.phone || '', amount: +o.amount, status: o.status, n: (o.lines || []).reduce((x, L) => x + +L.n, 0), method: (o.callback || {}).method || '', at: o.created_at })) });
     }
-
     /* --- מנהל המכירה --- */
     if (req.method !== 'POST') return json(res, 405, {});
     res.setHeader('Cache-Control', 'private, no-store');
@@ -414,7 +441,7 @@ module.exports = async (req, res) => {
       return json(res, 200, mgrView(await load(s.slug, true), await site()));
     }
     if (a === 'open' || a === 'close') {
-      if (a === 'open') { const S = await site(); if (!PAY.provs(s, S).length && !b.force) return json(res, 409, { error: 'pay', message: 'לפני הפתיחה צריך להגדיר סליקה (מספר מוסד וקוד אימות של נדרים פלוס)' }); if (!s.products.some(p => p.active !== false)) return json(res, 409, { error: 'products', message: 'אין מוצרים במכירה' }); }
+      if (a === 'open') { const S = await site(); if (!PAY.provs(s, S).length && !cfgOf(s).allowUnpaid && cfgOf(s).repOrders === 'off' && !b.force) return json(res, 409, { error: 'pay', message: 'לפני הפתיחה צריך להגדיר סליקה, או לאפשר הזמנה בלי תשלום' }); if (!s.products.some(p => p.active !== false)) return json(res, 409, { error: 'products', message: 'אין מוצרים במכירה' }); }
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: a === 'open' ? 'open' : 'closed', updated_at: new Date().toISOString() }) }); drop(s.slug);
       notify(s, a === 'open' ? 'המכירה נפתחה' : 'המכירה נסגרה', '<p>' + (a === 'open' ? 'המכירה נפתחה לרכישה' : 'המכירה נסגרה. אי אפשר לרכוש, ורשימת הכרטיסים נעולה להגרלה') + ' (על ידי ' + u.email + ').</p>').catch(() => {});
       return json(res, 200, { status: a === 'open' ? 'open' : 'closed' });
@@ -444,7 +471,7 @@ module.exports = async (req, res) => {
     if (a === 'orders') {
       const st = ['paid', 'pending', 'failed', 'refunded', 'underpaid'].includes(b.status) ? '&status=eq.' + b.status : '';
       const O = await db('auction_order?sale_id=eq.' + s.id + st + '&select=*&order=created_at.desc&limit=' + Math.min(2000, Math.max(1, +b.limit || 500)));
-      return json(res, 200, { orders: (O || []).map(o => { const x = { ...o }; delete x.callback; delete x.ua; return x; }) });
+      return json(res, 200, { orders: (O || []).map(o => { const x = { ...o }, cb = o.callback || {}; x.callback = { later: !!cb.later, method: cb.method || '', note: cb.note || '' }; delete x.ua; return x; }) });
     }
     if (a === 'order') {
       const id = String(b.id || ''); if (!/^au[0-9a-f]{22}$/.test(id)) return json(res, 400, { error: 'id' });
