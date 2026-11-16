@@ -374,18 +374,24 @@ function ivr(){var v=S.cfg.ivr||{},cc=v.cc||{};
   var cw=function(){$('c7w').hidden=$('c1').value!=='other'};$('c1').onchange=cw;cw();
   var D=S.ivrDefaults||{},own=S.cfg.ivrtxt||{};
   var IA=S.cfg.ivrAudio||{},VN={'סכום':'הסכום','כרטיסים':'מספר הכרטיסים','חבילה':'שם החבילה','מוצר':'מספר ושם המוצר','מכירה':'שם המכירה','מקש':'מספר המקש'};
+  var arow=function(k,ix,label,a){var mu=a&&a.mute,has=a&&!a.mute;
+    return '<div class="acts" style="margin:4px 0;align-items:center;flex-wrap:wrap"><span style="min-width:100px;font-size:13px">'+label+'</span>'
+      +'<button type="button" class="btn" data-ma="'+k+'" data-i="'+ix+'">'+(has?'החלפת שמע':'העלאת שמע')+'</button>'
+      +(has?'<button type="button" class="btn bad" data-mad="'+k+'" data-i="'+ix+'">מחיקה</button><audio controls src="'+esc(a.url)+'" style="height:34px;max-width:200px"></audio>'+(a.y?'<span class="pill ok">מושמע במקום הטקסט</span>':'<span class="pill wait">לא הועלה לימות</span>'):'')
+      +'<label class="ck" style="margin:0"><input type="checkbox" data-mu="'+k+'" data-i="'+ix+'"'+(mu?' checked':'')+'> בלי טקסט (לא להשמיע)</label></div>'};
   $('ivt').innerHTML=Object.keys(D).map(function(k){var P=D[k][2]||[],multi=P.some(function(x){return x.v});
-    var rows=P.map(function(x,i){if(x.v)return '<div class="note" style="padding:4px 10px;margin:2px 0;font-size:13px">↳ '+esc(VN[x.v]||x.v)+': נאמר אוטומטי</div>';if(!x.s)return '';
-      var a=IA[k+'#'+i]||(i===0?IA[k]:null);
-      return '<div class="acts" style="margin:4px 0;align-items:center"><span style="min-width:100px;font-size:13px">'+(multi?'חלק: ':'')+'«'+esc(x.s)+'»</span><button type="button" class="btn" data-ma="'+k+'" data-i="'+i+'">'+(a?'החלפת שמע':'העלאת שמע')+'</button>'
-        +(a?'<button type="button" class="btn bad" data-mad="'+k+'" data-i="'+i+'">מחיקה</button><audio controls src="'+esc(a.url)+'" style="height:34px;max-width:200px"></audio>'+(a.y?'<span class="pill ok">מושמע במקום הטקסט</span>':'<span class="pill wait">לא הועלה לימות</span>'):'')+'</div>'}).join('');
+    var rows=(multi?'<div style="border-bottom:1px solid var(--line,#ddd);padding-bottom:4px;margin-bottom:4px"><b style="font-size:13px">הקלטה אחת לכל ההודעה</b> <small>(מחליפה את כל הטקסט, כולל הסכום והכמות, שלא יושמעו אוטומטית)</small>'+arow(k,'all','כל ההודעה',IA[k+'#all'])+'</div><b style="font-size:13px">או הקלטה לכל חלק</b>':'')
+     +P.map(function(x,i){if(x.v)return '<div class="note" style="padding:4px 10px;margin:2px 0;font-size:13px">↳ '+esc(VN[x.v]||x.v)+': נאמר אוטומטי</div>';if(!x.s)return '';
+      return arow(k,i,(multi?'חלק: ':'')+'«'+esc(x.s)+'»',IA[k+'#'+i]||(i===0?IA[k]:null))}).join('');
     return '<div class="f"><label for="iv_'+k+'">'+esc(D[k][0])+'</label><textarea id="iv_'+k+'" data-iv="'+k+'" rows="2" placeholder="'+esc(D[k][1])+'" style="min-height:58px">'+esc(own[k]||'')+'</textarea>'
-      +'<details style="margin-top:2px"><summary style="cursor:pointer;font-size:13px">הקלטה במקום הטקסט'+(multi?' (מחולקת לחלקים, המספרים והשמות נאמרים אוטומטית ביניהם)':'')+'</summary>'+rows
-      +(multi?'<small>חלק בלי הקלטה מושמע כטקסט. אם מעלים הקלטה לחלק כלשהו, נוסח הטקסט שנכתב למעלה לא בשימוש בהודעה הזאת.'+(D[k][1].indexOf('{מקש}')>=0?' את מספר המקש אומרים אוטומטית, לפי אם יש חבילות.':'')+'</small>':'')+'</details></div>'}).join('')+'<input type="file" id="maf" accept="audio/*" hidden>';
+      +'<details style="margin-top:2px"><summary style="cursor:pointer;font-size:13px">הקלטה במקום הטקסט, או ביטול הטקסט'+(IA[k+'#all']&&IA[k+'#all'].mute?' (ההודעה כבויה)':'')+'</summary>'+rows
+      +'<small>חלק או הודעה שמסומנים "בלי טקסט" לא מושמעים בכלל. בהודעה שמבקשת מהמתקשר להקיש משהו, כדאי להשאיר לפחות הקלטה או טקסט אחד, כדי שיבין מה מבקשים.'+(multi?' חלק בלי הקלטה מושמע כטקסט. אם מעלים הקלטה לחלק כלשהו, נוסח הטקסט שנכתב למעלה לא בשימוש בהודעה הזאת.':'')+'</small></details></div>'}).join('')+'<input type="file" id="maf" accept="audio/*" hidden>';
+  $('ivt').onchange=function(e){var c=e.target.closest('[data-mu]');if(!c)return;var ix=c.dataset.i==='all'?'all':(+c.dataset.i||0);
+    call(c.checked?{a:'msgAudioSet',key:c.dataset.mu,idx:ix,mute:true}:{a:'msgAudioSet',key:c.dataset.mu,idx:ix,url:''}).then(function(){flash(c.checked?'ההודעה לא תושמע':'חזר השמע הרגיל');return loadSale()}).then(ivr).catch(function(er){flash(er.message||'שגיאה')})};
   var MK='',MI=0;
   $('ivt').onclick=function(e){var b=e.target.closest('[data-ma]'),d=e.target.closest('[data-mad]');
-    if(b){MK=b.dataset.ma;MI=+b.dataset.i||0;$('maf').value='';$('maf').click();return}
-    if(d&&confirm('למחוק את ההקלטה? יושמע שוב הטקסט.'))call({a:'msgAudioSet',key:d.dataset.mad,idx:+d.dataset.i||0,url:''}).then(function(r){flash('נמחק');return loadSale()}).then(ivr)};
+    if(b){MK=b.dataset.ma;MI=b.dataset.i==='all'?'all':(+b.dataset.i||0);$('maf').value='';$('maf').click();return}
+    if(d&&confirm('למחוק את ההקלטה? יושמע שוב הטקסט.'))call({a:'msgAudioSet',key:d.dataset.mad,idx:d.dataset.i==='all'?'all':(+d.dataset.i||0),url:''}).then(function(r){flash('נמחק');return loadSale()}).then(ivr)};
   $('maf').onchange=function(){var f=this.files[0];if(!f||!MK)return;var ext=((f.name.match(/\.(\w+)$/)||[])[1]||'mp3').toLowerCase(),key=MK,idx=MI;flash('מעלה…');
     call({a:'msgAudioUrl',key:key,idx:idx,ext:ext}).then(function(u){if(!u.upload)throw new Error(u.message||'אין אחסון');return fetch(u.upload,{method:'PUT',body:f}).then(function(r){if(!r.ok)throw new Error('העלאה נכשלה');return u.url})})
      .then(function(url){return call({a:'msgAudioSet',key:key,idx:idx,url:url})}).then(function(r){flash(r.warn||'הקובץ הועלה',!!r.warn);return loadSale()}).then(ivr).catch(function(e){flash(e.message||'שגיאה',1)})};

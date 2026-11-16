@@ -64,14 +64,18 @@ const PH_RE = /(\{(?:מכירה|סכום|כרטיסים|חבילה|מקש|מוצ
 function partsOf(text) { return String(text).split(PH_RE).map(x => { const m = /^\{(.+)\}$/.exec(x); return m ? { v: m[1] } : { s: x.trim() }; }); }
 function M(s, key, V) {
   const cfg = s.cfg || {}, ia = cfg.ivrAudio || {}, ivp = (cfg.ivr || {}).path, P = partsOf(MSG[key][1]);
-  const au = i => { const a = ia[key + '#' + i] || (i === 0 ? ia[key] : null); return a && a.y ? a : null; };
+  const au = i => { const a = ia[key + '#' + i] || (i === 0 ? ia[key] : null); return a && (a.y || a.mute) ? a : null; };
+  /* הקלטה אחת לכל ההודעה: מחליפה את כל הטקסט (גם את הסכום והכמות). או סימון "בלי טקסט": ההודעה לא מושמעת */
+  const all = ia[key + '#all'];
+  if (all && all.mute) return '';
+  if (all && all.y && ivp) return 'f-/' + ivp + '/' + all.y;
   const val = k => V && V[k] != null ? V[k] : k === 'מכירה' ? A().cfgOf(s).title : '';
   /* אם הועלתה הקלטה לחלק כלשהו: החלקים הקבועים בלי הקלטה מושמעים כטקסט, והמשתנים (סכום, כמות...) מושמעים אוטומטית */
-  if (ivp && P.some((x, i) => x.s && au(i))) {
+  if (P.some((x, i) => x.s && au(i) && (au(i).mute || ivp))) {
     const out = [];
     P.forEach((x, i) => {
       if (x.v) { const v = val(x.v); if (v !== '' && v != null) out.push(x.v === 'כרטיסים' || x.v === 'מקש' ? 'n-' + v : T(v)); }
-      else if (x.s) out.push(au(i) ? 'f-/' + ivp + '/' + au(i).y : T(x.s));
+      else if (x.s) { const a = au(i); if (a && a.mute) return; if (a && a.y && ivp) out.push('f-/' + ivp + '/' + a.y); else out.push(T(x.s)); }
     });
     return out.join('.');
   }
@@ -226,7 +230,7 @@ async function dropCart(s, ph) { if (ph) await db('auction_cart?sale_id=eq.' + s
 module.exports = async (req, res) => {
   const q = { ...(req.query || {}), ...(req.body && typeof req.body === 'object' ? req.body : {}) };
   const out = t => { res.statusCode = 200; res.setHeader('Content-Type', 'text/plain; charset=utf-8'); res.end(t); };
-  const bye = parts => out('id_list_message=' + [].concat(parts).join('.') + '&go_to_folder=hangup');
+  const bye = parts => out('id_list_message=' + [].concat(parts).filter(Boolean).join('.') + '&go_to_folder=hangup');
   try {
     const s = await A().load(q.s), iv = s && (s.cfg || {}).ivr || {};
     if (!s || !iv.key || String(q.k || '') !== iv.key || iv.on === false) return q.hangup === 'yes' ? out('') : bye(T('השלוחה לא מוגדרת'));
@@ -247,7 +251,7 @@ module.exports = async (req, res) => {
     const st = replay(s, await reps(s), ans, saved), next = 'X' + (ans.length + 1);
     const pre = ans.length ? st.msg : [M(s, 'welcome')];
     /* הערך ה-15 של מודול ה-API בימות: "no" = בלי בקשת אישור אחרי כל הקשה ("לאישור הקישו 1, להקשה מחודשת הקישו 2") */
-    const rd = (parts, max, min, ok) => out('read=' + pre.concat(parts).join('.') + '=' + [next, 'no', max, min, 10, 'NO', 'yes', 'no', '', ok || '', '', '', '', '', 'no'].join(','));
+    const rd = (parts, max, min, ok) => out('read=' + pre.concat(parts).filter(Boolean).join('.') + '=' + [next, 'no', max, min, 10, 'NO', 'yes', 'no', '', ok || '', '', '', '', '', 'no'].join(','));
     const pkgs = s.pkgs.filter(A().pkgLive);
     /* חזרה מסליקת האשראי: ההזמנה של השיחה כבר קיימת (והסל כבר עבר אליה), אז הולכים ישר לטיפול בתשלום */
     switch (q.CreditCard_CODE != null ? 'pay' : st.phase) {
@@ -309,7 +313,7 @@ module.exports = async (req, res) => {
             : cc.type === 'kesherhk' ? { term: cc.terminal || K.userName || '', pass: cc.password || K.password || '', reg: cc.register || '', user: cc.user || '' }
             : { term: cc.terminal || '', pass: cc.password || '', reg: cc.register || '', user: cc.user || '' };
           const v = [cc.type, sum, f.reg, '1', '1', '', f.user, f.term, f.pass, 'all', '', '', '', '', 'GoBack'].map(x => String(x).replace(/[,&=]/g, ''));
-          return out('id_list_message=' + pre.concat(M(s, 'toPay', { 'סכום': nis(o.amount) })).join('.') + '&credit_card=' + v.join(','));
+          return out('id_list_message=' + pre.concat(M(s, 'toPay', { 'סכום': nis(o.amount) })).filter(Boolean).join('.') + '&credit_card=' + v.join(','));
         }
         /* מעבר לשלוחת סליקה של הארגון (אם הוגדרה). אחרת ההזמנה נשארת ממתינה, ומנהל המכירה משלים אותה */
         if (iv.payPath) return out('id_list_message=' + pre.concat(T('ההזמנה נרשמה הסכום לתשלום ' + nis(o.amount) + ' מעבירים אתכם לתשלום מאובטח')).join('.') + '&go_to_folder=/' + iv.payPath);

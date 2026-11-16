@@ -609,22 +609,23 @@ module.exports = async (req, res) => {
       const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', R = require('./_r2'), M = R.mediaPut('auction/' + s.id + '/p' + p.num + '-' + Date.now().toString(36) + '.' + ext);
       if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
     }
-    /* הקלטה לחלק קבוע בהודעת שיחה. הודעה עם משתנים (סכום, כמות...) מחולקת לחלקים, והמשתנה מושמע אוטומטית בין ההקלטות */
+    /* הקלטה להודעת שיחה: לחלק קבוע (idx), או אחת לכל ההודעה (idx='all', מחליפה את כל הטקסט). אפשר גם לסמן "בלי טקסט" (mute) */
     if (a === 'msgAudioUrl' || a === 'msgAudioSet') {
-      const IV = require('./_auction_ivr'), key = String(b.key || ''), def = IV.MSG[key], idx = Math.floor(+b.idx || 0), part = def && IV.partsOf(def[1])[idx];
-      if (!part || !part.s) return json(res, 400, { error: 'key', message: 'אי אפשר להעלות שמע לחלק הזה' });
-      const ak = key + '#' + idx;
+      const IV = require('./_auction_ivr'), key = String(b.key || ''), def = IV.MSG[key], isAll = b.idx === 'all', idx = isAll ? 0 : Math.floor(+b.idx || 0), part = def && !isAll && IV.partsOf(def[1])[idx];
+      if (!def || (!isAll && (!part || !part.s))) return json(res, 400, { error: 'key', message: 'אי אפשר להעלות שמע לחלק הזה' });
+      const ak = isAll ? key + '#all' : key + '#' + idx, tag = isAll ? 'all' : String(idx);
       if (a === 'msgAudioUrl') {
-        const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', M = require('./_r2').mediaPut('auction/' + s.id + '/m-' + key + idx + '-' + Date.now().toString(36) + '.' + ext);
+        const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', M = require('./_r2').mediaPut('auction/' + s.id + '/m-' + key + tag + '-' + Date.now().toString(36) + '.' + ext);
         if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
       }
       const MD = require('./_r2').media(), url = String(b.url || '');
       if (url && !(MD && url.indexOf(MD.url + '/auction/' + s.id + '/') === 0)) return json(res, 400, { error: 'url' });
       const ia = { ...((s.cfg || {}).ivrAudio || {}) }, iv = (s.cfg || {}).ivr || {}; let warn = '';
-      if (!url) { delete ia[ak]; if (idx === 0) delete ia[key]; }
+      if (b.mute) ia[ak] = { mute: true };
+      else if (!url) { delete ia[ak]; if (idx === 0 && !isAll) delete ia[key]; }
       else if (iv.token && iv.path) {
-        try { const f = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (!f.ok) throw new Error('fetch ' + f.status); const buf = await f.arrayBuffer(), nm = 'am' + s.id + key.toLowerCase() + idx;
-          await ymUpload(iv.token, 'ivr2:/' + iv.path + '/' + nm + '.wav', buf); ia[ak] = { url, y: nm }; if (idx === 0) delete ia[key]; }
+        try { const f = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (!f.ok) throw new Error('fetch ' + f.status); const buf = await f.arrayBuffer(), nm = 'am' + s.id + key.toLowerCase() + tag;
+          await ymUpload(iv.token, 'ivr2:/' + iv.path + '/' + nm + '.wav', buf); ia[ak] = { url, y: nm }; if (idx === 0 && !isAll) delete ia[key]; }
         catch (e) { warn = 'ההעלאה לימות המשיח נכשלה: ' + String(e.message).slice(0, 120); ia[ak] = { url }; }
       } else { ia[ak] = { url }; warn = 'הקובץ נשמר באתר. כדי שיושמע בטלפון, צריך להזין בהגדרות הטלפון את הטוקן של ימות ואת מספר השלוחה'; }
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, ivrAudio: ia }, updated_at: new Date().toISOString() }) }); drop(s.slug);
