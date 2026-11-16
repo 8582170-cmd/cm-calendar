@@ -203,6 +203,7 @@ function mgrView(s, S) {
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
     ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null };
 }
+const holdFolder = x => String(x || '').replace(/[^\w\-\/]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '').slice(0, 60) || 'HOLD';
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
   str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 20000); str('color', 7); str('logo', 400); str('banner', 400); str('video', 400);
@@ -235,7 +236,7 @@ function cleanCfg(old, b) {
     c.ivr = { ...v0, cc }; delete b.ivr.cc; }
   if (b.ivr && typeof b.ivr === 'object') { const v = { ...(c.ivr || {}) }; if (!v.key) v.key = crypto.randomBytes(8).toString('hex');
     if (b.ivr.path != null) v.path = String(b.ivr.path).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (b.ivr.payPath != null) v.payPath = String(b.ivr.payPath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
-    if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') { const nm = String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60), o = v.hold || {}; v.hold = { on: !!b.ivr.hold.on, name: nm }; if (o.url) { v.hold.url = o.url; if (o.y) v.hold.y = true; } } if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
+    if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') { const nm = String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60), o = v.hold || {}; v.hold = { on: !!b.ivr.hold.on, name: nm, folder: holdFolder(b.ivr.hold.folder != null ? b.ivr.hold.folder : o.folder) }; if (o.url) { v.hold.url = o.url; if (o.y) v.hold.y = true; } } if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
   return c;
 }
 /* מוצרים / חבילות / מגייסים: שמירה של כל הרשימה. שורה בלי id נוצרת, שורה עם del נמחקת (רק אם אין עליה כרטיסים) */
@@ -631,13 +632,13 @@ module.exports = async (req, res) => {
       }
       const MD = require('./_r2').media(), url = String(b.url || ''), iv = { ...((s.cfg || {}).ivr || {}) }; let warn = '';
       if (url && !(MD && url.indexOf(MD.url + '/auction/' + s.id + '/') === 0)) return json(res, 400, { error: 'url' });
-      const oh = iv.hold || {};
-      if (!url) iv.hold = { on: !!oh.on, name: oh.name || '' };
+      const oh = iv.hold || {}, fo = holdFolder(b.folder != null ? b.folder : oh.folder);
+      if (!url) iv.hold = { on: !!oh.on, name: oh.name || '', folder: fo };
       else {
-        /* הקובץ עולה לתיקייה ייעודית בתוך השלוחה. בניהול של ימות צריך ללחוץ עליה קליק ימני ו"יצירת מוזיקה בהמתנה", ואת השם שנוצר לרשום באתר */
-        const nm = 'hold' + s.id; iv.hold = { on: !!oh.on, name: oh.name || '', url };
+        /* הקובץ עולה לתיקייה שנבחרה (ברירת מחדל HOLD, מתחת לשורש המערכת). בניהול של ימות צריך ללחוץ עליה קליק ימני ו"יצירת מוזיקה בהמתנה", ואת השם שנוצר לרשום באתר */
+        const nm = 'hold' + s.id; iv.hold = { on: !!oh.on, name: oh.name || '', folder: fo, url };
         if (iv.token && iv.path) {
-          try { const f = await fetch(url, { signal: AbortSignal.timeout(30000) }); if (!f.ok) throw new Error('fetch ' + f.status); await ymUpload(iv.token, 'ivr2:/' + iv.path + '/hold/' + nm + '.wav', await f.arrayBuffer()); iv.hold.y = true; }
+          try { const f = await fetch(url, { signal: AbortSignal.timeout(30000) }); if (!f.ok) throw new Error('fetch ' + f.status); await ymUpload(iv.token, 'ivr2:/' + fo + '/' + nm + '.wav', await f.arrayBuffer()); iv.hold.y = true; }
           catch (e) { warn = 'ההעלאה לימות המשיח נכשלה: ' + String(e.message).slice(0, 120); }
         } else warn = 'הקובץ נשמר באתר. כדי שיועלה לימות, צריך להזין בהגדרות הטלפון את הטוקן ואת מספר השלוחה, ולהעלות שוב';
       }
