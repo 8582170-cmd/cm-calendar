@@ -145,7 +145,7 @@ async function mailBuyer(o) {
   const body = '<p>תודה רבה על ההשתתפות במכירה הסינית של ' + escH(c.title) + '.</p><p>סכום ששולם: <b>' + (+o.amount) + ' ₪</b> · מספר הזמנה: ' + o.id.slice(2, 10) + '</p>'
     + '<p style="margin:14px 0 6px"><b>מספרי הכרטיסים שלכם:</b></p><table style="border-collapse:collapse;width:100%;font-size:15px">' + rows + '</table>'
     + (c.drawAt ? '<p style="margin-top:14px">ההגרלה: ' + escH(c.drawAt) + '. בהצלחה!</p>' : '<p style="margin-top:14px">בהצלחה בהגרלה!</p>');
-  const mn = clean((s.cfg || {}).mailName, 60), rt = notifyList(s)[0];
+  const mn = senderName(s, ''), rt = notifyList(s)[0];
   await sendMail({ to: o.email, subject: 'הכרטיסים שלכם במכירה הסינית של ' + c.title, html: frame({ title: 'הכרטיסים שלכם', body, button: 'לדף המכירה', url: SITE() + '/auction?s=' + s.slug, brand: mn || undefined }), ...(mn ? { fromName: mn } : {}), ...(mn && rt ? { replyTo: rt } : {}) }, 'auction');
 }
 
@@ -154,8 +154,9 @@ const notifyList = s => (Array.isArray((s.cfg || {}).notify) ? s.cfg.notify : []
 async function notify(s, subject, body) {
   const to = notifyList(s); if (!to.length) return;
   const { sendMail, frame } = require('./_mail'), c = cfgOf(s);
-  const html = frame({ title: subject, body: body + '<p style="color:#666;font-size:13px">המכירה הסינית של ' + require('./_mail').escH(c.title) + '</p>', button: 'לניהול המכירה', url: SITE() + '/auction-manage?s=' + s.slug });
-  for (const m of to) await sendMail({ to: m, subject: subject + ' · ' + c.title, html }, 'auction').catch(e => console.error('notify', m, e.message));
+  const nm = senderName(s, c.title) || undefined;
+  const html = frame({ brand: nm, title: subject, body: body + '<p style="color:#666;font-size:13px">המכירה הסינית של ' + require('./_mail').escH(c.title) + '</p>', button: 'לניהול המכירה', url: SITE() + '/auction-manage?s=' + s.slug });
+  for (const m of to) await sendMail({ to: m, subject: subject + ' · ' + c.title, html, fromName: nm }, 'auction').catch(e => console.error('notify', m, e.message));
 }
 async function notifyBySale(saleId, subject, body) { const S = await db('auction_sale?id=eq.' + saleId + '&select=slug&limit=1'); const s = S && S[0] && await load(S[0].slug); if (s) await notify(s, subject, body); }
 async function notifyPaid(o) {
@@ -186,9 +187,11 @@ async function kesherPaid(s, id, num) {
 /* מי מנהל את המכירה: מי שפתח אותה, המיילים שבעל האתר / המנהל הוסיף (cfg.managers), ובעלי האתר */
 const managersOf = s => (Array.isArray((s.cfg || {}).managers) ? s.cfg.managers : []).map(mailN).filter(Boolean);
 const canManage = (s, u) => !!u && (s.user_id === u.id || isAdmin(u) || managersOf(s).includes(String(u.email || '').toLowerCase()));
+/* שם שולח בטוח לכותרת המייל: בלי תווים שמשבשים את הכתובת */
+const senderName = (s, dflt) => String(((s.cfg || {}).mailName) || dflt || '').replace(/[<>"\\,;@]/g, '').trim().slice(0, 60);
 async function inviteManagers(s, list, by) {
   const { sendMail, frame, escH } = require('./_mail'), c = cfgOf(s);
-  for (const m of list) await sendMail({ to: m, subject: 'הוזמנתם לנהל את המכירה הסינית של ' + c.title, html: frame({ title: 'ניהול המכירה הסינית', body: '<p>' + escH(by || 'מנהל האתר') + ' הוסיף אתכם כמנהלים של המכירה הסינית <b>' + escH(c.title) + '</b>.</p><p>הכניסה לניהול היא עם כתובת המייל הזאת (' + escH(m) + '): בכניסה הראשונה שולחים לכם קישור למייל, ואפשר גם לקבוע סיסמה.</p>', button: 'לניהול המכירה', url: SITE() + '/auction-manage?s=' + s.slug }) }, 'auction').catch(e => console.error('invite', m, e.message));
+  for (const m of list) await sendMail({ to: m, subject: 'הוזמנתם לנהל את המכירה הסינית של ' + c.title, fromName: senderName(s, c.title) || undefined, html: frame({ brand: senderName(s, c.title) || undefined, title: 'ניהול המכירה הסינית', body: '<p>' + escH(by || 'מנהל האתר') + ' הוסיף אתכם כמנהלים של המכירה הסינית <b>' + escH(c.title) + '</b>.</p><p>הכניסה לניהול היא עם כתובת המייל הזאת (' + escH(m) + '): בכניסה הראשונה שולחים לכם קישור למייל, ואפשר גם לקבוע סיסמה.</p>', button: 'לניהול המכירה', url: SITE() + '/auction-manage?s=' + s.slug }) }, 'auction').catch(e => console.error('invite', m, e.message));
 }
 async function mineOr403(req, res, b) {
   const u = await getUser(req); if (!u) { json(res, 401, { error: 'login' }); return null; }
