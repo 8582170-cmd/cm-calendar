@@ -69,6 +69,12 @@ label.f small{font-weight:400;color:var(--mute);font-size:13px}
 iframe.pay{width:100%;border:0;min-height:430px}
 .done{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:12px;max-width:720px}
 .done table{border-collapse:collapse;width:100%}.done td{padding:8px 10px;border-bottom:1px solid #EEF0F4;font-size:15px}.done td.s{direction:ltr;text-align:left;font-weight:700}
+.cdw{max-width:1100px;width:calc(100% - 32px);margin:18px auto 0;padding:16px 18px;border-radius:16px;background:var(--cream,#FBF6E9);border:1px solid var(--cream-line,#EADFC0);text-align:center}
+.cdt{font-weight:700;font-size:17px}.cdd{font-size:14px;opacity:.8;margin-top:4px}
+.cdb{display:flex;justify-content:center;gap:10px;margin-top:10px;direction:rtl}
+.cdb span{min-width:70px;background:#fff;border:1px solid var(--cream-line,#EADFC0);border-radius:12px;padding:8px 6px;display:flex;flex-direction:column;align-items:center}
+.cdb b{font:700 32px/1.1 'Secular One',Heebo,sans-serif;font-variant-numeric:tabular-nums}.cdb i{font-style:normal;font-size:13px;opacity:.75}
+@media(max-width:420px){.cdb span{min-width:60px}.cdb b{font-size:26px}}
 .hero{width:100%;max-height:420px;object-fit:cover;display:block;background:#E4E7EF}
 .vid{max-width:900px;width:100%;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:16/9}.vid video,.vid iframe{width:100%;height:100%;border:0;display:block}
 .faq details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 16px}.faq summary{cursor:pointer;font-weight:700;padding:14px 0;min-height:44px}.faq details p{margin:0 0 14px;white-space:pre-line;color:#2B3349}
@@ -112,6 +118,19 @@ function nis(n){n=Math.round(+n*100)/100;return n.toLocaleString('he-IL')+' ₪'
 function tok(){try{var j=JSON.parse(localStorage.getItem('myluach-auth')||'null');return j&&j.access_token||''}catch(e){return ''}}
 function get(p){return fetch(API+'&'+new URLSearchParams(p),{headers:Q.get('preview')&&tok()?{Authorization:'Bearer '+tok()}:{}}).then(function(r){return r.json().then(function(j){j._st=r.status;return j})})}
 function post(b){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;return j})})}
+/* שעון ספירה לאחור: לפתיחה, לסגירה ולהגרלה */
+var CDT=null;
+function cdPick(c,open,status){var now=Date.now(),cd=c.cd||{open:true,close:true,draw:true},T=function(x){return x?Date.parse(x):NaN};
+  if(cd.open&&status!=='closed'&&T(c.openAt)>now)return {to:T(c.openAt),t:'המכירה נפתחת בעוד'};
+  if(cd.close&&open&&T(c.closeAt)>now)return {to:T(c.closeAt),t:'המכירה נסגרת בעוד'};
+  if(cd.draw&&T(c.drawTime)>now)return {to:T(c.drawTime),t:'ההגרלה בעוד'};
+  return null}
+function cdHtml(x){if(!x)return '';return '<section class="cdw" aria-label="'+esc(x.t)+'"><div class="cdt">'+esc(x.t)+'</div><div class="cdb" id="cdb" data-to="'+x.to+'"></div><div class="cdd">'+new Date(x.to).toLocaleString('he-IL',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+'</div></section>'}
+function cdRun(){clearInterval(CDT);var el=document.getElementById('cdb');if(!el)return;var to=+el.dataset.to;
+  var tick=function(){var ms=to-Date.now();if(ms<=0){clearInterval(CDT);location.reload();return}
+    var d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);
+    el.innerHTML=[[d,'ימים'],[h,'שעות'],[m,'דקות'],[s,'שניות']].filter(function(x,i){return i>0||d>0}).map(function(x){return '<span><b>'+(x[0]<10&&x[1]!=='ימים'?'0':'')+x[0]+'</b><i>'+x[1]+'</i></span>'}).join('')};
+  tick();CDT=setInterval(tick,1000)}
 function closed(t){app.innerHTML='<div class="cen"><h1 style="font-size:28px;margin-bottom:10px">'+esc(t)+'</h1><p class="msg">אם הגעתם מקישור, בדקו שהוא שלם.</p></div>'}
 if(!SLUG){closed('לא נמצאה מכירה');return}
 if(Q.get('rep'))return repView();
@@ -144,6 +163,7 @@ function buyView(){
     if(S.rep)h+='<div class="band">הגעתם דרך הקישור של <b>'+esc(S.rep.name||('נציג '+S.rep.code))+'</b> · הרכישה תיזקף לזכותו</div>';
     if(!S.open)h+='<div class="band bad">'+(S.status==='closed'?'המכירה הסתיימה. תודה לכל המשתתפים!':c.openAt&&new Date(c.openAt)>new Date()?'המכירה תיפתח ב־'+new Date(c.openAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'}):'המכירה סגורה כרגע')+'</div>';
     else if(c.closeAt)h+='<div class="band">המכירה פתוחה עד '+new Date(c.closeAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'})+'</div>';
+    h+=cdHtml(cdPick(c,S.open,S.status));
     if(c.banner)h+='<img class="hero" src="'+esc(c.banner)+'" alt="">';
     h+='<main id="main">';
     if(c.video)h+='<section class="sec"><div class="vid">'+vidHtml(c.video)+'</div></section>';
@@ -155,7 +175,7 @@ function buyView(){
     if(c.terms)h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></p>';
     h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-manage?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
     h+='</main>';
-    app.innerHTML=h;
+    app.innerHTML=h;cdRun();
     drawPkgs();drawGrid();drawSum();
     app.addEventListener('input',function(e){if(e.target.classList.contains('repin')){typed=e.target.value.replace(/\D/g,'');[].forEach.call(document.querySelectorAll('.repin'),function(x){if(x!==e.target)x.value=typed})}
       if(e.target.dataset.q){var v=Math.max(0,Math.min(999,parseInt(e.target.value,10)||0));qty[e.target.dataset.q]=v;drawSum(true)}});
@@ -292,16 +312,16 @@ function progView(){
     if(j.closeAt){var ms=new Date(j.closeAt)-new Date();if(ms>0){var d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5);left=(d?d+' ימים · ':'')+h+' שעות'}else left='המכירה הסתיימה'}
     var lb=function(t,L,lab,val){if(!L.length)return '';var mx=Math.max.apply(null,L.map(function(x){return +x._v||0}))||1;
       return '<section class="board"><h2 style="font-size:22px">'+t+'</h2>'+L.map(function(x,i){return '<div class="lb"><div class="r"><span><b>'+(i+1)+'.</b> '+esc(lab(x))+'</span><b>'+esc(val(x))+'</b></div><div class="t" aria-hidden="true"><i style="width:'+Math.round((+x._v||0)/mx*100)+'%"></i></div></div>'}).join('')+'</section>'};
-    var money=j.amount!=null;
+    var money=j.amount!=null,now=Date.now(),cdx=cdPick(j,j.status==='open'&&!(Date.parse(j.openAt)>now)&&!(Date.parse(j.closeAt)<=now),j.status);
     app.innerHTML='<header class="top"><div class="kick">המכירה הסינית של '+esc(j.title)+' · התקדמות המכירה</div>'
       +(money?'<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:baseline"><span class="big">'+nis(j.amount)+'</span>'+(j.goal?'<span style="font-size:22px;color:#D5DAE6">מתוך יעד של '+nis(j.goal)+'</span>':'')+'</div>':'')
       +(money&&j.goal?'<div class="bar" role="img" aria-label="'+pct+' אחוז מהיעד"><i style="width:'+pct+'%"></i></div>':'')
-      +'<div class="kpis"><div><span>כרטיסים שנמכרו</span><b>'+j.tickets.toLocaleString('he-IL')+'</b></div><div><span>רוכשים</span><b>'+j.buyers.toLocaleString('he-IL')+'</b></div>'+(left?'<div><span>עד סגירת המכירה</span><b>'+esc(left)+'</b></div>':'')+'</div></header>'
+      +'<div class="kpis"><div><span>כרטיסים שנמכרו</span><b>'+j.tickets.toLocaleString('he-IL')+'</b></div><div><span>רוכשים</span><b>'+j.buyers.toLocaleString('he-IL')+'</b></div>'+(left&&!cdx?'<div><span>עד סגירת המכירה</span><b>'+esc(left)+'</b></div>':'')+'</div></header>'+cdHtml(cdx)
       +'<main><div class="boards">'
       +lb('מגייסים מובילים',j.reps.map(function(r){r._v=r.amount;return r}),function(r){return r.name||'מגייס'},function(r){return money?nis(r.amount):''})
       +lb('קבוצות',j.groups.map(function(g){g._v=g.amount;return g}),function(g){return g.grp},function(g){return money?nis(g.amount):''})
       +lb('המוצרים המבוקשים',j.products.map(function(p){p._v=p.tickets;return p}),function(p){return p.num+' · '+p.name},function(p){return p.tickets+' כרטיסים'})
-      +'</div><p class="msg">הדף מתעדכן אוטומטית.</p></main>';
+      +'</div><p class="msg">הדף מתעדכן אוטומטית.</p></main>';cdRun();
   }).catch(function(){})}
   load();setInterval(load,30000);
 }

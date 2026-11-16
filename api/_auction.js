@@ -45,7 +45,7 @@ function isOpen(s) { if (!s || s.status !== 'open') return false; const c = s.cf
 /* ההגדרות עם ברירות מחדל */
 function cfgOf(s) {
   const c = s.cfg || {};
-  return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
+  return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', drawTime: c.drawTime || '', cd: { open: !(c.cd && c.cd.open === false), close: !(c.cd && c.cd.close === false), draw: !(c.cd && c.cd.draw === false) }, openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
     repWeb: ['start', 'end', 'both', 'off'].includes(c.repWeb) ? c.repWeb : 'end', repPhone: ['start', 'pay', 'both', 'off'].includes(c.repPhone) ? c.repPhone : 'pay',
     repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
     allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
@@ -208,7 +208,8 @@ function cleanCfg(old, b) {
   str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 20000); str('color', 7); str('logo', 400); str('banner', 400); str('video', 400);
   if (b.termsAgree != null) c.termsAgree = !!b.termsAgree;
   if (Array.isArray(b.faq)) c.faq = b.faq.map(x => ({ q: clean(x && x.q, 300), a: clean(x && x.a, 3000) })).filter(x => x.q && x.a).slice(0, 60);
-  iso('openAt'); iso('closeAt');
+  iso('openAt'); iso('closeAt'); iso('drawTime');
+  if (b.cd && typeof b.cd === 'object') c.cd = { open: b.cd.open !== false, close: b.cd.close !== false, draw: b.cd.draw !== false };
   if (b.goal != null) c.goal = Math.max(0, Math.min(1e9, +b.goal || 0));
   ['repWeb', 'repPhone', 'priceMode'].forEach(k => { if (b[k] != null) c[k] = clean(b[k], 10); });
   if (b.repSkip != null) c.repSkip = !!b.repSkip;
@@ -353,7 +354,7 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s || s.status === 'draft' && !b.preview) return json(res, 404, { error: 'no sale' });
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
-      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on },
+      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on },
         open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
@@ -406,7 +407,7 @@ module.exports = async (req, res) => {
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=20');
       const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const c = cfgOf(s); if (!c.progress.on) return json(res, 403, { error: 'off' });
       const R = await report(s), top = (L, k) => L.filter(x => x[k] > 0).slice(0, 10);
-      return json(res, 200, { title: c.title, closeAt: c.closeAt, goal: c.progress.amount ? c.goal : 0, amount: c.progress.amount ? R.totals.amount : null, tickets: R.totals.tickets, buyers: R.totals.buyers,
+      return json(res, 200, { title: c.title, closeAt: c.closeAt, openAt: c.openAt, drawTime: c.drawTime, drawAt: c.drawAt, cd: c.cd, status: s.status, goal: c.progress.amount ? c.goal : 0, amount: c.progress.amount ? R.totals.amount : null, tickets: R.totals.tickets, buyers: R.totals.buyers,
         reps: c.progress.reps ? top(R.reps, 'amount').map(r => ({ name: r.name || '', amount: c.progress.amount ? r.amount : null, grp: r.grp || '' })) : [],
         groups: c.progress.groups ? top(R.groups.filter(g => g.grp !== 'ללא קבוצה'), 'amount').map(g => ({ grp: g.grp, amount: c.progress.amount ? g.amount : null })) : [],
         products: c.progress.products ? R.products.slice().sort((x, y) => y.tickets - x.tickets).slice(0, 10).map(p => ({ num: p.num, name: p.name, tickets: p.tickets })) : [] });
