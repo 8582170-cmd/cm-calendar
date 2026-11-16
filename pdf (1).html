@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="he" dir="rtl" data-pg="pdf">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>עריכת PDF בחינם · מחיקת טקסט, כתיבה על PDF בעברית, חתימה ומיזוג | MyLuach</title>
+<meta name="description" content="עורך PDF חינמי בעברית: מוחקים מילה וכותבים במקומה, מוסיפים טקסט, תמונה וחתימה, מדגישים, מסובבים, מוחקים וממזגים עמודים. הקובץ נשאר במחשב שלכם ואינו נשלח לשום שרת, וההורדה באיכות המקור.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://www.myluach.org/pdf">
+<meta property="og:title" content="עריכת PDF בחינם, בעברית · MyLuach">
+<meta property="og:url" content="https://www.myluach.org/pdf">
+<meta property="og:type" content="website"><meta property="og:locale" content="he_IL">
+<meta property="og:description" content="מוחקים מילה וכותבים במקומה, מוסיפים טקסט, תמונה וחתימה, ממזגים ומסדרים עמודים. הקובץ נשאר במחשב שלכם.">
+<meta property="og:image" content="https://www.myluach.org/assets/icon-512.png">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@900&display=swap">
+<style>
+:root{--paper:#f6f7f4;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--teal-soft:#e4eeec;--card:#fff;--desk:#cfd6d4;--bad:#b3261e;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--card:#161f22;--desk:#232d31;--bad:#ef8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f1517;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--card:#161f22;--desk:#232d31;--bad:#ef8a80;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.7 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:1180px;margin-inline:auto;padding-bottom:48px}
+a{color:var(--teal)}
+.nav{display:flex;justify-content:space-between;align-items:center;padding-block:20px;border-bottom:1px solid var(--line)}
+.logo{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:26px;color:var(--ink);text-decoration:none;display:inline-flex;gap:10px;align-items:center;direction:ltr}
+.logo-img{display:inline-block;vertical-align:middle;flex:none;margin-inline-end:8px}
+.nl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+h1{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(28px,5vw,38px);line-height:1.15;margin:28px 0 6px}
+h2{font-size:21px;margin:30px 0 6px}
+p,li{max-width:70ch}
+.mute{color:var(--mute)}
+.lead{margin:0 0 4px;color:var(--mute)}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;line-height:1.3;white-space:nowrap}
+.btn.pri{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.btn[aria-pressed="true"]{background:var(--teal-soft);border-color:var(--teal);color:var(--teal)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:4px 9px;font-size:14px;border-radius:8px}
+.btn.bad{color:var(--bad)}
+:is(.btn,input,select,textarea,summary):focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+input,select{font:inherit;font-size:15px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+input[type=color]{width:38px;height:34px;padding:2px;cursor:pointer}
+input[type=number]{width:68px;direction:ltr}
+
+/* אזור הפתיחה */
+.drop{margin-top:18px;border:2px dashed var(--line);border-radius:18px;background:var(--card);padding:38px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--teal);background:var(--teal-soft)}
+.drop b{font-size:22px}
+.drop .btn{font-size:18px;padding:11px 26px}
+.safe{display:inline-block;margin-top:6px;font-size:15px;color:var(--mute)}
+.err{color:var(--bad);font-weight:700;margin:10px 0 0}
+
+/* העורך */
+.ed{margin-top:16px}
+.bar{position:sticky;top:0;z-index:30;background:var(--paper);border-bottom:1px solid var(--line);padding:8px 0 6px;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sep{width:1px;align-self:stretch;background:var(--line);margin-inline:3px}
+.grow{flex:1}
+.lbl{font-size:14px;font-weight:700;color:var(--mute);display:inline-flex;align-items:center;gap:5px}
+.hint{font-size:15px;color:var(--mute);margin:0;min-height:1.6em}
+.zv{min-width:52px;text-align:center;font-weight:700;font-size:14px;direction:ltr}
+.menu{position:relative}
+.menu>div{position:absolute;inset-inline-start:0;top:calc(100% + 4px);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:2px;min-width:210px;box-shadow:0 8px 24px rgba(0,0,0,.14);z-index:40}
+.menu>div button{font:inherit;font-size:15px;font-weight:600;text-align:start;border:0;background:none;color:var(--ink);padding:7px 10px;border-radius:8px;cursor:pointer}
+.menu>div button:hover{background:var(--teal-soft)}
+.desk{background:var(--desk);border-radius:0 0 14px 14px;padding:14px 10px 30px;overflow-x:auto;direction:ltr;min-height:300px}
+.pw{margin:0 auto 18px;width:max-content;max-width:none}
+.ph{direction:rtl;display:flex;gap:6px;align-items:center;justify-content:space-between;margin-bottom:4px;font-size:14px;font-weight:700;color:var(--ink)}
+.ph span{background:var(--card);border-radius:8px;padding:1px 9px;white-space:nowrap}
+.ph div{display:flex;gap:4px}
+.pg{position:relative;margin-inline:auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);overflow:hidden;touch-action:pan-x pan-y}
+.sheet{position:absolute;left:0;top:0;transform-origin:0 0}
+.sheet canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.ly{position:absolute;inset:0;cursor:default;user-select:none;-webkit-user-select:none}
+.ly.t-replace,.ly.t-text{cursor:text}
+.ly.draw{cursor:crosshair;touch-action:none}
+.ly.draw .ob{pointer-events:none}
+.ly.t-text .ob:not(.tx){pointer-events:none}
+.ob{position:absolute;cursor:move}
+.ob.sel{outline:1.5px dashed #1f8f9c;outline-offset:2px}
+.ob.hl{mix-blend-mode:multiply;opacity:.45}
+.ob.bx,.ob.el{background:none;border-style:solid}
+.ob.el{border-radius:50%}
+.ob.im img{width:100%;height:100%;display:block;pointer-events:none;-webkit-user-drag:none}
+.ob.tx{white-space:pre;color:#000;padding:0}
+.ob.tx .t{display:block;outline:0;min-width:3px;white-space:pre;unicode-bidi:plaintext}
+.ob.tx.edit{cursor:text;outline:1.5px solid #1f8f9c;outline-offset:2px;user-select:text;-webkit-user-select:text}
+.ob.tx.empty:not(.edit){outline:1px dashed #9aa}
+svg.ob{overflow:visible;cursor:default;pointer-events:none}
+svg.ob path.hit{pointer-events:stroke;cursor:move;stroke:transparent;fill:none}
+.ly.draw svg.ob path.hit{pointer-events:none}
+svg.ob.sel{outline:0}
+svg.ob.sel path.vis{filter:drop-shadow(0 0 2px #1f8f9c)}
+.hd{position:absolute;width:11px;height:11px;margin:-6px 0 0 -6px;background:#fff;border:1.5px solid #1f8f9c;border-radius:3px;z-index:5;touch-action:none}
+.rub{position:absolute;border:1.5px dashed #1f8f9c;background:rgba(31,143,156,.12);pointer-events:none}
+.busy{position:fixed;inset:0;background:rgba(15,21,23,.55);display:grid;place-items:center;z-index:100;color:#fff;font-weight:700;font-size:20px;text-align:center;padding:20px}
+
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);padding:20px;max-width:min(560px,94vw);width:100%}
+dialog::backdrop{background:rgba(15,21,23,.5)}
+dialog h3{margin:0 0 10px;font-size:21px}
+dialog label{display:block;font-weight:700;font-size:15px;margin:10px 0 4px}
+dialog .opt{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;cursor:pointer;font-weight:400}
+dialog .opt b{display:block}
+dialog .opt small{color:var(--mute);font-size:14px;line-height:1.45;display:block}
+dialog .opt input{margin-top:6px}
+dialog .acts{display:flex;gap:8px;justify-content:flex-start;margin-top:16px;flex-wrap:wrap}
+dialog input[type=text],dialog input[type=password],dialog select{width:100%}
+#sigPad{width:100%;height:200px;border:1px solid var(--line);border-radius:12px;background:#fff;touch-action:none;display:block;cursor:crosshair}
+
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:10px;padding:0;list-style:none}
+.feat li{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;max-width:none}
+.feat b{display:block}
+.feat span{color:var(--mute);font-size:15px;line-height:1.5;display:block}
+details{border-bottom:1px solid var(--line);padding:8px 0}
+summary{cursor:pointer;font-weight:700}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;color:var(--mute);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:var(--mute)}
+@media (max-width:640px){.btn{font-size:14px;padding:6px 9px}.desk{padding-inline:4px}.bar{position:static}.ph{flex-wrap:wrap}}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"עריכת PDF · MyLuach","url":"https://www.myluach.org/pdf","description":"עורך PDF חינמי בעברית שפועל בדפדפן: מחיקת טקסט וכתיבה במקומו, הוספת טקסט, תמונה וחתימה, מיזוג וסידור עמודים. הקובץ אינו נשלח לשרת.","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","inLanguage":"he","offers":{"@type":"Offer","price":"0","priceCurrency":"ILS"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"הקובץ שלי נשלח לאתר?","acceptedAnswer":{"@type":"Answer","text":"לא. כל העריכה נעשית בדפדפן שלכם, והקובץ לא נשלח לשום שרת ולא נשמר אצלנו."}},{"@type":"Question","name":"האיכות של הקובץ נפגעת?","acceptedAnswer":{"@type":"Answer","text":"עמודים שלא מחקתם בהם טקסט נשארים בדיוק כפי שהיו, והטקסט שהוספתם נשמר באיכות הדפסה גבוהה וניתן לסימון. עמוד שמחקתם או החלפתם בו טקסט נשמר כתמונה באיכות גבוהה."}},{"@type":"Question","name":"איך מוחקים מילה ב-PDF וכותבים אחרת במקומה?","acceptedAnswer":{"@type":"Answer","text":"בוחרים בכלי \"החלפת מילה\" ולוחצים על המילה. היא מכוסה בצבע הרקע, ואפשר להקליד מיד את המילה החדשה."}},{"@type":"Question","name":"מה שמחקתי באמת נמחק מהקובץ?","acceptedAnswer":{"@type":"Answer","text":"כן. עמוד שמחקתם או החלפתם בו טקסט נשמר כתמונה, והטקסט שמחקתם נעלם ממנו לגמרי. הטקסט שנשאר והטקסט החדש ניתנים לסימון."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MyLuach","item":"https://www.myluach.org/"},{"@type":"ListItem","position":2,"name":"עריכת PDF","item":"https://www.myluach.org/pdf"}]}</script>
+<script src="/assets/a11y.js?v=9" defer></script>
+<script src="/assets/sitemsg.js?v=3" defer></script>
+<script src="/assets/cms.js?v=7" defer></script>
+</head>
+<body><div class="wrap">
+<header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a><nav class="nl"><a href="./">לוח שנה להדפסה</a><a href="online/">הלוח המקוון</a></nav></header>
+<main>
+<div id="intro">
+<h1>עריכת PDF, בחינם ובעברית</h1>
+<p class="lead">מוחקים מילה וכותבים אחרת במקומה, מוסיפים טקסט, תמונה וחתימה, ומסדרים את העמודים. הקובץ נשאר במחשב שלכם.</p>
+</div>
+
+<section class="drop" id="drop">
+  <b>גוררים לכאן קובץ PDF</b>
+  <span class="mute">או</span>
+  <button class="btn pri" type="button" id="pick">בחירת קובץ מהמחשב</button>
+  <span class="safe">הקובץ לא נשלח לשום שרת. כל העריכה נעשית בדפדפן שלכם.</span>
+  <p class="err" id="err" hidden></p>
+</section>
+<input type="file" id="file" accept="application/pdf,.pdf" hidden>
+<input type="file" id="fileAdd" accept="application/pdf,.pdf" multiple hidden>
+<input type="file" id="fileImg" accept="image/*" hidden>
+<input type="file" id="fileImgPg" accept="image/*" multiple hidden>
+
+<section class="ed" id="ed" hidden data-cms-skip>
+  <div class="bar" id="bar">
+    <div class="row" role="toolbar" aria-label="כלי עריכה">
+      <button class="btn" type="button" data-tool="replace" aria-pressed="true">החלפת מילה</button>
+      <button class="btn" type="button" data-tool="cover">מחיקה</button>
+      <button class="btn" type="button" data-tool="text">טקסט</button>
+      <button class="btn" type="button" data-tool="select">בחירה והזזה</button>
+      <span class="sep"></span>
+      <button class="btn" type="button" data-tool="hl">הדגשה</button>
+      <button class="btn" type="button" data-tool="rect">מלבן</button>
+      <button class="btn" type="button" data-tool="ell">עיגול</button>
+      <button class="btn" type="button" data-tool="line">קו</button>
+      <button class="btn" type="button" data-tool="arrow">חץ</button>
+      <button class="btn" type="button" data-tool="pen">עט</button>
+      <button class="btn" type="button" id="bImg">תמונה</button>
+      <button class="btn" type="button" id="bSign">חתימה</button>
+    </div>
+    <div class="row">
+      <span id="pText" class="row">
+        <select id="fFont" aria-label="גופן" style="max-width:190px"></select>
+        <button class="btn sm" type="button" id="bLocal" hidden title="הצגת כל הגופנים שמותקנים במחשב">הגופנים שבמחשב</button>
+        <label class="lbl">גודל<input type="number" id="fSize" min="3" max="400" step="0.5"></label>
+        <input type="color" id="fColor" aria-label="צבע הטקסט" title="צבע הטקסט">
+        <button class="btn sm" type="button" id="fB" title="מודגש"><b>B</b></button>
+        <button class="btn sm" type="button" id="fI" title="נטוי"><i>I</i></button>
+        <select id="fAlign" aria-label="יישור"><option value="right">ימין</option><option value="center">מרכז</option><option value="left">שמאל</option></select>
+        <label class="lbl" id="lsWrap">ריווח<input type="number" id="fLs" min="-5" max="60" step="0.1"></label>
+      </span>
+      <span id="pFill" class="row" hidden><label class="lbl">צבע<input type="color" id="cFill"></label><button class="btn sm" type="button" id="bDrop" hidden title="דגימת צבע מהמסך">דגימת צבע</button></span>
+      <span id="pStroke" class="row" hidden><label class="lbl">צבע<input type="color" id="cStroke"></label><label class="lbl">עובי<input type="number" id="cSw" min="0.25" max="40" step="0.25"></label></span>
+      <span id="pObj" class="row" hidden>
+        <span class="sep"></span>
+        <button class="btn sm" type="button" id="bFront" title="להביא לפני שאר הפריטים">קדימה</button>
+        <button class="btn sm" type="button" id="bBack" title="לשלוח אל מאחורי שאר הפריטים">אחורה</button>
+        <button class="btn sm" type="button" id="bDup">שכפול</button>
+        <button class="btn sm bad" type="button" id="bDel">מחיקת הפריט</button>
+      </span>
+    </div>
+    <div class="row">
+      <button class="btn sm" type="button" id="bUndo" disabled>ביטול</button>
+      <button class="btn sm" type="button" id="bRedo" disabled>שחזור</button>
+      <span class="sep"></span>
+      <button class="btn sm" type="button" id="zOut" aria-label="הקטנה">−</button><span class="zv" id="zVal">100%</span><button class="btn sm" type="button" id="zIn" aria-label="הגדלה">+</button>
+      <button class="btn sm" type="button" id="zFit">התאמה לרוחב</button>
+      <span class="sep"></span>
+      <span class="menu"><button class="btn sm" type="button" id="bAdd" aria-haspopup="true" aria-expanded="false">הוספת עמודים</button>
+        <div id="mAdd" hidden><button type="button" data-add="pdf">קובץ PDF נוסף (מיזוג)</button><button type="button" data-add="img">תמונות כעמודים</button><button type="button" data-add="blank">עמוד ריק</button></div></span>
+      <button class="btn sm" type="button" id="bNew">קובץ אחר</button>
+      <span class="grow"></span>
+      <button class="btn pri" type="button" id="bSave">הורדת הקובץ</button>
+    </div>
+    <p class="hint" id="hint" role="status" aria-live="polite"></p>
+  </div>
+  <div class="desk" id="desk"></div>
+</section>
+
+<section id="about">
+<h2>מה אפשר לעשות כאן</h2>
+<ul class="feat">
+  <li><b>להחליף מילה</b><span>לוחצים על מילה במסמך, היא מכוסה בצבע הרקע, ומקלידים את החדשה במקומה.</span></li>
+  <li><b>לכתוב בעברית בלי תקלות</b><span>עברית, אנגלית ומספרים באותה שורה, עם ניקוד, בכל גופן, כולל הגופנים שמותקנים במחשב.</span></li>
+  <li><b>למחוק ולהדגיש</b><span>מכסים כל חלק במסמך, מדגישים שורות, מוסיפים מלבן, עיגול, קו, חץ או ציור חופשי.</span></li>
+  <li><b>להוסיף תמונה וחתימה</b><span>מעלים לוגו או תמונה, או חותמים עם העכבר או האצבע ומניחים את החתימה במקום.</span></li>
+  <li><b>לסדר עמודים</b><span>מסובבים, מוחקים ומזיזים עמודים, ממזגים כמה קובצי PDF, והופכים תמונות לעמודים.</span></li>
+  <li><b>להוריד באיכות המקור</b><span>מה שהיה בקובץ נשאר בדיוק כפי שהיה, ומה שהוספתם נשמר באיכות הדפסה וניתן לסימון.</span></li>
+</ul>
+
+<h2>שאלות נפוצות</h2>
+<details><summary>הקובץ שלי נשלח לאתר?</summary><p>לא. כל העריכה נעשית בדפדפן שלכם, והקובץ לא נשלח לשום שרת ולא נשמר אצלנו. אפשר לערוך כאן גם מסמכים אישיים.</p></details>
+<details><summary>האיכות של הקובץ נפגעת?</summary><p>עמודים שלא מחקתם בהם טקסט נשארים בדיוק כפי שהיו: הטקסט נשאר חד וניתן לסימון, והתמונות לא נדחסות מחדש. הטקסט שהוספתם נשמר באיכות הדפסה גבוהה, עד 1200 נקודות לאינץ', וגם הוא ניתן לסימון והעתקה. עמוד שמחקתם או החלפתם בו טקסט נשמר כתמונה באיכות גבוהה, ושכבת טקסט בלתי נראית מעליה משאירה את הטקסט שנשאר ניתן לסימון.</p></details>
+<details><summary>איך מוחקים מילה וכותבים אחרת במקומה?</summary><p>בוחרים בכלי "החלפת מילה" ולוחצים על המילה. היא מכוסה בצבע הרקע של הדף, ואפשר להקליד מיד את המילה החדשה. את הגופן, הגודל והצבע משנים בסרגל שמעל הדף.</p></details>
+<details><summary>מה שמחקתי באמת נמחק מהקובץ?</summary><p>כן. עמוד שמחקתם או החלפתם בו טקסט נשמר כתמונה, והטקסט שמחקתם נעלם ממנו לגמרי ולא נשאר מתחת לכיסוי. הטקסט שלא נגעתם בו והטקסט החדש נשארים ניתנים לסימון. אם בוחרים בחלון ההורדה "מחיקה סופית", כל העמודים שנערכו נשמרים כתמונה, ואי אפשר לסמן בהם טקסט.</p></details>
+<details><summary>הטקסט החדש יוצא לפני הכיסוי או מאחוריו?</summary><p>כל פריט חדש מונח מעל הקודמים. אם משהו הוסתר, בוחרים את הפריט ולוחצים "קדימה" או "אחורה".</p></details>
+<details><summary>אפשר לעבוד גם בטלפון?</summary><p>כן, אבל במחשב נוח יותר. בטלפון כדאי להגדיל את הדף לפני שמסמנים מילה.</p></details>
+<details><summary>זה בחינם?</summary><p>כן, בלי הרשמה ובלי סימן מים.</p></details>
+</section>
+</main>
+<footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="online/">הלוח המקוון</a><a href="timer.html">ספירה לאחור</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a></footer>
+</div>
+
+<dialog id="dlDlg">
+  <h3>הורדת הקובץ</h3>
+  <label for="dlName">שם הקובץ</label>
+  <input type="text" id="dlName" dir="auto">
+  <label for="dlQ">איכות הטקסט והתוספות (בקובץ PDF רגיל)</label>
+  <select id="dlQ"><option value="1200">הכי גבוהה (1200 נקודות לאינץ')</option><option value="600">גבוהה (600)</option><option value="300">רגילה, קובץ קטן יותר (300)</option></select>
+  <label class="opt"><input type="radio" name="dlMode" value="keep" checked><span><b>PDF באיכות המקור (מומלץ)</b><small>כל מה שהיה בקובץ נשאר בדיוק כפי שהיה, והטקסט נשאר חד וניתן לסימון. עמודים שמחקתם או החלפתם בהם טקסט נשמרים כתמונה באיכות גבוהה, והטקסט שמחקתם נמחק מהם לגמרי.</small></span></label>
+  <label class="opt"><input type="radio" name="dlMode" value="legacy"><span><b>PDF כמו בעבר, בלי סימון טקסט חדש</b><small>הקובץ המקורי נשמר כמו שהוא, והטקסט שהוספתם נשמר כתמונה שאי אפשר לסמן. מה שכיסיתם מוסתר, אבל עדיין קיים בקובץ מתחת לכיסוי.</small></span></label>
+  <label class="opt"><input type="radio" name="dlMode" value="flat"><span><b>PDF של תמונות, מחיקה סופית</b><small>העמודים שנערכו נשמרים כתמונה, ומה שכוסה נמחק לגמרי מהקובץ. בעמודים האלה אי אפשר יהיה לסמן טקסט או לחפש בו.</small>
+    <select id="dlFlatQ" style="margin-top:6px"><option value="1200">הכי גבוהה (1200)</option><option value="600">גבוהה (600)</option><option value="300" selected>תמונה באיכות הדפסה (300)</option><option value="200">קובץ קטן (200)</option></select></span></label>
+  <label class="opt"><input type="radio" name="dlMode" value="img"><span><b>קובצי תמונה</b><small>כל עמוד נשמר כתמונה, עם כל העריכות. כמה עמודים יורדים כקובץ ZIP.</small>
+    <select id="dlImgFmt" style="margin-top:6px"><option value="png">PNG (חד, קובץ גדול)</option><option value="jpg">JPG (קובץ קטן)</option></select>
+    <select id="dlImgQ" style="margin-top:6px"><option value="1200">הכי גבוהה (1200)</option><option value="600">גבוהה (600)</option><option value="300">איכות הדפסה (300)</option><option value="200" selected>רגילה (200)</option><option value="150">קובץ קטן (150)</option></select></span></label>
+  <p class="mute" id="dlNote" hidden style="font-size:14px;margin:10px 0 0"></p>
+  <div class="acts"><button class="btn pri" type="button" id="dlGo">הורדה</button><button class="btn" type="button" data-close>ביטול</button></div>
+</dialog>
+
+<dialog id="sigDlg">
+  <h3>חתימה</h3>
+  <canvas id="sigPad" width="1040" height="400"></canvas>
+  <div class="acts"><label class="lbl" style="margin:0">צבע<select id="sigColor" style="width:auto"><option value="#111111">שחור</option><option value="#1a3a8f">כחול</option></select></label>
+    <button class="btn pri" type="button" id="sigOk">הוספה לדף</button><button class="btn" type="button" id="sigClear">ניקוי</button><button class="btn" type="button" data-close>ביטול</button></div>
+</dialog>
+
+<dialog id="pwDlg">
+  <h3>הקובץ מוגן בסיסמה</h3>
+  <label for="pwIn" id="pwLbl">סיסמת הקובץ</label>
+  <input type="password" id="pwIn" dir="ltr" autocomplete="off">
+  <div class="acts"><button class="btn pri" type="button" id="pwOk">פתיחה</button><button class="btn" type="button" id="pwNo">ביטול</button></div>
+</dialog>
+
+<div class="busy" id="busy" hidden></div>
+<script src="/assets/pdfedit.js?v=5" defer></script>
+</body>
+</html>
