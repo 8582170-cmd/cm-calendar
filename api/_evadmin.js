@@ -61,7 +61,7 @@ module.exports = async function (b) {
     const G = await db('timer_gift?slug=eq.' + s + '&status=eq.paid&select=amount,fee,net,payout&limit=2000').catch(() => []);
     const gifts = (G || []).reduce((x, g) => ({ n: x.n + 1, amount: x.amount + (+g.amount || 0), net: x.net + (+g.net || 0) }), { n: 0, amount: 0, net: 0 });
     const c = cur.cfg || {};
-    return { slug: s, cfg: c, paid: cur.paid || null, mail: cur.mail || null, calls: cur.calls || [], seat: cur.seat ? (cur.seat.tables || []).length : 0, disabled: !!cur.disabled, note: cur.adminNote || '', token: cur.token, c: C, gifts,
+    return { slug: s, cfg: c, paid: cur.paid || null, mail: cur.mail || null, calls: cur.calls || [], seat: cur.seat ? (cur.seat.tables || []).length : 0, disabled: !!cur.disabled, note: cur.adminNote || '', afMax: +cur.afMax || 0, token: cur.token, c: C, gifts,
       media: ['bgi', 'bgv', 'mus', 'inv', 'p'].filter(k => c[k]).map(k => ({ k, url: c[k] })) };
   }
   if (!cur) return { error: 'not found' };
@@ -89,6 +89,8 @@ module.exports = async function (b) {
     return { ok: true };
   }
   if (a === 'ev_disable') { const o = { ...cur, disabled: !!b.on }; if (!b.on) delete o.disabled; return save(o); }
+  /* אישור מיוחד ללקוח: גודל מרבי (MB) לקובץ ההזמנה שמצורף למייל, בלי הקטנה אוטומטית. 0 = ברירת המחדל (2MB, ומעליו הקטנה) */
+  if (a === 'ev_afmax') { const n = int(b.mb, 0, 15); const o = { ...cur }; if (n > 2) o.afMax = n; else delete o.afMax; return save(o); }
   if (a === 'ev_note') return save({ ...cur, adminNote: str(b.note, 2000) });
   /* מחיקת קובץ מדיה (תמונת רקע, סרטון, מוזיקה, תמונת הזמנה) */
   if (a === 'ev_media') {

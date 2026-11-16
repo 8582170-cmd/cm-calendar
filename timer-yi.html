@@ -851,22 +851,24 @@ summary{cursor:pointer;font-weight:700}
     $('afB').onclick=function(){if(!authTok()){ast('כדי לצרף קובץ מען דארף להתחבר לחשבון.','no');return}$('afF').click()};
     $('afX').onclick=function(){setM('af','');ast('הקובץ הוסר. אל תשכחו לשמור.')};
     var mb=function(n){return (n/1e6).toFixed(1).replace(/\.0$/,'')+'MB'},AFLIM=2e6;
-    var afUp=function(f,done){
-      return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+authTok()},body:JSON.stringify({mup:1,type:f.type,size:f.size,slug:slugVal(),token:store()[slugVal()]})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
-        if(a[0]===401){ast('מען דארף להתחבר לחשבון','no');return}if(a[0]===403){ast('קודם שומרים את דף ההזמנה, ואז מצרפים קובץ.','no');return}if(a[0]===413){ast('די טעקע איז צו גרויס (ביז '+Math.round(a[1].max/1e6)+'MB)','no');return}if(a[0]!==200){ast('סוג הקובץ לא נתמך. אפשר PDF, JPG או PNG.','no');return}
+    var afUp=function(f,done,raw,onBig){
+      return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+authTok()},body:JSON.stringify({mup:1,type:f.type,size:f.size,slug:slugVal(),token:store()[slugVal()],raw:raw?1:0})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){
+        if(a[0]===401){ast('מען דארף להתחבר לחשבון','no');return}if(a[0]===403){ast('קודם שומרים את דף ההזמנה, ואז מצרפים קובץ.','no');return}if(a[0]===413&&onBig){onBig(a[1].approved?a[1].max:0);return}if(a[0]===413){ast('די טעקע איז צו גרויס (ביז '+Math.round(a[1].max/1e6)+'MB)','no');return}if(a[0]!==200){ast('סוג הקובץ לא נתמך. אפשר PDF, JPG או PNG.','no');return}
         return fetch(a[1].put,{method:'PUT',headers:{'Content-Type':a[1].ctype},body:f}).then(function(r){if(!r.ok)throw 0;ast('');setM('af',a[1].url);ast(done||'הקובץ צורף ✓ אל תשכחו לשמור','ok')})}).catch(function(){ast('ארויפלייגן איז נישט געלונגען. פרובירט נאכאמאל.','no')})};
     /* קובץ מעל 2MB מומר אוטומטית בדפדפן לגרסה קלה באיכות גבוהה (assets/invshrink.js), ורק אז עולה */
     $('afF').onchange=function(){var f=this.files[0];this.value='';if(!f)return;
       if(!/^(application\/pdf|image\/jpeg|image\/png)$/.test(f.type)){ast('סוג הקובץ לא נתמך. אפשר PDF, JPG או PNG.','no');return}
       if(f.size<=AFLIM){ast('מעלה את הקובץ…');afUp(f);return}
       if(f.size>60e6){ast('הקובץ גדול מדי ('+mb(f.size)+'). נסו קובץ עד 60MB.','no');return}
+      /* אירוע שאושר בניהול לקובץ גדול: עולה בגודל המקורי. אחרת השרת מסרב, ואז מקטינים */
+      ast('בודקים את הקובץ…');afUp(f,'הקובץ צורף בגודלו המקורי ('+mb(f.size)+') ✓ אל תשכחו לשמור',true,function(okMax){var LIM=okMax>AFLIM?okMax:AFLIM;
       ast('הקובץ שוקל '+mb(f.size)+'. ממירים אותו לגרסה קלה באיכות גבוהה, זה לוקח כמה שניות…');
       var lib=window.invShrink?Promise.resolve():new Promise(function(res,rej){var sc=document.createElement('script');sc.src='/assets/invshrink.js?v=1';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
-      lib.then(function(){return window.invShrink(f,AFLIM)}).then(function(g){ast('מעלה את הקובץ…');return afUp(g,'הקובץ הוקטן מ־'+mb(f.size)+' ל־'+mb(g.size)+' וצורף ✓ אל תשכחו לשמור')},function(e){
+      lib.then(function(){return window.invShrink(f,LIM)}).then(function(g){ast('מעלה את הקובץ…');return afUp(g,'הקובץ הוקטן מ־'+mb(f.size)+' ל־'+mb(g.size)+' וצורף ✓ אל תשכחו לשמור')},function(e){
         if(e&&e.message==='pages'){ast('ב־PDF יש יותר מ־12 עמודים, ואי אפשר להקטין אותו אוטומטית. צרפו רק את עמודי ההזמנה.','no');return}
         /* ההמרה לא הצליחה (למשל הספריות נחסמו): אם הקובץ עדיין בגבול שהשרת מקבל, מצרפים אותו כמו שהוא */
         if(f.size<=(f.type==='application/pdf'?5e6:3e6)){ast('מעלה את הקובץ…');return afUp(f,'לא הצלחנו להקטין את הקובץ, והוא צורף בגודלו המקורי ('+mb(f.size)+') ✓ אל תשכחו לשמור')}
-        ast('לא הצלחנו להקטין את הקובץ אוטומטית. נסו קובץ קטן מ־'+mb(f.type==='application/pdf'?5e6:3e6)+'.','no')})};
+        ast('לא הצלחנו להקטין את הקובץ אוטומטית. נסו קובץ קטן מ־'+mb(f.type==='application/pdf'?5e6:3e6)+'.','no')})})};
     $('bgB').onclick=function(){if(!authTok()){needLogin(istat);return}$('bgF').click()};
     $('bgF').onchange=function(){var f=this.files[0];this.value='';if(!f)return;mst('מכין…');var im=new Image(),u=URL.createObjectURL(f);im.onload=function(){URL.revokeObjectURL(u);var k=Math.min(1,1920/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);var q=.85,d=cv.toDataURL('image/jpeg',q);while(d.length>1180000&&q>.4){q-=.12;d=cv.toDataURL('image/jpeg',q)}
       fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+authTok()},body:JSON.stringify({img:d,big:1})}).then(function(r){return r.json().then(function(j){return [r.status,j]})}).then(function(a){if(a[0]===200){setM('bgi',a[1].url);mst('דאס הינטערגרונט בילד איז צוגעלייגט ✓ פארגעסט נישט אפצוהיטן','ok')}else if(a[0]===401)mst('מען דארף להתחבר לחשבון','no');else mst('ארויפלייגן איז נישט געלונגען','no')})};im.src=u};

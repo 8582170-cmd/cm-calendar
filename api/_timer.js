@@ -54,7 +54,10 @@ async function mediaUp(req, res, b) {
   const T = { 'video/mp4': ['mp4', 'video', 20e6], 'video/webm': ['webm', 'video', 20e6], 'audio/mpeg': ['mp3', 'audio', 10e6], 'audio/mp4': ['m4a', 'audio', 10e6], 'audio/x-m4a': ['m4a', 'audio', 10e6], 'audio/aac': ['m4a', 'audio', 10e6],
     /* קובץ הזמנה לצירוף למייל */
     'application/pdf': ['pdf', 'doc', 5e6], 'image/jpeg': ['jpg', 'doc', 3e6], 'image/png': ['png', 'doc', 3e6] }[String(b.type || '')];
-  if (!T) return json(res, 400, { error: 'type' }); if (!(+b.size > 0) || +b.size > T[2]) return json(res, 413, { error: 'size', max: T[2] });
+  if (!T) return json(res, 400, { error: 'type' });
+  /* קובץ הזמנה למייל: מעל 2MB הדפדפן מקטין אותו לפני ההעלאה. העלאה בגודל המקורי (raw) רק לאירוע שאושר לכך בניהול (afMax, ב-MB) */
+  if (T[1] === 'doc' && (b.raw || +cur.afMax > 2)) { const mx = +cur.afMax > 2 ? Math.min(15, +cur.afMax) * 1e6 : 0; if (!mx || !(+b.size > 0) || +b.size > mx) return json(res, 413, { error: 'size', max: mx || 2e6, approved: !!mx }); }
+  else if (!(+b.size > 0) || +b.size > T[2]) return json(res, 413, { error: 'size', max: T[2] });
   const path = 'timers/media/' + new Date().toISOString().slice(0, 7).replace('-', '') + '/' + crypto.randomBytes(12).toString('hex') + '.' + T[0];
   const P = R2.mediaPut(path);
   if (!cur.paid) { try { const { loadSetting, saveSetting } = require('./_lib'), M = (await loadSetting('mediapend')) || {}; M[path] = { s: sl, at: Date.now() }; await saveSetting('mediapend', M); } catch (e) { console.error('mediapend', e.message); } }

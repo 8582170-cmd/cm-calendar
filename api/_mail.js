@@ -15,7 +15,7 @@ const ATT = new Map();
 async function attB64(a) {
   const c = ATT.get(a.url); if (c && Date.now() - c.at < 600000) return c.b;
   const r = await fetch(a.url); if (!r.ok) throw new Error('attach ' + r.status);
-  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 6e6) throw new Error('attach size');
+  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 15.5e6) throw new Error('attach size');
   const b = buf.toString('base64'); if (ATT.size > 20) ATT.clear(); ATT.set(a.url, { at: Date.now(), b }); return b;
 }
 async function viaResend(m) {
