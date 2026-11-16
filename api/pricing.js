@@ -5,6 +5,12 @@ module.exports = async (req, res) => {
   /* תוכן שנערך בדף הניהול לדף מסוים: ?c=index */
   /* דפים ומאמרים שנוצרו בניהול: /p/<slug> */
   if ((req.query || {}).pg) return require('./_pages').handle(req, res);
+  /* ימות המשיח מוסיפים "?" לסוף הכתובת גם כשכבר יש בה "?", וכך נוצרת כתובת כמו ?c=_auctionivr?s=abc&k=..., שבה הפרמטר הראשון נדבק לערך של c. מפצלים אותו בחזרה */
+  if (req.query && typeof req.query.c === 'string' && req.query.c.indexOf('?') > 0) {
+    const i = req.query.c.indexOf('?'), rest = req.query.c.slice(i + 1);
+    req.query.c = req.query.c.slice(0, i);
+    for (const [k, v] of new URLSearchParams(rest)) if (req.query[k] == null) req.query[k] = v;
+  }
   const cp = String((req.query || {}).c || '');
   /* מאגר התמונות (רק תמונות פעילות) */
   if (cp === '_lib') {
