@@ -164,16 +164,18 @@ function logMail(provider, kind, ok, m, err) {
 
 /* מסגרת מייל אחידה בעברית */
 /* מסגרת המייל. o: lang ('he'/'en'), size ('s'/'m'/'l'), accent (צבע הכותרות, הכפתור והקישורים), ink (צבע הטקסט) */
-function frame({ title, body, button, url, foot, lang, size, accent, ink }) {
+function frame({ title, body, button, url, foot, lang, size, accent, ink, brand }) {
   const en = lang === 'en', ok = c => /^#[0-9a-f]{6}$/i.test(String(c || ''));
   const A = ok(accent) ? accent : '#1f5c63', T = ok(ink) ? ink : '#3c474b', fs = { s: 14, m: 16, l: 18 }[size] || 16;
   const btn = button && url ? '<p style="margin:0 0 22px"><a href="' + url + '" style="display:inline-block;background:' + A + ';color:#ffffff;text-decoration:none;font-weight:bold;font-size:' + fs + 'px;padding:12px 26px;border-radius:10px">' + button + '</a></p>' : '';
   return '<div dir="' + (en ? 'ltr' : 'rtl') + '" style="font-family:Arial,Helvetica,sans-serif;background:#f6f7f4;padding:24px 12px"><div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #dde2df;border-radius:14px;padding:28px 24px;text-align:' + (en ? 'left' : 'right') + '">' +
+    (brand ? '<p style="margin:0 0 18px;font-size:24px;font-weight:bold;color:' + A + ';font-family:Arial,Helvetica,sans-serif">' + escH(brand) + '</p>' : 
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 ' + (en ? 'auto 18px 0' : '0 18px auto') + ';direction:ltr"><tr><td style="vertical-align:middle;padding-right:8px"><span style="font-size:24px;font-weight:bold;color:' + A + ';font-family:Arial,Helvetica,sans-serif">MyLuach</span></td>' +
-    '<td style="vertical-align:middle"><img src="https://www.myluach.org/assets/icon-180.png" width="36" height="36" alt="MyLuach" style="display:block;border:0;border-radius:8px"></td></tr></table>' +
+    '<td style="vertical-align:middle"><img src="https://www.myluach.org/assets/icon-180.png" width="36" height="36" alt="MyLuach" style="display:block;border:0;border-radius:8px"></td></tr></table>'
+    ) +
     '<h1 style="font-size:' + (fs + 4) + 'px;color:#172126;margin:0 0 10px">' + title + '</h1><div style="font-size:' + fs + 'px;line-height:1.6;color:' + T + ';margin:0 0 22px">' + String(body).replace(/\{A\}/g, A).replace(/\{FS(\d)\}/g, (m, n) => fs + (+n)) + '</div>' + btn +
     (foot ? '<p style="font-size:' + (fs - 3) + 'px;line-height:1.6;color:#6b7679;margin:0">' + foot + '</p>' : '') +
-    '</div><p style="text-align:center;font-size:12px;color:#8a9497;margin:14px 0 0">' + (en ? 'MyLuach · Hebrew–Gregorian calendar · myluach.org' : 'MyLuach · לוח שנה עברי־לועזי · myluach.org') + '</p></div>';
+    '</div><p style="text-align:center;font-size:12px;color:#8a9497;margin:14px 0 0">' + (brand ? escH(brand) : (en ? 'MyLuach · Hebrew–Gregorian calendar · myluach.org' : 'MyLuach · לוח שנה עברי־לועזי · myluach.org')) + '</p></div>';
 }
 const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 

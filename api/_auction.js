@@ -145,7 +145,8 @@ async function mailBuyer(o) {
   const body = '<p>תודה רבה על ההשתתפות במכירה הסינית של ' + escH(c.title) + '.</p><p>סכום ששולם: <b>' + (+o.amount) + ' ₪</b> · מספר הזמנה: ' + o.id.slice(2, 10) + '</p>'
     + '<p style="margin:14px 0 6px"><b>מספרי הכרטיסים שלכם:</b></p><table style="border-collapse:collapse;width:100%;font-size:15px">' + rows + '</table>'
     + (c.drawAt ? '<p style="margin-top:14px">ההגרלה: ' + escH(c.drawAt) + '. בהצלחה!</p>' : '<p style="margin-top:14px">בהצלחה בהגרלה!</p>');
-  await sendMail({ to: o.email, subject: 'הכרטיסים שלכם במכירה הסינית של ' + c.title, html: frame({ title: 'הכרטיסים שלכם', body, button: 'לדף המכירה', url: SITE() + '/auction?s=' + s.slug }) }, 'auction');
+  const mn = clean((s.cfg || {}).mailName, 60), rt = notifyList(s)[0];
+  await sendMail({ to: o.email, subject: 'הכרטיסים שלכם במכירה הסינית של ' + c.title, html: frame({ title: 'הכרטיסים שלכם', body, button: 'לדף המכירה', url: SITE() + '/auction?s=' + s.slug, brand: mn || undefined }), ...(mn ? { fromName: mn } : {}), ...(mn && rt ? { replyTo: rt } : {}) }, 'auction');
 }
 
 /* ===== התראות למנהלי המכירה (עד 4 כתובות בהגדרות) ===== */
@@ -224,6 +225,7 @@ function cleanCfg(old, b) {
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
     if (b.pay.mosad != null) p.mosad = String(b.pay.mosad).replace(/\D/g, '').slice(0, 10); if (b.pay.apiValid != null) p.apiValid = clean(b.pay.apiValid, 60); if (b.pay.groupe != null) p.groupe = clean(b.pay.groupe, 60); c.pay = p; }
+  if (b.mailName != null) c.mailName = clean(b.mailName, 60);
   if (Array.isArray(b.notify)) c.notify = [...new Set(b.notify.map(mailN).filter(Boolean))].slice(0, 4);
   if (b.pay && b.pay.kesher && typeof b.pay.kesher === 'object') { const k = { ...((c.pay || {}).kesher || {}) }, K = b.pay.kesher;
     if (K.pageUrl != null) k.pageUrl = /^https:\/\/[^\s"<>]+$/.test(String(K.pageUrl).trim()) ? String(K.pageUrl).trim().slice(0, 400) : '';
