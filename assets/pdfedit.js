@@ -1,7 +1,9 @@
 /* עורך PDF בדפדפן (myluach.org/pdf).
    הקובץ של הגולש לא נשלח לשרת: PDF.js מציג את הדפים, ו-pdf-lib כותב את הקובץ החדש, שניהם בדפדפן.
-   בהורדה הרגילה הקובץ המקורי נשמר כמו שהוא (טקסט, תמונות, סימניות), ומעליו מצוירים הפריטים שנוספו:
+   בהורדה הרגילה עמודים שלא נמחק בהם טקסט נשמרים כמו שהם (טקסט, תמונות, סימניות), ומעליהם מצוירים הפריטים שנוספו:
    צורות כקווים חדים, תמונות בקובץ המקורי שלהן, וטקסט כתמונה שקופה ברזולוציה גבוהה (כך כל גופן, ניקוד ועברית עם מספרים יוצאים בדיוק כמו על המסך).
+   מעל תמונת הטקסט נוספת שכבת טקסט אמיתית בלתי נראית (כמו ב-OCR), כדי שאפשר יהיה לסמן, להעתיק ולחפש.
+   עמוד שיש בו מחיקה או החלפה נשמר כתמונה, כדי שהטקסט שנמחק ייעלם מהקובץ לגמרי, ומעליו נוספת שכבת טקסט בלתי נראית לטקסט שנשאר.
    הספריות נטענות קודם מ-jsdelivr, ואם זה נחסם (נטפרי וכו') דרך /cdn של האתר. */
 (function(){
 'use strict';
@@ -50,6 +52,11 @@ function loadScript(src){ return new Promise(function(res, rej){ var s = documen
 async function loadPdfLib(){
   for (var i = 0; i < BASES.length && !window.PDFLib; i++) { try { await loadScript(BASES[i] + 'pdf-lib@' + PDFLIB_V + '/dist/pdf-lib.min.js') } catch (e) {} }
   if (!window.PDFLib) throw new Error('pdf-lib'); return window.PDFLib;
+}
+var FONTKIT_V = '1.1.1', REV_RTL = false; /* אם בהעתקה העברית יוצאת הפוכה, לשנות ל-true */
+async function loadFontkit(){
+  for (var i = 0; i < BASES.length && !window.fontkit; i++) { try { await loadScript(BASES[i] + '@pdf-lib/fontkit@' + FONTKIT_V + '/dist/fontkit.umd.min.js') } catch (e) {} }
+  return window.fontkit || null;
 }
 
 /* ---------- גופנים ---------- */
@@ -634,14 +641,65 @@ function canvasObjs(ctx, p, sc){
     ctx.restore();
   });
 }
-async function raster(p, dpi){
-  var sc = dpi / 72, mx = 60e6; if (p.w * p.h * sc * sc > mx) sc = Math.sqrt(mx / (p.w * p.h));
-  var c = document.createElement('canvas'); c.width = Math.round(p.w * sc); c.height = Math.round(p.h * sc); var ctx = c.getContext('2d');
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+async function rasterCanvas(p, dpi){
+  /* עד 60 מיליון פיקסלים לעמוד, ובבחירת 1200 עד 145 מיליון. אם הדפדפן לא מצליח להקצות כזה קנבס, מנסים רזולוציה נמוכה יותר */
+  var sc = dpi / 72, mx = dpi >= 1200 ? 145e6 : 60e6, c, ctx;
+  for (var tries = 0; tries < 6; tries++) {
+    if (p.w * p.h * sc * sc > mx) sc = Math.sqrt(mx / (p.w * p.h));
+    c = document.createElement('canvas'); c.width = Math.round(p.w * sc); c.height = Math.round(p.h * sc); ctx = c.getContext('2d');
+    if (ctx) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); try { if (ctx.getImageData(0, 0, 1, 1).data[3] === 255) break } catch (e) { break } }
+    c.width = c.height = 1; ctx = null; mx = p.w * p.h * sc * sc * 0.5;
+  }
+  if (!ctx) throw new Error('canvas');
   if (p.kind === 'pdf') await p.pg.render({ canvasContext: ctx, canvas: c, viewport: p.pg.getViewport({ scale: c.width / p.w }) }).promise;
   else if (p.kind === 'image') ctx.drawImage(S.assets[p.key].img, 0, 0, c.width, c.height);
   canvasObjs(ctx, p, c.width / p.w);
-  var b = await toBytes(c, 'image/jpeg', 0.95); c.width = c.height = 1; return b;
+  return c;
+}
+async function raster(p, dpi){
+  var c = await rasterCanvas(p, dpi), b = await toBytes(c, 'image/jpeg', 0.95); c.width = c.height = 1; return b;
+}
+function rotCanvas(c, rot){
+  if (!rot) return c;
+  var o = document.createElement('canvas'), sw = rot % 180 !== 0; o.width = sw ? c.height : c.width; o.height = sw ? c.width : c.height;
+  var x = o.getContext('2d'); x.translate(o.width / 2, o.height / 2); x.rotate(rot * Math.PI / 180); x.drawImage(c, -c.width / 2, -c.height / 2); c.width = c.height = 1; return o;
+}
+/* ZIP בלי דחיסה (store), מספיק לקובצי תמונה שכבר דחוסים */
+var CRC_T = null;
+function crc32(b){
+  if (!CRC_T) { CRC_T = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC_T[n] = c >>> 0 } }
+  var c2 = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c2 = CRC_T[(c2 ^ b[i]) & 255] ^ (c2 >>> 8); return (c2 ^ 0xFFFFFFFF) >>> 0;
+}
+function makeZip(files){
+  var enc = new TextEncoder(), now = new Date(), dt = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF, dd = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+  var parts = [], cen = [], off = 0;
+  files.forEach(function(f){
+    var nm = enc.encode(f.name), crc = crc32(f.bytes), h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint16(10, dt, true); h.setUint16(12, dd, true);
+    h.setUint32(14, crc, true); h.setUint32(18, f.bytes.length, true); h.setUint32(22, f.bytes.length, true); h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    var c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true); c.setUint16(12, dt, true); c.setUint16(14, dd, true);
+    c.setUint32(16, crc, true); c.setUint32(20, f.bytes.length, true); c.setUint32(24, f.bytes.length, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+    parts.push(new Uint8Array(h.buffer), nm, f.bytes); cen.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + f.bytes.length;
+  });
+  var cs = 0; cen.forEach(function(a){ cs += a.length });
+  var e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
+  return new Blob(parts.concat(cen, [new Uint8Array(e.buffer)]), { type: 'application/zip' });
+}
+async function exportImages(opt){
+  var out = [], N = S.order.length, ext = opt.imgFmt === 'png' ? 'png' : 'jpg', mime = ext === 'png' ? 'image/png' : 'image/jpeg', pad = String(N).length;
+  for (var n = 0; n < N; n++) {
+    busy('מכין תמונה… עמוד ' + (n + 1) + ' מתוך ' + N);
+    var p = S.order[n], c = rotCanvas(await rasterCanvas(p, opt.imgDpi), p.rot);
+    out.push({ name: ('0000' + (n + 1)).slice(-Math.max(2, pad)) + '.' + ext, bytes: await toBytes(c, mime, 0.95) }); c.width = c.height = 1;
+    await new Promise(function(r){ setTimeout(r, 0) });
+  }
+  return { files: out, mime: mime, ext: ext };
+}
+function saveBlob(blob, name){
+  var a = document.createElement('a'), url = URL.createObjectURL(blob);
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url) }, 60000);
 }
 async function embedAsset(L, out, cache, key){
   if (cache[key]) return cache[key]; var a = S.assets[key], im;
@@ -649,6 +707,81 @@ async function embedAsset(L, out, cache, key){
   if (!im) { var c = document.createElement('canvas'); c.width = a.iw; c.height = a.ih; c.getContext('2d').drawImage(a.img, 0, 0); im = await out.embedPng(await toBytes(c, 'image/png')) }
   return cache[key] = im;
 }
+
+/* ---------- שכבת טקסט בלתי נראית (לסימון, העתקה וחיפוש) ---------- */
+/* בוחר גופן עם כיסוי לכל התווים: קודם הגופן שנבחר (אם הוא מגופני האתר), ואז גופני האתר האחרים */
+async function getTextFont(out, o, cache){
+  var tc = cache.tf = cache.tf || {};
+  var cps = Array.from(String(o.text)).filter(function(ch){ return /\S/.test(ch) }).map(function(ch){ return ch.codePointAt(0) });
+  var names = [o.font].concat(MYL).filter(function(n, i, a){ return MY[n] && a.indexOf(n) === i }).slice(0, 8);
+  for (var i = 0; i < names.length; i++) {
+    var m = MY[names[i]], url = (o.bold && m.b) ? m.b : m.url;
+    if (!(url in tc)) {
+      try { var r = await fetch(url); if (!r.ok) throw 0; var bytes = new Uint8Array(await r.arrayBuffer()); tc[url] = { bytes: bytes, set: window.fontkit.create(bytes).characterSet, pdf: null } }
+      catch (e) { tc[url] = null }
+    }
+    var f = tc[url]; if (!f) continue;
+    var ok = cps.every(function(c){ return f.set.indexOf(c) >= 0 });
+    if (!ok && i < names.length - 1) continue;
+    if (!f.pdf) { try { f.pdf = await out.embedFont(f.bytes, { subset: true }) } catch (e) { tc[url] = null; continue } }
+    return f;
+  }
+  return null;
+}
+/* שכבת טקסט בלתי נראית מעל תמונת הטקסט, באותו מיקום ובאותו רוחב */
+async function textLayer(L, out, pg, o, b, cache){
+  var f = await getTextFont(out, o, cache); if (!f) return;
+  var font = f.pdf, key = pg.node.newFontDictionary(font.name, font.ref), L1 = lay(o, 1);
+  var ops = [L.pushGraphicsState(), L.beginText(), L.setFontAndSize(key, o.size), L.setTextRenderingMode(L.TextRenderingMode.Invisible)];
+  L1.lines.forEach(function(line, i){
+    var txt = Array.from(line).map(function(ch){ return f.set.indexOf(ch.codePointAt(0)) >= 0 ? ch : ' ' }).join('');
+    if (!txt.trim()) return;
+    if (REV_RTL && isRtl(txt)) txt = Array.from(txt).reverse().join('');
+    setFont(mctx, o, 1);
+    var target = mctx.measureText(line).width, meas = font.widthOfTextAtSize(txt, o.size);
+    var tz = meas > 0 ? clamp(target / meas * 100, 20, 500) : 100;
+    var x = o.align === 'right' ? b.x + L1.w - target : o.align === 'center' ? b.x + (L1.w - target) / 2 : b.x;
+    ops.push(L.setTextMatrix(1, 0, 0, -1, x, b.y + i * L1.lh + L1.base), L.setCharacterSqueeze(tz), L.showText(font.encodeText(txt)));
+  });
+  ops.push(L.endText(), L.popGraphicsState());
+  pg.pushOperators.apply(pg, ops);
+}
+function coverRects(p){ return p.objs.filter(function(o){ return o.t === 'cover' }) }
+function hitsCover(rects, x0, y0, x1, y1){
+  return rects.some(function(r){ return x0 < r.x + r.w && x1 > r.x && y0 < r.y + r.h && y1 > r.y });
+}
+function invisibleRuns(L, pg, f, runs){
+  var font = f.pdf, key = pg.node.newFontDictionary(font.name, font.ref), ops = [L.pushGraphicsState(), L.beginText(), L.setTextRenderingMode(L.TextRenderingMode.Invisible)];
+  runs.forEach(function(r){
+    var txt = Array.from(r.s).map(function(ch){ return f.set.indexOf(ch.codePointAt(0)) >= 0 ? ch : ' ' }).join('');
+    if (!txt.trim()) return;
+    var meas = font.widthOfTextAtSize(txt, r.size), tz = meas > 0 ? clamp(r.w / meas * 100, 20, 500) : 100;
+    ops.push(L.setFontAndSize(key, r.size), L.setTextMatrix(1, 0, 0, -1, r.x, r.base), L.setCharacterSqueeze(tz), L.showText(font.encodeText(txt)));
+  });
+  ops.push(L.endText(), L.popGraphicsState()); pg.pushOperators.apply(pg, ops);
+}
+/* שכבת טקסט בלתי נראית לטקסט המקורי שנשאר, בלי האותיות שנמצאות מתחת לכיסויים */
+async function origTextLayer(L, out, pg, p, cache){
+  if (p.kind !== 'pdf') return;
+  var rects = coverRects(p);
+  if (!p.tc) p.tc = await p.pg.getTextContent();
+  var U = pdfjs.Util, runs = [], all = '';
+  p.tc.items.forEach(function(it){
+    if (!it.str || !it.str.trim() || !(it.width > 0)) return;
+    var m = U.transform(p.vt, it.transform); if (Math.abs(m[1]) > 0.05 * Math.abs(m[0]) || m[0] <= 0) return;
+    var chars = Array.from(it.str), n = chars.length, fh = Math.hypot(m[2], m[3]), cw = it.width / n, seg = null;
+    for (var i = 0; i <= n; i++) {
+      var cut = i === n;
+      if (!cut) { var cx = m[4] + cw * (i + 0.5); cut = hitsCover(rects, cx, m[5] - fh, cx, m[5] + fh * 0.3) }
+      if (!cut) { if (!seg) seg = { s: '', x: m[4] + cw * i, base: m[5], size: fh, w: 0 }; seg.s += chars[i]; seg.w += cw }
+      else if (seg) { runs.push(seg); all += seg.s; seg = null }
+    }
+  });
+  if (!runs.length) return;
+  var f = await getTextFont(out, { text: all, font: DEF.font, bold: false }, cache); if (!f) return;
+  invisibleRuns(L, pg, f, runs);
+}
+
 async function overlay(L, out, pg, p, dpi, cache){
   if (!p.objs.length) return;
   pg.node.normalize();
@@ -669,6 +802,7 @@ async function overlay(L, out, pg, p, dpi, cache){
       var c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(W * k)); c.height = Math.max(1, Math.ceil(H * k));
       drawText(c.getContext('2d'), o, k, pad * k, pad * k);
       image(await out.embedPng(await toBytes(c, 'image/png')), b.x - pad, b.y - pad, c.width / k, c.height / k); c.width = c.height = 1;
+      if (cache.fk) { try { await textLayer(L, out, pg, o, b, cache) } catch (e) { if (window.console) console.error(e) } }
     } else {
       var ops = [L.pushGraphicsState(), L.setStrokingColor(col(o.stroke)), L.setLineWidth(o.sw), L.setLineCap(L.LineCapStyle.Round), L.setLineJoin(L.LineJoinStyle.Round)];
       if (o.t === 'pen') { o.pts.forEach(function(q, j){ ops.push(j ? L.lineTo(q[0], q[1]) : L.moveTo(q[0], q[1])) }); if (o.pts.length === 1) ops.push(L.lineTo(o.pts[0][0] + 0.01, o.pts[0][1])) }
@@ -689,11 +823,26 @@ async function exportPdf(opt){
   var baseI = used[0] ? 0 : -1, out, orig = [], libs = {}, copies = {}, cache = {};
   if (baseI === 0) { out = await L.PDFDocument.load(S.docs[0].bytes, { updateMetadata: false }); orig = out.getPages().slice(); for (var i = out.getPageCount() - 1; i >= 0; i--) out.removePage(i) }
   else out = await L.PDFDocument.create();
+  var fk = opt.legacy ? null : await loadFontkit(); if (fk) { out.registerFontkit(fk); cache.fk = true }
   for (var di in used) { if (+di === baseI) continue; libs[di] = await L.PDFDocument.load(S.docs[di].bytes, { updateMetadata: false }); var idx = used[di].filter(function(v, j, a){ return a.indexOf(v) === j }), cp = await out.copyPages(libs[di], idx); copies[di] = {}; idx.forEach(function(v, j){ copies[di][v] = cp[j] }) }
   for (var n = 0; n < S.order.length; n++) {
     var p = S.order[n], pg; busy('מכין את הקובץ… עמוד ' + (n + 1) + ' מתוך ' + S.order.length);
-    var flat = (p.kind === 'pdf' && S.docs[p.di].enc) || (opt.flat && p.objs.length > 0);
-    if (flat) { pg = out.addPage([p.w, p.h]); var im = await out.embedJpg(await raster(p, opt.flatDpi)); pg.drawImage(im, { x: 0, y: 0, width: p.w, height: p.h }); if (p.rot) pg.setRotation(L.degrees(p.rot)) }
+    var enc = p.kind === 'pdf' && S.docs[p.di].enc, cov = !opt.legacy && p.kind !== 'blank' && coverRects(p).length > 0;
+    var flat = enc || (opt.flat && p.objs.length > 0) || cov;
+    if (flat) {
+      pg = out.addPage([p.w, p.h]);
+      var im = await out.embedJpg(await raster(p, (opt.flat || enc) ? opt.flatDpi : opt.dpi));
+      pg.drawImage(im, { x: 0, y: 0, width: p.w, height: p.h });
+      if (cache.fk && !opt.flat && !enc) {
+        pg.pushOperators(L.pushGraphicsState(), L.concatTransformationMatrix(1, 0, 0, -1, 0, p.h));
+        try {
+          await origTextLayer(L, out, pg, p, cache);
+          for (var ti = 0; ti < p.objs.length; ti++) { var to = p.objs[ti]; if (to.t === 'text' && to.text.trim()) await textLayer(L, out, pg, to, tbox(to), cache) }
+        } catch (e) { if (window.console) console.error(e) }
+        pg.pushOperators(L.popGraphicsState());
+      }
+      if (p.rot) pg.setRotation(L.degrees(p.rot));
+    }
     else {
       if (p.kind === 'pdf') { pg = +p.di === baseI ? orig[p.n - 1] : copies[p.di][p.n - 1]; out.addPage(pg) }
       else { pg = out.addPage([p.w, p.h]); if (p.kind === 'image') pg.drawImage(await embedAsset(L, out, cache, p.key), { x: 0, y: 0, width: p.w, height: p.h }) }
@@ -713,13 +862,21 @@ async function openDl(){
   $('dlName').value = S.name + '-ערוך'; $('dlDlg').showModal();
 }
 async function doDl(){
-  var opt = { dpi: +$('dlQ').value || 600, flat: document.querySelector('input[name=dlMode]:checked').value === 'flat', flatDpi: +$('dlFlatQ').value || 300 };
-  var name = ($('dlName').value.trim() || 'document').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\.pdf$/i, '') + '.pdf';
+  var mode = document.querySelector('input[name=dlMode]:checked').value;
+  var opt = { dpi: +$('dlQ').value || 600, mode: mode, flat: mode === 'flat', legacy: mode === 'legacy', flatDpi: +$('dlFlatQ').value || 300, imgFmt: $('dlImgFmt').value, imgDpi: +$('dlImgQ').value || 200 };
+  var base = ($('dlName').value.trim() || 'document').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\.(pdf|zip|png|jpe?g)$/i, '');
   $('dlDlg').close(); busy('מכין את הקובץ…');
   try {
-    var bytes = await exportPdf(opt), a = document.createElement('a'), url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url) }, 60000);
-    S.dirty = false; window.__mlPdfLast = bytes; hint('הקובץ ירד למחשב: ' + name);
+    if (mode === 'img') {
+      var r = await exportImages(opt), nm;
+      if (r.files.length === 1) { nm = base + '.' + r.ext; saveBlob(new Blob([r.files[0].bytes], { type: r.mime }), nm) }
+      else { nm = base + '.zip'; r.files.forEach(function(f){ f.name = base + '-' + f.name }); saveBlob(makeZip(r.files), nm) }
+      S.dirty = false; hint('הקובץ ירד למחשב: ' + nm);
+    } else {
+      var bytes = await exportPdf(opt), name = base + '.pdf';
+      saveBlob(new Blob([bytes], { type: 'application/pdf' }), name);
+      S.dirty = false; window.__mlPdfLast = bytes; hint('הקובץ ירד למחשב: ' + name);
+    }
   } catch (e) { if (window.console) console.error(e); hint('משהו השתבש בהכנת הקובץ. נסו שוב, ואם זה חוזר בחרו באיכות נמוכה יותר.') }
   busy('');
 }
