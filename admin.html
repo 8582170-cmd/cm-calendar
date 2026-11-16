@@ -106,7 +106,7 @@ function api(body){return fetch('/api/admin',{method:body?'POST':'GET',headers:{
   /* תשובה שאינה JSON: בדרך כלל דף שגיאה של Cloudflare (למשל חריגה מזמן העיבוד). מציגים את הקוד שלה */
   const code=(/Error (\d{3,4})/.exec(t)||[])[1],title=((/<title>([^<]*)/i.exec(t)||[])[1]||'').trim();throw Object.assign(new Error('השרת החזיר שגיאה '+r.status+(code?' (Cloudflare '+code+')':'')+(title?': '+title.slice(0,80):'')),{code:r.status})}
   if(!r.ok)throw Object.assign(new Error(j.error||j.message||('שגיאה '+r.status)),{code:r.status,j});return j}))}
-function login(){api().then(d=>{try{sessionStorage.setItem('myluach-admin',PW);localStorage.setItem('myluach-maint-bypass','1')}catch(e){}D=d;C=JSON.parse(JSON.stringify(d.config||{}));render()})
+function login(){api().then(d=>{setTimeout(function(){mailAlertShow(api)},300);try{sessionStorage.setItem('myluach-admin',PW);localStorage.setItem('myluach-maint-bypass','1')}catch(e){}D=d;C=JSON.parse(JSON.stringify(d.config||{}));render()})
   .catch(e=>{const m=$('#lmsg');if(m)m.textContent=e.code===429?'יותר מדי ניסיונות שגויים. אפשר לנסות שוב '+(e.j&&e.j.until?'בשעה '+new Date(e.j.until).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}):'מאוחר יותר')+'.':e.code===401?'סיסמה שגויה':e.code===503?'לא הוגדרה סיסמה: צריך להוסיף ב-Vercel את המשתנה ADMIN_PASSWORD (לפחות 8 תווים)':'שגיאה: '+(e.j&&e.j.message||e.message);try{sessionStorage.removeItem('myluach-admin')}catch(x){}})}
 $('#login').onsubmit=e=>{e.preventDefault();PW=$('#pw').value;login()};
 if(PW)login();
@@ -933,4 +933,15 @@ window.ADMIN_NAV={title:'ניהול MyLuach',sub:'הגדרות האתר',groups:
 })();
 </script>
 <script src="/assets/admin-nav.js?v=2"></script>
+<script>
+/* התראה קופצת: שליחת מיילים נעצרה בגלל מכסה (מתוך /api/admin action=mailalert) */
+function mailAlertShow(api){api({action:'mailalert'}).then(function(r){var L=(r.list||[]).filter(function(x){return !x.ack});if(!L.length)return;
+  var e=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  var d=document.createElement('div');d.id='mailAlert';d.setAttribute('role','alertdialog');d.setAttribute('aria-labelledby','maT');
+  d.style.cssText='position:fixed;z-index:9999;inset:0;background:rgb(0 0 0 / .45);display:flex;align-items:center;justify-content:center;padding:16px';
+  d.innerHTML='<div style="background:#fff;color:#1d2328;max-width:520px;width:100%;border-radius:16px;padding:22px 20px;border-top:6px solid #c0392b;box-shadow:0 20px 60px rgb(0 0 0 / .35);font:16px/1.6 Arial,sans-serif;direction:rtl"><h2 id="maT" style="margin:0 0 8px;font-size:21px">⚠️ שליחת מיילים נעצרה בגלל מכסה</h2>'+
+    L.map(function(x){return '<p style="margin:8px 0"><b>'+(x.route==='inv'?'הזמנות דיגיטליות':'שאר האתר')+'</b> · '+e(new Date(x.at).toLocaleString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}))+(x.n>1?' · '+x.n+' עצירות':'')+'<br><small style="color:#666">'+(x.route==='inv'?'המוזמנים נשארים בתור והשליחה תמשיך כשהמכסה תתחדש.':'מיילים שנכשלו לא נשלחים שוב מעצמם.')+'</small></p>'}).join('')+
+    '<p style="margin:10px 0 14px;font-size:14.5px;color:#444">אפשר להגדיל מכסה אצל הספק (למשל חבילת קרדיטים ב-Brevo) ולעדכן אותה בניתוב המיילים, או להוסיף ספק גיבוי.</p><button type="button" id="maOk" style="font:inherit;font-weight:700;border:0;border-radius:999px;padding:10px 22px;background:#1f5c63;color:#fff;cursor:pointer">הבנתי</button></div>';
+  document.body.appendChild(d);var b=document.getElementById('maOk');b.focus();b.onclick=function(){api({action:'mailalertack'}).catch(function(){});d.remove()}}).catch(function(){})}
+</script>
 </body></html>

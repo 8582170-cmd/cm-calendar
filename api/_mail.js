@@ -3,7 +3,7 @@
    ספקים: Resend (RESEND_API_KEY), Brevo (BREVO_API_KEY), Mailjet (MAILJET_API_KEY + MAILJET_SECRET_KEY), Amazon SES (SES_ACCESS_KEY_ID + SES_SECRET_ACCESS_KEY + SES_REGION).
    ספק שלא הוגדר מדולג. אם ספק נכשל (מגבלה, תקלה), עוברים לבא בתור. */
 'use strict';
-const { env, db, loadSetting } = require('./_lib');
+const { env, db, loadSetting, saveSetting } = require('./_lib');
 const FROM_EMAIL = () => env('MAIL_FROM') || 'noreply@myluach.org';
 const FROM_NAME = 'MyLuach';
 /* תשובות למיילים מגיעות לכתובת הזאת (ולא ל-noreply): MAIL_REPLY_TO, ואם אין: OWNER_EMAIL */
@@ -103,17 +103,44 @@ async function sendMail(m, kind, only) {
   const inv = /^invite/.test(kind || '');
   let order = only ? [only] : (names(R[inv ? 'inv' : 'other']).length ? names(R[inv ? 'inv' : 'other']) : names(env(inv ? 'MAIL_INVITE_ORDER' : 'MAIL_OTHER_ORDER') || (inv ? 'brevo' : 'resend,mailjet,brevo')));
   if (!order.length) order = inv ? ['brevo'] : ['resend', 'mailjet', 'brevo'];
+  let capped = false;
   if (!only) {
     const C = await counts();
     const free = order.filter(k => (C.n[k] || 0) < capDay(R, k) && (C.m[k] || 0) < capMonth(R, k) && (!capHour(R, k) || (C.h[k] || 0) < capHour(R, k)));
     order = free.concat(order.filter(k => free.indexOf(k) < 0));
+    capped = !free.length;
   }
   for (const k of order) {
     const fn = PROVIDERS[k]; if (!fn) continue;
     try { const used = await fn(m); if (used) { if (CNT) { ['n', 'm', 'h'].forEach(x => { CNT[x][used] = (CNT[x][used] || 0) + 1; }); } await logMail(used, kind, true, m); return used; } }
     catch (e) { errs.push(e.message); console.error('mail fail', k, e.message); await logMail(k, kind, false, m, e.message); }
   }
+  /* עצירה בגלל מכסה (כל הספקים בתור מלאים לפי הספירה, או שספק החזיר שגיאת מכסה): התראה למנהל במייל ובדף הניהול */
+  if (!only && errs.length && (capped || errs.some(e => QUOTA_RX.test(e)))) await quotaAlert(inv ? 'inv' : 'other', errs, capped).catch(e => console.error('quota alert', e.message));
   throw new Error('no mail provider succeeded: ' + (errs.join(' | ') || 'none configured'));
+}
+const QUOTA_RX = /\b(402|429)\b|limit|quota|credit|exceed/i;
+/* התראה אחת לכל סוג (הזמנות / שאר האתר) ביום. נשמרת ב-settings.mailalert ומוצגת בדפי הניהול עד שמסמנים "הבנתי".
+   המייל למנהל יוצא דרך ניתוב "שאר האתר"; אם גם הוא חסום, ההתראה נשארת רק בניהול. */
+let ALERTING = false;
+async function quotaAlert(route, errs, capped) {
+  if (ALERTING) return; ALERTING = true;
+  try {
+    const now = new Date().toISOString(), day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+    const A = (await loadSetting('mailalert').catch(() => null)) || {}, L = Array.isArray(A.list) ? A.list : [];
+    const same = L.find(x => x.route === route && x.day === day);
+    if (same) { same.n = (+same.n || 1) + 1; same.last = now; await saveSetting('mailalert', { list: L }); return; }
+    L.unshift({ route, day, at: now, last: now, n: 1, capped: !!capped, err: errs.join(' | ').slice(0, 400), ack: false });
+    await saveSetting('mailalert', { list: L.slice(0, 30) });
+    const to = env('OWNER_EMAIL'); if (!to) return;
+    const what = route === 'inv' ? 'מיילים של ההזמנות הדיגיטליות' : 'מיילים של שאר האתר (קישורי כניסה, קבלות, תזכורות ועוד)';
+    const then = route === 'inv' ? 'המוזמנים שלא קיבלו נשארים בתור, והשליחה תמשיך לבד כשהמכסה תתחדש (בדרך כלל למחרת). כדי לשלוח עכשיו: להגדיל מכסה אצל הספק (למשל חבילת קרדיטים ב-Brevo) ולעדכן את המכסה בדף הניהול, או להוסיף ספק גיבוי בניתוב.'
+      : 'מיילים שנכשלו כאן לא נשלחים שוב מעצמם. כדאי להוסיף ספק גיבוי בניתוב, או להגדיל מכסה אצל הספק ולעדכן אותה בדף הניהול.';
+    await sendMail({ to, subject: '⚠️ שליחת מיילים נעצרה: הגעתם למכסה (' + (route === 'inv' ? 'הזמנות' : 'האתר') + ')',
+      html: frame({ title: 'שליחת מיילים נעצרה בגלל מכסה', body: 'נעצרה שליחה של ' + escH(what) + '.<br><br>' + escH(then) + '<br><br><small style="color:#777">' + (capped ? 'כל הספקים בניתוב הגיעו למכסה לפי הספירה. ' : '') + 'פירוט: ' + escH(errs.join(' | ').slice(0, 300)) + '</small>',
+        button: 'לדף הניהול', url: (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '') + '/admin' }),
+      text: 'שליחת ' + what + ' נעצרה בגלל מכסה. ' + then }, 'mailalert');
+  } finally { ALERTING = false; }
 }
 function logMail(provider, kind, ok, m, err) {
   const base = { provider, kind: kind || '', ok };

@@ -79,7 +79,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
+const ALOG_RO = /^(mailalert|dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -634,6 +634,12 @@ async function main(req, res) {
       const d = /^\d{4}-\d{2}-\d{2}$/.test(ds) ? new Date(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10), 12) : new Date();
       const h = new HDate(d), m = h.getMonth(), day = h.getDate(), leap = HDate.isLeapYear(h.getFullYear());
       return json(res, 200, { heb: h.renderGematriya(true), items: list.filter(e => e.d === day && (e.m === m || (!leap && m === 12 && e.m === 13))) });
+    }
+    /* התראות על עצירת מיילים בגלל מכסה (נכתבות ב-_mail.js) */
+    if (req.method === 'POST' && (b.action === 'mailalert' || b.action === 'mailalertack')) {
+      const A = (await loadSetting('mailalert').catch(() => null)) || {}, L = Array.isArray(A.list) ? A.list : [];
+      if (b.action === 'mailalertack') { L.forEach(x => { x.ack = true; }); await saveSetting('mailalert', { list: L }); }
+      return json(res, 200, { list: L });
     }
     if (req.method === 'POST' && b.action === 'mailroute') {
       /* ניתוב מיילים: אילו ספקים (לפי סדר) שולחים הזמנות, ואילו את שאר האתר, ומכסות לכל ספק */
