@@ -204,7 +204,7 @@ function mgrView(s, S) {
     ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null };
 }
 /* שם תיקייה בימות: אותיות באנגלית וספרות בלבד (קו תחתון או מקף גורמים לתיקייה לא להיפתח בניהול של ימות). אפשר נתיב עם / */
-const holdFolder = x => String(x || '').replace(/[^A-Za-z0-9\/]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '').slice(0, 60) || 'HoldAPI';
+const holdFolder = x => String(x || '').replace(/[^A-Za-z0-9\/]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '').slice(0, 60) || 'HoldApi';
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
   str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 20000); str('color', 7); str('logo', 400); str('banner', 400); str('video', 400);
@@ -637,7 +637,7 @@ module.exports = async (req, res) => {
       const oh = iv.hold || {}, fo = holdFolder(b.folder != null ? b.folder : oh.folder);
       if (!url) iv.hold = { on: !!oh.on, name: oh.name || '', folder: fo };
       else {
-        /* הקובץ עולה לתיקייה שנבחרה (ברירת מחדל HoldAPI, מתחת לשורש המערכת). בניהול של ימות צריך ללחוץ עליה קליק ימני ו"יצירת מוזיקה בהמתנה", ואת השם שנוצר לרשום באתר */
+        /* הקובץ עולה לתיקייה שנבחרה (ברירת מחדל HoldApi, מתחת לשורש המערכת). בניהול של ימות צריך ללחוץ עליה קליק ימני ו"יצירת מוזיקה בהמתנה", ואת השם שנוצר לרשום באתר */
         const nm = 'hold' + s.id; iv.hold = { on: !!oh.on, name: oh.name || '', folder: fo, url };
         if (iv.token && iv.path) {
           try { const f = await fetch(url, { signal: AbortSignal.timeout(30000) }); if (!f.ok) throw new Error('fetch ' + f.status); await ymUpload(iv.token, 'ivr2:/' + fo + '/' + nm + '.wav', await f.arrayBuffer()); iv.hold.y = true; }
