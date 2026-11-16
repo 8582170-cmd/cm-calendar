@@ -91,20 +91,36 @@ function tok(){var j=sess();if(!j)return Promise.resolve('');
   return fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:j.refresh_token})})
    .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at})))}catch(e){}return n.access_token}).catch(function(){return ''})}
 function call(b){return tok().then(function(t){TK=t;return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TK},body:JSON.stringify(Object.assign({s:SLUG},b))})}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;if(r.status===401)login();if(j.error==='setup')flash(j.message,1);return j})})}
-function login(){nav.innerHTML='';var back='/app.html#login&back='+encodeURIComponent(location.pathname+location.search);
-  box.innerHTML='<div class="card" style="max-width:420px"><h1>ניהול מכירה סינית</h1><p class="hint" style="margin:0 0 8px">כניסה עם החשבון באתר, באותו מייל שהוגדר למנהל המכירה.</p>'
-   +'<label class="f" for="lgm">מייל<input id="lgm" type="email" dir="ltr" autocomplete="email"></label><label class="f" for="lgp">סיסמה<input id="lgp" type="password" dir="ltr" autocomplete="current-password"></label>'
-   +'<div class="acts"><button class="btn pri" type="button" id="lgi">כניסה</button></div><p class="hint" id="lgx" style="margin:6px 0 0"></p>'
-   +'<p class="hint" style="margin:10px 0 0">אין סיסמה, שכחתם אותה, או רוצים להיכנס עם Google או עם קישור במייל? <a href="'+back+'">כניסה בדרך אחרת</a> (עוברים דרך דף הלוח וחוזרים לכאן).</p></div>';
-  var go=function(){var m=$('lgm').value.trim(),pw=$('lgp').value,C=window.MYLUACH_CFG||{},x=$('lgx');
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)||!pw){x.textContent='נא למלא מייל וסיסמה.';return}
-    if(!C.supabaseUrl){x.textContent='הכניסה לא זמינה כרגע. אפשר להיכנס בדרך אחרת.';return}
-    x.textContent='נכנסים…';$('lgi').disabled=true;
-    fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({email:m,password:pw})})
+function loadSb(){return window.supabase?Promise.resolve():new Promise(function(res,rej){var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';s.onload=res;s.onerror=function(){var s2=document.createElement('script');s2.src='/cdn/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';s2.onload=res;s2.onerror=rej;document.head.appendChild(s2)};document.head.appendChild(s)})}
+var SB=null;
+function sbReady(){var C=window.MYLUACH_CFG||{};if(!C.supabaseUrl)return Promise.reject(new Error('cfg'));return loadSb().then(function(){return SB||(SB=window.supabase.createClient(C.supabaseUrl,C.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:KEY}}))})}
+function authMsg(e){var m=String(e&&e.message||e||'');if(/invalid login/i.test(m))return 'המייל או הסיסמה שגויים. אם אין לכם סיסמה, השתמשו בקישור במייל.';if(/rate|limit|seconds/i.test(m))return 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.';if(/provider|not enabled|unsupported/i.test(m))return 'הכניסה עם Google עדיין לא הופעלה באתר. אפשר להיכנס עם קישור במייל.';return 'שגיאה: '+esc(m)}
+function login(msg0){nav.innerHTML='';
+  box.innerHTML='<div class="card" style="max-width:440px"><h1>כניסה לניהול המכירה</h1><p class="hint" style="margin:0 0 10px">כניסה באותו מייל שהוגדר למנהל המכירה. אין צורך בסיסמה.</p>'
+   +'<div class="acts"><button class="btn" type="button" id="lgg" style="width:100%">כניסה עם Google</button></div>'
+   +'<p class="hint" style="text-align:center;margin:10px 0">או</p>'
+   +'<label class="f" for="lgm">מייל<input id="lgm" type="email" dir="ltr" autocomplete="email"></label>'
+   +'<div class="acts"><button class="btn pri" type="button" id="lgl" style="width:100%">שלחו לי קישור כניסה למייל</button></div>'
+   +'<details style="margin-top:12px"><summary style="cursor:pointer;font-size:14px">יש לי סיסמה</summary><label class="f" for="lgp">סיסמה<input id="lgp" type="password" dir="ltr" autocomplete="current-password"></label><div class="acts"><button class="btn" type="button" id="lgi">כניסה עם סיסמה</button></div></details>'
+   +'<p class="hint" id="lgx" style="margin:10px 0 0"></p></div>';
+  var X=$('lgx'),say=function(t,bad){X.innerHTML=t;X.style.color=bad?'#b00020':''};if(msg0)say(msg0,1);
+  var mail=function(){var m=$('lgm').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){say('נא למלא כתובת מייל תקינה.',1);$('lgm').focus();return ''}return m};
+  var here=location.origin+location.pathname;
+  var mark=function(){try{var u=location.pathname+location.search;sessionStorage.setItem('ml-back',u);localStorage.setItem('ml-back2',JSON.stringify({u:u,t:Date.now()}));if(SLUG)localStorage.setItem('ml-s',SLUG)}catch(e){}};
+  $('lgg').onclick=function(){say('עוברים לגוגל…');mark();sbReady().then(function(sb){return sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:here,queryParams:{prompt:'select_account'}}})}).then(function(r){if(r&&r.error)say(authMsg(r.error),1)}).catch(function(e){say(authMsg(e),1)})};
+  $('lgl').onclick=function(){var m=mail();if(!m)return;var b=$('lgl');b.disabled=true;say('שולחים…');mark();
+    sbReady().then(function(sb){return sb.auth.signInWithOtp({email:m,options:{emailRedirectTo:here}})}).then(function(r){b.disabled=false;if(r&&r.error)return say(authMsg(r.error),1);say('<b>נשלח!</b> פתחו את המייל ולחצו על הקישור, ותיכנסו ישר לניהול. אם הוא לא מגיע תוך דקה, בדקו בספאם.');b.textContent='שליחה חוזרת'}).catch(function(e){b.disabled=false;say(authMsg(e),1)})};
+  var pw=function(){var m=mail(),p=$('lgp').value,C=window.MYLUACH_CFG||{};if(!m)return;if(!p){say('נא למלא סיסמה.',1);return}if(!C.supabaseUrl){say('הכניסה לא זמינה כרגע.',1);return}$('lgi').disabled=true;say('נכנסים…');
+    fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({email:m,password:p})})
      .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})}).then(function(o){
-       if(!o.ok||!o.j.access_token){$('lgi').disabled=false;x.textContent=/invalid|credentials/i.test(JSON.stringify(o.j))?'המייל או הסיסמה לא נכונים. אם נרשמתם בלי סיסמה, השתמשו ב"כניסה בדרך אחרת".':'הכניסה נכשלה. נסו שוב.';return}
-       try{localStorage.setItem(KEY,JSON.stringify(o.j))}catch(e){}location.reload()}).catch(function(){$('lgi').disabled=false;x.textContent='תקלת תקשורת. נסו שוב.'})};
-  $('lgi').onclick=go;$('lgp').onkeydown=function(e){if(e.key==='Enter')go()}}
+       if(!o.ok||!o.j.access_token){$('lgi').disabled=false;say(/invalid|credentials/i.test(JSON.stringify(o.j))?'המייל או הסיסמה שגויים. אם אין לכם סיסמה, השתמשו בקישור במייל.':'הכניסה נכשלה. נסו שוב.',1);return}
+       try{localStorage.setItem(KEY,JSON.stringify(o.j))}catch(e){}location.reload()}).catch(function(){$('lgi').disabled=false;say('תקלת תקשורת. נסו שוב.',1)})};
+  $('lgi').onclick=pw;$('lgp').onkeydown=function(e){if(e.key==='Enter')pw()}}
+/* חזרה מכניסה עם Google או מקישור במייל: הכתובת מגיעה עם הטוקן, ספריית הכניסה שומרת אותו, ואז נכנסים לניהול */
+function finishHash(){var err=/error_description=([^&]+)/.exec(location.hash);nav.innerHTML='';box.innerHTML='<div class="card"><p>מתחברים…</p></div>';
+  var clean=function(){var s='';try{s=localStorage.getItem('ml-s')||'';localStorage.removeItem('ml-s');localStorage.removeItem('ml-back2');sessionStorage.removeItem('ml-back')}catch(e){}return location.pathname+(SLUG||!s?location.search:'?s='+encodeURIComponent(s))};
+  if(err){history.replaceState(null,'',location.pathname+location.search);return login('הכניסה נכשלה: '+esc(decodeURIComponent(err[1].replace(/\+/g,' '))))}
+  sbReady().then(function(sb){return new Promise(function(res){var d=0;sb.auth.onAuthStateChange(function(ev,s){if(s&&!d){d=1;res(s)}});setTimeout(function(){if(!d){d=1;res(null)}},5000)})}).then(function(s){if(!s)return login('הכניסה לא הושלמה. נסו שוב.');location.replace(clean())}).catch(function(){login('הכניסה לא הושלמה. נסו שוב.')})}
 function go(t,s){var u=new URL(location.href);if(s!==undefined){u.searchParams.set('s',s);SLUG=s}u.searchParams.set('t',t);history.replaceState(null,'',u);TAB=t;show()}
 function csv(name,head,rows){var e=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   var t='﻿'+[head].concat(rows).map(function(r){return r.map(e).join(',')}).join('\r\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));a.download=name+'.csv';a.click()}
@@ -115,7 +131,7 @@ var PUB=location.origin+'/auction?s=';
 document.addEventListener('click',function(e){var b=e.target.closest('[data-cpw]');if(b&&navigator.clipboard)navigator.clipboard.writeText(b.dataset.cpw).then(function(){flash('הקישור הועתק')})});
 
 if(/[?&]out=1\b/.test(location.search)){try{localStorage.removeItem(KEY)}catch(e){}}
-tok().then(function(t){TK=t;if(!t)return login();acctBar();SLUG?loadSale().then(show):listView()});
+if(/[#&](access_token|error_description)=/.test(location.hash))finishHash();else tok().then(function(t){TK=t;if(!t)return login();acctBar();SLUG?loadSale().then(show):listView()});
 
 /* ===== רשימת המכירות ===== */
 function listView(){nav.innerHTML='<div class="ttl">מכירה סינית</div><div class="org">ניהול</div>';

@@ -4184,7 +4184,7 @@ function acctInit(){
       const was=user;user=u;AUTH.user=u;acctBtn();if(!!was!==!!u){syncPlanUI();render()}
       if(u&&(!was||was.id!==u.id))setTimeout(shareCheck,1500);
       if(u&&(!was||was.id!==u.id))onSignedIn((ev==='SIGNED_IN'||ev==='PASSWORD_RECOVERY')&&!had);
-      if(u){had=true;let bk=null;try{bk=sessionStorage.getItem('ml-back');if(bk)sessionStorage.removeItem('ml-back')}catch(e){}if(bk)setTimeout(()=>{window.location.href=bk},400)}
+      if(u){had=true;let bk=null;try{bk=sessionStorage.getItem('ml-back');if(bk)sessionStorage.removeItem('ml-back');if(!bk&&ev==='SIGNED_IN'){const b2=JSON.parse(localStorage.getItem('ml-back2')||'null');if(b2){localStorage.removeItem('ml-back2');if(b2.u&&Date.now()-b2.t<900000&&/^\/[^/]/.test(b2.u))bk=b2.u}}}catch(e){}if(bk)setTimeout(()=>{window.location.href=bk},400)}
       if(!u&&was){cloudDirty=false;clearTimeout(cloudT)}
     });
     window.addEventListener('beforeunload',()=>{if(user&&cloudDirty)cloudSave()});
