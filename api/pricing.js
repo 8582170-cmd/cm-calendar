@@ -110,6 +110,14 @@ module.exports = async (req, res) => {
   if (cp === '_share') return require('./_share').pub(req, res);
   /* לוח ציבורי מהלוח המקוון: myluach.org/<שם> */
   if (cp === '_pubcal') return require('./_pubcal').read(req, res);
+  /* UPAY: קישור בדיקה של ₪1 שנוצר אוטומטית (הסכום והכתובות נקבעים כאן), לבדיקת החיבור */
+  if (cp === '_upaytest') {
+    const { env } = require('./_lib'), em = env('UPAY_EMAIL');
+    if (!em) return json(res, 400, { error: 'חסר UPAY_EMAIL בהגדרות השרת' });
+    const site = 'https://myluach.org', q = new URLSearchParams({ email: em, amount: '1', returnurl: site + '/pay-return.html?upay=test', ipnurl: site + '/api/pricing?c=_upayipn&t=test',
+      paymentdetails: 'בדיקת חיבור MyLuach', maxpayments: '1', livesystem: '1', commissionreduction: '', createinvoiceandreceipt: '1', createinvoice: '0', createreceipt: '0', refername: 'UPAY', lang: 'HE', currency: 'NIS' });
+    res.statusCode = 302; res.setHeader('Location', 'https://app.upay.co.il/API6/clientsecure/redirectpage.php?' + q); res.setHeader('Cache-Control', 'no-store'); return res.end();
+  }
   /* UPAY: הודעת שרת על תשלום (קישור לעדכון שרת / IPN). בשלב הבדיקה רק נרשם, כדי לראות מה הם שולחים */
   if (cp === '_upayipn') {
     try {
