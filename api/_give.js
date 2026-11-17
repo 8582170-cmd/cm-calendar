@@ -76,7 +76,7 @@ function cfgOf(s) {
     monthly: { on: !!mo.on && f.monthly, def: Math.max(0, Math.min(60, mo.def != null ? +mo.def : 12)), max: Math.max(2, Math.min(60, +mo.max || 36)), unlimited: mo.unlimited !== false, count: mo.count === 'first' ? 'first' : 'months', countUnl: Math.max(1, Math.min(60, +mo.countUnl || 12)) },
     f, auction: /^[a-z0-9][a-z0-9-]{2,39}$/.test(c.auction || '') ? c.auction : '', auctionCount: c.auctionCount !== false,
     rcp: { mail: !(c.rcp && c.rcp.mail === false), org: (c.rcp && c.rcp.org) || '', num: (c.rcp && c.rcp.num) || '', note: (c.rcp && c.rcp.note) || '' },
-    thanks: c.thanks || '', faq: Array.isArray(c.faq) ? c.faq : [], phoneLine: c.phoneLine || '', screenNote: c.screenNote || '', feedSort: c.feedSort === 'big' ? 'big' : 'new'
+    thanks: c.thanks || '', terms: c.terms || '', faq: Array.isArray(c.faq) ? c.faq : [], phoneLine: c.phoneLine || '', screenNote: c.screenNote || '', feedSort: c.feedSort === 'big' ? 'big' : 'new'
   };
 }
 
@@ -174,7 +174,7 @@ async function campView(s, b) {
   let goal = c.goal, stage = 0;
   if (c.f.bonus && c.bonus.length && goal && st.total >= goal) { const nx = c.bonus.find(x => +x.goal > st.total); stage = nx ? c.bonus.indexOf(nx) + 1 : c.bonus.length; goal = nx ? +nx.goal : +c.bonus[c.bonus.length - 1].goal; }
   return {
-    slug: s.slug, status: s.status, cfg: pubCfg(c), org: require('./_orgpages').pub((s.cfg || {}).org, c.faq), time: t,
+    slug: s.slug, status: s.status, cfg: pubCfg(c), org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms }), time: t,
     totals: { total: st.total, raised: st.raised, auction: c.f.auction ? st.auction : 0, matched: st.matched, donors: c.f.donors ? st.donors : null, goal, goal0: c.goal, stage, stageTitle: stage ? String((c.bonus[Math.min(stage, c.bonus.length) - 1] || {}).title || '') : '' },
     teams, reps, feed: c.f.feed ? feed.map(d => pubDon(d, c, s)) : [], feedTotal: c.f.feed ? (one ? feed.length : tm ? feed.length : vis.length) : 0,
     rep: one ? { id: one.id, code: one.code, name: one.name || '', img: one.img || '', story: one.story || '', goal: +one.goal || 0, team: one.team_id || null, amount: r2((st.rep[one.id] || {}).amount * X || 0), count: (st.rep[one.id] || {}).count || 0 } : null,
@@ -291,7 +291,7 @@ function mgrView(s, S) {
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
-  str('title', 120); str('sub', 600); str('story', 20000); str('thanks', 2000); str('phoneLine', 30); str('screenNote', 200); str('color', 7); str('color2', 7);
+  str('title', 120); str('sub', 600); str('story', 20000); str('terms', 20000); str('thanks', 2000); str('phoneLine', 30); str('screenNote', 200); str('color', 7); str('color2', 7);
   ['logo', 'banner', 'video'].forEach(k => { if (b[k] != null) c[k] = url(b[k]); });
   if (Array.isArray(b.gallery)) c.gallery = b.gallery.map(url).filter(Boolean).slice(0, 30);
   if (b.org && typeof b.org === 'object') c.org = require('./_orgpages').clean(b.org, c.org);

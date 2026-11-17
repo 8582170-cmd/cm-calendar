@@ -244,7 +244,7 @@ function buyView(){
     h+='<div class="cols"><section class="sec prods"><h2>המוצרים בהגרלה</h2><div class="grid" id="grid"></div></section>';
     h+='<aside class="sum" id="sum" aria-live="polite"></aside></div>';
     if(c.faq&&c.faq.length&&!(c.org&&c.org.faq))h+='<section class="sec faq"><h2>שאלות ותשובות</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>';
-    if(c.terms)h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></p>';
+    if(c.terms&&!(c.org&&c.org.terms))h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></p>';
     h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-manage?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
     h+='</main>';
     app.innerHTML=h;cdRun();
