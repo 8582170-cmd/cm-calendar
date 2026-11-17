@@ -387,9 +387,10 @@ function endEdit(silent){
   var t = E.el.firstChild, o = E.o, p = E.p; o.text = norm(t.innerText); t.contentEditable = 'false'; t.oninput = t.onpaste = null; E.el.classList.remove('edit');
   try { getSelection().removeAllRanges() } catch (x) {}
   if (E.cv && E.orig && o.text.trim() === E.orig.trim() && styleKey(o) === E.sk) {
-    var ci = p.objs.indexOf(E.cv); if (ci >= 0) p.objs.splice(ci, 1); var ti = p.objs.indexOf(o); if (ti >= 0) p.objs.splice(ti, 1); if (S.sel && S.sel.o === o) S.sel = null;
+    var ci = p.objs.indexOf(E.cv); if (ci >= 0) p.objs.splice(ci, 1); var li = E.ln ? p.objs.indexOf(E.ln) : -1; if (li >= 0) p.objs.splice(li, 1); var ti = p.objs.indexOf(o); if (ti >= 0) p.objs.splice(ti, 1); if (S.sel && S.sel.o === o) S.sel = null;
     if (!silent) { drawObjs(p); updateProps(); hint() } return true;
   }
+  if (E.ln && o.text.trim()) { var tb = tbox(o); E.ln.x1 = Math.min(E.ln.x1, tb.x - 1.5); E.ln.x2 = Math.max(E.ln.x2, tb.x + tb.w + 1.5) }
   if (!o.text.trim()) { var i = p.objs.indexOf(o); if (i >= 0) p.objs.splice(i, 1); if (S.sel && S.sel.o === o) S.sel = null }
   if (!silent) { drawObjs(p); if (o.text !== E.before || E.fresh) commit(); updateProps(); hint() }
   return true;
@@ -464,7 +465,7 @@ async function smart(p, x, y){
       var rows = Object.keys(isU).map(Number).sort(function(a, b){ return a - b }), first = rows[0], last = first;
       for (var ri = 1; ri < rows.length && rows[ri] - last <= 1; ri++) last = rows[ri];
       for (py = first - 1; py <= last + 1; py++) if (py >= 0 && py < H) isU[py] = 1;
-      ul = { rows: isU, off: (first - baseRow) / sc, th: (last - first + 1) / sc };
+      ul = { rows: isU, first: first, last: last };
     }
   }
   for (px = 0; px < W; px++) for (py = top; py <= bot; py++) { if (ul && ul.rows[py]) continue; if (dist(px, py) > 90) { col[px] = 1; break } }
@@ -487,10 +488,17 @@ async function smart(p, x, y){
   if (b2 < t2) { t2 = top; b2 = bot }
   var sr = 0, sg = 0, sb = 0, sn = 0;
   for (py = t2; py <= b2; py++) for (px = l; px <= rr; px++) { if (ul && ul.rows[py]) continue; if (dist(px, py) >= mxd * 0.85) { var i = (py * W + px) * 4; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; sn++ } }
+  var ulOut = null;
+  if (ul) {
+    var um = 0, ur = 0, ug = 0, ub = 0, un = 0, pyu;
+    for (pyu = ul.first; pyu <= ul.last; pyu++) for (px = l; px <= rr; px++) { var du = dist(px, pyu); if (du > um) um = du }
+    for (pyu = ul.first; pyu <= ul.last; pyu++) for (px = l; px <= rr; px++) { if (um > 0 && dist(px, pyu) >= um * 0.85) { var iu = (pyu * W + px) * 4; ur += d[iu]; ug += d[iu + 1]; ub += d[iu + 2]; un++ } }
+    if (un) { if (ur / un < 28 && ug / un < 28 && ub / un < 28) ur = ug = ub = 0; ulOut = { y: (st.Y0 + (ul.first + ul.last + 1) / 2) / sc, th: Math.max(0.5, (ul.last - ul.first + 1) / sc), col: hex(ur / un, ug / un, ub / un) } }
+  }
   var pad = 1.3;
   if (bg[0] > 243 && bg[1] > 243 && bg[2] > 243) bg = [255, 255, 255];
   if (sn && sr / sn < 28 && sg / sn < 28 && sb / sn < 28) sr = sg = sb = 0;
-  return { it: it, x: l / sc - pad, y: (t2 + st.Y0) / sc - pad, w: (rr - l + 1) / sc + pad * 2, h: (b2 - t2 + 1) / sc + pad * 2, bg: hex(bg[0], bg[1], bg[2]), fg: sn ? hex(sr / sn, sg / sn, sb / sn) : '#000000', em: em / sc, ul: ul ? { off: ul.off, th: ul.th } : null };
+  return { it: it, x: l / sc - pad, y: (t2 + st.Y0) / sc - pad, w: (rr - l + 1) / sc + pad * 2, h: (b2 - t2 + 1) / sc + pad * 2, bg: hex(bg[0], bg[1], bg[2]), fg: sn ? hex(sr / sn, sg / sn, sb / sn) : '#000000', em: em / sc, ul: ulOut };
 }
 function edgeColor(p, o){
   var st = strip(p, o.y - 3, o.y + o.h + 3); if (!st) return '#ffffff';
@@ -542,7 +550,7 @@ async function doReplace(p, x, y){
   var pre = { color: r.fg, fresh: true };
   if (r.it) { pre.size = r1(r.it.fh); var g = guessFont(r.it); for (var k in g) pre[k] = g[k]; if (!('bold' in g)) pre.bold = false; if (!('italic' in g)) pre.italic = false }
   else pre.size = r1(clamp(r.em, 5, 200));
-  pre.u = !!r.ul; if (r.ul) { pre.uo = Math.max(0, r1(r.ul.off)); pre.uw = Math.max(0.3, r1(r.ul.th)) }
+  pre.u = false;
   var word = wordText(p, r, r.it); if (word) pre.text = word;
   pre.align = r.it && r.it.ltr ? 'left' : 'right';
   pre.ax = pre.align === 'right' ? r.x + r.w - 1.3 : r.x + 1.3;
@@ -551,9 +559,11 @@ async function doReplace(p, x, y){
   var L = lay(probe, 1); pre.y = r.it ? r.it.base - L.base : r.y + r.h / 2 - L.h / 2;
   var cv = { t: 'cover', x: r.x, y: r.y, w: r.w, h: r.h, fill: r.bg, rp: 1 };
   p.objs.push(cv);
+  /* הקו התחתון המקורי: קו נפרד באותו צבע, עובי ושורה, שנמשך מעט אל מעבר למילה כדי להתחבר לקו המקורי משני הצדדים */
+  var ln = null; if (r.ul) { ln = { t: 'line', x1: r.x - 1.5, y1: r.ul.y, x2: r.x + r.w + 1.5, y2: r.ul.y, stroke: r.ul.col, sw: r.ul.th }; p.objs.push(ln) }
   var to = addText(p, x, y, pre);
-  /* אם נשארה המילה המקורית ללא שינוי, לא מחליפים אותה (ביטול הכיסוי בסיום העריכה) */
-  if (S.edit && S.edit.o === to && word) { S.edit.orig = word; S.edit.cv = cv; S.edit.sk = styleKey(to) }
+  /* אם נשארה המילה המקורית ללא שינוי, לא מחליפים אותה (ביטול הכיסוי והקו בסיום העריכה) */
+  if (S.edit && S.edit.o === to) { S.edit.ln = ln; if (word) { S.edit.orig = word; S.edit.cv = cv; S.edit.sk = styleKey(to) } }
 }
 
 /* ---------- עכבר ומגע ---------- */
