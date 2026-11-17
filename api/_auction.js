@@ -214,7 +214,7 @@ function mgrView(s, S) {
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
-    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null, giveOk: giveOk(s, S), give: (s.cfg || {}).give || null, fee: FEE.eff(s.cfg, S.fee), admin: (s.cfg || {}).admin || {} };
+    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null, giveOk: giveOk(s, S), give: (s.cfg || {}).give || null, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
 }
 /* שם תיקייה בימות: אותיות באנגלית וספרות בלבד (קו תחתון או מקף גורמים לתיקייה לא להיפתח בניהול של ימות). אפשר נתיב עם / */
 const holdFolder = x => String(x || '').replace(/[^A-Za-z0-9\/]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '').slice(0, 60) || 'HoldApi';
@@ -509,7 +509,7 @@ module.exports = async (req, res) => {
       const by = {}; SL.forEach(s => { by[s.id] = { slug: s.slug, name: s.name, status: s.status, open: isOpen(s), owner: s.email || '', managers: managersOf(s), pay: ((s.cfg || {}).pay || {}).prov || 'nedarim', orders: 0, amount: 0, pending: 0, pendingAmount: 0, tickets: 0, m: {} }; });
       OL.forEach(o => { const x = by[o.sale_id]; if (!x) return; if (o.status === 'paid') { x.orders++; x.amount += +o.amount; const k = how(o); x.m[k] = r2((x.m[k] || 0) + +o.amount); } else if (o.status === 'pending') { x.pending++; x.pendingAmount += +o.amount; } });
       const S0 = await site(), cfgById = new Map(SL.map(s => [s.id, s.cfg]));
-      const out = Object.entries(by).map(([id, x]) => ({ ...x, amount: r2(x.amount), pendingAmount: r2(x.pendingAmount), fee: FEE.calc(FEE.eff(cfgById.get(+id), S0.fee), x.amount) }));
+      const out = Object.entries(by).map(([id, x]) => ({ ...x, amount: r2(x.amount), pendingAmount: r2(x.pendingAmount), fee: FEE.calc(FEE.eff(cfgById.get(+id), S0.fee), x.amount), feeDef: FEE.eff(cfgById.get(+id), S0.fee), give: ((cfgById.get(+id) || {}).give || {}).slug || '' }));
       const tot = out.reduce((t, x) => { t.amount += x.amount; t.orders += x.orders; Object.keys(x.m).forEach(k => { t.m[k] = r2((t.m[k] || 0) + x.m[k]); }); return t; }, { amount: 0, orders: 0, m: {} });
       return json(res, 200, { sales: out, total: { ...tot, amount: r2(tot.amount), sales: out.length, open: out.filter(x => x.open).length } });
     }
@@ -532,7 +532,7 @@ module.exports = async (req, res) => {
       return json(res, 200, { slug });
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
-    if (a === 'get') { const S = await site(), g = (s.cfg || {}).give; let gs = null; if (g && g.slug) gs = await require('./_give').summary(g.slug).catch(() => null); return json(res, 200, { ...mgrView(s, S), amAdmin: isAdmin(u), giveSum: gs }); }
+    if (a === 'get') { const S = await site(), g = (s.cfg || {}).give; let gs = null; if (g && g.slug) gs = await require('./_give').summary(g.slug).catch(() => null); return json(res, 200, { ...mgrView(s, S), amAdmin: isAdmin(u), giveSum: gs, ...(isAdmin(u) ? { admin: (s.cfg || {}).admin || {} } : {}) }); }
     /* בעל האתר: הגדרות למכירה מסוימת (התרמה במקביל, דמי שימוש) */
     if (a === 'adminSet') {
       if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
@@ -540,7 +540,7 @@ module.exports = async (req, res) => {
       if (x.give != null) ad.give = ['yes', 'no'].includes(x.give) ? x.give : '';
       if (x.fee !== undefined) ad.fee = x.fee && x.fee.type ? FEE.feeOf(x.fee) : null;
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, admin: ad }, updated_at: new Date().toISOString() }) }); drop(s.slug);
-      return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true });
+      return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true, admin: ad });
     }
     /* פתיחת קמפיין התרמה לארגון, מקושר למכירה: אותה כתובת (אם פנויה), אותה סליקה ואותם מנהלים */
     if (a === 'giveCreate') {

@@ -252,7 +252,7 @@ function mgrView(s, S) {
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   if (c.ivr && c.ivr.cc) { const cc = { ...c.ivr.cc }; const hp = !!cc.password; delete cc.password; c.ivr = { ...c.ivr, cc: { ...cc, hasPassword: hp } }; }
   const iv = c.ivr || {};
-  return { ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG)), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug, fee: FEE.eff(s.cfg, S.fee), admin: (s.cfg || {}).admin || {} };
+  return { ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG)), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
@@ -374,9 +374,21 @@ module.exports = async (req, res) => {
       if (!S.open && !isAdmin(u)) return json(res, 403, { error: 'closed', message: 'פתיחת קמפיינים עדיין לא פתוחה לכולם' });
       const slug = String(b.slug || '').trim().toLowerCase(), name = clean(b.name, 120);
       if (!SLUG.test(slug)) return json(res, 400, { error: 'slug', message: 'הכתובת: 3 עד 40 אותיות באנגלית, ספרות ומקף' }); if (!name) return json(res, 400, { error: 'name', message: 'חסר שם' });
-      try { await db('give_campaign', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ slug, name, user_id: u.id, email: u.email || null, status: 'draft', cfg: { title: name, f: { ...FEAT } } }) }); }
+      try { await db('give_campaign', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ slug, name, user_id: u.id, email: u.email || null, status: 'draft', cfg: { title: name, f: { ...FEAT }, ...(isAdmin(u) && Array.isArray(b.managers) ? { managers: b.managers.map(mailN).filter(Boolean).slice(0, 20) } : {}) } }) }); }
       catch (e) { return json(res, 409, { error: 'taken', message: 'הכתובת הזאת כבר תפוסה' }); }
+      if (isAdmin(u) && Array.isArray(b.managers) && b.managers.map(mailN).filter(Boolean).length) { const { sendMail, frame, escH } = require('./_mail'); for (const m of b.managers.map(mailN).filter(Boolean)) await sendMail({ to: m, subject: 'נפתח עבורכם קמפיין התרמה: ' + name, html: frame({ title: 'קמפיין התרמה', body: '<p>נפתח עבורכם הקמפיין <b>' + escH(name) + '</b>. נכנסים לניהול עם כתובת המייל הזאת.</p>', button: 'לניהול הקמפיין', url: SITE() + '/give-manage?s=' + slug }) }, 'give').catch(() => {}); }
       return json(res, 200, { slug });
+    }
+    /* בעל האתר: כל הקמפיינים, כמה גויס בכל ערוץ ואמצעי (כולל מזומן), ודמי השימוש */
+    if (a === 'siteStats') {
+      const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {}); const S = await site();
+      const [CL, DL] = await Promise.all([all('give_campaign?select=id,slug,name,status,cfg,email,created_at&order=created_at.desc'), all('give_donation?select=campaign_id,total,amount,months,status,channel,method,txn')]);
+      const how = d => d.channel === 'offline' ? (d.method || 'ידני') : d.channel === 'phone' ? (/^YM-/.test(d.txn || '') ? 'אשראי בטלפון' : /^REP-/.test(d.txn || '') ? 'מזומן / צ׳ק דרך נציג' : 'טלפון (סומן ידנית)') : /^K-/.test(d.txn || '') ? 'קשר' : +d.months !== 1 ? 'נדרים פלוס · הוראת קבע' : 'נדרים פלוס';
+      const by = new Map(CL.map(c => [c.id, { slug: c.slug, name: (c.cfg || {}).title || c.name, status: c.status, owner: c.email || '', managers: managersOf(c), raised: 0, count: 0, pending: 0, pendingAmount: 0, m: {}, auction: (c.cfg || {}).auction || '', cfg: c.cfg }]));
+      DL.forEach(d => { const x = by.get(d.campaign_id); if (!x) return; if (d.status === 'paid') { x.raised += +d.total; x.count++; const k = how(d); x.m[k] = r2((x.m[k] || 0) + +d.total); } else if (d.status === 'pending') { x.pending++; x.pendingAmount += +d.total; } });
+      const out = [...by.values()].map(x => { const fd = FEE.eff(x.cfg, S.fee); const o = { ...x, raised: r2(x.raised), pendingAmount: r2(x.pendingAmount), fee: FEE.calc(fd, x.raised), feeDef: fd }; delete o.cfg; return o; });
+      const tot = out.reduce((t, x) => { t.raised += x.raised; t.count += x.count; t.fee += x.fee; Object.keys(x.m).forEach(k => { t.m[k] = r2((t.m[k] || 0) + x.m[k]); }); return t; }, { raised: 0, count: 0, fee: 0, m: {} });
+      return json(res, 200, { list: out, total: { ...tot, raised: r2(tot.raised), fee: r2(tot.fee), campaigns: out.length, open: out.filter(x => x.status === 'open').length } });
     }
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {});
@@ -384,12 +396,12 @@ module.exports = async (req, res) => {
       return json(res, 200, await site());
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
-    if (a === 'get') return json(res, 200, { ...mgrView(s, await site()), amAdmin: isAdmin(u) });
+    if (a === 'get') return json(res, 200, { ...mgrView(s, await site()), amAdmin: isAdmin(u), ...(isAdmin(u) ? { admin: (s.cfg || {}).admin || {} } : {}) });
     if (a === 'adminSet') {
       if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
       const ad = { ...((s.cfg || {}).admin || {}) }, x = b.set || {}; if (x.fee !== undefined) ad.fee = x.fee && x.fee.type ? FEE.feeOf(x.fee) : null;
       await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, admin: ad }, updated_at: new Date().toISOString() }) }); drop(s.slug);
-      return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true });
+      return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true, admin: ad });
     }
     if (a === 'save') {
       const nc = cleanCfg(s.cfg, b.cfg || {}), oldM = managersOf(s);
