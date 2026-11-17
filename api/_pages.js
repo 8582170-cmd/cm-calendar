@@ -128,6 +128,7 @@ async function handle(req, res) {
     res.statusCode = 200; res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     /* גוגל דורש לפחות כתובת אחת במפה, גם כשעוד אין דפים שפורסמו: מוסיפים את דף המאמרים */
     const U = (on ? ['  <url><loc>' + SITE + '/torah/</loc></url>'] : []).concat(L.filter(x => x.published).map(x => `  <url><loc>${SITE}/p/${x.slug}</loc>${x.mod || x.date ? '<lastmod>' + (x.mod || x.date).slice(0, 10) + '</lastmod>' : ''}</url>`));
+    try { (await require('./_products').cfg()).filter(x => x.index).forEach(x => U.push('  <url><loc>' + SITE + x.path + '</loc></url>')); } catch (e) {}
     if (!U.length) U.push('  <url><loc>' + SITE + '/articles/</loc></url>');
     return res.end('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + U.join('\n') + '\n</urlset>\n');
   }

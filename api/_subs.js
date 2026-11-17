@@ -29,6 +29,7 @@ async function cfg() { return clean(await loadSetting('subs').catch(() => ({})))
 
 /* שם להזמנה (במיילים, בדוחות ובכרטיס הלקוח) */
 function nameOf(plan, S) {
+  if (/^(psingle|ppack|psub):/.test(String(plan || '')) || plan === 'pdf') { const P = require('./_pdfpay'); return plan === 'pdf' ? 'עריכת PDF: שימוש' : P.nameOf(plan, P.__S); }
   const m = /^(gsub|gpack|rsub):([a-z0-9-]+)(?::([my]))?$/.exec(String(plan || '')); if (!m) return null;
   const L = m[1] === 'gsub' ? (S && S.gsubs) : m[1] === 'gpack' ? (S && S.gpacks) : (S && S.rem && S.rem.opts), x = (L || []).find(y => y.id === m[2]);
   const per = m[3] === 'y' ? ' (שנתי)' : m[3] === 'm' ? ' (חודשי)' : '';
@@ -83,6 +84,7 @@ async function remEnt(who, S) {
 
 /* מהקופה: plan=sub עם kind (gsub / gpack / rsub), id ו-per (m / y) */
 async function prepare(b) {
+  if (/^(psingle|ppack|psub)$/.test(String(b.kind || ''))) return require('./_pdfpay').prepare(b);
   const S = await cfg(); if (!S.on) return { error: 'המנויים לא פעילים כרגע' };
   const kind = String(b.kind || ''), x = id(b.id), per = b.per === 'y' ? 'y' : 'm';
   if (kind === 'gsub') { const o = S.gsubs.find(y => y.id === x && y.on); if (!o) return { error: 'המנוי לא נמצא' }; const amount = per === 'y' ? o.py : o.pm; if (!(amount >= 1)) return { error: 'המחיר לא מוגדר' }; return { amount, plan: 'gsub:' + o.id + ':' + per, title: nameOf('gsub:' + o.id + ':' + per, S) }; }

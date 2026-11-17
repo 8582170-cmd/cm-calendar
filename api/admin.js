@@ -79,7 +79,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(mailalert|dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
+const ALOG_RO = /^(mailalert|dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|pdfget|prodget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -126,6 +126,18 @@ async function main(req, res) {
       const { loadSetting, saveSetting } = require('./_lib');
       if (b.action === 'gmset') await saveSetting('greetmail', { on: !!b.on, free: !!b.free, perDay: Math.max(1, Math.min(500, parseInt(b.perDay, 10) || 20)) });
       return json(res, 200, (await loadSetting('greetmail').catch(() => null)) || {});
+    }
+    /* עריכת PDF (api/_pdfpay.js): עריכה חינמית, מה חסום בה, ומחירים */
+    if (req.method === 'POST' && (b.action === 'pdfget' || b.action === 'pdfset')) {
+      const PP = require('./_pdfpay');
+      if (b.action === 'pdfset') await require('./_lib').saveSetting('pdf', PP.clean(b.pdf || {}));
+      return json(res, 200, { pdf: await PP.cfg(), feats: Object.entries(PP.FEATS) });
+    }
+    /* המוצרים באתר: מה מוצג בדף "עוד מוצרים" ומה נכלל באינדוקס של גוגל (api/_products.js) */
+    if (req.method === 'POST' && (b.action === 'prodget' || b.action === 'prodset')) {
+      const PR = require('./_products');
+      if (b.action === 'prodset') await require('./_lib').saveSetting('products', PR.clean(b.products || {}));
+      return json(res, 200, { products: await PR.cfg() });
     }
     /* מנויים וחבילות (api/_subs.js) */
     if (req.method === 'POST' && (b.action === 'subsget' || b.action === 'subsset')) {

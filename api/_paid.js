@@ -67,7 +67,7 @@ function render(kind, vars, tpl, opt) {
 let SUBS = null; const SUBN = p => { try { return require('./_subs').nameOf(p, SUBS); } catch (e) { return null; } };
 function vars(o) {
   const isDon = o.plan === 'donation';
-  return { 'מסלול': isDon ? 'תרומה' : o.plan === 'greet' ? 'ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'דף הזמנה לאירוע' : o.plan === 'gift' ? 'מתנה לאירוע' : o.plan === 'wishd' ? 'ברכה מעוצבת לאירוע' : /^(gsub|gpack|rsub):/.test(o.plan) ? (SUBN(o.plan) || 'מנוי') : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan), 'סכום': +o.amount ? (+o.amount).toLocaleString('he-IL') + ' ₪' : 'בחינם',
+  return { 'מסלול': isDon ? 'תרומה' : o.plan === 'greet' ? 'ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'דף הזמנה לאירוע' : o.plan === 'gift' ? 'מתנה לאירוע' : o.plan === 'wishd' ? 'ברכה מעוצבת לאירוע' : /^(gsub|gpack|rsub|psingle|ppack|psub):/.test(o.plan) ? (SUBN(o.plan) || 'מנוי') : 'מסלול ' + (PLAN_NAMES[o.plan] || o.plan), 'סכום': +o.amount ? (+o.amount).toLocaleString('he-IL') + ' ₪' : 'בחינם',
     'קופון': o.coupon ? ', קופון ' + o.coupon : '', 'הזמנה': String(o.id || '').slice(0, 8), 'מייל': o.email || 'לא ידוע', 'אמצעי': o.via || 'נדרים פלוס', 'סוג': isDon ? 'תרומה' : 'רכישה' };
 }
 
@@ -82,7 +82,7 @@ async function markPaid(o, extra, via) {
   return first;
 }
 async function notify(o) {
-  if (/^(gsub|gpack|rsub):/.test(o.plan || '')) { try { SUBS = await require('./_subs').cfg(); } catch (e) {} }
+  if (/^(gsub|gpack|rsub|psingle|ppack|psub):/.test(o.plan || '')) { try { SUBS = await require('./_subs').cfg(); if (/^(psingle|ppack|psub):/.test(o.plan || '')) SUBS.pdf = await require('./_pdfpay').cfg(); } catch (e) {} }
   const { sendMail } = require('./_mail'), tpl = (await loadConfig()).mailTpl, V = vars(o), isDon = o.plan === 'donation';
   /* ברכה מעוצבת: הלקוח מקבל מייל עם הקישור האישי לעיצוב (במקום אישור רכישה של מסלול) */
   if (o.plan === 'greet' || o.plan === 'wishd') { try { await require('./_greetpay').paid(o); } catch (e) { console.error('greet paid', e.message); } }
@@ -90,7 +90,7 @@ async function notify(o) {
   else if (o.plan === 'event') { try { await require('./_eventpay').paid(o); } catch (e) { console.error('event paid', e.message); } }
   if (o.plan === 'gift') { try { await require('./_giftpay').paid(o); } catch (e) { console.error('gift paid', e.message); } }
   else if (o.plan === 'event' || o.plan === 'greet' || o.plan === 'wishd') { /* יש להם מייל ייעודי משלהם (קישור אישי), בלי מייל "לבונה הלוח" */ }
-  else if (o.email && /^(gsub|gpack|rsub):/.test(o.plan || '')) { try { await sendMail({ to: o.email, ...subMail(o, V, tpl) }, 'purchase'); } catch (e) { console.error('sub mail', e.message); } }
+  else if (o.email && /^(gsub|gpack|rsub|psingle|ppack|psub):/.test(o.plan || '')) { try { await sendMail({ to: o.email, ...subMail(o, V, tpl) }, 'purchase'); } catch (e) { console.error('sub mail', e.message); } }
   else if (o.email) { try { await sendMail({ to: o.email, ...render(isDon ? 'donation' : 'purchase', V, tpl) }, 'purchase'); } catch (e) { console.error('customer mail', e.message); } }
   const to = env('OWNER_EMAIL') || env('ALERT_EMAIL');
   if (to && !(o.plan === 'greet' && /^(SUB|PACK)$/.test(o.coupon || ''))) { try { await sendMail({ to, ...render('owner', V, tpl) }, 'owner'); } catch (e) { console.error('owner mail', e.message); } }
@@ -109,9 +109,10 @@ async function send(kind, to, V, opt, logKind) {
 function subMail(o, V, tpl) {
   const k = String(o.plan).split(':')[0], S = SUBS || {}, t = Date.parse(o.paid_at || Date.now());
   let end = null; const m = /:([my])$/.exec(o.plan); if (m) end = t + require('./_subs').PER[m[1]] * 864e5;
+  if (k === 'ppack') { const x = ((S.pdf || {}).packs || []).find(y => 'ppack:' + y.id === o.plan); if (x && x.months) end = t + x.months * 30.5 * 864e5; }
   if (k === 'gpack') { const x = (S.gpacks || []).find(y => 'gpack:' + y.id === o.plan); if (x && x.months) end = t + x.months * 30.5 * 864e5; }
-  const X = { gsub: 'המנוי משויך לחשבון עם המייל הזה. מתחברים באתר עם המייל הזה, ובכל עיצוב בתשלום מופיעה האפשרות לקבל אותו מהמנוי.', gpack: 'החבילה משויכת לחשבון עם המייל הזה. מתחברים באתר עם המייל הזה, ובכל עיצוב בתשלום מופיעה האפשרות לקבל אותו מהחבילה.', rsub: 'ההטבה משויכת לחשבון עם המייל הזה. מעכשיו אפשר להוסיף עוד תזכורות בלוח המקוון.' };
-  return render('subbuy', { ...V, 'הסבר': X[k] || '', 'עד': end ? new Date(end).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }) : 'ללא הגבלת זמן', 'כפתור': k === 'rsub' ? 'ללוח המקוון' : 'לברכות והזמנות' }, tpl, { url: site() + (k === 'rsub' ? '/online/' : '/brachot/my.html#subs') });
+  const X = { gsub: 'המנוי משויך לחשבון עם המייל הזה. מתחברים באתר עם המייל הזה, ובכל עיצוב בתשלום מופיעה האפשרות לקבל אותו מהמנוי.', gpack: 'החבילה משויכת לחשבון עם המייל הזה. מתחברים באתר עם המייל הזה, ובכל עיצוב בתשלום מופיעה האפשרות לקבל אותו מהחבילה.', rsub: 'ההטבה משויכת לחשבון עם המייל הזה. מעכשיו אפשר להוסיף עוד תזכורות בלוח המקוון.', psingle: 'ההורדה משויכת לחשבון עם המייל הזה. נכנסים לעורך ה-PDF עם המייל הזה, וההורדה הבאה תהיה בלי סימן מים.', ppack: 'החבילה משויכת לחשבון עם המייל הזה. נכנסים לעורך ה-PDF עם המייל הזה, וכל הורדה תיספר מהחבילה.', psub: 'המנוי משויך לחשבון עם המייל הזה. נכנסים לעורך ה-PDF עם המייל הזה, וההורדות נספרות מהמנוי.' };
+  return render('subbuy', { ...V, 'הסבר': X[k] || '', 'עד': end ? new Date(end).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }) : 'ללא הגבלת זמן', 'כפתור': k === 'rsub' ? 'ללוח המקוון' : /^p/.test(k) ? 'לעורך ה-PDF' : 'לברכות והזמנות' }, tpl, { url: site() + (k === 'rsub' ? '/online/' : /^p/.test(k) ? '/pdf' : '/brachot/my.html#subs') });
 }
 async function welcome() { return render('welcome', {}, (await loadConfig()).mailTpl); }
 /* לתצוגה מקדימה בניהול: כל המיילים עם נתוני דוגמה, לפי נוסח נתון (גם לפני שמירה) */

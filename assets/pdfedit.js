@@ -143,7 +143,7 @@ async function readDoc(file){
 }
 function showErr(t){ var e = $('err'); e.textContent = t; e.hidden = !t }
 async function openFile(file){
-  if (!file) return; showErr(''); busy('פותח את הקובץ…');
+  if (!file) return; if (window.__mlGate && !S.docs.length) { try { await window.__mlGate.early() } catch (e) {} } showErr(''); busy('פותח את הקובץ…');
   try {
     var pages = await readDoc(file);
     S.order = pages; S.name = file.name.replace(/\.pdf$/i, '') || 'document';
@@ -495,7 +495,7 @@ async function doReplace(p, x, y){
   var probe = newText(); for (var k2 in pre) probe[k2] = pre[k2]; probe.text = 'א';
   await ensureFont(probe.font);
   var L = lay(probe, 1); pre.y = r.it ? r.it.base - L.base : r.y + r.h / 2 - L.h / 2;
-  p.objs.push({ t: 'cover', x: r.x, y: r.y, w: r.w, h: r.h, fill: r.bg });
+  p.objs.push({ t: 'cover', x: r.x, y: r.y, w: r.w, h: r.h, fill: r.bg, rp: 1 });
   addText(p, x, y, pre);
 }
 
@@ -594,12 +594,12 @@ function key(e){
 }
 
 /* ---------- תמונה וחתימה ---------- */
-async function placeImage(blob, maxW){
+async function placeImage(blob, maxW, isSig){
   var p = curPage(); if (!p) return; endEdit();
   var key; try { key = await mkAsset(blob) } catch (e) { hint('לא הצלחנו לקרוא את התמונה.'); return }
   var a = S.assets[key], w = Math.min(maxW || 220, p.w * 0.6), h = w * a.ih / a.iw; if (h > p.h * 0.6) { h = p.h * 0.6; w = h * a.iw / a.ih }
   var r = p.el.getBoundingClientRect(), c = pt(p, { clientX: clamp(window.innerWidth / 2, r.left + 20, r.right - 20), clientY: clamp(window.innerHeight / 2, r.top + 20, r.bottom - 20) });
-  var o = { t: 'img', x: clamp(c[0] - w / 2, 0, Math.max(0, p.w - w)), y: clamp(c[1] - h / 2, 0, Math.max(0, p.h - h)), w: w, h: h, key: key };
+  var o = { t: 'img', x: clamp(c[0] - w / 2, 0, Math.max(0, p.w - w)), y: clamp(c[1] - h / 2, 0, Math.max(0, p.h - h)), w: w, h: h, key: key }; if (isSig) o.sig = 1;
   p.objs.push(o); commit(); setTool('select'); select(p, o); hint('גוררים את התמונה למקום, ומשנים גודל מהפינות.');
 }
 function sigInit(){
@@ -617,7 +617,7 @@ function sigInit(){
     for (var yy = 0; yy < c.height; yy++) for (var xx = 0; xx < c.width; xx++) if (d[(yy * c.width + xx) * 4 + 3] > 8) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy }
     x0 = Math.max(0, x0 - 6); y0 = Math.max(0, y0 - 6); x1 = Math.min(c.width - 1, x1 + 6); y1 = Math.min(c.height - 1, y1 + 6);
     var o = document.createElement('canvas'); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1; o.getContext('2d').drawImage(c, -x0, -y0);
-    o.toBlob(function(b){ $('sigDlg').close(); placeImage(b, 150) }, 'image/png');
+    o.toBlob(function(b){ $('sigDlg').close(); placeImage(b, 150, true) }, 'image/png');
   };
 }
 
@@ -687,11 +687,36 @@ function makeZip(files){
   var e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
   return new Blob(parts.concat(cen, [new Uint8Array(e.buffer)]), { type: 'application/zip' });
 }
+/* ---------- סימן מים והגבלות (העריכה החינמית) ---------- */
+function wmarkCanvas(c, text){
+  var x = c.getContext('2d'), s = Math.max(24, Math.round(Math.min(c.width, c.height) / 12));
+  x.save(); x.globalAlpha = 0.22; x.fillStyle = '#444'; x.font = 'bold ' + s + 'px Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.translate(c.width / 2, c.height / 2); x.rotate(-Math.PI / 4); x.fillText(text, 0, 0); x.fillText(text, 0, s * 3); x.fillText(text, 0, -s * 3); x.restore();
+}
+async function wmarkPdf(L, out, pg, text, cache){
+  if (!cache.wmFont) cache.wmFont = await out.embedFont(L.StandardFonts.HelveticaBold);
+  var sz = pg.getSize(), size = Math.max(18, Math.round(Math.min(sz.width, sz.height) / 14)), t = /^[\x20-\x7e·]+$/.test(text) ? text : 'myluach.org';
+  var w = cache.wmFont.widthOfTextAtSize(t, size), a = Math.PI / 4;
+  [-2, 0, 2].forEach(function(k){
+    pg.drawText(t, { x: sz.width / 2 - (w / 2) * Math.cos(a) + k * size * 1.6 * Math.sin(a), y: sz.height / 2 - (w / 2) * Math.sin(a) - k * size * 1.6 * Math.cos(a), size: size, font: cache.wmFont, color: L.rgb(0.3, 0.3, 0.3), opacity: 0.22, rotate: L.degrees(45) });
+  });
+}
+/* אילו יכולות שמורות לתשלום בשימוש בקובץ הנוכחי (נשלח לשרת בהורדה) */
+function usedFeats(mode){
+  var f = {}, N = S.order.length;
+  if (mode === 'flat') f.flat = 1;
+  if (S.docs.length > 1) f.merge = 1;
+  S.order.forEach(function(p){
+    if (p.kind !== 'pdf') f.merge = 1;
+    p.objs.forEach(function(o){ if (o.t === 'cover' && o.rp) f.replace = 1; if (o.t === 'img') { if (o.sig) f.sign = 1; else f.img = 1 } });
+  });
+  return { feats: Object.keys(f), pages: N };
+}
 async function exportImages(opt){
   var out = [], N = S.order.length, ext = opt.imgFmt === 'png' ? 'png' : 'jpg', mime = ext === 'png' ? 'image/png' : 'image/jpeg', pad = String(N).length;
   for (var n = 0; n < N; n++) {
     busy('מכין תמונה… עמוד ' + (n + 1) + ' מתוך ' + N);
-    var p = S.order[n], c = rotCanvas(await rasterCanvas(p, opt.imgDpi), p.rot);
+    var p = S.order[n], c = rotCanvas(await rasterCanvas(p, opt.imgDpi), p.rot); if (opt.watermark) wmarkCanvas(c, opt.watermark);
     out.push({ name: ('0000' + (n + 1)).slice(-Math.max(2, pad)) + '.' + ext, bytes: await toBytes(c, mime, 0.95) }); c.width = c.height = 1;
     await new Promise(function(r){ setTimeout(r, 0) });
   }
@@ -849,6 +874,7 @@ async function exportPdf(opt){
       await overlay(L, out, pg, p, opt.dpi, cache);
       if (p.rot) pg.setRotation(L.degrees((pg.getRotation().angle + p.rot) % 360));
     }
+    if (opt.watermark) { try { await wmarkPdf(L, out, pg, opt.watermark, cache) } catch (e) { if (window.console) console.error(e) } }
     await new Promise(function(r){ setTimeout(r, 0) });
   }
   return await out.save();
@@ -865,7 +891,14 @@ async function doDl(){
   var mode = document.querySelector('input[name=dlMode]:checked').value;
   var opt = { dpi: +$('dlQ').value || 600, mode: mode, flat: mode === 'flat', legacy: mode === 'legacy', flatDpi: +$('dlFlatQ').value || 300, imgFmt: $('dlImgFmt').value, imgDpi: +$('dlImgQ').value || 200 };
   var base = ($('dlName').value.trim() || 'document').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\.(pdf|zip|png|jpe?g)$/i, '');
-  $('dlDlg').close(); busy('מכין את הקובץ…');
+  $('dlDlg').close();
+  if (window.__mlGate) {
+    var uf = usedFeats(mode), g = await window.__mlGate.check(uf.feats, uf.pages, String(S.hi) + ':' + S.order.length + ':' + mode);
+    if (!g.ok) { if (g.msg) hint(g.msg); return }
+    if (g.mode === 'watermark') opt.watermark = g.mark || 'MyLuach · myluach.org';
+    if (g.note) setTimeout(function(){ hint(g.note) }, 50);
+  }
+  busy('מכין את הקובץ…');
   try {
     if (mode === 'img') {
       var r = await exportImages(opt), nm;

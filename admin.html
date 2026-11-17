@@ -119,7 +119,7 @@ function render(){
   C.plans=C.plans||{};C.sale=C.sale||{on:false,percent:20,plans:[],until:'',label:''};C.coupons=C.coupons||[];
   const eff=D.effective||{plans:{}};
   app.innerHTML='<div class="top"><h1>ניהול MyLuach</h1><div class="row"><a class="btn primary" href="/admin-events">ניהול אירועים</a><a class="btn" href="/admin-studio">סטודיו רקעים לברכות</a><button class="btn" type="button" id="out">יציאה</button></div></div>'+
-  actSection()+mailSection()+custSection()+recentSection()+finSection()+subsSection()+gmSection()+dirSection()+schedSection()+healthSection()+maintSection()+alogSection()+secSection()+cronSection()+'<section><h2>הזמנות לאירועים</h2><p class="sub">כל מה שקשור לדפי ההזמנה (אירועים, מחירים, הודעות קוליות ו־SMS, מתנות ומיילים מתוזמנים) עבר לאזור נפרד.</p><a class="btn primary" href="/admin-events">לניהול האירועים ←</a></section>'+msgSection()+fbSection()+usageSection()+
+  actSection()+mailSection()+custSection()+recentSection()+finSection()+subsSection()+pdfSection()+prodSection()+gmSection()+dirSection()+schedSection()+healthSection()+maintSection()+alogSection()+secSection()+cronSection()+'<section><h2>הזמנות לאירועים</h2><p class="sub">כל מה שקשור לדפי ההזמנה (אירועים, מחירים, הודעות קוליות ו־SMS, מתנות ומיילים מתוזמנים) עבר לאזור נפרד.</p><a class="btn primary" href="/admin-events">לניהול האירועים ←</a></section>'+msgSection()+fbSection()+usageSection()+
   (D.testAmount?'<div class="warn">מצב בדיקה פעיל: כל רכישת מסלול נגבית כ־'+esc(D.testAmount)+' ₪, בלי קשר למחירים כאן. כדי לבטל: למחוק ב-Vercel את NEDARIM_TEST_AMOUNT ולעשות Redeploy.</div>':'')+
   '<section><h2>מחירים</h2><p class="sub">שדה ריק = המחיר שבקובץ (מוצג באפור). הנחת היכרות היא הנחה קבועה באחוזים למסלול. "מוצג למכירה" כבוי = המסלול לא מופיע באתר ולא נמכר (מי שכבר קנה ממשיך להשתמש בו).</p><div class="scroll"><table class="tbl"><thead><tr><th>מסלול</th><th>מחיר ₪</th><th>מחיר $</th><th>הנחת היכרות %</th><th>מחיר בפועל</th><th>מוצג למכירה</th></tr></thead><tbody>'+
   IDS().map(id=>{const d=D.defaults[id],o=C.plans[id]||{};return '<tr data-plan="'+id+'"><td><b>'+esc(d.name)+'</b></td><td><input type="number" min="0" step="0.5" data-k="ils" value="'+val(o.ils||null)+'" placeholder="'+d.ils+'"></td><td><input type="number" min="0" step="0.1" data-k="usd" value="'+val(o.usd||null)+'" placeholder="'+d.usd+'"></td><td><input type="number" min="0" max="100" step="1" data-k="intro" value="'+val(o.intro)+'" placeholder="'+d.intro+'"></td><td class="preview" data-prev="'+id+'"></td><td><input type="checkbox" class="plan-sell" value="'+id+'"'+((C.off||[]).includes(id)?'':' checked')+' title="כבוי = המסלול לא מוצג ולא נמכר. מי שכבר קנה ממשיך להשתמש בו."></td></tr>'}).join('')+
@@ -255,6 +255,36 @@ document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest
   if(t.dataset.sbadd){SBX.subs=sbRead();const k=t.dataset.sbadd;if(k==='G')SBX.subs.gsubs.push({id:'',name:'',desc:'',quota:10,pm:0,py:0,on:true});if(k==='P')SBX.subs.gpacks.push({id:'',name:'',desc:'',n:5,price:0,months:12,on:true});if(k==='R')SBX.subs.rem.opts.push({id:'',name:'',mail:null,voice:0,plans:[],pm:0,py:0,on:true});sbDraw();return}
   if(t.id==='sbSave'){const m=$('#sbMsg'),x=sbRead();const bad=[].concat(x.gsubs,x.gpacks,x.rem.opts).find(r=>!/^[a-z0-9-]{1,20}$/.test(r.id||''));if(bad){m.textContent='לכל שורה צריך מזהה באותיות אנגליות קטנות, מספרים או מקף';return}
     m.textContent='שומר…';api({action:'subsset',subs:x}).then(j=>{SBX=j;sbDraw();$('#sbMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})}});
+
+/* עריכת PDF: עריכה חינמית, מה חסום בה, ומחירים (api/_pdfpay.js) */
+let PDX=null;
+function pdfSection(){setTimeout(()=>{if(!PDX)api({action:'pdfget'}).then(j=>{PDX=j;pdDraw()}).catch(()=>{});else pdDraw()},0);return '<section id="pdSec"><h2>עריכת PDF: חינם ותשלום</h2><p class="sub">כל אימייל מקבל עריכה חינמית (ברירת מחדל: אחת). אחריה: הורדה עם סימן מים, או תשלום לפי מה שמוגדר כאן: הורדה בודדת, חבילת הורדות, או מנוי. הסדר בהורדה: מנוי, חבילה, הורדה בודדת, חינם. יכולת שסגורה בחינם נפתחת לכל מי שיש לו מנוי, חבילה או הורדה בודדת. מזהה = אותיות באנגלית בלבד, ולא משנים אותו אחרי שנמכר. הערה: העריכה רצה בדפדפן, ולכן ההגבלה היא בדיקה בהורדה ולא חסימה טכנית מלאה.</p><div id="pdBox">טוען…</div></section>'}
+function pdDraw(){const B=$('#pdBox');if(!B||!PDX)return;const S=PDX.pdf,v=x=>x==null?'':x;
+  const inp=(k,val,w,t)=>'<input data-k="'+k+'" type="'+(t||'text')+'" value="'+esc(v(val))+'" style="width:'+(w||90)+'px"'+(t==='number'?' min="0" step="any"':'')+'>';
+  const chk=(k,val)=>'<input type="checkbox" data-k="'+k+'"'+(val?' checked':'')+'>';
+  const del='<button class="btn small" type="button" data-pddel>✕</button>';
+  B.innerHTML='<label class="row"><input type="checkbox" id="pdOn"'+(S.on?' checked':'')+'> הגבלת העריכה והמכירה פעילות (כבוי = העורך חינמי לכולם בלי סימן מים, כמו היום)</label>'+
+  '<h3>העריכה החינמית</h3><div class="row"><label>עריכות חינם לכל אימייל <input type="number" id="pdN" min="0" max="50" value="'+v(S.free.n)+'" style="width:70px"></label><label>עד <input type="number" id="pdMp" min="0" value="'+v(S.free.maxPages)+'" style="width:80px"> עמודים (0 = בלי הגבלה)</label></div>'+
+  '<p class="sub">יכולות שחסומות בעריכה החינמית (נפתחות רק בתשלום):</p><div class="row" id="pdBl">'+PDX.feats.map(f=>'<label><input type="checkbox" data-bl="'+f[0]+'"'+(S.free.blocked.indexOf(f[0])>=0?' checked':'')+'> '+esc(f[1])+'</label>').join(' ')+'</div>'+
+  '<div class="row"><label>אחרי שהעריכה החינמית נוצלה: <select id="pdAf"><option value="watermark"'+(S.free.after==='watermark'?' selected':'')+'>הורדה עם סימן מים</option><option value="deny"'+(S.free.after==='deny'?' selected':'')+'>אי אפשר להוריד בלי תשלום</option></select></label><label>טקסט סימן המים <input id="pdMk" value="'+esc(S.free.mark)+'" style="width:220px"></label></div>'+
+  '<h3>הורדה בודדת</h3><div class="row"><label><input type="checkbox" id="pdOne"'+(S.one.on?' checked':'')+'> למכור הורדה בודדת</label><label>מחיר ₪ <input type="number" id="pdOp" min="0" step="any" value="'+v(S.one.price)+'" style="width:80px"></label></div>'+
+  '<h3>חבילות הורדות</h3><p class="sub">תוקף בחודשים (0 = בלי הגבלת זמן).</p><div class="tw"><table id="pdP"><thead><tr><th>פעיל</th><th>מזהה</th><th>שם</th><th>תיאור</th><th>הורדות</th><th>מחיר ₪</th><th>תוקף (חודשים)</th><th></th></tr></thead><tbody>'+S.packs.map(x=>'<tr><td>'+chk('on',x.on)+'</td><td>'+inp('id',x.id,80)+'</td><td>'+inp('name',x.name,120)+'</td><td>'+inp('desc',x.desc,170)+'</td><td>'+inp('n',x.n,60,'number')+'</td><td>'+inp('price',x.price,70,'number')+'</td><td>'+inp('months',x.months,60,'number')+'</td><td>'+del+'</td></tr>').join('')+'</tbody></table></div><button class="btn small" type="button" data-pdadd="P">+ חבילה</button>'+
+  '<h3>מנויים</h3><p class="sub">מכסה = כמה הורדות בכל חודש של המנוי (0 = ללא הגבלה). מחיר 0 = לא נמכר בתקופה הזאת. התשלום מראש לתקופה.</p><div class="tw"><table id="pdS"><thead><tr><th>פעיל</th><th>מזהה</th><th>שם</th><th>תיאור</th><th>מכסה לחודש</th><th>₪ לחודש</th><th>₪ לשנה</th><th></th></tr></thead><tbody>'+S.subs.map(x=>'<tr><td>'+chk('on',x.on)+'</td><td>'+inp('id',x.id,80)+'</td><td>'+inp('name',x.name,120)+'</td><td>'+inp('desc',x.desc,170)+'</td><td>'+inp('quota',x.quota,60,'number')+'</td><td>'+inp('pm',x.pm,70,'number')+'</td><td>'+inp('py',x.py,70,'number')+'</td><td>'+del+'</td></tr>').join('')+'</tbody></table></div><button class="btn small" type="button" data-pdadd="S">+ מנוי</button>'+
+  '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="pdSave">שמירה</button><span class="sub" id="pdMsg" role="status"></span></div>'}
+function pdRead(){const rows=id=>[...document.querySelectorAll('#'+id+' tbody tr')].map(tr=>{const o={};tr.querySelectorAll('[data-k]').forEach(i=>{o[i.dataset.k]=i.type==='checkbox'?i.checked:i.type==='number'?(i.value===''?0:+i.value):i.value.trim()});return o});
+  return {on:$('#pdOn').checked,free:{n:+$('#pdN').value||0,maxPages:+$('#pdMp').value||0,blocked:[...document.querySelectorAll('#pdBl [data-bl]')].filter(i=>i.checked).map(i=>i.dataset.bl),after:$('#pdAf').value,mark:$('#pdMk').value.trim()},one:{on:$('#pdOne').checked,price:+$('#pdOp').value||0},packs:rows('pdP'),subs:rows('pdS')}}
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('#pdBox'))return;
+  if(t.dataset.pddel!=null){t.closest('tr').remove();return}
+  if(t.dataset.pdadd){PDX.pdf=pdRead();const k=t.dataset.pdadd;if(k==='P')PDX.pdf.packs.push({id:'',name:'',desc:'',n:5,price:0,months:12,on:true});if(k==='S')PDX.pdf.subs.push({id:'',name:'',desc:'',quota:0,pm:0,py:0,on:true});pdDraw();return}
+  if(t.id==='pdSave'){const m=$('#pdMsg'),x=pdRead();const bad=[].concat(x.packs,x.subs).find(r=>!/^[a-z0-9-]{1,20}$/.test(r.id||''));if(bad){m.textContent='לכל שורה צריך מזהה באנגלית (אותיות קטנות, ספרות ומקף).';return}
+    m.textContent='שומר…';api({action:'pdfset',pdf:x}).then(j=>{PDX=j;pdDraw();$('#pdMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})}});
+
+/* המוצרים באתר: מה מוצג בדף "עוד מוצרים" ומה נכלל באינדוקס של גוגל (api/_products.js) */
+let PRX=null;
+function prodSection(){setTimeout(()=>{if(!PRX)api({action:'prodget'}).then(j=>{PRX=j;prDraw()}).catch(()=>{});else prDraw()},0);return '<section id="prSec"><h2>המוצרים באתר</h2><p class="sub">"להציג" = מופיע בדף myluach.org/products. "אינדוקס" = נכלל במפת האתר של גוגל (sitemap-pages.xml). בדף עריכת ה-PDF האינדוקס גם מסיר את התגית שחוסמת את גוגל. בדפים אחרים האינדוקס משפיע על מפת האתר בלבד, והם נשארים כפי שהם בגוגל.</p><div id="prBox">טוען…</div></section>'}
+function prDraw(){const B=$('#prBox');if(!B||!PRX)return;B.innerHTML='<div class="tw"><table id="prT"><thead><tr><th>מוצר</th><th>כתובת</th><th>להציג בדף המוצרים</th><th>אינדוקס בגוגל</th></tr></thead><tbody>'+PRX.products.map(x=>'<tr data-k="'+esc(x.k)+'"><td>'+esc(x.name)+'</td><td dir="ltr">'+esc(x.path)+'</td><td><input type="checkbox" data-f="show"'+(x.show?' checked':'')+'></td><td><input type="checkbox" data-f="index"'+(x.index?' checked':'')+'></td></tr>').join('')+'</tbody></table></div><div class="row" style="margin-top:12px"><button class="btn" type="button" id="prSave">שמירה</button><span class="sub" id="prMsg" role="status"></span></div>'}
+document.addEventListener('click',e=>{const t=e.target;if(!t||t.id!=='prSave')return;const o={};document.querySelectorAll('#prT tbody tr').forEach(tr=>{o[tr.dataset.k]={show:tr.querySelector('[data-f=show]').checked,index:tr.querySelector('[data-f=index]').checked}});
+  const m=$('#prMsg');m.textContent='שומר…';api({action:'prodset',products:o}).then(j=>{PRX=j;prDraw();$('#prMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})});
 /* תזמון התזכורות מהלוח (sched.cal) */
 /* שעות מדויקות: רשימת שעות (HH:MM) עם הוספה והסרה */
 const hrList=x=>(x&&Array.isArray(x.times)?x.times:(x&&Array.isArray(x.hours)?x.hours.map(h=>String(h).padStart(2,'0')+':00'):[]));
@@ -907,6 +937,8 @@ window.ADMIN_NAV={title:'ניהול MyLuach',sub:'הגדרות האתר',groups:
   ['sales','💰 מחירים ותשלום',/^מחירים|מבצע כללי|מסלולים נוספים|תשלום ולקוחות|קופונים/],
   ['fin','📈 דוחות כספיים',/^דוחות כספיים/],
   ['subs','🔁 מנויים וחבילות',/^מנויים וחבילות/],
+  ['pdf','📄 עריכת PDF',/^עריכת PDF/],
+  ['prod','🧩 המוצרים באתר',/^המוצרים באתר/],
   ['cust','👤 לקוחות ופניות',/^לקוח|פעילות אחרונה|משובים ופניות|שליחת מייל מעוצב/],
   ['mail','✉️ מיילים',/תזמון תזכורות|שליחת ברכות במייל|דוח מיילים|המיילים שהלקוחות|מיילים ותזכורות|מיילים מתוזמנים/],
   ['phone','📞 תזכורות קוליות',/קוליות/],
@@ -914,7 +946,7 @@ window.ADMIN_NAV={title:'ניהול MyLuach',sub:'הגדרות האתר',groups:
   ['content','📝 תוכן ודפים',/דפים|הודעות לגולשים|מאגר|מבזקי/],
   ['sys','⚙️ מערכת',/בדיקת מערכת|מצב תחזוקה|יומן פעולות|אבטחה|שומר שבת|מנועי חיפוש|מסד הנתונים|משימת הלילה/],
   ['events','🎉 הזמנות לאירועים',/הזמנות לאירועים|דף הזמנה לאירוע/]],
-  links:[['/admin-events','🎉 ניהול אירועים'],['/admin-studio','🎨 סטודיו רקעים'],['/auction-admin','מכירה סינית']]};
+  links:[['/admin-events','🎉 ניהול אירועים'],['/admin-studio','🎨 סטודיו רקעים'],['/auction-admin','מכירה סינית'],['/give-manage','❤ התרמה']]};
 </script>
 <script>
 /* כיווץ חלקים בניהול: בכניסה הכל מכווץ, ולחיצה על כותרת פותחת או סוגרת אותה (לא פעיל כשיש תפריט צד) */

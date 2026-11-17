@@ -25,7 +25,7 @@ function ilNow() {
 function descOf(o) {
   const PLAN = (require('./_lib').PLAN_NAMES || {})[o.plan];
   return o.plan === 'donation' ? 'MyLuach · תרומה' : o.plan === 'greet' ? 'MyLuach · ברכה / הזמנה מעוצבת' : o.plan === 'event' ? 'MyLuach · דף הזמנה לאירוע'
-    : o.plan === 'gift' ? 'MyLuach · מתנה לאירוע' : o.plan === 'wishd' ? 'MyLuach · ברכה לאירוע' : /^(gsub|gpack|rsub):/.test(String(o.plan)) ? 'MyLuach · מנוי / חבילה'
+    : o.plan === 'gift' ? 'MyLuach · מתנה לאירוע' : o.plan === 'wishd' ? 'MyLuach · ברכה לאירוע' : /^(gsub|gpack|rsub|psingle|ppack|psub):/.test(String(o.plan)) ? 'MyLuach · מנוי / חבילה'
     : 'MyLuach' + (PLAN ? ' · מסלול ' + PLAN : '');
 }
 
