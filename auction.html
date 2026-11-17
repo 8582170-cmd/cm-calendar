@@ -100,6 +100,24 @@ iframe.pay{width:100%;border:0;min-height:430px}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
 .code{font-size:30px;font-weight:700;letter-spacing:3px;color:var(--navy)}
 .lnk{background:var(--bg);border-radius:10px;padding:12px;font-size:14px;direction:ltr;text-align:left;word-break:break-all}
+
+.hm{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:34px}
+.hbtn{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.hb{display:inline-block;border:2px solid currentColor;color:inherit;border-radius:999px;padding:10px 22px;font-weight:700;text-decoration:none;background:transparent;cursor:pointer;font-size:16px}
+.hb.pri{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.hfs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.hf{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}.hf b{font-size:17px}.hf span{font-size:14px;color:var(--mute)}
+.hsteps{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;counter-reset:st}
+.hsteps li{counter-increment:st;background:var(--cream);border:1px solid var(--cream-line);border-radius:12px;padding:16px 18px;color:var(--cream-ink)}
+.hsteps li::before{content:counter(st);display:block;font:700 26px "Frank Ruhl Libre",serif;color:#8A6516}
+.hinfo{white-space:pre-line;background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px}
+.rform{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;max-width:720px}
+.rform label{display:flex;flex-direction:column;gap:4px;font-weight:500}
+.rform input:not([type=radio]),.rform textarea{border:1px solid var(--line2);border-radius:8px;padding:10px;background:#fff;min-height:44px}.rform textarea{min-height:90px}
+.rform .rk{display:flex;flex-wrap:wrap;gap:18px}.rform .rk label{flex-direction:row;align-items:center;gap:8px}
+.rform .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.rform .hb{align-self:flex-start;color:var(--navy)}.rmsg{margin:0;min-height:1.4em}.rmsg.bad{color:var(--bad)}
+.rdone{text-align:center;padding:20px}
 :focus-visible{outline:3px solid #2A5BD7;outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:700px){aside.sum{position:static;max-width:none}}
@@ -145,7 +163,28 @@ function winView(){get({a:'winners',s:SLUG}).then(function(j){
    +'<p class="msg" style="text-align:center;margin-top:20px"><a href="?s='+SLUG+'" style="color:inherit">לדף המכירה</a></p></main>';
 }).catch(function(){closed('לא הצלחנו לטעון')})}
 function closed(t){app.innerHTML='<div class="cen"><h1 style="font-size:28px;margin-bottom:10px">'+esc(t)+'</h1><p class="msg">אם הגעתם מקישור, בדקו שהוא שלם.</p></div>'}
-if(!SLUG){closed('לא נמצאה מכירה');return}
+function home(){
+  document.title='מכירה סינית לארגונים · MyLuach';
+  get({a:'home'}).then(function(H){
+    if(H._st!==200)H={canOpen:false};
+    var F=[['חבילות וכרטיסים','כרטיס לכל מוצר, וחבילות במחיר מיוחד, בהרכב שאתם קובעים'],['תשלום באתר ובטלפון','נדרים פלוס או קשר/קהילות, והכסף נכנס ישירות לארגון'],['שלוחה טלפונית','שמיעת המוצרים, בחירה ותשלום בטלפון, עם סל שמור'],['מגייסים ונציגים','קישור אישי ודף אישי לכל מגייס, וקוד נציג בהזמנה'],['הגרלה מסודרת','הגרלה נפרדת לכל זוכה, ורשימת זוכים לציבור'],['שעוני ספירה','לפתיחה, לסגירה ולהגרלה'],['דוחות וניהול לקוחות','פירוט כל ההזמנות, התקדמות המכירה ורשימת תורמים'],['שילוב עם התרמה','קמפיין התרמה במקביל למכירה, בחלון אחד']];
+    var h='<header class="top"><div class="t"><div class="kick">MyLuach</div><h1>מכירה סינית לארגון שלכם</h1><div class="sub">'+esc(H.intro||'מערכת למכירה סינית בלי עבודה ידנית: מוצרים, כרטיסים, חבילות, תשלום באתר ובטלפון, מגייסים והגרלה מסודרת. כל ארגון מנהל את המכירה שלו.')+'</div>'
+     +'<div class="hbtn">'+(H.canOpen?'<a class="hb pri" href="/auction-manage">פתיחת מכירה חדשה</a>':'')+'<a class="hb'+(H.canOpen?'':' pri')+'" href="#rq">'+(H.canOpen?'בקשה / קבלת פרטים':'בקשה לפתיחת מכירה')+'</a><a class="hb" href="/auction-manage">כניסה לניהול</a></div></div></header>'
+     +'<main class="hm">'
+     +'<section class="sec" aria-labelledby="hs"><h2 id="hs">איך זה עובד</h2><ol class="hsteps"><li><b>פותחים מכירה</b><br>מגדירים מוצרים, מחירים וחבילות.</li><li><b>מפיצים</b><br>קישור לדף המכירה, קישורים אישיים למגייסים ומספר טלפון.</li><li><b>הקהל קונה</b><br>באתר או בטלפון, ומקבל מספרי כרטיסים במייל.</li><li><b>מגרילים</b><br>בדף ההגרלות, ומפרסמים את הזוכים.</li></ol></section>'
+     +'<section class="sec" aria-labelledby="hf"><h2 id="hf">מה כלול</h2><div class="hfs">'+F.map(function(f){return '<div class="hf"><b>'+f[0]+'</b><span>'+f[1]+'</span></div>'}).join('')+'</div></section>';
+    if(H.infoText)h+='<section class="sec"><h2>פרטים</h2><div class="hinfo">'+esc(H.infoText)+'</div></section>';
+    h+='<section class="sec" id="rq" aria-labelledby="hq"><h2 id="hq">'+(H.canOpen?'בקשה או קבלת פרטים':'בקשה לפתיחת מכירה')+'</h2><form id="rf" class="rform" novalidate><div class="rk" role="radiogroup" aria-label="סוג הפנייה"><label><input type="radio" name="kind" value="open" checked> אני רוצה לפתוח מכירה</label><label><input type="radio" name="kind" value="info"> אני רוצה לקבל פרטים</label></div>'
+      +'<div class="two"><label>שם איש קשר<input name="name" required autocomplete="name"></label><label>שם הארגון<input name="org" required autocomplete="organization"></label><label>טלפון<input name="phone" type="tel" dir="ltr" autocomplete="tel"></label><label>מייל<input name="email" type="email" dir="ltr" autocomplete="email"></label></div>'
+      +'<label>הודעה (לא חובה): מתי המכירה, כמה מוצרים בערך<textarea name="note"></textarea></label><input name="website" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true"><p class="msg">מלאו מייל או טלפון, ונחזור אליכם בהקדם.</p><button class="hb pri" type="submit">שליחה</button><p id="rm" role="status" class="rmsg"></p></form></section>'
+     +'<p class="msg" style="text-align:center">יש לכם כבר מכירה? <a href="/auction-manage">כניסה לניהול</a> · לפתיחת התרמה לארגון: <a href="/give">התרמה מקוונת</a></p></main>';
+    app.innerHTML=h;
+    var f=$('rf');f.onsubmit=function(e){e.preventDefault();var o={a:'request'};new FormData(f).forEach(function(v,k){o[k]=v});var m=$('rm');m.className='rmsg';
+      if(!String(o.org||'').trim()||!String(o.name||'').trim()||!(String(o.email||'').trim()||String(o.phone||'').trim())){m.className='rmsg bad';m.textContent='צריך שם ארגון, שם איש קשר, ומייל או טלפון';return}
+      m.textContent='שולח…';
+      post(o).then(function(r){if(r._st===200){f.innerHTML='<div class="rdone" role="status"><h3>הבקשה התקבלה, תודה!</h3><p>נחזור אליכם בהקדם.</p></div>'}else{m.className='rmsg bad';m.textContent=r.message||'לא נשלח, נסו שוב'}}).catch(function(){m.className='rmsg bad';m.textContent='שגיאת רשת, נסו שוב'})}
+  }).catch(function(){closed('לא הצלחנו לטעון')})}
+if(!SLUG){home();return}
 if(Q.get('rep'))return repView();
 if(Q.get('view')==='progress')return progView();
 if(Q.get('view')==='terms')return termsView();

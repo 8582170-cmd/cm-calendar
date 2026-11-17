@@ -25,7 +25,7 @@ async function all(path) {
   return out;
 }
 /* הגדרות האגף (בעל האתר): open = כל משתמש יכול לפתוח מכירה, sitePay / kehilot = ספקי סליקה נוספים */
-async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, cancel: s.cancel === true, note: String(s.note || ''), giveAllow: s.giveAllow === 'none' ? 'none' : 'all', fee: FEE.feeOf(s.fee) }; }
+async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, cancel: s.cancel === true, note: String(s.note || ''), intro: String(s.intro || ''), infoText: String(s.infoText || ''), giveAllow: s.giveAllow === 'none' ? 'none' : 'all', fee: FEE.feeOf(s.fee) }; }
 const FEE = require('./_fee');
 /* האם המכירה יכולה להפעיל במקביל התרמה לארגון: לפי מה שבעל האתר קבע למכירה הזאת, אחרת לפי ברירת המחדל */
 const giveOk = (s, S) => { const g = ((s.cfg || {}).admin || {}).give; return g === 'yes' ? true : g === 'no' ? false : S.giveAllow !== 'none'; };
@@ -407,16 +407,19 @@ module.exports = async (req, res) => {
       const S2 = await db('auction_sale?id=eq.' + o.sale_id + '&select=slug&limit=1'), s = S2 && S2[0] && await load(S2[0].slug);
       return json(res, 200, { status: o.status, amount: +o.amount, tickets: o.status === 'paid' && s ? await ticketsOf(o, s) : [] });
     }
+    /* דף הפתיחה /auction (בלי כתובת מכירה) */
+    if (a === 'home') { res.setHeader('Cache-Control', 'public, max-age=60'); const S = await site(); return json(res, 200, { canOpen: S.open, intro: S.intro, infoText: S.infoText }); }
     /* בקשה לפתיחת מכירה (כשפתיחה עצמית סגורה): נשמרת לבעל האתר ונשלחת אליו במייל */
     if (a === 'request') {
       if (req.method !== 'POST') return json(res, 405, {});
-      const x = { id: crypto.randomBytes(6).toString('hex'), org: clean(b.org, 120), name: clean(b.name, 80), phone: phoneN(b.phone) || clean(b.phone, 20), email: mailN(b.email), note: clean(b.note, 1500), at: new Date().toISOString() };
+      const x = { id: crypto.randomBytes(6).toString('hex'), org: clean(b.org, 120), name: clean(b.name, 80), phone: phoneN(b.phone) || clean(b.phone, 20), email: mailN(b.email), note: clean(b.note, 1500), kind: b.kind === 'info' ? 'info' : 'open', at: new Date().toISOString() };
+      if (clean(b.website, 50)) return json(res, 200, { ok: true });
       if (!x.org || !x.name || !(x.email || x.phone)) return json(res, 400, { error: 'details', message: 'צריך שם ארגון, שם איש קשר, ומייל או טלפון' });
       const R0 = await loadSetting('auctionreq').catch(() => []), RL = (Array.isArray(R0) ? R0 : []).slice(-299);
       if (RL.filter(r => r.email && r.email === x.email && Date.now() - Date.parse(r.at) < 3600e3).length >= 3) return json(res, 429, { error: 'many', message: 'הבקשה כבר נשלחה' });
       RL.push(x); await saveSetting('auctionreq', RL);
       const to = admins()[0]; const { sendMail, frame, escH } = require('./_mail');
-      if (to) await sendMail({ to, subject: 'בקשה לפתיחת מכירה סינית: ' + x.org, html: frame({ title: 'בקשה לפתיחת מכירה', body: '<p><b>' + escH(x.org) + '</b></p><p>' + escH(x.name) + ' · ' + escH(x.phone || '') + ' · ' + escH(x.email || '') + '</p>' + (x.note ? '<p style="white-space:pre-line">' + escH(x.note) + '</p>' : ''), button: 'לבקשות', url: SITE() + '/auction-admin' }) }, 'auction').catch(() => {});
+      if (to) await sendMail({ to, subject: (x.kind === 'info' ? 'בקשה לקבלת פרטים על מכירה סינית: ' : 'בקשה לפתיחת מכירה סינית: ') + x.org, html: frame({ title: x.kind === 'info' ? 'בקשה לקבלת פרטים' : 'בקשה לפתיחת מכירה', body: '<p><b>' + escH(x.org) + '</b></p><p>' + escH(x.name) + ' · ' + escH(x.phone || '') + ' · ' + escH(x.email || '') + '</p>' + (x.note ? '<p style="white-space:pre-line">' + escH(x.note) + '</p>' : ''), button: 'לבקשות', url: SITE() + '/auction-admin' }) }, 'auction').catch(() => {});
       return json(res, 200, { ok: true });
     }
     if (a === 'kcheck') {
@@ -497,7 +500,7 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
-      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: !b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000), ...(b.set.giveAllow != null ? { giveAllow: b.set.giveAllow === 'none' ? 'none' : 'all' } : {}), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }); }
+      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: !b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000), ...(b.set.intro != null ? { intro: clean(b.set.intro, 400) } : {}), ...(b.set.infoText != null ? { infoText: clean(b.set.infoText, 3000) } : {}), ...(b.set.giveAllow != null ? { giveAllow: b.set.giveAllow === 'none' ? 'none' : 'all' } : {}), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }); }
       if (b.reqDone != null) { const R0 = await loadSetting('auctionreq').catch(() => []); const RL = Array.isArray(R0) ? R0 : []; const x = RL.find(r => r.id === b.reqDone); if (x) { x.done = x.done || 'נסגר'; await saveSetting('auctionreq', RL); } }
       const RQ = await loadSetting('auctionreq').catch(() => []);
       const R = await db('auction_order?txn=not.is.null&select=callback&order=paid_at.desc.nullslast&limit=300').catch(() => []);
