@@ -36,8 +36,8 @@ const MSG = {
   menuProd: ['תפריט ראשי: בחירת מוצרים', 'לבחירת כרטיסים לפי מספר מוצר הקישו {מקש}'],
   menuAll: ['תפריט ראשי: כל המוצרים', 'לשמיעת כל המוצרים ברצף הקישו {מקש}'],
   menuCart: ['תפריט ראשי: מעבר לסל (כשיש בו כרטיסים)', 'למעבר לסל ולתשלום הקישו 9'],
-  navHint: ['הסבר על סולמית וכוכבית (בתחילת השיחה)', 'בכל שלב לחזרה שלב אחורה הקישו סולמית ולתפריט הראשי הקישו כוכבית'],
-  brwIntroA: ['דפדוף אוטומטי: הסבר לפני המוצר הראשון', 'נשמיע לכם את המוצרים אחד אחרי השני בכל רגע וגם תוך כדי ההקראה לבחירת המוצר הקישו 1 למוצר הקודם 2 למעבר מיידי למוצר הבא 3 ולתפריט הראשי כוכבית'],
+  navHint: ['הסבר על סולמית וכוכבית (בתחילת השיחה)', 'בכל שלב לחזרה שלב אחורה הקישו סולמית וליציאה לתפריט הראשי של הקו הקישו כוכבית'],
+  brwIntroA: ['דפדוף אוטומטי: הסבר לפני המוצר הראשון', 'נשמיע לכם את המוצרים אחד אחרי השני בכל רגע וגם תוך כדי ההקראה לבחירת המוצר הקישו 1 למוצר הקודם 2 למעבר מיידי למוצר הבא 3'],
   brwIntroM: ['דפדוף עם תפריט: הסבר לפני המוצר הראשון', 'נשמיע לכם את המוצרים אחד אחרי השני ואחרי כל מוצר תוכלו לבחור אותו או לעבור למוצר אחר'],
   brwMenu: ['דפדוף עם תפריט: אחרי כל מוצר', 'לבחירת המוצר הקישו 1 למוצר הקודם 2 למוצר הבא 3'],
   brwFirst: ['דפדוף: כשמבקשים מוצר קודם במוצר הראשון', 'זה המוצר הראשון'],
@@ -145,7 +145,7 @@ function replay(s, R, ans, saved, mode) {
   for (const v0 of ans) {
     const raw = String(v0 == null ? '' : v0).trim(), v = raw.replace(/\D/g, ''), empty = !v && !raw.includes('*'); st.msg = [];
     if (st.phase !== 'repA' && st.phase !== 'repB' && st.phase !== 'bye') {
-      if (raw.includes('*')) { st.phase = 'menu'; st.fromBrw = false; continue; }
+      if (raw.includes('*')) { st.phase = 'exit'; break; } /* כוכבית: יציאה לשלוחה הראשית של הקו בימות */
       if (empty && st.phase !== 'brw') { const b = BACK[st.phase]; if (b) st.phase = typeof b === 'function' ? b() : b; continue; }
     }
     if (st.phase === 'repA' || st.phase === 'repB') {
@@ -316,6 +316,7 @@ module.exports = async (req, res) => {
     /* חזרה מסליקת האשראי: ההזמנה של השיחה כבר קיימת (והסל כבר עבר אליה), אז הולכים ישר לטיפול בתשלום */
     switch (q.CreditCard_CODE != null ? 'pay' : st.phase) {
       case 'bye': return bye(pre.concat(T('להתראות')));
+      case 'exit': { if (cartOn && ph && (st.cart.length || st.pkg)) await saveCart(s, ph, call, row, st).catch(e => console.error('cart save', e.message)); return out('go_to_folder=/'); }
       case 'repA': case 'repB': return rd([M(s, 'repAsk')].concat(c.repSkip ? [M(s, 'repSkip')] : []), 8, 1);
       case 'saved': return rd([M(s, 'savedHead')].concat(st.hear()).concat(M(s, 'savedMenu')), 1, 1, '1.2.3');
       case 'store': await saveCart(s, ph, call, row, st); return bye(pre.concat(M(s, 'stored')));
