@@ -17,6 +17,7 @@ function clean(b, old) {
   const a = b.about, c = b.contact, l = b.list;
   if (a && typeof a === 'object') o.about = { on: !!a.on, text: str(a.text, 4000), email: mailN(a.email), phone: str(a.phone, 30), address: str(a.address, 200), site: url(a.site),
     links: (Array.isArray(a.links) ? a.links : []).map(x => ({ t: str(x && x.t, 60), u: url(x && x.u) })).filter(x => x.t && x.u).slice(0, 8) };
+  if (b.faq && typeof b.faq === 'object') o.faq = { on: !!b.faq.on };
   if (c && typeof c === 'object') o.contact = { on: !!c.on, intro: str(c.intro, 500) };
   if (l && typeof l === 'object') o.list = { on: !!l.on, intro: str(l.intro, 500), mode: l.mode === 'contact' ? 'contact' : 'popup' };
   return o;
@@ -24,9 +25,12 @@ function clean(b, old) {
 /* איפה מוצגת ההצטרפות: בתוך דף "צור קשר" (תיבת סימון), או בחלון קופץ. אם "צור קשר" כבוי, תמיד חלון קופץ */
 const listMode = o => ((o.list || {}).mode === 'contact' && (o.contact || {}).on) ? 'contact' : 'popup';
 /* מה מוצג לציבור: רק דפים פעילים */
-function pub(o) {
+function pub(o, faq) {
   o = o || {}; const a = o.about || {}, r = {};
   if (a.on && (a.text || a.email || a.phone || a.address || a.site || (a.links || []).length)) r.about = { text: a.text || '', email: a.email || '', phone: a.phone || '', address: a.address || '', site: a.site || '', links: a.links || [] };
+  /* שאלות ותשובות כדף נפרד: הנתונים הם אלה שכבר קיימים במכירה / בקמפיין (faq), והם עוברים מהדף הראשי לדף הזה */
+  const fq = (Array.isArray(faq) ? faq : []).filter(x => x && x.q && x.a);
+  if ((o.faq || {}).on && fq.length) r.faq = { items: fq.map(x => ({ q: x.q, a: x.a })) };
   if ((o.contact || {}).on) r.contact = { intro: o.contact.intro || '' };
   if ((o.list || {}).on) r.list = { intro: o.list.intro || '', mode: listMode(o) };
   return Object.keys(r).length ? r : null;

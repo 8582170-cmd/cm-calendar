@@ -3,9 +3,9 @@
    MLOrg.wire(שורש, מפתח, send) מחבר את הטופס. send(אובייקט) מחזירה Promise עם {_st, message}. */
 (function () {
   'use strict';
-  var LAB = { about: 'על הארגון', contact: 'צור קשר', list: 'הצטרפות לרשימה' };
+  var LAB = { about: 'על הארגון', faq: 'שאלות ותשובות', contact: 'צור קשר', list: 'הצטרפות לרשימה' };
   var CSS = '.og{max-width:720px;display:flex;flex-direction:column;gap:14px}.og h2{margin:0;font-size:24px}.og p{margin:0}.og .ogt{white-space:pre-line;line-height:1.7}' +
-    '.og .ogd{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid rgb(128 128 128 / .35);border-radius:12px}.og .ogd a{color:inherit}' +
+    '.og .ogf{border:1px solid rgb(128 128 128 / .35);border-radius:10px;padding:10px 14px}.og .ogf summary{cursor:pointer;font-weight:700}.og .ogf p{margin-top:8px}.og .ogd{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid rgb(128 128 128 / .35);border-radius:12px}.og .ogd a{color:inherit}' +
     '.og form{display:flex;flex-direction:column;gap:12px;padding:16px;border:1px solid rgb(128 128 128 / .35);border-radius:12px}.og label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:15px}' +
     '.og label.ck{flex-direction:row;align-items:flex-start;gap:8px;font-weight:400}.og label.ck input{margin-top:4px;width:18px;height:18px;flex:none}' +
     '.og input:not([type=checkbox]),.og textarea{font:inherit;font-weight:400;padding:10px;border:1px solid rgb(128 128 128 / .5);border-radius:8px;background:#fff;color:#111;min-height:44px}.og textarea{min-height:110px}' +
@@ -16,7 +16,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function css() { if (!document.getElementById('og-css')) { var st = document.createElement('style'); st.id = 'og-css'; st.textContent = CSS; document.head.appendChild(st); } }
   /* דפים: על הארגון, צור קשר. ההצטרפות לרשימה היא או תיבת סימון בתוך "צור קשר" (mode=contact), או חלון קופץ (mode=popup, הערך השלישי 'pop') */
-  function tabs(o) { var r = []; if (!o) return r; ['about', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
+  function tabs(o) { var r = []; if (!o) return r; ['about', 'faq', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
   function html(o, k) {
     css(); o = o || {}; var d = o[k]; if (!d) return '';
     if (k === 'about') {
@@ -25,6 +25,7 @@
       (d.links || []).forEach(function (l) { det.push('<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.t) + '</a>'); });
       return '<div class="og"><h2>' + LAB.about + '</h2>' + (d.text ? '<div class="ogt">' + esc(d.text) + '</div>' : '') + (det.length ? '<div class="ogd">' + det.map(function (x) { return '<div>' + x + '</div>'; }).join('') + '</div>' : '') + '</div>';
     }
+    if (k === 'faq') return '<div class="og"><h2>' + LAB.faq + '</h2>' + (d.items || []).map(function (f) { return '<details class="ogf"><summary>' + esc(f.q) + '</summary><p class="ogt">' + esc(f.a) + '</p></details>'; }).join('') + '</div>';
     var hp = '<input name="website" class="ogx" tabindex="-1" autocomplete="off" aria-hidden="true">';
     if (k === 'contact') return '<div class="og"><h2>' + LAB.contact + '</h2>' + (d.intro ? '<p class="ogt">' + esc(d.intro) + '</p>' : '') + '<form data-og="contact" novalidate><div class="two"><label>שם<input name="name" required autocomplete="name"></label><label>טלפון<input name="phone" type="tel" dir="ltr" autocomplete="tel"></label><label>מייל<input name="email" type="email" dir="ltr" autocomplete="email"></label></div><label>ההודעה<textarea name="msg" required></textarea></label>' + hp + '<p class="hint">מלאו מייל או טלפון, כדי שנוכל לחזור אליכם.</p>' + (o.list && o.list.mode === 'contact' ? '<label class="ck"><input type="checkbox" name="consent"> <span>אני מסכים/ה להצטרף לרשימת התפוצה ולקבל עדכונים מהארגון. אפשר לבקש הסרה בכל עת.</span></label>' : '') + '<button class="ogb" type="submit">שליחה</button><p class="ogm" role="status"></p></form></div>';
     return '<div class="og"><h2>' + LAB.list + '</h2>' + (d.intro ? '<p class="ogt">' + esc(d.intro) + '</p>' : '<p class="ogt">השאירו פרטים ונעדכן אתכם.</p>') + '<form data-og="list" novalidate><div class="two"><label>שם (לא חובה)<input name="name" autocomplete="name"></label><label>מייל<input name="email" type="email" dir="ltr" autocomplete="email"></label><label>טלפון<input name="phone" type="tel" dir="ltr" autocomplete="tel"></label></div><label class="ck"><input type="checkbox" name="consent"> <span>אני מסכים/ה לקבל עדכונים מהארגון במייל או בטלפון שמסרתי. אפשר לבקש הסרה בכל עת.</span></label>' + hp + '<button class="ogb" type="submit">הצטרפות</button><p class="ogm" role="status"></p></form></div>';

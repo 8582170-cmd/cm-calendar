@@ -355,7 +355,7 @@ function kesherBack(){var id=Q.get('kp'),tn=Q.get('transactionNumber')||Q.get('T
     history.replaceState(null,'',location.pathname+(SLUG&&!/^\/give\//.test(location.pathname)?'?s='+SLUG:''));if(j.ok)thanks();else if(a)a.innerHTML='<div class="closed">'+esc(j.message||'לא הצלחנו לאשר את התשלום. אם חויבתם, פנו למארגנים.')+'</div>'})}
 
 /* ===== לשוניות ===== */
-function tabsHtml(){var c=D.cfg,L=[];var OT=window.MLOrg?MLOrg.tabs(D.org):[];if(c.story||c.video||c.gallery.length||c.faq.length||c.match.matchers.length)L.push(['about','אודות']);if(c.f.feed)L.push(['feed','תורמים'+(D.feedTotal?' ('+D.feedTotal+')':'')]);
+function tabsHtml(){var c=D.cfg,L=[];var OT=window.MLOrg?MLOrg.tabs(D.org):[];if(c.story||c.video||c.gallery.length||(c.faq.length&&!(D.org&&D.org.faq))||c.match.matchers.length)L.push(['about','אודות']);if(c.f.feed)L.push(['feed','תורמים'+(D.feedTotal?' ('+D.feedTotal+')':'')]);
   if(c.f.teams&&D.teams.length&&!D.team&&!D.rep)L.push(['teams','קבוצות']);if(c.f.reps&&D.reps.length&&!D.rep)L.push(['reps',D.team?'הנציגים בקבוצה':'נציגים']);if(c.f.chart&&(D.teams.length||D.reps.length)&&!D.rep)L.push(['chart','גרף']);
   var POP=OT.filter(function(x){return x[2]==='pop'})[0];OT.forEach(function(x){if(x[2]!=='pop')L.push(['o'+x[0],x[1]])});
   if(window.MLOrg)MLOrg.bind(function(){return D.org},function(x){x.a='orgmsg';x.s=SLUG;return post(x)});
@@ -363,11 +363,11 @@ function tabsHtml(){var c=D.cfg,L=[];var OT=window.MLOrg?MLOrg.tabs(D.org):[];if
   if(!L.length)return PB?'<div class="tabs">'+PB+'</div>':'';if(!L.some(function(x){return x[0]===TAB}))TAB=L[0][0];
   return '<div class="tabs" role="tablist">'+L.map(function(x){return '<button type="button" role="tab" id="tb-'+x[0]+'" aria-selected="'+(x[0]===TAB)+'" aria-controls="pane">'+x[1]+'</button>'}).join('')+PB+'</div><div id="pane" role="tabpanel"></div>'}
 function pane(){var p=$('pane');if(!p)return;var c=D.cfg;
-  if(/^o(about|contact)$/.test(TAB)){var ok=TAB.slice(1);p.innerHTML=MLOrg.html(D.org,ok);MLOrg.wire(p,ok,function(x){x.a='orgmsg';x.s=SLUG;return post(x)})}
+  if(/^o(about|faq|contact)$/.test(TAB)){var ok=TAB.slice(1);p.innerHTML=MLOrg.html(D.org,ok);MLOrg.wire(p,ok,function(x){x.a='orgmsg';x.s=SLUG;return post(x)})}
   else if(TAB==='about'){var h='';if(c.video)h+='<div class="vid">'+vid(c.video)+'</div>';if(c.story)h+='<div class="story">'+esc(c.story)+'</div>';
     if(c.gallery.length)h+='<div class="gal">'+c.gallery.map(function(u){return '<img src="'+esc(u)+'" alt="" loading="lazy">'}).join('')+'</div>';
     if(c.match.on&&c.match.matchers.length)h+='<h3 style="margin:22px 0 10px">התורמים המכפילים</h3><div class="mt">'+c.match.matchers.map(function(m){return '<div class="mm">'+(m.logo?'<img src="'+esc(m.logo)+'" alt="">':'')+'<b>'+esc(m.name)+'</b>'+(m.amount?'<span class="msg">'+nis(m.amount)+'</span>':'')+'</div>'}).join('')+'</div>';
-    if(c.faq.length)h+='<h3 style="margin:22px 0 6px">שאלות נפוצות</h3><div class="faq">'+c.faq.map(function(f){return '<details><summary>'+esc(f.q)+'</summary><p style="white-space:pre-line">'+esc(f.a)+'</p></details>'}).join('')+'</div>';
+    if(c.faq.length&&!(D.org&&D.org.faq))h+='<h3 style="margin:22px 0 6px">שאלות נפוצות</h3><div class="faq">'+c.faq.map(function(f){return '<details><summary>'+esc(f.q)+'</summary><p style="white-space:pre-line">'+esc(f.a)+'</p></details>'}).join('')+'</div>';
     p.innerHTML=h}
   else if(TAB==='feed'){p.innerHTML='<div class="tools"><label class="sr" for="fq">חיפוש תורם</label><input id="fq" placeholder="חיפוש לפי שם, הקדשה או הודעה"><label class="sr" for="fso">מיון</label><select id="fso"><option value="new">החדשים קודם</option><option value="big">הגדולים קודם</option></select></div><div class="feed" id="fd"></div><p style="text-align:center"><button class="btn" id="fmr" type="button" hidden>עוד תורמים</button></p>';
     var off=0,run=function(add){var q={a:'feed',s:SLUG,off:off,sort:$('fso').value,q:$('fq').value.trim()};if(D.rep)q.r=D.rep.code;if(D.team)q.t=D.team.id;get(q).then(function(j){var h=(j.feed||[]).map(dnHtml).join('');$('fd').innerHTML=(add?$('fd').innerHTML:'')+(h||(add?'':'<p class="msg">עוד אין תורמים. היו הראשונים!</p>'));off+=(j.feed||[]).length;$('fmr').hidden=off>=j.total})};
