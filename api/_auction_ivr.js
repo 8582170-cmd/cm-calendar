@@ -36,8 +36,8 @@ const MSG = {
   menuProd: ['תפריט ראשי: בחירת מוצרים', 'לבחירת כרטיסים לפי מספר מוצר הקישו {מקש}'],
   menuAll: ['תפריט ראשי: כל המוצרים', 'לשמיעת כל המוצרים ברצף הקישו {מקש}'],
   menuCart: ['תפריט ראשי: מעבר לסל (כשיש בו כרטיסים)', 'למעבר לסל ולתשלום הקישו 9'],
-  navHint: ['הסבר על סולמית וכוכבית (בתחילת השיחה)', 'בכל שלב לחזרה שלב אחורה הקישו סולמית וליציאה לתפריט הראשי של הקו הקישו כוכבית'],
-  brwIntroA: ['דפדוף אוטומטי: הסבר לפני המוצר הראשון', 'נשמיע לכם את המוצרים אחד אחרי השני בכל רגע וגם תוך כדי ההקראה לבחירת המוצר הקישו 1 למוצר הקודם 2 למעבר מיידי למוצר הבא 3'],
+  navHint: ['הסבר על סולמית וכוכבית (בתחילת השיחה)', 'בכל שלב לחזרה שלב אחורה הקישו אפס ובמקום שמקישים מספר הקישו אפס וסולמית וליציאה לתפריט הראשי של הקו הקישו כוכבית'],
+  brwIntroA: ['דפדוף אוטומטי: הסבר לפני המוצר הראשון', 'נשמיע לכם את המוצרים אחד אחרי השני בכל רגע וגם תוך כדי ההקראה לבחירת המוצר הקישו 1 למוצר הקודם 2 למעבר מיידי למוצר הבא 3 ולחזרה לתפריט אפס'],
   brwIntroM: ['דפדוף עם תפריט: הסבר לפני המוצר הראשון', 'נשמיע לכם את המוצרים אחד אחרי השני ואחרי כל מוצר תוכלו לבחור אותו או לעבור למוצר אחר'],
   brwMenu: ['דפדוף עם תפריט: אחרי כל מוצר', 'לבחירת המוצר הקישו 1 למוצר הקודם 2 למוצר הבא 3'],
   brwFirst: ['דפדוף: כשמבקשים מוצר קודם במוצר הראשון', 'זה המוצר הראשון'],
@@ -140,13 +140,13 @@ function replay(s, R, ans, saved, mode) {
   };
   if (repAsk('start')) st.phase = 'repA'; else goHome();
   st.first = st.msg; /* הודעות של הכניסה הישירה (למשל ההסבר לפני הדפדוף), מושמעות אחרי הפתיחה */
-  /* סולמית לבד (או שקט עד סוף זמן ההמתנה) = שלב אחורה. כוכבית = התפריט הראשי */
+  /* אפס = שלב אחורה (סולמית לבד ושקט נשלחים מימות כאותו ערך, ולכן לא משמשים לחזרה). כוכבית = יציאה לשלוחה הראשית של הקו */
   const BACK = { pkg: 'menu', prod: () => st.prodFrom || 'menu', prodok: 'prod', qty: () => st.fromBrw ? 'brw' : 'prodok', qtyok: 'qty', after: 'brw', more: 'menu', edit: 'more', editq: 'edit', editok: 'editq', sum: 'more', payhow: 'sum', allp: 'menu' };
   for (const v0 of ans) {
     const raw = String(v0 == null ? '' : v0).trim(), v = raw.replace(/\D/g, ''), empty = !v && !raw.includes('*'); st.msg = [];
     if (st.phase !== 'repA' && st.phase !== 'repB' && st.phase !== 'bye') {
       if (raw.includes('*')) { st.phase = 'exit'; break; } /* כוכבית: יציאה לשלוחה הראשית של הקו בימות */
-      if (empty && st.phase !== 'brw') { const b = BACK[st.phase]; if (b) st.phase = typeof b === 'function' ? b() : b; continue; }
+      if (v === '0' && st.phase !== 'editq' && BACK[st.phase]) { const b = BACK[st.phase]; st.phase = typeof b === 'function' ? b() : b; continue; }
     }
     if (st.phase === 'repA' || st.phase === 'repB') {
       if (v === '0' || v === '') { if (c.repSkip) { afterRep(st.phase); st.tries = 0; } else st.msg.push(T('צריך להקיש קוד נציג')); continue; }
@@ -174,7 +174,7 @@ function replay(s, R, ans, saved, mode) {
       if (v === '1') { const p = prods[st.bi]; st.cur = p; st.fromBrw = true; if (qtyOf(p.id)) st.msg.push(T('יש כבר בסל ' + qtyOf(p.id) + ' כרטיסים למוצר הזה')); st.phase = 'qty'; }
       else if (v === '2') { if (st.bi > 0) st.bi--; else st.msg.push(M(s, 'brwFirst')); }
       else if (v === '3' || (empty && st.bm === 'auto')) { st.bi++; if (st.bi >= prods.length) { st.msg.push(M(s, 'brwEnd')); st.phase = 'menu'; } }
-      else if (empty) st.phase = 'menu';
+      else if (v === '0') st.phase = 'menu';
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
@@ -311,7 +311,8 @@ module.exports = async (req, res) => {
     const pre = ans.length ? st.msg : [M(s, 'welcome'), M(s, 'navHint')].concat(st.first || []);
     /* הפרמטרים של read בימות: שם, שימוש בערך קיים, מקסימום ספרות, מינימום, שניות המתנה, השמעת ההקשה, חסימת כוכבית (no = כוכבית מגיעה אלינו),
        חסימת אפס, החלפת תו, מקשים מותרים, מספר ניסיונות, קבלת הקשה ריקה (Ok = סולמית לבד או שקט מגיעים כערך ריק), הערך בריק, ... הערך ה-15: no = בלי בקשת אישור אחרי ההקשה */
-    const rd = (parts, max, min, ok, wait) => out('read=' + pre.concat(parts).filter(Boolean).join('.') + '=' + [next, 'no', max, min, wait || 10, 'NO', 'no', 'no', '', ok ? ok + '.*' : '', '', 'Ok', 'E', '', 'no'].join(','));
+    /* wait = דפדוף אוטומטי: רק שם מותרת הקשה ריקה (שקט עד סוף ההמתנה = המוצר הבא). בשאר המסכים שקט = "לא הוקשה בחירה" והשאלה חוזרת */
+    const rd = (parts, max, min, ok, wait) => out('read=' + pre.concat(parts).filter(Boolean).join('.') + '=' + [next, 'no', max, min, wait || 10, 'NO', 'no', 'no', '', ok ? ok + '.0.*' : '', '', wait ? 'Ok' : '', wait ? 'E' : '', '', 'no'].join(','));
     const pkgs = s.pkgs.filter(A().pkgLive);
     /* חזרה מסליקת האשראי: ההזמנה של השיחה כבר קיימת (והסל כבר עבר אליה), אז הולכים ישר לטיפול בתשלום */
     switch (q.CreditCard_CODE != null ? 'pay' : st.phase) {
