@@ -29,6 +29,34 @@ async function site() { const s = await loadSetting('give').catch(() => ({})) ||
 const admins = () => [env('OWNER_EMAIL'), ...env('AUCTION_ADMINS').split(','), ...env('GIVE_ADMINS').split(',')].map(s => s.trim().toLowerCase()).filter(Boolean);
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 
+/* ===== יום נתינה: דף משותף לכמה קמפיינים, עם שעון משותף, סכום מצטבר ולוח תוצאות (setting giveDays) ===== */
+const dayId = v => String(v || '').toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '').slice(0, 40);
+function cleanDay(x) {
+  x = x && typeof x === 'object' ? x : {}; const m = x.match && typeof x.match === 'object' ? x.match : {}, ts = v => (v && !isNaN(Date.parse(v)) ? new Date(v).toISOString() : '');
+  const seen = {}, camps = (Array.isArray(x.campaigns) ? x.campaigns : []).map(v => String(v || '').trim().toLowerCase()).filter(v => /^[a-z0-9][a-z0-9-]{2,39}$/.test(v) && !seen[v] && (seen[v] = 1)).slice(0, 200);
+  return { id: dayId(x.id), title: clean(x.title, 120), sub: clean(x.sub, 600), note: clean(x.note, 800), start: ts(x.start), end: ts(x.end), goal: Math.max(0, Math.min(1e10, +x.goal || 0)), on: x.on === true, listed: x.listed === true, joinOpen: x.joinOpen === true,
+    match: { on: m.on === true, ratio: Math.max(1.1, Math.min(10, +m.ratio || 2)), cap: Math.max(0, Math.min(1e10, +m.cap || 0)), text: clean(m.text, 300) }, campaigns: camps };
+}
+async function daysOf() { const raw = await loadSetting('giveDays').catch(() => ({})) || {}; return (Array.isArray(raw.list) ? raw.list : []).map(cleanDay).filter(d => d.id); }
+const DAYC = new Map();
+async function dayView(d) {
+  const k = d.id, hit = DAYC.get(k); if (hit && Date.now() - hit.at < 8000 && hit.sig === JSON.stringify(d)) return hit.v;
+  const from = d.start ? Date.parse(d.start) : 0, to = d.end ? Date.parse(d.end) : Infinity, now = Date.now(), list = [];
+  for (const slug of d.campaigns) {
+    try {
+      const s = await load(slug); if (!s) continue; const c = cfgOf(s); if (s.status === 'draft') continue;
+      const A = await all('give_donation?campaign_id=eq.' + s.id + '&status=eq.paid&select=total,paid_at,created_at');
+      let raised = 0, count = 0; A.forEach(r => { const t = Date.parse(r.paid_at || r.created_at); if (t >= from && t <= to) { raised += +r.total; count++; } });
+      list.push({ slug, title: c.title, logo: c.logo || '', goal: c.goal || 0, raised: r2(raised), count, url: SITE() + '/give/' + slug });
+    } catch (e) { console.error('day camp', slug, e.message); }
+  }
+  list.sort((a, b) => b.raised - a.raised);
+  const raised = r2(list.reduce((t, x) => t + x.raised, 0)), count = list.reduce((t, x) => t + x.count, 0);
+  const bonus = d.match.on ? r2(Math.min(d.match.cap || Infinity, raised * (d.match.ratio - 1))) : 0;
+  const v = { day: { id: d.id, title: d.title, sub: d.sub, note: d.note, start: d.start, end: d.end, goal: d.goal, match: d.match.on ? { ratio: d.match.ratio, cap: d.match.cap, text: d.match.text } : null },
+    time: { started: !d.start || now >= from, ended: !!d.end && now > to, now: new Date().toISOString() }, totals: { raised, count, campaigns: list.length, goal: d.goal, bonus }, list };
+  DAYC.set(k, { at: Date.now(), sig: JSON.stringify(d), v }); return v;
+}
 /* ===== ההגדרות ===== */
 const THEMES = ['classic', 'modern', 'festive', 'warm', 'minimal', 'night', 'royal', 'nature'];
 const FEAT = { match: true, bonus: true, dedic: true, message: true, anon: true, monthly: true, offline: true, feed: true, popups: true, teams: true, reps: true, chart: true, countdown: true, screen: true, share: true, amounts: true, donors: true, auction: true, repSelect: true, teamSelect: true };
@@ -371,7 +399,19 @@ module.exports = async (req, res) => {
         const pick = (L || []).filter(x => (x.cfg || {}).listed === true).slice(0, 12);
         list = (await Promise.all(pick.map(async x => { try { const s = await load(x.slug); if (!s) return null; const c = cfgOf(s), st = await stats(s); return { slug: s.slug, title: c.title, logo: c.logo, banner: c.banner, goal: c.goal, total: st.total, theme: c.theme, color: c.color }; } catch (e) { return null; } }))).filter(Boolean);
       }
-      return json(res, 200, { canOpen: S.open, reqOn: S.reqOn, intro: S.intro, infoText: S.infoText, note: S.note, list });
+      const days = (await daysOf()).filter(d => d.on && d.listed && !(d.end && Date.now() > Date.parse(d.end))).slice(0, 6).map(d => ({ id: d.id, title: d.title, sub: d.sub, start: d.start, end: d.end }));
+      return json(res, 200, { canOpen: S.open, reqOn: S.reqOn, intro: S.intro, infoText: S.infoText, note: S.note, list, days });
+    }
+    if (a === 'day') {
+      const d = (await daysOf()).find(x => x.id === dayId(b.id)); if (!d || !d.on) return json(res, 404, { error: 'none' });
+      return json(res, 200, await dayView(d));
+    }
+    if (a === 'dayList' || a === 'daySave' || a === 'dayDel') {
+      const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {});
+      let L = await daysOf();
+      if (a === 'daySave') { const d = cleanDay(b.day); if (!d.id || !d.title) return json(res, 400, { error: 'x', message: 'חסרים כתובת ושם ליום הנתינה' }); const i = L.findIndex(x => x.id === d.id); if (i >= 0) L[i] = d; else L.push(d); L = L.slice(-50); await saveSetting('giveDays', { list: L }); DAYC.clear(); }
+      if (a === 'dayDel') { L = L.filter(x => x.id !== dayId(b.id)); await saveSetting('giveDays', { list: L }); DAYC.clear(); }
+      return json(res, 200, { list: L, base: SITE() + '/give?day=' });
     }
     if (a === 'request') {
       if (req.method !== 'POST') return json(res, 405, {});
@@ -447,6 +487,16 @@ module.exports = async (req, res) => {
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
     if (a === 'get') return json(res, 200, { ...mgrView(s, await site()), amAdmin: isAdmin(u), ...(isAdmin(u) ? { admin: (s.cfg || {}).admin || {} } : {}) });
+    if (a === 'dayMine' || a === 'dayJoin') {
+      const L = await daysOf();
+      if (a === 'dayJoin') {
+        const i = L.findIndex(x => x.id === dayId(b.day)); if (i < 0) return json(res, 404, { error: 'none' });
+        const has = L[i].campaigns.includes(s.slug);
+        if (b.leave) { if (has) { L[i].campaigns = L[i].campaigns.filter(x => x !== s.slug); await saveSetting('giveDays', { list: L }); DAYC.clear(); } }
+        else if (!has) { if (!L[i].joinOpen && !isAdmin(u)) return json(res, 403, { error: 'closed', message: 'ההצטרפות ליום הזה סגורה' }); if (L[i].end && Date.now() > Date.parse(L[i].end)) return json(res, 400, { error: 'ended', message: 'יום הנתינה הסתיים' }); L[i].campaigns = L[i].campaigns.concat(s.slug).slice(0, 200); await saveSetting('giveDays', { list: L }); DAYC.clear(); }
+      }
+      return json(res, 200, { days: L.filter(d => d.on && !(d.end && Date.now() > Date.parse(d.end)) && (d.joinOpen || d.campaigns.includes(s.slug))).map(d => ({ id: d.id, title: d.title, start: d.start, end: d.end, joinOpen: d.joinOpen, joined: d.campaigns.includes(s.slug), url: SITE() + '/give?day=' + d.id })) });
+    }
     /* הקלטות לנוסחי השלוחה הטלפונית: מועלות לאחסון של האתר, ומשם לימות המשיח (עם הטוקן והשלוחה שהוגדרו בלשונית השלוחה) */
     if (a === 'msgAudioUrl' || a === 'msgAudioSet') {
       const IV = require('./_give_ivr'), key = String(b.key || ''), def = IV.MSG[key], isAll = b.idx === 'all', idx = isAll ? 0 : Math.floor(+b.idx || 0), part = def && !isAll && IV.partsOf(def[1])[idx];

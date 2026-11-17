@@ -213,6 +213,7 @@ function home(){
      +'<div class="hbtn">'+(H.canOpen?'<a class="hb pri" href="/give-manage">פתיחת קמפיין חדש</a>':'')+(H.reqOn?'<a class="hb'+(H.canOpen?'':' pri')+'" href="#rq">'+(H.canOpen?'בקשה / קבלת פרטים':'בקשה לפתיחת קמפיין')+'</a>':'')+'<a class="hb" href="/give-manage">כניסה לניהול</a></div></div></header>'
      +'<main class="wrap hm">';
     if(H.note)h+='<div class="closed">'+esc(H.note)+'</div>';
+    if(H.days&&H.days.length)h+='<section aria-labelledby="hd"><h2 id="hd">ימי נתינה</h2><div class="hgrid">'+H.days.map(function(x){return '<a class="hcard" href="/give?day='+esc(x.id)+'"><div class="hbody"><b>'+esc(x.title)+'</b>'+(x.sub?'<small>'+esc(x.sub)+'</small>':'')+'<span class="hb pri" style="align-self:flex-start;margin-top:6px">לדף יום הנתינה</span></div></a>'}).join('')+'</div></section>';
     if(H.list&&H.list.length)h+='<section aria-labelledby="hl"><h2 id="hl">קמפיינים פעילים</h2><div class="hgrid">'+H.list.map(function(x){var p=pct(x.total,x.goal);return '<a class="hcard" href="/give/'+esc(x.slug)+'">'+(x.banner?'<div class="him" style="background-image:url(\''+esc(x.banner)+'\')"></div>':'')+'<div class="hbody">'+(x.logo?'<img class="hlogo" src="'+esc(x.logo)+'" alt="">':'')+'<b>'+esc(x.title)+'</b><div class="bar"><i style="width:'+p+'%"></i></div><small>'+nis(x.total)+(x.goal?' מתוך '+nis(x.goal)+' ('+p+'%)':'')+'</small></div></a>'}).join('')+'</div></section>';
     h+='<section aria-labelledby="hf"><h2 id="hf">מה כלול</h2><div class="hgrid f">'+F.map(function(f){return '<div class="hfeat"><b>'+f[0]+'</b><span>'+f[1]+'</span></div>'}).join('')+'</div></section>';
     if(H.infoText)h+='<section><h2>פרטים</h2><div class="hinfo">'+esc(H.infoText)+'</div></section>';
@@ -224,6 +225,25 @@ function home(){
       post(o).then(function(r){if(r._st===200){f.innerHTML='<div class="done"><h3>הבקשה התקבלה, תודה!</h3><p>נחזור אליכם בהקדם.</p></div>'}else{m.className='rmsg bad';m.textContent=r.message||'לא נשלח, נסו שוב'}}).catch(function(){m.className='rmsg bad';m.textContent='שגיאת רשת, נסו שוב'})}
   })}
 
+/* ===== יום נתינה: דף משותף לכמה קמפיינים ===== */
+function dayPage(){
+  var DAYID=(Q.get('day')||'').toLowerCase().replace(/[^a-z0-9-]/g,''),V=null,tm=null;
+  function fmt(ms){var s=Math.max(0,Math.floor(ms/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),x=s%60,z=function(n){return (n<10?'0':'')+n};return (d?d+' ימים ':'')+z(h)+':'+z(m)+':'+z(x)}
+  function clock(){var el=$('dclock');if(!el||!V)return;var d=V.day,now=Date.now()+(V.skew||0),st=d.start?Date.parse(d.start):0,en=d.end?Date.parse(d.end):0;
+    el.textContent=en&&now>en?'יום הנתינה הסתיים. תודה לכל התורמים!':st&&now<st?'מתחיל בעוד '+fmt(st-now):en?'נותר עוד '+fmt(en-now):''}
+  function draw(){var d=V.day,T=V.totals,p=pct(T.raised,T.goal);
+    var h='<header class="hero center"><div class="in"><h1>'+esc(d.title)+'</h1>'+(d.sub?'<div class="sub">'+esc(d.sub)+'</div>':'')+'<div id="dclock" style="font-size:clamp(20px,3vw,32px);font-weight:800;direction:rtl"></div></div></header><main class="wrap hm">'
+     +(d.note?'<div class="closed" style="background:#fff7e6;color:#5a4300">'+esc(d.note)+'</div>':'')
+     +'<section aria-label="סכום מצטבר"><div class="hcard" style="padding:18px;text-align:center"><div style="font-size:clamp(34px,6vw,60px);font-weight:900">'+nis(T.raised)+'</div><div>'+T.count+' תרומות ב-'+T.campaigns+' ארגונים'+'</div>'
+     +(T.goal?'<div class="bar" style="margin:10px 0"><i style="width:'+p+'%"></i></div><small>יעד משותף '+nis(T.goal)+' ('+p+'%)</small>':'')
+     +(d.match&&T.bonus?'<div style="margin-top:10px;font-weight:700">עם ההכפלה של התורמים המכפילים: עוד '+nis(T.bonus)+(d.match.text?'<br><small style="font-weight:400">'+esc(d.match.text)+'</small>':'')+'</div>':(d.match&&d.match.text?'<div style="margin-top:10px"><small>'+esc(d.match.text)+'</small></div>':''))+'</div></section>'
+     +'<section aria-labelledby="dl"><h2 id="dl">לוח תוצאות</h2>'+(V.list.length?'<div class="hgrid">'+V.list.map(function(x,i){var q=pct(x.raised,x.goal);return '<a class="hcard" href="'+esc(x.url)+'"><div class="hbody"><div style="display:flex;gap:10px;align-items:center"><b style="font-size:22px;min-width:28px">'+(i+1)+'</b>'+(x.logo?'<img class="hlogo" src="'+esc(x.logo)+'" alt="">':'')+'<b>'+esc(x.title)+'</b></div><div class="bar"><i style="width:'+q+'%"></i></div><small>'+nis(x.raised)+' · '+x.count+' תרומות'+(x.goal?' (יעד הקמפיין '+nis(x.goal)+')':'')+'</small><span class="hb pri" style="align-self:flex-start;margin-top:6px">לתרומה לארגון</span></div></a>'}).join('')+'</div>':'<p>עדיין לא הצטרפו ארגונים.</p>')+'</section></main>';
+    app.innerHTML=h;document.title=d.title+' · MyLuach';clock()}
+  function load(){return get({a:'day',id:DAYID}).then(function(j){
+    if(j._st!==200){app.innerHTML='<div class="full"><h1>יום הנתינה לא נמצא</h1><p>ייתכן שהכתובת שגויה, או שהוא עוד לא פתוח.</p></div>';return}
+    j.skew=j.time&&j.time.now?Date.parse(j.time.now)-Date.now():0;V=j;draw()})}
+  load();setInterval(clock,1000);setInterval(function(){if(!document.hidden)load()},15000)}
+if(!SLUG&&Q.get('day')){dayPage();return}
 if(!SLUG){home();return}
 
 function load(){var q={a:'camp',s:SLUG};if(R)q.r=R;if(TM)q.t=TM;if(PV)q.pv=1;return get(q).then(function(j){
