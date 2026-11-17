@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>מכירה סינית · MyLuach</title>
-<meta name="description" content="מכירה סינית: בוחרים מוצרים, קובעים כמה כרטיסים, ומשלמים באתר או בטלפון.">
-<meta name="robots" content="noindex">
+<meta name="description" content="מכירה סינית לארגונים: מוצרים, כרטיסים וחבילות, תשלום באתר ובטלפון, מגייסים והגרלה מסודרת. בקשה לפתיחת מכירה.">
+<link rel="canonical" href="https://www.myluach.org/auction">
+<meta name="robots" content="index,follow">
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
 <style>
@@ -185,6 +186,7 @@ function home(){
       post(o).then(function(r){if(r._st===200){f.innerHTML='<div class="rdone" role="status"><h3>הבקשה התקבלה, תודה!</h3><p>נחזור אליכם בהקדם.</p></div>'}else{m.className='rmsg bad';m.textContent=r.message||'לא נשלח, נסו שוב'}}).catch(function(){m.className='rmsg bad';m.textContent='שגיאת רשת, נסו שוב'})}
   }).catch(function(){closed('לא הצלחנו לטעון')})}
 if(!SLUG){home();return}
+(function(){var r=document.querySelector('meta[name=robots]');if(r)r.content='noindex';var c=document.querySelector('link[rel=canonical]');if(c)c.remove()})();
 if(Q.get('rep'))return repView();
 if(Q.get('view')==='progress')return progView();
 if(Q.get('view')==='terms')return termsView();

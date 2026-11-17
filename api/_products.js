@@ -12,7 +12,7 @@ const LIST = [
   { k: 'timer', path: '/timer', name: 'שעון ספירה לאחור', show: true, index: true },
   { k: 'brachot', path: '/brachot/', name: 'ברכות והזמנות מעוצבות', show: true, index: true },
   { k: 'invite', path: '/invite', name: 'הזמנות דיגיטליות', show: true, index: true },
-  { k: 'auction', path: '/auction-manage', name: 'מכירה סינית', show: true, index: false },
+  { k: 'auction', path: '/auction', name: 'מכירה סינית', show: true, index: true },
   { k: 'give', path: '/give', name: 'התרמה מקוונת', show: true, index: true },
   { k: 'pdf', path: '/pdf', name: 'עריכת PDF', show: false, index: false },
   { k: 'gallery', path: '/gallery.html', name: 'גלריית עיצובים', show: false, index: true }
