@@ -110,10 +110,13 @@ async function cms(K, digest, when, tsaUrl) {
 function clean(s) {
   s = s && typeof s === 'object' ? s : {}; const t = s.tsa && typeof s.tsa === 'object' ? s.tsa : {};
   let url = String(t.url === undefined ? 'https://freetsa.org/tsr' : t.url).trim(); if (!/^https?:\/\/[^\s]+$/i.test(url)) url = '';
-  return { on: !!s.on, need: s.need === 'any' ? 'any' : 'login', cap: Math.max(1, Math.min(1000, Math.round(+s.cap || 20))), tsa: { on: t.on === undefined ? true : !!t.on, url: url.slice(0, 300) } };
+  /* כתובת תעודת שרת הזמן (להורדה ולייבוא באדובי). ברירת מחדל: FreeTSA, כשהשרת הוא של FreeTSA */
+  let cert = t.cert === undefined ? (/^https:\/\/(www\.)?freetsa\.org\//i.test(url) ? 'https://freetsa.org/files/cacert.pem' : '') : String(t.cert).trim();
+  if (!/^https:\/\/[^\s]+$/i.test(cert)) cert = '';
+  return { on: !!s.on, need: s.need === 'any' ? 'any' : 'login', cap: Math.max(1, Math.min(1000, Math.round(+s.cap || 20))), tsa: { on: t.on === undefined ? true : !!t.on, url: url.slice(0, 300), cert: cert.slice(0, 300) } };
 }
 async function cfg() { return clean(await loadSetting('sign').catch(() => ({}))); }
-async function pub() { const S = await cfg(), K = S.on ? await loadKey().catch(() => null) : null; return { on: !!(S.on && K), tsa: !!(S.tsa.on && S.tsa.url) }; }
+async function pub() { const S = await cfg(), K = S.on ? await loadKey().catch(() => null) : null; return { on: !!(S.on && K), tsa: !!(S.tsa.on && S.tsa.url), tsaCert: !!(S.tsa.on && S.tsa.cert) }; }
 const newId = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = rnd(12); return Array.from(r, x => A[x % A.length]).join(''); };
 const dayKey = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
 const rec = r => ({ id: r.id, at: r.at, name: r.name || '', org: r.org || '', ts: !!r.ts, fp: r.fp || '', pages: r.pages || 0, rv: !!r.rv });
@@ -133,6 +136,20 @@ module.exports = async (req, res) => {
       }
       const K = await loadKey().catch(() => null);
       return json(res, 200, { found, fp: K ? K.fp : '' });
+    }
+    /* תעודת שרת חותמות הזמן, להורדה (מומרת ל-DER כדי שאדובי יוכל לייבא אותה). נטענת מהכתובת שהוגדרה בניהול בלבד */
+    if (a === 'tsacert') {
+      const S = await cfg(); if (!S.tsa.cert) return json(res, 404, { error: 'none' });
+      const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 8000);
+      try {
+        const r = await fetch(S.tsa.cert, { signal: ctl.signal, redirect: 'follow' }); if (!r.ok) throw new Error('http ' + r.status);
+        const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 20000) throw new Error('size');
+        const txt = buf.toString('latin1'), m = /-----BEGIN CERTIFICATE-----([A-Za-z0-9+/=\s]+)-----END CERTIFICATE-----/.exec(txt);
+        const der = m ? Buffer.from(m[1].replace(/\s+/g, ''), 'base64') : (buf[0] === 0x30 ? buf : null); if (!der || !der.length) throw new Error('format');
+        res.setHeader('Content-Type', 'application/x-x509-ca-cert'); res.setHeader('Content-Disposition', 'attachment; filename="TSA-certificate.cer"'); res.statusCode = 200;
+        return res.end(der);
+      } catch (e) { return json(res, 502, { error: 'tsacert', message: 'לא הצלחנו להביא את תעודת שרת הזמן מהכתובת שהוגדרה.' }); }
+      finally { clearTimeout(tm) }
     }
     if (a === 'cert') {
       const K = await loadKey().catch(() => null); if (!K) return json(res, 404, { error: 'none' });
