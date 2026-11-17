@@ -75,6 +75,7 @@ module.exports = async (req, res) => {
   /* אתר התרמה (קמפיינים, נציגים, קבוצות) */
   if (cp === '_products') { res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300'); return require('./_lib').json(res, 200, { list: (await require('./_products').cfg()).map(x => ({ k: x.k, show: x.show, index: x.index })) }); }
   if (cp === '_pdfpay') return require('./_pdfpay')(req, res);
+  if (cp === '_sign') return require('./_pdfsign')(req, res);
   if (cp === '_give') return require('./_give')(req, res);
   if (cp === '_giveivr') return require('./_give_ivr')(req, res);
   if (cp === '_ivr') return require('./_timer').ivr(req, res);

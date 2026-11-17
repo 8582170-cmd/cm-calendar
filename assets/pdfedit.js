@@ -733,7 +733,7 @@ function stInit(){
 /* שדה חתימה ריק בעמוד האחרון (AcroForm), עם החותמת כרקע. את החתימה עצמה מוסיפים באדובי עם תעודה דיגיטלית */
 async function addSigField(L, out, o){
   var page = out.getPages()[out.getPageCount() - 1], sz = page.getSize(), w = 220, h = 73, m = 36;
-  var x = o.pos === 'left' ? m : o.pos === 'center' ? (sz.width - w) / 2 : sz.width - w - m, y = m;
+  var x = o.pos === 'left' ? m : o.pos === 'center' ? (sz.width - w) / 2 : sz.width - w - m, y = m + (o.lift || 0);
   try { var c = document.createElement('canvas'); await stDraw(c, Object.assign({}, stGet(), { date: false })); var png = await out.embedPng(await toBytes(c, 'image/png')); page.drawImage(png, { x: x, y: y, width: w, height: h }) } catch (e) { if (window.console) console.error(e) }
   var N = L.PDFName, ctx = out.context;
   var widget = ctx.obj({ Type: 'Annot', Subtype: 'Widget', FT: 'Sig', T: L.PDFString.of('MyLuachSignature1'), Rect: [x, y, x + w, y + h], F: 4, P: page.ref });
@@ -742,6 +742,50 @@ async function addSigField(L, out, o){
   if (!form) { form = ctx.obj({ Fields: [] }); out.catalog.set(N.of('AcroForm'), form) }
   var fields = form.lookupMaybe(N.of('Fields'), L.PDFArray); if (!fields) { fields = ctx.obj([]); form.set(N.of('Fields'), fields) }
   fields.push(ref);
+}
+
+/* ---------- חתימה מוצפנת של האתר, עם חותמת זמן ---------- */
+var SIGAPI = '/api/pricing?c=_sign';
+function sgPost(t, b){ return fetch(SIGAPI, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(b) }).then(function(r){ return r.json().catch(function(){ return {} }).then(function(j){ j._st = r.status; return j }) }) }
+function findBytes(buf, str, from){
+  var n = str.length, c0 = str.charCodeAt(0);
+  for (var i = from || 0, e = buf.length - n; i <= e; i++) { if (buf[i] !== c0) continue; var k = 1; while (k < n && buf[i + k] === str.charCodeAt(k)) k++; if (k === n) return i }
+  return -1;
+}
+/* מוסיף לעמוד האחרון שדה חתימה חתום-בהמתנה (V) עם חותמת גלויה, ומחזיר את המזהה. את ה-hash מחשבים אחרי השמירה */
+async function addSiteSig(L, out, id, sigBytes, pos){
+  var pages = out.getPages(), page = pages[pages.length - 1], sz = page.getSize(), w = 220, h = 73, m = 36;
+  var x = pos === 'left' ? m : pos === 'center' ? (sz.width - w) / 2 : sz.width - w - m, y = m, st = stGet();
+  var c = document.createElement('canvas'); await stDraw(c, { logo: st.logo, name: st.name, title: st.title, line: st.line || 'נחתם דיגיטלית', date: true });
+  var png = await out.embedPng(await toBytes(c, 'image/png')); page.drawImage(png, { x: x, y: y, width: w, height: h });
+  try { var f = await out.embedFont(L.StandardFonts.Helvetica); page.drawText('Digitally signed via MyLuach  |  ID ' + id + '  |  myluach.org/verify', { x: x, y: y - 9, size: 6.5, font: f, color: L.rgb(.25, .25, .25) }) } catch (e) {}
+  var ctx = out.context, N = L.PDFName;
+  var br = ctx.obj([L.PDFNumber.of(0), L.PDFNumber.of(9999999999), L.PDFNumber.of(9999999999), L.PDFNumber.of(9999999999)]);
+  var sig = ctx.obj({ Type: 'Sig', Filter: 'Adobe.PPKLite', SubFilter: 'adbe.pkcs7.detached', ByteRange: br, Contents: L.PDFHexString.of(new Array(sigBytes * 2 + 1).join('0')), M: L.PDFString.fromDate(new Date()), Name: L.PDFHexString.fromText(st.name || 'MyLuach'), Reason: L.PDFString.of('Signed via MyLuach. ID: ' + id), Location: L.PDFString.of('myluach.org/verify') });
+  var sref = ctx.register(sig);
+  var widget = ctx.obj({ Type: 'Annot', Subtype: 'Widget', FT: 'Sig', T: L.PDFString.of('MyLuachSiteSignature'), V: sref, Rect: [x, y, x + w, y + h], F: 132, P: page.ref });
+  var ref = ctx.register(widget); page.node.addAnnot(ref);
+  var form = out.catalog.lookupMaybe(N.of('AcroForm'), L.PDFDict);
+  if (!form) { form = ctx.obj({ Fields: [] }); out.catalog.set(N.of('AcroForm'), form) }
+  var fields = form.lookupMaybe(N.of('Fields'), L.PDFArray); if (!fields) { fields = ctx.obj([]); form.set(N.of('Fields'), fields) }
+  fields.push(ref); form.set(N.of('SigFlags'), L.PDFNumber.of(3));
+}
+/* אחרי השמירה: מחשב את ה-SHA-256 של הקובץ בלי שדה החתימה, מבקש מהשרת חתימה ומחזיר את הקובץ החתום */
+async function siteSign(bytes, t, id, sigBytes, pages){
+  var zeros = '<' + new Array(sigBytes * 2 + 1).join('0') + '>', cs = findBytes(bytes, zeros);
+  if (cs < 0) throw new Error('placeholder');
+  var ce = cs + zeros.length, brk = findBytes(bytes, '/ByteRange'); if (brk < 0) throw new Error('byterange');
+  var b0 = bytes.indexOf(91, brk), b1 = bytes.indexOf(93, brk), old = b1 - b0 + 1;
+  var rng = '[0 ' + cs + ' ' + ce + ' ' + (bytes.length - ce) + ']'; if (rng.length > old) throw new Error('byterange size');
+  while (rng.length < old) rng = rng.slice(0, -1) + ' ]';
+  for (var i = 0; i < old; i++) bytes[b0 + i] = rng.charCodeAt(i);
+  var all = new Uint8Array(cs + bytes.length - ce); all.set(bytes.subarray(0, cs), 0); all.set(bytes.subarray(ce), cs);
+  var dg = Array.prototype.map.call(new Uint8Array(await crypto.subtle.digest('SHA-256', all)), function(x){ return ('0' + x.toString(16)).slice(-2) }).join('');
+  var st = stGet(), r = await sgPost(t, { a: 'sign', id: id, digest: dg, name: st.name || '', org: st.title || '', pages: pages });
+  if (!r.ok) throw new Error(r.message || 'sign');
+  var hx = r.sig; if (hx.length > sigBytes * 2) throw new Error('size');
+  for (var j = 0; j < hx.length; j++) bytes[cs + 1 + j] = hx.charCodeAt(j);
+  return { bytes: bytes, ts: !!r.ts };
 }
 /* ---------- סימן מים והגבלות (העריכה החינמית) ---------- */
 function wmarkCanvas(c, text){
@@ -933,7 +977,12 @@ async function exportPdf(opt){
     if (opt.watermark) { try { await wmarkPdf(L, out, pg, opt.watermark, cache) } catch (e) { if (window.console) console.error(e) } }
     await new Promise(function(r){ setTimeout(r, 0) });
   }
-  if (opt.sigField) { try { await addSigField(L, out, opt.sigField) } catch (e) { if (window.console) console.error(e) } }
+  if (opt.sigField) { try { await addSigField(L, out, Object.assign({}, opt.sigField, { lift: opt.csig ? 100 : 0 })) } catch (e) { if (window.console) console.error(e) } }
+  if (opt.csig) {
+    await addSiteSig(L, out, opt.csig.id, opt.csig.sigBytes, opt.csig.pos);
+    var raw = await out.save({ useObjectStreams: false }), res = await siteSign(raw, opt.csig.t, opt.csig.id, opt.csig.sigBytes, S.order.length);
+    window.__mlSigTs = res.ts; return res.bytes;
+  }
   return await out.save();
 }
 async function openDl(){
@@ -942,7 +991,8 @@ async function openDl(){
   busy('');
   var enc = S.docs.some(function(d){ return d.enc }), note = $('dlNote');
   note.hidden = !enc; note.textContent = enc ? 'הקובץ המקורי מוגן, ולכן העמודים שלו יישמרו כתמונה באיכות שנבחרה ב"מחיקה סופית".' : '';
-  $('dlName').value = S.name + '-ערוך'; $('dlDlg').showModal();
+  $('dlName').value = S.name + '-ערוך'; if ($('dlCSig')) { if (!window.__mlSigPub) fetch('/api/pricing?c=_sign&a=pub').then(function(r){ return r.json() }).then(function(j){ window.__mlSigPub = j || {}; $('dlCSigW').hidden = !j.on }).catch(function(){}); else $('dlCSigW').hidden = !window.__mlSigPub.on }
+  $('dlDlg').showModal();
 }
 async function doDl(){
   var mode = document.querySelector('input[name=dlMode]:checked').value;
@@ -950,10 +1000,16 @@ async function doDl(){
   var base = ($('dlName').value.trim() || 'document').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\.(pdf|zip|png|jpe?g)$/i, '');
   $('dlDlg').close();
   if (window.__mlGate) {
-    var uf = usedFeats(mode); if (opt.sigField && uf.feats.indexOf('sign') < 0) uf.feats.push('sign'); var g = await window.__mlGate.check(uf.feats, uf.pages, String(S.hi) + ':' + S.order.length + ':' + mode);
+    var uf = usedFeats(mode); if (opt.sigField && uf.feats.indexOf('sign') < 0) uf.feats.push('sign'); if (mode !== 'img' && $('dlCSig') && $('dlCSig').checked) uf.feats.push('csign'); var g = await window.__mlGate.check(uf.feats, uf.pages, String(S.hi) + ':' + S.order.length + ':' + mode);
     if (!g.ok) { if (g.msg) hint(g.msg); return }
     if (g.mode === 'watermark') opt.watermark = g.mark || 'MyLuach · myluach.org';
     if (g.note) setTimeout(function(){ hint(g.note) }, 50);
+  }
+  if (mode !== 'img' && $('dlCSig') && $('dlCSig').checked) {
+    var tk = window.__mlGate ? await window.__mlGate.token() : ''; if (!tk) { hint('כדי לחתום בחתימה מוצפנת צריך להיכנס.'); return }
+    var pr = await sgPost(tk, { a: 'prepare' });
+    if (!pr.ok) { hint(pr.message || 'לא הצלחנו להתחיל חתימה. נסו שוב.'); return }
+    opt.csig = { id: pr.id, sigBytes: pr.sigBytes, t: tk, pos: $('dlSigPos').value };
   }
   busy('מכין את הקובץ…');
   try {
@@ -965,7 +1021,7 @@ async function doDl(){
     } else {
       var bytes = await exportPdf(opt), name = base + '.pdf';
       saveBlob(new Blob([bytes], { type: 'application/pdf' }), name);
-      S.dirty = false; window.__mlPdfLast = bytes; hint('הקובץ ירד למחשב: ' + name);
+      S.dirty = false; window.__mlPdfLast = bytes; hint('הקובץ ירד למחשב: ' + name + (opt.csig ? (window.__mlSigTs ? '. נחתם בחתימה מוצפנת, עם חותמת זמן.' : '. נחתם בחתימה מוצפנת, אבל חותמת הזמן לא הצטרפה (שרת חותמות הזמן לא ענה).') : ''));
     }
   } catch (e) { if (window.console) console.error(e); hint('משהו השתבש בהכנת הקובץ. נסו שוב, ואם זה חוזר בחרו באיכות נמוכה יותר.') }
   busy('');

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>אימות מסמך חתום · MyLuach</title>
+<meta name="description" content="בדיקה אם מסמך PDF נחתם דרך MyLuach ולא שונה מאז. הקובץ לא עולה לשרת.">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap">
+<script>window.__mlShabbat=true</script>
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--acc:#1f5c63;--ok:#0b6b3a;--bad:#b00020;--warn:#8a5a00}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 Heebo,Arial,sans-serif}
+main{max-width:760px;margin:0 auto;padding:22px 14px 60px}h1{font-size:30px;margin:6px 0 4px}.sub{color:var(--mute);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;margin:0 0 6px}input[type=text]{width:100%;min-height:48px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font:inherit;direction:ltr;text-align:left}
+.btn{font:inherit;font-weight:800;min-height:48px;padding:8px 20px;border-radius:12px;border:2px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;margin-top:10px}.btn.s{background:#fff;color:var(--acc)}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--mute);cursor:pointer}.drop.on{border-color:var(--acc);background:#eef5f5}
+.res{border-radius:14px;padding:16px;border:2px solid var(--line);margin-top:6px}.res.ok{border-color:var(--ok);background:#eef8f2}.res.warn{border-color:var(--warn);background:#fff7e6}.res.bad{border-color:var(--bad);background:#fdeff1}
+.res h2{margin:0 0 6px;font-size:22px}.res dl{margin:10px 0 0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}.res dt{color:var(--mute)}.res dd{margin:0;font-weight:700;word-break:break-word}
+.note{font-size:15px;color:var(--mute)}code{direction:ltr;unicode-bidi:embed;background:#eef0ef;border-radius:6px;padding:1px 6px;word-break:break-all}
+details summary{cursor:pointer;font-weight:700}a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+  <a href="/" style="font-size:14px;color:var(--mute);text-decoration:none">MyLuach</a>
+  <h1>אימות מסמך חתום</h1>
+  <p class="sub">בודקים אם מסמך PDF נחתם דרך MyLuach, ואם התוכן שנחתם לא שונה מאז. הקובץ נשאר אצלכם, ואל השרת נשלחת רק טביעה (hash) שלו.</p>
+
+  <div class="card">
+    <label for="fid">מזהה המסמך (מופיע בתחתית החותמת)</label>
+    <input type="text" id="fid" maxlength="20" placeholder="ABCD2345EFGH" autocomplete="off">
+    <button class="btn" type="button" id="byId">בדיקה לפי מזהה</button>
+  </div>
+
+  <div class="card">
+    <label>או העלאת הקובץ לבדיקה</label>
+    <div class="drop" id="drop" tabindex="0" role="button">גררו לכאן קובץ PDF או לחצו לבחירה</div>
+    <input type="file" id="fl" accept="application/pdf,.pdf" hidden>
+  </div>
+
+  <div id="out" aria-live="polite"></div>
+
+  <div class="card note">
+    <b>מה הבדיקה אומרת ומה לא.</b>
+    <ul style="margin:6px 0 0;padding-inline-start:20px">
+      <li>היא מראה שהמסמך נחתם דרך MyLuach בזמן שמופיע כאן, ושהתוכן שנחתם זהה למה שבקובץ שלכם.</li>
+      <li>שם הארגון והתפקיד הוזנו על ידי מי שחתם, ו-MyLuach לא מאמתת אותם.</li>
+      <li>זו חתימה בתעודה של האתר, ולא תעודה של רשות מוכרת. היא לא מחליפה חתימה מאושרת לפי חוק חתימה אלקטרונית.</li>
+    </ul>
+  </div>
+
+  <div class="card note">
+    <details>
+      <summary>איך לראות וי ירוק באדובי</summary>
+      <p>אדובי מציג אזהרה כי התעודה של האתר אינה ברשימת הרשויות המוכרות שלו. אפשר להגדיר אותה כמהימנה, פעם אחת:</p>
+      <ol style="margin:0;padding-inline-start:20px">
+        <li><a href="/api/pricing?c=_sign&a=cert">הורידו את התעודה</a> (קובץ cer).</li>
+        <li>ב-Acrobat: ערוך ← העדפות ← חתימות ← זהויות ותעודות מהימנות ← עוד ← ייבוא.</li>
+        <li>סמנו "תעודה מהימנה" לחתימות ולאימות מסמכים.</li>
+      </ol>
+      <p>טביעת האצבע (SHA-256) של התעודה, להשוואה: <code id="fp">...</code></p>
+    </details>
+  </div>
+</main>
+<script>
+(function(){
+var $ = function(i){ return document.getElementById(i) }, API = '/api/pricing?c=_sign';
+function post(b){ b.a = 'check'; return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function(r){ return r.json() }) }
+function when(iso){ try { return new Date(iso).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'long', timeStyle: 'short' }) } catch (e) { return iso } }
+function row(dl, k, v){ if (!v) return; var a = document.createElement('dt'), b = document.createElement('dd'); a.textContent = k; b.textContent = v; dl.appendChild(a); dl.appendChild(b) }
+function show(kind, title, text, r, extra){
+  var o = $('out'); o.textContent = ''; var d = document.createElement('div'); d.className = 'res ' + kind;
+  var h = document.createElement('h2'); h.textContent = title; d.appendChild(h);
+  var p = document.createElement('div'); p.textContent = text; d.appendChild(p);
+  if (extra) { var q = document.createElement('p'); q.className = 'note'; q.textContent = extra; d.appendChild(q) }
+  if (r) { var dl = document.createElement('dl'); row(dl, 'מזהה', r.id); row(dl, 'נחתם בתאריך', when(r.at)); row(dl, 'שם החותם (הוזן על ידו)', r.name); row(dl, 'ארגון או תפקיד (הוזן על ידו)', r.org); row(dl, 'חותמת זמן חיצונית', r.ts ? 'כן (RFC 3161)' : 'לא נוספה'); row(dl, 'עמודים', r.pages ? String(r.pages) : ''); d.appendChild(dl) }
+  o.appendChild(d); d.scrollIntoView({ block: 'nearest' });
+}
+function hex(b){ return Array.prototype.map.call(new Uint8Array(b), function(x){ return ('0' + x.toString(16)).slice(-2) }).join('') }
+function latin(u8){ var s = '', C = 32768; for (var i = 0; i < u8.length; i += C) s += String.fromCharCode.apply(null, u8.subarray(i, i + C)); return s }
+
+function byId(id){
+  id = String(id || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (!id) { show('bad', 'חסר מזהה', 'נא להקליד את המזהה שמופיע בחותמת.'); return }
+  post({ id: id }).then(function(j){
+    if (j.found && j.found.length) show('ok', 'נמצא מסמך חתום', 'המזהה קיים אצל MyLuach. כדי לוודא שהקובץ שבידכם הוא אותו מסמך, העלו אותו כאן לבדיקה.', j.found[0]);
+    else show('bad', 'המזהה לא נמצא', 'לא נמצא מסמך חתום עם המזהה הזה. בדקו שהמזהה הוקלד נכון.');
+  }).catch(function(){ show('bad', 'תקלה זמנית', 'לא הצלחנו לבדוק. נסו שוב.') });
+}
+async function byFile(f){
+  if (!f) return; show('warn', 'בודקים…', f.name);
+  try {
+    var u8 = new Uint8Array(await f.arrayBuffer()), txt = latin(u8), hs = [], ranges = [], m, re = /\/ByteRange\s*\[\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*\]/g;
+    while ((m = re.exec(txt)) && ranges.length < 8) {
+      var a = +m[1], b = +m[2], c = +m[3], d = +m[4]; if (a !== 0 || b > u8.length || c + d > u8.length) continue;
+      var all = new Uint8Array(b + d); all.set(u8.subarray(0, b), 0); all.set(u8.subarray(c, c + d), b);
+      hs.push(hex(await crypto.subtle.digest('SHA-256', all))); ranges.push({ end: c + d });
+    }
+    var idm = /Signed via MyLuach\. ID: ([A-Z0-9]{12})/.exec(txt), j = hs.length ? await post({ h: hs }) : { found: [] };
+    if (j.found && j.found.length) {
+      var r = j.found[0], more = ranges.some(function(x){ return x.end < u8.length });
+      show('ok', 'המסמך נחתם דרך MyLuach ולא שונה', 'התוכן שנחתם זהה למה שבקובץ הזה.', r, more ? 'שימו לב: אחרי החתימה של MyLuach נוספו לקובץ שינויים או חתימות נוספות (למשל חתימה של הארגון באדובי). התוכן שנחתם על ידי MyLuach לא שונה.' : '');
+    } else if (idm) {
+      var q = await post({ id: idm[1] });
+      if (q.found && q.found.length) show('bad', 'המסמך שונה אחרי החתימה', 'בקובץ יש חתימה של MyLuach, אבל התוכן שבו אינו זהה למה שנחתם. ייתכן שהקובץ נערך או הועתק בצורה שמשנה אותו.', q.found[0]);
+      else show('bad', 'לא נמצא רישום', 'המזהה שבקובץ (' + idm[1] + ') לא רשום אצל MyLuach.');
+    } else show('bad', 'לא נמצאה חתימה של MyLuach', 'בקובץ הזה אין חתימה דיגיטלית שנרשמה אצל MyLuach.');
+  } catch (e) { show('bad', 'לא הצלחנו לקרוא את הקובץ', 'ודאו שזה קובץ PDF תקין ונסו שוב.') }
+}
+$('byId').onclick = function(){ byId($('fid').value) };
+$('fid').onkeydown = function(e){ if (e.key === 'Enter') byId(this.value) };
+var dr = $('drop'), fl = $('fl');
+dr.onclick = function(){ fl.click() }; dr.onkeydown = function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fl.click() } };
+fl.onchange = function(){ byFile(fl.files[0]); fl.value = '' };
+dr.ondragover = function(e){ e.preventDefault(); dr.classList.add('on') }; dr.ondragleave = function(){ dr.classList.remove('on') };
+dr.ondrop = function(e){ e.preventDefault(); dr.classList.remove('on'); byFile(e.dataTransfer.files[0]) };
+var m = /^\/verify\/([A-Za-z0-9]+)/.exec(location.pathname); if (m) { $('fid').value = m[1].toUpperCase(); byId(m[1]) }
+post({}).then(function(j){ if (j && j.fp) $('fp').textContent = j.fp.replace(/(..)(?=.)/g, '$1:') }).catch(function(){});
+})();
+</script>
+</body>
+</html>

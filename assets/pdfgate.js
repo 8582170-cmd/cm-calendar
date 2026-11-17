@@ -122,5 +122,10 @@ pub().then(function(info){
   if (!info || !info.on) return;
   Array.prototype.forEach.call(document.querySelectorAll('details'), function(d){ var q = d.querySelector('summary'); if (q && /זה בחינם/.test(q.textContent)) { var p = d.querySelector('p'); if (p) p.textContent = 'העריכה עצמה בחינם. לכל מייל יש הורדה אחת בלי תשלום (כניסה עם מייל או Google). אחריה אפשר להוריד עם סימן מים, או לרכוש הורדה בודדת, חבילה או מנוי. יכולות מסוימות כלולות רק בתשלום.' } });
 }).catch(function(){});
-window.__mlGate = { check: check, early: early };
+async function token(){
+  var t = await tok(); if (t) return t;
+  var ok = await openLogin('כדי לחתום על הקובץ בחתימה מוצפנת צריך להיכנס עם מייל או Google.'); if (!ok) return '';
+  return tok();
+}
+window.__mlGate = { check: check, early: early, token: token };
 })();

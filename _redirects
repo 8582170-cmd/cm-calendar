@@ -5,4 +5,5 @@
 /auction/* /auction 200
 /auction-manage /auction-admin 200
 /give/* /give 200
+/verify/* /verify 200
 /give-manage /give-admin 200

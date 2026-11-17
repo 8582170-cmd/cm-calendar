@@ -108,6 +108,8 @@
   { "source": "/auction-manage", "destination": "/auction-admin.html" },
   { "source": "/give-manage", "destination": "/give-admin.html" },
   { "source": "/products", "destination": "/products.html" },
+  { "source": "/verify", "destination": "/verify.html" },
+  { "source": "/verify/:id", "destination": "/verify.html" },
   { "source": "/give", "destination": "/give.html" },
   { "source": "/give/:slug", "destination": "/give.html" },
     {

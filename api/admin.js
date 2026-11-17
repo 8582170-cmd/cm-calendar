@@ -79,7 +79,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(mailalert|dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|pdfget|prodget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
+const ALOG_RO = /^(mailalert|dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|pdfget|signget|prodget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -132,6 +132,18 @@ async function main(req, res) {
       const PP = require('./_pdfpay');
       if (b.action === 'pdfset') await require('./_lib').saveSetting('pdf', PP.clean(b.pdf || {}));
       return json(res, 200, { pdf: await PP.cfg(), feats: Object.entries(PP.FEATS) });
+    }
+    /* חתימה דיגיטלית מוצפנת ועמוד אימות (api/_pdfsign.js) */
+    if (req.method === 'POST' && (b.action === 'signget' || b.action === 'signset' || b.action === 'signgen')) {
+      const SG = require('./_pdfsign'), L = require('./_lib');
+      if (b.action === 'signset') await L.saveSetting('sign', SG.clean(b.sign || {}));
+      if (b.action === 'signgen') {
+        if ((process.env.MYLUACH_SIGN_KEY && process.env.MYLUACH_SIGN_CERT)) return json(res, 200, { error: 'env', message: 'התעודה מוגדרת במשתני הסביבה של השרת, ולא ניתן ליצור אותה מכאן.' });
+        const ex = await SG.loadKey(); if (ex && !b.replace) return json(res, 200, { error: 'exists', message: 'כבר יש תעודה. ליצירה מחדש (החתימות הקודמות ימשיכו להיבדק, אבל אדובי יראה תעודה אחרת) צריך לאשר החלפה.' });
+        const k = await SG.makeKey(String(b.name || '').slice(0, 60) || undefined); await L.saveSetting('signkey', k); SG.reset();
+      }
+      const K = await SG.loadKey().catch(() => null);
+      return json(res, 200, { sign: await SG.cfg(), has: !!K, fp: K ? K.fp : '', env: !!(process.env.MYLUACH_SIGN_KEY && process.env.MYLUACH_SIGN_CERT) });
     }
     /* המוצרים באתר: מה מוצג בדף "עוד מוצרים" ומה נכלל באינדוקס של גוגל (api/_products.js) */
     if (req.method === 'POST' && (b.action === 'prodget' || b.action === 'prodset')) {
