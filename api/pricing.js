@@ -118,6 +118,28 @@ module.exports = async (req, res) => {
       paymentdetails: 'בדיקת חיבור MyLuach', maxpayments: '1', livesystem: '1', commissionreduction: '', createinvoiceandreceipt: '1', createinvoice: '0', createreceipt: '0', refername: 'UPAY', lang: 'HE', currency: 'NIS' });
     res.statusCode = 302; res.setHeader('Location', 'https://app.upay.co.il/API6/clientsecure/redirectpage.php?' + q); res.setHeader('Cache-Control', 'no-store'); return res.end();
   }
+  /* UPAY: בדיקה דרך ה-API עם המפתח (כמו שספקים כמו EasyCard עובדים): יצירת דף תשלום של ₪1. התשובה נשמרת ביומן ומוצגת */
+  if (cp === '_upaytest2') {
+    const { env, loadSetting, saveSetting } = require('./_lib'), em = env('UPAY_EMAIL'), key = env('UPAY_KEY');
+    if (!em || !key) return json(res, 400, { error: 'חסר UPAY_EMAIL או UPAY_KEY בהגדרות השרת' });
+    const site = 'https://myluach.org', H = { refername: 'UPAY', livesystem: 1, language: 'HE' };
+    const msgs = [
+      { header: H, request: { mainaction: 'CONNECTION', minoraction: 'LOGIN', encoding: 'json', numbertemplate: 1, parameters: { email: em, key } } },
+      { header: H, request: { mainaction: 'CASHIER', minoraction: 'REDIRECTDEPOSITCREDITCARDTRANSFER', encoding: 'json', numbertemplate: 1, parameters: {
+        transfers: [{ email: em, amount: '1', numberpayments: '1', currency: 'NIS', commissionreduction: '1', acceptedtransaction: '1', comment: 'בדיקת חיבור MyLuach (API)',
+          ipnurl: site + '/api/pricing?c=_upayipn&t=api', returnurl: site + '/pay-return.html?upay=api', createinvoiceandreceipt: '1' }],
+        key, cardreader: '0', creditcardcompanytype: 'ISR', creditcardtype: 'MA' } } }];
+    let txt = '', st = 0;
+    try { const r = await fetch('https://app.upay.co.il/API6/clientsecure/json.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ msgs: JSON.stringify(msgs) }), signal: AbortSignal.timeout(25000) }); st = r.status; txt = await r.text(); }
+    catch (e) { txt = 'ERR ' + e.message; }
+    const safe = txt.split(key).join('[KEY]').split(em).join('[EMAIL]').replace(/("sessionid"\s*:\s*")[^"]+/gi, '$1[SID]');
+    try { const log = await loadSetting('upaylog'), L = Array.isArray(log.items) ? log.items : []; L.unshift({ at: new Date().toISOString(), method: 'API-TEST', status: st, raw: safe.slice(0, 6000) }); await saveSetting('upaylog', { items: L.slice(0, 40) }); } catch (e) {}
+    const urls = (txt.match(/https?:\\?\/\\?\/[^"'\s<>]+/g) || []).map(u => u.replace(/\\\//g, '/')).filter(u => /upay/i.test(u) && !/myluach/.test(u));
+    res.statusCode = 200; res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.setHeader('Cache-Control', 'no-store');
+    return res.end('<!doctype html><meta charset="utf-8"><body dir="rtl" style="font:16px Arial;padding:20px"><h2>בדיקת UPAY דרך המפתח</h2>' +
+      (urls.length ? '<p><a style="font-size:20px" href="' + urls[0].replace(/"/g, '&quot;') + '">➜ מעבר לדף התשלום של ₪1</a></p>' : '<p>לא התקבל קישור לדף תשלום. התשובה נשמרה ואני אבדוק אותה.</p>') +
+      '<details><summary>תשובת UPAY</summary><pre dir="ltr" style="white-space:pre-wrap;font-size:12px">' + safe.replace(/</g, '&lt;').slice(0, 6000) + '</pre></details></body>');
+  }
   /* UPAY: הודעת שרת על תשלום (קישור לעדכון שרת / IPN). בשלב הבדיקה רק נרשם, כדי לראות מה הם שולחים */
   if (cp === '_upayipn') {
     try {
