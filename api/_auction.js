@@ -25,7 +25,10 @@ async function all(path) {
   return out;
 }
 /* הגדרות האגף (בעל האתר): open = כל משתמש יכול לפתוח מכירה, sitePay / kehilot = ספקי סליקה נוספים */
-async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, cancel: s.cancel === true, note: String(s.note || '') }; }
+async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, cancel: s.cancel === true, note: String(s.note || ''), giveAllow: s.giveAllow === 'none' ? 'none' : 'all', fee: FEE.feeOf(s.fee) }; }
+const FEE = require('./_fee');
+/* האם המכירה יכולה להפעיל במקביל התרמה לארגון: לפי מה שבעל האתר קבע למכירה הזאת, אחרת לפי ברירת המחדל */
+const giveOk = (s, S) => { const g = ((s.cfg || {}).admin || {}).give; return g === 'yes' ? true : g === 'no' ? false : S.giveAllow !== 'none'; };
 const admins = () => [env('OWNER_EMAIL'), ...env('AUCTION_ADMINS').split(',')].map(s => s.trim().toLowerCase()).filter(Boolean);
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 
@@ -183,6 +186,12 @@ async function kesherPaid(s, id, num) {
   return { status: 200, ok: true, ...m };
 }
 
+/* ההתרמה המקבילה, כפי שהיא מוצגת בדף המכירה */
+async function giveBox(s, S) {
+  const g = (s.cfg || {}).give; if (!g || !g.on || !g.slug || !giveOk(s, S)) return null;
+  try { const x = await require('./_give').summary(g.slug); return x && x.status !== 'draft' ? { mode: g.mode === 'button' ? 'button' : 'progress', ...x } : null; } catch (e) { return null; }
+}
+
 /* ===== ניהול ===== */
 /* מי מנהל את המכירה: מי שפתח אותה, המיילים שבעל האתר / המנהל הוסיף (cfg.managers), ובעלי האתר */
 const managersOf = s => (Array.isArray((s.cfg || {}).managers) ? s.cfg.managers : []).map(mailN).filter(Boolean);
@@ -205,7 +214,7 @@ function mgrView(s, S) {
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
-    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null };
+    ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null, giveOk: giveOk(s, S), give: (s.cfg || {}).give || null, fee: FEE.eff(s.cfg, S.fee), admin: (s.cfg || {}).admin || {} };
 }
 /* שם תיקייה בימות: אותיות באנגלית וספרות בלבד (קו תחתון או מקף גורמים לתיקייה לא להיפתח בניהול של ימות). אפשר נתיב עם / */
 const holdFolder = x => String(x || '').replace(/[^A-Za-z0-9\/]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '').slice(0, 60) || 'HoldApi';
@@ -228,6 +237,7 @@ function cleanCfg(old, b) {
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
     if (b.pay.mosad != null) p.mosad = String(b.pay.mosad).replace(/\D/g, '').slice(0, 10); if (b.pay.apiValid != null) p.apiValid = clean(b.pay.apiValid, 60); if (b.pay.groupe != null) p.groupe = clean(b.pay.groupe, 60); c.pay = p; }
+  if (b.give && typeof b.give === 'object' && c.give) c.give = { ...c.give, on: !!b.give.on, mode: b.give.mode === 'button' ? 'button' : 'progress', prog: !!b.give.prog };
   if (b.mailName != null) c.mailName = clean(b.mailName, 60);
   if (Array.isArray(b.notify)) c.notify = [...new Set(b.notify.map(mailN).filter(Boolean))].slice(0, 4);
   if (b.pay && b.pay.kesher && typeof b.pay.kesher === 'object') { const k = { ...((c.pay || {}).kesher || {}) }, K = b.pay.kesher;
@@ -364,7 +374,7 @@ module.exports = async (req, res) => {
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
       return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on },
-        open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
+        give: await giveBox(s, S), open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
     if (a === 'checkout') {
@@ -440,7 +450,8 @@ module.exports = async (req, res) => {
       return json(res, 200, { title: c.title, closeAt: c.closeAt, openAt: c.openAt, drawTime: c.drawTime, drawAt: c.drawAt, cd: c.cd, status: s.status, goal: c.progress.amount ? c.goal : 0, amount: c.progress.amount ? R.totals.amount : null, tickets: R.totals.tickets, buyers: R.totals.buyers,
         reps: c.progress.reps ? top(R.reps, 'amount').map(r => ({ name: r.name || '', amount: c.progress.amount ? r.amount : null, grp: r.grp || '' })) : [],
         groups: c.progress.groups ? top(R.groups.filter(g => g.grp !== 'ללא קבוצה'), 'amount').map(g => ({ grp: g.grp, amount: c.progress.amount ? g.amount : null })) : [],
-        products: c.progress.products ? R.products.slice().sort((x, y) => y.tickets - x.tickets).slice(0, 10).map(p => ({ num: p.num, name: p.name, tickets: p.tickets })) : [] });
+        products: c.progress.products ? R.products.slice().sort((x, y) => y.tickets - x.tickets).slice(0, 10).map(p => ({ num: p.num, name: p.name, tickets: p.tickets })) : [],
+        give: (s.cfg.give || {}).prog ? await giveBox(s, await site()) : null });
     }
     if (a === 'repLogin') {
       if (req.method !== 'POST') return json(res, 405, {});
@@ -483,7 +494,7 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
-      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: !b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000) }); }
+      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: !b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000), ...(b.set.giveAllow != null ? { giveAllow: b.set.giveAllow === 'none' ? 'none' : 'all' } : {}), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }); }
       if (b.reqDone != null) { const R0 = await loadSetting('auctionreq').catch(() => []); const RL = Array.isArray(R0) ? R0 : []; const x = RL.find(r => r.id === b.reqDone); if (x) { x.done = x.done || 'נסגר'; await saveSetting('auctionreq', RL); } }
       const RQ = await loadSetting('auctionreq').catch(() => []);
       const R = await db('auction_order?txn=not.is.null&select=callback&order=paid_at.desc.nullslast&limit=300').catch(() => []);
@@ -497,7 +508,8 @@ module.exports = async (req, res) => {
       const how = o => { const x = String(o.txn || ''), cb = o.callback || {}; if (/^K-/.test(x)) return 'kehilot'; if (/^YM-/.test(x)) return 'phonecc'; if (/^rep:/.test(x) || cb.byRep) return 'rep'; if (/^manual:/.test(x)) return cb.later ? 'later' : 'manual'; if (cb.via === 'site') return 'site'; return 'nedarim'; };
       const by = {}; SL.forEach(s => { by[s.id] = { slug: s.slug, name: s.name, status: s.status, open: isOpen(s), owner: s.email || '', managers: managersOf(s), pay: ((s.cfg || {}).pay || {}).prov || 'nedarim', orders: 0, amount: 0, pending: 0, pendingAmount: 0, tickets: 0, m: {} }; });
       OL.forEach(o => { const x = by[o.sale_id]; if (!x) return; if (o.status === 'paid') { x.orders++; x.amount += +o.amount; const k = how(o); x.m[k] = r2((x.m[k] || 0) + +o.amount); } else if (o.status === 'pending') { x.pending++; x.pendingAmount += +o.amount; } });
-      const out = Object.values(by).map(x => ({ ...x, amount: r2(x.amount), pendingAmount: r2(x.pendingAmount) }));
+      const S0 = await site(), cfgById = new Map(SL.map(s => [s.id, s.cfg]));
+      const out = Object.entries(by).map(([id, x]) => ({ ...x, amount: r2(x.amount), pendingAmount: r2(x.pendingAmount), fee: FEE.calc(FEE.eff(cfgById.get(+id), S0.fee), x.amount) }));
       const tot = out.reduce((t, x) => { t.amount += x.amount; t.orders += x.orders; Object.keys(x.m).forEach(k => { t.m[k] = r2((t.m[k] || 0) + x.m[k]); }); return t; }, { amount: 0, orders: 0, m: {} });
       return json(res, 200, { sales: out, total: { ...tot, amount: r2(tot.amount), sales: out.length, open: out.filter(x => x.open).length } });
     }
@@ -520,7 +532,34 @@ module.exports = async (req, res) => {
       return json(res, 200, { slug });
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
-    if (a === 'get') return json(res, 200, mgrView(s, await site()));
+    if (a === 'get') { const S = await site(), g = (s.cfg || {}).give; let gs = null; if (g && g.slug) gs = await require('./_give').summary(g.slug).catch(() => null); return json(res, 200, { ...mgrView(s, S), amAdmin: isAdmin(u), giveSum: gs }); }
+    /* בעל האתר: הגדרות למכירה מסוימת (התרמה במקביל, דמי שימוש) */
+    if (a === 'adminSet') {
+      if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
+      const x = b.set || {}, ad = { ...((s.cfg || {}).admin || {}) };
+      if (x.give != null) ad.give = ['yes', 'no'].includes(x.give) ? x.give : '';
+      if (x.fee !== undefined) ad.fee = x.fee && x.fee.type ? FEE.feeOf(x.fee) : null;
+      await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, admin: ad }, updated_at: new Date().toISOString() }) }); drop(s.slug);
+      return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true });
+    }
+    /* פתיחת קמפיין התרמה לארגון, מקושר למכירה: אותה כתובת (אם פנויה), אותה סליקה ואותם מנהלים */
+    if (a === 'giveCreate') {
+      const S = await site(); if (!giveOk(s, S)) return json(res, 403, { error: 'give', message: 'התרמה במקביל לא פתוחה למכירה הזאת' });
+      const c = cfgOf(s), mode = b.mode === 'button' ? 'button' : 'progress';
+      let slug = (s.cfg.give && s.cfg.give.slug) || '';
+      if (!slug) {
+        for (const cand of [s.slug, (s.slug + '-give').slice(0, 40), (s.slug.slice(0, 33) + '-' + crypto.randomBytes(3).toString('hex'))]) {
+          const ex = await db('give_campaign?slug=eq.' + enc(cand) + '&select=id&limit=1').catch(() => null);
+          if (ex && !ex.length) { slug = cand; break; }
+        }
+        if (!slug) return json(res, 500, { error: 'slug', message: 'לא הצלחנו ליצור את הקמפיין. נסו שוב' });
+        const P = (s.cfg || {}).pay || {}, mg = [...new Set([...managersOf(s), ...(u.email && u.id !== s.user_id ? [String(u.email).toLowerCase()] : [])])];
+        const gc = { title: c.title, logo: c.logo, banner: c.banner, color: c.color, auction: s.slug, pay: P, managers: mg, notify: notifyList(s), mailName: (s.cfg || {}).mailName || '', phoneLine: '' };
+        await db('give_campaign', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ slug, name: c.title, user_id: s.user_id || u.id, email: s.email || u.email || null, status: 'draft', cfg: gc }) });
+      }
+      await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, give: { on: true, mode, slug, prog: true } }, updated_at: new Date().toISOString() }) }); drop(s.slug);
+      return json(res, 200, { ...mgrView(await load(s.slug, true), S), amAdmin: isAdmin(u), giveSlug: slug });
+    }
     if (a === 'save') {
       const before = managersOf(s), up = { cfg: cleanCfg(s.cfg, b.cfg || {}), updated_at: new Date().toISOString() };
       if (Array.isArray((b.cfg || {}).managers)) { up.cfg.managers = [...new Set(b.cfg.managers.map(mailN).filter(Boolean))].slice(0, 5); const added = up.cfg.managers.filter(m => !before.includes(m) && m !== u.email); if (added.length) inviteManagers({ ...s, cfg: up.cfg }, added, u.email).catch(() => {}); } if (b.name != null && clean(b.name, 120)) up.name = clean(b.name, 120);

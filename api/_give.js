@@ -24,7 +24,8 @@ async function all(path) {
   const out = []; for (let off = 0; off < 200000; off += 1000) { const L = await db(path + (path.includes('?') ? '&' : '?') + 'limit=1000&offset=' + off); out.push(...(L || [])); if (!L || L.length < 1000) break; }
   return out;
 }
-async function site() { const s = await loadSetting('give').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, note: String(s.note || '') }; }
+const FEE = require('./_fee');
+async function site() { const s = await loadSetting('give').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, note: String(s.note || ''), fee: FEE.feeOf(s.fee) }; }
 const admins = () => [env('OWNER_EMAIL'), ...env('AUCTION_ADMINS').split(','), ...env('GIVE_ADMINS').split(',')].map(s => s.trim().toLowerCase()).filter(Boolean);
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 
@@ -251,7 +252,7 @@ function mgrView(s, S) {
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   if (c.ivr && c.ivr.cc) { const cc = { ...c.ivr.cc }; const hp = !!cc.password; delete cc.password; c.ivr = { ...c.ivr, cc: { ...cc, hasPassword: hp } }; }
   const iv = c.ivr || {};
-  return { ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG)), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug };
+  return { ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG)), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug, fee: FEE.eff(s.cfg, S.fee), admin: (s.cfg || {}).admin || {} };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
@@ -379,11 +380,17 @@ module.exports = async (req, res) => {
     }
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {});
-      if (b.set) { const o = await loadSetting('give').catch(() => ({})) || {}; const n = { ...o, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: b.set.kehilot === false, note: clean(b.set.note, 500) }; await saveSetting('give', n); }
+      if (b.set) { const o = await loadSetting('give').catch(() => ({})) || {}; const n = { ...o, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: b.set.kehilot === false, note: clean(b.set.note, 500), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }; await saveSetting('give', n); }
       return json(res, 200, await site());
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
-    if (a === 'get') return json(res, 200, mgrView(s, await site()));
+    if (a === 'get') return json(res, 200, { ...mgrView(s, await site()), amAdmin: isAdmin(u) });
+    if (a === 'adminSet') {
+      if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
+      const ad = { ...((s.cfg || {}).admin || {}) }, x = b.set || {}; if (x.fee !== undefined) ad.fee = x.fee && x.fee.type ? FEE.feeOf(x.fee) : null;
+      await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, admin: ad }, updated_at: new Date().toISOString() }) }); drop(s.slug);
+      return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true });
+    }
     if (a === 'save') {
       const nc = cleanCfg(s.cfg, b.cfg || {}), oldM = managersOf(s);
       await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: nc, ...(b.cfg && b.cfg.title ? { name: clean(b.cfg.title, 120) } : {}), updated_at: new Date().toISOString() }) }); drop(s.slug);
@@ -435,5 +442,8 @@ module.exports = async (req, res) => {
     return json(res, 400, { error: 'action' });
   } catch (e) { console.error('give', e); return json(res, 500, { error: 'server', message: 'שגיאה בשרת' }); }
 };
+/* תקציר לדף המכירה הסינית המקושרת */
+module.exports.summary = async slug => { const s = await load(slug); if (!s) return null; const c = cfgOf(s), st = await stats(s), t = await timing(s, c, st);
+  return { status: s.status, title: c.title, url: SITE() + '/give/' + s.slug, total: st.total, goal: c.goal, donors: c.f.donors ? st.donors : null, match: c.match.on ? c.match.ratio : 0, can: t.can, end: c.f.countdown ? t.end : '' }; };
 module.exports.nedPaid = nedPaid; module.exports.cfgOf = cfgOf; module.exports.timing = timing; module.exports.load = load; module.exports.stats = stats; module.exports.markPaid = markPaid;
 module.exports.notifyPhone = async (s, d) => { const { escH } = require('./_mail'), r = d.rep_id ? s.reps.find(x => x.id === d.rep_id) : null; await notify(s, 'תרומה בטלפון ממתינה לגבייה: ' + (+d.amount) + ' ₪', '<p>' + escH(d.method || 'תרומה בטלפון') + (r ? ' · נציג: ' + escH(r.name || r.code) : '') + (d.phone ? ' · טלפון: ' + escH(d.phone) : '') + '</p><p>אחרי הגבייה מסמנים "שולם" בלשונית התרומות.</p>'); };
