@@ -750,21 +750,68 @@ function stGet(){ try { return JSON.parse(localStorage.getItem(ST_KEY) || '{}') 
 function stSave(o){ try { localStorage.setItem(ST_KEY, JSON.stringify(o)) } catch (e) {} }
 function stToday(){ try { return new Date().toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }) } catch (e) { return '' } }
 function stImg(src){ return new Promise(function(ok){ var im = new Image(); im.onload = function(){ ok(im) }; im.onerror = function(){ ok(null) }; im.src = src }) }
-async function stDraw(cv, o){
-  var W = 900, H = 300, x = cv.getContext('2d'); cv.width = W; cv.height = H;
-  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.strokeStyle = '#1a3a8f'; x.lineWidth = 6; x.strokeRect(3, 3, W - 6, H - 6);
-  var lx = 24, tw = W - 48;
-  if (o.logo) { var im = await stImg(o.logo); if (im) { var s = Math.min(240 / im.width, 240 / im.height); x.drawImage(im, 30, (H - im.height * s) / 2, im.width * s, im.height * s); tw = W - 30 - 240 - 40; } }
-  var right = W - 30; x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic'; x.fillStyle = '#1a3a8f';
-  var F = 'Arial, "Noto Sans Hebrew", sans-serif', lines = [];
-  lines.push([(o.line || 'נחתם על ידי'), '600 34px ' + F, '#555']);
-  if (o.name) lines.push([o.name, '800 56px ' + F, '#111']);
-  if (o.title) lines.push([o.title, '500 36px ' + F, '#333']);
-  if (o.date) lines.push([stToday(), '500 32px ' + F, '#555']);
-  var tot = lines.length * 62, y = (H - tot) / 2 + 46;
-  lines.forEach(function(l){ x.font = l[1]; x.fillStyle = l[2]; while (x.measureText(l[0]).width > tw && /\d/.test(l[1])) { l[1] = l[1].replace(/(\d+)px/, function(m, n){ return (n - 2) + 'px' }); x.font = l[1] } x.fillText(l[0], right, y); y += 62 });
+/* ---------- מראה ומיקום החתימה (צורה, גודל, צבעים, עמוד ומקום בדף) ---------- */
+var SG_KEY = 'ml-pdf-sg', CM = 72 / 2.54;
+var SHAPES = { rect: 3, round: 3, square: 1, circle: 1, ellipse: 2, diamond: 1.5, hex: 1.15, tri: 1.15 };
+function sgGet(){ try { return JSON.parse(localStorage.getItem(SG_KEY) || '{}') || {} } catch (e) { return {} } }
+function sgSave(o){ try { localStorage.setItem(SG_KEY, JSON.stringify(Object.assign(sgGet(), o))) } catch (e) {} }
+function sgLook(){
+  var g = sgGet(), hexc = /^#[0-9a-f]{6}$/i;
+  return { shape: SHAPES[g.shape] ? g.shape : 'rect', wd: clamp(+g.wd || 220, 40, 520), ht: clamp(+g.ht || 73, 28, 520), bc: hexc.test(g.bc || '') ? g.bc : '#1a3a8f', tc: hexc.test(g.tc || '') ? g.tc : '' };
 }
-function stRead(){ var o = stGet(); return { logo: o.logo || '', name: $('stName').value.trim(), title: $('stTitle').value.trim(), line: $('stLine').value.trim(), date: $('stDate').checked } }
+function sgPlace(){ var g = sgGet(); return { pos: g.pos || 'right', cx: g.cx, cy: g.cy, pg: g.pg || 'last', pn: g.pn | 0 || 1 } }
+function sgPageIdx(n, P){ return P.pg === 'first' ? 0 : P.pg === 'n' ? clamp((P.pn | 0) - 1, 0, n - 1) : n - 1 }
+/* מיקום החתימה בדף: פינה שמאלית עליונה, ביחידות נקודה, מלמעלה למטה */
+function sgRect(pw, ph, K, P){
+  var w = K.wd, h = K.ht, m = 36, x, y;
+  if (P.pos === 'custom' && typeof P.cx === 'number' && typeof P.cy === 'number') { x = P.cx * pw - w / 2; y = P.cy * ph - h / 2 }
+  else {
+    var c = P.pos.replace(/^t/, '');
+    x = c === 'left' ? m : c === 'center' || c === 'mid' ? (pw - w) / 2 : pw - w - m;
+    y = P.pos === 'mid' ? (ph - h) / 2 : P.pos.charAt(0) === 't' ? m : ph - h - m;
+  }
+  return { x: clamp(x, 0, Math.max(0, pw - w)), y: clamp(y, 0, Math.max(0, ph - h)), w: w, h: h };
+}
+function stPath(x, shape, W, H, m){
+  x.beginPath();
+  if (shape === 'rect' || shape === 'square') x.rect(m, m, W - 2 * m, H - 2 * m);
+  else if (shape === 'round') { var r = Math.min(W, H) * 0.2; x.moveTo(m + r, m); x.arcTo(W - m, m, W - m, H - m, r); x.arcTo(W - m, H - m, m, H - m, r); x.arcTo(m, H - m, m, m, r); x.arcTo(m, m, W - m, m, r); x.closePath() }
+  else if (shape === 'circle' || shape === 'ellipse') x.ellipse(W / 2, H / 2, W / 2 - m, H / 2 - m, 0, 0, Math.PI * 2);
+  else { var pts = shape === 'diamond' ? [[W / 2, m], [W - m, H / 2], [W / 2, H - m], [m, H / 2]] : shape === 'hex' ? [[m, H / 2], [W * 0.25, m], [W * 0.75, m], [W - m, H / 2], [W * 0.75, H - m], [W * 0.25, H - m]] : [[W / 2, m], [W - m, H - m], [m, H - m]];
+    pts.forEach(function(q, i){ if (i) x.lineTo(q[0], q[1]); else x.moveTo(q[0], q[1]) }); x.closePath() }
+}
+/* אזור הטקסט שנכנס בתוך הצורה: [x, y, רוחב, גובה] ואם ליישר למרכז */
+function stArea(shape, W, H){
+  if (shape === 'rect' || shape === 'square') return { a: [24, 10, W - 48, H - 20], c: false };
+  if (shape === 'round') return { a: [W * 0.05, H * 0.07, W * 0.9, H * 0.86], c: false };
+  if (shape === 'circle' || shape === 'ellipse') return { a: [W * 0.15, H * 0.19, W * 0.7, H * 0.62], c: true };
+  if (shape === 'diamond') return { a: [W * 0.25, H * 0.25, W * 0.5, H * 0.5], c: true };
+  if (shape === 'hex') return { a: [W * 0.2, H * 0.12, W * 0.6, H * 0.76], c: true };
+  return { a: [W * 0.29, H * 0.5, W * 0.42, H * 0.44], c: true };
+}
+async function stDraw(cv, o){
+  var K = sgLook(), ratio = K.wd / K.ht, W, H, x = cv.getContext('2d');
+  if (ratio >= 1) { W = 900; H = Math.max(120, Math.round(900 / ratio)) } else { H = 900; W = Math.max(120, Math.round(900 * ratio)) }
+  cv.width = W; cv.height = H; x.clearRect(0, 0, W, H);
+  stPath(x, K.shape, W, H, 3); x.fillStyle = '#fff'; x.fill(); x.strokeStyle = K.bc; x.lineWidth = 6; x.lineJoin = 'round'; x.stroke();
+  var A = stArea(K.shape, W, H), ax = A.a[0], ay = A.a[1], aw = A.a[2], ah = A.a[3], tx = ax, ty = ay, tw = aw, th = ah;
+  if (o.logo) { var im = await stImg(o.logo); if (im) {
+    if (aw / ah >= 2) { var ls = Math.min(ah * 0.9, aw * 0.3), sc1 = Math.min(ls / im.width, ls / im.height); x.drawImage(im, ax + 6, ay + (ah - im.height * sc1) / 2, im.width * sc1, im.height * sc1); tx = ax + ls + 16; tw = aw - ls - 16 }
+    else { var lh = ah * (A.c ? 0.28 : 0.36), sc2 = Math.min(aw * 0.6 / im.width, lh / im.height); x.drawImage(im, ax + (aw - im.width * sc2) / 2, ay, im.width * sc2, im.height * sc2); ty = ay + lh + 8; th = ah - lh - 8 }
+  } }
+  x.direction = 'rtl'; x.textBaseline = 'alphabetic'; x.textAlign = A.c ? 'center' : 'right';
+  var F = 'Arial, "Noto Sans Hebrew", sans-serif', lines = [], g1 = K.tc || '#555';
+  lines.push([(o.line || 'נחתם על ידי'), 600, 34, K.tc || '#555']);
+  if (o.name) lines.push([o.name, 800, 56, K.tc || '#111']);
+  if (o.title) lines.push([o.title, 500, 36, K.tc || '#333']);
+  if (o.date) lines.push([stToday(), 500, 32, K.tc || '#555']);
+  var n = lines.length, sf = clamp(th / (n * 62), 0.25, ratio >= 2.5 ? 1 : 1.6), step = 62 * sf, y = ty + (th - n * step) / 2 + 46 * sf, px0 = A.c ? tx + tw / 2 : tx + tw - 6;
+  lines.forEach(function(l){
+    var sz = Math.round(l[2] * sf); x.font = l[1] + ' ' + sz + 'px ' + F; x.fillStyle = l[3];
+    while (x.measureText(l[0]).width > tw && sz > 8) { sz -= 2; x.font = l[1] + ' ' + sz + 'px ' + F }
+    x.fillText(l[0], px0, y); y += step;
+  });
+}
 function stPrev(){ stDraw($('stPrev'), stRead()) }
 function stOpen(){
   var o = stGet(); $('stName').value = o.name || ''; $('stTitle').value = o.title || ''; $('stLine').value = o.line || ''; $('stDate').checked = o.date !== false; stPrev(); $('stDlg').showModal();
@@ -787,10 +834,65 @@ function stInit(){
     c.toBlob(function(b){ placeImage(b, 230, true) }, 'image/png');
   };
 }
-/* שדה חתימה ריק בעמוד האחרון (AcroForm), עם החותמת כרקע. את החתימה עצמה מוסיפים באדובי עם תעודה דיגיטלית */
+/* ---------- ממשק מראה ומיקום החתימה בחלון ההורדה ---------- */
+var SGV = { img: null, key: '', rect: null, drag: null };
+function sgShow(){ var on = ($('dlSig') && $('dlSig').checked) || ($('dlCSig') && $('dlCSig').checked && !$('dlCSigW').hidden); $('dlLook').hidden = !on; if (on) sgRefresh() }
+function sgLoadUI(){
+  var K = sgLook(), P = sgPlace();
+  $('sgShape').value = K.shape; $('sgW').value = (K.wd / CM).toFixed(1); $('sgH').value = (K.ht / CM).toFixed(1); $('sgBc').value = K.bc; $('sgTc').value = K.tc || '#111111';
+  $('sgPg').value = P.pg; $('sgPn').value = P.pn; $('sgPn').hidden = P.pg !== 'n'; $('sgPn').max = String(Math.max(1, S.order.length));
+  $('dlSigPos').value = P.pos; sgShow();
+}
+async function sgStamp(){
+  var st = stGet(), key = JSON.stringify([sgGet(), st.name, st.title, st.line, st.date, (st.logo || '').length]);
+  if (SGV.key !== key || !SGV.img) { var c = document.createElement('canvas'); await stDraw(c, { logo: st.logo, name: st.name, title: st.title, line: st.line || 'נחתם דיגיטלית', date: true }); SGV.img = c; SGV.key = key }
+  return SGV.img;
+}
+async function sgRefresh(){
+  var cv = $('sgPrev'); if (!cv || $('dlLook').hidden || !S.order.length) return;
+  var P = sgPlace(), K = sgLook(), p = S.order[sgPageIdx(S.order.length, P)], pw = p.w, ph = p.h;
+  var img = await sgStamp(), CW = 520; cv.width = CW; cv.height = Math.max(40, Math.round(CW * ph / pw));
+  var x = cv.getContext('2d'), k = CW / pw; x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height);
+  try { if (p.canvas && p.canvas.width > 8) x.drawImage(p.canvas, 0, 0, cv.width, cv.height) } catch (e) {}
+  var R = sgRect(pw, ph, K, P); SGV.rect = R; SGV.pw = pw; SGV.ph = ph;
+  x.drawImage(img, R.x * k, R.y * k, R.w * k, R.h * k);
+  x.save(); x.setLineDash([6, 4]); x.strokeStyle = '#888'; x.lineWidth = 1; x.strokeRect(R.x * k + 0.5, R.y * k + 0.5, R.w * k, R.h * k); x.restore();
+}
+function sgInit(){
+  function look(){
+    var sh = $('sgShape').value, w = parseFloat($('sgW').value), h = parseFloat($('sgH').value);
+    if (!(w > 0)) w = sgLook().wd / CM; if (!(h > 0)) h = sgLook().ht / CM;
+    sgSave({ shape: sh, wd: clamp(w * CM, 40, 520), ht: clamp(h * CM, 28, 520), bc: $('sgBc').value }); sgRefresh();
+  }
+  $('sgShape').onchange = function(){
+    var w = parseFloat($('sgW').value) || 7.8, a = SHAPES[this.value]; $('sgH').value = (w / a).toFixed(1); look();
+  };
+  $('sgW').oninput = function(){ var sh = $('sgShape').value; if (sh === 'square' || sh === 'circle') $('sgH').value = this.value; look() };
+  $('sgH').oninput = function(){ var sh = $('sgShape').value; if (sh === 'square' || sh === 'circle') $('sgW').value = this.value; look() };
+  $('sgBc').oninput = look; $('sgTc').oninput = function(){ sgSave({ tc: this.value }); sgRefresh() };
+  $('sgPg').onchange = function(){ $('sgPn').hidden = this.value !== 'n'; sgSave({ pg: this.value }); sgRefresh() };
+  $('sgPn').oninput = function(){ var v = parseInt(this.value, 10); if (v >= 1) { sgSave({ pn: Math.min(v, S.order.length) }); sgRefresh() } };
+  $('dlSigPos').onchange = function(){ sgSave({ pos: this.value }); sgRefresh() };
+  $('dlSig').onchange = $('dlCSig').onchange = sgShow;
+  var cv = $('sgPrev');
+  function at(e){ var r = cv.getBoundingClientRect(), k = SGV.pw / r.width; return [(e.clientX - r.left) * k, (e.clientY - r.top) * k] }
+  cv.onpointerdown = function(e){
+    if (!SGV.rect) return; e.preventDefault(); var q = at(e), R = SGV.rect, inside = q[0] >= R.x && q[0] <= R.x + R.w && q[1] >= R.y && q[1] <= R.y + R.h;
+    SGV.drag = { dx: inside ? q[0] - (R.x + R.w / 2) : 0, dy: inside ? q[1] - (R.y + R.h / 2) : 0 }; try { cv.setPointerCapture(e.pointerId) } catch (x) {} cv.style.cursor = 'grabbing'; mv(e);
+  };
+  function mv(e){
+    if (!SGV.drag) return; var q = at(e), cx = (q[0] - SGV.drag.dx) / SGV.pw, cy = (q[1] - SGV.drag.dy) / SGV.ph;
+    sgSave({ pos: 'custom', cx: clamp(cx, 0, 1), cy: clamp(cy, 0, 1) }); $('dlSigPos').value = 'custom'; sgRefresh();
+  }
+  cv.onpointermove = mv;
+  cv.onpointerup = cv.onpointercancel = function(){ SGV.drag = null; cv.style.cursor = 'grab' };
+}
+/* שדה חתימה ריק (AcroForm), עם החותמת כרקע. את החתימה עצמה מוסיפים באדובי עם תעודה דיגיטלית */
 async function addSigField(L, out, o){
-  var page = out.getPages()[out.getPageCount() - 1], sz = page.getSize(), w = 220, h = 73, m = 36;
-  var x = o.pos === 'left' ? m : o.pos === 'center' ? (sz.width - w) / 2 : sz.width - w - m, y = m + (o.lift || 0);
+  var K = sgLook(), page = out.getPages()[sgPageIdx(out.getPageCount(), o.P)], sz = page.getSize(), R = sgRect(sz.width, sz.height, K, o.P), w = R.w, h = R.h, x = R.x, ty = R.y;
+  /* כששתי החתימות מסומנות, השדה לאדובי מונח מעל החתימה של האתר (ואם אין מקום, מתחתיה) */
+  if (o.stack) { var up = ty - h - 14; ty = up >= 0 ? up : Math.min(sz.height - h, ty + h + 14) }
+  var y = sz.height - ty - h;
   try { var c = document.createElement('canvas'); await stDraw(c, Object.assign({}, stGet(), { date: false })); var png = await out.embedPng(await toBytes(c, 'image/png')); page.drawImage(png, { x: x, y: y, width: w, height: h }) } catch (e) { if (window.console) console.error(e) }
   var N = L.PDFName, ctx = out.context;
   var widget = ctx.obj({ Type: 'Annot', Subtype: 'Widget', FT: 'Sig', T: L.PDFString.of('MyLuachSignature1'), Rect: [x, y, x + w, y + h], F: 4, P: page.ref });
@@ -810,12 +912,12 @@ function findBytes(buf, str, from){
   return -1;
 }
 /* מוסיף לעמוד האחרון שדה חתימה חתום-בהמתנה (V) עם חותמת גלויה, ומחזיר את המזהה. את ה-hash מחשבים אחרי השמירה */
-async function addSiteSig(L, out, id, sigBytes, pos){
-  var pages = out.getPages(), page = pages[pages.length - 1], sz = page.getSize(), w = 220, h = 73, m = 36;
-  var x = pos === 'left' ? m : pos === 'center' ? (sz.width - w) / 2 : sz.width - w - m, y = m, st = stGet();
+async function addSiteSig(L, out, id, sigBytes, P){
+  var pages = out.getPages(), K = sgLook(), page = pages[sgPageIdx(pages.length, P)], sz = page.getSize(), R = sgRect(sz.width, sz.height, K, P), w = R.w, h = R.h;
+  var x = R.x, y = sz.height - R.y - h, st = stGet();
   var c = document.createElement('canvas'); await stDraw(c, { logo: st.logo, name: st.name, title: st.title, line: st.line || 'נחתם דיגיטלית', date: true });
   var png = await out.embedPng(await toBytes(c, 'image/png')); page.drawImage(png, { x: x, y: y, width: w, height: h });
-  try { var f = await out.embedFont(L.StandardFonts.Helvetica); page.drawText('Digitally signed via MyLuach  |  ID ' + id + '  |  myluach.org/verify', { x: x, y: y - 9, size: 6.5, font: f, color: L.rgb(.25, .25, .25) }) } catch (e) {}
+  try { var f = await out.embedFont(L.StandardFonts.Helvetica); page.drawText('Digitally signed via MyLuach  |  ID ' + id + '  |  myluach.org/verify', { x: x, y: y >= 12 ? y - 9 : y + h + 3, size: 6.5, font: f, color: L.rgb(.25, .25, .25) }) } catch (e) {}
   var ctx = out.context, N = L.PDFName;
   var br = ctx.obj([L.PDFNumber.of(0), L.PDFNumber.of(9999999999), L.PDFNumber.of(9999999999), L.PDFNumber.of(9999999999)]);
   var sig = ctx.obj({ Type: 'Sig', Filter: 'Adobe.PPKLite', SubFilter: 'adbe.pkcs7.detached', ByteRange: br, Contents: L.PDFHexString.of(new Array(sigBytes * 2 + 1).join('0')), M: L.PDFString.fromDate(new Date()), Name: L.PDFHexString.fromText(st.name || 'MyLuach'), Reason: L.PDFString.of('Signed via MyLuach. ID: ' + id), Location: L.PDFString.of('myluach.org/verify') });
@@ -1034,9 +1136,9 @@ async function exportPdf(opt){
     if (opt.watermark) { try { await wmarkPdf(L, out, pg, opt.watermark, cache) } catch (e) { if (window.console) console.error(e) } }
     await new Promise(function(r){ setTimeout(r, 0) });
   }
-  if (opt.sigField) { try { await addSigField(L, out, Object.assign({}, opt.sigField, { lift: opt.csig ? 100 : 0 })) } catch (e) { if (window.console) console.error(e) } }
+  if (opt.sigField) { try { await addSigField(L, out, Object.assign({}, opt.sigField, { P: opt.P, stack: !!opt.csig })) } catch (e) { if (window.console) console.error(e) } }
   if (opt.csig) {
-    await addSiteSig(L, out, opt.csig.id, opt.csig.sigBytes, opt.csig.pos);
+    await addSiteSig(L, out, opt.csig.id, opt.csig.sigBytes, opt.P);
     var raw = await out.save({ useObjectStreams: false }), res = await siteSign(raw, opt.csig.t, opt.csig.id, opt.csig.sigBytes, S.order.length);
     window.__mlSigTs = res.ts; return res.bytes;
   }
@@ -1048,12 +1150,12 @@ async function openDl(){
   busy('');
   var enc = S.docs.some(function(d){ return d.enc }), note = $('dlNote');
   note.hidden = !enc; note.textContent = enc ? 'הקובץ המקורי מוגן, ולכן העמודים שלו יישמרו כתמונה באיכות שנבחרה ב"מחיקה סופית".' : '';
-  $('dlName').value = S.name + '-ערוך'; if ($('dlCSig')) { if (!window.__mlSigPub) fetch('/api/pricing?c=_sign&a=pub').then(function(r){ return r.json() }).then(function(j){ window.__mlSigPub = j || {}; $('dlCSigW').hidden = !j.on }).catch(function(){}); else $('dlCSigW').hidden = !window.__mlSigPub.on }
-  $('dlDlg').showModal();
+  $('dlName').value = S.name + '-ערוך'; if ($('dlCSig')) { if (!window.__mlSigPub) fetch('/api/pricing?c=_sign&a=pub').then(function(r){ return r.json() }).then(function(j){ window.__mlSigPub = j || {}; $('dlCSigW').hidden = !j.on; sgShow() }).catch(function(){}); else $('dlCSigW').hidden = !window.__mlSigPub.on }
+  sgLoadUI(); $('dlDlg').showModal();
 }
 async function doDl(){
   var mode = document.querySelector('input[name=dlMode]:checked').value;
-  var opt = { dpi: +$('dlQ').value || 600, mode: mode, flat: mode === 'flat', legacy: mode === 'legacy', flatDpi: +$('dlFlatQ').value || 300, imgFmt: $('dlImgFmt').value, imgDpi: +$('dlImgQ').value || 200, sigField: (mode !== 'img' && $('dlSig').checked) ? { pos: $('dlSigPos').value } : null };
+  var opt = { dpi: +$('dlQ').value || 600, mode: mode, flat: mode === 'flat', legacy: mode === 'legacy', flatDpi: +$('dlFlatQ').value || 300, imgFmt: $('dlImgFmt').value, imgDpi: +$('dlImgQ').value || 200, sigField: (mode !== 'img' && $('dlSig').checked) ? {} : null, P: sgPlace() };
   var base = ($('dlName').value.trim() || 'document').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\.(pdf|zip|png|jpe?g)$/i, '');
   $('dlDlg').close();
   if (window.__mlGate) {
@@ -1066,7 +1168,7 @@ async function doDl(){
     var tk = window.__mlGate ? await window.__mlGate.token() : ''; if (!tk) { hint('כדי לחתום בחתימה מוצפנת צריך להיכנס.'); return }
     var pr = await sgPost(tk, { a: 'prepare' });
     if (!pr.ok) { hint(pr.message || 'לא הצלחנו להתחיל חתימה. נסו שוב.'); return }
-    opt.csig = { id: pr.id, sigBytes: pr.sigBytes, t: tk, pos: $('dlSigPos').value };
+    opt.csig = { id: pr.id, sigBytes: pr.sigBytes, t: tk };
   }
   busy('מכין את הקובץ…');
   try {
@@ -1123,7 +1225,7 @@ function init(){
   $('bNew').onclick = function(){ if (!S.dirty || window.confirm('השינויים שלא הורדתם יימחקו. להמשיך?')) { S.dirty = false; location.reload() } };
   $('bSave').onclick = openDl; $('dlGo').onclick = doDl;
   Array.prototype.forEach.call(document.querySelectorAll('dialog [data-close]'), function(b){ b.onclick = function(){ b.closest('dialog').close() } });
-  sigInit(); stInit();
+  sigInit(); stInit(); sgInit();
   window.addEventListener('beforeunload', function(e){ if (S.dirty) { e.preventDefault(); e.returnValue = '' } });
   /* טעינה מוקדמת של הספריות, כדי שהפתיחה תהיה מיידית */
   setTimeout(function(){ loadPdfjs().catch(function(){}) }, 600);

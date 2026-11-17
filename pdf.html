@@ -249,8 +249,27 @@ footer a{color:var(--mute)}
     <select id="dlImgFmt" style="margin-top:6px"><option value="png">PNG (חד, קובץ גדול)</option><option value="jpg">JPG (קובץ קטן)</option></select>
     <select id="dlImgQ" style="margin-top:6px"><option value="1200">הכי גבוהה (1200)</option><option value="600">גבוהה (600)</option><option value="300">איכות הדפסה (300)</option><option value="200" selected>רגילה (200)</option><option value="150">קובץ קטן (150)</option></select></span></label>
   <label class="opt" id="dlCSigW" hidden><input type="checkbox" id="dlCSig"><span><b>חתימה דיגיטלית מוצפנת של MyLuach, עם חותמת זמן</b><small>החתימה נוצרת בשרת של MyLuach על טביעה (hash) של הקובץ, השרת לא רואה את המסמך. כל שינוי בקובץ אחרי החתימה מתגלה. לכל מסמך מזהה ייחודי, ואפשר לאמת אותו ב-<a href="/verify" target="_blank" rel="noopener">myluach.org/verify</a>. החתימה היא בתעודה של האתר ולא של רשות מוכרת, ולכן אדובי יציג אזהרה עד ש<a href="/api/pricing?c=_sign&a=cert">מייבאים את התעודה</a> כמהימנה. יש צורך להיכנס לחשבון. לא זמין בקובצי תמונה.</small></span></label>
-  <label class="opt"><input type="checkbox" id="dlSig"><span><b>להוסיף שדה חתימה דיגיטלית מוצפנת (לאדובי)</b><small>מוסיף לעמוד האחרון מקום חתימה עם הלוגו והשם מ"חותמת עם לוגו". אחרי ההורדה פותחים את הקובץ ב-Adobe Acrobat, לוחצים על השדה וחותמים עם תעודה דיגיטלית של הארגון (למשל של קומסיין). החתימה והאימות הם של התעודה שלכם, ולא של האתר. לא זמין בקובצי תמונה.</small>
-    <select id="dlSigPos" style="margin-top:6px"><option value="right">בפינה הימנית למטה</option><option value="left">בפינה השמאלית למטה</option><option value="center">באמצע למטה</option></select></span></label>
+  <label class="opt"><input type="checkbox" id="dlSig"><span><b>להוסיף שדה חתימה דיגיטלית מוצפנת (לאדובי)</b><small>מוסיף לעמוד שתבחרו מקום חתימה עם הלוגו והשם מ"חותמת עם לוגו". אחרי ההורדה פותחים את הקובץ ב-Adobe Acrobat, לוחצים על השדה וחותמים עם תעודה דיגיטלית של הארגון (למשל של קומסיין). החתימה והאימות הם של התעודה שלכם, ולא של האתר. לא זמין בקובצי תמונה.</small></span></label>
+  <fieldset id="dlLook" hidden style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0 0">
+    <legend style="font-weight:700;padding:0 6px">מראה ומיקום החתימה</legend>
+    <div class="row" style="gap:10px">
+      <label class="lbl">צורה
+        <select id="sgShape"><option value="rect">מלבן</option><option value="round">מלבן עם פינות מעוגלות</option><option value="square">ריבוע</option><option value="circle">עיגול</option><option value="ellipse">אליפסה</option><option value="diamond">מעוין</option><option value="hex">משושה</option><option value="tri">משולש</option></select></label>
+      <label class="lbl">רוחב (ס"מ)<input type="number" id="sgW" min="1.5" max="18" step="0.1" style="width:70px"></label>
+      <label class="lbl">גובה (ס"מ)<input type="number" id="sgH" min="1" max="18" step="0.1" style="width:70px"></label>
+      <label class="lbl">צבע המסגרת<input type="color" id="sgBc"></label>
+      <label class="lbl">צבע הטקסט<input type="color" id="sgTc"></label>
+    </div>
+    <div class="row" style="gap:10px;margin-top:8px">
+      <label class="lbl">עמוד
+        <select id="sgPg"><option value="last">האחרון</option><option value="first">הראשון</option><option value="n">מספר…</option></select></label>
+      <input type="number" id="sgPn" min="1" step="1" value="1" style="width:70px" hidden aria-label="מספר העמוד">
+      <label class="lbl">מיקום
+        <select id="dlSigPos"><option value="right">למטה בימין</option><option value="center">למטה באמצע</option><option value="left">למטה בשמאל</option><option value="tright">למעלה בימין</option><option value="tcenter">למעלה באמצע</option><option value="tleft">למעלה בשמאל</option><option value="mid">במרכז העמוד</option><option value="custom">מיקום חופשי (גרירה)</option></select></label>
+    </div>
+    <canvas id="sgPrev" style="width:260px;max-width:100%;border:1px solid var(--line);border-radius:8px;margin-top:10px;touch-action:none;cursor:grab;background:#fff"></canvas>
+    <small style="display:block;color:var(--mute);font-size:14px;line-height:1.45">גוררים את החתימה בתצוגה כדי למקם אותה בדיוק. בשדה לחתימה באדובי, הצורה היא של התמונה שמאחורי השדה, ובעת החתימה אדובי מציג את החתימה בתוך מלבן השדה. אם מסומנות שתי החתימות, השדה לאדובי מונח מעל החתימה של האתר.</small>
+  </fieldset>
   <p class="mute" id="dlNote" hidden style="font-size:14px;margin:10px 0 0"></p>
   <div class="acts"><button class="btn pri" type="button" id="dlGo">הורדה</button><button class="btn" type="button" data-close>ביטול</button></div>
 </dialog>
@@ -288,6 +307,6 @@ footer a{color:var(--mute)}
 <div class="busy" id="busy" hidden></div>
 <script src="/assets/config.js"></script>
 <script src="/assets/pdfgate.js?v=1" defer></script>
-<script src="/assets/pdfedit.js?v=7" defer></script>
+<script src="/assets/pdfedit.js?v=8" defer></script>
 </body>
 </html>
