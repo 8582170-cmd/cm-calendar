@@ -19,6 +19,7 @@ function clean(b, old) {
     links: (Array.isArray(a.links) ? a.links : []).map(x => ({ t: str(x && x.t, 60), u: url(x && x.u) })).filter(x => x.t && x.u).slice(0, 8) };
   if (b.faq && typeof b.faq === 'object') o.faq = { on: !!b.faq.on };
   if (b.terms && typeof b.terms === 'object') o.terms = { on: !!b.terms.on };
+  if (b.cross && typeof b.cross === 'object') o.cross = { on: !!b.cross.on };
   if (c && typeof c === 'object') o.contact = { on: !!c.on, intro: str(c.intro, 500) };
   if (l && typeof l === 'object') o.list = { on: !!l.on, intro: str(l.intro, 500), mode: l.mode === 'contact' ? 'contact' : 'popup' };
   return o;
@@ -34,6 +35,8 @@ function pub(o, x) {
   const fq = (Array.isArray(faq) ? faq : []).filter(x => x && x.q && x.a);
   if ((o.faq || {}).on && fq.length) r.faq = { items: fq.map(x => ({ q: x.q, a: x.a })) };
   if ((o.terms || {}).on && String(x.terms || '').trim()) r.terms = { text: String(x.terms) };
+  /* קישור לאגף המקביל (מכירה <-> התרמה), רק אם קיים ופעיל */
+  if ((o.cross || {}).on && x.cross && x.cross.url) r.cross = { url: String(x.cross.url), label: String(x.cross.label || '') };
   if ((o.contact || {}).on) r.contact = { intro: o.contact.intro || '' };
   if ((o.list || {}).on) r.list = { intro: o.list.intro || '', mode: listMode(o) };
   return Object.keys(r).length ? r : null;

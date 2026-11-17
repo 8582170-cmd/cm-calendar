@@ -198,7 +198,7 @@ buyView();
 
 /* ===== דפי הארגון: על הארגון, יצירת קשר, הצטרפות לרשימה ===== */
 function orgBind(o){MLOrg.bind(function(){return o},function(x){x.a='orgmsg';x.s=SLUG;return post(x)})}
-function orgNav(o,cur){var L=window.MLOrg?MLOrg.tabs(o):[];if(!L.length)return '';orgBind(o);return '<nav class="onav" aria-label="דפי הארגון"><a href="?s='+SLUG+'"'+(cur===''?' aria-current="page"':'')+'>המכירה</a>'+L.map(function(x){return x[2]==='pop'?'<button type="button" data-ogpop>'+x[1]+'</button>':'<a href="?s='+SLUG+'&view=org&p='+x[0]+'"'+(cur===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</nav>'}
+function orgNav(o,cur){var L=window.MLOrg?MLOrg.tabs(o):[];if(!L.length)return '';orgBind(o);return '<nav class="onav" aria-label="דפי הארגון"><a href="?s='+SLUG+'"'+(cur===''?' aria-current="page"':'')+'>המכירה</a>'+L.map(function(x){return x[2]==='pop'?'<button type="button" data-ogpop>'+x[1]+'</button>':x[2]==='link'?'<a href="'+esc(x[3])+'">'+esc(x[1])+'</a>':'<a href="?s='+SLUG+'&view=org&p='+x[0]+'"'+(cur===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</nav>'}
 function orgView(){
   get({a:'sale',s:SLUG,preview:Q.get('preview')||''}).then(function(j){
     if(j._st===404||!j.cfg){closed('המכירה לא נמצאה');return}

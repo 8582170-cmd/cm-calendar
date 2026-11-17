@@ -174,7 +174,7 @@ async function campView(s, b) {
   let goal = c.goal, stage = 0;
   if (c.f.bonus && c.bonus.length && goal && st.total >= goal) { const nx = c.bonus.find(x => +x.goal > st.total); stage = nx ? c.bonus.indexOf(nx) + 1 : c.bonus.length; goal = nx ? +nx.goal : +c.bonus[c.bonus.length - 1].goal; }
   return {
-    slug: s.slug, status: s.status, cfg: pubCfg(c), org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms }), time: t,
+    slug: s.slug, status: s.status, cfg: pubCfg(c), org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms, cross: c.auction && c.f.auction ? { url: SITE() + '/auction?s=' + c.auction, label: 'המכירה הסינית' } : null }), time: t,
     totals: { total: st.total, raised: st.raised, auction: c.f.auction ? st.auction : 0, matched: st.matched, donors: c.f.donors ? st.donors : null, goal, goal0: c.goal, stage, stageTitle: stage ? String((c.bonus[Math.min(stage, c.bonus.length) - 1] || {}).title || '') : '' },
     teams, reps, feed: c.f.feed ? feed.map(d => pubDon(d, c, s)) : [], feedTotal: c.f.feed ? (one ? feed.length : tm ? feed.length : vis.length) : 0,
     rep: one ? { id: one.id, code: one.code, name: one.name || '', img: one.img || '', story: one.story || '', goal: +one.goal || 0, team: one.team_id || null, amount: r2((st.rep[one.id] || {}).amount * X || 0), count: (st.rep[one.id] || {}).count || 0 } : null,

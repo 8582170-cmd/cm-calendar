@@ -16,7 +16,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function css() { if (!document.getElementById('og-css')) { var st = document.createElement('style'); st.id = 'og-css'; st.textContent = CSS; document.head.appendChild(st); } }
   /* דפים: על הארגון, צור קשר. ההצטרפות לרשימה היא או תיבת סימון בתוך "צור קשר" (mode=contact), או חלון קופץ (mode=popup, הערך השלישי 'pop') */
-  function tabs(o) { var r = []; if (!o) return r; ['about', 'faq', 'terms', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
+  function tabs(o) { var r = []; if (!o) return r; ['about', 'faq', 'terms', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.cross) r.push(['cross', o.cross.label, 'link', o.cross.url]); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
   function html(o, k) {
     css(); o = o || {}; var d = o[k]; if (!d) return '';
     if (k === 'about') {

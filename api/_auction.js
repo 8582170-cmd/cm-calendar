@@ -187,6 +187,10 @@ async function kesherPaid(s, id, num) {
 }
 
 /* ההתרמה המקבילה, כפי שהיא מוצגת בדף המכירה */
+async function crossLink(s, S) {
+  const g = (s.cfg || {}).give; if (!g || !g.slug || !giveOk(s, S) || !(((s.cfg || {}).org || {}).cross || {}).on) return null;
+  try { const x = await require('./_give').summary(g.slug); return x && x.status !== 'draft' ? { url: x.url, label: 'התרמה' } : null; } catch (e) { return null; }
+}
 async function giveBox(s, S) {
   const g = (s.cfg || {}).give; if (!g || !g.on || !g.slug || !giveOk(s, S)) return null;
   try { const x = await require('./_give').summary(g.slug); return x && x.status !== 'draft' ? { mode: g.mode === 'button' ? 'button' : 'progress', ...x } : null; } catch (e) { return null; }
@@ -377,7 +381,7 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s || s.status === 'draft' && !b.preview) return json(res, 404, { error: 'no sale' });
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
-      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on, org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms }) },
+      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on, org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms, cross: await crossLink(s, S) }) },
         give: await giveBox(s, S), open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
