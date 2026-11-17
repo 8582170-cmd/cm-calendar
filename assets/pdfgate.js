@@ -98,7 +98,7 @@ async function check(feats, pages, keyHint, again){
   var r = await api(t, { a: 'dl', key: SID + ':' + (keyHint || ''), feats: feats, pages: pages });
   if (r._st === 401) { try { localStorage.removeItem(KEY) } catch (e) {} return again ? { ok: false, msg: 'הכניסה פגה. נסו שוב.' } : check(feats, pages, keyHint, true) }
   if (r._st !== 200) return { ok: false, msg: r.message || 'לא הצלחנו לבדוק את הזכאות להורדה. נסו שוב.' };
-  if (r.ok) return { ok: true, mode: r.mode, mark: r.mark, note: noteOf(r) };
+  if (r.ok) { bal(r.left); return { ok: true, mode: r.mode, mark: r.mark, note: noteOf(r) }; }
   var why = r.locked && r.locked.length ? 'היכולות שבקובץ הזה כלולות רק בתשלום.' : 'העריכה החינמית שלכם נוצלה.';
   var paid = await openPay(info, why, r.locked);
   if (!paid) return { ok: false, msg: '' };
@@ -127,5 +127,18 @@ async function token(){
   var ok = await openLogin('כדי לחתום על הקובץ בחתימה מוצפנת צריך להיכנס עם מייל או Google.'); if (!ok) return '';
   return tok();
 }
+/* שורת יתרה בראש העורך: כמה הורדות נשארו (רק כשהמכירה פעילה והמשתמש מחובר) */
+function bal(l){
+  if (!l) return; var el = document.getElementById('mlBal');
+  if (!el) { var at = document.getElementById('intro'); if (!at || !at.parentNode) return; el = document.createElement('p'); el.id = 'mlBal'; el.setAttribute('role', 'status'); el.style.cssText = 'margin:0 0 12px;padding:8px 14px;border:1px solid #dde2df;border-radius:10px;background:#e4eeec;color:#172126;font-size:15px'; at.parentNode.insertBefore(el, at.nextSibling) }
+  var p = [], d = function(t){ return new Date(t).toLocaleDateString('he-IL') };
+  if (l.sub) p.push('מנוי ' + l.sub.name + ': ' + (l.sub.left == null ? 'הורדות ללא הגבלה' : 'נשארו ' + l.sub.left + ' הורדות החודש') + ', עד ' + d(l.sub.end));
+  if (l.pack > 0) p.push('בחבילה נשארו ' + l.pack + ' הורדות');
+  if (l.one > 0) p.push('הורדה בודדת שנרכשה: ' + l.one);
+  if (l.free > 0) p.push('העריכה החינמית: נשארו ' + l.free);
+  el.textContent = p.length ? 'היתרה שלך: ' + p.join(' · ') : 'אין כרגע הורדות ללא סימן מים. העריכה החינמית נוצלה, וההורדה הבאה תדרוש רכישה.';
+}
+pub().then(function(info){ if (!info || !info.on) return; return tok().then(function(t){ if (!t) return; return api(t, { a: 'me' }).then(function(r){ if (r && r._st === 200) bal(r.left) }) }) }).catch(function(){});
+
 window.__mlGate = { check: check, early: early, token: token };
 })();
