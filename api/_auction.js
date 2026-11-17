@@ -253,6 +253,9 @@ function cleanCfg(old, b) {
   if (b.ivr && typeof b.ivr === 'object') { const v = { ...(c.ivr || {}) }; if (!v.key) v.key = crypto.randomBytes(8).toString('hex');
     if (b.ivr.path != null) v.path = String(b.ivr.path).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (b.ivr.payPath != null) v.payPath = String(b.ivr.payPath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
     if (b.ivr.listChunk != null) v.listChunk = Math.max(3, Math.min(30, Math.floor(+b.ivr.listChunk) || 10));
+    if (b.ivr.browse != null) v.browse = ['list', 'auto', 'menu', 'none'].includes(b.ivr.browse) ? b.ivr.browse : 'list';
+    if (b.ivr.browseWait != null) v.browseWait = Math.max(1, Math.min(8, Math.round(+b.ivr.browseWait) || 2));
+    if (b.ivr.ext && typeof b.ivr.ext === 'object') { const e = {}; ['num', 'list', 'auto', 'menu'].forEach(k => { const x = String(b.ivr.ext[k] || '').replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (x) e[k] = x; }); v.ext = e; }
     if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') { const nm = String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60), o = v.hold || {}; v.hold = { on: !!b.ivr.hold.on, name: nm, folder: holdFolder(b.ivr.hold.folder != null ? b.ivr.hold.folder : o.folder) }; if (o.url) { v.hold.url = o.url; if (o.y) v.hold.y = true; } } if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
   return c;
 }
@@ -661,14 +664,19 @@ module.exports = async (req, res) => {
       const iv = (s.cfg || {}).ivr || {}, hd = iv.hold || {};
       if (!iv.token || !iv.path) return json(res, 400, { error: 'ivr', message: 'צריך להזין קודם את הטוקן ואת מספר השלוחה, ולשמור' });
       if (!iv.key) return json(res, 400, { error: 'key', message: 'חסר מפתח שלוחה, יש לשמור את הגדרות הטלפון' });
-      const lines = ['type=api', 'api_link=' + SITE() + '/api/pricing?c=_auctionivr', 'api_add_0=s=' + s.slug, 'api_add_1=k=' + iv.key];
-      if (hd.on) { lines.push('api_wait_answer_music_on_hold=yes', 'api_wait_answer_music_on_hold_continue_all_sends=yes'); if (hd.name) lines.push('api_wait_answer_music_on_hold_different=' + hd.name); }
-      const fd = new URLSearchParams({ token: iv.token, what: 'ivr2:/' + String(iv.path).replace(/^\/+|\/+$/g, '') + '/ext.ini', contents: lines.join('\n') });
-      try {
-        const r = await fetch('https://www.call2all.co.il/ym/api/UploadTextFile', { method: 'POST', body: fd, signal: AbortSignal.timeout(20000) }), t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
-        if (!j || (j.responseStatus && j.responseStatus !== 'OK')) return json(res, 502, { error: 'yemot', message: 'ימות המשיח החזירה שגיאה: ' + String((j && (j.message || j.responseStatus)) || t).slice(0, 140) });
-      } catch (e) { return json(res, 502, { error: 'yemot', message: 'לא הצלחנו להגיע לימות המשיח: ' + String(e.message).slice(0, 100) }); }
-      return json(res, 200, { ok: true, lines });
+      /* השלוחה הראשית, ושלוחה נוספת לכל סוג שהוגדר לו מספר (כניסה ישירה: mode=num / list / auto / menu). כולן מפנות לאותו קוד */
+      const mk = m => { const L = ['type=api', 'api_link=' + SITE() + '/api/pricing?c=_auctionivr', 'api_add_0=s=' + s.slug, 'api_add_1=k=' + iv.key]; if (m) L.push('api_add_2=mode=' + m);
+        if (hd.on) { L.push('api_wait_answer_music_on_hold=yes', 'api_wait_answer_music_on_hold_continue_all_sends=yes'); if (hd.name) L.push('api_wait_answer_music_on_hold_different=' + hd.name); } return L; };
+      const targets = [[iv.path, '']].concat(Object.entries(iv.ext || {}).map(([m, pth]) => [pth, m])), done = [];
+      for (const [pth, m] of targets) {
+        const lines = mk(m), fd = new URLSearchParams({ token: iv.token, what: 'ivr2:/' + String(pth).replace(/^\/+|\/+$/g, '') + '/ext.ini', contents: lines.join('\n') });
+        try {
+          const r = await fetch('https://www.call2all.co.il/ym/api/UploadTextFile', { method: 'POST', body: fd, signal: AbortSignal.timeout(20000) }), t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+          if (!j || (j.responseStatus && j.responseStatus !== 'OK')) return json(res, 502, { error: 'yemot', done, message: 'ימות המשיח החזירה שגיאה בשלוחה ' + pth + ': ' + String((j && (j.message || j.responseStatus)) || t).slice(0, 140) });
+        } catch (e) { return json(res, 502, { error: 'yemot', done, message: 'לא הצלחנו להגיע לימות המשיח (שלוחה ' + pth + '): ' + String(e.message).slice(0, 100) }); }
+        done.push(pth);
+      }
+      return json(res, 200, { ok: true, done, lines: mk('') });
     }
     /* מוזיקת המתנה לשרת: מועלית באתר, ומשם לתיקיית השלוחה בימות (שם הקובץ נרשם אוטומטית ב-ext.ini) */
     if (a === 'holdUrl' || a === 'holdSet') {
