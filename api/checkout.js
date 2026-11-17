@@ -116,6 +116,12 @@ module.exports = async (req, res) => {
       greet = await require('./_greetpay').prepare(b);
       if (greet.error) return json(res, 400, { error: 'greet', message: greet.error });
       amount = greet.amount; info = { amount, base: amount, off: 0, why: '' };
+    } else if (plan === 'ofee') {
+      /* דמי פתיחה למכירה סינית / קמפיין התרמה (api/_openfee.js): הסכום מהחלק הקבוע של דמי השימוש */
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'email', message: 'נא למלא כתובת מייל. לשם יישלח האישור.' });
+      sub = null; var ofee = await require('./_openfee').prepare(b);
+      if (ofee.error) return json(res, 400, { error: 'ofee', message: ofee.error });
+      amount = ofee.amount; plan = ofee.plan; info = { amount, base: amount, off: 0, why: '' }; b.ofeeTitle = ofee.title;
     } else if (plan === 'sub') {
       /* מנוי / חבילה (ברכות והזמנות, או תזכורות בלוח): תשלום מראש לתקופה. ההזמנה נשמרת עם plan = gsub:… / gpack:… / rsub:… */
       /* המנוי משויך לחשבון המחובר (user_id). המייל שמולא בתשלום נשמר בהזמנה (לקבלה ולמיילים) */
@@ -216,7 +222,7 @@ module.exports = async (req, res) => {
     if (greet) await require('./_greetpay').create(id, email, greet);
     if (ev) await require('./_eventpay').create(id, email, ev);
     if (gift) await require('./_giftpay').create(id, email, gift, require('./_lib').reqMeta(req));
-    const desc = isDon ? 'MyLuach · תרומה' : wishd ? 'MyLuach · ברכה לאירוע' + (gift && gift.amount ? ' + מתנה' : '') : sub ? 'MyLuach · ' + sub.title : greet ? 'MyLuach · ' + greet.title : ev ? 'MyLuach · ' + ev.title : gift ? 'MyLuach · ' + gift.title : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
+    const desc = isDon ? 'MyLuach · תרומה' : wishd ? 'MyLuach · ברכה לאירוע' + (gift && gift.amount ? ' + מתנה' : '') : b.ofeeTitle ? 'MyLuach · ' + b.ofeeTitle : sub ? 'MyLuach · ' + sub.title : greet ? 'MyLuach · ' + greet.title : ev ? 'MyLuach · ' + ev.title : gift ? 'MyLuach · ' + gift.title : 'MyLuach · מסלול ' + PLAN_NAMES[plan];
     const extra = { base: info ? info.base : amount, off: info ? info.off : 0, why: info ? info.why : '', min: !!(info && info.min), coupon: coupon ? coupon.code : null };
 
     if (prov === 'bit') {

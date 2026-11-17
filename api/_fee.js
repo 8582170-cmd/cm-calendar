@@ -6,7 +6,9 @@
 const feeOf = f => { f = f || {}; return { type: ['fixed', 'pct', 'both', 'none', 'deal'].includes(f.type) ? f.type : 'none', fixed: Math.max(0, Math.min(1e7, +f.fixed || 0)), pct: Math.max(0, Math.min(100, +f.pct || 0)), note: String(f.note || '').replace(/[<>]/g, '').slice(0, 300) }; };
 function calc(f, amount) { f = feeOf(f); const v = (f.type === 'fixed' || f.type === 'both' ? f.fixed : 0) + (f.type === 'pct' || f.type === 'both' ? (+amount || 0) * f.pct / 100 : 0); return Math.round(v * 100) / 100; }
 /* ההגדרה שחלה בפועל: של הארגון אם נקבעה, אחרת הכללית */
-const eff = (cfg, siteFee) => { const a = ((cfg || {}).admin || {}).fee; return feeOf(a && a.type ? a : siteFee); };
+const raw = (cfg, siteFee) => { const a = ((cfg || {}).admin || {}).fee; return feeOf(a && a.type ? a : siteFee); };
+/* אחרי ששולמו דמי פתיחה (api/_openfee.js) החלק הקבוע כבר שולם, ולא נגבה שוב */
+const eff = (cfg, siteFee) => { const f = raw(cfg, siteFee), p = (cfg || {}).openfee; return p && p.paid && (f.type === 'fixed' || f.type === 'both') ? { ...f, fixed: 0, prepaid: +p.amount || 0 } : f; };
 /* מה מנהל הארגון רואה: בלי ההערה הפנימית */
 const pub = f => { f = feeOf(f); delete f.note; return f; };
-module.exports = { feeOf, calc, eff, pub };
+module.exports = { feeOf, calc, eff, raw, pub };

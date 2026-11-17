@@ -25,7 +25,7 @@ async function all(path) {
   return out;
 }
 /* הגדרות האגף (בעל האתר): open = כל משתמש יכול לפתוח מכירה, sitePay / kehilot = ספקי סליקה נוספים */
-async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, cancel: s.cancel === true, note: String(s.note || ''), intro: String(s.intro || ''), infoText: String(s.infoText || ''), giveAllow: s.giveAllow === 'none' ? 'none' : 'all', fee: FEE.feeOf(s.fee) }; }
+async function site() { const s = await loadSetting('auction').catch(() => ({})); return { open: s.open === true, reqPay: s.reqPay === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, cancel: s.cancel === true, note: String(s.note || ''), intro: String(s.intro || ''), infoText: String(s.infoText || ''), giveAllow: s.giveAllow === 'none' ? 'none' : 'all', fee: FEE.feeOf(s.fee) }; }
 const FEE = require('./_fee');
 /* האם המכירה יכולה להפעיל במקביל התרמה לארגון: לפי מה שבעל האתר קבע למכירה הזאת, אחרת לפי ברירת המחדל */
 const giveOk = (s, S) => { const g = ((s.cfg || {}).admin || {}).give; return g === 'yes' ? true : g === 'no' ? false : S.giveAllow !== 'none'; };
@@ -213,7 +213,7 @@ function mgrView(s, S) {
   const c = { ...(s.cfg || {}) }, iv = { ...(c.ivr || {}) }; const hasTok = !!iv.token; delete iv.token; c.ivr = { ...iv, hasToken: hasTok };
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
-  return { id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
+  return { openFee: require('./_openfee').need(s, S), id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
     ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null, giveOk: giveOk(s, S), give: (s.cfg || {}).give || null, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
 }
 /* שם תיקייה בימות: אותיות באנגלית וספרות בלבד (קו תחתון או מקף גורמים לתיקייה לא להיפתח בניהול של ימות). אפשר נתיב עם / */
@@ -500,7 +500,7 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
-      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: !b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000), ...(b.set.intro != null ? { intro: clean(b.set.intro, 400) } : {}), ...(b.set.infoText != null ? { infoText: clean(b.set.infoText, 3000) } : {}), ...(b.set.giveAllow != null ? { giveAllow: b.set.giveAllow === 'none' ? 'none' : 'all' } : {}), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }); }
+      if (b.set) { const old = await loadSetting('auction').catch(() => ({})); await saveSetting('auction', { ...old, open: !!b.set.open, ...(b.set.reqPay != null ? { reqPay: !!b.set.reqPay } : {}), sitePay: !!b.set.sitePay, kehilotOff: !b.set.kehilot, cancel: !!b.set.cancel, note: clean(b.set.note, 1000), ...(b.set.intro != null ? { intro: clean(b.set.intro, 400) } : {}), ...(b.set.infoText != null ? { infoText: clean(b.set.infoText, 3000) } : {}), ...(b.set.giveAllow != null ? { giveAllow: b.set.giveAllow === 'none' ? 'none' : 'all' } : {}), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }); }
       if (b.reqDone != null) { const R0 = await loadSetting('auctionreq').catch(() => []); const RL = Array.isArray(R0) ? R0 : []; const x = RL.find(r => r.id === b.reqDone); if (x) { x.done = x.done || 'נסגר'; await saveSetting('auctionreq', RL); } }
       const RQ = await loadSetting('auctionreq').catch(() => []);
       const R = await db('auction_order?txn=not.is.null&select=callback&order=paid_at.desc.nullslast&limit=300').catch(() => []);
@@ -545,6 +545,7 @@ module.exports = async (req, res) => {
       const x = b.set || {}, ad = { ...((s.cfg || {}).admin || {}) };
       if (x.give != null) ad.give = ['yes', 'no'].includes(x.give) ? x.give : '';
       if (x.fee !== undefined) ad.fee = x.fee && x.fee.type ? FEE.feeOf(x.fee) : null;
+      if (x.openPay !== undefined) ad.openPay = x.openPay === 'waive' ? 'waive' : '';
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, admin: ad }, updated_at: new Date().toISOString() }) }); drop(s.slug);
       return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true, admin: ad });
     }
@@ -573,6 +574,7 @@ module.exports = async (req, res) => {
       return json(res, 200, mgrView(await load(s.slug, true), await site()));
     }
     if (a === 'open' || a === 'close') {
+      if (a === 'open' && !isAdmin(u)) { const N = require('./_openfee').need(s, await site()); if (N.required) return json(res, 402, { error: 'openfee', amount: N.amount, message: 'לפני פתיחת המכירה לציבור צריך לשלם דמי פתיחה: ' + N.amount.toLocaleString('he-IL') + ' ₪' }); }
       if (a === 'open') { const S = await site(); if (!PAY.provs(s, S).length && !cfgOf(s).allowUnpaid && cfgOf(s).repOrders === 'off' && !b.force) return json(res, 409, { error: 'pay', message: 'לפני הפתיחה צריך להגדיר סליקה, או לאפשר הזמנה בלי תשלום' }); if (!s.products.some(p => p.active !== false)) return json(res, 409, { error: 'products', message: 'אין מוצרים במכירה' }); }
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: a === 'open' ? 'open' : 'closed', updated_at: new Date().toISOString() }) }); drop(s.slug);
       notify(s, a === 'open' ? 'המכירה נפתחה' : 'המכירה נסגרה', '<p>' + (a === 'open' ? 'המכירה נפתחה לרכישה' : 'המכירה נסגרה. אי אפשר לרכוש, ורשימת הכרטיסים נעולה להגרלה') + ' (על ידי ' + u.email + ').</p>').catch(() => {});
@@ -752,4 +754,4 @@ async function ymUpload(token, path, buf) {
   const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
   if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 80));
 }
-module.exports.nedPaid = nedPaid; module.exports.notify = notify; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;
+module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.notify = notify; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;

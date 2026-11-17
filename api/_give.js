@@ -25,7 +25,7 @@ async function all(path) {
   return out;
 }
 const FEE = require('./_fee');
-async function site() { const s = await loadSetting('give').catch(() => ({})) || {}; return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, note: String(s.note || ''), fee: FEE.feeOf(s.fee), reqOn: s.reqOff !== true, listPub: s.listOff !== true, intro: String(s.intro || ''), infoText: String(s.infoText || '') }; }
+async function site() { const s = await loadSetting('give').catch(() => ({})) || {}; return { open: s.open === true, reqPay: s.reqPay === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, note: String(s.note || ''), fee: FEE.feeOf(s.fee), reqOn: s.reqOff !== true, listPub: s.listOff !== true, intro: String(s.intro || ''), infoText: String(s.infoText || '') }; }
 const admins = () => [env('OWNER_EMAIL'), ...env('AUCTION_ADMINS').split(','), ...env('GIVE_ADMINS').split(',')].map(s => s.trim().toLowerCase()).filter(Boolean);
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 
@@ -282,12 +282,12 @@ async function mineOr403(req, res, b) {
   return { u, s };
 }
 function mgrView(s, S) {
-  const c = { ...(s.cfg || {}) };
+  const c = { ...(s.cfg || {}) }, openFee = require('./_openfee').need(s, S);
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   if (c.ivr && c.ivr.cc) { const cc = { ...c.ivr.cc }; const hp = !!cc.password; delete cc.password; c.ivr = { ...c.ivr, cc: { ...cc, hasPassword: hp } }; }
   if (c.ivr && c.ivr.ytoken) { const { ytoken, ...r } = c.ivr; c.ivr = { ...r, hasToken: true }; }
   const iv = c.ivr || {};
-  return { ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG).map(([k, m]) => [k, [m[0], m[1], require('./_give_ivr').partsOf(m[1])]])), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
+  return { openFee, ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG).map(([k, m]) => [k, [m[0], m[1], require('./_give_ivr').partsOf(m[1])]])), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
@@ -475,7 +475,7 @@ module.exports = async (req, res) => {
     }
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {});
-      if (b.set) { const o = await loadSetting('give').catch(() => ({})) || {}; const n = { ...o, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: b.set.kehilot === false, note: clean(b.set.note, 500), reqOff: b.set.reqOn === false, listOff: b.set.listPub === false, intro: clean(b.set.intro, 600), infoText: clean(b.set.infoText, 1500), reqMail: mailN(b.set.reqMail), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }; await saveSetting('give', n); }
+      if (b.set) { const o = await loadSetting('give').catch(() => ({})) || {}; const n = { ...o, open: !!b.set.open, ...(b.set.reqPay != null ? { reqPay: !!b.set.reqPay } : {}), sitePay: !!b.set.sitePay, kehilotOff: b.set.kehilot === false, note: clean(b.set.note, 500), reqOff: b.set.reqOn === false, listOff: b.set.listPub === false, intro: clean(b.set.intro, 600), infoText: clean(b.set.infoText, 1500), reqMail: mailN(b.set.reqMail), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }; await saveSetting('give', n); }
       const raw = await loadSetting('give').catch(() => ({})) || {};
       return json(res, 200, { ...(await site()), reqMail: raw.reqMail || '' });
     }
@@ -522,6 +522,7 @@ module.exports = async (req, res) => {
     if (a === 'adminSet') {
       if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
       const ad = { ...((s.cfg || {}).admin || {}) }, x = b.set || {}; if (x.fee !== undefined) ad.fee = x.fee && x.fee.type ? FEE.feeOf(x.fee) : null;
+      if (x.openPay !== undefined) ad.openPay = x.openPay === 'waive' ? 'waive' : '';
       await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, admin: ad }, updated_at: new Date().toISOString() }) }); drop(s.slug);
       return json(res, 200, { ...mgrView(await load(s.slug, true), await site()), amAdmin: true, admin: ad });
     }
@@ -532,7 +533,9 @@ module.exports = async (req, res) => {
       if (added.length) { const { sendMail, frame, escH } = require('./_mail'), c = cfgOf({ ...s, cfg: nc }); for (const m of added) await sendMail({ to: m, subject: 'הוזמנתם לנהל את הקמפיין ' + c.title, html: frame({ title: 'ניהול קמפיין התרמה', body: '<p>' + escH(u.email || '') + ' הוסיף אתכם כמנהלים של הקמפיין <b>' + escH(c.title) + '</b>.</p><p>נכנסים לניהול עם כתובת המייל הזאת.</p>', button: 'לניהול הקמפיין', url: SITE() + '/give-manage?s=' + s.slug }) }, 'give').catch(() => {}); }
       return json(res, 200, mgrView(await load(s.slug, true), await site()));
     }
-    if (a === 'state') { const st = ['draft', 'open', 'closed'].includes(b.status) ? b.status : s.status; await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: st, updated_at: new Date().toISOString() }) }); drop(s.slug); return json(res, 200, { status: st }); }
+    if (a === 'state') { const st = ['draft', 'open', 'closed'].includes(b.status) ? b.status : s.status;
+      if (st === 'open' && s.status !== 'open' && !isAdmin(u)) { const N = require('./_openfee').need(s, await site()); if (N.required) return json(res, 402, { error: 'openfee', amount: N.amount, message: 'לפני פתיחת הקמפיין לציבור צריך לשלם דמי פתיחה: ' + N.amount.toLocaleString('he-IL') + ' ₪' }); }
+      await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: st, updated_at: new Date().toISOString() }) }); drop(s.slug); return json(res, 200, { status: st }); }
     if (a === 'teamsSave') { const errs = await saveRows('give_team', s, b.list, mkTeam); return json(res, 200, { errors: errs, teams: (await load(s.slug, true)).teams }); }
     if (a === 'repsSave') { const errs = await saveRows('give_rep', s, b.list, mkRep(s)); return json(res, 200, { errors: errs, reps: (await load(s.slug, true)).reps }); }
     if (a === 'report') return json(res, 200, await report(s, b));
@@ -586,5 +589,5 @@ async function ymUpload(token, path, buf) {
 }
 module.exports.summary = async slug => { const s = await load(slug); if (!s) return null; const c = cfgOf(s), st = await stats(s), t = await timing(s, c, st);
   return { status: s.status, title: c.title, url: SITE() + '/give/' + s.slug, total: st.total, goal: c.goal, donors: c.f.donors ? st.donors : null, match: c.match.on ? c.match.ratio : 0, can: t.can, end: c.f.countdown ? t.end : '' }; };
-module.exports.nedPaid = nedPaid; module.exports.cfgOf = cfgOf; module.exports.timing = timing; module.exports.load = load; module.exports.stats = stats; module.exports.markPaid = markPaid;
+module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.cfgOf = cfgOf; module.exports.timing = timing; module.exports.load = load; module.exports.stats = stats; module.exports.markPaid = markPaid;
 module.exports.notifyPhone = async (s, d) => { const { escH } = require('./_mail'), r = d.rep_id ? s.reps.find(x => x.id === d.rep_id) : null; await notify(s, 'תרומה בטלפון ממתינה לגבייה: ' + (+d.amount) + ' ₪', '<p>' + escH(d.method || 'תרומה בטלפון') + (r ? ' · נציג: ' + escH(r.name || r.code) : '') + (d.phone ? ' · טלפון: ' + escH(d.phone) : '') + '</p><p>אחרי הגבייה מסמנים "שולם" בלשונית התרומות.</p>'); };
