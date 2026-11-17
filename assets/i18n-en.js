@@ -7,7 +7,9 @@
   Object.keys(D.exact||{}).forEach(function(k){X.set(k.replace(/\s+/g,' ').trim(),D.exact[k])});
   (D.re||[]).forEach(function(p){try{R.push([new RegExp(p[0]),p[1]])}catch(e){}});
   var MISS=window.__i18nMiss=new Map();
-  function tr(s){if(!s||!HEB.test(s))return null;var t=s.replace(/\s+/g,' ').trim();if(!t)return null;var v=X.get(t);
+  /* תאריך עברי באותיות (בחירה בבונה): לא לתרגם שמות חודשים עבריים */
+  var HM=/^(ניסן|אייר|סיון|תמוז|אב|אלול|תשרי|חשון|כסלו|טבת|שבט|אדר( [אב]׳)?)$/;
+  function tr(s){if(!s||!HEB.test(s))return null;var t=s.replace(/\s+/g,' ').trim();if(!t)return null;if(window.__mlHebLetters&&HM.test(t))return null;var v=X.get(t);
     if(v==null)for(var i=0;i<R.length;i++){if(R[i][0].test(t)){v=t.replace(R[i][0],R[i][1]);break}}
     if(v==null){MISS.set(t,(MISS.get(t)||0)+1);return null}
     var lead=s.match(/^\s*/)[0],tail=s.match(/\s*$/)[0];return lead+v+tail}

@@ -175,17 +175,19 @@ const WEEKDAYS=['ראשון','שני','שלישי','רביעי','חמישי','ש
 if(EN){GREG_MONTHS.splice(0,12,'January','February','March','April','May','June','July','August','September','October','November','December');WEEKDAYS.splice(0,7,'Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Shabbat')}
 const ACCENTS=['#1e5a63','#24427a','#6b2d4f','#7a4a17','#3d5a2a','#8a2c2c','#2f2f3a'];
 
+/* באנגלית: התאריך העברי במספרים (15 Kislev 5787), או לפי בחירה באותיות עבריות (ט״ו כסלו תשפ״ז) */
+function HL(){if(!EN)return false;let on=false;try{on=!!(state&&state.s&&state.s.hebLetters)}catch(e){}window.__mlHebLetters=on;return on}
 function gem(n){
-  if(EN)return String(n);
+  if(EN&&!HL())return String(n);
   const H=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק']],T=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],O=['','א','ב','ג','ד','ה','ו','ז','ח','ט'];
   let s='';for(const [v,l] of H){while(n>=v){s+=l;n-=v}}
   if(n===15)s+='טו';else if(n===16)s+='טז';else s+=T[Math.floor(n/10)]+O[n%10];
   return s.length===1?s+'׳':s.slice(0,-1)+'״'+s.slice(-1);
 }
 const HEB_MONTHS_EN={1:'Nisan',2:'Iyar',3:'Sivan',4:'Tammuz',5:'Av',6:'Elul',7:'Tishrei',8:'Cheshvan',9:'Kislev',10:'Tevet',11:'Shevat',12:'Adar',13:'Adar II'};
-const hebMonthName=(m,leap)=>EN?(m===12&&leap?'Adar I':HEB_MONTHS_EN[m]):m===12&&leap?'אדר א׳':HEB_MONTHS[m];
+const hebMonthName=(m,leap)=>EN&&!HL()?(m===12&&leap?'Adar I':HEB_MONTHS_EN[m]):m===12&&leap?'אדר א׳':HEB_MONTHS[m];
 const hebMonthOpt=m=>EN?(m===12?'Adar / Adar I':HEB_MONTHS_EN[m]):m===12?'אדר / אדר א׳':HEB_MONTHS[m];
-const hebYearStr=y=>EN?String(y):gem(y%1000);
+const hebYearStr=y=>EN&&!HL()?String(y):gem(y%1000);
 const isLeap=y=>HDate.isLeapYear(y);
 const ymd=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
 const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -3196,7 +3198,8 @@ function fillStatic(){
   $('#cTz').innerHTML=tzs.map(t=>opt(t,t)).join('');
   if(!framed&&navigator.geolocation)$('#geoBtn').hidden=false;
 }
-function syncUI(){if(typeof renderLearnOwn==='function')renderLearnOwn();if(typeof renderTColors==='function'&&!document.activeElement?.dataset?.tcolC)renderTColors();if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
+function syncUI(){if(EN&&!document.getElementById('hebLettersChk'))['dateStyle','cdDStyle'].forEach(id=>{const sel=document.getElementById(id),lb=sel&&sel.closest('label');if(!lb||lb.nextElementSibling?.classList?.contains('hl-chk'))return;
+    lb.insertAdjacentHTML('afterend','<label class="chk hl-chk"'+(id==='dateStyle'?' id="hebLettersChk"':'')+'><input type="checkbox" data-opt="hebLetters"> Hebrew dates in Hebrew letters (<span dir="rtl">ט״ו כסלו תשפ״ז</span>) instead of numbers (15 Kislev 5787)</label>')});if(typeof renderLearnOwn==='function')renderLearnOwn();if(typeof renderTColors==='function'&&!document.activeElement?.dataset?.tcolC)renderTColors();if(typeof renderPlaceUI==='function')renderPlaceUI();if(typeof renderTfilot==='function'&&!document.activeElement?.closest?.('#tfList'))renderTfilot();
   yzInvalidate();
   const s=state.s;
   const radio=(n,v)=>document.querySelectorAll('input[name='+n+']').forEach(r=>r.checked=r.value===v);
