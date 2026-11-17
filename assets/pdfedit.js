@@ -757,7 +757,7 @@ function sgGet(){ try { return JSON.parse(localStorage.getItem(SG_KEY) || '{}') 
 function sgSave(o){ try { localStorage.setItem(SG_KEY, JSON.stringify(Object.assign(sgGet(), o))) } catch (e) {} }
 function sgLook(){
   var g = sgGet(), hexc = /^#[0-9a-f]{6}$/i;
-  return { shape: SHAPES[g.shape] ? g.shape : 'rect', wd: clamp(+g.wd || 220, 40, 520), ht: clamp(+g.ht || 73, 28, 520), bc: hexc.test(g.bc || '') ? g.bc : '#1a3a8f', tc: hexc.test(g.tc || '') ? g.tc : '' };
+  return { shape: SHAPES[g.shape] ? g.shape : 'rect', wd: clamp(+g.wd || 220, 40, 520), ht: clamp(+g.ht || 73, 28, 520), bc: hexc.test(g.bc || '') ? g.bc : '#1a3a8f', tc: hexc.test(g.tc || '') ? g.tc : '', bg: g.bg === 'white' ? 'white' : 'none' };
 }
 function sgPlace(){ var g = sgGet(); return { pos: g.pos || 'right', cx: g.cx, cy: g.cy, pg: g.pg || 'last', pn: g.pn | 0 || 1 } }
 function sgPageIdx(n, P){ return P.pg === 'first' ? 0 : P.pg === 'n' ? clamp((P.pn | 0) - 1, 0, n - 1) : n - 1 }
@@ -793,7 +793,7 @@ async function stDraw(cv, o){
   var K = sgLook(), ratio = K.wd / K.ht, W, H, x = cv.getContext('2d');
   if (ratio >= 1) { W = 900; H = Math.max(120, Math.round(900 / ratio)) } else { H = 900; W = Math.max(120, Math.round(900 * ratio)) }
   cv.width = W; cv.height = H; x.clearRect(0, 0, W, H);
-  stPath(x, K.shape, W, H, 3); x.fillStyle = '#fff'; x.fill(); x.strokeStyle = K.bc; x.lineWidth = 6; x.lineJoin = 'round'; x.stroke();
+  stPath(x, K.shape, W, H, 3); if (K.bg === 'white') { x.fillStyle = '#fff'; x.fill() } x.strokeStyle = K.bc; x.lineWidth = 6; x.lineJoin = 'round'; x.stroke();
   var A = stArea(K.shape, W, H), ax = A.a[0], ay = A.a[1], aw = A.a[2], ah = A.a[3], tx = ax, ty = ay, tw = aw, th = ah;
   if (o.logo) { var im = await stImg(o.logo); if (im) {
     if (aw / ah >= 2) { var ls = Math.min(ah * 0.9, aw * 0.3), sc1 = Math.min(ls / im.width, ls / im.height); x.drawImage(im, ax + 6, ay + (ah - im.height * sc1) / 2, im.width * sc1, im.height * sc1); tx = ax + ls + 16; tw = aw - ls - 16 }
@@ -812,6 +812,7 @@ async function stDraw(cv, o){
     x.fillText(l[0], px0, y); y += step;
   });
 }
+function stRead(){ var o = stGet(); return { logo: o.logo || '', name: $('stName').value.trim(), title: $('stTitle').value.trim(), line: $('stLine').value.trim(), date: $('stDate').checked } }
 function stPrev(){ stDraw($('stPrev'), stRead()) }
 function stOpen(){
   var o = stGet(); $('stName').value = o.name || ''; $('stTitle').value = o.title || ''; $('stLine').value = o.line || ''; $('stDate').checked = o.date !== false; stPrev(); $('stDlg').showModal();
@@ -839,7 +840,7 @@ var SGV = { img: null, key: '', rect: null, drag: null };
 function sgShow(){ var on = ($('dlSig') && $('dlSig').checked) || ($('dlCSig') && $('dlCSig').checked && !$('dlCSigW').hidden); $('dlLook').hidden = !on; if (on) sgRefresh() }
 function sgLoadUI(){
   var K = sgLook(), P = sgPlace();
-  $('sgShape').value = K.shape; $('sgW').value = (K.wd / CM).toFixed(1); $('sgH').value = (K.ht / CM).toFixed(1); $('sgBc').value = K.bc; $('sgTc').value = K.tc || '#111111';
+  $('sgShape').value = K.shape; $('sgW').value = (K.wd / CM).toFixed(1); $('sgH').value = (K.ht / CM).toFixed(1); $('sgBc').value = K.bc; $('sgTc').value = K.tc || '#111111'; $('sgBg').checked = K.bg === 'none';
   $('sgPg').value = P.pg; $('sgPn').value = P.pn; $('sgPn').hidden = P.pg !== 'n'; $('sgPn').max = String(Math.max(1, S.order.length));
   $('dlSigPos').value = P.pos; sgShow();
 }
@@ -869,6 +870,7 @@ function sgInit(){
   };
   $('sgW').oninput = function(){ var sh = $('sgShape').value; if (sh === 'square' || sh === 'circle') $('sgH').value = this.value; look() };
   $('sgH').oninput = function(){ var sh = $('sgShape').value; if (sh === 'square' || sh === 'circle') $('sgW').value = this.value; look() };
+  $('sgBg').onchange = function(){ sgSave({ bg: this.checked ? 'none' : 'white' }); sgRefresh() };
   $('sgBc').oninput = look; $('sgTc').oninput = function(){ sgSave({ tc: this.value }); sgRefresh() };
   $('sgPg').onchange = function(){ $('sgPn').hidden = this.value !== 'n'; sgSave({ pg: this.value }); sgRefresh() };
   $('sgPn').oninput = function(){ var v = parseInt(this.value, 10); if (v >= 1) { sgSave({ pn: Math.min(v, S.order.length) }); sgRefresh() } };
