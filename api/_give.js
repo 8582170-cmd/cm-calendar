@@ -257,8 +257,9 @@ function mgrView(s, S) {
   const c = { ...(s.cfg || {}) };
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
   if (c.ivr && c.ivr.cc) { const cc = { ...c.ivr.cc }; const hp = !!cc.password; delete cc.password; c.ivr = { ...c.ivr, cc: { ...cc, hasPassword: hp } }; }
+  if (c.ivr && c.ivr.ytoken) { const { ytoken, ...r } = c.ivr; c.ivr = { ...r, hasToken: true }; }
   const iv = c.ivr || {};
-  return { ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG)), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
+  return { ivrUrl: iv.key ? SITE() + '/api/pricing?c=_giveivr&s=' + s.slug + '&k=' + iv.key : '', ivrBase: SITE() + '/api/pricing?c=_giveivr', ivrKey: iv.key || '', ivrDefaults: Object.fromEntries(Object.entries(require('./_give_ivr').MSG).map(([k, m]) => [k, [m[0], m[1], require('./_give_ivr').partsOf(m[1])]])), id: s.id, slug: s.slug, name: s.name, status: s.status, cfg: c, eff: cfgOf(s), teams: s.teams, reps: s.reps, provs: PAY.provs(s, S), site: S, managers: managersOf(s), themes: THEMES, url: SITE() + '/give/' + s.slug, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
 }
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
@@ -295,6 +296,8 @@ function cleanCfg(old, b) {
     if (X.on != null) v.on = !!X.on; if (X.newKey) v.key = crypto.randomBytes(8).toString('hex');
     if (X.rep != null) v.rep = ['start', 'end', 'off'].includes(X.rep) ? X.rep : 'start'; if (X.repCash != null) v.repCash = ['paid', 'pending', 'off'].includes(X.repCash) ? X.repCash : 'paid';
     ['status', 'reps'].forEach(k => { if (X[k] != null) v[k] = !!X[k]; }); if (X.max != null) v.max = Math.max(100, Math.min(1e7, +X.max || 100000));
+    if (X.ypath != null) v.ypath = String(X.ypath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
+    if (X.ytoken) v.ytoken = String(X.ytoken).trim().replace(/[\s&=]/g, '').slice(0, 120); if (X.clearToken) delete v.ytoken;
     if (X.payPath != null) v.payPath = String(X.payPath).replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40);
     if (X.txt && typeof X.txt === 'object') { const K = require('./_give_ivr').MSG, o = {}; Object.keys(K).forEach(k => { const t = clean(X.txt[k], 400).replace(/[.=&"<>-]/g, ' ').trim(); if (t) o[k] = t; }); v.txt = o; }
     if (X.cc && typeof X.cc === 'object') { const cc = { ...(v.cc || {}) }, Y = X.cc; if (Y.on != null) cc.on = !!Y.on; ['type', 'register', 'user', 'terminal'].forEach(k => { if (Y[k] != null) cc[k] = String(Y[k]).replace(/[^\w.:;|-]/g, '').slice(0, 60); });
@@ -444,6 +447,28 @@ module.exports = async (req, res) => {
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
     if (a === 'get') return json(res, 200, { ...mgrView(s, await site()), amAdmin: isAdmin(u), ...(isAdmin(u) ? { admin: (s.cfg || {}).admin || {} } : {}) });
+    /* הקלטות לנוסחי השלוחה הטלפונית: מועלות לאחסון של האתר, ומשם לימות המשיח (עם הטוקן והשלוחה שהוגדרו בלשונית השלוחה) */
+    if (a === 'msgAudioUrl' || a === 'msgAudioSet') {
+      const IV = require('./_give_ivr'), key = String(b.key || ''), def = IV.MSG[key], isAll = b.idx === 'all', idx = isAll ? 0 : Math.floor(+b.idx || 0), part = def && !isAll && IV.partsOf(def[1])[idx];
+      if (!def || (!isAll && (!part || !part.s))) return json(res, 400, { error: 'key', message: 'אי אפשר להעלות שמע לחלק הזה' });
+      const ak = isAll ? key + '#all' : key + '#' + idx, tag = isAll ? 'all' : String(idx);
+      if (a === 'msgAudioUrl') {
+        const ext = /^(mp3|wav|m4a|ogg)$/.test(String(b.ext || '')) ? b.ext : 'mp3', M = require('./_r2').mediaPut('give/' + s.id + '/m-' + key + tag + '-' + Date.now().toString(36) + '.' + ext);
+        if (!M) return json(res, 503, { error: 'storage', message: 'אחסון הקבצים לא מוגדר באתר' }); return json(res, 200, M);
+      }
+      const MD = require('./_r2').media(), url = String(b.url || '');
+      if (url && !(MD && url.indexOf(MD.url + '/give/' + s.id + '/') === 0)) return json(res, 400, { error: 'url' });
+      const ia = { ...((s.cfg || {}).ivrAudio || {}) }, iv = (s.cfg || {}).ivr || {}; let warn = '';
+      if (b.mute) ia[ak] = { mute: true };
+      else if (!url) { delete ia[ak]; if (idx === 0 && !isAll) delete ia[key]; }
+      else if (iv.ytoken && iv.ypath) {
+        try { const f = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (!f.ok) throw new Error('fetch ' + f.status); const buf = await f.arrayBuffer(), nm = 'gm' + s.id + key.toLowerCase() + tag;
+          await ymUpload(iv.ytoken, 'ivr2:/' + iv.ypath + '/' + nm + '.wav', buf); ia[ak] = { url, y: nm }; if (idx === 0 && !isAll) delete ia[key]; }
+        catch (e) { warn = 'ההעלאה לימות המשיח נכשלה: ' + String(e.message).slice(0, 120); ia[ak] = { url }; }
+      } else { ia[ak] = { url }; warn = 'הקובץ נשמר באתר. כדי שיושמע בטלפון, צריך להזין בלשונית השלוחה את הטוקן של ימות ואת תיקיית השמע'; }
+      await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...s.cfg, ivrAudio: ia }, updated_at: new Date().toISOString() }) }); drop(s.slug);
+      return json(res, 200, { ok: true, warn, ivrAudio: ia });
+    }
     if (a === 'adminSet') {
       if (!isAdmin(u)) return json(res, 403, { error: 'admin' });
       const ad = { ...((s.cfg || {}).admin || {}) }, x = b.set || {}; if (x.fee !== undefined) ad.fee = x.fee && x.fee.type ? FEE.feeOf(x.fee) : null;
@@ -502,6 +527,13 @@ module.exports = async (req, res) => {
   } catch (e) { console.error('give', e); return json(res, 500, { error: 'server', message: 'שגיאה בשרת' }); }
 };
 /* תקציר לדף המכירה הסינית המקושרת */
+/* העלאת קובץ שמע למערכת בימות המשיח של הארגון (טוקן + נתיב ivr2:/<תיקייה>/<שם>.wav) */
+async function ymUpload(token, path, buf) {
+  const fd = new FormData(); fd.append('token', token); fd.append('path', path); fd.append('convertAudio', '1'); fd.append('file', new Blob([buf]), path.split('/').pop());
+  const r = await fetch('https://www.call2all.co.il/ym/api/UploadFile', { method: 'POST', body: fd, signal: AbortSignal.timeout(40000) });
+  const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+  if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 80));
+}
 module.exports.summary = async slug => { const s = await load(slug); if (!s) return null; const c = cfgOf(s), st = await stats(s), t = await timing(s, c, st);
   return { status: s.status, title: c.title, url: SITE() + '/give/' + s.slug, total: st.total, goal: c.goal, donors: c.f.donors ? st.donors : null, match: c.match.on ? c.match.ratio : 0, can: t.can, end: c.f.countdown ? t.end : '' }; };
 module.exports.nedPaid = nedPaid; module.exports.cfgOf = cfgOf; module.exports.timing = timing; module.exports.load = load; module.exports.stats = stats; module.exports.markPaid = markPaid;

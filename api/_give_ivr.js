@@ -38,9 +38,28 @@ const MSG = {
   rSaved: ['נציג: התרומה נרשמה', 'התרומה בסך {סכום} נרשמה על שמכם'],
   end: ['סיום', 'להתראות']
 };
+/* פירוק הודעה לחלקים: טקסט קבוע, ומשתנה שמושמע אוטומטית באמצע. לכל חלק קבוע אפשר להעלות הקלטה (cfg.ivrAudio) */
+const PH_RE = /(\{(?:קמפיין|סכום|יחס)\})/;
+function partsOf(text) { return String(text).split(PH_RE).map(x => { const m = /^\{(.+)\}$/.exec(x); return m ? { v: m[1] } : { s: x.trim() }; }); }
 function M(s, key, V) {
-  const own = ((((s.cfg || {}).ivr || {}).txt) || {})[key], txt = String(own || '').trim() || MSG[key][1];
+  const cfg = s.cfg || {}, ia = cfg.ivrAudio || {}, ivp = (cfg.ivr || {}).ypath, P = partsOf(MSG[key][1]);
+  const au = i => { const a = ia[key + '#' + i] || (i === 0 ? ia[key] : null); return a && (a.y || a.mute) ? a : null; };
   const val = k => V && V[k] != null ? V[k] : k === 'קמפיין' ? G().cfgOf(s).title : '';
+  /* הקלטה אחת לכל ההודעה מחליפה את כל הטקסט, או סימון "בלי טקסט": ההודעה לא מושמעת */
+  const all = ia[key + '#all'];
+  if (all && all.mute) return '';
+  if (all && all.y && ivp) return 'f-/' + ivp + '/' + all.y;
+  /* אם הועלתה הקלטה לחלק כלשהו: חלקים בלי הקלטה מושמעים כטקסט, והמשתנים (סכום, יחס...) מושמעים אוטומטית */
+  if (P.some((x, i) => x.s && au(i) && (au(i).mute || ivp))) {
+    const own = ((((s.cfg || {}).ivr || {}).txt) || {})[key];
+    const PP = own && String(own).trim() ? partsOf(String(own).trim()) : P, out = [];
+    PP.forEach((x, i) => {
+      if (x.v) { const v = val(x.v); if (v !== '' && v != null) out.push(T(String(v))); }
+      else if (x.s) { const a = own && String(own).trim() ? null : au(i); if (a && a.mute) return; if (a && a.y && ivp) out.push('f-/' + ivp + '/' + a.y); else out.push(T(x.s)); }
+    });
+    return out.join('.');
+  }
+  const own = ((((s.cfg || {}).ivr || {}).txt) || {})[key], txt = String(own || '').trim() || MSG[key][1];
   return T(txt.replace(/\{(קמפיין|סכום|יחס)\}/g, (x, k) => val(k)));
 }
 const ivrOf = s => { const v = (s.cfg || {}).ivr || {}; return { ...v, rep: ['start', 'end', 'off'].includes(v.rep) ? v.rep : 'start', status: v.status !== false, reps: v.reps !== false, repCash: ['paid', 'pending', 'off'].includes(v.repCash) ? v.repCash : 'paid', max: Math.max(100, +v.max || 100000) }; };
@@ -201,4 +220,4 @@ module.exports = async (req, res) => {
     return bye(T('שגיאה'));
   } catch (e) { console.error('give ivr', e.message); return bye(T('אירעה תקלה נסו שוב מאוחר יותר')); }
 };
-module.exports.MSG = MSG; module.exports.replay = replay;
+module.exports.MSG = MSG; module.exports.partsOf = partsOf; module.exports.replay = replay;
