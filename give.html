@@ -160,6 +160,22 @@ body.scr{background:#070B18;color:#fff;overflow:hidden}
 .scr .S .cd .u{background:#121A33;color:var(--acc);min-width:9vh}.scr .S .cd .u b{font-size:4vh}.scr .S .cd .u small{font-size:1.5vh}
 .scr .S .match{font-size:3vh}
 .full{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px}
+/* דף הפתיחה */
+.hbtn{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px}
+.hb{display:inline-block;border:2px solid currentColor;color:inherit;border-radius:999px;padding:10px 22px;font-weight:700;text-decoration:none;background:transparent;cursor:pointer;font-size:16px}
+.hb.pri{background:var(--acc);border-color:var(--acc);color:var(--accInk)}
+.hm{padding-top:30px;padding-bottom:60px;display:flex;flex-direction:column;gap:34px}
+.hm h2{font-size:26px;margin-bottom:14px}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.hcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r,14px);overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column}
+.hcard .him{height:120px;background-size:cover;background-position:center}.hbody{padding:14px;display:flex;flex-direction:column;gap:8px}.hlogo{max-height:44px;max-width:120px;object-fit:contain;align-self:flex-start}
+.hfeat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px}.hfeat span{color:var(--mute);font-size:14px}
+.hinfo{white-space:pre-line;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.rform{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;max-width:760px}
+.rform label{display:flex;flex-direction:column;gap:4px;font-weight:500}.rform input,.rform textarea{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg)}.rform textarea{min-height:90px}
+.rk{display:flex;flex-wrap:wrap;gap:18px}.rk label{flex-direction:row;align-items:center;gap:8px}.rk input{width:auto}
+.two2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.hint2{margin:0;color:var(--mute);font-size:14px}.rmsg{margin:0;min-height:1.4em}.rmsg.bad{color:#B3261E}.done{text-align:center;padding:20px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <script src="/assets/a11y.js?v=9" defer></script>
@@ -187,7 +203,28 @@ function vid(u){var y=/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shor
   if(y)return '<iframe src="https://www.youtube-nocookie.com/embed/'+y[1]+'" title="סרטון הקמפיין" allowfullscreen></iframe>';if(v)return '<iframe src="https://player.vimeo.com/video/'+v[1]+'" title="סרטון הקמפיין" allowfullscreen></iframe>';
   return u?'<video src="'+esc(u)+'" controls preload="metadata"></video>':''}
 function base(){return location.origin+'/give/'+SLUG}
-if(!SLUG){app.innerHTML='<div class="full"><h1>לא נמצא קמפיין</h1></div>';return}
+/* ===== דף הפתיחה /give (בלי כתובת קמפיין) ===== */
+function home(){
+  document.title='התרמה מקוונת לארגונים · MyLuach';
+  get({a:'home'}).then(function(H){
+    if(H._st!==200)H={canOpen:false,reqOn:true,list:[]};
+    var F=[['יעד ומד התקדמות','פס התקדמות חי, יעד, ויעדי בונוס'],['נציגים וקבוצות','דף אישי לכל נציג ולכל קבוצה, עם גרף תחרות'],['הכפלת תרומות','מכפילים עם תקרה, והכפלה מוצגת בזמן אמת'],['הוראת קבע','תרומה חודשית או קבועה'],['שלוחה טלפונית','תרומה והתקדמות בטלפון, גם לנציגים'],['הקרנה באולם','מסך הקרנה עם תרומות בזמן אמת'],['שילוב עם מכירה סינית','התרמה במקביל למכירה, בחלון אחד'],['שבת ושעון','בחירה איך הקמפיין מתנהג בשבת']];
+    var h='<header class="hero center"><div class="in"><h1>התרמה מקוונת לארגונך</h1><div class="sub">'+esc(H.intro||'קמפיין התרמה מעוצב עם נציגים, קבוצות, מכפילים ומסך הקרנה. תרומות נכנסות ישירות לחשבון הארגון.')+'</div>'
+     +'<div class="hbtn">'+(H.canOpen?'<a class="hb pri" href="/give-manage">פתיחת קמפיין חדש</a>':'')+(H.reqOn?'<a class="hb'+(H.canOpen?'':' pri')+'" href="#rq">'+(H.canOpen?'בקשה / קבלת פרטים':'בקשה לפתיחת קמפיין')+'</a>':'')+'<a class="hb" href="/give-manage">כניסה לניהול</a></div></div></header>'
+     +'<main class="wrap hm">';
+    if(H.note)h+='<div class="closed">'+esc(H.note)+'</div>';
+    if(H.list&&H.list.length)h+='<section aria-labelledby="hl"><h2 id="hl">קמפיינים פעילים</h2><div class="hgrid">'+H.list.map(function(x){var p=pct(x.total,x.goal);return '<a class="hcard" href="/give/'+esc(x.slug)+'">'+(x.banner?'<div class="him" style="background-image:url(\''+esc(x.banner)+'\')"></div>':'')+'<div class="hbody">'+(x.logo?'<img class="hlogo" src="'+esc(x.logo)+'" alt="">':'')+'<b>'+esc(x.title)+'</b><div class="bar"><i style="width:'+p+'%"></i></div><small>'+nis(x.total)+(x.goal?' מתוך '+nis(x.goal)+' ('+p+'%)':'')+'</small></div></a>'}).join('')+'</div></section>';
+    h+='<section aria-labelledby="hf"><h2 id="hf">מה כלול</h2><div class="hgrid f">'+F.map(function(f){return '<div class="hfeat"><b>'+f[0]+'</b><span>'+f[1]+'</span></div>'}).join('')+'</div></section>';
+    if(H.infoText)h+='<section><h2>פרטים</h2><div class="hinfo">'+esc(H.infoText)+'</div></section>';
+    if(H.reqOn)h+='<section id="rq" aria-labelledby="hq"><h2 id="hq">'+(H.canOpen?'בקשה או קבלת פרטים':'בקשה לפתיחת קמפיין')+'</h2><form id="rf" class="rform" novalidate><div class="rk" role="radiogroup" aria-label="סוג הפנייה"><label><input type="radio" name="kind" value="open" checked> אני רוצה לפתוח קמפיין</label><label><input type="radio" name="kind" value="info"> אני רוצה לקבל פרטים</label></div>'
+      +'<div class="two2"><label>שם איש קשר<input name="name" required autocomplete="name"></label><label>שם הארגון<input name="org" autocomplete="organization"></label><label>טלפון<input name="phone" type="tel" dir="ltr" autocomplete="tel"></label><label>מייל<input name="email" type="email" dir="ltr" autocomplete="email"></label><label>יעד משוער (₪)<input name="goal" inputmode="numeric"></label><label>מתי הקמפיין<input name="when" placeholder="למשל: חנוכה, אדר, סוף השנה"></label></div>'
+      +'<label>הודעה (לא חובה)<textarea name="msg"></textarea></label><input name="website" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true"><p class="hint2">נחזור אליכם בהקדם בטלפון או במייל.</p><button class="hb pri" type="submit">שליחה</button><p id="rm" role="status" class="rmsg"></p></form></section>';
+    h+='</main>';app.innerHTML=h;
+    var f=$('rf');if(f)f.onsubmit=function(e){e.preventDefault();var o={a:'request'};new FormData(f).forEach(function(v,k){o[k]=v});var m=$('rm');m.className='rmsg';m.textContent='שולח…';
+      post(o).then(function(r){if(r._st===200){f.innerHTML='<div class="done"><h3>הבקשה התקבלה, תודה!</h3><p>נחזור אליכם בהקדם.</p></div>'}else{m.className='rmsg bad';m.textContent=r.message||'לא נשלח, נסו שוב'}}).catch(function(){m.className='rmsg bad';m.textContent='שגיאת רשת, נסו שוב'})}
+  })}
+
+if(!SLUG){home();return}
 
 function load(){var q={a:'camp',s:SLUG};if(R)q.r=R;if(TM)q.t=TM;if(PV)q.pv=1;return get(q).then(function(j){
   if(j._st!==200){app.innerHTML='<div class="full"><h1>הקמפיין לא נמצא</h1><p>ייתכן שהכתובת שגויה, או שהקמפיין עוד לא נפתח.</p></div>';return null}

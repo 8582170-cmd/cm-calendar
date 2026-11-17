@@ -25,7 +25,7 @@ async function all(path) {
   return out;
 }
 const FEE = require('./_fee');
-async function site() { const s = await loadSetting('give').catch(() => ({})); return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, note: String(s.note || ''), fee: FEE.feeOf(s.fee) }; }
+async function site() { const s = await loadSetting('give').catch(() => ({})) || {}; return { open: s.open === true, sitePay: s.sitePay === true, kehilot: s.kehilotOff !== true, note: String(s.note || ''), fee: FEE.feeOf(s.fee), reqOn: s.reqOff !== true, listPub: s.listOff !== true, intro: String(s.intro || ''), infoText: String(s.infoText || '') }; }
 const admins = () => [env('OWNER_EMAIL'), ...env('AUCTION_ADMINS').split(','), ...env('GIVE_ADMINS').split(',')].map(s => s.trim().toLowerCase()).filter(Boolean);
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 
@@ -39,7 +39,7 @@ function cfgOf(s) {
   const matchers = Array.isArray(m.matchers) ? m.matchers : [];
   return {
     title: c.title || s.name || '', sub: c.sub || '', story: c.story || '', logo: c.logo || '', banner: c.banner || '', video: c.video || '', gallery: Array.isArray(c.gallery) ? c.gallery : [],
-    theme: THEMES.includes(c.theme) ? c.theme : 'classic', color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', color2: /^#[0-9a-f]{6}$/i.test(c.color2 || '') ? c.color2 : '', heroLayout: ['banner', 'split', 'center'].includes(c.heroLayout) ? c.heroLayout : 'banner',
+    listed: c.listed === true, theme: THEMES.includes(c.theme) ? c.theme : 'classic', color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', color2: /^#[0-9a-f]{6}$/i.test(c.color2 || '') ? c.color2 : '', heroLayout: ['banner', 'split', 'center'].includes(c.heroLayout) ? c.heroLayout : 'banner',
     goal: +c.goal || 0, bonus: (Array.isArray(c.bonus) ? c.bonus : []).filter(x => +x.goal > 0).sort((a, b) => a.goal - b.goal),
     startAt: c.startAt || '', endAt: c.endAt || '', shabbat: ['pause', 'block', 'full'].includes(c.shabbat) ? c.shabbat : 'pause',
     endMode: ['close', 'open', 'extend'].includes(c.endMode) ? c.endMode : 'close', extHours: Math.max(1, Math.min(168, +c.extHours || 6)), extTimes: Math.max(1, Math.min(10, +c.extTimes || 1)),
@@ -259,6 +259,7 @@ function cleanCfg(old, b) {
   str('title', 120); str('sub', 600); str('story', 20000); str('thanks', 2000); str('phoneLine', 30); str('screenNote', 200); str('color', 7); str('color2', 7);
   ['logo', 'banner', 'video'].forEach(k => { if (b[k] != null) c[k] = url(b[k]); });
   if (Array.isArray(b.gallery)) c.gallery = b.gallery.map(url).filter(Boolean).slice(0, 30);
+  if (b.listed != null) c.listed = !!b.listed;
   if (b.theme != null) c.theme = THEMES.includes(b.theme) ? b.theme : 'classic';
   if (b.heroLayout != null) c.heroLayout = ['banner', 'split', 'center'].includes(b.heroLayout) ? b.heroLayout : 'banner';
   if (b.feedSort != null) c.feedSort = b.feedSort === 'big' ? 'big' : 'new';
@@ -346,6 +347,32 @@ module.exports = async (req, res) => {
   try {
     const b = req.method === 'POST' ? (readBody(req) || {}) : (req.query || {}), a = String(b.a || '');
     /* ===== ציבורי ===== */
+    /* דף הפתיחה /give: מה אפשר לעשות כאן, קמפיינים פעילים, ובקשה לפתיחת קמפיין / קבלת פרטים */
+    if (a === 'home') {
+      const S = await site(); let list = [];
+      if (S.listPub) {
+        const L = await db('give_campaign?status=eq.open&select=slug,name,cfg&order=created_at.desc&limit=60').catch(() => []);
+        const pick = (L || []).filter(x => (x.cfg || {}).listed === true).slice(0, 12);
+        list = (await Promise.all(pick.map(async x => { try { const s = await load(x.slug); if (!s) return null; const c = cfgOf(s), st = await stats(s); return { slug: s.slug, title: c.title, logo: c.logo, banner: c.banner, goal: c.goal, total: st.total, theme: c.theme, color: c.color }; } catch (e) { return null; } }))).filter(Boolean);
+      }
+      return json(res, 200, { canOpen: S.open, reqOn: S.reqOn, intro: S.intro, infoText: S.infoText, note: S.note, list });
+    }
+    if (a === 'request') {
+      if (req.method !== 'POST') return json(res, 405, {});
+      const S = await site(); if (!S.reqOn) return json(res, 403, { error: 'off', message: 'הגשת בקשות כבויה כרגע' });
+      if (clean(b.website, 50)) return json(res, 200, { ok: true });
+      const r = { id: crypto.randomBytes(6).toString('hex'), at: new Date().toISOString(), kind: b.kind === 'info' ? 'info' : 'open', name: clean(b.name, 80), org: clean(b.org, 120), phone: phoneN(b.phone), email: mailN(b.email), msg: clean(b.msg, 1500), goal: clean(b.goal, 40), when: clean(b.when, 60), status: 'new' };
+      if (!r.name) return json(res, 400, { error: 'name', message: 'חסר שם' });
+      if (!r.phone && !r.email) return json(res, 400, { error: 'contact', message: 'צריך טלפון או מייל תקין כדי שנוכל לחזור אליכם' });
+      const raw = await loadSetting('giveReq').catch(() => ({})) || {}, L = Array.isArray(raw.list) ? raw.list : [];
+      const m = reqMeta(req), ip = m && m.ip; const recent = ip ? L.filter(x => x.ip === ip && Date.now() - Date.parse(x.at) < 3600e3).length : 0;
+      if (recent >= 3 || L.filter(x => Date.now() - Date.parse(x.at) < 3600e3).length >= 30) return json(res, 429, { error: 'many', message: 'נשלחו כבר כמה בקשות, נחזור אליכם בהקדם' });
+      L.unshift({ ...r, ip: ip || '' }); await saveSetting('giveReq', { list: L.slice(0, 300) });
+      try { const g = await loadSetting('give').catch(() => ({})) || {}, to = [mailN(g.reqMail), ...admins().map(mailN)].filter(Boolean); const { sendMail, frame, escH } = require('./_mail');
+        const body = '<p><b>' + (r.kind === 'info' ? 'בקשה לקבלת פרטים' : 'בקשה לפתיחת קמפיין') + '</b></p><p>' + escH(r.name) + (r.org ? ' · ' + escH(r.org) : '') + '</p>' + (r.phone ? '<p>טלפון: ' + escH(r.phone) + '</p>' : '') + (r.email ? '<p>מייל: ' + escH(r.email) + '</p>' : '') + (r.goal ? '<p>יעד: ' + escH(r.goal) + '</p>' : '') + (r.when ? '<p>מתי: ' + escH(r.when) + '</p>' : '') + (r.msg ? '<p>' + escH(r.msg) + '</p>' : '');
+        for (const t of [...new Set(to)].slice(0, 3)) await sendMail({ to: t, subject: 'בקשה חדשה באתר ההתרמה: ' + r.name, html: frame({ title: 'בקשה חדשה', body, button: 'לניהול הבקשות', url: SITE() + '/give-manage' }), ...(r.email ? { replyTo: r.email } : {}) }, 'give').catch(e => console.error('give req mail', e.message)); } catch (e) { console.error('give req mail', e.message); }
+      return json(res, 200, { ok: true });
+    }
     if (a === 'camp') { const s = await load(b.s); if (!s || s.status === 'draft' && !b.pv) return json(res, 404, { error: 'no campaign' }); return json(res, 200, await campView(s, b)); }
     if (a === 'feed') {
       const s = await load(b.s); if (!s) return json(res, 404, {}); const c = cfgOf(s); if (!c.f.feed) return json(res, 200, { feed: [] });
@@ -392,8 +419,15 @@ module.exports = async (req, res) => {
     }
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {});
-      if (b.set) { const o = await loadSetting('give').catch(() => ({})) || {}; const n = { ...o, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: b.set.kehilot === false, note: clean(b.set.note, 500), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }; await saveSetting('give', n); }
-      return json(res, 200, await site());
+      if (b.set) { const o = await loadSetting('give').catch(() => ({})) || {}; const n = { ...o, open: !!b.set.open, sitePay: !!b.set.sitePay, kehilotOff: b.set.kehilot === false, note: clean(b.set.note, 500), reqOff: b.set.reqOn === false, listOff: b.set.listPub === false, intro: clean(b.set.intro, 600), infoText: clean(b.set.infoText, 1500), reqMail: mailN(b.set.reqMail), ...(b.set.fee ? { fee: FEE.feeOf(b.set.fee) } : {}) }; await saveSetting('give', n); }
+      const raw = await loadSetting('give').catch(() => ({})) || {};
+      return json(res, 200, { ...(await site()), reqMail: raw.reqMail || '' });
+    }
+    if (a === 'requests') {
+      const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {});
+      const raw = await loadSetting('giveReq').catch(() => ({})) || {}; let L = Array.isArray(raw.list) ? raw.list : [];
+      if (b.id && (b.status || b.del)) { L = b.del ? L.filter(x => x.id !== b.id) : L.map(x => x.id === b.id ? { ...x, status: b.status === 'done' ? 'done' : 'new' } : x); await saveSetting('giveReq', { list: L }); }
+      return json(res, 200, { list: L.map(x => { const { ip, ...y } = x; return y; }) });
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
     if (a === 'get') return json(res, 200, { ...mgrView(s, await site()), amAdmin: isAdmin(u), ...(isAdmin(u) ? { admin: (s.cfg || {}).admin || {} } : {}) });

@@ -107,6 +107,7 @@
   },
   { "source": "/auction-manage", "destination": "/auction-admin.html" },
   { "source": "/give-manage", "destination": "/give-admin.html" },
+  { "source": "/give", "destination": "/give.html" },
   { "source": "/give/:slug", "destination": "/give.html" },
     {
    "source": "/auction/:slug",
