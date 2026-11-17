@@ -29,7 +29,7 @@ const T={
   ctaT:'Want this as a printed calendar?',ctaP:'MyLuach builds a personal Jewish calendar for your family, synagogue or school: photos, family events, zmanim and more.',ctaB:'Build a personal calendar',
   sunrise:'Sunrise',sunset:'Sunset',candles:'Candle lighting',havdalah:'Havdalah',parasha:'Torah portion',nextHoliday:'Next holiday',inDays:n=>n===0?'today':n===1?'tomorrow':'in '+n+' days',
   daysAgo:n=>n===1?'yesterday':n+' days ago',fromToday:'from today',addRem:'Add reminder',note:'Note for this day',color:'Day color',save:'Save',del:'Delete',close:'Close',
-  showOmer:'Omer count',showLearn:'Daily learning',showDz:'Daily times',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',
+  showOmer:'Omer count',showLearn:'Daily learning',showDz:'Daily times',showTimes:'Candles & havdalah',showParasha:'Torah portion',showModern:'Israeli national days',showHL:'Hebrew dates in Hebrew letters (ט״ו כסלו)',
   convert:'Date converter',countdown:'Countdown',barmitzvah:'Bar / Bat Mitzvah calculator',days:'Days between dates',yahrzeit:'Yahrzeit calculator',
   weekdays:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Shabbat'],wdShort:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
   gMonths:['January','February','March','April','May','June','July','August','September','October','November','December']}
@@ -47,10 +47,12 @@ function gem(n){const H2=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק']],TT=['','�
   let s='';for(const [v,l] of H2){while(n>=v){s+=l;n-=v}}if(n===15)s+='טו';else if(n===16)s+='טז';else s+=TT[Math.floor(n/10)]+O[n%10];
   return s.length===1?s+'׳':s.slice(0,-1)+'״'+s.slice(-1)}
 const leap=y=>HDate.isLeapYear(y);
-const hMonthName=(m,y)=>HE()?(m===12&&leap(y)?'אדר א׳':HEB_MONTHS[m]):new HDate(1,m,y).getMonthName();
-const hYear=y=>HE()?gem(y%1000):String(y);
-const hDay=d=>HE()?gem(d):String(d);
-const hStr=(hd,withYear=true)=>HE()?hDay(hd.getDate())+' '+hMonthName(hd.getMonth(),hd.getFullYear())+(withYear?' '+hYear(hd.getFullYear()):''):hd.getDate()+' '+hMonthName(hd.getMonth(),hd.getFullYear())+(withYear?' '+hd.getFullYear():'');
+/* באנגלית: תאריך עברי במספרים, או לפי בחירה באותיות עבריות */
+const HB=()=>HE()||!!(st.opts&&st.opts.hl);
+const hMonthName=(m,y)=>HB()?(m===12&&leap(y)?'אדר א׳':HEB_MONTHS[m]):new HDate(1,m,y).getMonthName();
+const hYear=y=>HB()?gem(y%1000):String(y);
+const hDay=d=>HB()?gem(d):String(d);
+const hStr=(hd,withYear=true)=>HB()?hDay(hd.getDate())+' '+hMonthName(hd.getMonth(),hd.getFullYear())+(withYear?' '+hYear(hd.getFullYear()):''):hd.getDate()+' '+hMonthName(hd.getMonth(),hd.getFullYear())+(withYear?' '+hd.getFullYear():'');
 const gStr=(d,withYear=true)=>HE()?d.getDate()+' ב'+t('gMonths')[d.getMonth()]+(withYear?' '+d.getFullYear():''):t('gMonths')[d.getMonth()]+' '+d.getDate()+(withYear?', '+d.getFullYear():'');
 const noon=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);
 const addD=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n,12);
@@ -267,7 +269,7 @@ function viewMonth(){
     '<span class="nav-arrows"><button class="btn" type="button" data-sh="-12" title="'+t('prevYear')+'">«</button><button class="btn" type="button" data-sh="-1" title="'+t('prev')+'">'+(HE()?'→':'←')+'</button><button class="btn" type="button" id="tdy">'+t('today')+'</button><button class="btn" type="button" data-sh="1" title="'+t('next')+'">'+(HE()?'←':'→')+'</button><button class="btn" type="button" data-sh="12" title="'+t('nextYear')+'">»</button></span>'+
     '<button class="btn" type="button" id="jPick">📅 '+(HE()?'בחירת יום':'Pick a day')+'</button><details class="jump-d"><summary class="btn">'+t('jump')+'</summary><div class="jump" style="margin-top:6px">'+jumpH+jumpG+'</div></details>'+
     '<button class="btn pri" type="button" id="prM">🖨 '+(HE()?'הדפסה':'Print')+'</button><a class="btn" href="'+builderLink()+'">'+(HE()?'✨ לוח מעוצב עם תמונות':'✨ Designed calendar')+'</a></div>'+
-    '<div class="opts no-print">'+[['dz','showDz'],['learn','showLearn'],['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'<button type="button" class="linkbtn2" id="dzPick">⚙ '+(HE()?'בחירת זמנים':'Choose times')+'</button>'+(st.opts.learn?'<button type="button" class="linkbtn2" id="lrPick">⚙ '+(HE()?'בחירת לימוד':'Choose learning')+'</button>':'')+'</div>'+
+    '<div class="opts no-print">'+[['dz','showDz'],['learn','showLearn'],['times','showTimes'],['parasha','showParasha'],['omer','showOmer'],['modern','showModern']].concat(HE()?[]:[['hl','showHL']]).map(([k,l])=>'<label class="chk"><input type="checkbox" data-opt="'+k+'"'+(st.opts[k]?' checked':'')+'> '+t(l)+'</label>').join('')+'<button type="button" class="linkbtn2" id="dzPick">⚙ '+(HE()?'בחירת זמנים':'Choose times')+'</button>'+(st.opts.learn?'<button type="button" class="linkbtn2" id="lrPick">⚙ '+(HE()?'בחירת לימוד':'Choose learning')+'</button>':'')+'</div>'+
     '<section class="month"><div class="mhead"><h1 class="sr">'+esc(pageH1())+'</h1><h2>'+esc(M.title)+'</h2><span class="mute">'+esc(M.other)+'</span>'+(st.opts.dz||st.opts.times?'<span class="zh">'+esc(horizon())+'</span>':'')+'</div>'+g+'</section>'+seoBlock();
   const jd=$('#jD');if(jd)jd.value=String(hdA.getDate());
 }
