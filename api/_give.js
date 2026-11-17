@@ -324,17 +324,23 @@ const mkRep = s => x => {
     ...(String(x.pin || '').replace(/\D/g, '').length >= 4 ? { pin: String(x.pin).replace(/\D/g, '').slice(0, 6) } : x.id ? {} : { pin: String(1000 + crypto.randomBytes(2).readUInt16BE(0) % 9000) }) };
 };
 
-async function report(s) {
+/* סינון לפי תאריכים (לפי יום בירושלים, כולל שני הקצוות). from / to בפורמט YYYY-MM-DD */
+const jday = d => new Date(d.paid_at || d.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+const dayArg = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
+const inRange = (b, d) => { const f = dayArg(b && b.from), t = dayArg(b && b.to); if (!f && !t) return true; const k = jday(d); return (!f || k >= f) && (!t || k <= t); };
+async function report(s, b) {
   const c = cfgOf(s), st = await stats(s, true);
-  const A = await all('give_donation?campaign_id=eq.' + s.id + '&select=status,channel,total,months,paid_at,created_at');
+  const A0 = await all('give_donation?campaign_id=eq.' + s.id + '&select=status,channel,total,months,paid_at,created_at'), A = A0.filter(d => inRange(b, d)), range = { from: dayArg(b && b.from), to: dayArg(b && b.to), raised: 0, count: 0 };
   const day = {}, hour = {}, ch = {};
   A.filter(d => d.status === 'paid').forEach(d => {
+    range.raised += +d.total; range.count++;
     const t = new Date(d.paid_at || d.created_at), k = t.toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }), D = day[k] = day[k] || { day: k, amount: 0, count: 0 }; D.amount += +d.total; D.count++;
     const hk = k + ' ' + t.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit' }).slice(0, 2), Hh = hour[hk] = hour[hk] || { hour: hk, amount: 0, count: 0 }; Hh.amount += +d.total; Hh.count++;
     const kk = d.channel + (+d.months !== 1 ? '-hk' : ''), C = ch[kk] = ch[kk] || { ch: kk, amount: 0, count: 0 }; C.amount += +d.total; C.count++;
   });
   const fx = o => { Object.keys(o).forEach(k => { if (typeof o[k] === 'number') o[k] = r2(o[k]); }); return o; };
   return {
+    range: { ...range, raised: r2(range.raised) },
     totals: { total: st.total, raised: st.raised, auction: st.auction, matched: st.matched, donors: st.donors, goal: c.goal, pending: A.filter(d => d.status === 'pending').length, failed: A.filter(d => d.status === 'failed').length, refunded: A.filter(d => d.status === 'refunded').length },
     days: Object.values(day).map(fx).sort((a, b) => a.day < b.day ? -1 : 1), hours: Object.values(hour).map(fx).sort((a, b) => a.hour < b.hour ? -1 : 1), channels: Object.values(ch).map(fx),
     reps: s.reps.map(r => fx({ id: r.id, code: r.code, name: r.name, team: r.team_id, goal: +r.goal || 0, amount: (st.rep[r.id] || {}).amount || 0, count: (st.rep[r.id] || {}).count || 0 })).sort((a, b) => b.amount - a.amount),
@@ -409,13 +415,13 @@ module.exports = async (req, res) => {
     /* בעל האתר: כל הקמפיינים, כמה גויס בכל ערוץ ואמצעי (כולל מזומן), ודמי השימוש */
     if (a === 'siteStats') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {}); const S = await site();
-      const [CL, DL] = await Promise.all([all('give_campaign?select=id,slug,name,status,cfg,email,created_at&order=created_at.desc'), all('give_donation?select=campaign_id,total,amount,months,status,channel,method,txn')]);
+      const [CL, DL] = await Promise.all([all('give_campaign?select=id,slug,name,status,cfg,email,created_at&order=created_at.desc'), all('give_donation?select=campaign_id,total,amount,months,status,channel,method,txn,paid_at,created_at')]);
       const how = d => d.channel === 'offline' ? (d.method || 'ידני') : d.channel === 'phone' ? (/^YM-/.test(d.txn || '') ? 'אשראי בטלפון' : /^REP-/.test(d.txn || '') ? 'מזומן / צ׳ק דרך נציג' : 'טלפון (סומן ידנית)') : /^K-/.test(d.txn || '') ? 'קשר' : +d.months !== 1 ? 'נדרים פלוס · הוראת קבע' : 'נדרים פלוס';
       const by = new Map(CL.map(c => [c.id, { slug: c.slug, name: (c.cfg || {}).title || c.name, status: c.status, owner: c.email || '', managers: managersOf(c), raised: 0, count: 0, pending: 0, pendingAmount: 0, m: {}, auction: (c.cfg || {}).auction || '', cfg: c.cfg }]));
-      DL.forEach(d => { const x = by.get(d.campaign_id); if (!x) return; if (d.status === 'paid') { x.raised += +d.total; x.count++; const k = how(d); x.m[k] = r2((x.m[k] || 0) + +d.total); } else if (d.status === 'pending') { x.pending++; x.pendingAmount += +d.total; } });
+      DL.filter(d => inRange(b, d)).forEach(d => { const x = by.get(d.campaign_id); if (!x) return; if (d.status === 'paid') { x.raised += +d.total; x.count++; const k = how(d); x.m[k] = r2((x.m[k] || 0) + +d.total); } else if (d.status === 'pending') { x.pending++; x.pendingAmount += +d.total; } });
       const out = [...by.values()].map(x => { const fd = FEE.eff(x.cfg, S.fee); const o = { ...x, raised: r2(x.raised), pendingAmount: r2(x.pendingAmount), fee: FEE.calc(fd, x.raised), feeDef: fd }; delete o.cfg; return o; });
       const tot = out.reduce((t, x) => { t.raised += x.raised; t.count += x.count; t.fee += x.fee; Object.keys(x.m).forEach(k => { t.m[k] = r2((t.m[k] || 0) + x.m[k]); }); return t; }, { raised: 0, count: 0, fee: 0, m: {} });
-      return json(res, 200, { list: out, total: { ...tot, raised: r2(tot.raised), fee: r2(tot.fee), campaigns: out.length, open: out.filter(x => x.status === 'open').length } });
+      return json(res, 200, { range: { from: dayArg(b.from), to: dayArg(b.to) }, list: out, total: { ...tot, raised: r2(tot.raised), fee: r2(tot.fee), campaigns: out.length, open: out.filter(x => x.status === 'open').length } });
     }
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, {});
@@ -447,11 +453,11 @@ module.exports = async (req, res) => {
     if (a === 'state') { const st = ['draft', 'open', 'closed'].includes(b.status) ? b.status : s.status; await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: st, updated_at: new Date().toISOString() }) }); drop(s.slug); return json(res, 200, { status: st }); }
     if (a === 'teamsSave') { const errs = await saveRows('give_team', s, b.list, mkTeam); return json(res, 200, { errors: errs, teams: (await load(s.slug, true)).teams }); }
     if (a === 'repsSave') { const errs = await saveRows('give_rep', s, b.list, mkRep(s)); return json(res, 200, { errors: errs, reps: (await load(s.slug, true)).reps }); }
-    if (a === 'report') return json(res, 200, await report(s));
+    if (a === 'report') return json(res, 200, await report(s, b));
     if (a === 'donations') {
       let q = 'give_donation?campaign_id=eq.' + s.id + '&select=*&order=created_at.desc';
       if (['paid', 'pending', 'failed', 'refunded'].includes(b.status)) q += '&status=eq.' + b.status;
-      const L = await all(q); return json(res, 200, { list: L.map(d => ({ ...d, callback: undefined })) });
+      const L = (await all(q)).filter(d => inRange(b, d)); return json(res, 200, { list: L.map(d => ({ ...d, callback: undefined })) });
     }
     if (a === 'manual') {
       const c = cfgOf(s); if (!c.f.offline) return json(res, 400, { error: 'off', message: 'תרומות ידניות כבויות בהגדרות' });
