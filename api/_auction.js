@@ -220,6 +220,7 @@ function mgrView(s, S) {
 const holdFolder = x => String(x || '').replace(/[^A-Za-z0-9\/]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '').slice(0, 60) || 'HoldApi';
 function cleanCfg(old, b) {
   const c = { ...(old || {}) }, str = (k, n) => { if (b[k] != null) c[k] = clean(b[k], n); }, iso = k => { if (b[k] != null) c[k] = b[k] && !isNaN(Date.parse(b[k])) ? new Date(b[k]).toISOString() : ''; };
+  if (b.org && typeof b.org === 'object') c.org = require('./_orgpages').clean(b.org, c.org);
   str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 20000); str('color', 7); str('logo', 400); str('banner', 400); str('video', 400);
   if (b.termsAgree != null) c.termsAgree = !!b.termsAgree;
   if (Array.isArray(b.faq)) c.faq = b.faq.map(x => ({ q: clean(x && x.q, 300), a: clean(x && x.a, 3000) })).filter(x => x.q && x.a).slice(0, 60);
@@ -376,7 +377,7 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s || s.status === 'draft' && !b.preview) return json(res, 404, { error: 'no sale' });
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
-      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on },
+      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, progress: c.progress.on, org: require('./_orgpages').pub((s.cfg || {}).org) },
         give: await giveBox(s, S), open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
@@ -409,6 +410,12 @@ module.exports = async (req, res) => {
     }
     /* דף הפתיחה /auction (בלי כתובת מכירה) */
     if (a === 'home') { res.setHeader('Cache-Control', 'public, max-age=60'); const S = await site(); return json(res, 200, { canOpen: S.open, intro: S.intro, infoText: S.infoText }); }
+    /* דפי הארגון: פנייה או הצטרפות לרשימה מדף המכירה */
+    if (a === 'orgmsg') {
+      if (req.method !== 'POST') return json(res, 405, {});
+      const s = await load(b.s); if (!s || s.status === 'draft') return json(res, 404, { error: 'no sale' });
+      const r = await require('./_orgpages').submit('auction', s, b, (sub, body) => notify(s, sub, body)); return json(res, r.status, r.status === 200 ? { ok: true, already: !!r.already } : { error: r.error, message: r.message });
+    }
     /* בקשה לפתיחת מכירה (כשפתיחה עצמית סגורה): נשמרת לבעל האתר ונשלחת אליו במייל */
     if (a === 'request') {
       if (req.method !== 'POST') return json(res, 405, {});
@@ -538,6 +545,8 @@ module.exports = async (req, res) => {
       return json(res, 200, { slug });
     }
     const M = await mineOr403(req, res, b); if (!M) return; const { u, s } = M;
+    if (a === 'orgmsgs') return json(res, 200, await require('./_orgpages').list('auction', s));
+    if (a === 'orgmsgDel') { await require('./_orgpages').del('auction', s, b.id); return json(res, 200, await require('./_orgpages').list('auction', s)); }
     if (a === 'get') { const S = await site(), g = (s.cfg || {}).give; let gs = null; if (g && g.slug) gs = await require('./_give').summary(g.slug).catch(() => null); return json(res, 200, { ...mgrView(s, S), amAdmin: isAdmin(u), giveSum: gs, ...(isAdmin(u) ? { admin: (s.cfg || {}).admin || {} } : {}) }); }
     /* בעל האתר: הגדרות למכירה מסוימת (התרמה במקביל, דמי שימוש) */
     if (a === 'adminSet') {

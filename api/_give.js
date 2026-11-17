@@ -174,7 +174,7 @@ async function campView(s, b) {
   let goal = c.goal, stage = 0;
   if (c.f.bonus && c.bonus.length && goal && st.total >= goal) { const nx = c.bonus.find(x => +x.goal > st.total); stage = nx ? c.bonus.indexOf(nx) + 1 : c.bonus.length; goal = nx ? +nx.goal : +c.bonus[c.bonus.length - 1].goal; }
   return {
-    slug: s.slug, status: s.status, cfg: pubCfg(c), time: t,
+    slug: s.slug, status: s.status, cfg: pubCfg(c), org: require('./_orgpages').pub((s.cfg || {}).org), time: t,
     totals: { total: st.total, raised: st.raised, auction: c.f.auction ? st.auction : 0, matched: st.matched, donors: c.f.donors ? st.donors : null, goal, goal0: c.goal, stage, stageTitle: stage ? String((c.bonus[Math.min(stage, c.bonus.length) - 1] || {}).title || '') : '' },
     teams, reps, feed: c.f.feed ? feed.map(d => pubDon(d, c, s)) : [], feedTotal: c.f.feed ? (one ? feed.length : tm ? feed.length : vis.length) : 0,
     rep: one ? { id: one.id, code: one.code, name: one.name || '', img: one.img || '', story: one.story || '', goal: +one.goal || 0, team: one.team_id || null, amount: r2((st.rep[one.id] || {}).amount * X || 0), count: (st.rep[one.id] || {}).count || 0 } : null,
@@ -294,6 +294,7 @@ function cleanCfg(old, b) {
   str('title', 120); str('sub', 600); str('story', 20000); str('thanks', 2000); str('phoneLine', 30); str('screenNote', 200); str('color', 7); str('color2', 7);
   ['logo', 'banner', 'video'].forEach(k => { if (b[k] != null) c[k] = url(b[k]); });
   if (Array.isArray(b.gallery)) c.gallery = b.gallery.map(url).filter(Boolean).slice(0, 30);
+  if (b.org && typeof b.org === 'object') c.org = require('./_orgpages').clean(b.org, c.org);
   if (b.listed != null) c.listed = !!b.listed;
   if (b.rcp && typeof b.rcp === 'object') c.rcp = { mail: b.rcp.mail !== false, org: clean(b.rcp.org, 80), num: clean(b.rcp.num, 30), note: clean(b.rcp.note, 500) };
   if (b.theme != null) c.theme = THEMES.includes(b.theme) ? b.theme : 'classic';
@@ -429,6 +430,11 @@ module.exports = async (req, res) => {
         for (const t of [...new Set(to)].slice(0, 3)) await sendMail({ to: t, subject: 'בקשה חדשה באתר ההתרמה: ' + r.name, html: frame({ title: 'בקשה חדשה', body, button: 'לניהול הבקשות', url: SITE() + '/give-manage' }), ...(r.email ? { replyTo: r.email } : {}) }, 'give').catch(e => console.error('give req mail', e.message)); } catch (e) { console.error('give req mail', e.message); }
       return json(res, 200, { ok: true });
     }
+    if (a === 'orgmsg') {
+      if (req.method !== 'POST') return json(res, 405, {});
+      const s = await load(b.s); if (!s || s.status === 'draft') return json(res, 404, { error: 'no campaign' });
+      const r = await require('./_orgpages').submit('give', s, b, (sub, body) => notify(s, sub, body)); return json(res, r.status, r.status === 200 ? { ok: true, already: !!r.already } : { error: r.error, message: r.message });
+    }
     if (a === 'camp') { const s = await load(b.s); if (!s || s.status === 'draft' && !b.pv) return json(res, 404, { error: 'no campaign' }); return json(res, 200, await campView(s, b)); }
     if (a === 'feed') {
       const s = await load(b.s); if (!s) return json(res, 404, {}); const c = cfgOf(s); if (!c.f.feed) return json(res, 200, { feed: [] });
@@ -538,6 +544,8 @@ module.exports = async (req, res) => {
       await db('give_campaign?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: st, updated_at: new Date().toISOString() }) }); drop(s.slug); return json(res, 200, { status: st }); }
     if (a === 'teamsSave') { const errs = await saveRows('give_team', s, b.list, mkTeam); return json(res, 200, { errors: errs, teams: (await load(s.slug, true)).teams }); }
     if (a === 'repsSave') { const errs = await saveRows('give_rep', s, b.list, mkRep(s)); return json(res, 200, { errors: errs, reps: (await load(s.slug, true)).reps }); }
+    if (a === 'orgmsgs') return json(res, 200, await require('./_orgpages').list('give', s));
+    if (a === 'orgmsgDel') { await require('./_orgpages').del('give', s, b.id); return json(res, 200, await require('./_orgpages').list('give', s)); }
     if (a === 'report') return json(res, 200, await report(s, b));
     if (a === 'donations') {
       let q = 'give_donation?campaign_id=eq.' + s.id + '&select=*&order=created_at.desc';

@@ -127,6 +127,7 @@ iframe.pay{width:100%;border:0;min-height:430px}
 <script src="/assets/sitemsg.js?v=3" defer></script>
 <script src="/assets/config.js"></script>
 <script src="/assets/auction-price.js?v=1"></script>
+<script src="/assets/orgpages.js?v=1"></script>
 </head>
 <body>
 <div id="app"><p class="cen">טוען…</p></div>
@@ -192,7 +193,20 @@ if(Q.get('view')==='progress')return progView();
 if(Q.get('view')==='terms')return termsView();
 if(Q.get('view')==='reps')return repLogin();
 if(Q.get('view')==='winners')return winView();
+if(Q.get('view')==='org')return orgView();
 buyView();
+
+/* ===== דפי הארגון: על הארגון, יצירת קשר, הצטרפות לרשימה ===== */
+function orgNav(o,cur){var L=window.MLOrg?MLOrg.tabs(o):[];if(!L.length)return '';return '<nav class="onav" aria-label="דפי הארגון"><a href="?s='+SLUG+'"'+(cur===''?' aria-current="page"':'')+'>המכירה</a>'+L.map(function(x){return '<a href="?s='+SLUG+'&view=org&p='+x[0]+'"'+(cur===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</nav>'}
+function orgView(){
+  get({a:'sale',s:SLUG,preview:Q.get('preview')||''}).then(function(j){
+    if(j._st===404||!j.cfg){closed('המכירה לא נמצאה');return}
+    var c=j.cfg,o=c.org,L=MLOrg.tabs(o),p=Q.get('p');if(!L.some(function(x){return x[0]===p}))p=L.length?L[0][0]:'';
+    document.title=(L.filter(function(x){return x[0]===p})[0]||['',''])[1]+' · '+c.title;if(c.color)document.documentElement.style.setProperty('--navy',c.color);
+    app.innerHTML='<header class="top"><div class="t"><div class="kick">מכירה סינית</div><h1>'+esc(c.title)+'</h1></div>'+(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="">':'')+'</header>'+orgNav(o,p)
+      +'<main id="main">'+(p?MLOrg.html(o,p):'<p class="msg">אין כאן דפים להצגה.</p>')+'<p class="msg"><a href="?s='+SLUG+'">חזרה לדף המכירה</a></p></main>';
+    if(p)MLOrg.wire(app,p,function(x){x.a='orgmsg';x.s=SLUG;return post(x)});
+  }).catch(function(){closed('לא הצלחנו לטעון')})}
 
 /* ===== דף הרכישה ===== */
 function buyView(){
@@ -219,6 +233,7 @@ function buyView(){
     if(!S.open)h+='<div class="band bad">'+(S.status==='closed'?'המכירה הסתיימה. תודה לכל המשתתפים!':c.openAt&&new Date(c.openAt)>new Date()?'המכירה תיפתח ב־'+new Date(c.openAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'}):'המכירה סגורה כרגע')+'</div>';
     else if(c.closeAt)h+='<div class="band">המכירה פתוחה עד '+new Date(c.closeAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'})+'</div>';
     h+=cdHtml(cdPick(c,S.open,S.status));
+    h+=orgNav(S.cfg.org,'');
     h+=giveHtml(S.give);
     if(c.banner)h+='<img class="hero" src="'+esc(c.banner)+'" alt="">';
     h+='<main id="main">';
