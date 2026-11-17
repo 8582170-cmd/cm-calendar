@@ -11,7 +11,7 @@ var PDFJS_V = '6.2.108', PDFLIB_V = '1.17.1', BASES = ['https://cdn.jsdelivr.net
 var $ = function(i){ return document.getElementById(i) };
 var desk = $('desk');
 var S = { docs: [], reg: {}, order: [], zoom: 1, tool: 'replace', sel: null, edit: null, drag: null, hist: [], hi: -1, dirty: false, assets: {}, seq: 1, name: 'document' };
-var DEF = { font: 'Arial', size: 12, color: '#000000', bold: false, italic: false, align: 'right', ls: 0, lh: 1.2, stroke: '#d0021b', sw: 1.5, hlc: '#ffe600' };
+var DEF = { font: 'Arial', size: 12, color: '#000000', bold: false, italic: false, u: false, align: 'right', ls: 0, lh: 1.2, stroke: '#d0021b', sw: 1.5, hlc: '#ffe600' };
 try { var sv = JSON.parse(localStorage.getItem('myluach-pdf-def') || 'null'); if (sv) for (var k in DEF) if (typeof sv[k] === typeof DEF[k]) DEF[k] = sv[k]; } catch (e) {}
 function saveDef(){ try { localStorage.setItem('myluach-pdf-def', JSON.stringify(DEF)) } catch (e) {} }
 
@@ -117,8 +117,12 @@ function drawText(c, o, k, X, Y){
     c.direction = isRtl(l) ? 'rtl' : 'ltr'; var x;
     if (o.align === 'right') { c.textAlign = 'right'; x = X + L.w } else if (o.align === 'center') { c.textAlign = 'center'; x = X + L.w / 2 } else { c.textAlign = 'left'; x = X }
     c.fillText(l, x, Y + i * L.lh + L.base);
+    if (o.u && l.trim()) { var lw = c.measureText(l).width, ux = c.textAlign === 'right' ? x - lw : c.textAlign === 'center' ? x - lw / 2 : x; c.fillRect(ux, Y + i * L.lh + L.base + ulo(o) * k, lw, ulw(o) * k) }
   });
 }
+/* קו תחתון: מרחק מקו הבסיס ועובי (בנקודות); אם נמדדו מהמקור משתמשים בהם */
+function ulw(o){ return o.uw > 0 ? o.uw : Math.max(0.5, o.size * 0.06) }
+function ulo(o){ return o.uo >= 0 ? o.uo : o.size * 0.12 }
 function tbox(o){ var L = lay(o, 1); return { x: o.align === 'right' ? o.ax - L.w : o.align === 'center' ? o.ax - L.w / 2 : o.ax, y: o.y, w: L.w, h: L.h } }
 
 /* ---------- פתיחת קבצים ---------- */
@@ -268,6 +272,7 @@ function styleText(e, o, p){
   if (o.align === 'right') { e.style.right = (p.w - o.ax) * z + 'px'; e.style.left = 'auto'; e.style.transform = '' }
   else { e.style.left = o.ax * z + 'px'; e.style.right = 'auto'; e.style.transform = o.align === 'center' ? 'translateX(-50%)' : '' }
   t.style.fontFamily = fam(o.font); t.style.fontSize = o.size * z + 'px'; t.style.fontWeight = o.bold ? '700' : '400'; t.style.fontStyle = o.italic ? 'italic' : 'normal';
+  t.style.textDecoration = o.u ? 'underline' : 'none'; if (o.u) { t.style.textDecorationThickness = ulw(o) * z + 'px'; t.style.textUnderlineOffset = ulo(o) * z + 'px'; t.style.textDecorationSkipInk = 'none' }
   t.style.lineHeight = String(o.lh); t.style.color = o.color; t.style.letterSpacing = o.ls * z + 'px'; t.style.textAlign = o.align; t.style.minHeight = o.size * o.lh * z + 'px';
   e.classList.toggle('empty', !o.text);
 }
@@ -344,7 +349,7 @@ function updateProps(){
   var s = t === 'text' ? o : DEF;
   if (catDone && allFonts().indexOf(s.font) < 0 && s.font) { LOCAL.push(s.font); fillFonts() }
   $('fFont').value = s.font; $('fSize').value = r1(s.size); $('fColor').value = s.color; $('fAlign').value = s.align; $('fLs').value = r1(s.ls);
-  $('fB').setAttribute('aria-pressed', s.bold ? 'true' : 'false'); $('fI').setAttribute('aria-pressed', s.italic ? 'true' : 'false');
+  $('fB').setAttribute('aria-pressed', s.bold ? 'true' : 'false'); $('fI').setAttribute('aria-pressed', s.italic ? 'true' : 'false'); $('fU').setAttribute('aria-pressed', s.u ? 'true' : 'false');
   if (fillT) $('cFill').value = o.fill;
   if (strokeT) { $('cStroke').value = o ? o.stroke : DEF.stroke; $('cSw').value = o ? o.sw : DEF.sw }
 }
@@ -363,7 +368,8 @@ function setProp(k, v){
 
 /* ---------- עריכת טקסט ---------- */
 function norm(s){ return String(s).replace(/\r/g, '').replace(/\u00a0/g, ' ').replace(/\n$/, '') }
-function newText(){ return { t: 'text', ax: 0, y: 0, text: '', font: DEF.font, size: DEF.size, color: DEF.color, bold: DEF.bold, italic: DEF.italic, align: DEF.align, ls: DEF.ls, lh: DEF.lh } }
+function newText(){ return { t: 'text', ax: 0, y: 0, text: '', font: DEF.font, size: DEF.size, color: DEF.color, bold: DEF.bold, italic: DEF.italic, u: DEF.u, align: DEF.align, ls: DEF.ls, lh: DEF.lh } }
+function styleKey(o){ return [o.font, o.size, o.color, o.bold, o.italic, o.u, o.ls, o.align].join('|') }
 function startEdit(p, o){
   endEdit(); select(p, o);
   var e = null; Array.prototype.forEach.call(p.ly.children, function(c){ if (c.__o === o) e = c }); if (!e) return;
@@ -380,6 +386,10 @@ function endEdit(silent){
   var E = S.edit; if (!E) return false; S.edit = null;
   var t = E.el.firstChild, o = E.o, p = E.p; o.text = norm(t.innerText); t.contentEditable = 'false'; t.oninput = t.onpaste = null; E.el.classList.remove('edit');
   try { getSelection().removeAllRanges() } catch (x) {}
+  if (E.cv && E.orig && o.text.trim() === E.orig.trim() && styleKey(o) === E.sk) {
+    var ci = p.objs.indexOf(E.cv); if (ci >= 0) p.objs.splice(ci, 1); var ti = p.objs.indexOf(o); if (ti >= 0) p.objs.splice(ti, 1); if (S.sel && S.sel.o === o) S.sel = null;
+    if (!silent) { drawObjs(p); updateProps(); hint() } return true;
+  }
   if (!o.text.trim()) { var i = p.objs.indexOf(o); if (i >= 0) p.objs.splice(i, 1); if (S.sel && S.sel.o === o) S.sel = null }
   if (!silent) { drawObjs(p); if (o.text !== E.before || E.fresh) commit(); updateProps(); hint() }
   return true;
@@ -439,7 +449,25 @@ async function smart(p, x, y){
   }
   var bandH = bot - top + 1, em = it ? it.fh * sc : bandH / 0.72;
   var col = new Uint8Array(W), px, py;
-  for (px = 0; px < W; px++) for (py = top; py <= bot; py++) if (dist(px, py) > 90) { col[px] = 1; break }
+  /* קו תחתון: שורה מתחת לקו הבסיס שיש בה רצף דיו ארוך. מוציאים אותה מזיהוי המילה (כדי שלא תחבר מילים), ומוסיפים אותה מחדש למילה החדשה */
+  var ul = null;
+  if (it) {
+    var baseRow = Math.round(it.base * sc) - st.Y0, uLo = Math.max(0, baseRow + Math.round(em * 0.03)), uHi = Math.min(H - 1, baseRow + Math.round(em * 0.5)), isU = {}, any = false;
+    for (py = uLo; py <= uHi; py++) {
+      /* רק הרצף שנמצא מתחת למילה שנלחצה (ולא קו תחתון של מילה אחרת באותה שורה) */
+      var seed = -1, sw = Math.max(2, Math.round(em * 0.15)); for (var dx = 0; dx <= sw && seed < 0; dx++) { if (cx - dx >= 0 && dist(cx - dx, py) > 90) seed = cx - dx; else if (cx + dx < W && dist(cx + dx, py) > 90) seed = cx + dx }
+      if (seed < 0) continue;
+      var ra = seed, rb = seed; while (ra > 0 && dist(ra - 1, py) > 90) ra--; while (rb < W - 1 && dist(rb + 1, py) > 90) rb++;
+      if (rb - ra + 1 >= em * 0.6 && rb - ra + 1 > 6) { isU[py] = 1; any = true }
+    }
+    if (any) {
+      var rows = Object.keys(isU).map(Number).sort(function(a, b){ return a - b }), first = rows[0], last = first;
+      for (var ri = 1; ri < rows.length && rows[ri] - last <= 1; ri++) last = rows[ri];
+      for (py = first - 1; py <= last + 1; py++) if (py >= 0 && py < H) isU[py] = 1;
+      ul = { rows: isU, off: (first - baseRow) / sc, th: (last - first + 1) / sc };
+    }
+  }
+  for (px = 0; px < W; px++) for (py = top; py <= bot; py++) { if (ul && ul.rows[py]) continue; if (dist(px, py) > 90) { col[px] = 1; break } }
   /* מרווח בין מילים מול מרווח בין אותיות: לפי הקפיצה הגדולה ברוחבי המרווחים שבשורה */
   var gaps = [], run = 0, seen = false, lim = Math.round(em * 40);
   for (px = Math.max(0, cx - lim); px < Math.min(W, cx + lim); px++) { if (col[px]) { if (seen && run) gaps.push(run); run = 0; seen = true } else run++ }
@@ -454,14 +482,15 @@ async function smart(p, x, y){
   for (px = c0 + 1, bl = 0; px < W; px++) { if (col[px]) { rr = px; bl = 0 } else if (++bl >= G) break }
   /* גובה מדויק לפי הדיו של המילה עצמה, וצבע הטקסט */
   var t2 = bot, b2 = top, mxd = 0;
-  for (py = top; py <= bot; py++) for (px = l; px <= rr; px++) { var dd = dist(px, py); if (dd > 90) { if (py < t2) t2 = py; if (py > b2) b2 = py; if (dd > mxd) mxd = dd } }
+  var bandBot = ul ? Math.max(bot, Math.min(H - 1, Math.max.apply(null, Object.keys(ul.rows).map(Number)))) : bot;
+  for (py = top; py <= bandBot; py++) for (px = l; px <= rr; px++) { var dd = dist(px, py); if (dd > 90) { if (py < t2) t2 = py; if (py > b2) b2 = py; if (!(ul && ul.rows[py]) && dd > mxd) mxd = dd } }
   if (b2 < t2) { t2 = top; b2 = bot }
   var sr = 0, sg = 0, sb = 0, sn = 0;
-  for (py = t2; py <= b2; py++) for (px = l; px <= rr; px++) { if (dist(px, py) >= mxd * 0.85) { var i = (py * W + px) * 4; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; sn++ } }
+  for (py = t2; py <= b2; py++) for (px = l; px <= rr; px++) { if (ul && ul.rows[py]) continue; if (dist(px, py) >= mxd * 0.85) { var i = (py * W + px) * 4; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; sn++ } }
   var pad = 1.3;
   if (bg[0] > 243 && bg[1] > 243 && bg[2] > 243) bg = [255, 255, 255];
   if (sn && sr / sn < 28 && sg / sn < 28 && sb / sn < 28) sr = sg = sb = 0;
-  return { it: it, x: l / sc - pad, y: (t2 + st.Y0) / sc - pad, w: (rr - l + 1) / sc + pad * 2, h: (b2 - t2 + 1) / sc + pad * 2, bg: hex(bg[0], bg[1], bg[2]), fg: sn ? hex(sr / sn, sg / sn, sb / sn) : '#000000', em: em / sc };
+  return { it: it, x: l / sc - pad, y: (t2 + st.Y0) / sc - pad, w: (rr - l + 1) / sc + pad * 2, h: (b2 - t2 + 1) / sc + pad * 2, bg: hex(bg[0], bg[1], bg[2]), fg: sn ? hex(sr / sn, sg / sn, sb / sn) : '#000000', em: em / sc, ul: ul ? { off: ul.off, th: ul.th } : null };
 }
 function edgeColor(p, o){
   var st = strip(p, o.y - 3, o.y + o.h + 3); if (!st) return '#ffffff';
@@ -484,19 +513,47 @@ function guessFont(it){
   else if (it.generic === 'serif' || /times|david|frank|narkis|serif/i.test(n)) res.font = pick(['David', 'Times New Roman', 'David Libre', 'Frank Ruhl Libre']);
   if (!res.font) delete res.font; return res;
 }
+/* הטקסט של המילה שנלחצה, מתוך שכבת הטקסט של ה-PDF: התווים שנמצאים בתוך גבולות המילה שזוהתה */
+function wordText(p, r, it){
+  try {
+    if (!p.tc || !it || !r || !r.w) return '';
+    var U = pdfjs.Util, x0 = r.x + 0.5, x1 = r.x + r.w - 0.5, pieces = [], rtlLine = !it.ltr;
+    mctx.font = it.fh + 'px ' + fam('Arial'); if (HAS_LS) mctx.letterSpacing = '0px';
+    p.tc.items.forEach(function(q){
+      if (!q.str || !q.str.trim()) return;
+      var m = U.transform(p.vt, q.transform); if (Math.abs(m[1]) > 0.05 * Math.abs(m[0]) || m[0] <= 0) return;
+      var fh = Math.hypot(m[2], m[3]); if (Math.abs(m[5] - it.base) > Math.max(2, it.fh * 0.35) || Math.abs(fh - it.fh) > it.fh * 0.5) return;
+      var l = m[4], w = q.width; if (l + w < x0 || l > x1) return;
+      var chars = Array.from(q.str), n = chars.length, tot = mctx.measureText(q.str).width || 1, rtl = q.dir === 'rtl' || RX_RTL.test(q.str), acc = '', got = '', cs = 0;
+      for (var i = 0; i < n; i++) {
+        var a = mctx.measureText(acc).width / tot * w; acc += chars[i]; var b = mctx.measureText(acc).width / tot * w, c = (a + b) / 2;
+        var cx = rtl ? l + w - c : l + c;
+        if (cx >= x0 && cx <= x1 && chars[i].trim()) { got += chars[i]; cs += cx } else if (got && chars[i].trim() === '') break;
+      }
+      if (got) pieces.push({ s: got, c: cs / Array.from(got).length });
+    });
+    pieces.sort(function(a, b){ return rtlLine ? b.c - a.c : a.c - b.c });
+    return pieces.map(function(q){ return q.s }).join('');
+  } catch (e) { return '' }
+}
 async function doReplace(p, x, y){
   var r = await smart(p, x, y); if (!p.ly) return;
   if (!r || !r.w) { addText(p, x, y); hint('לא זוהה כאן טקסט, אז נוספה תיבת טקסט רגילה. אפשר לכסות קודם את האזור עם הכלי "מחיקה".'); return }
   var pre = { color: r.fg, fresh: true };
   if (r.it) { pre.size = r1(r.it.fh); var g = guessFont(r.it); for (var k in g) pre[k] = g[k]; if (!('bold' in g)) pre.bold = false; if (!('italic' in g)) pre.italic = false }
   else pre.size = r1(clamp(r.em, 5, 200));
+  pre.u = !!r.ul; if (r.ul) { pre.uo = Math.max(0, r1(r.ul.off)); pre.uw = Math.max(0.3, r1(r.ul.th)) }
+  var word = wordText(p, r, r.it); if (word) pre.text = word;
   pre.align = r.it && r.it.ltr ? 'left' : 'right';
   pre.ax = pre.align === 'right' ? r.x + r.w - 1.3 : r.x + 1.3;
   var probe = newText(); for (var k2 in pre) probe[k2] = pre[k2]; probe.text = 'א';
   await ensureFont(probe.font);
   var L = lay(probe, 1); pre.y = r.it ? r.it.base - L.base : r.y + r.h / 2 - L.h / 2;
-  p.objs.push({ t: 'cover', x: r.x, y: r.y, w: r.w, h: r.h, fill: r.bg, rp: 1 });
-  addText(p, x, y, pre);
+  var cv = { t: 'cover', x: r.x, y: r.y, w: r.w, h: r.h, fill: r.bg, rp: 1 };
+  p.objs.push(cv);
+  var to = addText(p, x, y, pre);
+  /* אם נשארה המילה המקורית ללא שינוי, לא מחליפים אותה (ביטול הכיסוי בסיום העריכה) */
+  if (S.edit && S.edit.o === to && word) { S.edit.orig = word; S.edit.cv = cv; S.edit.sk = styleKey(to) }
 }
 
 /* ---------- עכבר ומגע ---------- */
@@ -1043,6 +1100,7 @@ function init(){
   $('fColor').oninput = function(){ setPropQuiet('color', this.value) };
   $('fB').onclick = function(){ setProp('bold', this.getAttribute('aria-pressed') !== 'true') };
   $('fI').onclick = function(){ setProp('italic', this.getAttribute('aria-pressed') !== 'true') };
+  $('fU').onclick = function(){ setProp('u', this.getAttribute('aria-pressed') !== 'true') };
   $('fAlign').onchange = function(){ setProp('align', this.value) };
   $('fLs').oninput = function(){ var v = parseFloat(this.value); if (v >= -5 && v <= 60) setPropQuiet('ls', v) };
   $('cFill').oninput = function(){ if (S.sel) { if (S.sel.o.t === 'hl') { DEF.hlc = this.value; saveDef() } setPropQuiet('fill', this.value) } };
