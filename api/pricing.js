@@ -72,6 +72,9 @@ module.exports = async (req, res) => {
   /* מכירה סינית: הדפים והניהול, ושלוחת הטלפון בימות המשיח */
   if (cp === '_auction') return require('./_auction')(req, res);
   if (cp === '_auctionivr') return require('./_auction_ivr')(req, res);
+  /* אתר התרמה (קמפיינים, נציגים, קבוצות) */
+  if (cp === '_give') return require('./_give')(req, res);
+  if (cp === '_giveivr') return require('./_give_ivr')(req, res);
   if (cp === '_ivr') return require('./_timer').ivr(req, res);
   if (cp === '_ivrcb') return require('./_timer').ivrcb(req, res);
   if (cp === '_contact') {

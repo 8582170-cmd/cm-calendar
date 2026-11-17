@@ -27,13 +27,14 @@ function provs(sale, S) {
 }
 
 /* טופס התשלום המוטמע של נדרים פלוס: כל 19 השדות חייבים להישלח, גם ריקים (כמו ב-checkout.js). שם, טלפון ומייל ממלא הדפדפן */
-function nedTx(acc, sale, order, desc) {
+function nedTx(acc, sale, order, desc, opt) {
+  opt = opt || {};
   return {
-    Mosad: acc.mosad, ApiValid: acc.apiValid, Zeout: '', PaymentType: 'Ragil',
-    Amount: String(order.amount), Tashlumim: '1', Currency: '1',
+    Mosad: acc.mosad, ApiValid: acc.apiValid, Zeout: '', PaymentType: opt.hk ? 'HK' : 'Ragil',
+    Amount: String(order.amount), Tashlumim: opt.hk ? (opt.months > 0 ? String(opt.months) : '') : '1', Currency: '1',
     FirstName: '', LastName: '', Street: '', City: '', Phone: '', Mail: order.email || '',
     Groupe: acc.groupe || '', Comment: clean(desc, 180) + ' · ' + order.id.slice(2, 10),
-    Param1: order.id, Param2: 'auction:' + sale.slug,
+    Param1: order.id, Param2: opt.p2 || 'auction:' + sale.slug,
     CallBack: SITE() + '/api/nedarim-callback', CallBackMailError: env('NEDARIM_CALLBACK_MAIL_ERROR')
   };
 }
@@ -46,7 +47,7 @@ async function kesher(acc, func, extra) {
   return j;
 }
 /* קישור לדף התשלום של קשר עם טוקן (הסכום נעול, הלקוח לא יכול לשנות אותו). בסיום קשר מחזירים ל-successurl / failedurl */
-async function kesherLink(sale, order, desc) {
+async function kesherLink(sale, order, desc, opt) {
   const acc = orgKesher(sale); if (!acc) throw new Error('kesher not set');
   const nm = String(order.name || '').trim().split(/\s+/);
   const req = { Total: String(order.amount), Name: clean(order.name, 60), FirstName: clean(nm[0], 40), LastName: clean(nm.slice(1).join(' '), 40), Tel: order.phone || '', Mail: order.email || '',
@@ -55,7 +56,7 @@ async function kesherLink(sale, order, desc) {
   const j = await kesher(acc, 'GetLinkToken', { request: req });
   const tok = j.Token || (j.Data && j.Data.Token);
   if (!tok) throw new Error(String((j.RequestResult && j.RequestResult.Description) || j.Description || 'אין טוקן מקשר').slice(0, 160));
-  const back = SITE() + '/auction?s=' + sale.slug + '&kp=' + order.id;
+  const back = (opt && opt.back) || SITE() + '/auction?s=' + sale.slug + '&kp=' + order.id;
   const u = new URL(acc.pageUrl);
   u.searchParams.set('token', tok); u.searchParams.set('successurl', back); u.searchParams.set('failedurl', back + '&kf=1'); u.searchParams.set('adddata', order.id);
   return u.toString();
@@ -73,11 +74,11 @@ async function kesherCheck(sale, num) {
 }
 
 /* מה הדפדפן מקבל כדי לשלם */
-async function webTx(sale, order, S, desc) {
+async function webTx(sale, order, S, desc, opt) {
   const p = provs(sale, S)[0];
-  if (p === 'nedarim') return { provider: 'nedarim', tx: nedTx(orgNed(sale), sale, order, desc) };
-  if (p === 'site') return { provider: 'nedarim', via: 'site', tx: nedTx(siteNed(), sale, order, desc) };
-  if (p === 'kehilot') return { provider: 'kehilot', url: await kesherLink(sale, order, desc) };
+  if (p === 'nedarim') return { provider: 'nedarim', tx: nedTx(orgNed(sale), sale, order, desc, opt) };
+  if (p === 'site') return { provider: 'nedarim', via: 'site', tx: nedTx(siteNed(), sale, order, desc, opt) };
+  if (p === 'kehilot') { if (opt && opt.hk) throw Object.assign(new Error('hk'), { user: 'הוראת קבע אפשרית כרגע רק דרך נדרים פלוס' }); return { provider: 'kehilot', url: await kesherLink(sale, order, desc, opt) }; }
   return null;
 }
 module.exports = { provs, webTx, orgNed, siteNed, orgKesher, kehilotReady, kesherCheck };

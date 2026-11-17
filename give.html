@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>קמפיין התרמה · MyLuach</title>
+<meta name="description" content="קמפיין התרמה: תרומה מאובטחת, נציגים, קבוצות והתקדמות בזמן אמת.">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&family=Rubik:wght@400;500;700;800&display=swap">
+<script>window.__mlShabbat=true</script>
+<style>
+:root{--bg:#F4F2EC;--card:#fff;--ink:#16203A;--mute:#5B6375;--line:#E2DED3;--acc:#B8902F;--acc2:#16203A;--accInk:#fff;--soft:#F7EFD9;--bar:#E9E4D6;--hero:#16203A;--heroInk:#fff;--hf:"Frank Ruhl Libre",serif;--bf:Heebo,Arial,sans-serif;--r:16px;--good:#1C7A56;--bad:#A3261B;--shadow:0 6px 24px rgba(20,25,40,.08)}
+body[data-theme=modern]{--bg:#F6F8FB;--ink:#0F1B2D;--mute:#5E6B7E;--line:#E3E8EF;--acc:#1E6FD9;--acc2:#0F1B2D;--soft:#E8F1FD;--bar:#E3E8EF;--hero:#fff;--heroInk:#0F1B2D;--hf:Rubik,Arial,sans-serif;--bf:Rubik,Arial,sans-serif;--r:20px}
+body[data-theme=festive]{--bg:#FFF8F1;--ink:#2B1338;--mute:#6E5A78;--line:#F1DFF0;--acc:#E0457B;--acc2:#7B2CBF;--soft:#FFE6EF;--bar:#F4E3F0;--hero:linear-gradient(120deg,#7B2CBF,#E0457B 60%,#FF9E44);--heroInk:#fff;--hf:Rubik,Arial,sans-serif;--bf:Rubik,Arial,sans-serif;--r:22px}
+body[data-theme=warm]{--bg:#FAF4EA;--ink:#3A1D16;--mute:#7A5E52;--line:#EBDCC8;--acc:#8E2A2A;--acc2:#3A1D16;--soft:#F5E6D3;--bar:#EBDCC8;--hero:#5C1F1F;--heroInk:#FFF4E2;--hf:"Frank Ruhl Libre",serif;--r:14px}
+body[data-theme=minimal]{--bg:#fff;--ink:#111;--mute:#666;--line:#E6E6E6;--acc:#111;--acc2:#111;--soft:#F4F4F4;--bar:#EEE;--hero:#fff;--heroInk:#111;--hf:Heebo,Arial,sans-serif;--r:6px;--shadow:none}
+body[data-theme=night]{--bg:#0B1020;--card:#141B31;--ink:#EEF1F8;--mute:#9AA4BD;--line:#26304D;--acc:#F2C14E;--acc2:#F2C14E;--accInk:#0B1020;--soft:#1D2644;--bar:#26304D;--hero:#0B1020;--heroInk:#fff;--hf:Rubik,Arial,sans-serif;--bf:Rubik,Arial,sans-serif;--shadow:0 6px 24px rgba(0,0,0,.35)}
+body[data-theme=royal]{--bg:#EEF1F7;--ink:#101B3D;--mute:#56607A;--line:#D8DEEA;--acc:#C8A44D;--acc2:#1B2D6B;--soft:#E7EBF5;--bar:#D8DEEA;--hero:radial-gradient(circle at 70% 20%,#2C4396,#101B3D 70%);--heroInk:#fff;--hf:"Frank Ruhl Libre",serif;--r:12px}
+body[data-theme=nature]{--bg:#F2F5EE;--ink:#1F2E1F;--mute:#5D6B5A;--line:#DCE4D3;--acc:#3F7D3A;--acc2:#1F2E1F;--soft:#E3EEDC;--bar:#DCE4D3;--hero:#2F5A2B;--heroInk:#F3F8EE;--hf:"Frank Ruhl Libre",serif;--r:18px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--bf)}
+h1,h2,h3{font-family:var(--hf);margin:0;line-height:1.2}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--acc)}
+img{max-width:100%}
+.hidden,[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+:focus-visible{outline:3px solid #2A5BD7;outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+/* כותרת */
+.hero{background:var(--hero);color:var(--heroInk);position:relative;overflow:hidden}
+.hero .in{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:42px 20px 36px;display:flex;flex-direction:column;gap:12px}
+.hero .logo{max-height:76px;max-width:220px;object-fit:contain;border-radius:10px;background:#fff;padding:6px;align-self:flex-start}
+body[data-theme=minimal] .hero .logo,body[data-theme=modern] .hero .logo{background:transparent;padding:0}
+.hero h1{font-size:clamp(30px,5vw,54px);font-weight:900}
+.hero .sub{font-size:clamp(16px,2vw,20px);opacity:.9;white-space:pre-line;max-width:760px}
+.hero.banner{min-height:200px;display:flex;align-items:flex-end}.hero.banner.has{min-height:360px}
+.hero.banner .bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.hero.banner .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.15) 70%)}
+.hero.banner.has{color:#fff}
+.hero.split .in{flex-direction:row;flex-wrap:wrap;align-items:center;gap:28px}.hero.split .t{flex:1 1 380px;display:flex;flex-direction:column;gap:12px}.hero.split .pic{flex:1 1 360px;border-radius:var(--r);overflow:hidden;aspect-ratio:16/10;background:center/cover no-repeat}
+.hero.center .in{align-items:center;text-align:center}.hero.center .logo{align-self:center}
+body[data-theme=modern] .hero,body[data-theme=minimal] .hero{border-bottom:1px solid var(--line)}
+/* התקדמות */
+.prog{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:24px;margin-top:-26px;position:relative;z-index:2;display:flex;flex-direction:column;gap:14px}
+.prog .nums{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 22px;justify-content:space-between}
+.prog .raised{font-size:clamp(34px,5.5vw,58px);font-weight:900;font-family:var(--hf);color:var(--acc2);line-height:1;font-variant-numeric:tabular-nums}
+body[data-theme=night] .prog .raised{color:var(--acc)}
+.prog .of{color:var(--mute);font-size:17px}
+.bar{height:20px;background:var(--bar);border-radius:999px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+body[data-theme=festive] .bar i{background:linear-gradient(90deg,#FF9E44,#E0457B,#7B2CBF)}
+.bar b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink);mix-blend-mode:normal}
+.stats{display:flex;flex-wrap:wrap;gap:10px}
+.stat{flex:1 1 140px;background:var(--soft);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column}
+.stat span{font-size:13px;color:var(--mute)}.stat b{font-size:22px;font-variant-numeric:tabular-nums}
+.match{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--accInk);border-radius:12px;padding:12px 16px;font-weight:700}
+.match .x{font-size:28px;font-weight:900;background:rgba(255,255,255,.2);border-radius:10px;padding:0 12px}
+.cd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cd .u{background:var(--acc2);color:#fff;border-radius:10px;min-width:62px;padding:6px 8px;text-align:center;display:flex;flex-direction:column;line-height:1.1}
+body[data-theme=night] .cd .u{background:var(--soft);color:var(--acc)}
+.cd .u b{font-size:24px;font-variant-numeric:tabular-nums}.cd .u small{font-size:11px;opacity:.85}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;background:var(--soft);color:var(--ink)}
+.badge.wait{background:#FFF3D6;color:#6B4E00}
+.stage{border:2px dashed var(--acc);border-radius:12px;padding:10px 14px;font-weight:600}
+/* מבנה */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:26px;margin:26px auto 60px;align-items:start}
+@media (max-width:920px){.grid{grid-template-columns:1fr}.don{order:-1}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.don{position:sticky;top:14px;display:flex;flex-direction:column;gap:12px}
+@media (max-width:920px){.don{position:static}}
+.don h2{font-size:24px}
+.amts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.amts button{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:10px 4px;cursor:pointer;font-weight:800;font-size:18px;display:flex;flex-direction:column;align-items:center;line-height:1.2;font-variant-numeric:tabular-nums}
+.amts button small{font-size:11px;font-weight:500;color:var(--mute)}
+.amts button[aria-pressed=true]{border-color:var(--acc);background:var(--soft)}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:8px;cursor:pointer;font-weight:600}
+.seg button[aria-pressed=true]{background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.12);color:var(--acc2)}
+body[data-theme=night] .seg button[aria-pressed=true]{color:var(--acc)}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600}
+input,select,textarea{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card);min-height:44px;width:100%;font-weight:400}
+textarea{min-height:70px;resize:vertical}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+label.ck{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}label.ck input{width:18px;height:18px;min-height:0}
+.go{border:0;border-radius:12px;background:var(--acc);color:var(--accInk);font-weight:800;font-size:19px;min-height:56px;cursor:pointer;width:100%}
+.go:disabled{opacity:.55;cursor:default}
+.xnote{background:var(--soft);border-radius:10px;padding:8px 12px;font-size:14px}
+.msg{font-size:14px;color:var(--mute)}.msg.bad{color:var(--bad);font-weight:600}
+iframe.pay{width:100%;border:0;min-height:430px}
+.closed{background:var(--soft);border-radius:12px;padding:16px;text-align:center;font-weight:600}
+details.more summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--acc2)}
+details.more[open]{display:flex;flex-direction:column;gap:10px}
+/* לשוניות */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:2px solid var(--line);margin-bottom:18px}
+.tabs button{border:0;background:transparent;padding:10px 14px;cursor:pointer;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs button[aria-selected=true]{color:var(--ink);border-color:var(--acc)}
+.story{white-space:pre-line;font-size:17px}
+.vid{border-radius:var(--r);overflow:hidden;aspect-ratio:16/9;background:#000;margin-bottom:16px}.vid iframe,.vid video{width:100%;height:100%;border:0;display:block}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:16px}.gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px}
+/* תורמים */
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tools input{flex:1 1 200px}.tools select{flex:0 0 160px}
+.feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.dn{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;animation:pop .5s ease}
+.dn.pin{border:2px solid var(--acc);background:var(--soft)}
+.dn .a{font-size:20px;font-weight:800;color:var(--acc2);font-variant-numeric:tabular-nums}
+body[data-theme=night] .dn .a{color:var(--acc)}
+.dn .n{font-weight:700}.dn .d{font-size:13px;color:var(--acc)}.dn .m{font-size:14px;color:var(--mute);font-style:italic}.dn .t{font-size:12px;color:var(--mute)}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+/* לוחות */
+.lb{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.lc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;transition:transform .15s}
+.lc:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.lc .h{display:flex;gap:10px;align-items:center}
+.av{width:46px;height:46px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:800;color:var(--acc2);flex:0 0 46px;overflow:hidden}.av img{width:100%;height:100%;object-fit:cover}
+.lc .rk{font-size:13px;color:var(--mute)}
+.lc .bar{height:10px}
+.lc .s{display:flex;justify-content:space-between;font-size:14px}
+.lc .s b{font-variant-numeric:tabular-nums}
+.medal{font-size:12px;font-weight:800;border-radius:999px;padding:1px 8px;background:var(--acc);color:var(--accInk)}
+/* גרף */
+.chart{display:flex;flex-direction:column;gap:7px}
+.cr{display:grid;grid-template-columns:150px 1fr 110px;gap:10px;align-items:center;font-size:14px}
+@media (max-width:600px){.cr{grid-template-columns:100px 1fr 80px}}
+.cr .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr .t{height:22px;background:var(--bar);border-radius:6px;overflow:hidden;position:relative}.cr .t i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:6px;transition:width 1s}
+.cr .t em{position:absolute;inset-inline-start:0;top:0;bottom:0;border-inline-end:2px dashed var(--ink);opacity:.5}
+.cr .v{white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums;text-align:left;direction:ltr}
+/* דף נציג / קבוצה */
+.who{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.who .av{width:96px;height:96px;flex:0 0 96px;font-size:34px}
+.share{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600;text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px;min-height:42px}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--accInk)}
+.mt{display:flex;flex-wrap:wrap;gap:10px}
+.mt .mm{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:12px;padding:8px 12px}.mt img{max-height:36px;max-width:90px;object-fit:contain}
+.faq details{border-bottom:1px solid var(--line);padding:10px 0}.faq summary{cursor:pointer;font-weight:600}
+.toast{position:fixed;bottom:18px;inset-inline-start:18px;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);padding:12px 16px;max-width:320px;animation:pop .4s ease}
+.toast b{color:var(--acc2)}
+.foot{color:var(--mute);font-size:13px;text-align:center;padding:24px 0 40px}
+.done{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.done .big{font-size:56px;line-height:1}
+.auc{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--soft);border-radius:var(--r);padding:16px 20px}
+/* מסך הקרנה */
+body.scr{background:#070B18;color:#fff;overflow:hidden}
+.scr .S{height:100vh;display:grid;grid-template-rows:auto auto 1fr;gap:2vh;padding:3vh 3vw}
+.scr .S .top{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.scr .S .top h1{font-size:4.2vh}.scr .S .top img{max-height:9vh;border-radius:8px;background:#fff;padding:4px}
+.scr .S .tot{display:flex;flex-direction:column;gap:1.6vh}
+.scr .S .tot .raised{font-size:13vh;font-weight:900;line-height:1;color:var(--acc);font-variant-numeric:tabular-nums;font-family:var(--hf)}
+.scr .S .tot .of{font-size:3vh;color:#B9C1D9}
+.scr .S .bar{height:4.5vh}.scr .S .bar b{font-size:2.4vh;color:#fff}
+.scr .S .bot{display:grid;grid-template-columns:1.2fr 1fr;gap:3vw;min-height:0}
+.scr .S .col{display:flex;flex-direction:column;gap:1.2vh;min-height:0;overflow:hidden}
+.scr .S .col h2{font-size:3vh;color:#B9C1D9}
+.scr .S .dn{background:#121A33;border-color:#26304D;color:#fff;font-size:2.4vh}.scr .S .dn .a{color:var(--acc);font-size:3.2vh}.scr .S .dn .m,.scr .S .dn .t{color:#9AA4BD}
+.scr .S .feed{grid-template-columns:repeat(2,1fr)}
+.scr .S .cr{grid-template-columns:26% 1fr 30%;font-size:2.3vh}.scr .S .cr .t{height:3vh;background:#1D2644}
+.scr .S .cd .u{background:#121A33;color:var(--acc);min-width:9vh}.scr .S .cd .u b{font-size:4vh}.scr .S .cd .u small{font-size:1.5vh}
+.scr .S .match{font-size:3vh}
+.full{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<script src="/assets/a11y.js?v=9" defer></script>
+</head>
+<body data-theme="classic">
+<div id="app"><p class="wrap" style="padding-top:40px">טוען…</p></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)},app=$('app');
+var API='/api/pricing?c=_give',Q=new URLSearchParams(location.search);
+var SLUG=(Q.get('s')||(location.pathname.match(/^\/give\/([a-z0-9-]+)/)||[])[1]||'').toLowerCase();
+var R=Q.get('r')||'',TM=Q.get('t')||'',SCREEN=Q.get('screen')==='1',PV=Q.get('pv')==='1';
+var D=null,TAB='about',seen={},first=true,timer=null,iv=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function nis(n){return (Math.round(+n||0)).toLocaleString('he-IL')+' ₪'}
+function pct(a,g){return g?Math.min(100,Math.round(a/g*100)):0}
+function get(b){var u=API+'&'+new URLSearchParams(b).toString();return fetch(u).then(function(r){return r.json().then(function(j){j._st=r.status;return j})})}
+function post(b){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;return j})})}
+function ago(t){var s=(Date.now()-Date.parse(t))/1000;if(s<60)return 'עכשיו';if(s<3600)return 'לפני '+Math.floor(s/60)+' דק׳';if(s<86400)return 'לפני '+Math.floor(s/3600)+' שע׳';return new Date(t).toLocaleDateString('he-IL')}
+function ini(n){n=String(n||'').trim();return esc(n?n.split(/\s+/).map(function(w){return w[0]}).slice(0,2).join(''):'♥')}
+function av(img,name){return '<span class="av" aria-hidden="true">'+(img?'<img src="'+esc(img)+'" alt="">':ini(name))+'</span>'}
+function vid(u){var y=/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{6,})/.exec(u||''),v=/vimeo\.com\/(\d+)/.exec(u||'');
+  if(y)return '<iframe src="https://www.youtube-nocookie.com/embed/'+y[1]+'" title="סרטון הקמפיין" allowfullscreen></iframe>';if(v)return '<iframe src="https://player.vimeo.com/video/'+v[1]+'" title="סרטון הקמפיין" allowfullscreen></iframe>';
+  return u?'<video src="'+esc(u)+'" controls preload="metadata"></video>':''}
+function base(){return location.origin+'/give/'+SLUG}
+if(!SLUG){app.innerHTML='<div class="full"><h1>לא נמצא קמפיין</h1></div>';return}
+
+function load(){var q={a:'camp',s:SLUG};if(R)q.r=R;if(TM)q.t=TM;if(PV)q.pv=1;return get(q).then(function(j){
+  if(j._st!==200){app.innerHTML='<div class="full"><h1>הקמפיין לא נמצא</h1><p>ייתכן שהכתובת שגויה, או שהקמפיין עוד לא נפתח.</p></div>';return null}
+  var newOnes=[];if(!first)j.feed.forEach(function(d){if(!seen[d.id])newOnes.push(d)});j.feed.forEach(function(d){seen[d.id]=1});
+  D=j;theme();if(first||SCREEN)render();else refresh();
+  if(!first&&D.cfg.f.popups&&newOnes.length)toast(newOnes[0]);first=false;return j})}
+function theme(){var c=D.cfg;document.body.dataset.theme=c.theme||'classic';var st=document.documentElement.style;
+  if(c.color){st.setProperty('--acc',c.color)}if(c.color2){st.setProperty('--acc2',c.color2)}
+  document.title=(c.title||'קמפיין')+(D.rep?' · '+D.rep.name:'')+(D.team?' · '+D.team.name:'')}
+function toast(d){var t=$('toast');t.innerHTML='<b>'+esc(d.name)+'</b> תרם/ה'+(d.amount!=null?' <b>'+nis(d.amount)+'</b>':'')+(d.rep?' דרך '+esc(d.rep):'')+(d.dedic?'<br><small>'+esc(d.dedic)+'</small>':'');t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},6000)}
+
+/* ===== שעון ===== */
+function cdHtml(){var T=D.time,c=D.cfg;if(!c.f.countdown||!T.end)return '';
+  if(T.before&&T.start)return '<div class="cd" id="cd" data-to="'+esc(T.start)+'"><span class="badge">הקמפיין ייפתח בעוד</span><span id="cdu"></span></div>';
+  if(T.ended)return c.endMode==='open'?'<span class="badge">הזמן הסתיים, ועדיין אפשר לתרום</span>':'<span class="badge">הקמפיין הסתיים</span>';
+  return '<div class="cd" id="cd" data-to="'+esc(T.end)+'"'+(T.paused?' data-paused="1"':'')+'>'+(T.paused?'<span class="badge wait">השעון עוצר בשבת</span>':'')+(T.ext?'<span class="badge wait">הקמפיין הוארך!</span>':'')+'<span id="cdu"></span></div>'}
+function tick(){var el=$('cd'),u=$('cdu');if(!el||!u)return;var to=Date.parse(el.dataset.to),ms=to-Date.now();
+  if(el.dataset.paused){ms=to-Date.parse(D.time.shabbatEnd||new Date().toISOString());}
+  if(ms<0)ms=0;var d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);
+  var U=function(v,l){return '<span class="u"><b>'+String(v).padStart(2,'0')+'</b><small>'+l+'</small></span>'};
+  u.innerHTML=(d?U(d,'ימים'):'')+U(h,'שעות')+U(m,'דקות')+U(s,'שניות');u.className='cd';if(!ms&&!el.dataset.paused)setTimeout(load,1500)}
+
+/* ===== חלקי הדף ===== */
+function progHtml(){var T=D.totals,c=D.cfg,p=pct(T.total,T.goal);
+  var h='<section class="prog" aria-label="התקדמות הקמפיין"><div class="nums"><div><div class="raised" id="raised">'+nis(T.total)+'</div>'+(T.goal?'<div class="of">'+(T.stage?'מתוך יעד הבונוס ':'מתוך היעד ')+nis(T.goal)+'</div>':'')+'</div>'+cdHtml()+'</div>';
+  if(T.goal)h+='<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+p+'" aria-label="אחוז מהיעד"><i id="pbar" style="width:'+p+'%"></i><b>'+p+'%</b></div>';
+  if(T.stage)h+='<div class="stage">היעד הראשון ('+nis(T.goal0)+') הושג! '+(T.stageTitle?esc(T.stageTitle):'ממשיכים ליעד הבונוס')+'</div>';
+  if(c.match.on)h+='<div class="match"><span class="x">×'+(+c.match.ratio)+'</span><span>'+(c.match.title?esc(c.match.title):'כל תרומה מוכפלת! על כל שקל שתתרמו, התורמים המכפילים מוסיפים '+(c.match.ratio-1===1?'עוד שקל':(c.match.ratio-1)+' שקלים'))+'</span></div>';
+  var S=[];if(T.donors!=null)S.push(['תורמים',T.donors.toLocaleString('he-IL')]);if(c.match.on)S.push(['מתוכם הכפלה',nis(T.matched)]);if(T.auction)S.push(['מהמכירה הסינית',nis(T.auction)]);if(T.goal)S.push(['נשאר ליעד',nis(Math.max(0,T.goal-T.total))]);
+  if(S.length)h+='<div class="stats">'+S.map(function(x){return '<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div>';
+  return h+'</section>'}
+function heroHtml(){var c=D.cfg,L=c.heroLayout||'banner',t='';
+  if(D.rep)return '<header class="hero center"><div class="in">'+(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="'+esc(c.title)+'">':'')+'<div class="sub">'+esc(c.title)+'</div><h1>'+esc(D.rep.name)+'</h1><div class="sub">מגייס/ת עבור הקמפיין</div></div></header>';
+  if(D.team)return '<header class="hero center"><div class="in">'+(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="'+esc(c.title)+'">':'')+'<div class="sub">'+esc(c.title)+'</div><h1>'+esc(D.team.name)+'</h1></div></header>';
+  t=(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="">':'')+'<h1>'+esc(c.title)+'</h1>'+(c.sub?'<div class="sub">'+esc(c.sub)+'</div>':'');
+  if(L==='split')return '<header class="hero split"><div class="in"><div class="t">'+t+'</div>'+(c.banner?'<div class="pic" style="background-image:url(\''+esc(c.banner)+'\')" role="img" aria-label="תמונת הקמפיין"></div>':'')+'</div></header>';
+  if(L==='center')return '<header class="hero center"><div class="in">'+t+'</div></header>';
+  return '<header class="hero banner'+(c.banner?' has':'')+'">'+(c.banner?'<div class="bg" style="background-image:url(\''+esc(c.banner)+'\')"></div>':'')+'<div class="in">'+t+'</div></header>'}
+function whoHtml(){var x=D.rep||D.team;if(!x)return '';var p=pct(x.amount,x.goal);
+  return '<section class="card" style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px"><div class="who">'+av(x.img,x.name)+'<div style="flex:1;min-width:200px"><h2 style="font-size:26px">'+esc(x.name)+'</h2><div style="font-size:30px;font-weight:900;color:var(--acc2)">'+nis(x.amount)+'</div>'+(x.goal?'<div class="msg">מתוך יעד אישי של '+nis(x.goal)+' · '+x.count+' תורמים</div>':'<div class="msg">'+x.count+' תורמים</div>')+'</div></div>'
+   +(x.goal?'<div class="bar"><i style="width:'+p+'%"></i><b>'+p+'%</b></div>':'')+((x.story||x.descr)?'<p class="story" style="margin:0">'+esc(x.story||x.descr)+'</p>':'')+shareHtml()+'<a href="'+base()+'">לדף הקמפיין הראשי</a></section>'}
+function shareHtml(){if(!D.cfg.f.share)return '';var u=location.href.split('#')[0],t=D.cfg.title+(D.rep?' · '+D.rep.name:'');
+  return '<div class="share"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(t+'\n'+u)+'">שיתוף בוואטסאפ</a><button class="btn" type="button" data-copy="'+esc(u)+'">העתקת הקישור</button></div>'}
+
+/* ===== טופס התרומה ===== */
+var F={amount:0,monthly:false,months:12},busy=false,ready=false,donId='';
+function donHtml(){var c=D.cfg,T=D.time;
+  var h='<aside class="don card" aria-labelledby="dh"><h2 id="dh">'+(D.rep?'תרומה דרך '+esc(D.rep.name):'תרמו עכשיו')+'</h2>';
+  if(!T.can)return h+'<div class="closed">'+esc(T.why)+'</div>'+(D.cfg.phoneLine?'<p class="msg">לתרומה בטלפון: <b dir="ltr">'+esc(D.cfg.phoneLine)+'</b></p>':'')+'</aside>';
+  if(!D.payVia)return h+'<div class="closed">התרומות באתר ייפתחו בקרוב</div></aside>';
+  F.months=c.monthly.def||0;
+  if(c.monthly.on)h+='<div class="seg" role="group" aria-label="סוג התרומה"><button type="button" id="m1" aria-pressed="true">חד פעמית</button><button type="button" id="m2" aria-pressed="false">הוראת קבע חודשית</button></div>';
+  h+='<div class="amts" role="group" aria-label="סכום">'+c.amounts.map(function(a){return '<button type="button" data-v="'+a.v+'" aria-pressed="false">'+nis(a.v)+(a.label?'<small>'+esc(a.label)+'</small>':'')+'</button>'}).join('')+'</div>';
+  h+='<label class="f" for="fa">סכום אחר<input id="fa" type="number" inputmode="numeric" min="'+c.min+'" placeholder="סכום בש״ח"></label>';
+  if(c.monthly.on){var mo=[];for(var i=2;i<=c.monthly.max;i++)if(i<=12||i%6===0)mo.push(i);h+='<label class="f" for="fm" id="fmw" hidden>מספר חודשים<select id="fm">'+(c.monthly.unlimited?'<option value="0">ללא הגבלה</option>':'')+mo.map(function(n){return '<option value="'+n+'"'+(n===c.monthly.def?' selected':'')+'>'+n+' חודשים</option>'}).join('')+'</select></label>'}
+  h+='<div class="xnote" id="xn" hidden></div>';
+  h+='<div class="row"><label class="f" for="fn">שם מלא<input id="fn" autocomplete="name"></label></div><div class="row"><label class="f" for="fp">טלפון<input id="fp" type="tel" inputmode="tel" autocomplete="tel" dir="ltr"></label><label class="f" for="fe">מייל<input id="fe" type="email" autocomplete="email" dir="ltr"></label></div>';
+  var rs=c.f.repSelect&&D.reps.length&&!D.rep,ts=c.f.teamSelect&&D.teams.length&&!D.rep&&!D.team;
+  if(rs)h+='<label class="f" for="fr">דרך נציג (לא חובה)<input id="fr" list="frl" placeholder="שם או קוד נציג"><datalist id="frl">'+D.reps.map(function(r){return '<option value="'+esc(r.name+' · '+r.code)+'">'}).join('')+'</datalist></label>';
+  else if(ts)h+='<label class="f" for="ft">לזכות קבוצה (לא חובה)<select id="ft"><option value="">בלי</option>'+D.teams.map(function(t){return '<option value="'+t.id+'">'+esc(t.name)+'</option>'}).join('')+'</select></label>';
+  if(c.f.dedic||c.f.message||c.f.anon){h+='<details class="more"><summary>הקדשה, הודעה ואפשרויות</summary>';
+    if(c.f.dedic)h+='<div class="row"><label class="f" for="fdt" style="flex:0 0 42%">הקדשה<select id="fdt">'+c.dedicTypes.map(function(x){return '<option>'+esc(x)+'</option>'}).join('')+'</select></label><label class="f" for="fdn">שם<input id="fdn" placeholder="פלוני בן פלוני"></label></div>';
+    if(c.f.message)h+='<label class="f" for="fmsg">הודעה שתוצג ברשימת התורמים<textarea id="fmsg" maxlength="300"></textarea></label>';
+    h+='<label class="f" for="fsn">השם שיוצג ברשימה (לא חובה)<input id="fsn" placeholder="למשל: משפחת כהן"></label>';
+    if(c.f.anon)h+='<label class="ck"><input type="checkbox" id="fan"> תרומה בעילום שם (השם לא יוצג)</label>';
+    h+='</details>'}
+  if(D.payVia!=='kehilot')h+='<label class="f" for="fz">תעודת זהות (אם חברת האשראי מבקשת)<input id="fz" inputmode="numeric" dir="ltr"></label><iframe class="pay" id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>';
+  h+='<button class="go" id="go" type="button" disabled>בוחרים סכום</button><p class="msg" id="pmsg" role="status"></p></aside>';return h}
+function wireDon(){if(!$('go'))return;var c=D.cfg;
+  try{var B=JSON.parse(localStorage.getItem('give-donor')||'null');if(B){$('fn').value=B.n||'';$('fp').value=B.p||'';$('fe').value=B.e||''}}catch(e){}
+  var btns=[].slice.call(document.querySelectorAll('.amts button'));
+  btns.forEach(function(b){b.onclick=function(){F.amount=+b.dataset.v;$('fa').value='';btns.forEach(function(x){x.setAttribute('aria-pressed',x===b)});upd()}});
+  $('fa').oninput=function(){F.amount=+this.value||0;btns.forEach(function(x){x.setAttribute('aria-pressed','false')});upd()};
+  if($('m1')){var seg=function(m){F.monthly=m;$('m1').setAttribute('aria-pressed',!m);$('m2').setAttribute('aria-pressed',m);$('fmw').hidden=!m;upd()};$('m1').onclick=function(){seg(false)};$('m2').onclick=function(){seg(true)};$('fm').onchange=function(){F.months=+this.value;upd()};F.months=+$('fm').value}
+  if(D.payVia==='kehilot'){ready=true;upd();$('go').onclick=pay;return}
+  var frame=$('frame'),postF=function(d){frame.contentWindow&&frame.contentWindow.postMessage(d,'*')};
+  frame.addEventListener('load',function(){postF({Name:'GetHeight'})});
+  window.addEventListener('message',function(e){if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;var d=e.data;if(!d||!d.Name)return;
+    if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';upd()}
+    else if(d.Name==='TransactionResponse'){busy=false;var v=d.Value||{};if(v.Status==='Error'){upd();var em=String(v.Message||'');msg(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות.':(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1)}else thanks()}});
+  $('go').onclick=function(){pay(postF)}}
+function upd(){var g=$('go'),c=D.cfg;if(!g)return;var a=F.amount,x=$('xn'),tot=F.monthly?(c.monthly.count==='first'?a:a*(F.months||c.monthly.countUnl)):a;
+  if(x){var t=[];if(F.monthly&&a)t.push(nis(a)+' לחודש'+(F.months?' × '+F.months+' חודשים = '+nis(a*F.months):' ללא הגבלה'));if(c.match.on&&a)t.push('עם ההכפלה, הקמפיין יקבל '+nis(tot*c.match.ratio));x.innerHTML=t.join('<br>');x.hidden=!t.length}
+  g.disabled=busy||!ready||!(a>=c.min);g.textContent=busy?'מעבד…':a>=c.min?'לתרומה של '+nis(a)+(F.monthly?' לחודש':''):a?'הסכום המינימלי: '+nis(c.min):'בוחרים סכום'}
+function msg(t,bad){var m=$('pmsg');if(m){m.textContent=t;m.className='msg'+(bad?' bad':'')}}
+function pay(postF){if(busy)return;var c=D.cfg,n=$('fn').value.trim(),p=$('fp').value.trim(),e=$('fe').value.trim();
+  if(n.split(/\s+/).length<2){$('fn').focus();return msg('נא למלא שם פרטי ושם משפחה.',1)}
+  if(!/^0\d{8,9}$/.test(p.replace(/\D/g,''))&&!e){$('fp').focus();return msg('נא למלא טלפון או מייל.',1)}
+  if(e&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){$('fe').focus();return msg('כתובת המייל לא תקינה.',1)}
+  try{localStorage.setItem('give-donor',JSON.stringify({n:n,p:p,e:e}))}catch(x){}
+  var rep='';if($('fr')&&$('fr').value){var m=/·\s*(\d+)\s*$/.exec($('fr').value)||/^(\d+)$/.exec($('fr').value.trim());if(m)rep=m[1];else{var hit=D.reps.find(function(r){return r.name===$('fr').value.trim()});if(hit)rep=hit.code;else{$('fr').focus();return msg('הנציג לא נמצא. בחרו מהרשימה או השאירו ריק.',1)}}}
+  var v=function(i){return $(i)?$(i).value.trim():''};
+  busy=true;upd();msg('מעבד…');
+  post({a:'donate',s:SLUG,amount:F.amount,monthly:F.monthly,months:F.months,name:n,phone:p,email:e,link:D.rep?D.rep.code:'',rep:rep,team:D.team?D.team.id:v('ft'),dedicType:v('fdt'),dedicName:v('fdn'),message:v('fmsg'),showName:v('fsn'),anon:$('fan')?$('fan').checked:false}).then(function(j){
+    if(j._st!==200){busy=false;upd();return msg(j.message||'לא הצלחנו להתחיל את התרומה.',1)}donId=j.id;
+    try{sessionStorage.setItem('give-last',JSON.stringify({id:j.id,amount:F.amount,monthly:F.monthly}))}catch(x){}
+    if(j.url){location.href=j.url;return}
+    postF({Name:'FinishTransaction2',Value:Object.assign({},j.tx,{Zeout:v('fz').replace(/\D/g,''),FirstName:n,LastName:'',Phone:p,Mail:e})});
+  }).catch(function(){busy=false;upd();msg('אין חיבור לשרת. נסו שוב.',1)})}
+function thanks(){var a=document.querySelector('.don');if(!a)return;var c=D.cfg;
+  a.innerHTML='<div class="done" role="status"><div class="big" aria-hidden="true">♥</div><h2>תודה רבה!</h2><p>התרומה שלכם ('+nis(F.amount)+(F.monthly?' לחודש':'')+') התקבלה.'+(c.match.on?' עם ההכפלה זה '+nis(F.amount*c.match.ratio*(F.monthly&&c.monthly.count!=='first'?(F.months||c.monthly.countUnl):1))+' לקמפיין!':'')+'</p>'+(c.thanks?'<p class="story">'+esc(c.thanks)+'</p>':'')+shareHtml()+'<button class="btn" type="button" id="again">לתרומה נוספת</button></div>';
+  $('again').onclick=function(){render()};setTimeout(load,4000)}
+function kesherBack(){var id=Q.get('kp'),tn=Q.get('transactionNumber')||Q.get('TransactionNumber')||Q.get('tn')||'';var a=document.querySelector('.don');
+  if(Q.get('kf')){if(a)a.insertAdjacentHTML('afterbegin','<div class="closed" style="color:var(--bad)">התשלום לא הושלם. אפשר לנסות שוב.</div>');return}
+  if(a)a.innerHTML='<p class="msg">בודקים את התשלום…</p>';
+  get({a:'kcheck',s:SLUG,id:id,tn:tn}).then(function(j){try{var L=JSON.parse(sessionStorage.getItem('give-last')||'null');if(L&&L.id===id){F.amount=L.amount;F.monthly=L.monthly}}catch(e){}
+    history.replaceState(null,'',location.pathname+(SLUG&&!/^\/give\//.test(location.pathname)?'?s='+SLUG:''));if(j.ok)thanks();else if(a)a.innerHTML='<div class="closed">'+esc(j.message||'לא הצלחנו לאשר את התשלום. אם חויבתם, פנו למארגנים.')+'</div>'})}
+
+/* ===== לשוניות ===== */
+function tabsHtml(){var c=D.cfg,L=[];if(c.story||c.video||c.gallery.length||c.faq.length||c.match.matchers.length)L.push(['about','אודות']);if(c.f.feed)L.push(['feed','תורמים'+(D.feedTotal?' ('+D.feedTotal+')':'')]);
+  if(c.f.teams&&D.teams.length&&!D.team&&!D.rep)L.push(['teams','קבוצות']);if(c.f.reps&&D.reps.length&&!D.rep)L.push(['reps',D.team?'הנציגים בקבוצה':'נציגים']);if(c.f.chart&&(D.teams.length||D.reps.length)&&!D.rep)L.push(['chart','גרף']);
+  if(!L.length)return '';if(!L.some(function(x){return x[0]===TAB}))TAB=L[0][0];
+  return '<div class="tabs" role="tablist">'+L.map(function(x){return '<button type="button" role="tab" id="tb-'+x[0]+'" aria-selected="'+(x[0]===TAB)+'" aria-controls="pane">'+x[1]+'</button>'}).join('')+'</div><div id="pane" role="tabpanel"></div>'}
+function pane(){var p=$('pane');if(!p)return;var c=D.cfg;
+  if(TAB==='about'){var h='';if(c.video)h+='<div class="vid">'+vid(c.video)+'</div>';if(c.story)h+='<div class="story">'+esc(c.story)+'</div>';
+    if(c.gallery.length)h+='<div class="gal">'+c.gallery.map(function(u){return '<img src="'+esc(u)+'" alt="" loading="lazy">'}).join('')+'</div>';
+    if(c.match.on&&c.match.matchers.length)h+='<h3 style="margin:22px 0 10px">התורמים המכפילים</h3><div class="mt">'+c.match.matchers.map(function(m){return '<div class="mm">'+(m.logo?'<img src="'+esc(m.logo)+'" alt="">':'')+'<b>'+esc(m.name)+'</b>'+(m.amount?'<span class="msg">'+nis(m.amount)+'</span>':'')+'</div>'}).join('')+'</div>';
+    if(c.faq.length)h+='<h3 style="margin:22px 0 6px">שאלות נפוצות</h3><div class="faq">'+c.faq.map(function(f){return '<details><summary>'+esc(f.q)+'</summary><p style="white-space:pre-line">'+esc(f.a)+'</p></details>'}).join('')+'</div>';
+    p.innerHTML=h}
+  else if(TAB==='feed'){p.innerHTML='<div class="tools"><label class="sr" for="fq">חיפוש תורם</label><input id="fq" placeholder="חיפוש לפי שם, הקדשה או הודעה"><label class="sr" for="fso">מיון</label><select id="fso"><option value="new">החדשים קודם</option><option value="big">הגדולים קודם</option></select></div><div class="feed" id="fd"></div><p style="text-align:center"><button class="btn" id="fmr" type="button" hidden>עוד תורמים</button></p>';
+    var off=0,run=function(add){var q={a:'feed',s:SLUG,off:off,sort:$('fso').value,q:$('fq').value.trim()};if(D.rep)q.r=D.rep.code;if(D.team)q.t=D.team.id;get(q).then(function(j){var h=(j.feed||[]).map(dnHtml).join('');$('fd').innerHTML=(add?$('fd').innerHTML:'')+(h||(add?'':'<p class="msg">עוד אין תורמים. היו הראשונים!</p>'));off+=(j.feed||[]).length;$('fmr').hidden=off>=j.total})};
+    $('fso').value=c.feedSort||'new';$('fso').onchange=function(){off=0;run()};var tq;$('fq').oninput=function(){clearTimeout(tq);tq=setTimeout(function(){off=0;run()},350)};$('fmr').onclick=function(){run(1)};run()}
+  else if(TAB==='teams')p.innerHTML=board(D.teams,'t');
+  else if(TAB==='reps'){var L=D.team?D.reps.filter(function(r){return r.team===D.team.id}):D.reps;p.innerHTML='<div class="tools"><label class="sr" for="rq">חיפוש נציג</label><input id="rq" placeholder="חיפוש נציג"></div><div id="rb">'+board(L,'r')+'</div>';
+    $('rq').oninput=function(){var q=this.value.trim();$('rb').innerHTML=board(L.filter(function(r){return !q||r.name.indexOf(q)>=0||r.code===q}),'r')}}
+  else if(TAB==='chart')p.innerHTML=chartHtml()}
+function dnHtml(d){return '<article class="dn'+(d.pinned?' pin':'')+'">'+(d.amount!=null?'<div class="a">'+nis(d.amount)+(d.monthly?' <small style="font-size:12px;font-weight:500">('+nis(d.monthly.amount)+' לחודש)</small>':'')+'</div>':'')+'<div class="n">'+esc(d.name)+'</div>'+(d.dedic?'<div class="d">'+esc(d.dedic)+'</div>':'')+(d.message?'<div class="m">"'+esc(d.message)+'"</div>':'')+'<div class="t">'+ago(d.at)+(d.rep?' · דרך '+esc(d.rep):'')+'</div></article>'}
+function board(L,k){L=L.slice().sort(function(a,b){return b.amount-a.amount});if(!L.length)return '<p class="msg">אין עדיין.</p>';var teamN={};D.teams.forEach(function(t){teamN[t.id]=t.name});
+  return '<div class="lb">'+L.map(function(x,i){var p=pct(x.amount,x.goal),href=k==='t'?base()+'?t='+x.id:base()+'?r='+x.code;
+    return '<a class="lc" href="'+href+'"><div class="h">'+av(x.img,x.name)+'<div style="flex:1;min-width:0"><div style="font-weight:700">'+esc(x.name)+(i<3&&x.amount?' <span class="medal">'+(i+1)+'</span>':'')+'</div><div class="rk">'+(k==='r'&&x.team&&teamN[x.team]?esc(teamN[x.team])+' · ':'')+x.count+' תורמים'+(k==='t'&&x.reps?' · '+x.reps+' נציגים':'')+'</div></div></div>'
+     +(x.goal?'<div class="bar"><i style="width:'+p+'%"></i></div>':'')+'<div class="s"><b>'+nis(x.amount)+'</b>'+(x.goal?'<span>'+p+'% מ־'+nis(x.goal)+'</span>':'')+'</div></a>'}).join('')+'</div>'}
+function chartHtml(){var h='',one=function(t,L){L=L.slice().sort(function(a,b){return b.amount-a.amount}).slice(0,40);if(!L.length)return '';var mx=Math.max.apply(null,L.map(function(x){return Math.max(x.amount,x.goal||0)}))||1;
+    return '<h3 style="margin:8px 0 10px">'+t+'</h3><div class="chart">'+L.map(function(x){return '<div class="cr"><span class="l" title="'+esc(x.name)+'">'+esc(x.name)+'</span><span class="t"><i style="width:'+(x.amount/mx*100).toFixed(1)+'%"></i>'+(x.goal?'<em style="width:'+(x.goal/mx*100).toFixed(1)+'%" title="יעד"></em>':'')+'</span><span class="v">'+nis(x.amount)+'</span></div>'}).join('')+'</div>'};
+  if(D.cfg.f.teams&&!D.team)h+=one('קבוצות',D.teams);if(D.cfg.f.reps)h+=one(D.team?'הנציגים בקבוצה':'נציגים',D.team?D.reps.filter(function(r){return r.team===D.team.id}):D.reps);
+  return h+'<p class="msg">הקו המקווקו מסמן את היעד.</p>'}
+
+/* ===== ציור ===== */
+function render(){if(SCREEN)return screen();var c=D.cfg,T=D.time;
+  if(T.full){app.innerHTML='<div class="full"><h1>שבת שלום</h1><p>האתר סגור בשבת ובחג. נשמח לראותכם במוצאי שבת.</p></div>';return}
+  var h=heroHtml()+'<div class="wrap">'+progHtml()+'<div class="grid"><main>'+whoHtml()
+   +(D.auctionUrl&&!D.rep?'<div class="auc" style="margin-bottom:20px"><div><b>המכירה הסינית של הקמפיין</b><div class="msg">כל כרטיס שנקנה במכירה נכנס לסכום הקמפיין</div></div><a class="btn pri" href="'+esc(D.auctionUrl)+'">למכירה הסינית</a></div>':'')
+   +tabsHtml()+'</main>'+donHtml()+'</div><p class="foot">התרומות מתקבלות ישירות אצל הארגון, בסליקה מאובטחת. '+(c.phoneLine?'לתרומה בטלפון: <b dir="ltr">'+esc(c.phoneLine)+'</b> · ':'')+'<a href="/">MyLuach</a></p></div>';
+  app.innerHTML=h;wireDon();pane();tick();clearInterval(timer);timer=setInterval(tick,1000);if(Q.get('kp'))kesherBack()}
+function refresh(){var r=$('raised');if(r){var old=document.querySelector('.prog');if(old){old.outerHTML=progHtml();tick()}}
+  var sel=document.querySelector('.tabs [aria-selected=true]');if(sel&&(TAB==='teams'||TAB==='chart'))pane();
+  if(TAB==='feed'&&$('fq')&&!$('fq').value&&$('fso').value==='new'){var f=$('fd');if(f&&D.feed.length)f.innerHTML=D.feed.slice(0,Math.max(12,f.children.length)).map(dnHtml).join('')}
+  var t=document.querySelector('.tabs');if(t){var b=document.getElementById('tb-feed');if(b)b.textContent='תורמים ('+D.feedTotal+')'}}
+function screen(){document.body.classList.add('scr');document.body.dataset.theme='night';var c=D.cfg,T=D.totals,p=pct(T.total,T.goal);
+  var L=(c.f.teams&&D.teams.length?D.teams:D.reps).slice().sort(function(a,b){return b.amount-a.amount}).slice(0,8),mx=Math.max.apply(null,L.map(function(x){return Math.max(x.amount,x.goal||0)}).concat([1]));
+  app.innerHTML='<div class="S"><div class="top"><h1>'+esc(c.title)+'</h1>'+(c.logo?'<img src="'+esc(c.logo)+'" alt="">':'')+'</div>'
+   +'<div class="tot"><div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap"><div><div class="raised">'+nis(T.total)+'</div>'+(T.goal?'<div class="of">מתוך '+nis(T.goal)+(T.donors!=null?' · '+T.donors.toLocaleString('he-IL')+' תורמים':'')+'</div>':'')+'</div>'+cdHtml()+'</div>'
+   +(T.goal?'<div class="bar"><i style="width:'+p+'%"></i><b>'+p+'%</b></div>':'')+(c.match.on?'<div class="match"><span class="x">×'+c.match.ratio+'</span><span>כל תרומה מוכפלת</span></div>':'')+(c.screenNote?'<div style="font-size:2.6vh;color:#B9C1D9">'+esc(c.screenNote)+'</div>':'')+'</div>'
+   +'<div class="bot"><div class="col"><h2>תרומות אחרונות</h2><div class="feed">'+D.feed.slice(0,8).map(dnHtml).join('')+'</div></div><div class="col"><h2>'+(c.f.teams&&D.teams.length?'קבוצות מובילות':'נציגים מובילים')+'</h2><div class="chart">'+L.map(function(x){return '<div class="cr"><span class="l">'+esc(x.name)+'</span><span class="t"><i style="width:'+(x.amount/mx*100).toFixed(1)+'%"></i></span><span class="v">'+nis(x.amount)+'</span></div>'}).join('')+'</div></div></div></div>';
+  tick();clearInterval(timer);timer=setInterval(tick,1000)}
+
+document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(b&&navigator.clipboard)navigator.clipboard.writeText(b.dataset.copy).then(function(){b.textContent='הועתק!'});
+  var t=e.target.closest('.tabs [role=tab]');if(t){TAB=t.id.slice(3);[].forEach.call(document.querySelectorAll('.tabs [role=tab]'),function(x){x.setAttribute('aria-selected',x===t)});pane()}});
+load().then(function(j){if(!j)return;iv=setInterval(function(){if(!document.hidden&&!busy)load()},SCREEN?8000:20000)});
+})();
+</script>
+</body>
+</html>

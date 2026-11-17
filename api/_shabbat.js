@@ -68,4 +68,17 @@ function placeOf(req) {
 async function closedNow(req, conf) { try { return (await status(Date.now(), placeOf(req), conf)).closed; } catch (e) { return false; } }
 /* האם התאריך (Date של צהריים מקומי) שבת או יום טוב */
 async function isHoly(d, il, yt) { const f = await holyFn(il !== false, yt !== false); return !!f([d.getFullYear(), d.getMonth() + 1, d.getDate()]); }
-module.exports = { isHoly, status, placeOf, closedNow, cfgOf, sunAlt, descend };
+/* כל חלונות השבת והחג בין שני רגעים (לקמפיין התרמה: השעון עוצר בשבת). עד 120 יום */
+async function blocksBetween(from, to, P, conf) {
+  const c = cfgOf(conf), out = []; if (!(to > from)) return out;
+  const holy = await holyFn(!!P.il, c.yt), d0 = ymdIn(from, P.tz), n = Math.min(120, Math.ceil((to - from) / 864e5) + 2);
+  let cur = null;
+  for (let i = -1; i <= n; i++) {
+    const day = addDays(d0, i), h = holy(day);
+    if (h) { if (!cur) { const ss = descend(...addDays(day, -1), P.lat, P.lng, -0.833); cur = { start: (ss || Date.UTC(day[0], day[1] - 1, day[2]) - 6 * 3600e3) - c.before * 60e3 }; } const tz = descend(day[0], day[1], day[2], P.lat, P.lng, -c.deg); cur.end = (tz || Date.UTC(day[0], day[1] - 1, day[2], 20)) + c.after * 60e3; }
+    else if (cur) { out.push(cur); cur = null; }
+  }
+  if (cur) out.push(cur);
+  return out.filter(b => b.end > from && b.start < to);
+}
+module.exports = { isHoly, status, placeOf, closedNow, cfgOf, sunAlt, descend, blocksBetween };
