@@ -687,6 +687,62 @@ function makeZip(files){
   var e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
   return new Blob(parts.concat(cen, [new Uint8Array(e.buffer)]), { type: 'application/zip' });
 }
+/* ---------- חותמת עם לוגו, ושדה חתימה לאדובי ---------- */
+var ST_KEY = 'ml-pdf-stamp';
+function stGet(){ try { return JSON.parse(localStorage.getItem(ST_KEY) || '{}') || {} } catch (e) { return {} } }
+function stSave(o){ try { localStorage.setItem(ST_KEY, JSON.stringify(o)) } catch (e) {} }
+function stToday(){ try { return new Date().toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }) } catch (e) { return '' } }
+function stImg(src){ return new Promise(function(ok){ var im = new Image(); im.onload = function(){ ok(im) }; im.onerror = function(){ ok(null) }; im.src = src }) }
+async function stDraw(cv, o){
+  var W = 900, H = 300, x = cv.getContext('2d'); cv.width = W; cv.height = H;
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.strokeStyle = '#1a3a8f'; x.lineWidth = 6; x.strokeRect(3, 3, W - 6, H - 6);
+  var lx = 24, tw = W - 48;
+  if (o.logo) { var im = await stImg(o.logo); if (im) { var s = Math.min(240 / im.width, 240 / im.height); x.drawImage(im, 30, (H - im.height * s) / 2, im.width * s, im.height * s); tw = W - 30 - 240 - 40; } }
+  var right = W - 30; x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic'; x.fillStyle = '#1a3a8f';
+  var F = 'Arial, "Noto Sans Hebrew", sans-serif', lines = [];
+  lines.push([(o.line || 'נחתם על ידי'), '600 34px ' + F, '#555']);
+  if (o.name) lines.push([o.name, '800 56px ' + F, '#111']);
+  if (o.title) lines.push([o.title, '500 36px ' + F, '#333']);
+  if (o.date) lines.push([stToday(), '500 32px ' + F, '#555']);
+  var tot = lines.length * 62, y = (H - tot) / 2 + 46;
+  lines.forEach(function(l){ x.font = l[1]; x.fillStyle = l[2]; while (x.measureText(l[0]).width > tw && /\d/.test(l[1])) { l[1] = l[1].replace(/(\d+)px/, function(m, n){ return (n - 2) + 'px' }); x.font = l[1] } x.fillText(l[0], right, y); y += 62 });
+}
+function stRead(){ var o = stGet(); return { logo: o.logo || '', name: $('stName').value.trim(), title: $('stTitle').value.trim(), line: $('stLine').value.trim(), date: $('stDate').checked } }
+function stPrev(){ stDraw($('stPrev'), stRead()) }
+function stOpen(){
+  var o = stGet(); $('stName').value = o.name || ''; $('stTitle').value = o.title || ''; $('stLine').value = o.line || ''; $('stDate').checked = o.date !== false; stPrev(); $('stDlg').showModal();
+}
+function stInit(){
+  $('bStamp').onclick = function(){ endEdit(); stOpen() };
+  ['stName', 'stTitle', 'stLine'].forEach(function(id){ $(id).oninput = stPrev }); $('stDate').onchange = stPrev;
+  $('stLogo').onchange = function(){
+    var f = this.files[0]; this.value = ''; if (!f) return;
+    var fr = new FileReader(); fr.onload = async function(){
+      var im = await stImg(fr.result); if (!im) { hint('לא הצלחנו לקרוא את התמונה.'); return }
+      var k = Math.min(1, 480 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); var o = stGet(); o.logo = c.toDataURL('image/png'); stSave(o); stPrev();
+    }; fr.readAsDataURL(f);
+  };
+  $('stClearLogo').onclick = function(){ var o = stGet(); delete o.logo; stSave(o); stPrev() };
+  $('stOk').onclick = async function(){
+    var v = stRead(); stSave(Object.assign(stGet(), { name: v.name, title: v.title, line: v.line, date: v.date }));
+    var c = document.createElement('canvas'); await stDraw(c, v); $('stDlg').close();
+    c.toBlob(function(b){ placeImage(b, 230, true) }, 'image/png');
+  };
+}
+/* שדה חתימה ריק בעמוד האחרון (AcroForm), עם החותמת כרקע. את החתימה עצמה מוסיפים באדובי עם תעודה דיגיטלית */
+async function addSigField(L, out, o){
+  var page = out.getPages()[out.getPageCount() - 1], sz = page.getSize(), w = 220, h = 73, m = 36;
+  var x = o.pos === 'left' ? m : o.pos === 'center' ? (sz.width - w) / 2 : sz.width - w - m, y = m;
+  try { var c = document.createElement('canvas'); await stDraw(c, Object.assign({}, stGet(), { date: false })); var png = await out.embedPng(await toBytes(c, 'image/png')); page.drawImage(png, { x: x, y: y, width: w, height: h }) } catch (e) { if (window.console) console.error(e) }
+  var N = L.PDFName, ctx = out.context;
+  var widget = ctx.obj({ Type: 'Annot', Subtype: 'Widget', FT: 'Sig', T: L.PDFString.of('MyLuachSignature1'), Rect: [x, y, x + w, y + h], F: 4, P: page.ref });
+  var ref = ctx.register(widget); page.node.addAnnot(ref);
+  var form = out.catalog.lookupMaybe(N.of('AcroForm'), L.PDFDict);
+  if (!form) { form = ctx.obj({ Fields: [] }); out.catalog.set(N.of('AcroForm'), form) }
+  var fields = form.lookupMaybe(N.of('Fields'), L.PDFArray); if (!fields) { fields = ctx.obj([]); form.set(N.of('Fields'), fields) }
+  fields.push(ref);
+}
 /* ---------- סימן מים והגבלות (העריכה החינמית) ---------- */
 function wmarkCanvas(c, text){
   var x = c.getContext('2d'), s = Math.max(24, Math.round(Math.min(c.width, c.height) / 12));
@@ -877,6 +933,7 @@ async function exportPdf(opt){
     if (opt.watermark) { try { await wmarkPdf(L, out, pg, opt.watermark, cache) } catch (e) { if (window.console) console.error(e) } }
     await new Promise(function(r){ setTimeout(r, 0) });
   }
+  if (opt.sigField) { try { await addSigField(L, out, opt.sigField) } catch (e) { if (window.console) console.error(e) } }
   return await out.save();
 }
 async function openDl(){
@@ -889,11 +946,11 @@ async function openDl(){
 }
 async function doDl(){
   var mode = document.querySelector('input[name=dlMode]:checked').value;
-  var opt = { dpi: +$('dlQ').value || 600, mode: mode, flat: mode === 'flat', legacy: mode === 'legacy', flatDpi: +$('dlFlatQ').value || 300, imgFmt: $('dlImgFmt').value, imgDpi: +$('dlImgQ').value || 200 };
+  var opt = { dpi: +$('dlQ').value || 600, mode: mode, flat: mode === 'flat', legacy: mode === 'legacy', flatDpi: +$('dlFlatQ').value || 300, imgFmt: $('dlImgFmt').value, imgDpi: +$('dlImgQ').value || 200, sigField: (mode !== 'img' && $('dlSig').checked) ? { pos: $('dlSigPos').value } : null };
   var base = ($('dlName').value.trim() || 'document').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\.(pdf|zip|png|jpe?g)$/i, '');
   $('dlDlg').close();
   if (window.__mlGate) {
-    var uf = usedFeats(mode), g = await window.__mlGate.check(uf.feats, uf.pages, String(S.hi) + ':' + S.order.length + ':' + mode);
+    var uf = usedFeats(mode); if (opt.sigField && uf.feats.indexOf('sign') < 0) uf.feats.push('sign'); var g = await window.__mlGate.check(uf.feats, uf.pages, String(S.hi) + ':' + S.order.length + ':' + mode);
     if (!g.ok) { if (g.msg) hint(g.msg); return }
     if (g.mode === 'watermark') opt.watermark = g.mark || 'MyLuach · myluach.org';
     if (g.note) setTimeout(function(){ hint(g.note) }, 50);
@@ -952,7 +1009,7 @@ function init(){
   $('bNew').onclick = function(){ if (!S.dirty || window.confirm('השינויים שלא הורדתם יימחקו. להמשיך?')) { S.dirty = false; location.reload() } };
   $('bSave').onclick = openDl; $('dlGo').onclick = doDl;
   Array.prototype.forEach.call(document.querySelectorAll('dialog [data-close]'), function(b){ b.onclick = function(){ b.closest('dialog').close() } });
-  sigInit();
+  sigInit(); stInit();
   window.addEventListener('beforeunload', function(e){ if (S.dirty) { e.preventDefault(); e.returnValue = '' } });
   /* טעינה מוקדמת של הספריות, כדי שהפתיחה תהיה מיידית */
   setTimeout(function(){ loadPdfjs().catch(function(){}) }, 600);

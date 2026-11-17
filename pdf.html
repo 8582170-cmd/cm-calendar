@@ -162,6 +162,7 @@ footer a{color:var(--mute)}
       <button class="btn" type="button" data-tool="pen">עט</button>
       <button class="btn" type="button" id="bImg">תמונה</button>
       <button class="btn" type="button" id="bSign">חתימה</button>
+      <button class="btn" type="button" id="bStamp" title="חותמת עם לוגו הארגון, שם, תפקיד ותאריך">חותמת עם לוגו</button>
     </div>
     <div class="row">
       <span id="pText" class="row">
@@ -239,8 +240,26 @@ footer a{color:var(--mute)}
   <label class="opt"><input type="radio" name="dlMode" value="img"><span><b>קובצי תמונה</b><small>כל עמוד נשמר כתמונה, עם כל העריכות. כמה עמודים יורדים כקובץ ZIP.</small>
     <select id="dlImgFmt" style="margin-top:6px"><option value="png">PNG (חד, קובץ גדול)</option><option value="jpg">JPG (קובץ קטן)</option></select>
     <select id="dlImgQ" style="margin-top:6px"><option value="1200">הכי גבוהה (1200)</option><option value="600">גבוהה (600)</option><option value="300">איכות הדפסה (300)</option><option value="200" selected>רגילה (200)</option><option value="150">קובץ קטן (150)</option></select></span></label>
+  <label class="opt"><input type="checkbox" id="dlSig"><span><b>להוסיף שדה חתימה דיגיטלית מוצפנת (לאדובי)</b><small>מוסיף לעמוד האחרון מקום חתימה עם הלוגו והשם מ"חותמת עם לוגו". אחרי ההורדה פותחים את הקובץ ב-Adobe Acrobat, לוחצים על השדה וחותמים עם תעודה דיגיטלית של הארגון (למשל של קומסיין). החתימה והאימות הם של התעודה שלכם, ולא של האתר. לא זמין בקובצי תמונה.</small>
+    <select id="dlSigPos" style="margin-top:6px"><option value="right">בפינה הימנית למטה</option><option value="left">בפינה השמאלית למטה</option><option value="center">באמצע למטה</option></select></span></label>
   <p class="mute" id="dlNote" hidden style="font-size:14px;margin:10px 0 0"></p>
   <div class="acts"><button class="btn pri" type="button" id="dlGo">הורדה</button><button class="btn" type="button" data-close>ביטול</button></div>
+</dialog>
+
+<dialog id="stDlg">
+  <h3>חותמת עם לוגו</h3>
+  <p class="mute" style="font-size:14px;margin:0 0 6px">חותמת גלויה לעמוד: לוגו, שם, תפקיד ותאריך. היא לא חתימה אלקטרונית מוצפנת (לזה יש את "שדה חתימה לאדובי" בהורדה). ההגדרות והלוגו נשמרים בדפדפן שלכם בלבד.</p>
+  <label for="stLogo">לוגו הארגון (תמונה)</label>
+  <input type="file" id="stLogo" accept="image/*">
+  <label for="stName">שם</label>
+  <input type="text" id="stName" dir="auto" maxlength="60">
+  <label for="stTitle">תפקיד או ארגון</label>
+  <input type="text" id="stTitle" dir="auto" maxlength="60">
+  <label for="stLine">שורה עליונה</label>
+  <input type="text" id="stLine" dir="auto" maxlength="40" placeholder="נחתם על ידי">
+  <label class="opt"><input type="checkbox" id="stDate" checked><span><b>להוסיף תאריך של היום</b></span></label>
+  <canvas id="stPrev" style="width:100%;border:1px solid var(--line);border-radius:10px;margin-top:10px"></canvas>
+  <div class="acts"><button class="btn pri" type="button" id="stOk">הוספה לדף</button><button class="btn" type="button" id="stClearLogo">הסרת הלוגו</button><button class="btn" type="button" data-close>ביטול</button></div>
 </dialog>
 
 <dialog id="sigDlg">
