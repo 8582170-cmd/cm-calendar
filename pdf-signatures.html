@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>חותמת וחתימה דיגיטלית בעורך ה-PDF: הסבר ומדריך · MyLuach</title>
+<meta name="description" content="מהי חתימה דיגיטלית, אילו אפשרויות חתימה וחותמת יש בעורך ה-PDF של MyLuach, איך מאמתים מסמך חתום, ואיך מורידים תעודה ומייבאים אותה ל-Adobe Acrobat.">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap">
+<script>window.__mlShabbat=true</script>
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--acc:#1f5c63;--ok:#0b6b3a;--bad:#b00020;--warn:#8a5a00}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 Heebo,Arial,sans-serif}
+main{max-width:800px;margin:0 auto;padding:22px 14px 70px}
+h1{font-size:30px;margin:6px 0 4px;line-height:1.3}h2{font-size:23px;margin:0 0 8px;line-height:1.35}h3{font-size:18px;margin:16px 0 4px}
+.sub{color:var(--mute);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:14px}
+.card p{margin:8px 0}.card ul,.card ol{margin:8px 0;padding-inline-start:24px}.card li{margin:4px 0}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none}
+.toc a{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 14px;text-decoration:none;color:var(--acc);font-weight:700;font-size:15px}
+.tip{border-inline-start:4px solid var(--acc);background:#eef5f5;border-radius:10px;padding:10px 14px;margin:10px 0}
+.warn{border-inline-start:4px solid var(--warn);background:#fff7e6;border-radius:10px;padding:10px 14px;margin:10px 0}
+.btnl{display:inline-block;font-weight:800;min-height:44px;padding:8px 18px;border-radius:12px;border:2px solid var(--acc);background:var(--acc);color:#fff;text-decoration:none;margin:4px 0 4px 8px}
+.btnl.s{background:#fff;color:var(--acc)}
+code,kbd{direction:ltr;unicode-bidi:embed;background:#eef0ef;border-radius:6px;padding:1px 7px;font-size:.92em;word-break:break-word}
+.en{direction:ltr;unicode-bidi:embed;font-weight:700}
+table{border-collapse:collapse;width:100%;font-size:16px;margin:8px 0}th,td{border:1px solid var(--line);padding:8px 10px;text-align:right;vertical-align:top}th{background:#f0f4f3}
+a{color:var(--acc)}details{margin:6px 0}details summary{cursor:pointer;font-weight:700}
+.back{font-size:14px;color:var(--mute);text-decoration:none;margin-inline-end:10px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">MyLuach</a><a class="back" href="/pdf">עורך ה-PDF</a>
+  <h1>חותמת וחתימה דיגיטלית בעורך ה-PDF</h1>
+  <p class="sub">מה זו חתימה דיגיטלית, אילו אפשרויות יש באתר, איך מאמתים מסמך חתום, ואיך מורידים את התעודה ומייבאים אותה ל-Adobe Acrobat.</p>
+
+  <ul class="toc" aria-label="תוכן העניינים">
+    <li><a href="#what">מהי חתימה דיגיטלית</a></li>
+    <li><a href="#options">האפשרויות באתר</a></li>
+    <li><a href="#look">מראה ומיקום</a></li>
+    <li><a href="#verify">איך מאמתים מסמך</a></li>
+    <li><a href="#cert">הורדת תעודה</a></li>
+    <li><a href="#adobe">ייבוא לאדובי</a></li>
+    <li><a href="#trouble">בעיות נפוצות</a></li>
+    <li><a href="#limits">מה החתימה לא נותנת</a></li>
+  </ul>
+
+  <section class="card" id="what">
+    <h2>מהי חתימה דיגיטלית</h2>
+    <p>חתימה דיגיטלית היא לא תמונה של חתימה. זה חישוב מתמטי שנעשה על תוכן הקובץ, בעזרת מפתח סודי של החותם, והתוצאה נשמרת בתוך הקובץ. מי שפותח את הקובץ, למשל ב-Adobe Acrobat, יכול לבדוק אותה, והיא מגלה שלושה דברים:</p>
+    <ul>
+      <li><b>שהקובץ לא שונה.</b> כל שינוי בקובץ אחרי החתימה, אפילו תו אחד, מפיל את הבדיקה.</li>
+      <li><b>מי חתם.</b> לפי התעודה הדיגיטלית של החותם, שהיא כמו תעודת זהות דיגיטלית.</li>
+      <li><b>מתי.</b> כשיש חותמת זמן, שמונפקת על ידי שרת חיצוני ולא לפי השעון של המחשב.</li>
+    </ul>
+    <p>לעומת זאת, <b>חתימה כתובה או חותמת עם לוגו</b> הן תמונה בלבד. הן נראות יפה, אבל אין בהן הגנה: אפשר לשנות את המסמך מסביבן והן לא ישתנו.</p>
+    <div class="tip"><b>למה צריך תעודה?</b> התעודה היא מה שמקשר בין החתימה לבין מי שחתם. יש תעודות של רשויות מוכרות (בתשלום), ש-Adobe מכיר מיד, ויש תעודה עצמית, כמו זו של MyLuach, שהקובץ נחתם בה תקין אך אדובי מציג אזהרה עד שמייבאים אותה פעם אחת.</div>
+  </section>
+
+  <section class="card" id="options">
+    <h2>האפשרויות באתר</h2>
+    <p>יש כאן ארבעה סוגים, מהפשוט אל המוצפן. שני הראשונים נמצאים בסרגל העורך, והשניים האחרונים בחלון ההורדה.</p>
+    <table>
+      <tr><th>אפשרות</th><th>מה היא</th><th>מוצפנת?</th></tr>
+      <tr><td><b>חתימה ביד</b><br>כפתור "חתימה"</td><td>מציירים חתימה או מעלים תמונה, ומניחים אותה בעמוד.</td><td>לא, גלויה בלבד</td></tr>
+      <tr><td><b>חותמת עם לוגו</b><br>כפתור "חותמת עם לוגו"</td><td>לוגו הארגון, שם, תפקיד ותאריך כתמונה בעמוד. אפשר להזיז ולשנות גודל. הלוגו וההגדרות נשמרים בדפדפן שלכם בלבד.</td><td>לא, גלויה בלבד</td></tr>
+      <tr><td><b>שדה חתימה לאדובי</b><br>בחלון ההורדה</td><td>האתר מוסיף שדה חתימה ריק. אתם פותחים את הקובץ ב-Adobe Acrobat, לוחצים על השדה וחותמים בתעודה הדיגיטלית של הארגון (למשל של קומסיין). החתימה והאימות הם של התעודה שלכם, ולא של האתר.</td><td>כן, בתעודה שלכם</td></tr>
+      <tr><td><b>חתימה מוצפנת של MyLuach</b><br>בחלון ההורדה</td><td>האתר חותם על טביעה (hash) של הקובץ ומוסיף חותמת זמן חיצונית. לכל מסמך יש מזהה ייחודי שאפשר לאמת <a href="/verify">בעמוד האימות</a>.</td><td>כן, בתעודה של האתר</td></tr>
+    </table>
+    <h3>איך החתימה המוצפנת של MyLuach עובדת</h3>
+    <ul>
+      <li>הקובץ לא עובר בשרת. הדפדפן מחשב טביעה (hash) של הקובץ ושולח לשרת רק אותה. השרת חותם עליה ומחזיר את החתימה, והדפדפן מכניס אותה לקובץ.</li>
+      <li>חותמת הזמן מגיעה משרת חיצוני (ברירת המחדל: FreeTSA). אם שרת הזמן לא עונה, הקובץ עדיין נחתם, בלי חותמת זמן, ותופיע הודעה.</li>
+      <li>החתימה זמינה בדרך כלל למחוברים בלבד, והיא מוגבלת בכמות ליום לכל משתמש. לפי הגדרות האתר ייתכן שהיא כלולה רק בתשלום (מנוי, חבילה או הורדה בודדת).</li>
+      <li>האפשרות מוצגת בחלון ההורדה רק כשהיא מופעלת באתר. היא לא זמינה בהורדה כקובצי תמונה.</li>
+    </ul>
+    <div class="warn">שם הארגון והתפקיד על החותמת מוזנים על ידי החותם ולא מאומתים על ידי האתר. החתימה מוכיחה שהקובץ לא שונה מאז, לא את זהות מי שהקליד את השם.</div>
+  </section>
+
+  <section class="card" id="look">
+    <h2>מראה ומיקום החותמת</h2>
+    <p>בחלון ההורדה, כשמסמנים שדה חתימה או חתימה מוצפנת, מופיע האזור "מראה ומיקום החתימה", עם תצוגה מקדימה של העמוד:</p>
+    <ul>
+      <li><b>צורה:</b> מלבן, מלבן עם פינות מעוגלות, ריבוע, עיגול, אליפסה, מעוין, משושה או משולש.</li>
+      <li><b>גודל:</b> רוחב וגובה בסנטימטרים. בריבוע ובעיגול הרוחב והגובה שווים.</li>
+      <li><b>צבעים:</b> צבע המסגרת וצבע הטקסט.</li>
+      <li><b>שקיפות הרקע:</b> מ-0% (רקע לבן מלא) עד 100% (שקוף לגמרי, והעמוד נראה מבעד לחותמת).</li>
+      <li><b>עמוד:</b> האחרון, הראשון, או מספר עמוד מסוים.</li>
+      <li><b>מיקום:</b> שישה מקומות קבועים (למטה או למעלה, בימין, באמצע או בשמאל), מרכז העמוד, או גרירה בתצוגה המקדימה למקום המדויק.</li>
+    </ul>
+    <p>התוכן של החותמת (לוגו, שם, תפקיד, שורה עליונה ותאריך) נקבע בחלון "חותמת עם לוגו". ההגדרות נשמרות בדפדפן לפעם הבאה.</p>
+    <div class="tip">אם מסמנים גם שדה לאדובי וגם חתימה מוצפנת, השדה לאדובי מונח מעל החתימה של האתר. בשדה לאדובי הצורה היא של התמונה שמאחורי השדה, ובעת החתימה אדובי מציג את החתימה בתוך מלבן השדה.</div>
+  </section>
+
+  <section class="card" id="verify">
+    <h2>איך מאמתים מסמך חתום באתר</h2>
+    <p>בעמוד <a href="/verify">myluach.org/verify</a> אפשר לבדוק אם מסמך נחתם דרך MyLuach ולא שונה מאז. יש שתי דרכים:</p>
+    <ol>
+      <li><b>לפי מזהה.</b> המזהה (12 תווים) מודפס בתחתית החותמת, אחרי <code>ID</code>. מקלידים אותו ולוחצים "בדיקה לפי מזהה".</li>
+      <li><b>לפי קובץ.</b> גוררים את ה-PDF לעמוד. הקובץ עצמו לא עולה לשרת: הדפדפן מחשב ממנו טביעה (hash) ושולח רק אותה.</li>
+    </ol>
+    <h3>איך קוראים את התוצאה</h3>
+    <ul>
+      <li><b>נמצא ותואם:</b> המסמך נחתם דרך MyLuach, ותוכנו זהה למה שנחתם. מוצגים תאריך החתימה, אם היתה חותמת זמן ומספר העמודים.</li>
+      <li><b>נוספו שינויים או חתימות אחרי החתימה:</b> למשל ארגון שחתם גם באדובי. העמוד אומר שהתוכן שנחתם על ידי MyLuach לא שונה.</li>
+      <li><b>לא נמצא, או התוכן שונה:</b> המסמך לא נחתם כאן, או שהקובץ שונה אחרי החתימה.</li>
+    </ul>
+    <p>אפשר לאמת גם ישירות ב-Adobe Acrobat, בלוח החתימות (<span class="en">Signature Panel</span>). שם הבדיקה מתבצעת בתוך התוכנה, ותלויה בייבוא התעודה, כמפורט בהמשך.</p>
+  </section>
+
+  <section class="card" id="cert">
+    <h2>הורדת תעודות מהאתר</h2>
+    <p>כדי ש-Adobe Acrobat יציג חתימה תקינה (וי ירוק) ולא אזהרה, צריך להוריד ולייבא פעם אחת שתי תעודות:</p>
+    <p>
+      <a class="btnl" href="/api/pricing?c=_sign&amp;a=cert">הורדת התעודה של MyLuach</a>
+      <a class="btnl s" href="/api/pricing?c=_sign&amp;a=tsacert">הורדת תעודת שרת הזמן</a>
+    </p>
+    <ul>
+      <li><b>התעודה של MyLuach</b> היא זו שחתמה על הקובץ. בלעדיה אדובי כותב שזהות החותם לא ידועה.</li>
+      <li><b>תעודת שרת הזמן</b> (ברירת מחדל: FreeTSA) מוודאת את חותמת הזמן. בלעדיה ייתכן שאדובי יציג חותמת זמן לא מאומתת.</li>
+      <li>הקבצים יורדים עם סיומת <code>.cer</code>. אם הדפדפן מציג טקסט במקום להוריד, שומרים את הדף כקובץ עם סיומת <code>.cer</code>.</li>
+    </ul>
+    <div class="warn">אם בעל האתר מחליף את התעודה (יצירת תעודה חדשה), צריך להוריד ולייבא אותה מחדש. קבצים שנחתמו בתעודה הישנה ממשיכים להיבדק בעמוד האימות, אבל באדובי יידרש הייבוא של התעודה שחתמה עליהם.</div>
+  </section>
+
+  <section class="card" id="adobe">
+    <h2>איך מייבאים תעודה ל-Adobe Acrobat</h2>
+    <p>עושים זאת פעם אחת בכל מחשב, ולכל תעודה בנפרד (תעודת MyLuach, ואחריה תעודת שרת הזמן). שמות התפריטים בגרסה האנגלית:</p>
+    <ol>
+      <li>פותחים את Acrobat ובוחרים <span class="en">Edit → Preferences</span>. בגרסה החדשה, אם אין תפריט Edit, לוחצים על שלוש השורות (<span class="en">Menu</span>) ואז <span class="en">Preferences</span>. ב-Mac: <span class="en">Acrobat → Preferences</span>.</li>
+      <li>ברשימה בצד שמאל בוחרים <span class="en">Signatures</span>.</li>
+      <li>תחת <span class="en">Identities &amp; Trusted Certificates</span> לוחצים <span class="en">More…</span></li>
+      <li>בצד שמאל בוחרים <span class="en">Trusted Certificates</span> (ולא Digital IDs), ולמעלה לוחצים <span class="en">Import</span>.</li>
+      <li>לוחצים <span class="en">Browse…</span> ובוחרים את קובץ ה-<code>.cer</code> שהורדתם.</li>
+      <li>בוחרים את התעודה ברשימה למעלה (תחת <span class="en">Contacts</span>), ואז בחלון הקטן שמתחתיה בוחרים את התעודה עצמה.</li>
+      <li>עוברים ללשונית <span class="en">Trust</span> ומסמנים <span class="en">Use this certificate as a trusted root</span>. <span class="en">Signed documents or data</span> מסומן אוטומטית. אין צורך לסמן <span class="en">Certified documents</span>.</li>
+      <li>לוחצים <span class="en">OK</span>, ואז בתחתית החלון לוחצים <b><span class="en">Import</span></b>. בלי הלחיצה הזו הייבוא לא נשמר. אחר כך <span class="en">OK</span> על שאר החלונות.</li>
+      <li>סוגרים את ה-PDF ופותחים אותו מחדש. ללחוץ ימנית על החתימה ← <span class="en">Validate Signature</span>.</li>
+    </ol>
+    <div class="tip">אם התעודה כבר ברשימה אבל לא מסומנת כמהימנה: בוחרים אותה ולוחצים <span class="en">Edit Trust</span>, ומסמנים <span class="en">Use this certificate as a trusted root</span>. בחלון התעודה שנפתח מתוך החתימה, הכפתור <span class="en">Add to Trusted Certificates</span> עשוי להיות אפור, ולכן עושים זאת מההעדפות כמו למעלה.</div>
+  </section>
+
+  <section class="card" id="trouble">
+    <h2>בעיות נפוצות</h2>
+    <details><summary>עדיין מופיע סימן שאלה צהוב, ולא וי ירוק</summary>
+      <p>בדרך כלל לא סומן האמון על התעודה, או שלא נלחץ <span class="en">Import</span> בסוף. בודקים בלשונית <span class="en">Trust</span> של התעודה, סוגרים את הקובץ ופותחים מחדש. אם עדיין צהוב, פותחים את <span class="en">Signature Properties</span> וקוראים את <span class="en">Validity Summary</span>, שם כתוב מה הבעיה.</p>
+    </details>
+    <details><summary>החתימה מסומנת באיקס אדום</summary>
+      <p>הקובץ שונה אחרי החתימה. חותמים מחדש על הגרסה הסופית. כל עריכה, אפילו הוספת הערה, מבטלת חתימה קיימת.</p>
+    </details>
+    <details><summary>אדובי כותב "זהות החותם לא ידועה"</summary>
+      <p>התעודה של MyLuach עדיין לא מיובאת כמהימנה במחשב הזה. זה לא אומר שהקובץ שונה. מייבאים כמתואר למעלה.</p>
+    </details>
+    <details><summary>חותמת הזמן לא מאומתת</summary>
+      <p>מייבאים גם את תעודת שרת הזמן, באותה דרך ובאותו סימון אמון.</p>
+    </details>
+    <details><summary>אין לי אפשרות חתימה מוצפנת בחלון ההורדה</summary>
+      <p>האפשרות מוצגת רק כשהחתימה המוצפנת פעילה באתר. אם היא לא מופיעה, היא כבויה כרגע.</p>
+    </details>
+    <details><summary>פותח את הקובץ במחשב אחר ויש שוב אזהרה</summary>
+      <p>הייבוא נעשה בכל מחשב בנפרד, ולכן צריך לעשות אותו שוב בכל מחשב שבו בודקים את החתימה. בעמוד האימות באתר אפשר לבדוק בלי ייבוא.</p>
+    </details>
+  </section>
+
+  <section class="card" id="limits">
+    <h2>מה החתימה לא נותנת</h2>
+    <ul>
+      <li>החתימה המוצפנת של MyLuach היא בתעודה עצמית של האתר, ולא של רשות מוכרת. אדובי לא מכיר בה אוטומטית אלא אחרי ייבוא.</li>
+      <li>היא לא חתימה אלקטרונית מאושרת לפי חוק חתימה אלקטרונית, ואין בה אימות של זהות מי שהזין את השם והארגון.</li>
+      <li>מי שצריך חתימה מאושרת, או חתימה שאדובי מכיר בה מיד, צריך תעודה של רשות מוכרת, ואז משתמשים באפשרות "שדה חתימה לאדובי". אם יש שאלה משפטית על תוקף החתימה במקרה שלכם, כדאי להתייעץ עם איש מקצוע.</li>
+    </ul>
+    <p class="sub" style="margin-top:14px">שאלות או בעיות? <a href="/pdf">חזרה לעורך ה-PDF</a> · <a href="/verify">אימות מסמך</a></p>
+  </section>
+</main>
+<script src="/assets/a11y.js?v=9" defer></script>
+<script src="/assets/sitemsg.js?v=3" defer></script>
+</body>
+</html>

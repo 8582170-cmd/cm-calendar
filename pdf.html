@@ -163,6 +163,7 @@ footer a{color:var(--mute)}
       <button class="btn" type="button" id="bImg">תמונה</button>
       <button class="btn" type="button" id="bSign">חתימה</button>
       <button class="btn" type="button" id="bStamp" title="חותמת עם לוגו הארגון, שם, תפקיד ותאריך">חותמת עם לוגו</button>
+      <a class="btn" href="/pdf-signatures" target="_blank" rel="noopener" title="הסבר על חותמת וחתימה דיגיטלית, אימות מסמך וייבוא תעודה לאדובי" style="text-decoration:none">הסבר על חתימות</a>
     </div>
     <div class="row">
       <span id="pText" class="row">
@@ -227,7 +228,7 @@ footer a{color:var(--mute)}
 <p><b>2. חותמת עם לוגו.</b> כפתור "חותמת עם לוגו": לוגו הארגון, שם, תפקיד ותאריך בעמוד. גם זו גלויה בלבד, ללא הצפנה. הלוגו וההגדרות נשמרים בדפדפן שלכם.</p>
 <p><b>3. שדה חתימה לאדובי (החתימה של הארגון עצמו).</b> בחלון ההורדה אפשר להוסיף לעמוד האחרון שדה חתימה ריק. פותחים את הקובץ ב-Adobe Acrobat, לוחצים על השדה וחותמים בתעודה דיגיטלית שיש לארגון (למשל של קומסיין או של חברה אחרת). את התעודה מנפיקה חברה חיצונית בתשלום, והחתימה והאימות הם של התעודה הזו ולא של האתר.</p>
 <p><b>4. חתימה דיגיטלית מוצפנת של MyLuach, עם חותמת זמן.</b> בחלון ההורדה, למחוברים. האתר חותם על טביעה (hash) של הקובץ, בלי לראות את המסמך, ומוסיף חותמת זמן חיצונית. כל שינוי בקובץ אחרי החתימה מתגלה. לכל מסמך יש מזהה, ואפשר לאמת אותו בכל עת ב-<a href="/verify">עמוד האימות</a>.</p>
-<p><b>חשוב לדעת על סעיף 4: אדובי יציג אזהרה.</b> החתימה היא בתעודה של MyLuach ולא של רשות מוכרת, ולכן Adobe Acrobat יכתוב שזהות החותם לא ידועה. זה לא אומר שהקובץ שונה. כדי שתופיע חתימה תקינה ב-Acrobat, מורידים את <a href="/api/pricing?c=_sign&amp;a=cert">התעודה של MyLuach</a> ומייבאים אותה פעם אחת כמהימנה: ערוך, העדפות, חתימות, זהויות ותעודות מהימנות, עוד, ייבוא, ואז מסמנים "תעודה מהימנה" (באדובי באנגלית: Edit, Preferences, Signatures, Identities &amp; Trusted Certificates, More, Trusted Certificates, Import, ואז Trust: Use this certificate as a trusted root). הייבוא נעשה בכל מחשב בנפרד. גם שרת חותמות הזמן החיצוני לא מוכר לאדובי, ולכן כדאי לייבא באותה דרך גם את <a href="/api/pricing?c=_sign&amp;a=tsacert">תעודת שרת הזמן</a>.</p>
+<p><b>חשוב לדעת על סעיף 4: אדובי יציג אזהרה.</b> החתימה היא בתעודה של MyLuach ולא של רשות מוכרת, ולכן Adobe Acrobat יכתוב שזהות החותם לא ידועה. זה לא אומר שהקובץ שונה. כדי שתופיע חתימה תקינה ב-Acrobat, מורידים את <a href="/api/pricing?c=_sign&amp;a=cert">התעודה של MyLuach</a> ומייבאים אותה פעם אחת כמהימנה: ערוך, העדפות, חתימות, זהויות ותעודות מהימנות, עוד, ייבוא, ואז מסמנים "תעודה מהימנה" (באדובי באנגלית: Edit, Preferences, Signatures, Identities &amp; Trusted Certificates, More, Trusted Certificates, Import, ואז Trust: Use this certificate as a trusted root). הייבוא נעשה בכל מחשב בנפרד. <a href="/pdf-signatures">למדריך המלא עם כל השלבים באנגלית</a>. גם שרת חותמות הזמן החיצוני לא מוכר לאדובי, ולכן כדאי לייבא באותה דרך גם את <a href="/api/pricing?c=_sign&amp;a=tsacert">תעודת שרת הזמן</a>.</p>
 <p><b>מה החתימה לא נותנת.</b> היא לא חתימה מאושרת לפי חוק חתימה אלקטרונית, ואין בה אימות של זהות מי שהזין את השם והארגון. מי שצריך חתימה מאושרת או חתימה שאדובי מכיר בה מיד, צריך תעודה של רשות מוכרת, ואז משתמשים באפשרות 3.</p></details>
 <details><summary>זה בחינם?</summary><p>כן, בלי הרשמה ובלי סימן מים.</p></details>
 </section>
@@ -252,6 +253,7 @@ footer a{color:var(--mute)}
   <label class="opt"><input type="checkbox" id="dlSig"><span><b>להוסיף שדה חתימה דיגיטלית מוצפנת (לאדובי)</b><small>מוסיף לעמוד שתבחרו מקום חתימה עם הלוגו והשם מ"חותמת עם לוגו". אחרי ההורדה פותחים את הקובץ ב-Adobe Acrobat, לוחצים על השדה וחותמים עם תעודה דיגיטלית של הארגון (למשל של קומסיין). החתימה והאימות הם של התעודה שלכם, ולא של האתר. לא זמין בקובצי תמונה.</small></span></label>
   <fieldset id="dlLook" hidden style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0 0">
     <legend style="font-weight:700;padding:0 6px">מראה ומיקום החתימה</legend>
+    <p style="margin:0 0 8px;font-size:14px"><a href="/pdf-signatures" target="_blank" rel="noopener">מדריך מלא: מהי חתימה דיגיטלית, אימות מסמך והורדת תעודה לאדובי</a></p>
     <div class="row" style="gap:10px">
       <label class="lbl">צורה
         <select id="sgShape"><option value="rect">מלבן</option><option value="round">מלבן עם פינות מעוגלות</option><option value="square">ריבוע</option><option value="circle">עיגול</option><option value="ellipse">אליפסה</option><option value="diamond">מעוין</option><option value="hex">משושה</option><option value="tri">משולש</option></select></label>
@@ -277,7 +279,7 @@ footer a{color:var(--mute)}
 
 <dialog id="stDlg">
   <h3>חותמת עם לוגו</h3>
-  <p class="mute" style="font-size:14px;margin:0 0 6px">חותמת גלויה לעמוד: לוגו, שם, תפקיד ותאריך. היא לא חתימה אלקטרונית מוצפנת (לזה יש את "שדה חתימה לאדובי" בהורדה). ההגדרות והלוגו נשמרים בדפדפן שלכם בלבד.</p>
+  <p class="mute" style="font-size:14px;margin:0 0 6px">חותמת גלויה לעמוד: לוגו, שם, תפקיד ותאריך. היא לא חתימה אלקטרונית מוצפנת (לזה יש את "שדה חתימה לאדובי" בהורדה). <a href="/pdf-signatures" target="_blank" rel="noopener">הסבר על חתימות</a>. ההגדרות והלוגו נשמרים בדפדפן שלכם בלבד.</p>
   <label for="stLogo">לוגו הארגון (תמונה)</label>
   <input type="file" id="stLogo" accept="image/*">
   <label for="stName">שם</label>

@@ -109,6 +109,7 @@
   { "source": "/give-manage", "destination": "/give-admin.html" },
   { "source": "/pdf-admin", "destination": "/pdf-admin.html" },
   { "source": "/products", "destination": "/products.html" },
+  { "source": "/pdf-signatures", "destination": "/pdf-signatures.html" },
   { "source": "/verify", "destination": "/verify.html" },
   { "source": "/verify/:id", "destination": "/verify.html" },
   { "source": "/give", "destination": "/give.html" },
