@@ -71,6 +71,7 @@ function post(b){ b.a = 'check'; return fetch(API, { method: 'POST', headers: { 
 function when(iso){ try { return new Date(iso).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'long', timeStyle: 'short' }) } catch (e) { return iso } }
 function row(dl, k, v){ if (!v) return; var a = document.createElement('dt'), b = document.createElement('dd'); a.textContent = k; b.textContent = v; dl.appendChild(a); dl.appendChild(b) }
 function show(kind, title, text, r, extra){
+  if (r && r.rv) { kind = 'bad'; title = 'החתימה הזו בוטלה'; text = 'המסמך נחתם דרך MyLuach בעבר, אבל החתימה בוטלה אחר כך. אין להסתמך עליה.'; extra = ''; }
   var o = $('out'); o.textContent = ''; var d = document.createElement('div'); d.className = 'res ' + kind;
   var h = document.createElement('h2'); h.textContent = title; d.appendChild(h);
   var p = document.createElement('div'); p.textContent = text; d.appendChild(p);

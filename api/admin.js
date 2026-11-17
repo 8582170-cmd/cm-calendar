@@ -79,7 +79,7 @@ function clean(c) {
 }
 
 /* יומן פעולות הניהול (settings → adminlog, 600 אחרונות). פעולות קריאה בלבד לא נרשמות */
-const ALOG_RO = /^(mailalert|dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|pdfget|signget|prodget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
+const ALOG_RO = /^(mailalert|dir_(books|search|blocklist|cfgget)|gmget|receipt|subsget|pdfget|pdfstats|signlist|signget|prodget|cu_search|schedget|fbget|custget|evpget|fin|giftlist|greet(fonts|stick|tpl)?get|indexqueue|mailplan|mailpreview|msgget|snapget|usage|yzready|yzsearch|yzday|page(slist|get)|libget|secget|ev_(stats|list|get)|cu_extra|cu_recent|health|alog|maintget)$/;
 async function alogAdd(req, b, act, st) {
   const { loadSetting, saveSetting } = require('./_lib'), SEC = require('./_sec');
   const ip = SEC.ipOf(req) || '', now = new Date().toISOString();
@@ -144,6 +144,30 @@ async function main(req, res) {
       }
       const K = await SG.loadKey().catch(() => null);
       return json(res, 200, { sign: await SG.cfg(), has: !!K, fp: K ? K.fp : '', env: !!(process.env.MYLUACH_SIGN_KEY && process.env.MYLUACH_SIGN_CERT) });
+    }
+    /* עריכת PDF: סקירה (הורדות, מכירות, חתימות) ורשימת המסמכים החתומים, כולל ביטול חתימה */
+    if (req.method === 'POST' && b.action === 'pdfstats') {
+      const rows = (await db('orders?select=plan,amount,coupon,paid_at,created_at&status=eq.paid&or=(plan.eq.pdf,plan.like.psingle*,plan.like.ppack*,plan.like.psub*)&order=created_at.desc&limit=5000').catch(() => [])) || [];
+      const sg = (await db('settings?key=like.vf:*&select=value&limit=2000').catch(() => [])) || [];
+      const now = Date.now(), D30 = now - 30 * 864e5, D1 = now - 864e5, ts = o => new Date(o.paid_at || o.created_at).getTime();
+      const dl = { total: 0, d30: 0, d1: 0, via: {} }, sales = { n: 0, sum: 0, n30: 0, sum30: 0, kinds: {} }, sig = { total: sg.length, d30: 0 };
+      for (const o of rows) {
+        const t = ts(o);
+        if (o.plan === 'pdf') { dl.total++; if (t > D30) dl.d30++; if (t > D1) dl.d1++; const v = o.coupon || '?'; dl.via[v] = (dl.via[v] || 0) + 1; }
+        else { const k = String(o.plan).slice(0, 5) === 'psing' ? 'single' : String(o.plan).slice(0, 5) === 'ppack' ? 'pack' : 'sub', a = +o.amount || 0; sales.n++; sales.sum += a; if (t > D30) { sales.n30++; sales.sum30 += a; } const K = sales.kinds[k] || (sales.kinds[k] = { n: 0, sum: 0 }); K.n++; K.sum += a; }
+      }
+      for (const r of sg) { const t = r.value && r.value.at ? new Date(r.value.at).getTime() : 0; if (t > D30) sig.d30++; }
+      return json(res, 200, { dl, sales, sig, capped: rows.length >= 5000 });
+    }
+    if (req.method === 'POST' && b.action === 'signlist') {
+      const rows = (await db('settings?key=like.vf:*&select=value&order=updated_at.desc&limit=200').catch(() => [])) || [];
+      return json(res, 200, { items: rows.map(r => r.value || {}).filter(v => v.id).map(v => ({ id: v.id, at: v.at, name: v.name || '', org: v.org || '', pages: v.pages || 0, ts: !!v.ts, by: v.by || '', rv: v.rv || '' })) });
+    }
+    if (req.method === 'POST' && b.action === 'signrevoke') {
+      const L = require('./_lib'), id = String(b.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20), r = id ? await L.loadSetting('vf:' + id) : null;
+      if (!r || !r.id) return json(res, 404, { error: 'not found' });
+      await L.saveSetting('vf:' + id, { ...r, rv: b.on ? new Date().toISOString() : '' });
+      return json(res, 200, { ok: true, id, rv: b.on ? 1 : 0 });
     }
     /* המוצרים באתר: מה מוצג בדף "עוד מוצרים" ומה נכלל באינדוקס של גוגל (api/_products.js) */
     if (req.method === 'POST' && (b.action === 'prodget' || b.action === 'prodset')) {

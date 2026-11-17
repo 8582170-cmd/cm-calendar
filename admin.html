@@ -256,44 +256,9 @@ document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest
   if(t.id==='sbSave'){const m=$('#sbMsg'),x=sbRead();const bad=[].concat(x.gsubs,x.gpacks,x.rem.opts).find(r=>!/^[a-z0-9-]{1,20}$/.test(r.id||''));if(bad){m.textContent='לכל שורה צריך מזהה באותיות אנגליות קטנות, מספרים או מקף';return}
     m.textContent='שומר…';api({action:'subsset',subs:x}).then(j=>{SBX=j;sbDraw();$('#sbMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})}});
 
-/* עריכת PDF: עריכה חינמית, מה חסום בה, ומחירים (api/_pdfpay.js) */
-let PDX=null;
-function pdfSection(){setTimeout(()=>{if(!PDX)api({action:'pdfget'}).then(j=>{PDX=j;pdDraw()}).catch(()=>{});else pdDraw()},0);return '<section id="pdSec"><h2>עריכת PDF: חינם ותשלום</h2><p class="sub">כל אימייל מקבל עריכה חינמית (ברירת מחדל: אחת). אחריה: הורדה עם סימן מים, או תשלום לפי מה שמוגדר כאן: הורדה בודדת, חבילת הורדות, או מנוי. הסדר בהורדה: מנוי, חבילה, הורדה בודדת, חינם. יכולת שסגורה בחינם נפתחת לכל מי שיש לו מנוי, חבילה או הורדה בודדת. מזהה = אותיות באנגלית בלבד, ולא משנים אותו אחרי שנמכר. הערה: העריכה רצה בדפדפן, ולכן ההגבלה היא בדיקה בהורדה ולא חסימה טכנית מלאה.</p><div id="pdBox">טוען…</div></section>'}
-function pdDraw(){const B=$('#pdBox');if(!B||!PDX)return;const S=PDX.pdf,v=x=>x==null?'':x;
-  const inp=(k,val,w,t)=>'<input data-k="'+k+'" type="'+(t||'text')+'" value="'+esc(v(val))+'" style="width:'+(w||90)+'px"'+(t==='number'?' min="0" step="any"':'')+'>';
-  const chk=(k,val)=>'<input type="checkbox" data-k="'+k+'"'+(val?' checked':'')+'>';
-  const del='<button class="btn small" type="button" data-pddel>✕</button>';
-  B.innerHTML='<label class="row"><input type="checkbox" id="pdOn"'+(S.on?' checked':'')+'> הגבלת העריכה והמכירה פעילות (כבוי = העורך חינמי לכולם בלי סימן מים, כמו היום)</label>'+
-  '<h3>העריכה החינמית</h3><div class="row"><label>עריכות חינם לכל אימייל <input type="number" id="pdN" min="0" max="50" value="'+v(S.free.n)+'" style="width:70px"></label><label>עד <input type="number" id="pdMp" min="0" value="'+v(S.free.maxPages)+'" style="width:80px"> עמודים (0 = בלי הגבלה)</label></div>'+
-  '<p class="sub">יכולות שחסומות בעריכה החינמית (נפתחות רק בתשלום):</p><div class="row" id="pdBl">'+PDX.feats.map(f=>'<label><input type="checkbox" data-bl="'+f[0]+'"'+(S.free.blocked.indexOf(f[0])>=0?' checked':'')+'> '+esc(f[1])+'</label>').join(' ')+'</div>'+
-  '<div class="row"><label>אחרי שהעריכה החינמית נוצלה: <select id="pdAf"><option value="watermark"'+(S.free.after==='watermark'?' selected':'')+'>הורדה עם סימן מים</option><option value="deny"'+(S.free.after==='deny'?' selected':'')+'>אי אפשר להוריד בלי תשלום</option></select></label><label>טקסט סימן המים <input id="pdMk" value="'+esc(S.free.mark)+'" style="width:220px"></label></div>'+
-  '<h3>הורדה בודדת</h3><div class="row"><label><input type="checkbox" id="pdOne"'+(S.one.on?' checked':'')+'> למכור הורדה בודדת</label><label>מחיר ₪ <input type="number" id="pdOp" min="0" step="any" value="'+v(S.one.price)+'" style="width:80px"></label></div>'+
-  '<h3>חבילות הורדות</h3><p class="sub">תוקף בחודשים (0 = בלי הגבלת זמן).</p><div class="tw"><table id="pdP"><thead><tr><th>פעיל</th><th>מזהה</th><th>שם</th><th>תיאור</th><th>הורדות</th><th>מחיר ₪</th><th>תוקף (חודשים)</th><th></th></tr></thead><tbody>'+S.packs.map(x=>'<tr><td>'+chk('on',x.on)+'</td><td>'+inp('id',x.id,80)+'</td><td>'+inp('name',x.name,120)+'</td><td>'+inp('desc',x.desc,170)+'</td><td>'+inp('n',x.n,60,'number')+'</td><td>'+inp('price',x.price,70,'number')+'</td><td>'+inp('months',x.months,60,'number')+'</td><td>'+del+'</td></tr>').join('')+'</tbody></table></div><button class="btn small" type="button" data-pdadd="P">+ חבילה</button>'+
-  '<h3>מנויים</h3><p class="sub">מכסה = כמה הורדות בכל חודש של המנוי (0 = ללא הגבלה). מחיר 0 = לא נמכר בתקופה הזאת. התשלום מראש לתקופה.</p><div class="tw"><table id="pdS"><thead><tr><th>פעיל</th><th>מזהה</th><th>שם</th><th>תיאור</th><th>מכסה לחודש</th><th>₪ לחודש</th><th>₪ לשנה</th><th></th></tr></thead><tbody>'+S.subs.map(x=>'<tr><td>'+chk('on',x.on)+'</td><td>'+inp('id',x.id,80)+'</td><td>'+inp('name',x.name,120)+'</td><td>'+inp('desc',x.desc,170)+'</td><td>'+inp('quota',x.quota,60,'number')+'</td><td>'+inp('pm',x.pm,70,'number')+'</td><td>'+inp('py',x.py,70,'number')+'</td><td>'+del+'</td></tr>').join('')+'</tbody></table></div><button class="btn small" type="button" data-pdadd="S">+ מנוי</button>'+
-  '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="pdSave">שמירה</button><span class="sub" id="pdMsg" role="status"></span></div>'}
-function pdRead(){const rows=id=>[...document.querySelectorAll('#'+id+' tbody tr')].map(tr=>{const o={};tr.querySelectorAll('[data-k]').forEach(i=>{o[i.dataset.k]=i.type==='checkbox'?i.checked:i.type==='number'?(i.value===''?0:+i.value):i.value.trim()});return o});
-  return {on:$('#pdOn').checked,free:{n:+$('#pdN').value||0,maxPages:+$('#pdMp').value||0,blocked:[...document.querySelectorAll('#pdBl [data-bl]')].filter(i=>i.checked).map(i=>i.dataset.bl),after:$('#pdAf').value,mark:$('#pdMk').value.trim()},one:{on:$('#pdOne').checked,price:+$('#pdOp').value||0},packs:rows('pdP'),subs:rows('pdS')}}
-document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('#pdBox'))return;
-  if(t.dataset.pddel!=null){t.closest('tr').remove();return}
-  if(t.dataset.pdadd){PDX.pdf=pdRead();const k=t.dataset.pdadd;if(k==='P')PDX.pdf.packs.push({id:'',name:'',desc:'',n:5,price:0,months:12,on:true});if(k==='S')PDX.pdf.subs.push({id:'',name:'',desc:'',quota:0,pm:0,py:0,on:true});pdDraw();return}
-  if(t.id==='pdSave'){const m=$('#pdMsg'),x=pdRead();const bad=[].concat(x.packs,x.subs).find(r=>!/^[a-z0-9-]{1,20}$/.test(r.id||''));if(bad){m.textContent='לכל שורה צריך מזהה באנגלית (אותיות קטנות, ספרות ומקף).';return}
-    m.textContent='שומר…';api({action:'pdfset',pdf:x}).then(j=>{PDX=j;pdDraw();$('#pdMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})}});
-
-/* עריכת PDF: חתימה דיגיטלית מוצפנת וחותמת זמן (api/_pdfsign.js) */
-let SGX=null;
-function signSection(){setTimeout(()=>{if(!SGX)api({action:'signget'}).then(j=>{SGX=j;sgDraw()}).catch(()=>{});else sgDraw()},0);return '<section id="sgSec"><h2>עריכת PDF: חתימה דיגיטלית מוצפנת</h2><p class="sub">האתר חותם על טביעה (hash) של הקובץ, בלי לראות את המסמך, ומוסיף חותמת זמן חיצונית. כל מסמך חתום מקבל מזהה ואפשר לאמת אותו ב-<a href="/verify" target="_blank">/verify</a>. התעודה היא עצמית (לא של רשות מוכרת), ולכן באדובי תופיע אזהרה עד שמייבאים אותה. כדי לנעול את היכולת למי ששילם בלבד, מוסיפים "חתימה דיגיטלית מוצפנת של האתר" לרשימת מה שחסום בעריכה החינמית.</p><div id="sgBox"></div></section>'}
-function sgDraw(){const B=$('#sgBox');if(!B||!SGX)return;const S=SGX.sign;
-  B.innerHTML='<div class="row"><label><input type="checkbox" id="sgOn" '+(S.on?'checked':'')+'> החתימה המוצפנת פעילה (מופיעה בחלון ההורדה בעורך)</label></div>'+
-  '<div class="row"><label>מי יכול לחתום <select id="sgNeed"><option value="login"'+(S.need!=='any'?' selected':'')+'>מחוברים בלבד (מומלץ)</option><option value="any"'+(S.need==='any'?' selected':'')+'>כולם, גם בלי כניסה (לפי כתובת)</option></select></label> <label>מכסה יומית לכל משתמש <input type="number" id="sgCap" min="1" max="1000" value="'+S.cap+'" style="width:90px"></label></div>'+
-  '<div class="row"><label><input type="checkbox" id="sgTs" '+(S.tsa.on?'checked':'')+'> להוסיף חותמת זמן חיצונית (RFC 3161)</label> <label>כתובת שרת חותמות הזמן <input id="sgTu" dir="ltr" value="'+(S.tsa.url||'').replace(/"/g,'&quot;')+'" style="min-width:280px"></label></div>'+
-  '<p class="sub">ברירת המחדל היא שרת חינמי של FreeTSA. אם שרת חותמות הזמן לא עונה, המסמך עדיין נחתם, בלי חותמת זמן, והלקוח מקבל על כך הודעה.</p>'+
-  '<div class="row"><b>תעודת החתימה:</b> '+(SGX.has?'קיימת. טביעת אצבע (SHA-256): <code dir="ltr">'+SGX.fp+'</code> · <a href="/api/pricing?c=_sign&a=cert">הורדת התעודה</a>':'עדיין לא נוצרה.')+(SGX.env?' (מוגדרת במשתני הסביבה של השרת)':'')+'</div>'+
-  (SGX.env?'':'<div class="row"><button class="btn" type="button" id="sgGen">'+(SGX.has?'יצירת תעודה חדשה (מחליפה)':'יצירת תעודת חתימה')+'</button></div>'+(SGX.has?'<p class="sub">אזהרה: החלפה גורמת לאדובי להציג תעודה אחרת במסמכים חדשים, ומי שייבא את הישנה יצטרך לייבא את החדשה. מסמכים שכבר נחתמו ממשיכים להיבדק בעמוד האימות.</p>':''))+
-  '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="sgSave">שמירה</button><span class="sub" id="sgMsg" role="status"></span></div>'}
-document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('#sgBox'))return;const m=$('#sgMsg');
-  const rd=()=>({on:$('#sgOn').checked,need:$('#sgNeed').value,cap:+$('#sgCap').value||20,tsa:{on:$('#sgTs').checked,url:$('#sgTu').value.trim()}});
-  if(t.id==='sgSave'){m.textContent='שומר…';api({action:'signset',sign:rd()}).then(j=>{SGX=j;sgDraw();$('#sgMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})}
-  if(t.id==='sgGen'){if(SGX.has&&!confirm('ליצור תעודה חדשה במקום הקיימת?'))return;m.textContent='יוצר…';api({action:'signgen',replace:SGX.has?1:0}).then(j=>{if(j.error){$('#sgMsg').textContent=j.message||j.error;return}SGX=j;sgDraw();$('#sgMsg').textContent='✓ נוצרה תעודה'}).catch(er=>{m.textContent='שגיאה: '+er.message})}});
+/* עריכת PDF (הגדרות, מחירים, חתימה מוצפנת וסקירה) עברו לדף נפרד: /pdf-admin */
+function pdfSection(){return '<section id="pdSec"><h2>עריכת PDF</h2><p class="sub">ההגדרות (מכירה ומחירים, יכולות נעולות, חתימה דיגיטלית מוצפנת), הסקירה והמסמכים החתומים עברו לדף נפרד.</p><a class="btn primary" href="/pdf-admin">לדף הניהול של עריכת PDF</a></section>'}
+function signSection(){return ''}
 
 /* המוצרים באתר: מה מוצג בדף "עוד מוצרים" ומה נכלל באינדוקס של גוגל (api/_products.js) */
 let PRX=null;
@@ -962,7 +927,7 @@ window.ADMIN_NAV={title:'ניהול MyLuach',sub:'הגדרות האתר',groups:
   ['content','📝 תוכן ודפים',/דפים|הודעות לגולשים|מאגר|מבזקי/],
   ['sys','⚙️ מערכת',/בדיקת מערכת|מצב תחזוקה|יומן פעולות|אבטחה|שומר שבת|מנועי חיפוש|מסד הנתונים|משימת הלילה/],
   ['events','🎉 הזמנות לאירועים',/הזמנות לאירועים|דף הזמנה לאירוע/]],
-  links:[['/admin-events','🎉 ניהול אירועים'],['/admin-studio','🎨 סטודיו רקעים'],['/auction-admin','מכירה סינית'],['/give-manage','❤ התרמה']]};
+  links:[['/admin-events','🎉 ניהול אירועים'],['/admin-studio','🎨 סטודיו רקעים'],['/pdf-admin','📄 עריכת PDF'],['/auction-admin','מכירה סינית'],['/give-manage','❤ התרמה']]};
 </script>
 <script>
 /* כיווץ חלקים בניהול: בכניסה הכל מכווץ, ולחיצה על כותרת פותחת או סוגרת אותה (לא פעיל כשיש תפריט צד) */

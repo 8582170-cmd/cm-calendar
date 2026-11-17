@@ -116,7 +116,7 @@ async function cfg() { return clean(await loadSetting('sign').catch(() => ({})))
 async function pub() { const S = await cfg(), K = S.on ? await loadKey().catch(() => null) : null; return { on: !!(S.on && K), tsa: !!(S.tsa.on && S.tsa.url) }; }
 const newId = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = rnd(12); return Array.from(r, x => A[x % A.length]).join(''); };
 const dayKey = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
-const rec = r => ({ id: r.id, at: r.at, name: r.name || '', org: r.org || '', ts: !!r.ts, fp: r.fp || '', pages: r.pages || 0 });
+const rec = r => ({ id: r.id, at: r.at, name: r.name || '', org: r.org || '', ts: !!r.ts, fp: r.fp || '', pages: r.pages || 0, rv: !!r.rv });
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'private, no-store');

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ניהול עריכת PDF · MyLuach</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<style>
+:root{--paper:#f6f7f4;--sheet:#fff;--ink:#172126;--mute:#5c686c;--line:#dde2df;--teal:#1f5c63;--teal-ink:#fff;--teal-soft:#e4eeec;--bad:#b3261e;--ok:#1f7a3a;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--paper:#0f1517;--sheet:#172024;--ink:#e6ecea;--mute:#9aa7a8;--line:#28343a;--teal:#79c0b8;--teal-ink:#0d1a1b;--teal-soft:#1b2b2d;--bad:#ef8a80;--ok:#7fd49a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Assistant",Arial,sans-serif;padding-inline:16px}
+.wrap{max-width:1000px;margin-inline:auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}h2{margin:0 0 4px;font-size:20px}h3{margin:16px 0 6px;font-size:17px}
+.sub{margin:0 0 12px;color:var(--mute);font-size:14px}
+section,.card{background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:18px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:inherit;font-weight:700;padding:9px 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer}
+.tabs button[aria-current="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);min-width:0}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal)}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.btn{font:inherit;font-weight:700;padding:8px 16px;border-radius:9px;border:1.5px solid var(--teal);background:transparent;color:var(--teal);cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--teal);color:var(--teal-ink)}.btn.small{padding:3px 10px;font-size:14px}.btn.danger{border-color:var(--bad);color:var(--bad)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-block:8px}.row label{display:flex;gap:6px;align-items:center;font-weight:600}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:15px}th{text-align:start;font-size:13px;color:var(--mute);padding:6px;border-bottom:1px solid var(--line)}td{padding:6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.kp div{border:1px solid var(--line);border-radius:12px;padding:12px}.kp b{display:block;font-size:26px}.kp span{color:var(--mute);font-size:14px}
+.bad{color:var(--bad);font-weight:700}.ok{color:var(--ok);font-weight:700}code{font-size:13px;word-break:break-all}
+.login{max-width:360px;margin:60px auto;display:flex;flex-direction:column;gap:10px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let PW='';try{PW=sessionStorage.getItem('myluach-admin')||''}catch(e){}
+const nis=n=>(Math.round((+n||0)*100)/100).toLocaleString('he-IL')+' ₪';
+function api(body){return fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':PW},body:JSON.stringify(body)}).then(r=>r.text().then(t=>{let j;try{j=JSON.parse(t)}catch(e){throw Object.assign(new Error('השרת החזיר שגיאה '+r.status),{code:r.status})}
+  if(!r.ok)throw Object.assign(new Error(j.error||j.message||('שגיאה '+r.status)),{code:r.status,j});return j}))}
+/* עריכת PDF: עריכה חינמית, מה חסום בה, ומחירים (api/_pdfpay.js) */
+let PDX=null;
+function pdfSection(){setTimeout(()=>{if(!PDX)api({action:'pdfget'}).then(j=>{PDX=j;pdDraw()}).catch(()=>{});else pdDraw()},0);return '<section id="pdSec"><h2>עריכת PDF: חינם ותשלום</h2><p class="sub">כל אימייל מקבל עריכה חינמית (ברירת מחדל: אחת). אחריה: הורדה עם סימן מים, או תשלום לפי מה שמוגדר כאן: הורדה בודדת, חבילת הורדות, או מנוי. הסדר בהורדה: מנוי, חבילה, הורדה בודדת, חינם. יכולת שסגורה בחינם נפתחת לכל מי שיש לו מנוי, חבילה או הורדה בודדת. מזהה = אותיות באנגלית בלבד, ולא משנים אותו אחרי שנמכר. הערה: העריכה רצה בדפדפן, ולכן ההגבלה היא בדיקה בהורדה ולא חסימה טכנית מלאה.</p><div id="pdBox">טוען…</div></section>'}
+function pdDraw(){const B=$('#pdBox');if(!B||!PDX)return;const S=PDX.pdf,v=x=>x==null?'':x;
+  const inp=(k,val,w,t)=>'<input data-k="'+k+'" type="'+(t||'text')+'" value="'+esc(v(val))+'" style="width:'+(w||90)+'px"'+(t==='number'?' min="0" step="any"':'')+'>';
+  const chk=(k,val)=>'<input type="checkbox" data-k="'+k+'"'+(val?' checked':'')+'>';
+  const del='<button class="btn small" type="button" data-pddel>✕</button>';
+  B.innerHTML='<label class="row"><input type="checkbox" id="pdOn"'+(S.on?' checked':'')+'> הגבלת העריכה והמכירה פעילות (כבוי = העורך חינמי לכולם בלי סימן מים, כמו היום)</label>'+
+  '<h3>העריכה החינמית</h3><div class="row"><label>עריכות חינם לכל אימייל <input type="number" id="pdN" min="0" max="50" value="'+v(S.free.n)+'" style="width:70px"></label><label>עד <input type="number" id="pdMp" min="0" value="'+v(S.free.maxPages)+'" style="width:80px"> עמודים (0 = בלי הגבלה)</label></div>'+
+  '<p class="sub">יכולות שחסומות בעריכה החינמית (נפתחות רק בתשלום):</p><div class="row" id="pdBl">'+PDX.feats.map(f=>'<label><input type="checkbox" data-bl="'+f[0]+'"'+(S.free.blocked.indexOf(f[0])>=0?' checked':'')+'> '+esc(f[1])+'</label>').join(' ')+'</div>'+
+  '<div class="row"><label>אחרי שהעריכה החינמית נוצלה: <select id="pdAf"><option value="watermark"'+(S.free.after==='watermark'?' selected':'')+'>הורדה עם סימן מים</option><option value="deny"'+(S.free.after==='deny'?' selected':'')+'>אי אפשר להוריד בלי תשלום</option></select></label><label>טקסט סימן המים <input id="pdMk" value="'+esc(S.free.mark)+'" style="width:220px"></label></div>'+
+  '<h3>הורדה בודדת</h3><div class="row"><label><input type="checkbox" id="pdOne"'+(S.one.on?' checked':'')+'> למכור הורדה בודדת</label><label>מחיר ₪ <input type="number" id="pdOp" min="0" step="any" value="'+v(S.one.price)+'" style="width:80px"></label></div>'+
+  '<h3>חבילות הורדות</h3><p class="sub">תוקף בחודשים (0 = בלי הגבלת זמן).</p><div class="tw"><table id="pdP"><thead><tr><th>פעיל</th><th>מזהה</th><th>שם</th><th>תיאור</th><th>הורדות</th><th>מחיר ₪</th><th>תוקף (חודשים)</th><th></th></tr></thead><tbody>'+S.packs.map(x=>'<tr><td>'+chk('on',x.on)+'</td><td>'+inp('id',x.id,80)+'</td><td>'+inp('name',x.name,120)+'</td><td>'+inp('desc',x.desc,170)+'</td><td>'+inp('n',x.n,60,'number')+'</td><td>'+inp('price',x.price,70,'number')+'</td><td>'+inp('months',x.months,60,'number')+'</td><td>'+del+'</td></tr>').join('')+'</tbody></table></div><button class="btn small" type="button" data-pdadd="P">+ חבילה</button>'+
+  '<h3>מנויים</h3><p class="sub">מכסה = כמה הורדות בכל חודש של המנוי (0 = ללא הגבלה). מחיר 0 = לא נמכר בתקופה הזאת. התשלום מראש לתקופה.</p><div class="tw"><table id="pdS"><thead><tr><th>פעיל</th><th>מזהה</th><th>שם</th><th>תיאור</th><th>מכסה לחודש</th><th>₪ לחודש</th><th>₪ לשנה</th><th></th></tr></thead><tbody>'+S.subs.map(x=>'<tr><td>'+chk('on',x.on)+'</td><td>'+inp('id',x.id,80)+'</td><td>'+inp('name',x.name,120)+'</td><td>'+inp('desc',x.desc,170)+'</td><td>'+inp('quota',x.quota,60,'number')+'</td><td>'+inp('pm',x.pm,70,'number')+'</td><td>'+inp('py',x.py,70,'number')+'</td><td>'+del+'</td></tr>').join('')+'</tbody></table></div><button class="btn small" type="button" data-pdadd="S">+ מנוי</button>'+
+  '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="pdSave">שמירה</button><span class="sub" id="pdMsg" role="status"></span></div>'}
+function pdRead(){const rows=id=>[...document.querySelectorAll('#'+id+' tbody tr')].map(tr=>{const o={};tr.querySelectorAll('[data-k]').forEach(i=>{o[i.dataset.k]=i.type==='checkbox'?i.checked:i.type==='number'?(i.value===''?0:+i.value):i.value.trim()});return o});
+  return {on:$('#pdOn').checked,free:{n:+$('#pdN').value||0,maxPages:+$('#pdMp').value||0,blocked:[...document.querySelectorAll('#pdBl [data-bl]')].filter(i=>i.checked).map(i=>i.dataset.bl),after:$('#pdAf').value,mark:$('#pdMk').value.trim()},one:{on:$('#pdOne').checked,price:+$('#pdOp').value||0},packs:rows('pdP'),subs:rows('pdS')}}
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('#pdBox'))return;
+  if(t.dataset.pddel!=null){t.closest('tr').remove();return}
+  if(t.dataset.pdadd){PDX.pdf=pdRead();const k=t.dataset.pdadd;if(k==='P')PDX.pdf.packs.push({id:'',name:'',desc:'',n:5,price:0,months:12,on:true});if(k==='S')PDX.pdf.subs.push({id:'',name:'',desc:'',quota:0,pm:0,py:0,on:true});pdDraw();return}
+  if(t.id==='pdSave'){const m=$('#pdMsg'),x=pdRead();const bad=[].concat(x.packs,x.subs).find(r=>!/^[a-z0-9-]{1,20}$/.test(r.id||''));if(bad){m.textContent='לכל שורה צריך מזהה באנגלית (אותיות קטנות, ספרות ומקף).';return}
+    m.textContent='שומר…';api({action:'pdfset',pdf:x}).then(j=>{PDX=j;pdDraw();$('#pdMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})}});
+
+/* עריכת PDF: חתימה דיגיטלית מוצפנת וחותמת זמן (api/_pdfsign.js) */
+let SGX=null;
+function signSection(){setTimeout(()=>{if(!SGX)api({action:'signget'}).then(j=>{SGX=j;sgDraw()}).catch(()=>{});else sgDraw()},0);return '<section id="sgSec"><h2>עריכת PDF: חתימה דיגיטלית מוצפנת</h2><p class="sub">האתר חותם על טביעה (hash) של הקובץ, בלי לראות את המסמך, ומוסיף חותמת זמן חיצונית. כל מסמך חתום מקבל מזהה ואפשר לאמת אותו ב-<a href="/verify" target="_blank">/verify</a>. התעודה היא עצמית (לא של רשות מוכרת), ולכן באדובי תופיע אזהרה עד שמייבאים אותה. כדי לנעול את היכולת למי ששילם בלבד, מוסיפים "חתימה דיגיטלית מוצפנת של האתר" לרשימת מה שחסום בעריכה החינמית.</p><div id="sgBox"></div></section>'}
+function sgDraw(){const B=$('#sgBox');if(!B||!SGX)return;const S=SGX.sign;
+  B.innerHTML='<div class="row"><label><input type="checkbox" id="sgOn" '+(S.on?'checked':'')+'> החתימה המוצפנת פעילה (מופיעה בחלון ההורדה בעורך)</label></div>'+
+  '<div class="row"><label>מי יכול לחתום <select id="sgNeed"><option value="login"'+(S.need!=='any'?' selected':'')+'>מחוברים בלבד (מומלץ)</option><option value="any"'+(S.need==='any'?' selected':'')+'>כולם, גם בלי כניסה (לפי כתובת)</option></select></label> <label>מכסה יומית לכל משתמש <input type="number" id="sgCap" min="1" max="1000" value="'+S.cap+'" style="width:90px"></label></div>'+
+  '<div class="row"><label><input type="checkbox" id="sgTs" '+(S.tsa.on?'checked':'')+'> להוסיף חותמת זמן חיצונית (RFC 3161)</label> <label>כתובת שרת חותמות הזמן <input id="sgTu" dir="ltr" value="'+(S.tsa.url||'').replace(/"/g,'&quot;')+'" style="min-width:280px"></label></div>'+
+  '<p class="sub">ברירת המחדל היא שרת חינמי של FreeTSA. אם שרת חותמות הזמן לא עונה, המסמך עדיין נחתם, בלי חותמת זמן, והלקוח מקבל על כך הודעה.</p>'+
+  '<div class="row"><b>תעודת החתימה:</b> '+(SGX.has?'קיימת. טביעת אצבע (SHA-256): <code dir="ltr">'+SGX.fp+'</code> · <a href="/api/pricing?c=_sign&a=cert">הורדת התעודה</a>':'עדיין לא נוצרה.')+(SGX.env?' (מוגדרת במשתני הסביבה של השרת)':'')+'</div>'+
+  (SGX.env?'':'<div class="row"><button class="btn" type="button" id="sgGen">'+(SGX.has?'יצירת תעודה חדשה (מחליפה)':'יצירת תעודת חתימה')+'</button></div>'+(SGX.has?'<p class="sub">אזהרה: החלפה גורמת לאדובי להציג תעודה אחרת במסמכים חדשים, ומי שייבא את הישנה יצטרך לייבא את החדשה. מסמכים שכבר נחתמו ממשיכים להיבדק בעמוד האימות.</p>':''))+
+  '<div class="row" style="margin-top:12px"><button class="btn" type="button" id="sgSave">שמירה</button><span class="sub" id="sgMsg" role="status"></span></div>'}
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('#sgBox'))return;const m=$('#sgMsg');
+  const rd=()=>({on:$('#sgOn').checked,need:$('#sgNeed').value,cap:+$('#sgCap').value||20,tsa:{on:$('#sgTs').checked,url:$('#sgTu').value.trim()}});
+  if(t.id==='sgSave'){m.textContent='שומר…';api({action:'signset',sign:rd()}).then(j=>{SGX=j;sgDraw();$('#sgMsg').textContent='✓ נשמר'}).catch(er=>{m.textContent='שגיאה: '+er.message})}
+  if(t.id==='sgGen'){if(SGX.has&&!confirm('ליצור תעודה חדשה במקום הקיימת?'))return;m.textContent='יוצר…';api({action:'signgen',replace:SGX.has?1:0}).then(j=>{if(j.error){$('#sgMsg').textContent=j.message||j.error;return}SGX=j;sgDraw();$('#sgMsg').textContent='✓ נוצרה תעודה'}).catch(er=>{m.textContent='שגיאה: '+er.message})}});
+
+
+/* סקירה */
+const VIA={FREE:'עריכה חינמית',ONE:'הורדה בודדת',PACK:'חבילה',SUB:'מנוי',WM:'עם סימן מים'};
+function ovDraw(){const B=$('#ovBox');B.textContent='טוען…';
+  api({action:'pdfstats'}).then(j=>{const d=j.dl,s=j.sales,K=s.kinds||{};
+    B.innerHTML='<div class="kp"><div><b>'+d.d1+'</b><span>הורדות ב-24 השעות האחרונות</span></div><div><b>'+d.d30+'</b><span>הורדות ב-30 הימים האחרונים</span></div><div><b>'+d.total+'</b><span>הורדות בסך הכל</span></div>'+
+    '<div><b>'+nis(s.sum30)+'</b><span>מכירות ב-30 הימים האחרונים ('+s.n30+')</span></div><div><b>'+nis(s.sum)+'</b><span>מכירות בסך הכל ('+s.n+')</span></div><div><b>'+j.sig.d30+'</b><span>חתימות מוצפנות ב-30 הימים ('+j.sig.total+' בסך הכל)</span></div></div>'+
+    '<h3>הורדות לפי סוג</h3><div class="tw"><table><tbody>'+Object.keys(d.via).map(k=>'<tr><td>'+esc(VIA[k]||k)+'</td><td>'+d.via[k]+'</td></tr>').join('')+'</tbody></table></div>'+
+    '<h3>מכירות לפי סוג</h3><div class="tw"><table><tbody>'+[['single','הורדה בודדת'],['pack','חבילות'],['sub','מנויים']].map(x=>'<tr><td>'+x[1]+'</td><td>'+((K[x[0]]||{}).n||0)+'</td><td>'+nis((K[x[0]]||{}).sum)+'</td></tr>').join('')+'</tbody></table></div>'+
+    (j.capped?'<p class="sub">הוצגו 5,000 הפעולות האחרונות בלבד.</p>':'')+'<p class="sub">הסכומים לפי הזמנות ששולמו באתר. חיוב חודשי אוטומטי של מנויים לא נבדק לעורך ה-PDF.</p>'}).catch(e=>{B.innerHTML='<span class="bad">שגיאה: '+esc(e.message)+'</span>'})}
+
+/* מסמכים חתומים */
+function docDraw(){const B=$('#docBox');B.textContent='טוען…';
+  api({action:'signlist'}).then(j=>{const L=j.items||[];
+    B.innerHTML=L.length?'<div class="tw"><table><thead><tr><th>מזהה</th><th>נחתם</th><th>שם החותם</th><th>ארגון או תפקיד</th><th>משתמש</th><th>עמודים</th><th>חותמת זמן</th><th>מצב</th><th></th></tr></thead><tbody>'+L.map(r=>'<tr><td><a href="/verify/'+esc(r.id)+'" target="_blank" dir="ltr">'+esc(r.id)+'</a></td><td>'+(r.at?new Date(r.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'')+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.org)+'</td><td dir="ltr">'+esc(r.by)+'</td><td>'+r.pages+'</td><td>'+(r.ts?'כן':'לא')+'</td><td>'+(r.rv?'<span class="bad">בוטלה</span>':'<span class="ok">בתוקף</span>')+'</td><td><button class="btn small'+(r.rv?'':' danger')+'" type="button" data-rv="'+esc(r.id)+'" data-on="'+(r.rv?0:1)+'">'+(r.rv?'החזרת תוקף':'ביטול חתימה')+'</button></td></tr>').join('')+'</tbody></table></div><p class="sub">200 החתימות האחרונות. ביטול חתימה גורם לעמוד האימות (/verify) להציג שהחתימה בוטלה. הוא לא משנה את הקובץ שכבר ירד אצל הלקוח, ולא מבטל את החתימה בתוך אדובי.</p>':'<p class="sub">עוד לא נחתמו מסמכים.</p>'}).catch(e=>{B.innerHTML='<span class="bad">שגיאה: '+esc(e.message)+'</span>'})}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-rv]');if(!b)return;
+  if(b.dataset.on==='1'&&!confirm('לבטל את החתימה '+b.dataset.rv+'? עמוד האימות יציג שהיא בוטלה.'))return;
+  b.disabled=true;api({action:'signrevoke',id:b.dataset.rv,on:+b.dataset.on}).then(docDraw).catch(er=>{b.disabled=false;alert('שגיאה: '+er.message)})});
+
+/* מסגרת הדף */
+const TABS=[['ov','סקירה'],['sale','מכירה והגבלות'],['sig','חתימה מוצפנת'],['doc','מסמכים חתומים']];let TAB='ov';
+function show(t){TAB=t;try{history.replaceState(null,'','#'+t)}catch(e){}
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.t===t?'true':'false'));const V=$('#view');
+  if(t==='ov'){V.innerHTML='<section><h2>סקירה</h2><div id="ovBox"></div></section>';ovDraw()}
+  if(t==='sale'){V.innerHTML=pdfSection()}
+  if(t==='sig'){V.innerHTML=signSection()}
+  if(t==='doc'){V.innerHTML='<section><h2>מסמכים חתומים</h2><p class="sub">כל המסמכים שנחתמו בחתימה המוצפנת של האתר. הקובץ עצמו לא נשמר אצלנו, רק הטביעה שלו.</p><div id="docBox"></div></section>';docDraw()}}
+function draw(){$('#app').innerHTML='<div class="top"><h1>עריכת PDF: ניהול</h1><div class="row"><a class="btn" href="/pdf" target="_blank">לעורך</a><a class="btn" href="/admin">לניהול הכללי</a></div></div><div class="tabs" role="tablist">'+TABS.map(t=>'<button type="button" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div><div id="view"></div>';
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.t));const h=(location.hash||'').slice(1);show(TABS.some(t=>t[0]===h)?h:'ov')}
+function loginForm(msg){$('#app').innerHTML='<form class="login card" id="lf"><h1>כניסה</h1><label>סיסמת ניהול<input type="password" id="pw" autocomplete="current-password" autofocus></label><button class="btn primary" type="submit">כניסה</button><p class="bad" id="lm" role="alert">'+esc(msg||'')+'</p></form>';
+  $('#lf').onsubmit=e=>{e.preventDefault();PW=$('#pw').value;go()}}
+function go(){api({action:'signlist'}).then(()=>{try{sessionStorage.setItem('myluach-admin',PW)}catch(e){}draw()}).catch(e=>{try{sessionStorage.removeItem('myluach-admin')}catch(x){}loginForm(e.code===429?'יותר מדי ניסיונות. נסו שוב מאוחר יותר.':e.code===401?(PW?'סיסמה שגויה':''):'שגיאה: '+e.message)})}
+PW?go():loginForm();
+</script>
+</body>
+</html>
