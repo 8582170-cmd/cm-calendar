@@ -9,7 +9,7 @@
   var T = EN ? {
     title: 'How was building your calendar?', sub: 'A few seconds, and it really helps us improve.',
     opt: 'Options', design: 'Designs', ease: 'Ease of use', sugg: 'Suggestions for improvement (optional)',
-    ph: 'What was missing? What was hard? What would you add?', mail: 'Email, if you would like a reply (optional)',
+    ph: 'What was missing? What was hard? What would you add?', fname: 'Name (optional, shown if we publish your review)', mail: 'Email, if you would like a reply (optional)',
     send: 'Send', sending: 'Sending…', thanks: 'Thank you! We read every response.', err: 'Could not send. Please try again.',
     need: 'Choose a rating or write a few words.', later: 'Not now',
     ctitle: 'We are happy to stay in touch and help', csub: 'A question, a request, a problem with an order or a calendar? Write to us and we will get back to you.',
@@ -19,7 +19,7 @@
   } : {
     title: 'איך היה לבנות את הלוח?', sub: 'כמה שניות, וזה עוזר לנו מאוד לשפר.',
     opt: 'האפשרויות', design: 'העיצובים', ease: 'הנוחות', sugg: 'הצעות לשיפור (לא חובה)',
-    ph: 'מה היה חסר? מה היה קשה? מה הייתם מוסיפים?', mail: 'מייל, אם תרצו שנחזור אליכם (לא חובה)',
+    ph: 'מה היה חסר? מה היה קשה? מה הייתם מוסיפים?', fname: 'שם (לא חובה, יופיע אם נפרסם את המשוב באתר)', mail: 'מייל, אם תרצו שנחזור אליכם (לא חובה)',
     send: 'שליחה', sending: 'שולחים…', thanks: 'תודה רבה! אנחנו קוראים כל תגובה.', err: 'השליחה לא הצליחה. נסו שוב.',
     need: 'בחרו דירוג או כתבו כמה מילים.', later: 'לא עכשיו',
     ctitle: 'נשמח להיות בקשר ולתת שירות', csub: 'שאלה, בקשה, בעיה בהזמנה או בלוח? כתבו לנו ונחזור אליכם.',
@@ -58,6 +58,7 @@
     el.classList.add('mlfb');
     el.innerHTML = '<h3>' + esc(o.title || T.title) + '</h3><p class="mlfb-sub">' + T.sub + '</p>' + stars('opt') + stars('design') + stars('ease') +
       '<label><span data-cms-t>' + T.sugg + '</span><textarea rows="3" maxlength="2000" data-f="text" placeholder="' + esc(T.ph) + '"></textarea></label>' +
+      '<label><span data-cms-t>' + T.fname + '</span><input maxlength="80" data-f="name" autocomplete="name"></label>' +
       '<label><span data-cms-t>' + T.mail + '</span><input type="email" maxlength="120" data-f="email" dir="ltr" autocomplete="email"></label>' +
       '<input class="mlfb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" data-f="hp">' +
       '<div class="mlfb-row"><button type="button" class="mlfb-go">' + T.send + '</button>' + (o.later ? '<button type="button" class="mlfb-later">' + T.later + '</button>' : '') + '<span class="mlfb-msg" aria-live="polite"></span></div>';
@@ -70,7 +71,7 @@
       var text = q('[data-f=text]').value.trim(), msg = q('.mlfb-msg');
       if (!Object.keys(R).length && text.length < 2) { msg.className = 'mlfb-msg bad'; msg.textContent = T.need; return; }
       var go = q('.mlfb-go'); go.disabled = true; msg.className = 'mlfb-msg'; msg.textContent = T.sending;
-      post({ kind: 'feedback', r: R, text: text, email: q('[data-f=email]').value.trim(), hp: q('[data-f=hp]').value, page: o.page || location.pathname, plan: plan() })
+      post({ kind: 'feedback', r: R, text: text, name: q('[data-f=name]').value.trim(), email: q('[data-f=email]').value.trim(), hp: q('[data-f=hp]').value, page: o.page || location.pathname, plan: plan() })
         .then(function () { ls('ml-fb-sent', String(Date.now())); el.innerHTML = '<div class="mlfb-ok">' + T.thanks + '</div>'; if (onDone) setTimeout(function () { onDone(true); }, 1800); })
         .catch(function () { go.disabled = false; msg.className = 'mlfb-msg bad'; msg.textContent = T.err; });
     });
