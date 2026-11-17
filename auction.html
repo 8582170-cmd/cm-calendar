@@ -197,11 +197,12 @@ if(Q.get('view')==='org')return orgView();
 buyView();
 
 /* ===== דפי הארגון: על הארגון, יצירת קשר, הצטרפות לרשימה ===== */
-function orgNav(o,cur){var L=window.MLOrg?MLOrg.tabs(o):[];if(!L.length)return '';return '<nav class="onav" aria-label="דפי הארגון"><a href="?s='+SLUG+'"'+(cur===''?' aria-current="page"':'')+'>המכירה</a>'+L.map(function(x){return '<a href="?s='+SLUG+'&view=org&p='+x[0]+'"'+(cur===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</nav>'}
+function orgBind(o){MLOrg.bind(function(){return o},function(x){x.a='orgmsg';x.s=SLUG;return post(x)})}
+function orgNav(o,cur){var L=window.MLOrg?MLOrg.tabs(o):[];if(!L.length)return '';orgBind(o);return '<nav class="onav" aria-label="דפי הארגון"><a href="?s='+SLUG+'"'+(cur===''?' aria-current="page"':'')+'>המכירה</a>'+L.map(function(x){return x[2]==='pop'?'<button type="button" data-ogpop>'+x[1]+'</button>':'<a href="?s='+SLUG+'&view=org&p='+x[0]+'"'+(cur===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</nav>'}
 function orgView(){
   get({a:'sale',s:SLUG,preview:Q.get('preview')||''}).then(function(j){
     if(j._st===404||!j.cfg){closed('המכירה לא נמצאה');return}
-    var c=j.cfg,o=c.org,L=MLOrg.tabs(o),p=Q.get('p');if(!L.some(function(x){return x[0]===p}))p=L.length?L[0][0]:'';
+    var c=j.cfg,o=c.org,L=MLOrg.tabs(o).filter(function(x){return x[2]!=='pop'}),p=Q.get('p');if(!L.some(function(x){return x[0]===p}))p=L.length?L[0][0]:'';
     document.title=(L.filter(function(x){return x[0]===p})[0]||['',''])[1]+' · '+c.title;if(c.color)document.documentElement.style.setProperty('--navy',c.color);
     app.innerHTML='<header class="top"><div class="t"><div class="kick">מכירה סינית</div><h1>'+esc(c.title)+'</h1></div>'+(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="">':'')+'</header>'+orgNav(o,p)
       +'<main id="main">'+(p?MLOrg.html(o,p):'<p class="msg">אין כאן דפים להצגה.</p>')+'<p class="msg"><a href="?s='+SLUG+'">חזרה לדף המכירה</a></p></main>';

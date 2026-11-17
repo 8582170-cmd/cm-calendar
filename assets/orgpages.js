@@ -11,10 +11,12 @@
     '.og input:not([type=checkbox]),.og textarea{font:inherit;font-weight:400;padding:10px;border:1px solid rgb(128 128 128 / .5);border-radius:8px;background:#fff;color:#111;min-height:44px}.og textarea{min-height:110px}' +
     '.og .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.og .ogb{font:inherit;font-weight:700;font-size:17px;min-height:48px;padding:10px 24px;border:0;border-radius:999px;cursor:pointer;align-self:flex-start;background:var(--acc2,var(--navy,#16203A));color:var(--accInk,#fff)}' +
     '.og .ogb:disabled{opacity:.5}.og .ogm{min-height:1.4em;font-size:15px}.og .ogm.bad{color:#B3261E}.og .ogx{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.og .ogok{text-align:center;padding:18px}.og .hint{font-size:14px;opacity:.75}' +
+    '.ogback{position:fixed;inset:0;background:rgb(0 0 0 / .5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 12px}.ogpop{position:relative;background:#fff;color:#111;border-radius:16px;max-width:560px;width:100%;padding:24px;margin-top:5vh}.ogcl{position:absolute;top:8px;left:12px;border:0;background:transparent;font-size:30px;line-height:1;cursor:pointer;color:#555;padding:4px 10px}.onav button{font:inherit;padding:8px 16px;border-radius:999px;border:1.5px solid currentColor;background:transparent;color:inherit;font-weight:600;font-size:15px;cursor:pointer}' +
     '.onav{display:flex;flex-wrap:wrap;gap:8px;padding:12px 6%;border-bottom:1px solid rgb(128 128 128 / .3)}.onav a{padding:8px 16px;border-radius:999px;border:1.5px solid currentColor;text-decoration:none;color:inherit;font-weight:600;font-size:15px}.onav a[aria-current=page]{background:var(--acc2,var(--navy,#16203A));color:var(--accInk,#fff);border-color:transparent}';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function css() { if (!document.getElementById('og-css')) { var st = document.createElement('style'); st.id = 'og-css'; st.textContent = CSS; document.head.appendChild(st); } }
-  function tabs(o) { var r = []; if (!o) return r; ['about', 'contact', 'list'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); return r; }
+  /* דפים: על הארגון, צור קשר. ההצטרפות לרשימה היא או תיבת סימון בתוך "צור קשר" (mode=contact), או חלון קופץ (mode=popup, הערך השלישי 'pop') */
+  function tabs(o) { var r = []; if (!o) return r; ['about', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
   function html(o, k) {
     css(); o = o || {}; var d = o[k]; if (!d) return '';
     if (k === 'about') {
@@ -24,7 +26,7 @@
       return '<div class="og"><h2>' + LAB.about + '</h2>' + (d.text ? '<div class="ogt">' + esc(d.text) + '</div>' : '') + (det.length ? '<div class="ogd">' + det.map(function (x) { return '<div>' + x + '</div>'; }).join('') + '</div>' : '') + '</div>';
     }
     var hp = '<input name="website" class="ogx" tabindex="-1" autocomplete="off" aria-hidden="true">';
-    if (k === 'contact') return '<div class="og"><h2>' + LAB.contact + '</h2>' + (d.intro ? '<p class="ogt">' + esc(d.intro) + '</p>' : '') + '<form data-og="contact" novalidate><div class="two"><label>שם<input name="name" required autocomplete="name"></label><label>טלפון<input name="phone" type="tel" dir="ltr" autocomplete="tel"></label><label>מייל<input name="email" type="email" dir="ltr" autocomplete="email"></label></div><label>ההודעה<textarea name="msg" required></textarea></label>' + hp + '<p class="hint">מלאו מייל או טלפון, כדי שנוכל לחזור אליכם.</p><button class="ogb" type="submit">שליחה</button><p class="ogm" role="status"></p></form></div>';
+    if (k === 'contact') return '<div class="og"><h2>' + LAB.contact + '</h2>' + (d.intro ? '<p class="ogt">' + esc(d.intro) + '</p>' : '') + '<form data-og="contact" novalidate><div class="two"><label>שם<input name="name" required autocomplete="name"></label><label>טלפון<input name="phone" type="tel" dir="ltr" autocomplete="tel"></label><label>מייל<input name="email" type="email" dir="ltr" autocomplete="email"></label></div><label>ההודעה<textarea name="msg" required></textarea></label>' + hp + '<p class="hint">מלאו מייל או טלפון, כדי שנוכל לחזור אליכם.</p>' + (o.list && o.list.mode === 'contact' ? '<label class="ck"><input type="checkbox" name="consent"> <span>אני מסכים/ה להצטרף לרשימת התפוצה ולקבל עדכונים מהארגון. אפשר לבקש הסרה בכל עת.</span></label>' : '') + '<button class="ogb" type="submit">שליחה</button><p class="ogm" role="status"></p></form></div>';
     return '<div class="og"><h2>' + LAB.list + '</h2>' + (d.intro ? '<p class="ogt">' + esc(d.intro) + '</p>' : '<p class="ogt">השאירו פרטים ונעדכן אתכם.</p>') + '<form data-og="list" novalidate><div class="two"><label>שם (לא חובה)<input name="name" autocomplete="name"></label><label>מייל<input name="email" type="email" dir="ltr" autocomplete="email"></label><label>טלפון<input name="phone" type="tel" dir="ltr" autocomplete="tel"></label></div><label class="ck"><input type="checkbox" name="consent"> <span>אני מסכים/ה לקבל עדכונים מהארגון במייל או בטלפון שמסרתי. אפשר לבקש הסרה בכל עת.</span></label>' + hp + '<button class="ogb" type="submit">הצטרפות</button><p class="ogm" role="status"></p></form></div>';
   }
   function wire(root, k, send) {
@@ -42,5 +44,17 @@
       }).catch(function () { b.disabled = false; m.className = 'ogm bad'; m.textContent = 'שגיאת רשת, נסו שוב'; });
     };
   }
-  window.MLOrg = { tabs: tabs, html: html, wire: wire, css: css };
+  /* חלון קופץ להצטרפות לרשימה. bind נקראת פעם אחת: get() מחזירה את הדפים הנוכחיים, send שולחת */
+  var BIND = null, last = null;
+  function popup() {
+    var o = BIND && BIND.get(); if (!o || !o.list) return; css(); last = document.activeElement;
+    var back = document.createElement('div'); back.className = 'ogback'; back.innerHTML = '<div class="ogpop" role="dialog" aria-modal="true" aria-label="' + LAB.list + '"><button type="button" class="ogcl" aria-label="סגירה">×</button>' + html(o, 'list') + '</div>';
+    var close = function () { document.removeEventListener('keydown', esc2); back.remove(); if (last && last.focus) last.focus(); };
+    var esc2 = function (e) { if (e.key === 'Escape') close(); };
+    back.addEventListener('click', function (e) { if (e.target === back || e.target.classList.contains('ogcl')) close(); });
+    document.addEventListener('keydown', esc2); document.body.appendChild(back); wire(back, 'list', BIND.send);
+    var f = back.querySelector('input:not([type=hidden]):not(.ogx)'); if (f) f.focus();
+  }
+  function bind(get, send) { BIND = { get: get, send: send }; if (!bind.on) { bind.on = true; document.addEventListener('click', function (e) { if (e.target.closest('[data-ogpop]')) { e.preventDefault(); popup(); } }); } }
+  window.MLOrg = { tabs: tabs, html: html, wire: wire, css: css, bind: bind };
 })();
