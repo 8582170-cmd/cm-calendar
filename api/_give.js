@@ -47,6 +47,7 @@ function cfgOf(s) {
     match: { on: !!m.on && f.match, ratio: Math.max(1.1, Math.min(10, +m.ratio || 2)), cap: +m.cap || matchers.reduce((t, x) => t + (+x.amount || 0), 0), matchers, auction: !!m.auction, repsX: !!m.repsX, title: m.title || '' },
     monthly: { on: !!mo.on && f.monthly, def: Math.max(0, Math.min(60, mo.def != null ? +mo.def : 12)), max: Math.max(2, Math.min(60, +mo.max || 36)), unlimited: mo.unlimited !== false, count: mo.count === 'first' ? 'first' : 'months', countUnl: Math.max(1, Math.min(60, +mo.countUnl || 12)) },
     f, auction: /^[a-z0-9][a-z0-9-]{2,39}$/.test(c.auction || '') ? c.auction : '', auctionCount: c.auctionCount !== false,
+    rcp: { mail: !(c.rcp && c.rcp.mail === false), org: (c.rcp && c.rcp.org) || '', num: (c.rcp && c.rcp.num) || '', note: (c.rcp && c.rcp.note) || '' },
     thanks: c.thanks || '', faq: Array.isArray(c.faq) ? c.faq : [], phoneLine: c.phoneLine || '', screenNote: c.screenNote || '', feedSort: c.feedSort === 'big' ? 'big' : 'new'
   };
 }
@@ -220,11 +221,16 @@ async function kesherPaid(s, id, num) {
 const senderName = (s, dflt) => String(((s.cfg || {}).mailName) || dflt || '').replace(/[<>"\\,;@]/g, '').trim().slice(0, 60);
 const notifyList = s => (Array.isArray((s.cfg || {}).notify) ? s.cfg.notify : []).map(mailN).filter(Boolean).slice(0, 4);
 async function thankDonor(s, d) {
-  if (!d.email) return; const { sendMail, frame, escH } = require('./_mail'), c = cfgOf(s), nm = senderName(s, c.title) || undefined;
-  const body = '<p>שלום ' + escH(d.name || '') + ',</p><p>תודה רבה על תרומתכם לקמפיין <b>' + escH(c.title) + '</b>.</p><p>סכום: <b>' + (+d.amount) + ' ₪</b>' + (+d.months !== 1 ? ' לחודש, ' + (+d.months ? d.months + ' חודשים' : 'ללא הגבלה') : '') + '</p>'
-    + (d.dedic_name ? '<p>' + escH((d.dedic_type || '') + ' ' + d.dedic_name) + '</p>' : '') + (c.thanks ? '<p style="white-space:pre-line">' + escH(c.thanks) + '</p>' : '') + '<p style="color:#666;font-size:13px">מספר תרומה: ' + d.id.slice(2, 10) + '</p>';
+  const c = cfgOf(s); if (!d.email || !c.rcp.mail) return; const { sendMail, frame, escH } = require('./_mail'), nm = senderName(s, c.title) || undefined;
+  const when = new Date(d.paid_at || Date.now()).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'long', year: 'numeric' });
+  const row = (k, v) => v ? '<tr><td style="padding:4px 12px 4px 0;color:#666">' + k + '</td><td style="padding:4px 0"><b>' + v + '</b></td></tr>' : '';
+  const per = +d.months !== 1 ? ' לחודש, ' + (+d.months ? d.months + ' חודשים' : 'ללא הגבלה') : '';
+  const body = '<p>שלום ' + escH(d.name || '') + ',</p><p>תודה רבה על תרומתכם לקמפיין <b>' + escH(c.title) + '</b>.</p>'
+    + '<table role="presentation" style="border-collapse:collapse;margin:6px 0 12px">' + row('סכום', (+d.amount) + ' ₪' + per) + row('תאריך', escH(when)) + row('מספר תרומה', escH(String(d.id).slice(2, 10)))
+    + row('הארגון', escH(c.rcp.org)) + row('מספר עמותה / עוסק', escH(c.rcp.num)) + row('הקדשה', d.dedic_name ? escH((d.dedic_type || '') + ' ' + d.dedic_name) : '') + '</table>'
+    + (c.thanks ? '<p style="white-space:pre-line">' + escH(c.thanks) + '</p>' : '') + (c.rcp.note ? '<p style="white-space:pre-line;color:#444">' + escH(c.rcp.note) + '</p>' : '');
   const rt = notifyList(s)[0];
-  await sendMail({ to: d.email, subject: 'תודה על תרומתכם · ' + c.title, html: frame({ brand: nm, title: 'תודה רבה!', body, button: 'לדף הקמפיין', url: SITE() + '/give/' + s.slug }), fromName: nm, ...(rt ? { replyTo: rt } : {}) }, 'give');
+  await sendMail({ to: d.email, subject: 'אישור תרומה ותודה · ' + c.title, html: frame({ brand: nm, title: 'תודה רבה!', body, button: 'לדף הקמפיין', url: SITE() + '/give/' + s.slug }), fromName: nm, ...(rt ? { replyTo: rt } : {}) }, 'give');
 }
 async function notify(s, subject, body) {
   const to = notifyList(s); if (!to.length) return;
@@ -260,6 +266,7 @@ function cleanCfg(old, b) {
   ['logo', 'banner', 'video'].forEach(k => { if (b[k] != null) c[k] = url(b[k]); });
   if (Array.isArray(b.gallery)) c.gallery = b.gallery.map(url).filter(Boolean).slice(0, 30);
   if (b.listed != null) c.listed = !!b.listed;
+  if (b.rcp && typeof b.rcp === 'object') c.rcp = { mail: b.rcp.mail !== false, org: clean(b.rcp.org, 80), num: clean(b.rcp.num, 30), note: clean(b.rcp.note, 500) };
   if (b.theme != null) c.theme = THEMES.includes(b.theme) ? b.theme : 'classic';
   if (b.heroLayout != null) c.heroLayout = ['banner', 'split', 'center'].includes(b.heroLayout) ? b.heroLayout : 'banner';
   if (b.feedSort != null) c.feedSort = b.feedSort === 'big' ? 'big' : 'new';
