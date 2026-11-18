@@ -37,9 +37,9 @@ main{padding:32px 6% 56px;display:flex;flex-direction:column;gap:32px}
 .pkg b{font-size:18px}.pkg span{font-size:14px;color:var(--mute)}.pkg .pr{font-size:17px;font-weight:700;color:#8A6516;margin-top:auto}
 .cols{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
 .cols>.prods{flex:999 1 560px;min-width:0}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--gmin,220px),1fr));gap:16px}
 .prod{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
-.prod .im{height:150px;background:#E4E7EF;position:relative;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:13px}
+.prod .im{height:var(--imh,150px);background:#E4E7EF;position:relative;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:13px}
 .prod .im img{width:100%;height:100%;object-fit:cover}
 .tag{position:absolute;top:10px;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px}
 .tag.num{right:10px;background:var(--navy);color:#fff;font-weight:500}.tag.dr{left:10px;background:var(--gold2);color:var(--navy)}
@@ -128,7 +128,7 @@ iframe.pay{width:100%;border:0;min-height:430px}
 <script src="/assets/config.js"></script>
 <script src="/assets/auction-price.js?v=1"></script>
 <script src="/assets/orgpages.js?v=1"></script>
-<script src="/assets/live.js?v=5"></script>
+<script src="/assets/live.js?v=6"></script>
 </head>
 <body>
 <div id="app"><p class="cen">טוען…</p></div>
@@ -250,6 +250,7 @@ function buyView(){
     h+='</main>';
     app.innerHTML=h;cdRun();
     if(!S.open&&c.winners)get({a:'winners',s:SLUG}).then(function(w){if(w._st!==200||!w.products.length)return;var m=document.querySelector('main')||app,sec=document.createElement('section');sec.className='sec';sec.innerHTML='<h2>הזוכים בהגרלות</h2>'+winList(w)+'<p class="msg"><a href="?s='+SLUG+'&view=winners" style="color:inherit">לדף הזוכים</a></p>';m.insertBefore(sec,m.firstChild)});
+    var PS={sm:[170,115],lg:[240,175],xl:[290,215]}[c.prodSize];if(PS){document.documentElement.style.setProperty('--gmin',PS[0]+'px');document.documentElement.style.setProperty('--imh',PS[1]+'px')}
     drawPkgs();drawGrid();drawSum();
     if(c.look==='live'&&window.MLLive)MLLive.start({open:S.open,names:(S.products||[]).map(function(p){return p.name}),badge:'לרכישה'});
     app.addEventListener('input',function(e){if(e.target.classList.contains('repin')){typed=e.target.value.replace(/\D/g,'');[].forEach.call(document.querySelectorAll('.repin'),function(x){if(x!==e.target)x.value=typed})}
