@@ -128,6 +128,7 @@ iframe.pay{width:100%;border:0;min-height:430px}
 <script src="/assets/config.js"></script>
 <script src="/assets/auction-price.js?v=1"></script>
 <script src="/assets/orgpages.js?v=1"></script>
+<script src="/assets/live.js?v=1"></script>
 </head>
 <body>
 <div id="app"><p class="cen">טוען…</p></div>
@@ -250,6 +251,7 @@ function buyView(){
     app.innerHTML=h;cdRun();
     if(!S.open&&c.winners)get({a:'winners',s:SLUG}).then(function(w){if(w._st!==200||!w.products.length)return;var m=document.querySelector('main')||app,sec=document.createElement('section');sec.className='sec';sec.innerHTML='<h2>הזוכים בהגרלות</h2>'+winList(w)+'<p class="msg"><a href="?s='+SLUG+'&view=winners" style="color:inherit">לדף הזוכים</a></p>';m.insertBefore(sec,m.firstChild)});
     drawPkgs();drawGrid();drawSum();
+    if(c.look==='live'&&window.MLLive)MLLive.start({open:S.open,names:(S.products||[]).map(function(p){return p.name}),badge:'לרכישה'});
     app.addEventListener('input',function(e){if(e.target.classList.contains('repin')){typed=e.target.value.replace(/\D/g,'');[].forEach.call(document.querySelectorAll('.repin'),function(x){if(x!==e.target)x.value=typed})}
       if(e.target.dataset.q){var v=Math.max(0,Math.min(999,parseInt(e.target.value,10)||0));qty[e.target.dataset.q]=v;drawSum(true)}});
   }
