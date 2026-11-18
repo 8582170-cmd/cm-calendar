@@ -11,7 +11,7 @@
     + '.lw{display:inline-block;white-space:nowrap;margin-inline-end:.28em}'
     + '.lc{display:inline-block;color:transparent;-webkit-text-stroke:1.5px var(--gold2);animation:lvdrop .95s cubic-bezier(.2,1.25,.4,1) both,lvfill .6s ease forwards,lvtint 12s linear infinite,lvwave 5s ease-in-out infinite;animation-delay:var(--d),calc(var(--d) + .8s),calc(var(--d) + 1.8s + var(--k)*.4s),calc(var(--d) + 1.2s)}'
     + '@property --lva{syntax:"<angle>";inherits:false;initial-value:0deg}'
-    + '.lc{position:relative}'
+    + '.lc{position:relative;text-shadow:0 0 9px color-mix(in srgb,currentColor 45%,transparent)}'
     + '.live header.top h1{position:relative}'
     + '.lv-sp{position:absolute;pointer-events:none;opacity:0;font-size:18px;line-height:1;color:var(--sc,#fff);text-shadow:0 0 8px var(--sc,#fff),0 0 18px var(--sc,#fff);animation:lvsp 3s ease-in-out infinite;z-index:3}'
     + '.lc::before{content:attr(data-c);position:absolute;inset:0;z-index:-1;color:transparent;-webkit-text-stroke:5px transparent;background:conic-gradient(from var(--lva),var(--c1,#fff),var(--c2,#fff),var(--c3,#fff),var(--c4,#fff),var(--c5,#fff),var(--c1,#fff));-webkit-background-clip:text;background-clip:text;opacity:0;pointer-events:none;animation:lvringin .8s ease forwards,lvring 4.5s linear infinite;animation-delay:calc(var(--d) + 1.5s),calc(var(--k)*-.25s)}'
@@ -53,7 +53,7 @@
     var r = parseInt(m[1].slice(0, 2), 16) / 255, g = parseInt(m[1].slice(2, 4), 16) / 255, b = parseInt(m[1].slice(4, 6), 16) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), h = 0;
     if (mx !== mn) { var d = mx - mn; h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = Math.round(h * 60); if (h < 0) h += 360; }
     var sat = (mx - mn) < .08 ? 0 : 1, out = [];
-    [0, 55, 120, 200, 290].forEach(function (o) { out.push('hsl(' + ((h + o) % 360) + ',' + (sat ? 85 : 0) + '%,' + (o === 0 ? 86 : 80) + '%)'); });
+    [0, 55, 120, 200, 290].forEach(function (o) { out.push('hsl(' + ((h + o) % 360) + ',' + (sat ? 90 : 0) + '%,' + (o === 0 ? 84 : 78) + '%)'); });
     if (!sat) out = ['#ffffff', '#f3dd9b', '#cfe3ff', '#ffd6e0', '#d6f5d6'];
     return out;
   }
