@@ -13,9 +13,15 @@
     + '.lv-strip .lv-tr{display:inline-block;padding-inline-start:100%;animation:lvmq 38s linear infinite}'
     + '.lv-strip:hover .lv-tr{animation-play-state:paused}'
     + '.lv-strip span{margin:0 22px}.lv-strip i{font-style:normal;opacity:.55}'
-    + '.live .prod{transition:transform .25s ease,box-shadow .25s ease}'
-    + '.live .prod:hover{transform:translateY(-6px);box-shadow:6px 8px 0 var(--gold)}'
-    + '.live .prod .im img{transition:transform .6s ease}.live .prod:hover .im img{transform:scale(1.07)}'
+    + '.live .prod{transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease;animation:lvbob 7s ease-in-out infinite;animation-delay:calc(var(--d,0)*-1.4s)}'
+    + '.live .prod:hover{transform:translateY(-10px) rotate(-.4deg);box-shadow:8px 10px 0 var(--gold);animation-play-state:paused;z-index:2}'
+    + '.live .prod .im{overflow:hidden}.live .prod .im img{transition:transform .7s cubic-bezier(.2,.8,.2,1),filter .5s ease}'
+    + '.live .prod:hover .im img{transform:scale(1.14) translateY(-2%);filter:saturate(1.2) contrast(1.04)}'
+    + '.live .prod .im::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.38) 50%,transparent 65%);transform:translateX(120%);pointer-events:none}'
+    + '.live .prod:hover .im::after{transform:translateX(-120%);transition:transform .9s ease}'
+    + '.lv-want{display:none}'
+    + '@media (hover:hover){.lv-want{display:flex;position:absolute;inset:auto 0 0 0;z-index:3;border:0;cursor:pointer;justify-content:center;align-items:flex-end;padding:34px 12px 12px;background:linear-gradient(transparent,rgba(10,16,36,.86));color:var(--gold2);font:700 22px "Frank Ruhl Libre",Heebo,serif;letter-spacing:.3px;opacity:0;transform:translateY(40%);transition:opacity .35s ease,transform .45s cubic-bezier(.2,.8,.2,1)}'
+    + '.live .prod:hover .lv-want,.lv-want:focus-visible{opacity:1;transform:none}.lv-want:disabled{display:none}.lv-want em{font-style:normal;display:inline-block;transition:transform .3s}.lv-want:hover em{transform:scale(1.08)}}'
     + '.live .pkg{transition:transform .2s ease,box-shadow .2s ease}.live .pkg:hover{transform:translateY(-3px);box-shadow:4px 5px 0 var(--gold)}'
     + '.lv-rv{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease;transition-delay:calc(var(--d,0)*60ms)}'
     + '.lv-rv.lv-in{opacity:1;transform:none}.lv-rv.lv-now{transition:none}'
@@ -25,14 +31,24 @@
     + '.lv-badge svg{direction:ltr}.lv-badge svg text{fill:var(--gold2);font:700 11.5px Heebo,Arial,sans-serif;letter-spacing:1.6px}'
     + '.lv-badge b{font-size:15px;color:var(--gold2);position:relative}'
     + '.lv-badge:hover{transform:scale(1.07)}'
-    + '@keyframes lvbg{to{background-position:100% 100%}}@keyframes lvfloat{to{transform:translate(60px,40px) scale(1.15)}}'
+    + '@keyframes lvbob{0%,100%{translate:0 0}50%{translate:0 -5px}}@keyframes lvbg{to{background-position:100% 100%}}@keyframes lvfloat{to{transform:translate(60px,40px) scale(1.15)}}'
     + '@keyframes lvfill{to{color:#fff;-webkit-text-stroke-color:transparent}}@keyframes lvmq{to{transform:translateX(100%)}}@keyframes lvspin{to{transform:rotate(360deg)}}'
-    + '@media (prefers-reduced-motion:reduce){.live header.top,.lv-orb,.lv-strip .lv-tr,.lv-badge svg{animation:none!important}.lw{animation:none!important;color:#fff;-webkit-text-stroke-color:transparent}.lv-rv{opacity:1;transform:none;transition:none}.live .prod,.live .pkg,.live .prod .im img{transition:none}.live .prod:hover,.live .pkg:hover{transform:none}}'
+    + '@media (prefers-reduced-motion:reduce){.live header.top,.lv-orb,.lv-strip .lv-tr,.lv-badge svg{animation:none!important}.lw{animation:none!important;color:#fff;-webkit-text-stroke-color:transparent}.lv-rv{opacity:1;transform:none;transition:none}.live .prod{animation:none!important}.live .prod,.live .pkg,.live .prod .im img,.lv-want{transition:none}.live .prod:hover,.live .pkg:hover{transform:none}}'
     + '@media print{.lv-badge,.lv-strip,.lv-orb{display:none!important}}';
   var seen = {}, io = null, mo = null;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function css() { if (!document.getElementById('lv-css')) { var st = document.createElement('style'); st.id = 'lv-css'; st.textContent = CSS; document.head.appendChild(st); } }
   function words(h1) { if (!h1 || h1.getAttribute('data-lv')) return; var t = h1.textContent; h1.setAttribute('data-lv', '1'); h1.setAttribute('aria-label', t); h1.innerHTML = t.split(/\s+/).filter(Boolean).map(function (w, i) { return '<span class="lw" aria-hidden="true" style="--i:' + i + '">' + esc(w) + '</span>'; }).join(' '); }
+  var WANT = ['אני רוצה את זה!', 'זה שלי!', 'תנו לי כרטיס!', 'אני בפנים!'];
+  function want(root, open) {
+    if (!open) return;
+    [].forEach.call((root || document).querySelectorAll('.prod .im:not([data-lw])'), function (im, i) {
+      im.setAttribute('data-lw', '1'); var card = im.closest('.prod'), plus = card && card.querySelector('.qty .plus');
+      if (!plus) return; var b = document.createElement('button'); b.type = 'button'; b.className = 'lv-want'; b.tabIndex = -1; b.setAttribute('aria-hidden', 'true');
+      b.innerHTML = '<em>' + esc(WANT[i % WANT.length]) + '</em>'; b.disabled = !!plus.disabled;
+      b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); if (!plus.disabled) plus.click(); }); im.appendChild(b);
+    });
+  }
   function reveal(root) {
     [].forEach.call((root || document).querySelectorAll('.prod:not(.lv-rv),.pkg:not(.lv-rv)'), function (el, i) {
       el.classList.add('lv-rv'); el.style.setProperty('--d', String(i % 6));
@@ -52,8 +68,8 @@
       hd.insertAdjacentHTML('afterend', '<div class="lv-strip" aria-hidden="true"><div class="lv-tr">' + items + items + '</div></div>');
     }
     if ('IntersectionObserver' in window && !io) io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('lv-in'); io.unobserve(e.target); } }); }, { threshold: .12 });
-    reveal(document);
-    if (!mo && 'MutationObserver' in window) { mo = new MutationObserver(function () { reveal(document); }); var g = document.getElementById('main') || document.body; mo.observe(g, { childList: true, subtree: true }); }
+    reveal(document); want(document, o.open);
+    if (!mo && 'MutationObserver' in window) { mo = new MutationObserver(function () { reveal(document); want(document, o.open); }); var g = document.getElementById('main') || document.body; mo.observe(g, { childList: true, subtree: true }); }
     if (o.open && !document.querySelector('.lv-badge')) {
       var t = (o.badge || 'לרכישה') + ' ✦ ', txt = t + t + t;
       document.body.insertAdjacentHTML('beforeend', '<a class="lv-badge" href="#main" aria-label="' + esc(o.badge || 'לרכישה') + '"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><path id="lvc" d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0"/></defs><text><textPath href="#lvc">' + esc(txt) + '</textPath></text></svg><b>' + esc(o.badge || 'לרכישה') + '</b></a>');
