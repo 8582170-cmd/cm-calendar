@@ -9,7 +9,9 @@
     + '.lv-o2{width:220px;height:220px;background:#4d6bff;bottom:-90px;inset-inline-end:12%;animation:lvfloat 14s ease-in-out infinite alternate-reverse}'
     + '.live header.top h1{font-size:clamp(38px,7vw,72px);line-height:1.05}'
     + '.lw{display:inline-block;white-space:nowrap;margin-inline-end:.28em}'
-    + '.lc{display:inline-block;color:transparent;-webkit-text-stroke:1.5px var(--gold2);animation:lvdrop .95s cubic-bezier(.2,1.25,.4,1) both,lvfill .6s ease forwards;animation-delay:var(--d),calc(var(--d) + .8s)}'
+    + '.lc{display:inline-block;color:transparent;-webkit-text-stroke:1.5px var(--gold2);animation:lvdrop .95s cubic-bezier(.2,1.25,.4,1) both,lvfill .6s ease forwards,lvtint 12s linear infinite,lvwave 5s ease-in-out infinite;animation-delay:var(--d),calc(var(--d) + .8s),calc(var(--d) + 1.8s + var(--k)*.4s),calc(var(--d) + 1.2s)}'
+    + '.live header.top h1{animation:lvsway 9s ease-in-out infinite 2.5s}'
+    + '.live header.top img.logo{animation:lvlogo 7s ease-in-out infinite}'
     + '.lv-strip{background:var(--gold);color:var(--navy);overflow:hidden;white-space:nowrap;padding:10px 0;font-weight:700;font-size:17px}'
     + '.lv-strip .lv-tr{display:inline-block;padding-inline-start:100%;animation:lvmq 38s linear infinite}'
     + '.lv-strip:hover .lv-tr{animation-play-state:paused}'
@@ -32,21 +34,32 @@
     + '.lv-badge svg{direction:ltr}.lv-badge svg text{fill:var(--gold2);font:700 11.5px Heebo,Arial,sans-serif;letter-spacing:1.6px}'
     + '.lv-badge b{font-size:15px;color:var(--gold2);position:relative}'
     + '.lv-badge:hover{transform:scale(1.07)}'
-    + '@keyframes lvbob{0%,100%{translate:0 0}50%{translate:0 -5px}}@keyframes lvbg{to{background-position:100% 100%}}@keyframes lvfloat{to{transform:translate(60px,40px) scale(1.15)}}'
+    + '@keyframes lvtint{0%,100%{color:var(--c1,#fff);-webkit-text-stroke-color:transparent}20%{color:var(--c2,#fff)}40%{color:var(--c3,#fff)}60%{color:var(--c4,#fff)}80%{color:var(--c5,#fff)}}@keyframes lvwave{0%,100%{translate:0 0}50%{translate:0 -4px}}@keyframes lvsway{0%,100%{translate:0 0}50%{translate:10px 2px}}@keyframes lvlogo{0%,100%{translate:0 0;rotate:-1.5deg}50%{translate:0 -8px;rotate:1.5deg}}@keyframes lvbob{0%,100%{translate:0 0}50%{translate:0 -5px}}@keyframes lvbg{to{background-position:100% 100%}}@keyframes lvfloat{to{transform:translate(60px,40px) scale(1.15)}}'
     + '@keyframes lvdrop{0%{opacity:0;transform:translate(var(--dx),-260px) rotate(var(--r))}55%{opacity:1}100%{opacity:1;transform:none}}@keyframes lvfill{to{color:#fff;-webkit-text-stroke-color:transparent}}@keyframes lvmq{to{transform:translateX(100%)}}@keyframes lvspin{to{transform:rotate(360deg)}}'
-    + '@media (prefers-reduced-motion:reduce){.live header.top,.lv-orb,.lv-strip .lv-tr,.lv-badge svg{animation:none!important}.lc{animation:none!important;color:#fff;-webkit-text-stroke-color:transparent}.lv-rv{opacity:1;transform:none;transition:none}.live .prod{animation:none!important}.live .prod,.live .pkg,.live .prod .im img,.lv-want{transition:none}.live .prod:hover,.live .pkg:hover{transform:none}}'
+    + '@media (prefers-reduced-motion:reduce){.live header.top,.lv-orb,.lv-strip .lv-tr,.lv-badge svg{animation:none!important}.lc,.live header.top h1,.live header.top img.logo{animation:none!important}.lc{color:#fff;-webkit-text-stroke-color:transparent}.lv-rv{opacity:1;transform:none;transition:none}.live .prod{animation:none!important}.live .prod,.live .pkg,.live .prod .im img,.lv-want{transition:none}.live .prod:hover,.live .pkg:hover{transform:none}}'
     + '@media print{.lv-badge,.lv-strip,.lv-orb{display:none!important}}';
   var seen = {}, io = null, mo = null;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function css() { if (!document.getElementById('lv-css')) { var st = document.createElement('style'); st.id = 'lv-css'; st.textContent = CSS; document.head.appendChild(st); } }
   /* כל אות יורדת מלמעלה: אותיות החצי הראשון נכנסות מצד אחד, ואותיות החצי השני מהצד השני, בו זמנית, וההרכבה נסגרת באמצע */
+  /* גוני טקסט עדינים שנגזרים מהצבע הראשי של הדף (--navy), כדי שהכותרת תתאים לעיצוב של כל ארגון */
+  function tints() {
+    var v = (getComputedStyle(document.documentElement).getPropertyValue('--navy') || '').trim(), m = /^#([0-9a-f]{6})$/i.exec(v); if (!m) return null;
+    var r = parseInt(m[1].slice(0, 2), 16) / 255, g = parseInt(m[1].slice(2, 4), 16) / 255, b = parseInt(m[1].slice(4, 6), 16) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), h = 0;
+    if (mx !== mn) { var d = mx - mn; h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = Math.round(h * 60); if (h < 0) h += 360; }
+    var sat = (mx - mn) < .08 ? 0 : 1, out = [];
+    [0, 55, 120, 200, 290].forEach(function (o) { out.push('hsl(' + ((h + o) % 360) + ',' + (sat ? 85 : 0) + '%,' + (o === 0 ? 86 : 80) + '%)'); });
+    if (!sat) out = ['#ffffff', '#f3dd9b', '#cfe3ff', '#ffd6e0', '#d6f5d6'];
+    return out;
+  }
   function words(h1) {
     if (!h1 || h1.getAttribute('data-lv')) return; var t = h1.textContent.trim(); h1.setAttribute('data-lv', '1'); h1.setAttribute('aria-label', t);
     var ws = t.split(/\s+/).filter(Boolean), L = ws.map(function (w) { return w.match(/[^\u0591-\u05C7][\u0591-\u05C7]*/g) || [w]; }), n = L.reduce(function (a, x) { return a + x.length; }, 0), k = 0;
+    var T = tints(); if (T) T.forEach(function (c, i) { h1.style.setProperty('--c' + (i + 1), c); });
     h1.innerHTML = L.map(function (let) {
       return '<span class="lw" aria-hidden="true">' + let.map(function (ch) {
         var i = k++, side = i < n / 2 ? 1 : -1, rank = Math.min(i, n - 1 - i), dx = side * (150 + (i % 3) * 45), r = side * (28 + (i % 4) * 14);
-        return '<span class="lc" style="--d:' + (0.15 + rank * 0.085).toFixed(3) + 's;--dx:' + dx + 'px;--r:' + r + 'deg">' + esc(ch) + '</span>';
+        return '<span class="lc" style="--d:' + (0.15 + rank * 0.085).toFixed(3) + 's;--dx:' + dx + 'px;--r:' + r + 'deg;--k:' + i + '">' + esc(ch) + '</span>';
       }).join('') + '</span>';
     }).join(' ');
   }
