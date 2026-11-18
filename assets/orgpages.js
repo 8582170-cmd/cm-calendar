@@ -12,11 +12,18 @@
     '.og .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.og .ogb{font:inherit;font-weight:700;font-size:17px;min-height:48px;padding:10px 24px;border:0;border-radius:999px;cursor:pointer;align-self:flex-start;background:var(--acc2,var(--navy,#16203A));color:var(--accInk,#fff)}' +
     '.og .ogb:disabled{opacity:.5}.og .ogm{min-height:1.4em;font-size:15px}.og .ogm.bad{color:#B3261E}.og .ogx{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.og .ogok{text-align:center;padding:18px}.og .hint{font-size:14px;opacity:.75}' +
     '.ogback{position:fixed;inset:0;background:rgb(0 0 0 / .5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 12px}.ogpop{position:relative;background:#fff;color:#111;border-radius:16px;max-width:560px;width:100%;padding:24px;margin-top:5vh}.ogcl{position:absolute;top:8px;left:12px;border:0;background:transparent;font-size:30px;line-height:1;cursor:pointer;color:#555;padding:4px 10px}.onav button{font:inherit;padding:8px 16px;border-radius:999px;border:1.5px solid currentColor;background:transparent;color:inherit;font-weight:600;font-size:15px;cursor:pointer}' +
-    '.onav{display:flex;flex-wrap:wrap;gap:8px;padding:12px 6%;border-bottom:1px solid rgb(128 128 128 / .3)}.onav a{padding:8px 16px;border-radius:999px;border:1.5px solid currentColor;text-decoration:none;color:inherit;font-weight:600;font-size:15px}.onav a[aria-current=page]{background:var(--acc2,var(--navy,#16203A));color:var(--accInk,#fff);border-color:transparent}';
+    '.onav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 6%;background:#fff;border-bottom:1px solid var(--line,#E3E6EE)}' +
+    '.onav a,.onav button{font:inherit;font-weight:600;font-size:15px;line-height:1.2;padding:9px 18px;border-radius:999px;border:1.5px solid var(--line2,#C5CAD6);background:#fff;color:var(--ink,#1B2338);text-decoration:none;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}' +
+    '.onav a:hover,.onav button:hover{border-color:var(--navy,#15203B);transform:translateY(-1px);box-shadow:0 3px 0 var(--gold,#C9A24B)}' +
+    '.onav a[aria-current=page]{background:var(--acc2,var(--navy,#15203B));color:var(--accInk,#fff);border-color:transparent;box-shadow:none;transform:none}' +
+    '.onav [data-ogpop]{margin-inline-start:auto;background:var(--gold,#C9A24B);color:var(--navy,#15203B);border-color:transparent}' +
+    '.onav [data-ogpop]:hover{border-color:transparent;box-shadow:0 3px 0 var(--navy,#15203B)}' +
+    '.tabs [data-ogpop]{margin-inline-start:auto;margin-bottom:6px;background:var(--acc,#C9A24B);color:var(--accInk,#fff);border-radius:999px;padding:8px 18px;border-bottom:0}' +
+    '.tabs .tablink{align-self:center}';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function css() { if (!document.getElementById('og-css')) { var st = document.createElement('style'); st.id = 'og-css'; st.textContent = CSS; document.head.appendChild(st); } }
   /* דפים: על הארגון, צור קשר. ההצטרפות לרשימה היא או תיבת סימון בתוך "צור קשר" (mode=contact), או חלון קופץ (mode=popup, הערך השלישי 'pop') */
-  function tabs(o) { var r = []; if (!o) return r; ['about', 'faq', 'terms', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.cross) r.push(['cross', o.cross.label, 'link', o.cross.url]); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
+  function tabs(o) { var r = []; if (!o) return r; css(); ['about', 'faq', 'terms', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.cross) r.push(['cross', o.cross.label, 'link', o.cross.url]); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
   function html(o, k) {
     css(); o = o || {}; var d = o[k]; if (!d) return '';
     if (k === 'about') {
