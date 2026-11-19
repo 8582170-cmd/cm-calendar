@@ -12,7 +12,7 @@
     + '.lk-ab1{width:60%;height:140%;left:-10%;top:-60%;background:#19E3B1;animation:lkdrift 14s ease-in-out infinite alternate}'
     + '.lk-ab2{width:55%;height:130%;left:30%;top:-40%;background:#6D5BFF;animation:lkdrift 18s ease-in-out infinite alternate-reverse}'
     + '.lk-ab3{width:45%;height:120%;right:-8%;top:-30%;background:#FF5FA2;opacity:.4;animation:lkdrift 22s ease-in-out infinite alternate}'
-    + 'html[data-lk=aurora] header.top h1{background:linear-gradient(90deg,#B8FFF0,#9C8CFF,#FF9FCB,#B8FFF0);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lkslide 9s linear infinite}'
+    + 'html[data-lk=aurora] header.top h1{color:#DFFCF4}'
     + 'html[data-lk=aurora] body::before{content:"";position:fixed;inset:-20% -10% auto;height:70vh;z-index:-1;pointer-events:none;background:radial-gradient(50% 60% at 30% 40%,rgba(25,227,177,.16),transparent 70%),radial-gradient(50% 60% at 70% 30%,rgba(109,91,255,.14),transparent 70%);animation:lkdrift 20s ease-in-out infinite alternate}'
     + 'html[data-lk=aurora] .lv-strip{background:linear-gradient(90deg,#19E3B1,#6D5BFF,#FF5FA2);color:#fff}'
     + 'html[data-lk=aurora].live .prod:hover{box-shadow:0 0 0 2px #19E3B1,0 16px 40px rgba(109,91,255,.35)}'
@@ -26,7 +26,7 @@
     + 'html[data-lk=fireworks].live .prod:hover{box-shadow:0 14px 34px rgba(30,30,90,.35),0 0 0 2px #FFD36B}'
     /* זהב */
     + 'html[data-lk=gold] header.top{background:linear-gradient(135deg,#0E0B05,color-mix(in srgb,var(--navy) 35%,#17120A))!important;animation:none!important;border-bottom:2px solid #C9A24B}'
-    + 'html[data-lk=gold] header.top h1{background:linear-gradient(100deg,#9C7428 0%,#F7E7B0 18%,#C9A24B 32%,#FFF3C8 46%,#B88A35 62%,#F1D998 80%,#9C7428 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lkslide 6s linear infinite;filter:drop-shadow(0 2px 10px rgba(201,162,75,.35))}'
+    + 'html[data-lk=gold] header.top h1{background:linear-gradient(100deg,#9C7428 0%,#F7E7B0 18%,#C9A24B 32%,#FFF3C8 46%,#B88A35 62%,#F1D998 80%,#9C7428 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lkwipe 1.6s cubic-bezier(.6,0,.2,1) both,lkslide 6s linear infinite 1.6s;filter:drop-shadow(0 2px 10px rgba(201,162,75,.35))}'
     + 'html[data-lk=gold] .lv-strip{background:linear-gradient(90deg,#9C7428,#F1D998,#C9A24B,#F7E7B0,#9C7428);background-size:200% 100%;animation:lkslide 10s linear infinite;color:#1A1205}'
     + '@property --lkg{syntax:"<angle>";inherits:false;initial-value:0deg}'
     + 'html[data-lk=gold].live .prod{position:relative}'
@@ -54,19 +54,51 @@
     + 'html[data-lk].live .prod.lk-t{transition:transform .18s ease-out,box-shadow .3s ease;transform:perspective(900px) rotateX(var(--rx,0)) rotateY(var(--ry,0)) translateY(-6px);animation:none}'
     + 'html[data-lk] .go{transition:transform .2s ease-out}'
     + '@keyframes lkup{to{transform:none}}'
+    /* ===== לכל סוג תנועה משלו: איך המילים זזות, איך המוצרים נכנסים, איך הם זזים בזמן מנוחה, ואיך הפס זז ===== */
+    /* זוהר צפוני: האותיות עולות מתוך ערפל בגל, ואחר כך גלי צבע ואור עוברים עליהן כמו זוהר בשמיים; המוצרים מופיעים מתוך ערפל ו"נושמים" באור */
+    + 'html[data-lk=aurora] .lk-l{opacity:0;filter:blur(10px);transform:translateY(18px);animation:lkin 1.1s ease forwards,lkaur 7s ease-in-out infinite,lkwav 4.5s ease-in-out infinite;animation-delay:calc(var(--i)*70ms),calc(var(--i)*-.35s),calc(var(--i)*-.18s + 1.2s)}'
+    + '@keyframes lkaur{0%,100%{color:#B8FFF0;text-shadow:0 0 14px rgba(25,227,177,.55)}33%{color:#B9AEFF;text-shadow:0 0 14px rgba(109,91,255,.55)}66%{color:#FFB3D4;text-shadow:0 0 14px rgba(255,95,162,.5)}}'
+    + '@keyframes lkwav{0%,100%{translate:0 0}50%{translate:0 -6px}}'
+    + 'html[data-lk=aurora] .lv-rv{opacity:0;filter:blur(14px);transform:scale(.94)}html[data-lk=aurora] .lv-rv.lv-in{opacity:1;filter:none;transform:none;transition:opacity 1.1s ease,filter 1.1s ease,transform 1.1s ease}'
+    + 'html[data-lk=aurora].live .prod{animation:lkglow 6s ease-in-out infinite;animation-delay:calc(var(--d,0)*-1.2s)}'
+    + '@keyframes lkglow{0%,100%{box-shadow:0 0 0 rgba(25,227,177,0)}50%{box-shadow:0 0 26px rgba(25,227,177,.28),0 0 46px rgba(109,91,255,.18)}}'
+    + 'html[data-lk=aurora] .lv-strip .lv-tr{animation-duration:60s}'
+    /* זיקוקים: כל אות "מתפוצצת" לתוך מקומה מכיוון אקראי, ואחר כך אותיות מהבהבות כמו ניצוצות; המוצרים "נפתחים" בקפיצה */
+    + 'html[data-lk=fireworks] .lk-l{opacity:0;filter:blur(6px);transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(.3);animation:lkin .8s cubic-bezier(.2,1.3,.4,1) forwards,lkflash 4s ease-in-out infinite;animation-delay:calc(var(--i)*40ms + .3s),var(--fd)}'
+    + '@keyframes lkflash{0%,86%,100%{text-shadow:0 0 18px rgba(255,255,255,.35)}92%{text-shadow:0 0 6px #fff,0 0 22px #FFD36B,0 0 44px #FF6F91;color:#FFF6D8}}'
+    + 'html[data-lk=fireworks] .lv-rv{opacity:0;transform:scale(.55)}html[data-lk=fireworks] .lv-rv.lv-in{opacity:1;transform:none;transition:opacity .4s ease,transform .7s cubic-bezier(.2,1.6,.4,1)}'
+    + 'html[data-lk=fireworks].live .prod{animation:none}'
+    + 'html[data-lk=fireworks] .lv-strip .lv-tr{animation-duration:22s}'
+    /* זהב: הכותרת נחשפת במשיכת מכחול מימין לשמאל ואחר כך ברק זהב עובר עליה; המוצרים מחליקים פנימה מהצדדים לסירוגין ועומדים במקום (יוקרה שקטה) */
+    + '@keyframes lkwipe{from{clip-path:inset(0 0 0 100%);letter-spacing:.12em}to{clip-path:inset(0 0 0 0);letter-spacing:normal}}'
+    + 'html[data-lk=gold] .lv-rv{opacity:0;transform:translateX(60px)}html[data-lk=gold] .grid>.lv-rv:nth-child(even),html[data-lk=gold] .pkgs>.lv-rv:nth-child(even){transform:translateX(-60px)}'
+    + 'html[data-lk=gold] .lv-rv.lv-in,html[data-lk=gold] .grid>.lv-rv.lv-in:nth-child(even),html[data-lk=gold] .pkgs>.lv-rv.lv-in:nth-child(even){opacity:1;transform:none;transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}'
+    + 'html[data-lk=gold].live .prod{animation:none}'
+    + 'html[data-lk=gold] .lv-strip .lv-tr{animation-duration:48s}'
+    /* בלונים: האותיות נופלות וקופצות ואחר כך מקפצות כל הזמן; המוצרים עולים מלמטה עם קפיצה ומתנדנדים כמו בלון על חוט */
+    + 'html[data-lk=balloons] .lv-rv{opacity:0;transform:translateY(80px)}html[data-lk=balloons] .lv-rv.lv-in{opacity:1;transform:none;transition:opacity .5s ease,transform .9s cubic-bezier(.3,1.7,.5,1)}'
+    + 'html[data-lk=balloons].live .prod{transform-origin:50% -40px;animation:lkswing 5s ease-in-out infinite;animation-delay:calc(var(--d,0)*-.8s)}'
+    + '@keyframes lkswing{0%,100%{rotate:-1.2deg}50%{rotate:1.2deg}}'
+    + 'html[data-lk=balloons] .lv-strip .lv-tr{animation-duration:26s}'
+    /* סטודיו: המילים עולות מתוך מסכה, ואחר כך הכול שקט; המוצרים נחשפים כמו וילון מלמטה למעלה והתמונה מתקרבת לאט; הפס זז בכיוון ההפוך */
+    + 'html[data-lk=studio] .lv-rv{opacity:1;transform:none;clip-path:inset(100% 0 0 0)}html[data-lk=studio] .lv-rv.lv-in{clip-path:inset(0 0 0 0);transition:clip-path 1s cubic-bezier(.7,0,.2,1);transition-delay:calc(var(--d,0)*90ms)}'
+    + 'html[data-lk=studio] .lv-rv .im img{transform:scale(1.25);transition:transform 1.6s cubic-bezier(.2,.8,.2,1)}html[data-lk=studio] .lv-rv.lv-in .im img{transform:none}'
+    + 'html[data-lk=studio].live .prod{animation:none}'
+    + 'html[data-lk=studio] .lv-strip .lv-tr{animation-direction:reverse;animation-duration:30s}'
+    + 'html[data-lk=studio] .sec>h2{clip-path:inset(0 0 0 0)}'
     + '@keyframes lkdrift{0%{transform:translate(0,0) scale(1)}50%{transform:translate(8%,10%) scale(1.15)}100%{transform:translate(-6%,4%) scale(.95)}}'
     + '@keyframes lkslide{to{background-position:-300% 0}}@keyframes lktw{to{opacity:.45}}@keyframes lkspin{to{--lkg:360deg}}'
     + '@keyframes lkin{to{opacity:1;filter:none;transform:none}}'
     + '@keyframes lkrise{0%{transform:translate(0,0) rotate(-4deg)}50%{transform:translate(18px,-230px) rotate(5deg)}100%{transform:translate(-10px,-470px) rotate(-3deg)}}'
     + '@keyframes lkbounce{0%{opacity:0;transform:translateY(-60px) scale(.6)}100%{opacity:1;transform:none}}@keyframes lkhop{0%,100%{transform:none}50%{transform:translateY(-5px)}}'
-    + '@media (prefers-reduced-motion:reduce){.lk-prog,.lk-spot{display:none}html[data-lk=studio] .lk-w>span{transform:none;animation:none}.lk-ab,.lk-stars,.lk-bl,.lk-l,html[data-lk] header.top h1,html[data-lk] .lv-strip,html[data-lk] body::before,html[data-lk].live .prod::before{animation:none!important}.lk-l{opacity:1!important;filter:none!important;transform:none!important}.lk-cv,.lk-bl{display:none}}'
+    + '@media (prefers-reduced-motion:reduce){html[data-lk] .lv-rv{opacity:1!important;filter:none!important;transform:none!important;clip-path:none!important}html[data-lk].live .prod{animation:none!important}.lk-prog,.lk-spot{display:none}html[data-lk=studio] .lk-w>span{transform:none;animation:none}.lk-ab,.lk-stars,.lk-bl,.lk-l,html[data-lk] header.top h1,html[data-lk] .lv-strip,html[data-lk] body::before,html[data-lk].live .prod::before{animation:none!important}.lk-l{opacity:1!important;filter:none!important;transform:none!important}.lk-cv,.lk-bl{display:none}}'
     + '@media print{.lk-layer{display:none!important}}';
   function css() { if (!document.getElementById('lk-css')) { var st = document.createElement('style'); st.id = 'lk-css'; st.textContent = CSS; document.head.appendChild(st); } }
   /* פירוק הכותרת לאותיות (עם ניקוד צמוד לאות), לסוגים שהאותיות בהם זזות */
   function letters(h1) {
     if (!h1 || h1.getAttribute('data-lk')) return; var t = h1.textContent.trim(); h1.setAttribute('data-lk', '1'); h1.setAttribute('aria-label', t);
     var L = t.match(/[^֑-ׇ][֑-ׇ]*/g) || [t], i = 0;
-    h1.innerHTML = L.map(function (ch) { return '<span class="lk-l" aria-hidden="true" style="--i:' + (i++) + '">' + ch.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }) + '</span>'; }).join('');
+    h1.innerHTML = L.map(function (ch) { return '<span class="lk-l" aria-hidden="true" style="--i:' + (i++) + ';--x:' + Math.round((Math.random() - .5) * 360) + 'px;--y:' + Math.round((Math.random() - .5) * 220) + 'px;--r:' + Math.round((Math.random() - .5) * 220) + 'deg;--fd:' + (1.5 + Math.random() * 4).toFixed(2) + 's">' + ch.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }) + '</span>'; }).join('');
   }
   function layer(hd, html) { var d = document.createElement('div'); d.className = 'lk-layer'; d.setAttribute('aria-hidden', 'true'); d.innerHTML = html || ''; hd.insertBefore(d, hd.firstChild); return d; }
   /* קנבס שרץ רק כשהכותרת על המסך ורק כשהלשונית פעילה */
@@ -122,7 +154,7 @@
   function start(kind) {
     var hd = document.querySelector('header.top'); if (!hd || hd.getAttribute('data-lkk')) return; css(); hd.setAttribute('data-lkk', kind);
     document.documentElement.setAttribute('data-lk', kind); var h1 = hd.querySelector('h1');
-    if (kind === 'aurora') layer(hd, '<i class="lk-ab lk-ab1"></i><i class="lk-ab lk-ab2"></i><i class="lk-ab lk-ab3"></i>');
+    if (kind === 'aurora') { letters(h1); } if (kind === 'aurora') layer(hd, '<i class="lk-ab lk-ab1"></i><i class="lk-ab lk-ab2"></i><i class="lk-ab lk-ab3"></i>');
     else if (kind === 'fireworks') { var b = layer(hd, '<i class="lk-stars"></i>'); letters(h1); fireworks(hd, b); }
     else if (kind === 'gold') { var g = layer(hd); dust(hd, g); }
     else if (kind === 'studio') { var sb = layer(hd, '<i class="lk-grid"></i><i class="lk-spot"></i>'); maskWords(h1);
