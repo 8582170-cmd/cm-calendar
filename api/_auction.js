@@ -49,6 +49,15 @@ function isOpen(s) { if (!s || s.status !== 'open') return false; const c = s.cf
 /* טקסטים שהמנהל יכול לשנות בדף המכירה (ברירות המחדל נמצאות ב-assets/auction-txt.js, ויש לשמור על התאמה) */
 const PG = require('./_auction_page');
 const ROLL = 4000; /* משך הערבוב בהגרלה החיה, באלפיות שנייה: כך גם המנהל וגם הצופים רואים את אותה אנימציה */
+/* איך מציגים זוכה לציבור (רשימת הזוכים והצפייה החיה). short = אות ראשונה של השם הפרטי ושם משפחה (כמו עד עכשיו), first = שם פרטי ואות ראשונה של המשפחה, full = שם מלא */
+function winName(mode, x) {
+  const n = String((x && x.name) || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+  if (mode === 'full' && n.length) return n.join(' ');
+  if (mode === 'first' && n.length >= 2) return n[0] + ' ' + n.slice(1).map(w => w.charAt(0) + '.').slice(0, 1).join('');
+  if (n.length >= 2) return n[0].charAt(0) + '. ' + n.slice(1).join(' ');
+  if (n.length === 1) return n[0];
+  const ph = String((x && x.phone) || ''); return ph ? 'רוכש בטלפון (מסתיים ב־' + ph.slice(-3) + ')' : 'רוכש';
+}
 const TXT_KEYS = ['kick', 'pkgs', 'prods', 'sum', 'price', 'noPkg', 'prodNo', 'pay', 'faq', 'terms', 'listen', 'badge'];
 const txtOf = t => { t = t && typeof t === 'object' ? t : {}; const o = {}; for (const k of TXT_KEYS) { const v = clean(t[k], 40); if (v) o[k] = v; } const i = clean(t.intro, 600), f = clean(t.foot, 400); if (i) o.intro = i; if (f) o.foot = f; return o; };
 const wantList = l => Array.isArray(l) ? l.map(x => clean(x, 40)).filter(Boolean).slice(0, 12) : [];
@@ -58,7 +67,7 @@ function cfgOf(s) {
     repWeb: ['start', 'end', 'both', 'off'].includes(c.repWeb) ? c.repWeb : 'end', repPhone: ['start', 'pay', 'both', 'off'].includes(c.repPhone) ? c.repPhone : 'pay',
     repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
     allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
-    progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
+    winNames: ['first', 'full'].includes(c.winNames) ? c.winNames : '', winCity: c.winCity !== false, progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '',
     banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', style: ['soft', 'bold', 'elegant'].includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '', pages: PG.pagesOf(c.pages), notes: PG.notesOf(c.notes), fields: PG.fieldsOf(c.fields), live: PG.liveOf(c.live) };
 }
@@ -247,6 +256,8 @@ function cleanCfg(old, b) {
   if (Array.isArray(b.faq)) c.faq = b.faq.map(x => ({ q: clean(x && x.q, 300), a: clean(x && x.a, 3000) })).filter(x => x.q && x.a).slice(0, 60);
   iso('openAt'); iso('closeAt'); iso('drawTime');
   if (b.winners != null) c.winners = !!b.winners;
+  if (b.winNames != null) c.winNames = ['first', 'full'].includes(b.winNames) ? b.winNames : '';
+  if (b.winCity != null) c.winCity = !!b.winCity;
   if (b.cd && typeof b.cd === 'object') c.cd = { open: b.cd.open !== false, close: b.cd.close !== false, draw: b.cd.draw !== false };
   if (b.goal != null) c.goal = Math.max(0, Math.min(1e9, +b.goal || 0));
   ['repWeb', 'repPhone', 'priceMode'].forEach(k => { if (b[k] != null) c[k] = clean(b[k], 10); });
@@ -474,16 +485,12 @@ module.exports = async (req, res) => {
       const ids = [...new Set(shown.map(w => w.customer_id).filter(Boolean))];
       const CU = ids.length ? await db('auction_customer?id=in.(' + ids.join(',') + ')&select=id,name,city,phone').catch(() => []) : [];
       const cu = new Map((CU || []).map(x => [x.id, x]));
-      const nm = x => { const n = String((x && x.name) || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-        if (c.live.names === 'full' && n.length) return n.join(' ');
-        if (n.length >= 2) return n[0].charAt(0) + '. ' + n.slice(1).join(' ');
-        if (n.length === 1) return n[0];
-        const ph = String((x && x.phone) || ''); return ph ? 'רוכש בטלפון (מסתיים ב־' + ph.slice(-3) + ')' : 'רוכש'; };
+      const mode = c.winNames || c.live.names, nm = x => winName(mode, x);
       const cnt = {}; shown.forEach(w => { cnt[w.product_id] = (cnt[w.product_id] || 0) + 1; });
       const pv = id => { const p = pm.get(id) || {}; return { num: p.num, name: p.name || '', img: p.img || '', draws: +p.draws || 1 }; };
       return json(res, 200, { title: c.title, logo: c.logo, color: c.color, conf: c.live.conf, now, roll: ROLL, open: isOpen(s),
         rolling: rolling ? { id: rolling.id, product: pv(rolling.product_id), round: rolling.round, at: Date.parse(rolling.created_at), revealAt: Date.parse(rolling.created_at) + ROLL } : null,
-        results: shown.slice(0, 60).map(w => ({ id: w.id, product: pv(w.product_id), round: w.round, serial: w.serial, name: nm(cu.get(w.customer_id)), city: (cu.get(w.customer_id) || {}).city || '', at: Date.parse(w.created_at) })),
+        results: shown.slice(0, 60).map(w => ({ id: w.id, product: pv(w.product_id), round: w.round, serial: w.serial, name: nm(cu.get(w.customer_id)), city: c.winCity ? (cu.get(w.customer_id) || {}).city || '' : '', at: Date.parse(w.created_at) })),
         products: s.products.filter(p => p.active !== false).sort((x, y) => x.num - y.num).map(p => ({ ...pv(p.id), done: cnt[p.id] || 0 })) });
     }
     if (a === 'winners') {
@@ -498,11 +505,8 @@ module.exports = async (req, res) => {
       const ids = [...new Set(W.map(w => w.customer_id).filter(Boolean))];
       const CU = ids.length ? await db('auction_customer?id=in.(' + ids.join(',') + ')&select=id,name,city,phone') : [];
       const cu = new Map((CU || []).map(x => [x.id, x]));
-      const short = x => { const n = String((x && x.name) || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-        if (n.length >= 2) return n[0].charAt(0) + '. ' + n.slice(1).join(' ');
-        if (n.length === 1) return n[0];
-        const ph = String((x && x.phone) || ''); return ph ? 'רוכש בטלפון (מסתיים ב־' + ph.slice(-3) + ')' : 'רוכש'; };
-      const by = {}; W.forEach(w => { (by[w.product_id] = by[w.product_id] || []).push({ round: w.round, serial: w.serial, alt: !!w.alt, name: short(cu.get(w.customer_id)), city: (cu.get(w.customer_id) || {}).city || '' }); });
+      const short = x => winName(c.winNames, x);
+      const by = {}; W.forEach(w => { (by[w.product_id] = by[w.product_id] || []).push({ round: w.round, serial: w.serial, alt: !!w.alt, name: short(cu.get(w.customer_id)), city: c.winCity ? (cu.get(w.customer_id) || {}).city || '' : '' }); });
       const products = s.products.filter(p => by[p.id]).sort((x, y) => x.num - y.num).map(p => ({ num: p.num, name: p.name, img: p.img || '', draws: +p.draws || 1, winners: by[p.id] }));
       return json(res, 200, { title: c.title, logo: c.logo, last: W.reduce((m, w) => w.created_at > m ? w.created_at : m, ''), products });
     }
