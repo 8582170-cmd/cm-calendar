@@ -288,7 +288,7 @@ function cleanCfg(old, b) {
     if (b.ivr.listChunk != null) v.listChunk = Math.max(3, Math.min(30, Math.floor(+b.ivr.listChunk) || 10));
     if (b.ivr.browse != null) v.browse = ['list', 'auto', 'menu', 'none'].includes(b.ivr.browse) ? b.ivr.browse : 'list';
     if (b.ivr.browseWait != null) v.browseWait = Math.max(1, Math.min(8, Math.round(+b.ivr.browseWait) || 2));
-    if (b.ivr.ext && typeof b.ivr.ext === 'object') { const e = {}; ['num', 'list', 'auto', 'menu'].forEach(k => { const x = String(b.ivr.ext[k] || '').replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (x) e[k] = x; }); v.ext = e; }
+    if (b.ivr.ext && typeof b.ivr.ext === 'object') { const e = {}; ['num', 'list', 'auto', 'menu', 'rep'].forEach(k => { const x = String(b.ivr.ext[k] || '').replace(/[^\d/]/g, '').replace(/^\/+|\/+$/g, '').slice(0, 40); if (x) e[k] = x; }); v.ext = e; }
     if (b.ivr.token) v.token = String(b.ivr.token).trim().slice(0, 200); if (b.ivr.hold && typeof b.ivr.hold === 'object') { const nm = String(b.ivr.hold.name || '').replace(/[^\w.\-]/g, '').slice(0, 60), o = v.hold || {}; v.hold = { on: !!b.ivr.hold.on, name: nm, folder: holdFolder(b.ivr.hold.folder != null ? b.ivr.hold.folder : o.folder) }; if (o.url) { v.hold.url = o.url; if (o.y) v.hold.y = true; } } if (b.ivr.clearToken) delete v.token; if (b.ivr.on != null) v.on = !!b.ivr.on; if (b.ivr.newKey) v.key = crypto.randomBytes(8).toString('hex'); c.ivr = v; }
   return c;
 }
@@ -817,4 +817,4 @@ async function ymUpload(token, path, buf) {
   const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
   if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 80));
 }
-module.exports.noteLive = PG.noteLive; module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.notify = notify; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;
+module.exports.noteLive = PG.noteLive; module.exports.markPaid = markPaid; module.exports.phoneN = phoneN;; module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.notify = notify; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;

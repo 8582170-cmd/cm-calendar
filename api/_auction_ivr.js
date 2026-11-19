@@ -286,6 +286,112 @@ async function saveCart(s, ph, call, row, st) {
 }
 async function dropCart(s, ph) { if (ph) await db('auction_cart?sale_id=eq.' + s.id + '&phone=eq.' + ph, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {}); }
 
+
+/* ===== שלוחת נציגים (mode=rep): הנציג מקיש את הרכישה של רוכש ששילם לו במזומן =====
+   מקשים: קוד נציג, קוד כניסה אישי, ואז רשימה אחת: מספר מוצר * כמות * מספר מוצר * כמות ... וסולמית. כמות לא חובה (כרטיס אחד).
+   אחר כך מקריאים את הרשימה לאישור, מקישים את הטלפון של הרוכש, וההזמנה נרשמת על שם הנציג (לפי הרשאתו: שולם / ממתין לאישור).
+   גם כאן השחזור הוא מתוך כל ההקשות, וכל הזמנה נוצרת פעם אחת (מזהה קבוע לפי השיחה והמספר הסידורי). */
+const BAD = new Map(); /* ניסיונות כושלים לפי מכירה ומתקשר, נגד ניחוש קודים */
+const badKey = (s, ph) => s.id + ':' + (ph || '?');
+/* ניתוח הרשימה. אם יש מוצר עם מספר קצר (עד 99) אין דרך להבדיל בינו לבין כמות, ולכן נדרשים זוגות מלאים של מוצר וכמות */
+function parseItems(raw, prods) {
+  const toks = String(raw || '').split('*').map(x => x.replace(/\D/g, '')).filter(Boolean), by = new Map(prods.map(p => [String(p.num), p]));
+  if (!toks.length) return { error: 'לא הוקשה רשימה' };
+  const L = [], add = (p, n) => { const e = L.find(x => x.p === p.id); if (e) e.n += n; else L.push({ p: p.id, n, prod: p }); };
+  if (prods.some(p => +p.num < 100)) {
+    if (toks.length % 2) return { error: 'במכירה הזאת מקישים מספר מוצר, כוכבית וכמות, לכל מוצר' };
+    for (let i = 0; i < toks.length; i += 2) { const p = by.get(String(+toks[i])), n = +toks[i + 1]; if (!p) return { error: 'מוצר מספר ' + toks[i] + ' לא נמצא' }; if (!(n >= 1 && n <= 99)) return { error: 'כמות לא תקינה' }; add(p, n); }
+  } else {
+    let cur = null;
+    for (const t of toks) {
+      const p = by.get(String(+t));
+      if (p) { add(p, 1); cur = L.find(x => x.p === p.id); cur.fresh = true; }
+      else if (cur && cur.fresh && +t >= 1 && +t <= 99) { cur.n += +t - 1; cur.fresh = false; }
+      else return { error: 'מוצר מספר ' + t + ' לא נמצא' };
+    }
+  }
+  return { items: L.map(x => ({ p: x.p, n: x.n })), lines: L };
+}
+function repReplay(s, R, ans, ph) {
+  const c = A().cfgOf(s), prods = s.products.filter(p => p.active !== false);
+  const st = { phase: 'code', tries: 0, jobs: [], cur: null, rep: null, msg: [], fail: '' };
+  const perm = r => ['off', 'pending', 'paid'].includes(r.perm) ? r.perm : c.repOrders;
+  for (const v0 of ans) {
+    const raw = String(v0 == null ? '' : v0).trim(), v = raw.replace(/\D/g, ''); st.msg = []; st.fail = '';
+    if (st.phase === 'code') {
+      const r = v ? R.find(x => String(x.code) === String(+v) || String(x.code) === v) : null;
+      if (!r) { st.msg.push(T('קוד הנציג לא נמצא')); st.fail = 'code'; if (++st.tries >= 3) st.phase = 'bye'; continue; }
+      st.rep = r; st.tries = 0;
+      if (perm(r) === 'off') { st.msg.push(T('אין לכם הרשאה לרשום הזמנות במכירה הזאת')); st.phase = 'bye'; continue; }
+      if (!r.pin) { st.msg.push(T('לא הוגדר לכם קוד כניסה אישי. פנו למנהל המכירה')); st.phase = 'bye'; continue; }
+      st.phase = 'pin'; continue;
+    }
+    if (st.phase === 'pin') {
+      if (v && v === String(st.rep.pin)) { st.phase = 'items'; st.tries = 0; st.msg.push(T('שלום ' + (st.rep.name || ''))); continue; }
+      st.msg.push(T('קוד הכניסה שגוי')); st.fail = 'pin'; if (++st.tries >= 3) st.phase = 'bye'; continue;
+    }
+    if (st.phase === 'items') {
+      if (raw === '0') { st.phase = 'bye'; continue; }
+      const P = parseItems(raw, prods);
+      if (P.error) { st.msg.push(T(P.error)); continue; }
+      const Q = C.price(s.products, null, P.items);
+      if (Q.error) { st.msg.push(T(Q.message || 'הרשימה לא תקינה')); continue; }
+      st.cur = { items: P.items, lines: P.lines, quote: Q }; st.phase = 'confirm'; continue;
+    }
+    if (st.phase === 'confirm') {
+      if (v === '1') st.phase = 'phone'; else if (v === '2') { st.cur = null; st.phase = 'items'; } else st.msg.push(T('בחירה לא תקינה'));
+      continue;
+    }
+    if (st.phase === 'phone') {
+      if (raw === '0') { st.phase = 'confirm'; continue; }
+      const ph2 = A().phoneN(v); if (!ph2) { st.msg.push(T('מספר הטלפון לא תקין')); continue; }
+      st.jobs.push({ items: st.cur.items, phone: ph2, quote: st.cur.quote, lines: st.cur.lines }); st.cur = null; st.phase = 'done'; continue;
+    }
+    if (st.phase === 'done') { if (v === '1') st.phase = 'items'; else if (v === '2') st.phase = 'bye'; else st.msg.push(T('בחירה לא תקינה')); continue; }
+  }
+  st.perm = st.rep ? perm(st.rep) : 'off';
+  return st;
+}
+const lineSay = l => T('מוצר ' + l.prod.num + ' ' + l.prod.name + ' ' + (l.n === 1 ? 'כרטיס אחד' : l.n + ' כרטיסים'));
+async function repFlow(s, q, ans, call, ph, out, bye) {
+  const R = (await db('auction_rep?sale_id=eq.' + s.id + '&active=is.true&select=id,code,name,pin,perm&limit=5000').catch(() => [])) || [];
+  const bk = badKey(s, ph), bd = BAD.get(bk);
+  if (bd && bd.n >= 8 && Date.now() - bd.at < 30 * 60e3) return bye(T('נסיונות רבים מדי. נסו שוב מאוחר יותר'));
+  const st = repReplay(s, R, ans, ph);
+  if (st.fail) BAD.set(bk, { n: ((bd && Date.now() - bd.at < 30 * 60e3) ? bd.n : 0) + 1, at: Date.now() });
+  else if (st.phase === 'items' && st.rep) BAD.delete(bk);
+  const next = 'X' + (ans.length + 1), pre = st.msg.filter(Boolean);
+  const rd = (parts, max, min, ok) => out('read=' + pre.concat(parts).filter(Boolean).join('.') + '=' + [next, 'no', max, min, 12, 'NO', 'no', 'no', '', ok ? ok + '.0' : '', '', '', '', '', 'no'].join(','));
+  /* רישום ההזמנות שהושלמו (פעם אחת לכל הזמנה) */
+  let last = null;
+  for (let i = 0; i < st.jobs.length; i++) {
+    const j = st.jobs[i], id = 'au' + crypto.createHash('sha256').update(call + ':' + s.slug + ':rp' + i).digest('hex').slice(0, 22);
+    let o = (await db('auction_order?id=eq.' + id + '&select=id,amount,status&limit=1').catch(() => []))[0];
+    if (!o) {
+      const r = await A().makeOrder(s, { items: j.items, repId: st.rep.id, repSrc: 'rep', phone: j.phone, name: '' }, 'rep', null, id);
+      if (r.error) return bye(pre.concat(T(r.message || 'לא הצלחנו לרשום את ההזמנה')));
+      o = r.order; const cb = { byRep: st.rep.id, method: 'מזומן', note: 'נרשם בטלפון' };
+      await db('auction_order?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: cb }) }).catch(() => {});
+      if (st.perm === 'paid') await A().markPaid(id, { txn: 'rep:' + st.rep.code + ':מזומן', callback: cb }).catch(e => console.error('rep phone paid', e.message));
+    }
+    last = { o, j, id };
+  }
+  switch (st.phase) {
+    case 'bye': return bye(pre.concat(T('להתראות')));
+    case 'code': return rd([T('נא להקיש את קוד הנציג שלכם וסולמית')], 8, 1);
+    case 'pin': return rd([T('נא להקיש את קוד הכניסה האישי שלכם וסולמית')], 6, 1);
+    case 'items': { const strict = s.products.some(p => p.active !== false && +p.num < 100); return rd([T(st.jobs.length ? 'הקישו את הרשימה של הרוכש הבא' : strict ? 'הקישו מספר מוצר כוכבית כמות, ואחריהם כוכבית ומוצר הבא עם הכמות שלו. בסיום סולמית. לסיום השיחה הקישו אפס וסולמית' : 'הקישו מספר מוצר כוכבית כמות. לכרטיס אחד אפשר לדלג על הכמות. בין מוצר למוצר מקישים כוכבית. בסיום סולמית. לסיום השיחה הקישו אפס וסולמית')], 60, 1); }
+    case 'confirm': { const Q = st.cur.quote; return rd(st.cur.lines.map(lineSay).concat(T('סך הכל ' + Q.count + ' כרטיסים ' + nis(Q.amount) + '. לאישור הקישו 1. להקשה מחדש הקישו 2')), 1, 1, '1.2'); }
+    case 'phone': return rd([T('נא להקיש את מספר הטלפון של הרוכש וסולמית. לחזרה הקישו אפס')], 10, 1);
+    case 'done': {
+      const said = [T(st.perm === 'paid' ? 'ההזמנה נרשמה ושולמה' : 'ההזמנה נרשמה וממתינה לאישור מנהל המכירה')];
+      if (st.perm === 'paid' && last) { const L = ((await db('auction_ticket?order_id=eq.' + last.id + '&select=serial&order=serial.asc&limit=5000').catch(() => [])) || []).map(x => x.serial); if (L.length === 1) said.push(T('מספר הכרטיס'), 'n-' + L[0]); else if (L.length) said.push(T('מספרי הכרטיסים מ'), 'n-' + L[0], T('עד'), 'n-' + L[L.length - 1]); }
+      said.push(T('להזנת רוכש נוסף הקישו 1. לסיום הקישו 2')); return rd(said, 1, 1, '1.2');
+    }
+  }
+  return bye(T('להתראות'));
+}
+
 module.exports = async (req, res) => {
   const q = { ...(req.query || {}), ...(req.body && typeof req.body === 'object' ? req.body : {}) };
   const out = t => { res.statusCode = 200; res.setHeader('Content-Type', 'text/plain; charset=utf-8'); res.end(t); };
@@ -297,6 +403,7 @@ module.exports = async (req, res) => {
     const row = cartOn ? await cartRow(s, ph) : null, saved = startOf(row, call);
     const orderId = 'au' + crypto.createHash('sha256').update((call || crypto.randomBytes(8).toString('hex')) + ':' + s.slug).digest('hex').slice(0, 22);
     /* ניתוק באמצע: הסל נשמר אוטומטית להתקשרות הבאה (אם לא נוצרה הזמנה בשיחה הזאת) */
+    if (q.hangup === 'yes' && q.mode === 'rep') return out('');
     if (q.hangup === 'yes') {
       const ans0 = []; for (let i = 1; i <= 1500 && q['X' + i] != null; i++) ans0.push(q['X' + i]);
       if (cartOn && ph && ans0.length) { const o0 = (await db('auction_order?id=eq.' + orderId + '&select=id&limit=1').catch(() => []))[0];
@@ -308,6 +415,7 @@ module.exports = async (req, res) => {
     const noteParts = () => c.notes.filter(n => n.phone && A().noteLive(n, Date.now())).map(n => T(n.phoneText || n.text.replace(/[.=&"<>-]/g, ' ')));
     if (!A().isOpen(s)) return bye([M(s, 'closed')].concat(noteParts()).join('.'));
     const ans = []; for (let i = 1; i <= 1500 && q['X' + i] != null; i++) ans.push(q['X' + i]);
+    if (q.mode === 'rep') return await repFlow(s, q, ans, call, ph, out, bye);
     const st = replay(s, await reps(s), ans, saved, q.mode), next = 'X' + (ans.length + 1);
     const pre = ans.length ? st.msg : [M(s, 'welcome')].concat(noteParts(), [M(s, 'navHint')], st.first || []);
     /* הפרמטרים של read בימות: שם, שימוש בערך קיים, מקסימום ספרות, מינימום, שניות המתנה, השמעת ההקשה, חסימת כוכבית (no = כוכבית מגיעה אלינו),
