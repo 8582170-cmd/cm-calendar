@@ -316,6 +316,15 @@ function repReplay(s, R, ans, ph) {
   const c = A().cfgOf(s), prods = s.products.filter(p => p.active !== false);
   const st = { phase: 'code', tries: 0, jobs: [], cur: null, rep: null, msg: [], fail: '' };
   const perm = r => ['off', 'pending', 'paid'].includes(r.perm) ? r.perm : c.repOrders;
+  const nameOn = c.repName !== 'off';
+  const finish = (phone, name) => { st.jobs.push({ items: st.cur.items, phone, name, quote: st.cur.quote, lines: st.cur.lines }); st.cur = null; st.phase = 'done'; };
+  /* רכישה של הנציג לעצמו: הטלפון נלקח מזיהוי המתקשר (ואם אין, מקישים), והשם הוא שם הנציג */
+  const selfOrPhone = () => {
+    if (st.how !== 'self') { st.phase = 'phone'; return; }
+    const ph1 = A().phoneN(String(ph || '').replace(/\D/g, '')), nm = st.rep.name || '';
+    if (!ph1) { st.msg.push(T('לא זוהה מספר המתקשר')); st.phase = 'phone'; return; }
+    st.buyer = { phone: ph1, name: nm }; if (nm || !nameOn) finish(ph1, nm); else st.phase = 'name';
+  };
   for (const v0 of ans) {
     const raw = String(v0 == null ? '' : v0).trim(), v = raw.replace(/\D/g, ''); st.msg = []; st.fail = '';
     if (st.phase === 'code') {
@@ -327,31 +336,67 @@ function repReplay(s, R, ans, ph) {
       st.phase = 'pin'; continue;
     }
     if (st.phase === 'pin') {
-      if (v && v === String(st.rep.pin)) { st.phase = 'items'; st.tries = 0; st.msg.push(T('שלום ' + (st.rep.name || ''))); continue; }
+      if (v && v === String(st.rep.pin)) { st.phase = 'menu'; st.tries = 0; st.msg.push(T('שלום ' + (st.rep.name || ''))); continue; }
       st.msg.push(T('קוד הכניסה שגוי')); st.fail = 'pin'; if (++st.tries >= 3) st.phase = 'bye'; continue;
     }
+    if (st.phase === 'menu') {
+      if (v === '1') { st.how = 'list'; st.phase = 'items'; } else if (v === '2') { st.how = 'guided'; st.g = []; st.phase = 'gprod'; }
+      else if (v === '3') { st.how = 'self'; st.g = []; st.phase = 'gprod'; } else if (raw === '0') st.phase = 'bye'; else st.msg.push(T('בחירה לא תקינה'));
+      continue;
+    }
     if (st.phase === 'items') {
-      if (raw === '0') { st.phase = 'bye'; continue; }
+      if (raw === '0') { st.phase = 'menu'; continue; }
       const P = parseItems(raw, prods);
       if (P.error) { st.msg.push(T(P.error)); continue; }
       const Q = C.price(s.products, null, P.items);
       if (Q.error) { st.msg.push(T(Q.message || 'הרשימה לא תקינה')); continue; }
       st.cur = { items: P.items, lines: P.lines, quote: Q }; st.phase = 'confirm'; continue;
     }
+    /* הזנה מודרכת, כמו רוכש רגיל: מספר מוצר, שמיעת שם המוצר, כמות, ועוד מוצר או סיום */
+    if (st.phase === 'gprod') {
+      if (raw === '0') { st.phase = st.g.length ? 'gmore' : 'menu'; continue; }
+      const p = prods.find(x => String(x.num) === String(+v));
+      if (!v || !p) { st.msg.push(T('מוצר מספר ' + (v || '') + ' לא נמצא')); continue; }
+      st.gp = p; st.phase = 'gqty'; continue;
+    }
+    if (st.phase === 'gqty') {
+      if (raw === '0') { st.phase = 'gprod'; continue; }
+      const n = +v; if (!(n >= 1 && n <= 99)) { st.msg.push(T('כמות לא תקינה')); continue; }
+      const e = st.g.find(x => x.p === st.gp.id); if (e) e.n += n; else st.g.push({ p: st.gp.id, n, prod: st.gp });
+      st.gp = null; st.phase = 'gmore'; continue;
+    }
+    if (st.phase === 'gmore') {
+      if (v === '1') st.phase = 'gprod';
+      else if (v === '2') {
+        const items = st.g.map(x => ({ p: x.p, n: x.n })), Q = C.price(s.products, null, items);
+        if (Q.error) { st.msg.push(T(Q.message || 'ההזמנה לא תקינה')); continue; }
+        st.cur = { items, lines: st.g.slice(), quote: Q }; st.phase = 'confirm';
+      } else if (v === '3') { st.g = []; st.phase = 'menu'; st.msg.push(T('ההזמנה בוטלה')); }
+      else st.msg.push(T('בחירה לא תקינה'));
+      continue;
+    }
     if (st.phase === 'confirm') {
-      if (v === '1') st.phase = 'phone'; else if (v === '2') { st.cur = null; st.phase = 'items'; } else st.msg.push(T('בחירה לא תקינה'));
+      if (v === '1') selfOrPhone(); else if (v === '2') { st.cur = null; st.g = []; st.phase = st.how === 'list' ? 'items' : 'menu'; } else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
     if (st.phase === 'phone') {
       if (raw === '0') { st.phase = 'confirm'; continue; }
       const ph2 = A().phoneN(v); if (!ph2) { st.msg.push(T('מספר הטלפון לא תקין')); continue; }
-      st.jobs.push({ items: st.cur.items, phone: ph2, quote: st.cur.quote, lines: st.cur.lines }); st.cur = null; st.phase = 'done'; continue;
+      st.buyer = { phone: ph2, name: st.how === 'self' ? (st.rep.name || '') : '' };
+      if (st.buyer.name || !nameOn) finish(ph2, st.buyer.name); else st.phase = 'name';
+      continue;
     }
-    if (st.phase === 'done') { if (v === '1') st.phase = 'items'; else if (v === '2') st.phase = 'bye'; else st.msg.push(T('בחירה לא תקינה')); continue; }
+    if (st.phase === 'name') {
+      if (raw === '0') { st.phase = 'phone'; continue; }
+      const nm = cleanName(raw); if (nm.length < 2) { st.msg.push(T('השם לא התקבל. נסו שוב')); continue; }
+      finish(st.buyer.phone, nm); continue;
+    }
+    if (st.phase === 'done') { if (v === '1') { st.phase = 'menu'; st.g = []; } else if (v === '2') st.phase = 'bye'; else st.msg.push(T('בחירה לא תקינה')); continue; }
   }
   st.perm = st.rep ? perm(st.rep) : 'off';
   return st;
 }
+const cleanName = x => String(x || '').replace(/[^\u05d0-\u05eaA-Za-z\s'"\-.]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
 const lineSay = l => T('מוצר ' + l.prod.num + ' ' + l.prod.name + ' ' + (l.n === 1 ? 'כרטיס אחד' : l.n + ' כרטיסים'));
 async function repFlow(s, q, ans, call, ph, out, bye) {
   const R = (await db('auction_rep?sale_id=eq.' + s.id + '&active=is.true&select=id,code,name,pin,perm&limit=5000').catch(() => [])) || [];
@@ -359,16 +404,16 @@ async function repFlow(s, q, ans, call, ph, out, bye) {
   if (bd && bd.n >= 8 && Date.now() - bd.at < 30 * 60e3) return bye(T('נסיונות רבים מדי. נסו שוב מאוחר יותר'));
   const st = repReplay(s, R, ans, ph);
   if (st.fail) BAD.set(bk, { n: ((bd && Date.now() - bd.at < 30 * 60e3) ? bd.n : 0) + 1, at: Date.now() });
-  else if (st.phase === 'items' && st.rep) BAD.delete(bk);
+  else if (st.phase !== 'code' && st.phase !== 'pin' && st.rep) BAD.delete(bk);
   const next = 'X' + (ans.length + 1), pre = st.msg.filter(Boolean);
-  const rd = (parts, max, min, ok) => out('read=' + pre.concat(parts).filter(Boolean).join('.') + '=' + [next, 'no', max, min, 12, 'NO', 'no', 'no', '', ok ? ok + '.0' : '', '', '', '', '', 'no'].join(','));
+  const rd = (parts, max, min, ok, kb) => out('read=' + pre.concat(parts).filter(Boolean).join('.') + '=' + [next, 'no', max, min, kb ? 30 : 12, kb || 'NO', 'no', 'no', '', kb ? '' : ok ? ok + '.0' : '', '', '', '', '', 'no'].join(','));
   /* רישום ההזמנות שהושלמו (פעם אחת לכל הזמנה) */
   let last = null;
   for (let i = 0; i < st.jobs.length; i++) {
     const j = st.jobs[i], id = 'au' + crypto.createHash('sha256').update(call + ':' + s.slug + ':rp' + i).digest('hex').slice(0, 22);
     let o = (await db('auction_order?id=eq.' + id + '&select=id,amount,status&limit=1').catch(() => []))[0];
     if (!o) {
-      const r = await A().makeOrder(s, { items: j.items, repId: st.rep.id, repSrc: 'rep', phone: j.phone, name: '' }, 'rep', null, id);
+      const r = await A().makeOrder(s, { items: j.items, repId: st.rep.id, repSrc: 'rep', phone: j.phone, name: j.name || '' }, 'rep', null, id);
       if (r.error) return bye(pre.concat(T(r.message || 'לא הצלחנו לרשום את ההזמנה')));
       o = r.order; const cb = { byRep: st.rep.id, method: 'מזומן', note: 'נרשם בטלפון' };
       await db('auction_order?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: cb }) }).catch(() => {});
@@ -380,6 +425,11 @@ async function repFlow(s, q, ans, call, ph, out, bye) {
     case 'bye': return bye(pre.concat(T('להתראות')));
     case 'code': return rd([T('נא להקיש את קוד הנציג שלכם וסולמית')], 8, 1);
     case 'pin': return rd([T('נא להקיש את קוד הכניסה האישי שלכם וסולמית')], 6, 1);
+    case 'menu': return rd([T('לרישום רשימה מהירה של מספרי מוצרים הקישו 1. להזנה מודרכת מוצר אחרי מוצר הקישו 2. לרכישה לעצמכם הקישו 3. לסיום הקישו אפס')], 1, 1, '1.2.3');
+    case 'gprod': return rd([T(st.g.length ? 'הקישו מספר מוצר נוסף וסולמית' : 'הקישו מספר מוצר וסולמית. לחזרה הקישו אפס')], 5, 1);
+    case 'gqty': return rd([T('מוצר ' + st.gp.num + ' ' + st.gp.name), T('הקישו כמות כרטיסים וסולמית')], 3, 1);
+    case 'gmore': return rd(st.g.map(lineSay).concat(T('להוספת מוצר הקישו 1. לסיום והמשך הקישו 2. לביטול כל ההזמנה הקישו 3')), 1, 1, '1.2.3');
+    case 'name': return rd([T('נא להקיש את שם הרוכש באותיות במקשי הטלפון. בסיום בחרו באפשרות סיום ההקלדה')], 40, 1, '', 'HebrewKeyboard');
     case 'items': { const strict = s.products.some(p => p.active !== false && +p.num < 100); return rd([T(st.jobs.length ? 'הקישו את הרשימה של הרוכש הבא' : strict ? 'הקישו מספר מוצר כוכבית כמות, ואחריהם כוכבית ומוצר הבא עם הכמות שלו. בסיום סולמית. לסיום השיחה הקישו אפס וסולמית' : 'הקישו מספר מוצר כוכבית כמות. לכרטיס אחד אפשר לדלג על הכמות. בין מוצר למוצר מקישים כוכבית. בסיום סולמית. לסיום השיחה הקישו אפס וסולמית')], 60, 1); }
     case 'confirm': { const Q = st.cur.quote; return rd(st.cur.lines.map(lineSay).concat(T('סך הכל ' + Q.count + ' כרטיסים ' + nis(Q.amount) + '. לאישור הקישו 1. להקשה מחדש הקישו 2')), 1, 1, '1.2'); }
     case 'phone': return rd([T('נא להקיש את מספר הטלפון של הרוכש וסולמית. לחזרה הקישו אפס')], 10, 1);
