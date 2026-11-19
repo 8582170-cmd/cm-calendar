@@ -119,6 +119,7 @@ iframe.pay{width:100%;border:0;min-height:430px}
 .rform .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .rform .hb{align-self:flex-start;color:var(--navy)}.rmsg{margin:0;min-height:1.4em}.rmsg.bad{color:var(--bad)}
 .rdone{text-align:center;padding:20px}
+.band.ok{background:#E6F4EA;border-color:#B7DDC1;color:#14532D}.band.note{align-items:flex-start;white-space:pre-line}.band a.lv{margin-inline-start:auto;font-weight:700}.fx .f small{font-weight:400}
 /* עריכת דף המכירה: מבוא, תצוגת מוצר בולטת, וסגנונות עיצוב (html[data-st]) */
 .intro{margin:0;white-space:pre-line;font-size:18px;line-height:1.7;max-width:900px}
 .prods{container-type:inline-size}
@@ -150,7 +151,7 @@ html[data-st=elegant] .qty button,html[data-st=elegant] .qty input,html[data-st=
 <script src="/assets/sitemsg.js?v=3" defer></script>
 <script src="/assets/config.js"></script>
 <script src="/assets/auction-price.js?v=1"></script>
-<script src="/assets/orgpages.js?v=2"></script>
+<script src="/assets/orgpages.js?v=3"></script>
 <script src="/assets/auction-txt.js?v=1"></script>
 <script src="/assets/auction-txt.js?v=1"></script>
 <script src="/assets/live.js?v=12"></script>
@@ -261,6 +262,8 @@ function buyView(){
     if(S.rep)h+='<div class="band">הגעתם דרך הקישור של <b>'+esc(S.rep.name||('נציג '+S.rep.code))+'</b> · הרכישה תיזקף לזכותו</div>';
     if(!S.open)h+='<div class="band bad">'+(S.status==='closed'?'המכירה הסתיימה. תודה לכל המשתתפים!':c.openAt&&new Date(c.openAt)>new Date()?'המכירה תיפתח ב־'+new Date(c.openAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'}):'המכירה סגורה כרגע')+'</div>';
     else if(c.closeAt)h+='<div class="band">המכירה פתוחה עד '+new Date(c.closeAt).toLocaleString('he-IL',{dateStyle:'full',timeStyle:'short'})+'</div>';
+    (c.notes||[]).forEach(function(n){h+='<div class="band note'+(n.tone==='ok'?' ok':n.tone==='warn'?' bad':'')+'" role="note">'+esc(n.text)+'</div>'});
+    if(c.liveOn)h+='<div class="band"><span>ההגרלה תתקיים בשידור חי, ואפשר לצפות בה מכל מקום.</span><a class="lv" href="/auction-live?s='+SLUG+'">לצפייה בהגרלה החיה</a></div>';
     h+=cdHtml(cdPick(c,S.open,S.status));
     h+=orgNav(S.cfg.org,'');
     h+=giveHtml(S.give);
@@ -329,7 +332,7 @@ function buyView(){
       +'<label class="f" for="bn">שם מלא<input id="bn" autocomplete="name" value="'+esc(b.name||'')+'"></label>'
       +'<label class="f" for="bp">טלפון<input id="bp" type="tel" autocomplete="tel" dir="ltr" value="'+esc(b.phone||'')+'"></label>'
       +'<label class="f" for="bm">מייל (לקבלת מספרי הכרטיסים)<input id="bm" type="email" autocomplete="email" dir="ltr" value="'+esc(b.mail||'')+'"></label>'
-      +'<label class="f" for="bc">עיר<input id="bc" autocomplete="address-level2" value="'+esc(b.city||'')+'"></label>'
+      +fieldsHtml(b)
       +(KH||NP?'':'<label class="f" for="bz">תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input id="bz" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label>')+'</div>'
       +(KH||NP?'':'<iframe class="pay" id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>')
       +(c.terms&&c.termsAgree?'<label class="agr" for="agr"><input type="checkbox" id="agr"><span>קראתי ואני מסכים/ה ל<a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></span></label>':'')
@@ -337,16 +340,37 @@ function buyView(){
     if(NP){}else if(KH){ready=true;wireKesher()}else wirePay();updGo();if(S.later)wireLater();
   }
   var KH=false;
+  /* שדות הרכישה לפי הגדרות המנהל: עיר וכתובת (כבוי / אופציונלי / חובה), ושדות נוספים */
+  function fieldsHtml(b){var F=(S.cfg&&S.cfg.fields)||{city:'opt',addr:'',extra:[]},h='';
+    if(F.city)h+='<label class="f" for="bc">עיר'+(F.city==='req'?' <small>(חובה)</small>':'')+'<input id="bc" autocomplete="address-level2" value="'+esc(b.city||'')+'"></label>';
+    if(F.addr)h+='<label class="f" for="ba">כתובת'+(F.addr==='req'?' <small>(חובה)</small>':'')+'<input id="ba" autocomplete="street-address" value="'+esc(b.addr||'')+'"></label>';
+    (F.extra||[]).forEach(function(x){var id='fx_'+x.id,req=x.req?' <small>(חובה)</small>':'',hp=x.help?'<small>'+esc(x.help)+'</small>':'';
+      if(x.type==='checkbox')h+='<label class="agr" for="'+id+'"><input type="checkbox" id="'+id+'" data-fx="'+x.id+'"><span>'+esc(x.label)+req+hp+'</span></label>';
+      else if(x.type==='select')h+='<label class="f" for="'+id+'">'+esc(x.label)+req+hp+'<select id="'+id+'" data-fx="'+x.id+'"><option value="">בחירה…</option>'+x.opts.map(function(o){return '<option>'+esc(o)+'</option>'}).join('')+'</select></label>';
+      else if(x.type==='textarea')h+='<label class="f" for="'+id+'">'+esc(x.label)+req+hp+'<textarea id="'+id+'" data-fx="'+x.id+'" maxlength="500" rows="3"></textarea></label>';
+      else h+='<label class="f" for="'+id+'">'+esc(x.label)+req+hp+'<input id="'+id+'" data-fx="'+x.id+'" maxlength="200"></label>'});
+    return h}
+  function gv(i){var e=$(i);return e?e.value.trim():''}
+  /* אוסף ובודק את השדות הנוספים. מחזיר false (עם הודעה) אם חסר משהו */
+  function gather(){var F=(S.cfg&&S.cfg.fields)||{city:'opt',addr:'',extra:[],phoneMail:'either'},fx={},bad=null,ph=gv('bp').replace(/\D/g,''),ml=gv('bm');
+    if((F.phoneMail==='phone'||F.phoneMail==='both')&&!/^0\d{8,9}$/.test(ph)){$('bp').focus();msg('נא למלא מספר טלפון תקין.',1);return false}
+    if((F.phoneMail==='email'||F.phoneMail==='both')&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ml)){$('bm').focus();msg('נא למלא כתובת מייל תקינה.',1);return false}
+    if(F.city==='req'&&!gv('bc')){$('bc').focus();msg('נא למלא עיר.',1);return false}
+    if(F.addr==='req'&&!gv('ba')){$('ba').focus();msg('נא למלא כתובת.',1);return false}
+    (F.extra||[]).forEach(function(x){if(bad)return;var e=$('fx_'+x.id);if(!e)return;var v=x.type==='checkbox'?e.checked:e.value.trim();if(x.req&&!v){bad=x;e.focus();return}if(v)fx[x.id]=v});
+    if(bad){msg('נא למלא: '+bad.label,1);return false}
+    return {city:gv('bc'),addr:gv('ba'),fx:fx}}
   function wireKesher(){
     $('go').onclick=function(){
-      if(busy)return;var name=$('bn').value.trim(),phone=$('bp').value.trim(),mail=$('bm').value.trim(),city=$('bc').value.trim();
+      if(busy)return;var name=$('bn').value.trim(),phone=$('bp').value.trim(),mail=$('bm').value.trim(),city=gv('bc');
+      var ex=gather();if(!ex)return;
       if(name.split(/\s+/).length<2){$('bn').focus();return msg('נא למלא שם פרטי ושם משפחה.',1)}
       if(!/^0\d{8,9}$/.test(phone.replace(/\D/g,''))&&!mail){$('bp').focus();return msg('נא למלא טלפון או מייל.',1)}
       if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){$('bm').focus();return msg('כתובת המייל לא תקינה.',1)}
-      try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:city}))}catch(e){}
+      try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:ex.city,addr:ex.addr}))}catch(e){}
       busy=true;updGo();msg('פותחים את דף התשלום…');
       if(!agreeOk()){busy=false;updGo();var lb=$('later');if(lb)lb.disabled=false;$('agr').focus();return msg('צריך לאשר את תקנון המכירה.',1)}
-      post({a:'checkout',agree:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
+      post({a:'checkout',agree:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:ex.city,addr:ex.addr,fx:ex.fx}).then(function(j){
         if(!j.url){busy=false;updGo();msg(j.message||'לא הצלחנו לפתוח את דף התשלום. נסו שוב.',1);return}
         try{sessionStorage.setItem('auction-amt-'+j.id,String(j.amount))}catch(e){}
         location.href=j.url;
@@ -363,14 +387,15 @@ function buyView(){
   }
   function wireLater(){
     $('later').onclick=function(){
-      if(busy)return;var name=$('bn').value.trim(),phone=$('bp').value.trim(),mail=$('bm').value.trim(),city=$('bc').value.trim();
+      if(busy)return;var name=$('bn').value.trim(),phone=$('bp').value.trim(),mail=$('bm').value.trim(),city=gv('bc');
+      var ex=gather();if(!ex)return;
       if(!(amount>0))return msg('בוחרים כרטיסים כדי להזמין.',1);
       if(name.split(/\s+/).length<2){$('bn').focus();return msg('נא למלא שם פרטי ושם משפחה.',1)}
       if(!/^0\d{8,9}$/.test(phone.replace(/\D/g,''))&&!mail){$('bp').focus();return msg('נא למלא טלפון או מייל.',1)}
-      try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:city}))}catch(e){}
+      try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:ex.city,addr:ex.addr}))}catch(e){}
       busy=true;updGo();this.disabled=true;msg('רושמים את ההזמנה…');var btn=this;
       if(!agreeOk()){busy=false;updGo();var lb=$('later');if(lb)lb.disabled=false;$('agr').focus();return msg('צריך לאשר את תקנון המכירה.',1)}
-      post({a:'checkout',agree:true,later:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
+      post({a:'checkout',agree:true,later:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:ex.city,addr:ex.addr,fx:ex.fx}).then(function(j){
         busy=false;btn.disabled=false;updGo();if(!j.later){msg(j.message||'לא הצלחנו לרשום את ההזמנה.',1);return}
         $('main').innerHTML='<div class="done" role="status"><h2 style="font-size:28px">ההזמנה נרשמה</h2><p>הזמנתם '+j.count+' כרטיסים בסך <b>'+nis(j.amount)+'</b>. מספר הזמנה: '+esc(j.id.slice(2,10))+'</p><p>הכרטיסים יקבלו מספרים ויכנסו להגרלה אחרי שהתשלום יתקבל אצל מארגני המכירה.</p><p><a href="'+location.pathname+'?s='+SLUG+'">להזמנה נוספת</a></p></div>';window.scrollTo(0,0);
       }).catch(function(){busy=false;btn.disabled=false;updGo();msg('אין חיבור לשרת. נסו שוב.',1)});
@@ -390,14 +415,15 @@ function buyView(){
         if(v.Status==='Error'){updGo();var em=String(v.Message||'');msg(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות של בעל הכרטיס.':(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1)}
         else thanks()}});
     $('go').onclick=function(){
-      if(busy)return;var name=$('bn').value.trim(),phone=$('bp').value.trim(),mail=$('bm').value.trim(),city=$('bc').value.trim(),zeout=$('bz').value.replace(/\D/g,'');
+      if(busy)return;var name=$('bn').value.trim(),phone=$('bp').value.trim(),mail=$('bm').value.trim(),city=gv('bc'),zeout=$('bz').value.replace(/\D/g,'');
+      var ex=gather();if(!ex)return;
       if(name.split(/\s+/).length<2){$('bn').focus();return msg('נא למלא שם פרטי ושם משפחה.',1)}
       if(!/^0\d{8,9}$/.test(phone.replace(/\D/g,''))&&!mail){$('bp').focus();return msg('נא למלא טלפון או מייל.',1)}
       if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){$('bm').focus();return msg('כתובת המייל לא תקינה.',1)}
-      try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:city}))}catch(e){}
+      try{localStorage.setItem('auction-buyer',JSON.stringify({name:name,phone:phone,mail:mail,city:ex.city,addr:ex.addr}))}catch(e){}
       busy=true;updGo();msg('מעבד את התשלום…');
       if(!agreeOk()){busy=false;updGo();var lb=$('later');if(lb)lb.disabled=false;$('agr').focus();return msg('צריך לאשר את תקנון המכירה.',1)}
-      post({a:'checkout',agree:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:city}).then(function(j){
+      post({a:'checkout',agree:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:ex.city,addr:ex.addr,fx:ex.fx}).then(function(j){
         if(!j.tx){busy=false;updGo();msg(j.message||'לא הצלחנו להתחיל את התשלום. נסו שוב.',1);return}
         orderId=j.id;postF({Name:'FinishTransaction2',Value:Object.assign({},j.tx,{Zeout:zeout,FirstName:name,LastName:'',Phone:phone,Mail:mail})});
       }).catch(function(){busy=false;updGo();msg('אין חיבור לשרת. נסו שוב.',1)});

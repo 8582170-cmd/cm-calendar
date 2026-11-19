@@ -174,3 +174,6 @@ alter table public.auction_cart enable row level security;
 
 -- הרשאה לכל נציג לרשום הזמנות (ריק = לפי הגדרת המכירה; off / pending / paid), וקוד אישי לכניסה ולרישום
 alter table public.auction_rep add column if not exists perm text, add column if not exists pin text;
+
+-- תשובות הרוכש לשדות נוספים שהמנהל הגדיר לפני התשלום ({מזהה שדה: תשובה}). הוחל גם ב-Supabase
+alter table public.auction_order add column if not exists answers jsonb;

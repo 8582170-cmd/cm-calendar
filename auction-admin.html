@@ -66,6 +66,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAF6}
 <script src="/assets/config.js"></script>
 <script src="/assets/auction-price.js?v=1"></script>
 <script src="/assets/auction-txt.js?v=1"></script>
+<script src="/assets/draw-fx.js?v=1"></script>
 </head>
 <body>
 <div class="app"><nav class="side noprint" id="nav" aria-label="ניהול המכירה"></nav><main id="box"><p>טוען…</p></main></div>
@@ -182,16 +183,63 @@ function ofBanner(){var N=S.openFee||{};if(N.required&&typeof AM!=='undefined'&&
 function feeTxt(f){return !f||f.type==='none'||f.type==='deal'?'':f.type==='fixed'?nis(f.fixed):f.type==='pct'?f.pct+'% מההכנסות':nis(f.fixed)+' + '+f.pct+'% מההכנסות'}
 var AM=false,GS=null;
 function loadSale(){return call({a:'get'}).then(function(j){if(j._st===200){if(j.amAdmin!=null)AM=j.amAdmin;GS=j.giveSum||null}if(j._st!==200){box.innerHTML='<div class="card"><p>'+(j._st===403?'אין הרשאה למכירה הזאת עם החשבון <b dir="ltr">'+esc(meMail())+'</b>. אפשר להיכנס עם מייל אחר, או לבקש ממנהל המכירה להוסיף את המייל הזה.':'המכירה לא נמצאה.')+'</p><div class="acts">'+(j._st===403?'<button class="btn pri" type="button" id="sw">כניסה עם מייל אחר</button>':'')+'<a class="btn" href="?">לרשימת המכירות שלי</a></div></div>';if($('sw'))$('sw').onclick=switchAcct;void 0;throw 0}S=j;return j})}
-var TABS=[['ov','סקירה'],['set','הגדרות'],['pay','סליקה'],['prod','מוצרים'],['pkg','חבילות'],['rep','מגייסים ונציגים'],['ord','הזמנות'],['cus','לקוחות ותורמים'],['rpt','דוחות'],['ivr','שלוחה טלפונית'],['draw','ביצוע ההגרלות'],['org','דפי הארגון']];
+var TABS=[['ov','סקירה'],['set','הגדרות'],['pay','סליקה'],['prod','מוצרים'],['pkg','חבילות'],['rep','מגייסים ונציגים'],['ord','הזמנות'],['cus','לקוחות ותורמים'],['rpt','דוחות'],['ivr','שלוחה טלפונית'],['draw','ביצוע ההגרלות'],['pgs','דפים, הודעות ושדות'],['org','דפי הארגון']];
 function show(){
   if((S.giveOk||S.give||AM)&&!TABS.some(function(t){return t[0]==='give'}))TABS.splice(TABS.length-1,0,['give','התרמה ודמי שימוש']);
   box.onclick=null;box.onchange=null;box.oninput=null;
   nav.innerHTML='<div class="ttl">ניהול המכירה</div><div class="org">'+esc(S.eff.title||S.name)+'</div>'+TABS.map(function(t){return '<button type="button" data-t="'+t[0]+'"'+(TAB===t[0]?' aria-current="page"':'')+'>'+t[1]+'</button>'}).join('')+'<a href="'+PUB+S.slug+(S.status==='draft'?'&preview=1':'')+'" target="_blank" rel="noopener">דף המכירה ↗</a><a href="?">כל המכירות</a>';
   nav.onclick=function(e){var b=e.target.closest('[data-t]');if(b)go(b.dataset.t)};
-  ({ov:ov,set:set,pay:pay,prod:prod,pkg:pkgs,rep:reps,ord:orders,cus:cust,rpt:rpt,ivr:ivr,draw:draw,org:orgTab,give:giveTab}[TAB]||ov)();
+  ({ov:ov,set:set,pay:pay,prod:prod,pkg:pkgs,rep:reps,ord:orders,cus:cust,rpt:rpt,ivr:ivr,draw:draw,pgs:pgsTab,org:orgTab,give:giveTab}[TAB]||ov)();
 }
 
 /* דפי הארגון (api/_orgpages.js): על הארגון, יצירת קשר, הצטרפות לרשימה. כבויים כברירת מחדל */
+
+/* דפים נוספים (עם עורך HTML), הודעות לגולשים ולטלפון, ושדות הרכישה */
+var HTML_DEMO='<h2>ברוכים הבאים</h2>\n<p>כאן אפשר לכתוב כל תוכן: <b>הדגשה</b>, <a href="https://example.org">קישור</a>, רשימות ותמונות.</p>\n<ul><li>נקודה ראשונה</li><li>נקודה שנייה</li></ul>';
+var SNIP=[['כותרת','<h2>כותרת</h2>'],['פסקה','<p>טקסט</p>'],['קישור','<a href="https://">טקסט הקישור</a>'],['תמונה','<img src="https://" alt="תיאור התמונה">'],['כפתור','<p><a href="https://" style="display:inline-block;background:#C9A24B;color:#15203B;padding:12px 26px;border-radius:999px;text-decoration:none;font-weight:700">טקסט הכפתור</a></p>'],['רשימה','<ul><li>פריט</li><li>פריט</li></ul>'],['טבלה','<table border="1" cellpadding="8" style="border-collapse:collapse;width:100%"><tr><th>כותרת</th><th>כותרת</th></tr><tr><td>תא</td><td>תא</td></tr></table>']];
+function pgsTab(){
+  var E=S.eff,st={pages:JSON.parse(JSON.stringify(E.pages||[])),notes:JSON.parse(JSON.stringify(E.notes||[])),fields:JSON.parse(JSON.stringify(E.fields||{city:'opt',addr:'',phoneMail:'either',extra:[]}))};
+  var rid=function(){return Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3)};
+  var loc=function(v){return v?iso2local(v):''};
+  function read(){
+    st.notes=[].map.call(box.querySelectorAll('[data-n]'),function(r){var q=function(k){return r.querySelector('[data-f="'+k+'"]')};return {id:r.dataset.n,text:q('text').value,tone:q('tone').value,on:q('on').checked,from:q('from').value?new Date(q('from').value).toISOString():'',to:q('to').value?new Date(q('to').value).toISOString():'',phone:q('phone').checked,phoneText:q('phoneText').value}});
+    st.pages=[].map.call(box.querySelectorAll('[data-pg]'),function(r){var q=function(k){return r.querySelector('[data-f="'+k+'"]')};return {id:r.dataset.pg,title:q('title').value,kind:q('kind').value,body:q('body').value,on:q('on').checked,h:+q('h').value||600}});
+    var F=st.fields;F.city=$('fc').value;F.addr=$('fa').value;F.phoneMail=$('fp').value;
+    F.extra=[].map.call(box.querySelectorAll('[data-x]'),function(r){var q=function(k){return r.querySelector('[data-f="'+k+'"]')};return {id:r.dataset.x,label:q('label').value,type:q('type').value,opts:q('opts').value.split('\n'),req:q('req').checked,help:q('help').value}})}
+  function sel(k,v,L){return '<select data-f="'+k+'">'+L.map(function(x){return '<option value="'+x[0]+'"'+(v===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'}
+  function draw(){
+    var h='<div class="hd"><h1>דפים, הודעות ושדות</h1><div class="acts"><button class="btn pri" id="pgsv">שמירה</button></div></div>';
+    h+='<div class="card"><div class="hd"><h2>הודעות לגולשים</h2><button class="btn" type="button" id="nadd">+ הודעה</button></div><p class="hint" style="margin:0 0 10px">הודעה מוצגת בראש דף המכירה, ואפשר להגביל אותה לתקופה. סימון "להשמיע בטלפון" משמיע אותה גם בתחילת השיחה לקו הטלפוני, כולל לפני שהמכירה נפתחה (בנוסח אחר אם רוצים).</p>'
+      +(st.notes.length?'':'<p class="hint">אין הודעות.</p>')+st.notes.map(function(n){return '<div class="card" style="background:#FAFAFC" data-n="'+n.id+'"><label class="f">הטקסט<textarea data-f="text" maxlength="600">'+esc(n.text)+'</textarea></label><div class="two" style="margin-top:8px"><label class="f">סגנון'+sel('tone',n.tone,[['info','רגיל'],['ok','חיובי (ירוק)'],['warn','חשוב (אדום)']])+'</label><label class="f">להציג מתאריך (לא חובה)<input type="datetime-local" data-f="from" value="'+loc(n.from)+'"></label><label class="f">עד תאריך (לא חובה)<input type="datetime-local" data-f="to" value="'+loc(n.to)+'"></label></div><label class="ck"><input type="checkbox" data-f="on"'+(n.on!==false?' checked':'')+'> פעילה</label><label class="ck"><input type="checkbox" data-f="phone"'+(n.phone?' checked':'')+'> להשמיע בטלפון</label><label class="f">נוסח לטלפון (לא חובה, ריק = אותו טקסט)<input data-f="phoneText" maxlength="400" value="'+esc(n.phoneText||'')+'"></label><div class="acts"><button class="btn bad" type="button" data-ndel="'+n.id+'">מחיקה</button></div></div>'}).join('')+'</div>';
+    h+='<div class="card"><div class="hd"><h2>דפים נוספים בתפריט</h2><button class="btn" type="button" id="padd">+ דף</button></div><p class="hint" style="margin:0 0 10px">כל דף מופיע בשורת הדפים של דף המכירה. אפשר לכתוב טקסט פשוט, או HTML מלא (כותרות, תמונות, טבלאות, עיצוב). ב-HTML לא פועלים סקריפטים, והדף מוצג במסגרת מבודדת, כך שאי אפשר לפגוע באתר.</p>'
+      +(st.pages.length?'':'<p class="hint">אין דפים נוספים.</p>')+st.pages.map(function(p){return '<div class="card" style="background:#FAFAFC" data-pg="'+p.id+'"><div class="two"><label class="f">שם הדף בתפריט<input data-f="title" maxlength="40" value="'+esc(p.title)+'"></label><label class="f">סוג'+sel('kind',p.kind,[['text','טקסט פשוט'],['html','HTML (עורך מתקדם)']])+'</label><label class="f">גובה המסגרת (HTML, בפיקסלים)<input type="number" data-f="h" min="200" max="3000" value="'+(p.h||600)+'"></label></div>'
+        +(p.kind==='html'?'<div class="acts" style="margin-top:8px">'+SNIP.map(function(x,i){return '<button class="btn" type="button" data-snip="'+i+'" data-for="'+p.id+'">'+x[0]+'</button>'}).join('')+'<button class="btn" type="button" data-demo="'+p.id+'">דוגמה</button><button class="btn" type="button" data-prev="'+p.id+'">תצוגה מקדימה</button></div>':'')
+        +'<label class="f">התוכן<textarea data-f="body" style="min-height:200px;'+(p.kind==='html'?'font-family:ui-monospace,Consolas,monospace;direction:ltr;text-align:left':'')+'" maxlength="60000">'+esc(p.body)+'</textarea></label><div id="pv_'+p.id+'"></div><label class="ck"><input type="checkbox" data-f="on"'+(p.on!==false?' checked':'')+'> הדף פעיל</label><div class="acts"><button class="btn bad" type="button" data-pdel="'+p.id+'">מחיקת הדף</button></div></div>'}).join('')+'</div>';
+    var F=st.fields,ex=F.extra||[];
+    h+='<div class="card"><h2>נתונים שמבקשים מהרוכש לפני התשלום</h2><p class="hint" style="margin:0 0 10px">שם מלא וטלפון או מייל תמיד נדרשים (כמו עד עכשיו). כאן קובעים מה עוד לבקש, ואפשר להוסיף שדות משלכם. התשובות מופיעות בהזמנות, ובייצוא.</p><div class="two">'
+      +'<label class="f" for="fc">עיר<select id="fc"><option value="">לא לבקש</option><option value="opt"'+(F.city==='opt'?' selected':'')+'>אופציונלי (כמו עד עכשיו)</option><option value="req"'+(F.city==='req'?' selected':'')+'>חובה</option></select></label>'
+      +'<label class="f" for="fa">כתובת<select id="fa"><option value="">לא לבקש (כמו עד עכשיו)</option><option value="opt"'+(F.addr==='opt'?' selected':'')+'>אופציונלי</option><option value="req"'+(F.addr==='req'?' selected':'')+'>חובה</option></select></label>'
+      +'<label class="f" for="fp">טלפון ומייל<select id="fp"><option value="either"'+(F.phoneMail==='either'?' selected':'')+'>מספיק אחד מהם (כמו עד עכשיו)</option><option value="phone"'+(F.phoneMail==='phone'?' selected':'')+'>טלפון חובה</option><option value="email"'+(F.phoneMail==='email'?' selected':'')+'>מייל חובה</option><option value="both"'+(F.phoneMail==='both'?' selected':'')+'>שניהם חובה</option></select></label></div>'
+      +'<div class="hd" style="margin-top:14px"><h3 style="margin:0">שדות נוספים</h3><button class="btn" type="button" id="xadd">+ שדה</button></div>'
+      +(ex.length?'':'<p class="hint">אין שדות נוספים.</p>')+ex.map(function(x){return '<div class="card" style="background:#FAFAFC" data-x="'+x.id+'"><div class="two"><label class="f">השאלה / שם השדה<input data-f="label" maxlength="80" value="'+esc(x.label)+'"></label><label class="f">סוג'+sel('type',x.type,[['text','שורת טקסט'],['textarea','טקסט ארוך'],['select','בחירה מרשימה'],['checkbox','תיבת סימון']])+'</label></div>'
+        +(x.type==='select'?'<label class="f">האפשרויות (אחת בכל שורה)<textarea data-f="opts" style="min-height:90px">'+esc((x.opts||[]).join('\n'))+'</textarea></label>':'<input type="hidden" data-f="opts" value="">')
+        +'<label class="f">הסבר קצר מתחת לשדה (לא חובה)<input data-f="help" maxlength="120" value="'+esc(x.help||'')+'"></label><label class="ck"><input type="checkbox" data-f="req"'+(x.req?' checked':'')+'> חובה למלא</label><div class="acts"><button class="btn bad" type="button" data-xdel="'+x.id+'">מחיקת השדה</button></div></div>'}).join('')+'</div>';
+    box.innerHTML=h;
+    $('nadd').onclick=function(){read();st.notes.push({id:rid(),text:'',tone:'info',on:true});draw()};
+    $('padd').onclick=function(){read();st.pages.push({id:rid(),title:'',kind:'text',body:'',on:true,h:600});draw()};
+    $('xadd').onclick=function(){read();st.fields.extra.push({id:rid(),label:'',type:'text',opts:[],req:false});draw()};
+    $('pgsv').onclick=function(){read();saveCfg({notes:st.notes.filter(function(n){return n.text.trim()}),pages:st.pages.filter(function(p){return p.title.trim()}),fields:st.fields})};
+    box.onchange=function(e){var t=e.target;if(t.dataset.f==='kind'||t.dataset.f==='type'){read();draw()}};
+    box.onclick=function(e){var b=e.target.closest('button');if(!b)return;
+      if(b.dataset.ndel){read();st.notes=st.notes.filter(function(n){return n.id!==b.dataset.ndel});draw()}
+      else if(b.dataset.pdel){if(confirm('למחוק את הדף?')){read();st.pages=st.pages.filter(function(p){return p.id!==b.dataset.pdel});draw()}}
+      else if(b.dataset.xdel){if(confirm('למחוק את השדה? תשובות שכבר נאספו יישארו שמורות בהזמנות, אבל לא יוצגו.')){read();st.fields.extra=st.fields.extra.filter(function(x){return x.id!==b.dataset.xdel});draw()}}
+      else if(b.dataset.snip!=null||b.dataset.demo||b.dataset.prev){var id=b.dataset.for||b.dataset.demo||b.dataset.prev,ta=box.querySelector('[data-pg="'+id+'"] [data-f="body"]');
+        if(b.dataset.snip!=null){var v=SNIP[+b.dataset.snip][1],a=ta.selectionStart||ta.value.length;ta.value=ta.value.slice(0,a)+v+ta.value.slice(a);ta.focus()}
+        else if(b.dataset.demo){if(!ta.value.trim()||confirm('להחליף את התוכן בדוגמה?'))ta.value=HTML_DEMO}
+        else{var pv=$('pv_'+id);pv.innerHTML='<iframe title="תצוגה מקדימה" sandbox style="width:100%;height:320px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:8px"></iframe>';pv.firstChild.srcdoc='<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="script-src \'none\'"><body dir="rtl" style="font:17px/1.7 Heebo,Arial,sans-serif;margin:14px">'+ta.value.replace(/<script[\s\S]*?<\/script>/gi,'')}}}
+  }
+  draw()}
 function orgTab(){var o=(S.cfg||{}).org||{},a=o.about||{},c=o.contact||{},l=o.list||{},h='<h1>דפי הארגון</h1><div class="note">כל דף כבוי כברירת מחדל, ואז הדף הציבורי נראה בדיוק כמו קודם. מפעילים רק את מה שרוצים.</div>';
   h+='<div class="card"><h2>על הארגון</h2><label class="ck"><input type="checkbox" id="oa0"'+(a.on?' checked':'')+'> להציג דף "על הארגון"</label><label class="f" for="oa1">טקסט על הארגון<textarea id="oa1" maxlength="4000" style="min-height:140px">'+esc(a.text||'')+'</textarea></label><div class="two"><label class="f" for="oa2">טלפון<input id="oa2" dir="ltr" value="'+esc(a.phone||'')+'"></label><label class="f" for="oa3">מייל<input id="oa3" dir="ltr" value="'+esc(a.email||'')+'"></label><label class="f" for="oa4">כתובת<input id="oa4" value="'+esc(a.address||'')+'"></label><label class="f" for="oa5">אתר האינטרנט<input id="oa5" dir="ltr" placeholder="https://" value="'+esc(a.site||'')+'"></label></div><label class="f" for="oa6">קישורים נוספים (שורה לכל קישור: כותרת | כתובת)<textarea id="oa6" style="min-height:80px" dir="auto">'+esc((a.links||[]).map(function(x){return x.t+' | '+x.u}).join('\n'))+'</textarea></label></div>';
   var fqn=((S.cfg||{}).faq||[]).length,fo=o.faq||{};h+='<div class="card"><h2>שאלות ותשובות</h2><label class="ck"><input type="checkbox" id="of0"'+(fo.on?' checked':'')+'> להציג את השאלות והתשובות כדף נפרד (במקום בתוך הדף הראשי)</label><p class="hint">יש כרגע '+fqn+' שאלות. עורכים אותן כמו עד עכשיו, בלשונית "הגדרות". אם אין שאלות, הדף לא יופיע.</p></div>';
@@ -385,14 +433,15 @@ function reps(){box.innerHTML='<h1>מגייסים ונציגים</h1><p>טוען
 /* --- הזמנות --- */
 function orders(st){box.innerHTML='<h1>הזמנות</h1><p>טוען…</p>';Promise.all([call({a:'orders',status:st||''}),REPS?Promise.resolve({reps:REPS}):call({a:'reps'})]).then(function(R){var L=R[0].orders||[];REPS=R[1].reps||[];
   var rn={};REPS.forEach(function(r){rn[r.id]=r.name||r.code});var pn={};S.products.forEach(function(p){pn[p.id]=p});var kn={};S.pkgs.forEach(function(k){kn[k.id]=k.name});
+  var FX=((S.eff||{}).fields||{}).extra||[],ans=function(o){var a=o.answers||{};return FX.filter(function(x){return a[x.id]!=null&&a[x.id]!==''}).map(function(x){return x.label+': '+(a[x.id]===true?'כן':a[x.id])}).join(' | ')};
   var desc=function(o){var cb=o.callback||{};return (cb.later?'תשלום מאוחר · ':'')+(cb.method?cb.method+' · ':'')+(o.pkg_id?'חבילה: '+(kn[o.pkg_id]||'')+' · ':'')+(o.lines||[]).map(function(l){return l.n+'×'+((pn[l.p]||{}).num||'')}).join(', ')};
   box.innerHTML='<div class="hd"><h1>הזמנות</h1><div class="acts"><select id="fs" aria-label="סינון לפי מצב">'+opt([['','הכול'],['paid','שולמו'],['pending','ממתינות'],['failed','נכשלו'],['refunded','זוכו']],st||'')+'</select><button class="btn" id="ex">ייצוא</button><button class="btn pri" id="man">+ הזמנה ידנית</button></div></div>'
    +'<div id="manbox"></div>'
    +'<p class="hint">הזמנות ממתינות: הזמנה בלי תשלום (באתר או בטלפון), הזמנה שנציג רשם במזומן, או הזמנת טלפון שעוד לא שולמה. אחרי שהתשלום התקבל מסמנים "שולם", והכרטיסים מקבלים מספרים ונכנסים להגרלה.</p>'
-   +table(['תאריך','שם','טלפון','ערוץ','פירוט','מגייס','סכום','מצב',''],L.map(function(o){return '<tr><td>'+dt(o.created_at)+'</td><td>'+esc(o.name||'')+'</td><td dir="ltr">'+esc(o.phone||'')+'</td><td>'+chName(o.channel)+'</td><td>'+esc(desc(o))+'</td><td>'+esc(rn[o.rep_id]||'')+'</td><td>'+nis(o.amount)+'</td><td>'+pill(o.status)+'</td><td class="acts">'
+   +table(['תאריך','שם','טלפון','ערוץ','פירוט','מגייס','סכום','מצב',''],L.map(function(o){return '<tr><td>'+dt(o.created_at)+'</td><td>'+esc(o.name||'')+'</td><td dir="ltr">'+esc(o.phone||'')+'</td><td>'+chName(o.channel)+'</td><td>'+esc(desc(o))+(ans(o)?'<br><small>'+esc(ans(o))+'</small>':'')+'</td><td>'+esc(rn[o.rep_id]||'')+'</td><td>'+nis(o.amount)+'</td><td>'+pill(o.status)+'</td><td class="acts">'
      +(o.status==='pending'||o.status==='failed'?'<button class="btn" data-pd="'+o.id+'">שולם</button>'+((S.cfg.pay||{}).prov==='kehilot'&&o.channel==='web'?'<button class="btn" data-kc="'+o.id+'">בדיקה מול קשר</button>':''):'')+(o.status==='paid'?'<button class="btn" data-tk="'+o.id+'">כרטיסים</button>'+(S.site.cancel&&S.cfg.allowCancel===true?'<button class="btn bad" data-rf="'+o.id+'">ביטול</button>':''):'')+'</td></tr>'}));
   $('fs').onchange=function(){orders(this.value)};
-  $('ex').onclick=function(){csv('הזמנות',['תאריך','מספר','שם','טלפון','מייל','ערוץ','פירוט','מגייס','סכום','מצב'],L.map(function(o){return [dt(o.created_at),o.id.slice(2,10),o.name,o.phone,o.email,chName(o.channel),desc(o),rn[o.rep_id]||'',o.amount,o.status]}))};
+  $('ex').onclick=function(){csv('הזמנות',['תאריך','מספר','שם','טלפון','מייל','ערוץ','פירוט','מגייס','סכום','מצב','נתונים נוספים'],L.map(function(o){return [dt(o.created_at),o.id.slice(2,10),o.name,o.phone,o.email,chName(o.channel),desc(o),rn[o.rep_id]||'',o.amount,o.status,ans(o)]}))};
   $('man').onclick=manual;
   box.onclick=function(e){var b=e.target.closest('button');if(!b)return;
     if(b.dataset.pd){var n=prompt('הערה (למשל: שולם במזומן, צ\'ק מספר…):','');if(n==null)return;call({a:'order',id:b.dataset.pd,do:'paid',note:n}).then(function(r){flash(r.ok?'סומן כשולם':'לא עודכן',!r.ok);orders(st)})}
@@ -515,6 +564,8 @@ function draw(){box.innerHTML='<h1>ביצוע ההגרלות</h1><p>טוען…<
   var by=function(pid,k){return j.draws.filter(function(d){return d.product_id===pid&&d.kind===k})};
   var done=P.filter(function(p){return by(p.id,'win').length>=(p.draws||1)}).length,cur=P.filter(function(p){return p.id===SEL})[0];
   var h='<div class="hd noprint"><h1>ביצוע ההגרלות</h1><div class="acts"><button class="btn" id="fs">תצוגת מסך מלא לאירוע</button><button class="btn" id="pr">הדפסת פרוטוקול</button></div></div>';
+  var LV=S.eff.live||{},LU=location.origin+'/auction-live?s='+S.slug;
+  h+='<div class="card noprint"><h2>צפייה חיה בהגרלות</h2><p class="hint" style="margin:0 0 8px">דף ציבורי שבו כל אחד יכול לצפות בהגרלות בזמן אמת: ערבוב, ואז הזוכה עם "מזל טוב" וקונפטי. כבוי כברירת מחדל.</p><label class="ck"><input type="checkbox" id="lv1"'+(LV.on?' checked':'')+'> להפעיל את דף הצפייה החיה</label><div class="two"><label class="f" for="lv2">שמות הזוכים בדף החי<select id="lv2"><option value="short"'+(LV.names!=='full'?' selected':'')+'>אות ראשונה של השם הפרטי ושם משפחה (כמו ברשימת הזוכים)</option><option value="full"'+(LV.names==='full'?' selected':'')+'>שם מלא</option></select></label></div><label class="ck"><input type="checkbox" id="lv3"'+(LV.conf!==false?' checked':'')+'> קונפטי בחשיפת הזוכה (גם במסך שלכם)</label><div class="acts"><button class="btn pri" id="lvs">שמירה</button></div>'+(LV.on?'<div class="note" style="margin-top:10px">קישור לצפייה: <span class="mono">'+esc(LU)+'</span> <button class="btn" type="button" data-cpw="'+esc(LU)+'">העתקה</button> <a class="btn" href="'+esc(LU)+'" target="_blank" rel="noopener">פתיחה ↗</a></div>':'')+'</div>';
   if(j.open)h+='<div class="note noprint">המכירה עדיין פתוחה. כדי שרשימת הכרטיסים תינעל, סוגרים את המכירה לפני ההגרלה. <button class="btn bad" id="cl">סגירת המכירה עכשיו</button></div>';
   h+='<div class="two noprint"><div><h2 style="margin-bottom:8px">המוצרים · הושלמו '+done+' מתוך '+P.length+'</h2><div class="prodlist">'+P.map(function(p){var n=by(p.id,'win').length,d=p.draws||1;return '<button type="button" data-p="'+p.id+'" aria-pressed="'+(p.id===SEL)+'"><span><b>'+p.num+'</b> · '+esc(p.name)+'</span><span class="pill '+(n>=d?'ok':'')+'">'+(n>=d?'הוגרל':n?n+' מתוך '+d:d>1?d+' הגרלות':'ממתין')+'</span></button>'}).join('')+'</div></div>';
   if(cur){var W=by(cur.id,'win'),RS=by(cur.id,'reserve'),d=cur.draws||1,rf=(cur.cfg||{}).reserves||0;
@@ -535,10 +586,15 @@ function draw(){box.innerHTML='<h1>ביצוע ההגרלות</h1><p>טוען…<
   if($('cl'))$('cl').onclick=function(){if(confirm('לסגור את המכירה עכשיו?'))call({a:'close'}).then(function(){loadSale().then(function(){draw()})})};
   if($('dg'))$('dg').onclick=function(){run('win')};
   if($('dr'))$('dr').onclick=function(){run('reserve')};
+  $('lvs').onclick=function(){saveCfg({live:{on:$('lv1').checked,names:$('lv2').value,conf:$('lv3').checked}})};
   $('fs').onclick=function(){full(cur)};
   $('pr').onclick=function(){proto();setTimeout(print,50)};
-  function run(kind){var b=$('dg')||$('dr');if(b)b.disabled=true;var ov=animate(cur);
-    call({a:'draw',product:cur.id,kind:kind}).then(function(r){setTimeout(function(){ov.stop(r.draw);if(!r.draw)flash(r.message||'ההגרלה לא בוצעה',1);setTimeout(function(){draw()},r.draw?0:0)},2400)})}
+  function run(kind){var b=$('dg')||$('dr');if(b)b.disabled=true;
+    /* ההגרלה נרשמת בשרת מיד, והצופים בדף החי רואים את אותו ערבוב (ROLL). אחרי הערבוב חושפים את הזוכה עם קונפטי */
+    call({a:'draw',product:cur.id,kind:kind}).then(function(r){
+      if(!r.draw){flash(r.message||'ההגרלה לא בוצעה',1);draw();return}
+      var d=r.draw,ms=Math.max(1500,(r.roll||4000)-250),pn=cur.num+' · '+cur.name,sh=MLDrawFX.shuffle(document.body,{product:pn,ms:ms});
+      setTimeout(function(){sh.stop();MLDrawFX.reveal(document.body,{product:pn,round:d.round,draws:cur.draws||1,kind:d.kind,serial:d.serial,name:d.name||d.phone||'',city:d.city||''},{conf:(S.eff.live||{}).conf!==false,onClose:function(){draw()}})},ms)})}
 })}
 function winBox(w,lab){return '<div class="win"><div><div class="k">'+esc(lab)+'</div><div style="font-family:Frank Ruhl Libre,serif;font-size:24px;font-weight:700">'+esc(w.name||w.phone||'—')+'</div><small>'+esc([w.city,w.channel?'נרכש '+(w.channel==='phone'?'בטלפון':w.channel==='manual'?'ידנית':'באתר'):'',w.rep?'מגייס: '+w.rep:''].filter(Boolean).join(' · '))+'</small></div><div style="text-align:center"><small>כרטיס מספר</small><div class="s">'+w.serial+'</div></div></div>'}
 /* אנימציה של ערבוב במסך מלא, בזמן שההגרלה רצה בשרת */

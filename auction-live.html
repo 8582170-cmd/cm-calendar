@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ההגרלה בשידור חי · MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap">
+<style>
+:root{--navy:#15203B;--gold:#C9A24B;--gold2:#E6C36F;--ink:#fff;--mute:#B9C0D2}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#26335c 0%,#0f1730 65%);color:var(--ink);font:17px/1.5 Heebo,Arial,sans-serif}
+h1,h2{font-family:"Frank Ruhl Libre",serif;margin:0}
+header{display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px 6% 10px;text-align:center}
+header img{max-height:80px;max-width:220px;border-radius:10px;background:#fff;padding:6px}
+header h1{font-size:clamp(28px,5vw,48px)}
+.live{display:inline-flex;align-items:center;gap:8px;color:var(--gold2);font-weight:700;font-size:15px}
+.live i{width:11px;height:11px;border-radius:50%;background:#ff4d6d;box-shadow:0 0 0 0 rgb(255 77 109 / .7);animation:lp 1.6s infinite}
+@keyframes lp{70%{box-shadow:0 0 0 12px rgb(255 77 109 / 0)}100%{box-shadow:0 0 0 0 rgb(255 77 109 / 0)}}
+main{max-width:1100px;margin:0 auto;padding:10px 5% 60px;display:flex;flex-direction:column;gap:26px}
+#stage{min-height:300px;border-radius:22px;border:1px solid rgb(230 195 111 / .35);background:rgb(255 255 255 / .04);display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;overflow:hidden}
+#stage .wait{color:var(--mute);font-size:22px;padding:40px 10px}#stage .wait b{display:block;font-size:30px;color:#fff;margin-bottom:6px;font-family:"Frank Ruhl Libre",serif}
+#stage .dfx.in{width:100%;min-height:360px;background:transparent}
+h2{font-size:26px;margin-bottom:10px}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:0;margin:0;list-style:none}
+.res li{display:flex;gap:12px;align-items:center;border:1px solid rgb(255 255 255 / .16);border-radius:14px;padding:12px 14px;background:rgb(255 255 255 / .05)}
+.res img{width:54px;height:54px;border-radius:10px;object-fit:cover;flex:none}
+.res .s{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:30px;color:#FFD879;min-width:64px;text-align:center}
+.res small{display:block;color:var(--mute)}.res b{display:block}
+.pl{display:flex;flex-wrap:wrap;gap:8px}.pl span{border:1px solid rgb(255 255 255 / .22);border-radius:999px;padding:5px 14px;font-size:15px}.pl .ok{background:rgb(59 206 172 / .2);border-color:#3BCEAC}
+.msg{color:var(--mute);text-align:center;padding:30px}
+</style>
+</head>
+<body>
+<header id="hd"></header>
+<main id="mn"><div id="stage" aria-live="polite"><div class="wait"><b>טוען…</b></div></div><section id="rs" hidden><h2>הזוכים עד כה</h2><ul class="res" id="rl"></ul></section><section id="ps" hidden><h2>המוצרים</h2><div class="pl" id="pl"></div></section></main>
+<script src="/assets/draw-fx.js?v=1"></script>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)};
+var Q=new URLSearchParams(location.search),SLUG=(Q.get('s')||'').toLowerCase(),API='/api/pricing?c=_auction';
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var seen={},booted=false,rollEl=null,rollId=null,delta=0,timer=null,last=null,showing=null;
+function poll(){
+  fetch(API+'&a=liveState&s='+encodeURIComponent(SLUG),{cache:'no-store'}).then(function(r){return r.json().then(function(j){j._st=r.status;return j})}).then(function(j){
+    if(j._st!==200){$('stage').innerHTML='<div class="wait"><b>הצפייה החיה לא פעילה</b>מארגני ההגרלה לא הפעילו את הדף הזה, או שהכתובת שגויה.</div>';next(8000);return}
+    delta=j.now-Date.now();draw(j);
+    var wait=3000;if(j.rolling){var left=j.rolling.revealAt-(Date.now()+delta);wait=Math.max(400,left+350)}
+    next(wait);
+  }).catch(function(){next(5000)});
+}
+function next(ms){clearTimeout(timer);timer=setTimeout(poll,ms)}
+function draw(j){
+  if(!$('hd').innerHTML){$('hd').innerHTML=(j.logo?'<img src="'+esc(j.logo)+'" alt="">':'')+'<h1>'+esc(j.title)+'</h1><span class="live"><i></i> ההגרלה בשידור חי</span>';document.title='ההגרלה בשידור חי · '+j.title;if(j.color&&/^#[0-9a-f]{6}$/i.test(j.color))document.documentElement.style.setProperty('--navy',j.color)}
+  var R=j.results;
+  /* בכניסה לדף: מסמנים את מה שכבר הוגרל, בלי להציג אותו כחגיגה */
+  if(!booted){booted=true;R.forEach(function(r){seen[r.id]=1});last=R[0]||null}
+  if(j.rolling&&rollId!==j.rolling.id){
+    rollId=j.rolling.id;if(rollEl)rollEl.stop();if(showing){showing.close();showing=null}
+    var left=Math.max(500,j.rolling.revealAt-(Date.now()+delta));$('stage').innerHTML='';
+    rollEl=MLDrawFX.shuffle($('stage'),{product:j.rolling.product.num+' · '+j.rolling.product.name,ms:left});
+  }
+  if(!j.rolling&&rollEl){rollEl.stop();rollEl=null}
+  var fresh=R.filter(function(r){return !seen[r.id]});
+  if(fresh.length){
+    var r=fresh[fresh.length-1];fresh.forEach(function(x){seen[x.id]=1});
+    if(rollEl){rollEl.stop();rollEl=null}rollId=null;$('stage').innerHTML='';
+    showing=MLDrawFX.reveal($('stage'),{product:r.product.num+' · '+r.product.name,round:r.round,draws:r.product.draws,serial:r.serial,name:r.name,city:r.city},{conf:j.conf});last=r;
+  }else if(!rollEl&&!showing){
+    $('stage').innerHTML=last?'':'<div class="wait"><b>'+(j.open?'המכירה עדיין פתוחה':'ממתינים להתחלת ההגרלות')+'</b>הדף מתעדכן לבד. ברגע שמגרילים, תראו את זה כאן.</div>';
+    if(last&&!$('stage').firstChild)showing=MLDrawFX.reveal($('stage'),{product:last.product.num+' · '+last.product.name,round:last.round,draws:last.product.draws,serial:last.serial,name:last.name,city:last.city},{conf:false});
+  }
+  $('rs').hidden=!R.length;$('rl').innerHTML=R.map(function(r){return '<li>'+(r.product.img?'<img src="'+esc(r.product.img)+'" alt="">':'')+'<div class="s">'+esc(r.serial)+'</div><div><b>'+esc(r.name)+'</b><small>'+esc(r.product.num+' · '+r.product.name+(r.product.draws>1?' (הגרלה '+r.round+')':''))+(r.city?' · '+esc(r.city):'')+'</small></div></li>'}).join('');
+  $('ps').hidden=!j.products.length;$('pl').innerHTML=j.products.map(function(p){return '<span class="'+(p.done>=p.draws?'ok':'')+'">'+esc(p.num+' · '+p.name)+(p.done>=p.draws?' ✓':'')+'</span>'}).join('');
+}
+if(!SLUG){$('stage').innerHTML='<div class="wait"><b>חסר מזהה מכירה</b></div>'}else poll();
+})();
+</script>
+</body>
+</html>

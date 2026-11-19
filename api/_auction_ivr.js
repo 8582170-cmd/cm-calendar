@@ -305,10 +305,11 @@ module.exports = async (req, res) => {
     }
     if (await require('./_shabbat').closedNow(req, await require('./_lib').loadConfig())) return bye(M(s, 'shabbat'));
     const c = A().cfgOf(s);
-    if (!A().isOpen(s)) return bye(M(s, 'closed'));
+    const noteParts = () => c.notes.filter(n => n.phone && A().noteLive(n, Date.now())).map(n => T(n.phoneText || n.text.replace(/[.=&"<>-]/g, ' ')));
+    if (!A().isOpen(s)) return bye([M(s, 'closed')].concat(noteParts()).join('.'));
     const ans = []; for (let i = 1; i <= 1500 && q['X' + i] != null; i++) ans.push(q['X' + i]);
     const st = replay(s, await reps(s), ans, saved, q.mode), next = 'X' + (ans.length + 1);
-    const pre = ans.length ? st.msg : [M(s, 'welcome'), M(s, 'navHint')].concat(st.first || []);
+    const pre = ans.length ? st.msg : [M(s, 'welcome')].concat(noteParts(), [M(s, 'navHint')], st.first || []);
     /* הפרמטרים של read בימות: שם, שימוש בערך קיים, מקסימום ספרות, מינימום, שניות המתנה, השמעת ההקשה, חסימת כוכבית (no = כוכבית מגיעה אלינו),
        חסימת אפס, החלפת תו, מקשים מותרים, מספר ניסיונות, קבלת הקשה ריקה (Ok = סולמית לבד או שקט מגיעים כערך ריק), הערך בריק, ... הערך ה-15: no = בלי בקשת אישור אחרי ההקשה */
     /* wait = דפדוף אוטומטי: רק שם מותרת הקשה ריקה (שקט עד סוף ההמתנה = המוצר הבא). בשאר המסכים שקט = "לא הוקשה בחירה" והשאלה חוזרת */

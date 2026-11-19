@@ -47,6 +47,8 @@ const drop = slug => CACHE.delete(String(slug || '').toLowerCase());
 function isOpen(s) { if (!s || s.status !== 'open') return false; const c = s.cfg || {}; const t = Date.now(); if (c.openAt && Date.parse(c.openAt) > t) return false; if (c.closeAt && Date.parse(c.closeAt) <= t) return false; return true; }
 /* ההגדרות עם ברירות מחדל */
 /* טקסטים שהמנהל יכול לשנות בדף המכירה (ברירות המחדל נמצאות ב-assets/auction-txt.js, ויש לשמור על התאמה) */
+const PG = require('./_auction_page');
+const ROLL = 4000; /* משך הערבוב בהגרלה החיה, באלפיות שנייה: כך גם המנהל וגם הצופים רואים את אותה אנימציה */
 const TXT_KEYS = ['kick', 'pkgs', 'prods', 'sum', 'price', 'noPkg', 'prodNo', 'pay', 'faq', 'terms', 'listen', 'badge'];
 const txtOf = t => { t = t && typeof t === 'object' ? t : {}; const o = {}; for (const k of TXT_KEYS) { const v = clean(t[k], 40); if (v) o[k] = v; } const i = clean(t.intro, 600), f = clean(t.foot, 400); if (i) o.intro = i; if (f) o.foot = f; return o; };
 const wantList = l => Array.isArray(l) ? l.map(x => clean(x, 40)).filter(Boolean).slice(0, 12) : [];
@@ -58,7 +60,7 @@ function cfgOf(s) {
     allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
     progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '',
-    banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', style: ['soft', 'bold', 'elegant'].includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '' };
+    banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', style: ['soft', 'bold', 'elegant'].includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '', pages: PG.pagesOf(c.pages), notes: PG.notesOf(c.notes), fields: PG.fieldsOf(c.fields), live: PG.liveOf(c.live) };
 }
 /* מה שהציבור רואה על מוצר / חבילה */
 const pubProd = p => ({ id: p.id, num: p.num, name: p.name, descr: p.descr || '', price: +p.price, draws: +p.draws || 1, img: p.img || '', audio: p.audio || '', maxPer: +((p.cfg || {}).maxPer) || 0, sponsor: (p.cfg || {}).sponsor || '', size: ['wide', 'full'].includes((p.cfg || {}).size) ? p.cfg.size : '', hl: !!(p.cfg || {}).hl, tag: (p.cfg || {}).tag || '', want: (p.cfg || {}).want || '' });
@@ -107,6 +109,7 @@ async function makeOrder(s, b, channel, meta, id) {
     items: (b.items || []).filter(i => +i.n > 0).map(i => ({ p: +i.p, n: Math.floor(+i.n) })), lines: pr.lines, pkg_left: pr.left, amount: pr.amount, status: 'pending',
     name: clean(b.name, 80) || (cu && cu.name) || null, phone: phoneN(b.phone) || (cu && cu.phone) || null, email: mailN(b.email) || (cu && cu.email) || null };
   await db('auction_order', { meta: meta || null, method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+  if (b.fx && Object.keys(b.fx).length) await db('auction_order?id=eq.' + row.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ answers: b.fx }) }).catch(e => console.error('auction answers', e.message));
   return { order: row, price: pr, pkg, rep: R.rep };
 }
 
@@ -236,6 +239,10 @@ function cleanCfg(old, b) {
   if (b.txt && typeof b.txt === 'object') c.txt = txtOf(b.txt);
   if (b.wantMode != null) c.wantMode = ['on', 'off'].includes(b.wantMode) ? b.wantMode : '';
   if (Array.isArray(b.wantList)) c.wantList = wantList(b.wantList);
+  if (Array.isArray(b.pages)) c.pages = PG.pagesOf(b.pages);
+  if (Array.isArray(b.notes)) c.notes = PG.notesOf(b.notes);
+  if (b.fields && typeof b.fields === 'object') c.fields = PG.fieldsOf(b.fields);
+  if (b.live && typeof b.live === 'object') c.live = PG.liveOf(b.live);
   if (b.prodSize != null) c.prodSize = ['sm', 'lg', 'xl'].includes(b.prodSize) ? b.prodSize : '';
   if (Array.isArray(b.faq)) c.faq = b.faq.map(x => ({ q: clean(x && x.q, 300), a: clean(x && x.a, 3000) })).filter(x => x.q && x.a).slice(0, 60);
   iso('openAt'); iso('closeAt'); iso('drawTime');
@@ -370,7 +377,7 @@ async function doDraw(s, u, b) {
   catch (e) { if (/duplicate|23505/.test(e.message)) return { status: 409, error: 'race', message: 'ההגרלה הזאת כבר בוצעה עכשיו ממקום אחר. רעננו את הדף' }; throw e; }
   const W1 = await withWho(s, [row]).then(L => L[0]);
   notify(s, 'הגרלה בוצעה: ' + p.num + ' ' + p.name, '<p>' + (kind === 'win' ? 'זוכה בהגרלה ' + row.round + ' מתוך ' + draws : 'זוכה חלופי ' + row.round) + ': כרטיס <b>' + row.serial + '</b> · ' + require('./_mail').escH(W1.name || W1.phone || '') + (W1.city ? ' · ' + require('./_mail').escH(W1.city) : '') + '</p><p style="font-size:13px;color:#666">' + d.pool + ' כרטיסים השתתפו · 3 ערבובים · בוצע על ידי ' + u.email + '</p>').catch(() => {});
-  return { status: 200, draw: W1 };
+  return { status: 200, draw: W1, roll: ROLL, now: Date.now() };
 }
 async function withWho(s, rows) {
   const cids = [...new Set(rows.map(r => r.customer_id).filter(Boolean))], tids = rows.map(r => r.ticket_id);
@@ -391,7 +398,8 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s || s.status === 'draft' && !b.preview) return json(res, 404, { error: 'no sale' });
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
-      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, look: c.look, style: c.style, txt: c.txt, wantMode: c.wantMode, wantList: c.wantList, prodSize: c.prodSize, progress: c.progress.on, org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms, cross: await crossLink(s, S) }) },
+      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, look: c.look, style: c.style, txt: c.txt, wantMode: c.wantMode, wantList: c.wantList, prodSize: c.prodSize, progress: c.progress.on, org: PG.withPages(require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms, cross: await crossLink(s, S) }), c.pages),
+          notes: c.notes.filter(x => PG.noteLive(x, Date.now())).map(x => ({ id: x.id, text: x.text, tone: x.tone })), fields: c.fields, liveOn: c.live.on, },
         give: await giveBox(s, S), open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }
@@ -400,6 +408,10 @@ module.exports = async (req, res) => {
       const s = await load(b.s, true); if (!s) return json(res, 404, { error: 'no sale' });
       if (await require('./_shabbat').closedNow(req, await require('./_lib').loadConfig())) return json(res, 423, { error: 'shabbat', message: 'האתר סגור בשבת ובחג' });
       if (!clean(b.name, 80) || !(phoneN(b.phone) || mailN(b.email))) return json(res, 400, { error: 'details', message: 'צריך שם, וטלפון או מייל' });
+      const F0 = cfgOf(s).fields, pm = F0.phoneMail;
+      if ((pm === 'phone' || pm === 'both') && !phoneN(b.phone)) return json(res, 400, { error: 'details', message: 'נא למלא טלפון תקין' });
+      if ((pm === 'email' || pm === 'both') && !mailN(b.email)) return json(res, 400, { error: 'details', message: 'נא למלא מייל תקין' });
+      const AN = PG.checkAnswers(F0, b); if (AN.error) return json(res, 400, AN); b.fx = AN.answers;
       { const c0 = cfgOf(s); if (c0.terms && c0.termsAgree && !b.agree) return json(res, 400, { error: 'agree', message: 'צריך לאשר את תקנון המכירה' }); }
       const S = await site(), later = !!b.later;
       if (later && !cfgOf(s).allowUnpaid) return json(res, 403, { error: 'later', message: 'במכירה הזאת אפשר להזמין רק עם תשלום' });
@@ -450,6 +462,30 @@ module.exports = async (req, res) => {
       try { const r = await kesherPaid(s, id, b.tn); return json(res, r.status, r); } catch (e) { console.error('kcheck', e.message); return json(res, 502, { error: 'kesher', message: 'לא הצלחנו לבדוק את התשלום מול קשר. נסו שוב בעוד רגע' }); }
     }
     /* רשימת הזוכים לציבור: אות ראשונה של השם הפרטי, שם משפחה ועיר. בלי טלפון ומייל */
+    /* צפייה חיה בהגרלות: ציבורי, רק כשמנהל המכירה הפעיל. תוצאה מוצגת רק אחרי שמסתיימת האנימציה (ROLL), כדי שלא תתגלה לפני שהמנהל חושף אותה. זוכים חלופיים לא מוצגים כאן */
+    if (a === 'liveState') {
+      res.setHeader('Cache-Control', 'private, no-store');
+      const s = await load(b.s, true); if (!s || s.status === 'draft') return json(res, 404, { error: 'no sale' });
+      const c = cfgOf(s); if (!c.live.on) return json(res, 404, { error: 'off' });
+      const now = Date.now();
+      const W0 = (await db('auction_draw?sale_id=eq.' + s.id + "&kind=eq.win&select=id,product_id,round,serial,customer_id,created_at&order=created_at.desc&limit=400").catch(() => [])) || [];
+      const pm = new Map(s.products.map(p => [p.id, p]));
+      const rolling = W0.filter(w => Date.parse(w.created_at) + ROLL > now)[0] || null, shown = W0.filter(w => Date.parse(w.created_at) + ROLL <= now);
+      const ids = [...new Set(shown.map(w => w.customer_id).filter(Boolean))];
+      const CU = ids.length ? await db('auction_customer?id=in.(' + ids.join(',') + ')&select=id,name,city,phone').catch(() => []) : [];
+      const cu = new Map((CU || []).map(x => [x.id, x]));
+      const nm = x => { const n = String((x && x.name) || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+        if (c.live.names === 'full' && n.length) return n.join(' ');
+        if (n.length >= 2) return n[0].charAt(0) + '. ' + n.slice(1).join(' ');
+        if (n.length === 1) return n[0];
+        const ph = String((x && x.phone) || ''); return ph ? 'רוכש בטלפון (מסתיים ב־' + ph.slice(-3) + ')' : 'רוכש'; };
+      const cnt = {}; shown.forEach(w => { cnt[w.product_id] = (cnt[w.product_id] || 0) + 1; });
+      const pv = id => { const p = pm.get(id) || {}; return { num: p.num, name: p.name || '', img: p.img || '', draws: +p.draws || 1 }; };
+      return json(res, 200, { title: c.title, logo: c.logo, color: c.color, conf: c.live.conf, now, roll: ROLL, open: isOpen(s),
+        rolling: rolling ? { id: rolling.id, product: pv(rolling.product_id), round: rolling.round, at: Date.parse(rolling.created_at), revealAt: Date.parse(rolling.created_at) + ROLL } : null,
+        results: shown.slice(0, 60).map(w => ({ id: w.id, product: pv(w.product_id), round: w.round, serial: w.serial, name: nm(cu.get(w.customer_id)), city: (cu.get(w.customer_id) || {}).city || '', at: Date.parse(w.created_at) })),
+        products: s.products.filter(p => p.active !== false).sort((x, y) => x.num - y.num).map(p => ({ ...pv(p.id), done: cnt[p.id] || 0 })) });
+    }
     if (a === 'winners') {
       const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' });
       const c = cfgOf(s); if (!c.winners) return json(res, 404, { error: 'off' });
@@ -777,4 +813,4 @@ async function ymUpload(token, path, buf) {
   const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
   if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 80));
 }
-module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.notify = notify; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;
+module.exports.noteLive = PG.noteLive; module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.notify = notify; module.exports.load = load; module.exports.makeOrder = makeOrder; module.exports.cfgOf = cfgOf; module.exports.isOpen = isOpen; module.exports.repBy = repBy; module.exports.customer = customer; module.exports.markPaid = markPaid; module.exports.pkgLive = pkgLive;

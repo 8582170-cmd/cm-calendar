@@ -23,9 +23,16 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function css() { if (!document.getElementById('og-css')) { var st = document.createElement('style'); st.id = 'og-css'; st.textContent = CSS; document.head.appendChild(st); } }
   /* דפים: על הארגון, צור קשר. ההצטרפות לרשימה היא או תיבת סימון בתוך "צור קשר" (mode=contact), או חלון קופץ (mode=popup, הערך השלישי 'pop') */
-  function tabs(o) { var r = []; if (!o) return r; css(); ['about', 'faq', 'terms', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); if (o.cross) r.push(['cross', o.cross.label, 'link', o.cross.url]); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
+  function tabs(o) { var r = []; if (!o) return r; css(); ['about', 'faq', 'terms', 'contact'].forEach(function (k) { if (o[k]) r.push([k, LAB[k]]); }); (o.custom || []).forEach(function (p) { r.push(['pg_' + p.id, p.title]); }); if (o.cross) r.push(['cross', o.cross.label, 'link', o.cross.url]); if (o.list && o.list.mode === 'popup') r.push(['list', LAB.list, 'pop']); return r; }
+  /* דף מותאם: טקסט רגיל, או HTML חופשי. ה-HTML מוצג במסגרת מבודדת בלי סקריפטים (sandbox + CSP), ונוקה גם בשרת */
+  function custom(o, id) {
+    var p = (o.custom || []).filter(function (x) { return x.id === id; })[0]; if (!p) return '';
+    if (p.kind !== 'html') return '<div class="og"><h2>' + esc(p.title) + '</h2><div class="ogt">' + esc(p.body) + '</div></div>';
+    var doc = '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="script-src \'none\'; frame-src \'none\'; form-action \'none\'"><base target="_blank"><style>body{font:17px/1.7 Heebo,Arial,sans-serif;margin:14px;color:#1B2338}img{max-width:100%;height:auto}</style></head><body>' + p.body + '</body></html>';
+    return '<div class="og" style="max-width:none"><h2>' + esc(p.title) + '</h2><iframe title="' + esc(p.title) + '" sandbox="allow-popups allow-popups-to-escape-sandbox" srcdoc="' + esc(doc) + '" style="width:100%;height:' + (+p.h || 600) + 'px;border:1px solid rgb(128 128 128 / .3);border-radius:10px;background:#fff"></iframe></div>';
+  }
   function html(o, k) {
-    css(); o = o || {}; var d = o[k]; if (!d) return '';
+    css(); o = o || {}; if (/^pg_/.test(k)) return custom(o, k.slice(3)); var d = o[k]; if (!d) return '';
     if (k === 'about') {
       var det = []; if (d.phone) det.push('טלפון: <a href="tel:' + esc(d.phone.replace(/[^\d+]/g, '')) + '" dir="ltr">' + esc(d.phone) + '</a>'); if (d.email) det.push('מייל: <a href="mailto:' + esc(d.email) + '" dir="ltr">' + esc(d.email) + '</a>');
       if (d.address) det.push('כתובת: ' + esc(d.address)); if (d.site) det.push('אתר: <a href="' + esc(d.site) + '" target="_blank" rel="noopener" dir="ltr">' + esc(d.site.replace(/^https?:\/\//, '')) + '</a>');
