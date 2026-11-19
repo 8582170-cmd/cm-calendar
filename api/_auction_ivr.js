@@ -147,8 +147,20 @@ function replay(s, R, ans, saved, mode, PUB, callerPh) {
   const afterRep = ph => { if (ph === 'repA') goHome(); else st.phase = toPay(); };
   const qtyOf = id => st.cart.filter(x => x.p === id).reduce((t, x) => t + x.n, 0);
   const setQty = (id, n) => { st.cart = st.cart.filter(x => x.p !== id); if (n > 0) st.cart.push({ p: id, n }); };
-  const hear = () => { const out = []; if (st.pkg) out.push(T('חבילה ' + st.pkg.name)); st.cart.forEach(x => { const p = s.products.find(y => y.id === x.p); if (p) out.push(T(x.n + ' כרטיסים למוצר ' + p.num + ' ' + p.name)); });
-    if (!out.length) out.push(T('הסל ריק')); else { const q = quote(); if (!q.error) out.push(T('סך הכל ' + q.count + ' כרטיסים בסכום ' + nis(q.amount))); } return out; };
+  /* שמיעת הסל: מצב החבילה (כמה נבחרו, כמה נותרו), פירוט המוצרים (כמה מהחבילה וכמה בתשלום) והסך לתשלום */
+  const hear = () => { const tk = n => +n === 1 ? 'כרטיס אחד' : n + ' כרטיסים', out = [], k = st.pkg, q = quote(), ok = !q.error, byId = id => s.products.find(y => String(y.id) === String(id));
+    if (k) {
+      if (k.kind === 'free') { const left = ok && q.left && q.left.tickets != null ? q.left.tickets : +k.qty || 0, tot = +k.qty || 0; out.push(T('חבילה ' + k.name + ' בחרתם ' + (tot - left) + ' מתוך ' + tk(tot) + (left ? ' נותרו ' + tk(left) + ' לחלוקה' : ' ניצלתם את כל הכרטיסים בחבילה'))); }
+      else if (k.kind === 'credit') { const left = ok && q.left && q.left.credit != null ? q.left.credit : +k.credit || 0, tot = +k.credit || 0; out.push(T('חבילה ' + k.name + ' ניצלתם ' + nis(Math.round((tot - left) * 100) / 100) + ' מתוך ' + nis(tot) + (left ? ' נותרו ' + nis(left) + ' לניצול' : ' ניצלתם את כל החבילה'))); }
+      else { out.push(T('חבילה ' + k.name)); (Array.isArray(k.comp) ? k.comp : []).forEach(c => { const p = byId(c.p); if (p && +c.n > 0) out.push(T('בחבילה ' + tk(c.n) + ' למוצר ' + p.num + ' ' + p.name)); }); }
+    }
+    if (ok) q.lines.forEach(L => { const p = byId(L.p); if (!p) return; const paid = L.n - L.pkg, amt = Math.round(paid * +p.price * 100) / 100;
+      out.push(T(tk(L.n) + ' למוצר ' + p.num + ' ' + p.name + (k && L.pkg ? ' מהם ' + L.pkg + ' מהחבילה' : '') + (paid && +p.price ? (k ? ' ' + paid + ' בתשלום רגיל ' : ' ') + 'בסכום ' + nis(amt) : ''))); });
+    else st.cart.forEach(x => { const p = byId(x.p); if (p) out.push(T(tk(x.n) + ' למוצר ' + p.num + ' ' + p.name)); });
+    if (!out.length) out.push(T('הסל ריק'));
+    else if (ok) out.push(T('סך הכל ' + tk(q.count) + (k && +q.pkgPrice ? ' מחיר החבילה ' + nis(q.pkgPrice) + (q.extra ? ' ועוד ' + nis(q.extra) + ' כרטיסים נוספים' : '') : '') + ' בסכום ' + nis(q.amount)));
+    else if (k && !st.cart.length) out.push(T('עדיין לא נבחרו כרטיסים'));
+    return out; };
   st.hear = hear;
   const listChunk = () => {
     const n = Math.max(3, Math.min(30, +(((s.cfg || {}).ivr || {}).listChunk) || 10)), from = st.allAt || 0;
