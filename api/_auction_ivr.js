@@ -16,6 +16,13 @@ const nis = n => { n = Math.round(+n * 100) / 100; return (Number.isInteger(n) ?
 const REPS = new Map();
 async function reps(s) { const c = REPS.get(s.id); if (c && Date.now() - c.at < 20000) return c.v; const L = await db('auction_rep?sale_id=eq.' + s.id + '&active=is.true&select=id,code,name&limit=5000').catch(() => []); const v = new Map((L || []).map(r => [r.code, r])); REPS.set(s.id, { at: Date.now(), v }); return v; }
 
+/* הנציגים שהמנהל אישר לפרסם ללקוחות בטלפון (שם, עיר או אזור, כתובת, טלפון) */
+const PUBC = new Map();
+async function pubReps(s) {
+  const c = PUBC.get(s.id); if (c && Date.now() - c.at < 20000) return c.v;
+  const L = await db('auction_rep?sale_id=eq.' + s.id + '&active=is.true&pub=is.true&select=name,phone,city,addr&order=city.asc,name.asc&limit=300').catch(() => []);
+  const v = (L || []).filter(r => r.name || r.phone); PUBC.set(s.id, { at: Date.now(), v }); return v;
+}
 function prodSay(s, p, full, nameSaid) {
   const iv = (s.cfg || {}).ivr || {}, y = (p.cfg || {}).y, out = [];
   if (y && iv.path) out.push('f-/' + iv.path + '/' + y);
@@ -65,6 +72,11 @@ const MSG = {
   payCancel: ['התשלום בוטל', 'התשלום בוטל הכרטיסים שבחרתם נשמרו בסל להתקשרות הבאה'],
   later: ['הזמנה לתשלום מאוחר', 'ההזמנה נרשמה הסכום {סכום} הכרטיסים יקבלו מספרים אחרי התשלום לנציגי המכירה תודה רבה ובהצלחה'],
   pending: ['הזמנה שממתינה לנציג', 'ההזמנה נרשמה הסכום {סכום} נציג המכירה יחזור אליכם להשלמת התשלום תודה רבה ובהצלחה'],
+  menuHear: ['תפריט ראשי: שמיעת סך הסל', 'לשמיעת סך הסל לתשלום הקישו 8'],
+  afterHear: ['אחרי הוספת מוצר בדפדוף: שמיעת סך הסל', 'לשמיעת סך הסל לתשלום הקישו 4'],
+  payhowRep: ['תפריט התשלום: אפשרות תשלום אצל נציג', 'לתשלום במזומן אצל נציג הקישו 3'],
+  repinfo: ['תשלום אצל נציג: תפריט', 'לשמיעת הנציגים באזור שלכם הקישו 1 להזמנה ותשלום במזומן לנציג הקישו 2'],
+  cashOrder: ['הזמנה לתשלום אצל נציג', 'ההזמנה נרשמה במצב המתנה הסכום {סכום} שלמו במזומן לנציג והנציג יאשר את ההזמנה על ידי הקשת מספר הטלפון שלכם הכרטיסים יקבלו מספרים לאחר האישור תודה רבה'],
   stored: ['הסל נשמר', 'הסל נשמר בהתקשרות הבאה מהטלפון הזה תוכלו לשמוע אותו לערוך ולהוסיף עליו ולהשלים את הרכישה להתראות'],
   end: ['סיום אחרי תשלום', 'בהצלחה']
 };
@@ -95,7 +107,7 @@ const pkgKey = (k, i) => String(+((k.cfg || {}).key) || i + 1);
 
 /* השחזור: מצב השיחה אחרי כל ההקשות.
    saved = הסל השמור של המתקשר כפי שהיה בתחילת השיחה ({pkg_id, items}), אם יש */
-function replay(s, R, ans, saved, mode) {
+function replay(s, R, ans, saved, mode, PUB, callerPh) {
   const c = A().cfgOf(s), prods = s.products.filter(p => p.active !== false), pkgs = s.pkgs.filter(A().pkgLive);
   const repAsk = w => c.repPhone === w || c.repPhone === 'both', cartOn = (s.cfg || {}).phoneCart !== false;
   const st = { phase: 'menu', cart: [], pkg: null, rep: null, tries: 0, msg: [] };
@@ -125,7 +137,13 @@ function replay(s, R, ans, saved, mode) {
   const quote = () => C.price(s.products, st.pkg, st.cart);
   const ccOn = !!(((s.cfg || {}).ivr || {}).cc || {}).on, laterOn = c.allowUnpaid && ccOn;
   /* לפני התשלום: אם אפשר גם לשלם בכרטיס בטלפון וגם להזמין בלי תשלום, שואלים */
-  const toPay = () => laterOn ? 'payhow' : 'pay';
+  const cashOn = !!c.cashRep; PUB = PUB || [];
+  const areas = [...new Set(PUB.map(r => r.city || ''))], areaName = a => a || 'כללי';
+  /* אפשרויות התשלום: pay = אשראי בטלפון (1), later = הזמנה ותשלום מאוחר (2), rep = מזומן אצל נציג (3) */
+  const payOpts = () => { const o = laterOn ? ['pay', 'later'] : ['pay']; if (cashOn) { if (!ccOn) return ['rep']; o.push('rep'); } return o; };
+  st.payOpts = payOpts;
+  const toPay = () => { const o = payOpts(); return o.length > 1 ? 'payhow' : o[0] === 'rep' ? 'repinfo' : 'pay'; };
+  st.areas = areas; st.areaName = areaName; st.PUB = PUB;
   const afterRep = ph => { if (ph === 'repA') goHome(); else st.phase = toPay(); };
   const qtyOf = id => st.cart.filter(x => x.p === id).reduce((t, x) => t + x.n, 0);
   const setQty = (id, n) => { st.cart = st.cart.filter(x => x.p !== id); if (n > 0) st.cart.push({ p: id, n }); };
@@ -141,7 +159,7 @@ function replay(s, R, ans, saved, mode) {
   if (repAsk('start')) st.phase = 'repA'; else goHome();
   st.first = st.msg; /* הודעות של הכניסה הישירה (למשל ההסבר לפני הדפדוף), מושמעות אחרי הפתיחה */
   /* אפס = שלב אחורה (סולמית לבד ושקט נשלחים מימות כאותו ערך, ולכן לא משמשים לחזרה). כוכבית = יציאה לשלוחה הראשית של הקו */
-  const BACK = { pkg: 'menu', prod: () => st.prodFrom || 'menu', prodok: 'prod', qty: () => st.fromBrw ? 'brw' : 'prodok', qtyok: 'qty', after: 'brw', more: 'menu', edit: 'more', editq: 'edit', editok: 'editq', sum: 'more', payhow: 'sum', allp: 'menu' };
+  const BACK = { pkg: 'menu', prod: () => st.prodFrom || 'menu', prodok: 'prod', qty: () => st.fromBrw ? 'brw' : 'prodok', qtyok: 'qty', after: 'brw', more: 'menu', edit: 'more', editq: 'edit', editok: 'editq', sum: 'more', payhow: 'sum', allp: 'menu', repinfo: 'sum', repArea: 'repinfo', repList: 'repinfo', cashph: 'repinfo' };
   for (const v0 of ans) {
     const raw = String(v0 == null ? '' : v0).trim(), v = raw.replace(/\D/g, ''), empty = !v && !raw.includes('*'); st.msg = [];
     if (st.phase !== 'repA' && st.phase !== 'repB' && st.phase !== 'bye') {
@@ -182,6 +200,7 @@ function replay(s, R, ans, saved, mode) {
       if (v === '1') { st.bi++; if (st.bi >= prods.length) { st.msg.push(M(s, 'brwEnd')); st.phase = 'menu'; } else st.phase = 'brw'; }
       else if (v === '2') { st.bi = 0; st.phase = 'brw'; }
       else if (v === '3') { const q = quote(); if (q.error) st.msg.push(T(q.message || 'לא נבחרו כרטיסים')); else st.phase = 'sum'; }
+      else if (v === '4' && (st.cart.length || st.pkg)) st.msg.push(...hear());
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
@@ -191,6 +210,7 @@ function replay(s, R, ans, saved, mode) {
       else if (v === mk.prod) { st.prodFrom = 'menu'; st.fromBrw = false; st.phase = 'prod'; }
       else if (mk.all && v === mk.all) entry(browse);
       else if (v === '9' && (st.cart.length || st.pkg)) st.phase = 'more';
+      else if (v === '8' && (st.cart.length || st.pkg)) st.msg.push(...hear());
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
@@ -259,8 +279,24 @@ function replay(s, R, ans, saved, mode) {
       setQty(p.id, n); st.phase = 'more'; st.msg.push(T(n ? 'עודכן ל ' + n + ' כרטיסים למוצר ' + p.num : 'מוצר ' + p.num + ' הוסר מהסל'));
       continue;
     }
+    if (st.phase === 'repinfo') {
+      if (v === '1' && PUB.length) { if (areas.length > 1) st.phase = 'repArea'; else { st.area = areas[0]; st.phase = 'repList'; } }
+      else if (v === '2') st.phase = callerPh ? 'cash' : 'cashph';
+      else st.msg.push(T('בחירה לא תקינה'));
+      continue;
+    }
+    if (st.phase === 'repArea') { const i = +v - 1; if (i >= 0 && i < areas.length) { st.area = areas[i]; st.phase = 'repList'; } else st.msg.push(T('בחירה לא תקינה')); continue; }
+    if (st.phase === 'repList') {
+      if (v === '1') { /* שמיעה חוזרת */ }
+      else if (v === '2' && areas.length > 1) st.phase = 'repArea';
+      else if (v === '3') st.phase = callerPh ? 'cash' : 'cashph';
+      else st.msg.push(T('בחירה לא תקינה'));
+      continue;
+    }
+    if (st.phase === 'cashph') { const p2 = A().phoneN(v); if (p2) { st.cashPhone = p2; st.phase = 'cash'; } else st.msg.push(T('מספר הטלפון לא תקין')); continue; }
     if (st.phase === 'payhow') {
-      if (v === '1') st.phase = 'pay'; else if (v === '2') st.phase = 'later'; else st.msg.push(T('בחירה לא תקינה'));
+      const o = payOpts();
+      if (v === '1' && o.includes('pay')) st.phase = 'pay'; else if (v === '2' && o.includes('later')) st.phase = 'later'; else if (v === '3' && o.includes('rep')) st.phase = 'repinfo'; else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
     if (st.phase === 'sum') {
@@ -314,7 +350,7 @@ function parseItems(raw, prods) {
 }
 function repReplay(s, R, ans, ph, known) {
   const c = A().cfgOf(s), prods = s.products.filter(p => p.active !== false);
-  const st = { phase: 'code', tries: 0, jobs: [], cur: null, rep: null, msg: [], fail: '', phones: [] }, F = c.fields || {}, FP = F.ph || {};
+  const st = { phase: 'code', tries: 0, jobs: [], cur: null, rep: null, msg: [], fail: '', phones: [], approves: [] }, F = c.fields || {}, FP = F.ph || {};
   const perm = r => ['off', 'pending', 'paid'].includes(r.perm) ? r.perm : c.repOrders;
   /* השאלות על הרוכש (שם, עיר, כתובת ושדות נוספים) שהמנהל בחר לשאול גם בטלפון. מי שכבר ידוע לפי הטלפון לא נשאל שוב */
   const stepsFor = (phone, how) => {
@@ -363,9 +399,25 @@ function repReplay(s, R, ans, ph, known) {
     }
     if (st.phase === 'menu') {
       if (v === '1') { st.how = 'list'; st.phase = 'items'; } else if (v === '2') { st.how = 'guided'; st.g = []; st.phase = 'gprod'; }
-      else if (v === '3') { st.how = 'self'; st.g = []; st.phase = 'gprod'; } else if (raw === '0') st.phase = 'bye'; else st.msg.push(T('בחירה לא תקינה'));
+      else if (v === '3') { st.how = 'self'; st.g = []; st.phase = 'gprod'; } else if (v === '4' && c.cashRep) st.phase = 'cph'; else if (raw === '0') st.phase = 'bye'; else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
+    /* אישור תשלום במזומן של הזמנה שהלקוח הזמין בטלפון (במצב המתנה): הנציג מקיש את הטלפון של הלקוח, שומע את הסכום ומאשר */
+    if (st.phase === 'cph') {
+      if (raw === '0') { st.phase = 'menu'; continue; }
+      const p2 = A().phoneN(v); if (!p2) { st.msg.push(T('מספר הטלפון לא תקין')); continue; }
+      if (st.phones.indexOf(p2) < 0) st.phones.push(p2);
+      if (!known) { st.ap = null; st.phase = 'cok'; continue; }
+      const list = ((known[p2] || {}).cash) || [];
+      if (!list.length) { st.msg.push(T('לא נמצאה הזמנה שממתינה לתשלום במזומן עבור המספר הזה')); continue; }
+      st.ap = { order: list[0], phone: p2, more: list.length - 1 }; st.phase = 'cok'; continue;
+    }
+    if (st.phase === 'cok') {
+      if (v === '1') { st.approves.push({ order: st.ap && st.ap.order }); st.phase = 'adone'; }
+      else if (v === '2') st.phase = 'cph'; else st.msg.push(T('בחירה לא תקינה'));
+      continue;
+    }
+    if (st.phase === 'adone') { if (v === '1') st.phase = 'cph'; else if (v === '2') st.phase = 'menu'; else st.msg.push(T('בחירה לא תקינה')); continue; }
     if (st.phase === 'items') {
       if (raw === '0') { st.phase = 'menu'; continue; }
       const P = parseItems(raw, prods);
@@ -436,6 +488,7 @@ async function knownOf(s, phone) {
     K.name = cu.name || ''; K.city = cu.city || ''; K.addr = cu.addr || '';
     const O = (await db('auction_order?sale_id=eq.' + s.id + '&phone=eq.' + phone + '&answers=not.is.null&select=answers&order=created_at.desc&limit=5').catch(() => [])) || [];
     O.slice().reverse().forEach(o => Object.assign(K.answers, o.answers || {}));
+    K.cash = ((await db('auction_order?sale_id=eq.' + s.id + '&phone=eq.' + phone + '&status=eq.pending&select=id,amount,lines,callback,rep_id&order=created_at.desc&limit=10').catch(() => [])) || []).filter(o => o.callback && o.callback.cash);
   } catch (e) { /* בלי מידע קודם שואלים הכול */ }
   return K;
 }
@@ -474,11 +527,29 @@ async function repFlow(s, q, ans, call, ph, out, bye) {
     }
     last = { o, j, id };
   }
+  let lastAp = null;
+  for (const a of st.approves) {
+    const o = a.order; if (!o) continue; lastAp = o.id;
+    const cb = { ...(o.callback || {}), byRep: st.rep.id, method: 'מזומן', note: 'אושר בטלפון על ידי נציג' };
+    if (st.perm === 'paid') await A().markPaid(o.id, { txn: 'rep:' + st.rep.code + ':מזומן', callback: cb, ...(o.rep_id ? {} : { rep_id: st.rep.id, rep_src: 'rep' }) }).catch(e => console.error('rep cash approve', e.message));
+    else await db('auction_order?id=eq.' + o.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { ...cb, repConfirmed: st.rep.id } }) }).catch(() => {});
+  }
   switch (st.phase) {
     case 'bye': return bye(pre.concat(T('להתראות')));
     case 'code': return rd([T('נא להקיש את קוד הנציג שלכם וסולמית')], 8, 1);
     case 'pin': return rd([T('נא להקיש את קוד הכניסה האישי שלכם וסולמית')], 6, 1);
-    case 'menu': return rd([T('לרישום רשימה מהירה של מספרי מוצרים הקישו 1. להזנה מודרכת מוצר אחרי מוצר הקישו 2. לרכישה לעצמכם הקישו 3. לסיום הקישו אפס')], 1, 1, '1.2.3');
+    case 'menu': { const cr = !!A().cfgOf(s).cashRep; return rd([T('לרישום רשימה מהירה של מספרי מוצרים הקישו 1. להזנה מודרכת מוצר אחרי מוצר הקישו 2. לרכישה לעצמכם הקישו 3.' + (cr ? ' לאישור תשלום במזומן של לקוח שהזמין בטלפון הקישו 4.' : '') + ' לסיום הקישו אפס')], 1, 1, '1.2.3' + (cr ? '.4' : '')); }
+    case 'cph': return rd([T('נא להקיש את מספר הטלפון של הלקוח וסולמית. לחזרה הקישו אפס')], 10, 1);
+    case 'cok': {
+      const o = st.ap && st.ap.order; if (!o) return rd([T('לא נמצאה הזמנה')], 1, 1, '2');
+      const n = (o.lines || []).reduce((t, L) => t + (+L.n || 0), 0);
+      return rd([T('הזמנה על סך ' + nis(o.amount) + ' ' + n + ' כרטיסים' + (st.ap.more ? '. יש עוד ' + st.ap.more + ' הזמנות שממתינות ללקוח הזה' : '') + '. אם התשלום התקבל במזומן הקישו 1. לביטול הקישו 2')], 1, 1, '1.2');
+    }
+    case 'adone': {
+      const said = [T(st.perm === 'paid' ? 'ההזמנה אושרה ושולמה' : 'האישור נרשם וממתין לאישור מנהל המכירה')];
+      if (st.perm === 'paid' && lastAp) { const L = ((await db('auction_ticket?order_id=eq.' + lastAp + '&select=serial&order=serial.asc&limit=5000').catch(() => [])) || []).map(x => x.serial); if (L.length === 1) said.push(T('מספר הכרטיס'), 'n-' + L[0]); else if (L.length) said.push(T('מספרי הכרטיסים מ'), 'n-' + L[0], T('עד'), 'n-' + L[L.length - 1]); }
+      said.push(T('לאישור לקוח נוסף הקישו 1. לחזרה לתפריט הקישו 2')); return rd(said, 1, 1, '1.2');
+    }
     case 'gprod': return rd([T(st.g.length ? 'הקישו מספר מוצר נוסף וסולמית' : 'הקישו מספר מוצר וסולמית. לחזרה הקישו אפס')], 5, 1);
     case 'gqty': return rd([T('מוצר ' + st.gp.num + ' ' + st.gp.name), T('הקישו כמות כרטיסים וסולמית')], 3, 1);
     case 'gmore': return rd(st.g.map(lineSay).concat(T('להוספת מוצר הקישו 1. לסיום והמשך הקישו 2. לביטול כל ההזמנה הקישו 3')), 1, 1, '1.2.3');
@@ -533,7 +604,7 @@ module.exports = async (req, res) => {
     if (!A().isOpen(s)) return bye([M(s, 'closed')].concat(noteParts()).join('.'));
     const ans = []; for (let i = 1; i <= 1500 && q['X' + i] != null; i++) ans.push(q['X' + i]);
     if (q.mode === 'rep') return await repFlow(s, q, ans, call, ph, out, bye);
-    const st = replay(s, await reps(s), ans, saved, q.mode), next = 'X' + (ans.length + 1);
+    const st = replay(s, await reps(s), ans, saved, q.mode, (s.cfg || {}).cashRep ? await pubReps(s) : [], ph), next = 'X' + (ans.length + 1);
     const pre = ans.length ? st.msg : [M(s, 'welcome')].concat(noteParts(), [M(s, 'navHint')], st.first || []);
     /* הפרמטרים של read בימות: שם, שימוש בערך קיים, מקסימום ספרות, מינימום, שניות המתנה, השמעת ההקשה, חסימת כוכבית (no = כוכבית מגיעה אלינו),
        חסימת אפס, החלפת תו, מקשים מותרים, מספר ניסיונות, קבלת הקשה ריקה (Ok = סולמית לבד או שקט מגיעים כערך ריק), הערך בריק, ... הערך ה-15: no = בלי בקשת אישור אחרי ההקשה */
@@ -547,14 +618,31 @@ module.exports = async (req, res) => {
       case 'repA': case 'repB': return rd([M(s, 'repAsk')].concat(c.repSkip ? [M(s, 'repSkip')] : []), 8, 1);
       case 'saved': return rd([M(s, 'savedHead')].concat(st.hear()).concat(M(s, 'savedMenu')), 1, 1, '1.2.3');
       case 'store': await saveCart(s, ph, call, row, st); return bye(pre.concat(M(s, 'stored')));
-      case 'payhow': return rd([M(s, 'payhow')], 1, 1, '1.2');
+      case 'payhow': { const o = st.payOpts(), k = [o.includes('pay') ? '1' : null, o.includes('later') ? '2' : null, o.includes('rep') ? '3' : null].filter(Boolean); return rd([M(s, 'payhow')].concat(o.includes('rep') ? [M(s, 'payhowRep')] : []), 1, 1, k.join('.')); }
+      case 'repinfo': return st.PUB.length ? rd([M(s, 'repinfo')], 1, 1, '1.2') : rd([M(s, 'repinfo')], 1, 1, '2');
+      case 'repArea': return rd(st.areas.map((a, i) => T('ל' + st.areaName(a) + ' הקישו ' + (i + 1))), String(st.areas.length).length, 1);
+      case 'repList': { const L = st.PUB.filter(r => (r.city || '') === (st.area || '')).slice(0, 8); return rd([T('הנציגים ב' + st.areaName(st.area))].concat(L.flatMap(r => [T((r.name || '') + (r.addr ? ' ' + r.addr : '')), r.phone ? T('טלפון ' + String(r.phone).split('').join(' ')) : '']), T('לשמיעה חוזרת הקישו 1' + (st.areas.length > 1 ? ' לאזור אחר הקישו 2' : '') + ' להזמנה ותשלום במזומן לנציג הקישו 3')), 1, 1, '1.3' + (st.areas.length > 1 ? '.2' : '')); }
+      case 'cashph': return rd([T('נא להקיש את מספר הטלפון שלכם וסולמית כדי שהנציג יוכל למצוא את ההזמנה')], 10, 1);
+      case 'cash': {
+        const id = orderId, phn = st.cashPhone || ph;
+        let o = (await db('auction_order?id=eq.' + id + '&select=id,amount,status&limit=1').catch(() => []))[0];
+        if (!o) {
+          const r = await A().makeOrder(s, { pkg: st.pkg ? st.pkg.id : null, items: st.cart, repId: st.rep ? st.rep.id : null, repSrc: 'code', phone: phn, name: '' }, 'phone', null, id);
+          if (r.error) return bye(pre.concat(T(r.message || 'לא הצלחנו לרשום את ההזמנה')));
+          o = r.order; await dropCart(s, ph);
+          await db('auction_order?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { cash: true, area: st.areaName(st.area || ''), note: 'ממתין לתשלום במזומן אצל נציג' } }) }).catch(() => {});
+          A().notify(s, 'הזמנה לתשלום אצל נציג', '<p>מתקשר ' + phn + ' הזמין בטלפון בסך ' + (+o.amount) + ' ₪ ומשלם במזומן אצל נציג. ההזמנה ממתינה לאישור.</p>').catch(() => {});
+        }
+        if (o.status === 'paid') return bye(pre.concat(T('ההזמנה כבר שולמה תודה רבה')));
+        return bye(pre.concat(M(s, 'cashOrder', { 'סכום': nis(o.amount) })));
+      }
       case 'edit': return rd([M(s, 'editAsk')], 5, 1);
       case 'editq': return rd([M(s, 'editQty')], 3, 1);
-      case 'menu': { const mk = st.menuKeys(), hc = st.cart.length > 0 || !!st.pkg; return rd((mk.pkg ? [M(s, 'menuPkg', { 'מקש': mk.pkg })] : []).concat(M(s, 'menuProd', { 'מקש': mk.prod }), mk.all ? [M(s, 'menuAll', { 'מקש': mk.all })] : [], hc ? [M(s, 'menuCart')] : []), 1, 1, [mk.pkg, mk.prod, mk.all, hc ? '9' : null].filter(Boolean).join('.')); }
+      case 'menu': { const mk = st.menuKeys(), hc = st.cart.length > 0 || !!st.pkg; return rd((mk.pkg ? [M(s, 'menuPkg', { 'מקש': mk.pkg })] : []).concat(M(s, 'menuProd', { 'מקש': mk.prod }), mk.all ? [M(s, 'menuAll', { 'מקש': mk.all })] : [], hc ? [M(s, 'menuCart'), M(s, 'menuHear')] : []), 1, 1, [mk.pkg, mk.prod, mk.all, hc ? '9' : null, hc ? '8' : null].filter(Boolean).join('.')); }
       case 'brw': { const prods = s.products.filter(p => p.active !== false), p = prods[st.bi], say = p ? prodSay(s, p) : [];
         if (st.bm === 'auto') return rd(say, 1, 1, '1.2.3', Math.max(1, Math.min(8, +iv.browseWait || 2)));
         return rd(say.concat(M(s, 'brwMenu')), 1, 1, '1.2.3'); }
-      case 'after': return rd([M(s, 'afterBrw')], 1, 1, '1.2.3');
+      case 'after': { const hc = st.cart.length > 0 || !!st.pkg; return rd([M(s, 'afterBrw')].concat(hc ? [M(s, 'afterHear')] : []), 1, 1, '1.2.3' + (hc ? '.4' : '')); }
       case 'pkg': return rd(pkgs.map((k, i) => T('ל' + k.name + ' במחיר ' + nis(k.price) + ' הקישו ' + pkgKey(k, i))), 1, 1);
       case 'allp': return rd([M(s, 'listMore')], 1, 1, '1.2.3');
       case 'prod': return rd([M(s, 'prodAsk')], 5, 1);

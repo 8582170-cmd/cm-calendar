@@ -177,3 +177,6 @@ alter table public.auction_rep add column if not exists perm text, add column if
 
 -- תשובות הרוכש לשדות נוספים שהמנהל הגדיר לפני התשלום ({מזהה שדה: תשובה}). הוחל גם ב-Supabase
 alter table public.auction_order add column if not exists answers jsonb;
+
+-- נציגים: עיר/אזור, כתובת, ואישור לפרסם ללקוחות בטלפון (תשלום במזומן אצל נציג)
+alter table public.auction_rep add column if not exists city text, add column if not exists addr text, add column if not exists pub boolean default false;
