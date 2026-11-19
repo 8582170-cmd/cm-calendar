@@ -8,7 +8,7 @@
 <link rel="canonical" href="https://www.myluach.org/auction">
 <meta name="robots" content="index,follow">
 <link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-180.png?v=2">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;700;800&family=Varela+Round&display=swap">
 <style>
 :root{--navy:#15203B;--gold:#C9A24B;--gold2:#E6C36F;--cream:#FBF4DF;--cream-line:#E8D9A8;--cream-ink:#4A3A0E;--bg:#F3F4F7;--card:#fff;--ink:#1B2338;--mute:#505869;--line:#DFE2EA;--line2:#C5CAD6;--bad:#A3261B;--good:#1C7A56}
 *{box-sizing:border-box}
@@ -154,7 +154,9 @@ html[data-st=elegant] .qty button,html[data-st=elegant] .qty input,html[data-st=
 <script src="/assets/orgpages.js?v=3"></script>
 <script src="/assets/auction-txt.js?v=1"></script>
 <script src="/assets/auction-txt.js?v=1"></script>
-<script src="/assets/live.js?v=12"></script>
+<script src="/assets/live.js?v=13"></script>
+<script src="/assets/live2.js?v=2"></script>
+<link rel="stylesheet" href="/assets/site-styles.css?v=3">
 </head>
 <body>
 <div id="app"><p class="cen">טוען…</p></div>
@@ -254,6 +256,16 @@ function buyView(){
   function repField(id){return '<label class="f" for="'+id+'">קוד נציג'+(S.cfg.repSkip?' (לא חובה)':'')+'<input id="'+id+'" class="repin" inputmode="numeric" maxlength="8" value="'+esc(typed)+'" placeholder="למשל 2417"><small>אם נציג או מגייס נתן לכם קוד, הקלידו אותו כאן והרכישה תירשם על שמו</small></label>'}
   var XD={};(window.AUC_TXT||[]).forEach(function(t){XD[t.k]=t.d});
   function X(k){var t=(S&&S.cfg&&S.cfg.txt)||{};return t[k]||XD[k]||''}
+  /* במראות שבהם סיכום הרכישה יורד מתחת למוצרים: פס תחתון קטן עם הסכום וכפתור שמוביל לסיכום */
+  function sumBar(st){
+    var old=document.querySelector('.sumbar');if(old)old.remove();
+    if(['gala','fresh'].indexOf(st)<0||!S.open)return;var sum=document.getElementById('sum');if(!sum)return;
+    var b=document.createElement('div');b.className='sumbar';b.innerHTML='<span>לתשלום <b>0 ₪</b></span><button type="button" class="go">לסיכום ותשלום</button>';document.body.appendChild(b);
+    var upd=function(){var t=sum.querySelector('.tot b');b.querySelector('b').textContent=t?t.textContent:'0 ₪';b.classList.toggle('has',!!t&&!/^0\s/.test(t.textContent))};upd();
+    if('MutationObserver' in window)new MutationObserver(upd).observe(sum,{childList:true,subtree:true,characterData:true});
+    if('IntersectionObserver' in window)new IntersectionObserver(function(e){b.classList.toggle('hid',e[0].isIntersecting)}).observe(sum);
+    b.querySelector('button').onclick=function(){sum.scrollIntoView({behavior:'smooth',block:'start'})};
+  }
   function render(){
     var c=S.cfg,rw=c.repWeb,h='';KH=S.payVia==='kehilot';document.documentElement.setAttribute('data-st',c.style||'');
     h+='<header class="top"><div class="t"><div class="kick">'+esc(X('kick'))+'</div><h1>'+esc(c.title)+'</h1>'+(c.sub?'<div class="sub">'+esc(c.sub)+'</div>':'')+(c.drawAt?'<div class="sub">ההגרלה: '+esc(c.drawAt)+'</div>':'')+'</div>'
@@ -272,7 +284,7 @@ function buyView(){
     if(c.txt&&c.txt.intro)h+='<section class="sec"><p class="intro">'+esc(c.txt.intro)+'</p></section>';
     if(c.video)h+='<section class="sec"><div class="vid">'+vidHtml(c.video)+'</div></section>';
     if(S.open&&(rw==='start'||rw==='both')&&!S.rep)h+='<section class="sec" style="max-width:420px">'+repField('rep1')+'</section>';
-    if(S.pkgs.length){h+='<section class="sec"><h2>'+esc(X('pkgs'))+'</h2><div class="pkgs" id="pkgs"></div></section>'}
+    if(S.pkgs.length){h+='<section class="sec pkgsec"><h2>'+esc(X('pkgs'))+'</h2><div class="pkgs" id="pkgs"></div></section>'}
     h+='<div class="cols"><section class="sec prods"><h2>'+esc(X('prods'))+'</h2><div class="grid" id="grid"></div></section>';
     h+='<aside class="sum" id="sum" aria-live="polite"></aside></div>';
     if(c.faq&&c.faq.length&&!(c.org&&c.org.faq))h+='<section class="sec faq"><h2>'+esc(X('faq'))+'</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>';
@@ -284,9 +296,10 @@ function buyView(){
     if(!S.open&&c.winners)get({a:'winners',s:SLUG}).then(function(w){if(w._st!==200||!w.products.length)return;var m=document.querySelector('main')||app,sec=document.createElement('section');sec.className='sec';sec.innerHTML='<h2>הזוכים בהגרלות</h2>'+winList(w)+'<p class="msg"><a href="?s='+SLUG+'&view=winners" style="color:inherit">לדף הזוכים</a></p>';m.insertBefore(sec,m.firstChild)});
     var PS={sm:[170,115],lg:[240,175],xl:[290,215]}[c.prodSize];if(PS){document.documentElement.style.setProperty('--gmin',PS[0]+'px');document.documentElement.style.setProperty('--imh',PS[1]+'px')}
     drawPkgs();drawGrid();drawSum();
+    sumBar(c.style);
     var per={};S.products.forEach(function(p){if(p.want)per[p.id]=p.want});
-    var wOn=c.wantMode==='off'?false:c.wantMode==='on'?true:c.look==='live',wL=c.wantList&&c.wantList.length?c.wantList:null;
-    if(c.look==='live'&&window.MLLive)MLLive.start({open:S.open,names:(S.products||[]).map(function(p){return p.name}),badge:X('badge'),want:wOn,list:wL,per:per});
+    var wOn=c.wantMode==='off'?false:c.wantMode==='on'?true:!!c.look,wL=c.wantList&&c.wantList.length?c.wantList:null;
+    if(c.look&&window.MLLive)MLLive.start({kind:c.look,open:S.open,names:(S.products||[]).map(function(p){return p.name}),badge:X('badge'),want:wOn,list:wL,per:per});
     else if(wOn&&window.MLLive)MLLive.wantOnly({open:S.open,list:wL,per:per});
     app.addEventListener('input',function(e){if(e.target.classList.contains('repin')){typed=e.target.value.replace(/\D/g,'');[].forEach.call(document.querySelectorAll('.repin'),function(x){if(x!==e.target)x.value=typed})}
       if(e.target.dataset.q){var v=Math.max(0,Math.min(999,parseInt(e.target.value,10)||0));qty[e.target.dataset.q]=v;drawSum(true)}});

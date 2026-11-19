@@ -127,8 +127,12 @@
   function start(o) {
     o = o || {}; css(); document.documentElement.classList.add('live'); document.body.classList.add('live');
     var hd = document.querySelector('header.top'); if (!hd) return;
-    if (!hd.querySelector('.lv-orb')) { hd.insertAdjacentHTML('afterbegin', '<i class="lv-orb lv-o1"></i><i class="lv-orb lv-o2"></i>'); }
-    words(hd.querySelector('h1')); sparkles(hd.querySelector('h1')); rays();
+    /* סוגים נוספים של אתר חי (live2.js): כותרת ואווירה משלהם, והשאר (פס נע, הופעה בגלילה, תג, משפטים) משותף */
+    if (o.kind && o.kind !== 'live' && window.MLLive2 && window.MLLive2.kinds.indexOf(o.kind) >= 0) window.MLLive2.start(o.kind);
+    else {
+      if (!hd.querySelector('.lv-orb')) { hd.insertAdjacentHTML('afterbegin', '<i class="lv-orb lv-o1"></i><i class="lv-orb lv-o2"></i>'); }
+      words(hd.querySelector('h1')); sparkles(hd.querySelector('h1')); rays();
+    }
     var names = (o.names || []).filter(Boolean).slice(0, 40);
     if (names.length && !document.querySelector('.lv-strip')) {
       var items = names.map(function (n) { return '<span>' + esc(n) + '</span><i>✦</i>'; }).join('');

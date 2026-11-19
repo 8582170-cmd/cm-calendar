@@ -18,6 +18,8 @@ const mailN = v => { v = String(v || '').trim().toLowerCase(); return /^[^\s@<>]
 const SLUG = /^[a-z0-9][a-z0-9-]{2,39}$/;
 const SITE = () => (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');
 const enc = encodeURIComponent;
+/* מראות כלליים וסוגי אתר חי שמותרים בהגדרות */
+const STYLES = ['soft', 'bold', 'elegant', 'glass', 'dark', 'bento', 'warm', 'gala', 'fresh'], LOOKS = ['live', 'aurora', 'fireworks', 'gold', 'balloons', 'studio'];
 
 /* כל השורות (Supabase מחזיר עד 1000 בכל פעם) */
 async function all(path) {
@@ -69,7 +71,7 @@ function cfgOf(s) {
     allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off', cashRep: c.cashRep === true, hearCart: c.hearCart === true,
     winNames: ['first', 'full'].includes(c.winNames) ? c.winNames : '', winCity: c.winCity !== false, progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '',
-    banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', style: ['soft', 'bold', 'elegant'].includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '', pages: PG.pagesOf(c.pages), notes: PG.notesOf(c.notes), fields: PG.fieldsOf(c.fields), live: PG.liveOf(c.live) };
+    banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: LOOKS.includes(c.look) ? c.look : '', style: STYLES.includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '', pages: PG.pagesOf(c.pages), notes: PG.notesOf(c.notes), fields: PG.fieldsOf(c.fields), live: PG.liveOf(c.live) };
 }
 /* מה שהציבור רואה על מוצר / חבילה */
 const pubProd = p => ({ id: p.id, num: p.num, name: p.name, descr: p.descr || '', price: +p.price, draws: +p.draws || 1, img: p.img || '', audio: p.audio || '', maxPer: +((p.cfg || {}).maxPer) || 0, sponsor: (p.cfg || {}).sponsor || '', size: ['wide', 'full'].includes((p.cfg || {}).size) ? p.cfg.size : '', hl: !!(p.cfg || {}).hl, tag: (p.cfg || {}).tag || '', want: (p.cfg || {}).want || '' });
@@ -243,8 +245,8 @@ function cleanCfg(old, b) {
   if (b.org && typeof b.org === 'object') c.org = require('./_orgpages').clean(b.org, c.org);
   str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 20000); str('color', 7); str('logo', 400); str('banner', 400); str('video', 400);
   if (b.termsAgree != null) c.termsAgree = !!b.termsAgree;
-  if (b.look != null) c.look = b.look === 'live' ? 'live' : '';
-  if (b.style != null) c.style = ['soft', 'bold', 'elegant'].includes(b.style) ? b.style : '';
+  if (b.look != null) c.look = LOOKS.includes(b.look) ? b.look : '';
+  if (b.style != null) c.style = STYLES.includes(b.style) ? b.style : '';
   if (b.txt && typeof b.txt === 'object') c.txt = txtOf(b.txt);
   if (b.wantMode != null) c.wantMode = ['on', 'off'].includes(b.wantMode) ? b.wantMode : '';
   if (Array.isArray(b.wantList)) c.wantList = wantList(b.wantList);

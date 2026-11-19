@@ -1,0 +1,123 @@
+/* מראות כלליים נוספים לדף המכירה (html[data-st=...]), בהשראת תבניות אתרים מוכנות: זכוכית, לילה, אריחים, חם וכפרי, גאלה, עליז.
+   הצבע הראשי של הארגון (--navy) נשמר בכל המראות. רק CSS, בלי סקריפט. */
+
+/* ===== זכוכית: רקע צבעוני רך ומשטחים שקופים ומטושטשים ===== */
+html[data-st=glass] body{background:radial-gradient(1100px 620px at 8% -8%,color-mix(in srgb,var(--gold) 42%,transparent),transparent 62%),radial-gradient(900px 700px at 100% 28%,color-mix(in srgb,var(--navy) 38%,#8fb0ff 30%),transparent 62%),radial-gradient(800px 600px at 40% 110%,color-mix(in srgb,#ff9ec4 40%,transparent),transparent 60%),linear-gradient(160deg,#eef1fb,#f8f2ff);background-attachment:fixed}
+html[data-st=glass] header.top{margin:16px 16px 0;border-radius:26px;background:color-mix(in srgb,var(--navy) 80%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(20,24,60,.22)}
+html[data-st=glass] .prod,html[data-st=glass] .pkg,html[data-st=glass] aside.sum,html[data-st=glass] .faq details,html[data-st=glass] .done,html[data-st=glass] .win,html[data-st=glass] .card,html[data-st=glass] .hf,html[data-st=glass] .hinfo,html[data-st=glass] .rform,html[data-st=glass] .cen,html[data-st=glass] .terms .txt{background:rgba(255,255,255,.58);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border:1px solid rgba(255,255,255,.75);border-radius:22px;box-shadow:0 10px 34px rgba(31,38,95,.12)}
+html[data-st=glass] .pkg[aria-pressed=true]{background:rgba(255,255,255,.85);border-color:var(--gold)}
+html[data-st=glass] .band{background:rgba(255,255,255,.45);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:0;margin:12px 16px 0;border-radius:16px}
+html[data-st=glass] .cdw{background:rgba(255,255,255,.5);border-color:rgba(255,255,255,.8)}html[data-st=glass] .cdb span{background:rgba(255,255,255,.7)}
+html[data-st=glass] .qty button,html[data-st=glass] .qty input,html[data-st=glass] label.f input,html[data-st=glass] .ghost{border-radius:14px;background:rgba(255,255,255,.75)}
+html[data-st=glass] .qty button.plus{background:var(--navy)}
+html[data-st=glass] .go{border-radius:16px;background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 8px 22px color-mix(in srgb,var(--gold) 45%,transparent)}
+html[data-st=glass] .prod .im{border-radius:22px 22px 0 0}html[data-st=glass] .tag{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+/* ===== לילה: מצב כהה עם הדגשה זהובה ===== */
+html[data-st=dark]{--bg:#0B0F1A;--ink:#E9ECF4;--mute:#A2AABD;--line:#262E44;--line2:#3A4566;--cream:#1A2133;--cream-line:#2E3650;--cream-ink:#EAD9A6;color-scheme:dark}
+html[data-st=dark] body{background:radial-gradient(900px 500px at 85% -10%,color-mix(in srgb,var(--navy) 60%,transparent),transparent 70%),#0B0F1A}
+html[data-st=dark] header.top{background:linear-gradient(180deg,#060912,color-mix(in srgb,var(--navy) 55%,#060912));border-bottom:1px solid color-mix(in srgb,var(--gold) 55%,transparent);box-shadow:0 1px 30px color-mix(in srgb,var(--gold) 25%,transparent)}
+html[data-st=dark] .prod,html[data-st=dark] .pkg,html[data-st=dark] aside.sum,html[data-st=dark] .faq details,html[data-st=dark] .done,html[data-st=dark] .win,html[data-st=dark] .card,html[data-st=dark] .hf,html[data-st=dark] .hinfo,html[data-st=dark] .rform,html[data-st=dark] .cen,html[data-st=dark] .terms .txt,html[data-st=dark] .board{background:#141A2A;border-color:#262E44;color:var(--ink)}
+html[data-st=dark] .prod{transition:box-shadow .25s ease,border-color .25s ease}html[data-st=dark] .prod:hover{border-color:color-mix(in srgb,var(--gold) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 40%,transparent),0 10px 40px color-mix(in srgb,var(--gold) 18%,transparent)}
+html[data-st=dark] .prod .im,html[data-st=dark] .win img,html[data-st=dark] .hero{background:#1B2236}
+html[data-st=dark] .pkg[aria-pressed=true]{background:#1F2740}
+html[data-st=dark] .qty button,html[data-st=dark] .ghost{background:#1B2236;color:var(--ink)}html[data-st=dark] .qty button.plus{background:var(--gold);border-color:var(--gold);color:#111}
+html[data-st=dark] .qty input,html[data-st=dark] label.f input,html[data-st=dark] .rform input,html[data-st=dark] .rform textarea,html[data-st=dark] select{background:#0F1422;color:var(--ink);border-color:#3A4566}
+html[data-st=dark] a,html[data-st=dark] .pkg .pr{color:var(--gold2)}html[data-st=dark] .prod .pp b{color:#fff}
+html[data-st=dark] .tag.num{background:var(--gold2);color:#111}html[data-st=dark] .cdb span{background:#141A2A}
+html[data-st=dark] .band.bad{background:#3A1712;border-color:#6B2A20;color:#FFB4A8}html[data-st=dark] .band.ok{background:#12301F;border-color:#1F5A38;color:#B9F0CF}
+html[data-st=dark] .done td{border-color:#262E44}html[data-st=dark] .faq details p{color:var(--mute)}
+
+/* ===== אריחים (בנטו): רשת של אריחים בגדלים שונים ===== */
+html[data-st=bento] body{font-family:Rubik,Heebo,Arial,sans-serif;background:#F1F2F6}
+html[data-st=bento] h1,html[data-st=bento] h2,html[data-st=bento] h3{font-family:Rubik,Heebo,Arial,sans-serif;font-weight:800}
+html[data-st=bento] header.top{margin:14px 14px 0;border-radius:28px;padding:40px 5%}
+html[data-st=bento] .grid{grid-auto-flow:dense;gap:14px}
+html[data-st=bento] .grid>.prod:not(.wide):not(.full):nth-child(7n+1){grid-column:span 2;grid-row:span 2}
+html[data-st=bento] .grid>.prod:not(.wide):not(.full):nth-child(7n+1) .im{height:auto;flex:1 1 calc(var(--imh,150px)*1.9)}
+html[data-st=bento] .grid>.prod:not(.wide):not(.full):nth-child(7n+1) .nm{font-size:24px}
+html[data-st=bento] .grid>.prod:not(.wide):not(.full):nth-child(7n+5){grid-column:span 2}
+@container (max-width:520px){html[data-st=bento] .grid>.prod:nth-child(n){grid-column:auto;grid-row:auto}html[data-st=bento] .grid>.prod:nth-child(7n+1) .im{flex:none;height:calc(var(--imh,150px)*1.3)}}
+html[data-st=bento] .prod,html[data-st=bento] .pkg,html[data-st=bento] aside.sum,html[data-st=bento] .faq details,html[data-st=bento] .done,html[data-st=bento] .win,html[data-st=bento] .card,html[data-st=bento] .hf,html[data-st=bento] .hinfo,html[data-st=bento] .rform{border:0;border-radius:24px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+html[data-st=bento] .grid>.prod:nth-child(3n+2){background:color-mix(in srgb,var(--gold) 11%,#fff)}html[data-st=bento] .grid>.prod:nth-child(3n){background:color-mix(in srgb,var(--navy) 7%,#fff)}
+html[data-st=bento] .prod .im{margin:8px 8px 0;border-radius:18px}html[data-st=bento] .tag{border-radius:10px}
+html[data-st=bento] .pkgs{gap:14px}html[data-st=bento] .pkg:first-child{background:var(--navy);color:#fff}html[data-st=bento] .pkg:first-child span,html[data-st=bento] .pkg:first-child .pr{color:var(--gold2)}
+html[data-st=bento] .qty button,html[data-st=bento] .qty input,html[data-st=bento] label.f input,html[data-st=bento] .ghost,html[data-st=bento] .go{border-radius:14px}
+html[data-st=bento] .band{margin:12px 14px 0;border-radius:18px;border:0}
+
+/* ===== חם וכפרי: גוני אדמה, נייר, גופן קלאסי ===== */
+html[data-st=warm]{--bg:#F5EDE0;--gold:#B4643A;--gold2:#E7A97F;--cream:#EFE1C8;--cream-line:#DDC8A4;--cream-ink:#5A3E1E;--line:#E0CFB2;--line2:#CDB792;--ink:#3A2A1C;--mute:#6E5A45}
+html[data-st=warm] body{background:repeating-linear-gradient(45deg,rgba(120,85,40,.03) 0 2px,transparent 2px 7px),#F5EDE0}
+html[data-st=warm] header.top{background:color-mix(in srgb,var(--navy) 40%,#4A3222);border-bottom:6px solid var(--gold)}
+html[data-st=warm] .prod,html[data-st=warm] .pkg,html[data-st=warm] aside.sum,html[data-st=warm] .faq details,html[data-st=warm] .done,html[data-st=warm] .win,html[data-st=warm] .card,html[data-st=warm] .hf,html[data-st=warm] .hinfo,html[data-st=warm] .rform{background:#FFFBF3;border:1px solid var(--line);border-radius:6px;box-shadow:0 2px 0 var(--line)}
+html[data-st=warm] .prod .nm,html[data-st=warm] .pkg b{font-family:"Frank Ruhl Libre",serif;font-size:19px}
+html[data-st=warm] .prod .im img{filter:sepia(.12) saturate(1.05)}
+html[data-st=warm] .sec h2{display:flex;align-items:center;gap:12px}html[data-st=warm] .sec h2::after{content:"";flex:0 0 64px;height:2px;background:var(--gold);border-radius:2px}
+html[data-st=warm] .qty button.plus,html[data-st=warm] .tag.num{background:var(--gold);border-color:var(--gold)}
+html[data-st=warm] .go{border-radius:6px;background:var(--gold);color:#fff}html[data-st=warm] .qty button,html[data-st=warm] .qty input,html[data-st=warm] label.f input,html[data-st=warm] .ghost{border-radius:6px;background:#FFFBF3}
+html[data-st=warm] a,html[data-st=warm] .pkg .pr{color:#8E4A26}
+
+/* ===== גאלה: שחור וזהב, כותרות ממורכזות ומרווחות ===== */
+html[data-st=gala]{--bg:#0A0A0B;--ink:#F1ECE0;--mute:#B6AE9C;--line:#2A2722;--line2:#4A4234;--cream:#17140F;--cream-line:#3A3225;--cream-ink:#E9D7A6;--gold:#C9A24B;--gold2:#E9CF8C;color-scheme:dark}
+html[data-st=gala] body{background:radial-gradient(1000px 520px at 50% -12%,rgba(201,162,75,.18),transparent 70%),#0A0A0B}
+html[data-st=gala] header.top{background:transparent;flex-direction:column;text-align:center;padding:56px 6% 40px;border-bottom:1px solid rgba(201,162,75,.5)}
+html[data-st=gala] header.top .t{align-items:center}
+html[data-st=gala] header.top h1{font-weight:500;letter-spacing:2px;background:linear-gradient(100deg,#B98E3A,#F6E3A8 45%,#C9A24B 70%,#F3DA92);-webkit-background-clip:text;background-clip:text;color:transparent}
+html[data-st=gala] .kick{letter-spacing:4px;text-transform:uppercase}
+html[data-st=gala] .sec h2{display:flex;align-items:center;gap:16px;justify-content:center;font-weight:500;letter-spacing:1.5px;color:var(--gold2)}
+html[data-st=gala] .sec h2::before,html[data-st=gala] .sec h2::after{content:"";flex:1 1 40px;max-width:160px;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+html[data-st=gala] .sec h2::after{background:linear-gradient(270deg,transparent,var(--gold))}
+html[data-st=gala] .prod,html[data-st=gala] .pkg,html[data-st=gala] aside.sum,html[data-st=gala] .faq details,html[data-st=gala] .done,html[data-st=gala] .win,html[data-st=gala] .card,html[data-st=gala] .hf,html[data-st=gala] .hinfo,html[data-st=gala] .rform,html[data-st=gala] .cen,html[data-st=gala] .terms .txt{background:#111013;border:1px solid rgba(201,162,75,.42);border-radius:0;color:var(--ink);box-shadow:none}
+html[data-st=gala] .prod .nm{font-family:"Frank Ruhl Libre",serif;font-weight:500;font-size:20px;color:#fff}
+html[data-st=gala] .prod .im{background:#1A1814}html[data-st=gala] .tag.num{background:var(--gold);color:#111}
+html[data-st=gala] .pkg[aria-pressed=true]{background:#1B1710;border-color:var(--gold2)}
+html[data-st=gala] .qty button,html[data-st=gala] .ghost{background:#17150F;color:var(--ink);border-radius:0;border-color:#4A4234}html[data-st=gala] .qty button.plus{background:var(--gold);border-color:var(--gold);color:#111}
+html[data-st=gala] .qty input,html[data-st=gala] label.f input,html[data-st=gala] select,html[data-st=gala] .rform input,html[data-st=gala] .rform textarea{background:#0F0E0C;color:var(--ink);border-radius:0;border-color:#4A4234}
+html[data-st=gala] .go{border-radius:0;letter-spacing:1px;background:linear-gradient(100deg,#B98E3A,#F1D998 50%,#C9A24B);color:#111}
+html[data-st=gala] a,html[data-st=gala] .pkg .pr{color:var(--gold2)}html[data-st=gala] .prod .pp b{color:#fff}
+html[data-st=gala] .cdw{background:#111013;border-color:rgba(201,162,75,.42)}html[data-st=gala] .cdb span{background:#0A0A0B;border-color:rgba(201,162,75,.42)}
+html[data-st=gala] .band.bad{background:#2A1210;color:#FFB4A8}html[data-st=gala] .done td{border-color:#2A2722}
+
+/* ===== עליז: פסטל, נקודות ברקע, כפתורי גלולה, גופן מעוגל ===== */
+html[data-st=fresh] body{font-family:"Varela Round",Heebo,Arial,sans-serif;background:radial-gradient(color-mix(in srgb,var(--gold) 22%,transparent) 1.2px,transparent 1.6px) 0 0/22px 22px,#FFF8F1}
+html[data-st=fresh] h1,html[data-st=fresh] h2,html[data-st=fresh] h3{font-family:"Varela Round",Heebo,Arial,sans-serif}
+html[data-st=fresh] header.top{position:relative;background:linear-gradient(135deg,var(--navy),color-mix(in srgb,var(--navy) 45%,#FF6FA3));padding-bottom:58px}
+html[data-st=fresh] header.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:26px;background:radial-gradient(circle at 13px 0,transparent 13px,#FFF8F1 14px) 0 0/26px 26px repeat-x}
+html[data-st=fresh] .prod,html[data-st=fresh] .pkg,html[data-st=fresh] aside.sum,html[data-st=fresh] .faq details,html[data-st=fresh] .done,html[data-st=fresh] .win,html[data-st=fresh] .card,html[data-st=fresh] .hf,html[data-st=fresh] .hinfo,html[data-st=fresh] .rform{border:2px solid #F1E3D3;border-radius:26px;box-shadow:0 6px 0 #F1E3D3}
+html[data-st=fresh] .prod{border-top:8px solid #7CC6FE;transition:transform .25s cubic-bezier(.2,1.4,.4,1)}html[data-st=fresh] .prod:hover{transform:rotate(-1deg) translateY(-4px)}
+html[data-st=fresh] .grid>.prod:nth-child(5n+2){border-top-color:#FF8FB1}html[data-st=fresh] .grid>.prod:nth-child(5n+3){border-top-color:#FFD166}html[data-st=fresh] .grid>.prod:nth-child(5n+4){border-top-color:#8FE3B0}html[data-st=fresh] .grid>.prod:nth-child(5n+5){border-top-color:#C3A6FF}
+html[data-st=fresh] .prod .im{margin:10px 10px 0;border-radius:18px}
+html[data-st=fresh] .qty button,html[data-st=fresh] .qty input,html[data-st=fresh] label.f input,html[data-st=fresh] .ghost,html[data-st=fresh] .go,html[data-st=fresh] .tag{border-radius:999px}
+html[data-st=fresh] .go{box-shadow:0 5px 0 color-mix(in srgb,var(--gold) 60%,#000)}html[data-st=fresh] .go:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srgb,var(--gold) 60%,#000)}
+html[data-st=fresh] .sec h2{display:inline-block;align-self:flex-start;background:#FFE7A3;padding:2px 14px;border-radius:999px;transform:rotate(-1.5deg)}
+html[data-st=fresh] .band{border-radius:0}
+
+@media (prefers-reduced-motion:reduce){html[data-st=fresh] .prod:hover{transform:none}}
+
+/* ===== סדר וסידור הדף בכל מראה (לא רק צבעים): איפה הכותרת, איפה הסיכום, איפה החבילות, ואיך המוצרים מסודרים ===== */
+/* כותרות ממורכזות (זכוכית, גאלה, עליז) */
+html[data-st=glass] header.top,html[data-st=fresh] header.top{flex-direction:column;text-align:center;align-items:center}
+html[data-st=glass] header.top .t,html[data-st=gala] header.top .t,html[data-st=fresh] header.top .t{flex:0 0 auto;align-items:center}
+/* זכוכית: סיכום הרכישה בצד ימין, וחבילות בפס גלילה אופקי */
+html[data-st=glass] .cols,html[data-st=bento] .cols{flex-direction:row-reverse}
+html[data-st=glass] .pkgs,html[data-st=fresh] .pkgs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 2px 14px;gap:14px}
+html[data-st=glass] .pkg,html[data-st=fresh] .pkg{flex:0 0 min(270px,80%);scroll-snap-align:start}
+/* לילה: כותרת מפוצלת (שם המכירה מול כרטיס הטלפון), המוצרים קודם והחבילות אחריהם */
+html[data-st=dark] header.top{min-height:34vh;padding-top:56px;padding-bottom:56px}html[data-st=dark] header.top h1{font-size:clamp(36px,6vw,64px)}
+html[data-st=dark] .phonecard{flex:0 1 380px;background:rgba(255,255,255,.04);border-color:color-mix(in srgb,var(--gold) 55%,transparent);padding:24px}html[data-st=dark] .phonecard b{font-size:34px;color:var(--gold2)}
+html[data-st=dark] main>*{order:3}html[data-st=dark] main>section.sec:not(.faq):not(.pkgsec){order:0}html[data-st=dark] main>.cols{order:1}html[data-st=dark] main>.pkgsec{order:2}
+/* חם וכפרי: מוצרים בשורות כמו במגזין (תמונה בצד והטקסט לידה) */
+html[data-st=warm] .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,430px),1fr))}
+html[data-st=warm] .grid>.prod:not(.full){flex-direction:row}html[data-st=warm] .grid>.prod:not(.full) .im{flex:0 0 42%;height:auto;min-height:190px}
+@container (max-width:520px){html[data-st=warm] .grid>.prod:not(.full){flex-direction:column}html[data-st=warm] .grid>.prod:not(.full) .im{flex:none;min-height:0;height:var(--imh,150px)}}
+/* גאלה ועליז: עמודה אחת ממורכזת, הסיכום יורד מתחת למוצרים, ופס תחתון עם הסכום */
+html[data-st=gala] .cols,html[data-st=fresh] .cols{flex-direction:column;align-items:stretch}
+html[data-st=gala] aside.sum,html[data-st=fresh] aside.sum{position:static;max-width:680px;width:100%;align-self:center}
+html[data-st=gala] main{max-width:1100px;margin:0 auto;width:100%}
+html[data-st=gala] .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:22px}html[data-st=gala] .prod .im{height:calc(var(--imh,150px)*1.6)}html[data-st=gala] .prod .bd{text-align:center;align-items:center}
+html[data-st=gala] .prod .qty{width:100%}
+.sumbar{position:fixed;bottom:14px;left:50%;transform:translate(-50%,0);z-index:55;display:flex;gap:14px;align-items:center;padding:8px 8px 8px 18px;padding-inline-start:20px;border-radius:999px;background:var(--navy);color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:transform .3s ease,opacity .3s ease;white-space:nowrap}
+.sumbar .go{height:42px;padding:0 18px;border-radius:999px;font-size:16px}.sumbar b{font-size:18px}
+.sumbar.hid,.sumbar:not(.has){opacity:0;transform:translate(-50%,140%);pointer-events:none}
+html[data-st=gala] .sumbar{background:#111013;border:1px solid rgba(201,162,75,.6);border-radius:0}html[data-st=gala] .sumbar .go{border-radius:0}
+@media print{.sumbar{display:none}}
