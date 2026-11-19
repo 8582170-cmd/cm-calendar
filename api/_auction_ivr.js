@@ -200,7 +200,7 @@ function replay(s, R, ans, saved, mode, PUB, callerPh) {
       if (v === '1') { st.bi++; if (st.bi >= prods.length) { st.msg.push(M(s, 'brwEnd')); st.phase = 'menu'; } else st.phase = 'brw'; }
       else if (v === '2') { st.bi = 0; st.phase = 'brw'; }
       else if (v === '3') { const q = quote(); if (q.error) st.msg.push(T(q.message || 'לא נבחרו כרטיסים')); else st.phase = 'sum'; }
-      else if (v === '4' && (st.cart.length || st.pkg)) st.msg.push(...hear());
+      else if (v === '4' && c.hearCart && (st.cart.length || st.pkg)) st.msg.push(...hear());
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
@@ -210,7 +210,7 @@ function replay(s, R, ans, saved, mode, PUB, callerPh) {
       else if (v === mk.prod) { st.prodFrom = 'menu'; st.fromBrw = false; st.phase = 'prod'; }
       else if (mk.all && v === mk.all) entry(browse);
       else if (v === '9' && (st.cart.length || st.pkg)) st.phase = 'more';
-      else if (v === '8' && (st.cart.length || st.pkg)) st.msg.push(...hear());
+      else if (v === '8' && c.hearCart && (st.cart.length || st.pkg)) st.msg.push(...hear());
       else st.msg.push(T('בחירה לא תקינה'));
       continue;
     }
@@ -638,11 +638,11 @@ module.exports = async (req, res) => {
       }
       case 'edit': return rd([M(s, 'editAsk')], 5, 1);
       case 'editq': return rd([M(s, 'editQty')], 3, 1);
-      case 'menu': { const mk = st.menuKeys(), hc = st.cart.length > 0 || !!st.pkg; return rd((mk.pkg ? [M(s, 'menuPkg', { 'מקש': mk.pkg })] : []).concat(M(s, 'menuProd', { 'מקש': mk.prod }), mk.all ? [M(s, 'menuAll', { 'מקש': mk.all })] : [], hc ? [M(s, 'menuCart'), M(s, 'menuHear')] : []), 1, 1, [mk.pkg, mk.prod, mk.all, hc ? '9' : null, hc ? '8' : null].filter(Boolean).join('.')); }
+      case 'menu': { const mk = st.menuKeys(), hc = st.cart.length > 0 || !!st.pkg; return rd((mk.pkg ? [M(s, 'menuPkg', { 'מקש': mk.pkg })] : []).concat(M(s, 'menuProd', { 'מקש': mk.prod }), mk.all ? [M(s, 'menuAll', { 'מקש': mk.all })] : [], hc ? [M(s, 'menuCart')].concat(c.hearCart ? [M(s, 'menuHear')] : []) : []), 1, 1, [mk.pkg, mk.prod, mk.all, hc ? '9' : null, hc && c.hearCart ? '8' : null].filter(Boolean).join('.')); }
       case 'brw': { const prods = s.products.filter(p => p.active !== false), p = prods[st.bi], say = p ? prodSay(s, p) : [];
         if (st.bm === 'auto') return rd(say, 1, 1, '1.2.3', Math.max(1, Math.min(8, +iv.browseWait || 2)));
         return rd(say.concat(M(s, 'brwMenu')), 1, 1, '1.2.3'); }
-      case 'after': { const hc = st.cart.length > 0 || !!st.pkg; return rd([M(s, 'afterBrw')].concat(hc ? [M(s, 'afterHear')] : []), 1, 1, '1.2.3' + (hc ? '.4' : '')); }
+      case 'after': { const hc = c.hearCart && (st.cart.length > 0 || !!st.pkg); return rd([M(s, 'afterBrw')].concat(hc ? [M(s, 'afterHear')] : []), 1, 1, '1.2.3' + (hc ? '.4' : '')); }
       case 'pkg': return rd(pkgs.map((k, i) => T('ל' + k.name + ' במחיר ' + nis(k.price) + ' הקישו ' + pkgKey(k, i))), 1, 1);
       case 'allp': return rd([M(s, 'listMore')], 1, 1, '1.2.3');
       case 'prod': return rd([M(s, 'prodAsk')], 5, 1);

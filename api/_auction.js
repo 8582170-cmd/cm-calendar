@@ -66,7 +66,7 @@ function cfgOf(s) {
   return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', drawTime: c.drawTime || '', winners: c.winners !== false, cd: { open: !(c.cd && c.cd.open === false), close: !(c.cd && c.cd.close === false), draw: !(c.cd && c.cd.draw === false) }, openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
     repWeb: ['start', 'end', 'both', 'off'].includes(c.repWeb) ? c.repWeb : 'end', repPhone: ['start', 'pay', 'both', 'off'].includes(c.repPhone) ? c.repPhone : 'pay',
     repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
-    allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off', cashRep: c.cashRep === true,
+    allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off', cashRep: c.cashRep === true, hearCart: c.hearCart === true,
     winNames: ['first', 'full'].includes(c.winNames) ? c.winNames : '', winCity: c.winCity !== false, progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '',
     banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', style: ['soft', 'bold', 'elegant'].includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '', pages: PG.pagesOf(c.pages), notes: PG.notesOf(c.notes), fields: PG.fieldsOf(c.fields), live: PG.liveOf(c.live) };
@@ -267,6 +267,7 @@ function cleanCfg(old, b) {
   if (b.allowUnpaid != null) c.allowUnpaid = !!b.allowUnpaid;
   if (b.ivrtxt && typeof b.ivrtxt === 'object') { const K = require('./_auction_ivr').MSG, o = {}; Object.keys(K).forEach(k => { const v = clean(b.ivrtxt[k], 400).replace(/[.=&"<>-]/g, ' ').trim(); if (v) o[k] = v; }); c.ivrtxt = o; }
   if (b.cashRep != null) c.cashRep = !!b.cashRep;
+  if (b.hearCart != null) c.hearCart = !!b.hearCart;
   if (b.repOrders != null) c.repOrders = ['pending', 'paid'].includes(b.repOrders) ? b.repOrders : 'off';
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
