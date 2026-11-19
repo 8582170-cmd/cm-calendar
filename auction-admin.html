@@ -36,6 +36,10 @@ label.ck{display:flex;gap:8px;align-items:center;font-size:14px;min-height:32px;
 .btn.dark{background:var(--navy);border-color:var(--navy);color:#fff}
 .btn.bad{color:var(--bad);border-color:#E3B3AD}
 .btn:disabled{opacity:.5;cursor:default}
+.dsl{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}.dsc{flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:18px}
+.dsp{flex:1.7 1 440px;min-width:0;max-width:760px;position:sticky;top:10px;align-self:flex-start}@media(max-width:900px){.dsp{position:static;max-width:none;width:100%}}
+.pvw{position:relative;height:min(78vh,760px);min-height:440px;overflow:hidden;border:1px solid var(--line2);border-radius:10px;background:#fff}.pvw iframe{border:0;flex:none;background:#fff}
+button.btn[data-pvd][aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
 .dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 label.dc{display:flex;flex-direction:column;gap:5px;border:2px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;background:#fff;position:relative;font-size:14px}
 label.dc input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
@@ -364,13 +368,31 @@ function thLk(k){var T=function(css,tx){return '<b style="position:absolute;inse
 function pick(name,L,cur,th){return '<div class="dgrid" role="radiogroup">'+L.map(function(x){return '<label class="dc"><input type="radio" name="'+name+'" value="'+x[0]+'"'+(cur===x[0]?' checked':'')+'>'+th(x[0])+'<b>'+x[1]+'</b><small>'+x[2]+'</small></label>'}).join('')+'</div>'}
 function rv(n){var r=document.querySelector('input[name="'+n+'"]:checked');return r?r.value:''}
 function wireMedia(){
-  box.onclick=function(e){var c2=e.target.closest('[data-clr]');if(c2){$(c2.dataset.clr).value='';$(c2.dataset.clr+'pv').innerHTML='<span class="hint">אין</span>'}};
+  box.onclick=function(e){var c2=e.target.closest('[data-clr]');if(c2){$(c2.dataset.clr).value='';$(c2.dataset.clr+'pv').innerHTML='<span class="hint">אין</span>';if(window.__pvSend)window.__pvSend()}var dv=e.target.closest('[data-pvd]');if(dv&&window.__pvMode)window.__pvMode(dv.dataset.pvd)};
   box.onchange=function(e){var f=e.target.closest('[data-up]');if(!f||!f.files[0])return;var file=f.files[0],id=f.dataset.up,kind=f.dataset.kind;f.value='';
     if(file.size>(kind==='video'?300e6:10e6))return flash('הקובץ גדול מדי',1);flash('מעלה…');
-    upload(kind,file).then(function(url){$(id).value=url;$(id+'pv').innerHTML=kind==='video'?'<video src="'+esc(url)+'" controls preload="metadata" style="width:100%;max-height:160px;border-radius:8px"></video>':'<img src="'+esc(url)+'" alt="" style="max-width:100%;max-height:120px;border-radius:8px">';flash('הקובץ הועלה. לוחצים "שמירת העיצוב"')}).catch(function(er){flash(er.message||'שגיאה',1)})};
+    upload(kind,file).then(function(url){$(id).value=url;if(window.__pvSend)window.__pvSend();$(id+'pv').innerHTML=kind==='video'?'<video src="'+esc(url)+'" controls preload="metadata" style="width:100%;max-height:160px;border-radius:8px"></video>':'<img src="'+esc(url)+'" alt="" style="max-width:100%;max-height:120px;border-radius:8px">';flash('הקובץ הועלה. לוחצים "שמירת העיצוב"')}).catch(function(er){flash(er.message||'שגיאה',1)})};
+}
+/* תצוגה מקדימה חיה: דף המכירה האמיתי ב-iframe, שמקבל את ערכי הטופס בהודעה (בלי שמירה) ומצייר את עצמו מחדש */
+function pvWire(){
+  var f=$('pvf'),w=$('pvw'),mode='d',t=0,ready=false;if(!f||!w)return;
+  function cfg(){var tx={};[].forEach.call(document.querySelectorAll('[data-tx]'),function(x){tx[x.dataset.tx]=x.value.trim()});tx.intro=$('tx_intro').value.trim();tx.foot=$('tx_foot').value.trim();
+    return {style:rv('dst'),look:rv('dlk'),color:$('t8').value,prodSize:$('t16').value,logo:$('t9').value.trim(),banner:$('t11').value.trim(),video:$('t12').value.trim(),bannerMode:$('bm').value,vidMode:$('vm').value,wantMode:$('t18').value,
+      wantList:$('t19').value.split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,12),txt:tx}}
+  function send(){if(!ready||!f.contentWindow)return;f.contentWindow.postMessage({t:'mlpv',cfg:cfg()},location.origin)}
+  function later(){clearTimeout(t);t=setTimeout(send,160)}
+  function fit(){if(!f.isConnected)return;var W=mode==='d'?1280:390,aw=w.clientWidth,ah=w.clientHeight,sc=mode==='d'?Math.min(1,aw/W):Math.min(1,ah/820,aw/W);
+    f.style.width=W+'px';f.style.height=Math.round(ah/sc)+'px';f.style.transform='scale('+sc+')';f.style.transformOrigin=mode==='d'?'top right':'top center';
+    f.style.position='absolute';f.style.top='0';if(mode==='d'){f.style.right='0';f.style.left='auto'}else{f.style.left=Math.round((aw-W)/2)+'px';f.style.right='auto'}}
+  window.__pvSend=later;window.__pvMode=function(m){mode=m;[].forEach.call(document.querySelectorAll('[data-pvd]'),function(b){b.setAttribute('aria-pressed',String(b.dataset.pvd===m))});fit()};
+  window.removeEventListener('message',window.__pvMsg||function(){});
+  window.__pvMsg=function(e){if(e.origin!==location.origin||!e.data||e.source!==f.contentWindow)return;if(e.data.t==='mlpv-ready'){ready=true;send()}};window.addEventListener('message',window.__pvMsg);
+  var oc=box.onchange;box.onchange=function(e){if(oc)oc(e);later()};box.oninput=later;
+  fit();window.addEventListener('resize',fit);if('ResizeObserver' in window)new ResizeObserver(fit).observe(w);
 }
 function design(){var c=S.eff;
   box.innerHTML='<h1>עיצוב</h1><p class="hint" style="margin:0">כל מה שקשור למראה דף המכירה. ברירת המחדל בכל בחירה היא "כמו עד עכשיו". השינויים מוצגים בדף המכירה אחרי השמירה.</p>'
+   +'<div class="dsl"><div class="dsc">'
    +'<div class="card"><h2>מראה כללי</h2><p class="hint" style="margin:0">הסגנון קובע גם את סדר הדף ואת הצורה של הכרטיסים והכפתורים, ובנפרד מהצבע הראשי. התמונות הקטנות הן סכמה בלבד.</p>'+pick('dst',ST_L,c.style||'',thSt)+'</div>'
    +'<div class="card"><h2>אתר "חי" (תנועה ואווירה)</h2><p class="hint" style="margin:0">לכל סוג יש תנועה משלו בכותרת, בכניסת המוצרים ובפס השמות. התנועה מתבטלת אוטומטית למי שהגדיר במכשיר "הפחת תנועה".</p>'+pick('dlk',LK_L,c.look||'',thLk)+'</div>'
    +'<div class="card"><h2>צבע וגודל</h2><div class="two"><label class="f" for="t8">צבע ראשי<input id="t8" type="color" value="'+(c.color||'#15203B')+'" style="height:42px"></label>'
@@ -380,15 +402,21 @@ function design(){var c=S.eff;
    +media('t11','banner','תמונה ראשית',c.banner,'image/png,image/jpeg,image/webp','תמונה רחבה מתחת לכותרת. מומלץ 1600×600')
    +media('t12','video','סרטון',c.video,'video/mp4,video/webm,video/quicktime','קובץ MP4 עד 300MB, או קישור ליוטיוב / וימאו (שימו לב: ברשתות מסוננות יוטיוב לרוב חסום, ועדיף להעלות קובץ)')
    +'</div></div>'
+   +'<div class="card"><h2>איפה מופיעים התמונה והסרטון</h2><p class="hint" style="margin:0">ברירת המחדל (כמו עד עכשיו): הלוגו בפינת הכותרת, התמונה הראשית כפס רחב מתחת לכותרת והסרגל, והסרטון בתוך הדף מעל החבילות, עם לחצני הפעלה. באתר "חי" יש להם גם מסגרת ותנועה לפי הסוג שנבחר (למשל זום איטי בתמונה, מסגרת זהב או זוהרת בסרטון).</p>'
+   +'<div class="two"><label class="f" for="bm">תמונה ראשית<select id="bm">'+opt([['','פס רחב מתחת לכותרת (כמו עד עכשיו)'],['bg','רקע חי לכותרת (הכותרת והטקסט מעל התמונה)']],c.bannerMode||'')+'</select></label>'
+   +'<label class="f" for="vm">סרטון<select id="vm">'+opt([['','עם לחצני הפעלה (כמו עד עכשיו)'],['loop','מתנגן לבד, בלי קול, בלולאה (עם כפתור הפעלת קול)'],['bg','רקע חי לכותרת, בלי קול (קובץ וידאו בלבד, לא יוטיוב)']],c.vidMode||'')+'</select></label></div>'
+   +'<p class="hint" style="margin:0">סרטון שמתנגן לבד מתחיל בלי קול, כי הדפדפנים לא מאפשרים אחרת. למי שהגדיר "הפחת תנועה" הסרטון לא מתנגן לבד. אם גם תמונה וגם סרטון מוגדרים כרקע, הסרטון הוא הרקע והתמונה מוצגת כרגיל.</p></div>'
    +'<div class="card"><h2>טקסטים בדף</h2><p class="hint" style="margin:0 0 8px">משנים כל כותרת או תווית בדף המכירה. שדה ריק = הנוסח הרגיל (מוצג באפור).</p><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">'+(window.AUC_TXT||[]).map(function(t){return '<label class="f">'+esc(t.l)+'<input data-tx="'+t.k+'" maxlength="40" value="'+esc((c.txt||{})[t.k]||'')+'" placeholder="'+esc(t.d)+'"></label>'}).join('')+'</div>'
    +'<label class="f" for="tx_intro" style="margin-top:10px">פסקת פתיחה מתחת לכותרת (לא חובה)<textarea id="tx_intro" maxlength="600" placeholder="למשל: תודה שבחרתם לתמוך. כל כרטיס מקרב אתכם לפרס, וכל השקל הולך לארגון.">'+esc((c.txt||{}).intro||'')+'</textarea></label>'
    +'<label class="f" for="tx_foot">הערה בתחתית הדף (לא חובה)<textarea id="tx_foot" maxlength="400" placeholder="למשל: ההגרלה תתקיים בשידור חי. בהצלחה לכולם!">'+esc((c.txt||{}).foot||'')+'</textarea></label></div>'
    +'<div class="card"><h2>משפטים על המוצרים במעבר עכבר</h2><p class="hint" style="margin:0 0 8px">כשעוברים עם העכבר על מוצר, עולה על התמונה משפט, ולחיצה עליו מוסיפה כרטיס. משפט מיוחד למוצר מסוים מגדירים בטבלת המוצרים, בעמודה "תצוגה".</p>'
    +'<label class="f" for="t18">הצגת המשפטים<select id="t18"><option value=""'+(!c.wantMode?' selected':'')+'>אוטומטי: מוצגים בסגנון החי בלבד</option><option value="on"'+(c.wantMode==='on'?' selected':'')+'>מוצגים גם באתר הפשוט (בלי סגנון חי)</option><option value="off"'+(c.wantMode==='off'?' selected':'')+'>כבוי: בלי משפטים בכלל</option></select></label>'
    +'<label class="f" for="t19" style="margin-top:10px">רשימת המשפטים (משפט בכל שורה, עד 12)<textarea id="t19" style="min-height:130px" maxlength="600" placeholder="'+esc((window.AUC_WANT||[]).join('\n'))+'">'+esc((c.wantList||[]).join('\n'))+'</textarea><small>המשפטים מתחלפים בין המוצרים לפי הסדר. ריק = הרשימה הרגילה (מוצגת באפור).</small></label></div>'
+   +'</div><div class="dsp"><div class="card" style="gap:8px"><div class="hd"><h2>תצוגה מקדימה</h2><div class="acts"><button class="btn" type="button" data-pvd="d" aria-pressed="true">מחשב</button><button class="btn" type="button" data-pvd="m" aria-pressed="false">נייד</button></div></div><p class="hint" style="margin:0">מתעדכנת מיד בכל שינוי, בלי לשמור. אפשר לגלול ולנסות אותה.</p><div class="pvw" id="pvw"><iframe id="pvf" title="תצוגה מקדימה של דף המכירה" src="'+PUB+S.slug+'&preview=1&pv=1"></iframe></div></div></div></div>'
    +'<div class="acts"><button class="btn pri" id="dsv" type="button">שמירת העיצוב</button><a class="btn" href="'+PUB+S.slug+(S.status==='draft'?'&preview=1':'')+'" target="_blank" rel="noopener">צפייה בדף המכירה ↗</a></div>';
-  $('dsv').onclick=function(){saveCfg({color:$('t8').value,look:rv('dlk'),prodSize:$('t16').value,style:rv('dst'),wantMode:$('t18').value,wantList:$('t19').value.split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,12),txt:(function(){var o={};[].forEach.call(document.querySelectorAll('[data-tx]'),function(x){o[x.dataset.tx]=x.value.trim()});o.intro=$('tx_intro').value.trim();o.foot=$('tx_foot').value.trim();return o})(),logo:$('t9').value,banner:$('t11').value,video:$('t12').value})};
+  $('dsv').onclick=function(){saveCfg({color:$('t8').value,look:rv('dlk'),prodSize:$('t16').value,style:rv('dst'),wantMode:$('t18').value,wantList:$('t19').value.split('\n').map(function(x){return x.trim()}).filter(Boolean).slice(0,12),txt:(function(){var o={};[].forEach.call(document.querySelectorAll('[data-tx]'),function(x){o[x.dataset.tx]=x.value.trim()});o.intro=$('tx_intro').value.trim();o.foot=$('tx_foot').value.trim();return o})(),logo:$('t9').value,banner:$('t11').value,video:$('t12').value,bannerMode:$('bm').value,vidMode:$('vm').value})};
   wireMedia();
+  pvWire();
 }
 
 /* העלאת קובץ ישירות לאחסון: מבקשים כתובת חתומה מהשרת ושולחים אליה */

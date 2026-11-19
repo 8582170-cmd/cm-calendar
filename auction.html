@@ -80,6 +80,11 @@ iframe.pay{width:100%;border:0;min-height:430px}
 .win{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line,#E4E7EF);border-radius:14px;padding:12px 14px}
 .win img{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#E4E7EF}
 .win .pn{font-weight:700}.win ul{list-style:none;margin:4px 0 0;padding:0}.win li{padding:2px 0}.win small{opacity:.7}
+.herow{overflow:hidden;background:#E4E7EF}
+header.top.hasbg{position:relative;overflow:hidden;min-height:280px}header.top.hasbg>.t,header.top.hasbg>img.logo,header.top.hasbg>.phonecard{position:relative;z-index:2}
+.hbgm{position:absolute;inset:0;z-index:0;background:var(--navy)}.hbgm img,.hbgm video{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.06)}
+.hbgm::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--navy) 55%,transparent),color-mix(in srgb,var(--navy) 78%,transparent))}
+.vid{position:relative}.vsnd{position:absolute;inset-inline-start:12px;bottom:12px;z-index:2;border:0;border-radius:999px;background:rgba(0,0,0,.62);color:#fff;font:600 14px Heebo,Arial,sans-serif;padding:8px 16px;min-height:40px;cursor:pointer}
 .hero{width:100%;max-height:420px;object-fit:cover;display:block;background:#E4E7EF}
 .vid{max-width:900px;width:100%;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:16/9}.vid video,.vid iframe{width:100%;height:100%;border:0;display:block}
 .faq details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 16px}.faq summary{cursor:pointer;font-weight:700;padding:14px 0;min-height:44px}.faq details p{margin:0 0 14px;white-space:pre-line;color:#2B3349}
@@ -154,8 +159,9 @@ html[data-st=elegant] .qty button,html[data-st=elegant] .qty input,html[data-st=
 <script src="/assets/orgpages.js?v=3"></script>
 <script src="/assets/auction-txt.js?v=1"></script>
 <script src="/assets/auction-txt.js?v=1"></script>
-<script src="/assets/live.js?v=13"></script>
-<script src="/assets/live2.js?v=3"></script>
+<script src="/assets/live.js?v=14"></script>
+<script src="/assets/live3.js?v=1"></script>
+<script src="/assets/live2.js?v=4"></script>
 <link rel="stylesheet" href="/assets/site-styles.css?v=3">
 </head>
 <body>
@@ -251,6 +257,15 @@ function buyView(){
     if(S.cfg.color)document.documentElement.style.setProperty('--navy',S.cfg.color);
     try{var sv=JSON.parse(localStorage.getItem('auction-buyer')||'{}');S._buyer=sv}catch(e){S._buyer={}}
     render();
+    /* תצוגה מקדימה בתוך דף הניהול (iframe באותו דומיין): מקבלים שינויי עיצוב בלי שמירה ומציירים מחדש */
+    if(Q.get('pv')&&window.parent!==window)(function(){
+      var K=['style','look','color','prodSize','logo','banner','video','bannerMode','vidMode','wantMode','wantList','txt'],U=['logo','banner','video'];
+      window.addEventListener('message',function(e){var d=e.data;if(e.origin!==location.origin||!d||d.t!=='mlpv'||!S||!d.cfg||typeof d.cfg!=='object')return;
+        K.forEach(function(k){if(!(k in d.cfg))return;var v=d.cfg[k];if(U.indexOf(k)>=0)v=/^https:\/\//.test(v||'')?v:'';if(k==='txt'&&(!v||typeof v!=='object'))v={};S.cfg[k]=v});
+        var y=window.pageYOffset||0;if(window.MLLive&&MLLive.stop)MLLive.stop();
+        if(S.cfg.color)document.documentElement.style.setProperty('--navy',S.cfg.color);else document.documentElement.style.removeProperty('--navy');
+        render();window.scrollTo(0,y);parent.postMessage({t:'mlpv-done'},location.origin)});
+      parent.postMessage({t:'mlpv-ready'},location.origin)})();
     if(Q.get('kp'))kesherBack();
   }).catch(function(){closed('לא הצלחנו לטעון את המכירה. נסו לרענן.')});
   function repField(id){return '<label class="f" for="'+id+'">קוד נציג'+(S.cfg.repSkip?' (לא חובה)':'')+'<input id="'+id+'" class="repin" inputmode="numeric" maxlength="8" value="'+esc(typed)+'" placeholder="למשל 2417"><small>אם נציג או מגייס נתן לכם קוד, הקלידו אותו כאן והרכישה תירשם על שמו</small></label>'}
@@ -268,7 +283,8 @@ function buyView(){
   }
   function render(){
     var c=S.cfg,rw=c.repWeb,h='';KH=S.payVia==='kehilot';document.documentElement.setAttribute('data-st',c.style||'');
-    h+='<header class="top"><div class="t"><div class="kick">'+esc(X('kick'))+'</div><h1>'+esc(c.title)+'</h1>'+(c.sub?'<div class="sub">'+esc(c.sub)+'</div>':'')+(c.drawAt?'<div class="sub">ההגרלה: '+esc(c.drawAt)+'</div>':'')+'</div>'
+    var RM0=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches,bgv=c.vidMode==='bg'&&c.video&&!/youtu|vimeo/.test(c.video)&&!RM0,bgi=!bgv&&c.bannerMode==='bg'&&c.banner;
+    h+='<header class="top'+(bgv||bgi?' hasbg':'')+'">'+(bgv?'<div class="hbgm" aria-hidden="true"><video src="'+esc(c.video)+'" autoplay muted loop playsinline></video></div>':bgi?'<div class="hbgm" aria-hidden="true"><img src="'+esc(c.banner)+'" alt=""></div>':'')+'<div class="t"><div class="kick">'+esc(X('kick'))+'</div><h1>'+esc(c.title)+'</h1>'+(c.sub?'<div class="sub">'+esc(c.sub)+'</div>':'')+(c.drawAt?'<div class="sub">ההגרלה: '+esc(c.drawAt)+'</div>':'')+'</div>'
      +(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="">':'')
      +(c.phoneLine?'<div class="phonecard"><span>רכישה בטלפון</span><b>'+esc(c.phoneLine)+'</b><span>מקישים את מספר המוצר שמופיע על כל מוצר, ואת כמות הכרטיסים</span></div>':'')+'</header>';
     if(S.rep)h+='<div class="band">הגעתם דרך הקישור של <b>'+esc(S.rep.name||('נציג '+S.rep.code))+'</b> · הרכישה תיזקף לזכותו</div>';
@@ -279,10 +295,10 @@ function buyView(){
     h+=cdHtml(cdPick(c,S.open,S.status));
     h+=orgNav(S.cfg.org,'');
     h+=giveHtml(S.give);
-    if(c.banner)h+='<img class="hero" src="'+esc(c.banner)+'" alt="">';
+    if(c.banner&&!bgi)h+='<div class="herow"><img class="hero" src="'+esc(c.banner)+'" alt=""></div>';
     h+='<main id="main">';
     if(c.txt&&c.txt.intro)h+='<section class="sec"><p class="intro">'+esc(c.txt.intro)+'</p></section>';
-    if(c.video)h+='<section class="sec"><div class="vid">'+vidHtml(c.video)+'</div></section>';
+    if(c.video&&!bgv)h+='<section class="sec secv"><div class="vid">'+vidHtml(c.video,c.vidMode)+'</div></section>';
     if(S.open&&(rw==='start'||rw==='both')&&!S.rep)h+='<section class="sec" style="max-width:420px">'+repField('rep1')+'</section>';
     if(S.pkgs.length){h+='<section class="sec pkgsec"><h2>'+esc(X('pkgs'))+'</h2><div class="pkgs" id="pkgs"></div></section>'}
     h+='<div class="cols"><section class="sec prods"><h2>'+esc(X('prods'))+'</h2><div class="grid" id="grid"></div></section>';
@@ -293,6 +309,7 @@ function buyView(){
     h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-manage?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
     h+='</main>';
     app.innerHTML=h;cdRun();
+    [].forEach.call(app.querySelectorAll('.vsnd'),function(b){b.onclick=function(){var v=b.parentNode.querySelector('video');if(!v)return;v.muted=!v.muted;v.controls=!v.muted;b.setAttribute('aria-pressed',String(!v.muted));b.textContent=v.muted?'הפעלת קול':'השתקה'}});
     if(!S.open&&c.winners)get({a:'winners',s:SLUG}).then(function(w){if(w._st!==200||!w.products.length)return;var m=document.querySelector('main')||app,sec=document.createElement('section');sec.className='sec';sec.innerHTML='<h2>הזוכים בהגרלות</h2>'+winList(w)+'<p class="msg"><a href="?s='+SLUG+'&view=winners" style="color:inherit">לדף הזוכים</a></p>';m.insertBefore(sec,m.firstChild)});
     var PS={sm:[170,115],lg:[240,175],xl:[290,215]}[c.prodSize];if(PS){document.documentElement.style.setProperty('--gmin',PS[0]+'px');document.documentElement.style.setProperty('--imh',PS[1]+'px')}
     drawPkgs();drawGrid();drawSum();
@@ -479,10 +496,10 @@ function giveHtml(g,big){if(!g)return '';var url=esc(g.url),p=g.goal?Math.min(10
   return '<section class="givebox" style="margin:'+(big?'0 0 24px':'18px 6% 0')+';background:#fff;border:2px solid var(--gold);border-radius:14px;padding:16px 20px;display:flex;flex-direction:column;gap:10px;color:var(--ink)"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><div style="font-size:14px;color:var(--mute)">התרמה לארגון'+(g.match?' · כל תרומה מוכפלת פי '+g.match:'')+'</div><div style="font-size:'+(big?'34':'28')+'px;font-weight:700">'+nis(g.total)+(g.goal?' <span style="font-size:16px;color:var(--mute);font-weight:400">מתוך '+nis(g.goal)+'</span>':'')+'</div>'+(g.donors!=null?'<div style="font-size:14px;color:var(--mute)">'+g.donors.toLocaleString('he-IL')+' תורמים</div>':'')+'</div>'+(g.can?'<a href="'+url+'" style="background:var(--gold);color:var(--navy);font-weight:700;border-radius:10px;padding:10px 20px;text-decoration:none">לתרומה</a>':'')+'</div>'+(g.goal?'<div style="height:14px;background:#EEE6CF;border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:'+p+'%;background:var(--gold)"></i></div>':'')+'</section>'}
 
 /* סרטון: קובץ (וידאו רגיל) או קישור ליוטיוב / וימאו */
-function vidHtml(u){var y=u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/),v=u.match(/vimeo\.com\/(\d+)/);
-  if(y)return '<iframe src="https://www.youtube-nocookie.com/embed/'+y[1]+'" title="סרטון המכירה" allowfullscreen></iframe>';
-  if(v)return '<iframe src="https://player.vimeo.com/video/'+v[1]+'" title="סרטון המכירה" allowfullscreen></iframe>';
-  return '<video src="'+esc(u)+'" controls preload="metadata" playsinline></video>'}
+function vidHtml(u,mode){var y=u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/),v=u.match(/vimeo\.com\/(\d+)/),rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches,lp=mode==='loop'&&!rm;
+  if(y)return '<iframe src="https://www.youtube-nocookie.com/embed/'+y[1]+(lp?'?autoplay=1&mute=1&loop=1&playlist='+y[1]+'&controls=0&playsinline=1':'')+'" title="סרטון המכירה" allow="autoplay" allowfullscreen></iframe>';
+  if(v)return '<iframe src="https://player.vimeo.com/video/'+v[1]+(lp?'?autoplay=1&muted=1&loop=1':'')+'" title="סרטון המכירה" allow="autoplay" allowfullscreen></iframe>';
+  return '<video src="'+esc(u)+'" '+(lp?'autoplay muted loop ':'controls ')+'preload="metadata" playsinline></video>'+(lp?'<button type="button" class="vsnd" aria-pressed="false">הפעלת קול</button>':'')}
 /* ===== תקנון ושאלות ===== */
 function termsView(){get({a:'sale',s:SLUG,preview:Q.get('preview')||''}).then(function(j){
   if(j._st===404||!j.cfg){closed('המכירה לא נמצאה');return}var c=j.cfg;document.title='תקנון: '+c.title;

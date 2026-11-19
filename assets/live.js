@@ -148,5 +148,11 @@
       document.querySelector('.lv-badge').addEventListener('click', function (e) { var t2 = document.querySelector('.cols') || document.getElementById('main'); if (t2) { e.preventDefault(); t2.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); } });
     }
   }
-  window.MLLive = { start: start, wantOnly: wantOnly };
+  /* ניקוי מלא (לתצוגה המקדימה בניהול: החלפת סוג בלי לרענן) */
+  function stop() {
+    document.documentElement.classList.remove('live'); document.body.classList.remove('live');
+    ['.lv-rays', '.lv-badge'].forEach(function (q) { var e = document.querySelector(q); if (e) e.remove(); });
+    if (mo) { mo.disconnect(); mo = null; } seen = {}; if (window.MLLive2 && window.MLLive2.stop) window.MLLive2.stop();
+  }
+  window.MLLive = { start: start, wantOnly: wantOnly, stop: stop };
 })();
