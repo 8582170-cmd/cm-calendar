@@ -260,6 +260,8 @@ function buyView(){
     document.title=(S.cfg.title||'מכירה סינית')+' · מכירה סינית';
     if(S.cfg.color)document.documentElement.style.setProperty('--navy',S.cfg.color);
     try{var sv=JSON.parse(localStorage.getItem('auction-buyer')||'{}');S._buyer=sv}catch(e){S._buyer={}}
+    /* הטמעה באתר אחר: אם בעל האתר הגביל לאתרים מאושרים, אתר לא מאושר רואה הודעה במקום המכירה (בדיקה בדפדפן לפי האתר המארח) */
+    if(EMB&&window.parent!==window&&!embedOk()){app.innerHTML='<header class="top"><div class="t"><h1>'+esc(S.cfg.title||'מכירה סינית')+'</h1></div></header><main class="wrap" style="padding:30px 6%;text-align:center"><p>ההצגה של המכירה באתר הזה לא אושרה.</p><p><a href="/auction?s='+SLUG+'" target="_blank" rel="noopener">לפתיחת המכירה באתר MyLuach</a></p></main>';return}
     render();
     /* תצוגה מקדימה בתוך דף הניהול (iframe באותו דומיין): מקבלים שינויי עיצוב בלי שמירה ומציירים מחדש */
     if(Q.get('pv')&&window.parent!==window)(function(){
@@ -275,6 +277,7 @@ function buyView(){
   function repField(id){return '<label class="f" for="'+id+'">קוד נציג'+(S.cfg.repSkip?' (לא חובה)':'')+'<input id="'+id+'" class="repin" inputmode="numeric" maxlength="8" value="'+esc(typed)+'" placeholder="למשל 2417"><small>אם נציג או מגייס נתן לכם קוד, הקלידו אותו כאן והרכישה תירשם על שמו</small></label>'}
   var XD={};(window.AUC_TXT||[]).forEach(function(t){XD[t.k]=t.d});
   function X(k){var t=(S&&S.cfg&&S.cfg.txt)||{};return t[k]||XD[k]||''}
+  function embedOk(){var e=S.embed||{};if(e.mode!=='list')return true;var o='';try{o=(location.ancestorOrigins&&location.ancestorOrigins[0])||''}catch(x){}if(!o)try{o=new URL(document.referrer).origin}catch(x){}if(!o)return false;if(o===location.origin)return true;var h;try{h=new URL(o).hostname.toLowerCase().replace(/^www\./,'')}catch(x){return false}return (e.sites||[]).some(function(d){return h===d||h.slice(-d.length-1)==='.'+d})}
   /* במראות שבהם סיכום הרכישה יורד מתחת למוצרים: פס תחתון קטן עם הסכום וכפתור שמוביל לסיכום */
   function sumBar(st){
     var old=document.querySelector('.sumbar');if(old)old.remove();
