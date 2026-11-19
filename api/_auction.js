@@ -66,7 +66,7 @@ function cfgOf(s) {
   return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', drawTime: c.drawTime || '', winners: c.winners !== false, cd: { open: !(c.cd && c.cd.open === false), close: !(c.cd && c.cd.close === false), draw: !(c.cd && c.cd.draw === false) }, openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
     repWeb: ['start', 'end', 'both', 'off'].includes(c.repWeb) ? c.repWeb : 'end', repPhone: ['start', 'pay', 'both', 'off'].includes(c.repPhone) ? c.repPhone : 'pay',
     repSkip: c.repSkip !== false, priceMode: c.priceMode === 'one' ? 'one' : 'each',
-    allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off', repName: c.repName === 'off' ? 'off' : 'kbd',
+    allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
     winNames: ['first', 'full'].includes(c.winNames) ? c.winNames : '', winCity: c.winCity !== false, progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '',
     banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', style: ['soft', 'bold', 'elegant'].includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '', pages: PG.pagesOf(c.pages), notes: PG.notesOf(c.notes), fields: PG.fieldsOf(c.fields), live: PG.liveOf(c.live) };
@@ -266,7 +266,6 @@ function cleanCfg(old, b) {
   if (b.phoneCart != null) c.phoneCart = !!b.phoneCart;
   if (b.allowUnpaid != null) c.allowUnpaid = !!b.allowUnpaid;
   if (b.ivrtxt && typeof b.ivrtxt === 'object') { const K = require('./_auction_ivr').MSG, o = {}; Object.keys(K).forEach(k => { const v = clean(b.ivrtxt[k], 400).replace(/[.=&"<>-]/g, ' ').trim(); if (v) o[k] = v; }); c.ivrtxt = o; }
-  if (b.repName != null) c.repName = b.repName === 'off' ? 'off' : 'kbd';
   if (b.repOrders != null) c.repOrders = ['pending', 'paid'].includes(b.repOrders) ? b.repOrders : 'off';
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
@@ -666,6 +665,19 @@ module.exports = async (req, res) => {
       if (!L || !L[0]) return json(res, 404, { error: 'no' });
       const T = await db('auction_ticket?customer_id=eq.' + id + '&sale_id=eq.' + s.id + '&void=is.false&select=serial,product_id,order_id&order=serial.asc&limit=5000');
       return json(res, 200, { customer: L[0], orders: O || [], tickets: T || [] });
+    }
+    /* האזנה להקלטה שהרוכש השאיר בטלפון (נשמרת בשלוחה בימות, ומורדת דרך הטוקן של הלקוח) */
+    if (a === 'rec') {
+      const iv = (s.cfg || {}).ivr || {}; if (!iv.token) return json(res, 400, { error: 'ivr', message: 'אין טוקן של ימות המשיח בהגדרות השלוחה' });
+      const O = (await db('auction_order?id=eq.' + enc(String(b.order || '')) + '&sale_id=eq.' + s.id + '&select=answers&limit=1').catch(() => []))[0];
+      const v = O && O.answers && /^rec_[\w-]+$/.test(String(b.k || '')) ? String(O.answers[b.k] || '') : ''; if (!v) return json(res, 404, { error: 'no', message: 'אין הקלטה' });
+      const [dir, base] = v.split('|'), root = 'https://www.call2all.co.il/ym/api/', tryGet = async nm => { const r = await fetch(root + 'DownloadFile?' + new URLSearchParams({ token: iv.token, path: 'ivr2:' + (dir || '') + '/' + nm }), { signal: AbortSignal.timeout(25000) }); const ct = r.headers.get('content-type') || ''; if (!r.ok || /json|text/.test(ct)) return null; return Buffer.from(await r.arrayBuffer()); };
+      let buf = await tryGet(base + '.wav').catch(() => null);
+      if (!buf) { /* ייתכן שימות הוסיפה תאריך ושעה לשם הקובץ: מחפשים בתיקייה */
+        try { const r = await fetch(root + 'GetIVR2Dir?' + new URLSearchParams({ token: iv.token, path: 'ivr2:' + (dir || '') }), { signal: AbortSignal.timeout(20000) }), j = await r.json(), f = ((j && j.files) || []).map(x => x.name || x.fileName || '').filter(n => n.startsWith(base) && /\.wav$/i.test(n)).sort().pop(); if (f) buf = await tryGet(f); } catch (e) { /* בלי קובץ */ }
+      }
+      if (!buf) return json(res, 404, { error: 'no', message: 'ההקלטה לא נמצאה בימות המשיח' });
+      return json(res, 200, { mime: 'audio/wav', b64: buf.toString('base64') });
     }
     if (a === 'orders') {
       const st = ['paid', 'pending', 'failed', 'refunded', 'underpaid'].includes(b.status) ? '&status=eq.' + b.status : '';

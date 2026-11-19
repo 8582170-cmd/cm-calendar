@@ -36,13 +36,22 @@ const noteLive = (n, t) => n.on && (!n.from || Date.parse(n.from) <= t) && (!n.t
 
 /* שדות הרכישה. std: '' = כבוי, opt = אופציונלי, req = חובה. phoneMail: either (כמו עד עכשיו) | phone | email | both
    extra: שדות נוספים [{id,label,type: text|textarea|select|checkbox,opts,req}] */
+/* שאלה בטלפון: m = צורת הקלטת התשובה ('' לא נשאל בטלפון | kbd הקשה באותיות | stt זיהוי דיבור | rec הקלטה בלי זיהוי | keys בחירה במספר, רק לרשימה ולתיבת סימון),
+   e = איך משמיעים ללקוח את מה שהתקבל (sys כמו שימות עושה בעצמה | say קריאה בקול ואישור | none בלי) */
+const PHM = ['', 'kbd', 'stt', 'rec'], PHE = ['sys', 'say', 'none'];
+function phOf(x, def, type) {
+  x = x && typeof x === 'object' ? x : {}; let m = x.m == null ? def : x.m;
+  if (type === 'select' || type === 'checkbox') m = m === 'keys' ? 'keys' : ''; else if (!PHM.includes(m)) m = def;
+  return { m, e: PHE.includes(x.e) ? x.e : 'sys' };
+}
 function fieldsOf(f) {
   f = f && typeof f === 'object' ? f : {}; const m = v => ['', 'opt', 'req'].includes(v) ? v : null, seen = new Set();
-  return { city: m(f.city) == null ? 'opt' : m(f.city), addr: m(f.addr) || '', phoneMail: ['phone', 'email', 'both'].includes(f.phoneMail) ? f.phoneMail : 'either',
+  const P = f.ph && typeof f.ph === 'object' ? f.ph : {};
+  return { ph: { name: phOf(P.name, 'kbd'), city: phOf(P.city, ''), addr: phOf(P.addr, '') }, city: m(f.city) == null ? 'opt' : m(f.city), addr: m(f.addr) || '', phoneMail: ['phone', 'email', 'both'].includes(f.phoneMail) ? f.phoneMail : 'either',
     extra: (Array.isArray(f.extra) ? f.extra : []).slice(0, 10).map(x => {
       x = x || {}; let id = ID.test(String(x.id || '')) ? String(x.id) : newId(); while (seen.has(id)) id = newId(); seen.add(id);
       const type = ['textarea', 'select', 'checkbox'].includes(x.type) ? x.type : 'text', opts = type === 'select' ? (Array.isArray(x.opts) ? x.opts : String(x.opts || '').split('\n')).map(o => line(o, 60)).filter(Boolean).slice(0, 20) : [];
-      return { id, label: line(x.label, 80), type, opts, req: !!x.req, help: line(x.help, 120) };
+      return { id, label: line(x.label, 80), type, opts, req: !!x.req, help: line(x.help, 120), ph: phOf(x.ph, '', type) };
     }).filter(x => x.label && (x.type !== 'select' || x.opts.length)) };
 }
 /* בדיקת תשובות הרוכש מול ההגדרות. מחזיר {error,message} או {answers} */

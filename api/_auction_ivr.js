@@ -312,18 +312,40 @@ function parseItems(raw, prods) {
   }
   return { items: L.map(x => ({ p: x.p, n: x.n })), lines: L };
 }
-function repReplay(s, R, ans, ph) {
+function repReplay(s, R, ans, ph, known) {
   const c = A().cfgOf(s), prods = s.products.filter(p => p.active !== false);
-  const st = { phase: 'code', tries: 0, jobs: [], cur: null, rep: null, msg: [], fail: '' };
+  const st = { phase: 'code', tries: 0, jobs: [], cur: null, rep: null, msg: [], fail: '', phones: [] }, F = c.fields || {}, FP = F.ph || {};
   const perm = r => ['off', 'pending', 'paid'].includes(r.perm) ? r.perm : c.repOrders;
-  const nameOn = c.repName !== 'off';
-  const finish = (phone, name) => { st.jobs.push({ items: st.cur.items, phone, name, quote: st.cur.quote, lines: st.cur.lines }); st.cur = null; st.phase = 'done'; };
-  /* רכישה של הנציג לעצמו: הטלפון נלקח מזיהוי המתקשר (ואם אין, מקישים), והשם הוא שם הנציג */
+  /* השאלות על הרוכש (שם, עיר, כתובת ושדות נוספים) שהמנהל בחר לשאול גם בטלפון. מי שכבר ידוע לפי הטלפון לא נשאל שוב */
+  const stepsFor = (phone, how) => {
+    const K = (known && known[phone]) || {}, KA = K.answers || {}, out = [];
+    if (FP.name && FP.name.m && !K.name && !(how === 'self' && st.rep.name) && !KA.rec_name) out.push({ key: 'name', label: 'שם הרוכש', ph: FP.name, req: true, type: 'text' });
+    if (F.city && FP.city && FP.city.m && !K.city && !KA.rec_city) out.push({ key: 'city', label: 'עיר', ph: FP.city, req: F.city === 'req', type: 'text' });
+    if (F.addr && FP.addr && FP.addr.m && !K.addr && !KA.rec_addr) out.push({ key: 'addr', label: 'כתובת', ph: FP.addr, req: F.addr === 'req', type: 'text' });
+    (F.extra || []).forEach(x => { if (x.ph && x.ph.m && KA[x.id] == null && !KA['rec_' + x.id]) out.push({ key: x.id, label: x.label, ph: x.ph, req: !!x.req, type: x.type, opts: x.opts }); });
+    return out;
+  };
+  const jobOf = () => {
+    const D = st.D || {}, o = { items: st.cur.items, phone: st.buyer.phone, name: D.name || (st.how === 'self' ? st.rep.name || '' : ''), quote: st.cur.quote, lines: st.cur.lines, city: D.city || '', addr: D.addr || '', fx: D.fx || {} };
+    st.jobs.push(o); st.cur = null; st.D = null; st.steps = null; st.phase = 'done';
+  };
+  const nextStep = () => { st.si++; st.pend = null; if (st.si >= st.steps.length) jobOf(); else st.sub = st.steps[st.si].req ? 'in' : 'gate'; };
+  const startData = (phone) => {
+    st.buyer = { phone }; if (st.phones.indexOf(phone) < 0) st.phones.push(phone);
+    st.steps = stepsFor(phone, st.how); st.D = { fx: {} }; st.si = -1;
+    if (st.how === 'self' && st.rep.name) st.D.name = st.rep.name;
+    nextStep(); if (st.phase !== 'done') st.phase = 'data';
+  };
   const selfOrPhone = () => {
     if (st.how !== 'self') { st.phase = 'phone'; return; }
-    const ph1 = A().phoneN(String(ph || '').replace(/\D/g, '')), nm = st.rep.name || '';
+    const ph1 = A().phoneN(String(ph || '').replace(/\D/g, ''));
     if (!ph1) { st.msg.push(T('לא זוהה מספר המתקשר')); st.phase = 'phone'; return; }
-    st.buyer = { phone: ph1, name: nm }; if (nm || !nameOn) finish(ph1, nm); else st.phase = 'name';
+    startData(ph1);
+  };
+  const clean = (x, n) => String(x || '').replace(/^Digits-/, '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+  const store = (S, key, val, rec) => {
+    if (rec) { st.D.fx['rec_' + key] = val; if (key === 'name' && !st.D.name) st.D.name = ''; return; }
+    if (key === 'name' || key === 'city' || key === 'addr') st.D[key] = val; else st.D.fx[key] = val;
   };
   for (const v0 of ans) {
     const raw = String(v0 == null ? '' : v0).trim(), v = raw.replace(/\D/g, ''); st.msg = []; st.fail = '';
@@ -382,14 +404,24 @@ function repReplay(s, R, ans, ph) {
     if (st.phase === 'phone') {
       if (raw === '0') { st.phase = 'confirm'; continue; }
       const ph2 = A().phoneN(v); if (!ph2) { st.msg.push(T('מספר הטלפון לא תקין')); continue; }
-      st.buyer = { phone: ph2, name: st.how === 'self' ? (st.rep.name || '') : '' };
-      if (st.buyer.name || !nameOn) finish(ph2, st.buyer.name); else st.phase = 'name';
-      continue;
+      startData(ph2); continue;
     }
-    if (st.phase === 'name') {
-      if (raw === '0') { st.phase = 'phone'; continue; }
-      const nm = cleanName(raw); if (nm.length < 2) { st.msg.push(T('השם לא התקבל. נסו שוב')); continue; }
-      finish(st.buyer.phone, nm); continue;
+    if (st.phase === 'data') {
+      const S = st.steps[st.si], m = S.ph.m, e = S.ph.e;
+      if (st.sub === 'gate') { if (v === '1') st.sub = 'in'; else if (v === '2') nextStep(); else st.msg.push(T('בחירה לא תקינה')); continue; }
+      if (st.sub === 'echo') { if (v === '1') { store(S, S.key, st.pend); nextStep(); } else if (v === '2') { st.sub = 'in'; st.pend = null; } else st.msg.push(T('בחירה לא תקינה')); continue; }
+      if (m === 'keys') {
+        if (S.type === 'checkbox') { if (v === '1') { store(S, S.key, true); nextStep(); } else if (v === '2') nextStep(); else st.msg.push(T('בחירה לא תקינה')); }
+        else { const n = +v; if (n >= 1 && n <= S.opts.length) { store(S, S.key, S.opts[n - 1]); nextStep(); } else st.msg.push(T('בחירה לא תקינה')); }
+        continue;
+      }
+      if (m === 'rec') { if (!raw || raw === 'None') { st.msg.push(T('לא התקבלה הקלטה')); continue; } store(S, S.key, 'rec', true); nextStep(); continue; }
+      /* הקשה או זיהוי דיבור: מגיע טקסט. הקשת ספרות בזמן זיהוי דיבור (Digits-...) לא מתקבלת כטקסט */
+      if (m === 'stt' && /^Digits-/.test(raw)) { st.msg.push(T('לא הובן. נסו שוב')); continue; }
+      const txt = clean(raw, S.type === 'textarea' ? 300 : 80);
+      if (txt.length < 2 || (S.key === 'name' && !/[\u05d0-\u05eaA-Za-z]/.test(txt))) { st.msg.push(T('לא התקבל. נסו שוב')); continue; }
+      if (e === 'say') { st.pend = txt; st.sub = 'echo'; continue; }
+      store(S, S.key, txt); nextStep(); continue;
     }
     if (st.phase === 'done') { if (v === '1') { st.phase = 'menu'; st.g = []; } else if (v === '2') st.phase = 'bye'; else st.msg.push(T('בחירה לא תקינה')); continue; }
   }
@@ -397,12 +429,33 @@ function repReplay(s, R, ans, ph) {
   return st;
 }
 const cleanName = x => String(x || '').replace(/[^\u05d0-\u05eaA-Za-z\s'"\-.]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+async function knownOf(s, phone) {
+  const K = { answers: {} };
+  try {
+    const cu = (await db('auction_customer?sale_id=eq.' + s.id + '&phone=eq.' + phone + '&select=name,city,addr&limit=1').catch(() => []))[0] || {};
+    K.name = cu.name || ''; K.city = cu.city || ''; K.addr = cu.addr || '';
+    const O = (await db('auction_order?sale_id=eq.' + s.id + '&phone=eq.' + phone + '&answers=not.is.null&select=answers&order=created_at.desc&limit=5').catch(() => [])) || [];
+    O.slice().reverse().forEach(o => Object.assign(K.answers, o.answers || {}));
+  } catch (e) { /* בלי מידע קודם שואלים הכול */ }
+  return K;
+}
+const recBase = (call, i, key) => 'rec' + crypto.createHash('sha256').update(call + ':' + i + ':' + key).digest('hex').slice(0, 14);
+function recFx(j, call, i, s) {
+  const fx = { ...(j.fx || {}) }, pth = (((s.cfg || {}).ivr || {}).path || '').replace(/^\/+|\/+$/g, '');
+  Object.keys(fx).forEach(k => { if (/^rec_/.test(k)) fx[k] = (pth ? '/' + pth : '') + '|' + recBase(call, i, k.slice(4)); });
+  return fx;
+}
 const lineSay = l => T('מוצר ' + l.prod.num + ' ' + l.prod.name + ' ' + (l.n === 1 ? 'כרטיס אחד' : l.n + ' כרטיסים'));
 async function repFlow(s, q, ans, call, ph, out, bye) {
   const R = (await db('auction_rep?sale_id=eq.' + s.id + '&active=is.true&select=id,code,name,pin,perm&limit=5000').catch(() => [])) || [];
   const bk = badKey(s, ph), bd = BAD.get(bk);
   if (bd && bd.n >= 8 && Date.now() - bd.at < 30 * 60e3) return bye(T('נסיונות רבים מדי. נסו שוב מאוחר יותר'));
-  const st = repReplay(s, R, ans, ph);
+  let st = repReplay(s, R, ans, ph);
+  if (st.phones.length) { /* מי שכבר רשום בטלפון הזה במכירה לא נשאל שוב על שם, עיר ושאר הפרטים */
+    const known = {};
+    for (const p of st.phones) known[p] = await knownOf(s, p);
+    st = repReplay(s, R, ans, ph, known);
+  }
   if (st.fail) BAD.set(bk, { n: ((bd && Date.now() - bd.at < 30 * 60e3) ? bd.n : 0) + 1, at: Date.now() });
   else if (st.phase !== 'code' && st.phase !== 'pin' && st.rep) BAD.delete(bk);
   const next = 'X' + (ans.length + 1), pre = st.msg.filter(Boolean);
@@ -413,7 +466,7 @@ async function repFlow(s, q, ans, call, ph, out, bye) {
     const j = st.jobs[i], id = 'au' + crypto.createHash('sha256').update(call + ':' + s.slug + ':rp' + i).digest('hex').slice(0, 22);
     let o = (await db('auction_order?id=eq.' + id + '&select=id,amount,status&limit=1').catch(() => []))[0];
     if (!o) {
-      const r = await A().makeOrder(s, { items: j.items, repId: st.rep.id, repSrc: 'rep', phone: j.phone, name: j.name || '' }, 'rep', null, id);
+      const r = await A().makeOrder(s, { items: j.items, repId: st.rep.id, repSrc: 'rep', phone: j.phone, name: j.name || '', city: j.city || '', addr: j.addr || '', fx: recFx(j, call, i, s) }, 'rep', null, id);
       if (r.error) return bye(pre.concat(T(r.message || 'לא הצלחנו לרשום את ההזמנה')));
       o = r.order; const cb = { byRep: st.rep.id, method: 'מזומן', note: 'נרשם בטלפון' };
       await db('auction_order?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: cb }) }).catch(() => {});
@@ -429,7 +482,21 @@ async function repFlow(s, q, ans, call, ph, out, bye) {
     case 'gprod': return rd([T(st.g.length ? 'הקישו מספר מוצר נוסף וסולמית' : 'הקישו מספר מוצר וסולמית. לחזרה הקישו אפס')], 5, 1);
     case 'gqty': return rd([T('מוצר ' + st.gp.num + ' ' + st.gp.name), T('הקישו כמות כרטיסים וסולמית')], 3, 1);
     case 'gmore': return rd(st.g.map(lineSay).concat(T('להוספת מוצר הקישו 1. לסיום והמשך הקישו 2. לביטול כל ההזמנה הקישו 3')), 1, 1, '1.2.3');
-    case 'name': return rd([T('נא להקיש את שם הרוכש באותיות במקשי הטלפון. בסיום בחרו באפשרות סיום ההקלדה')], 40, 1, '', 'HebrewKeyboard');
+    case 'data': {
+      const S = st.steps[st.si], m = S.ph.m, e = S.ph.e, lab = S.label, raw = parts => out('read=' + pre.concat(parts).filter(Boolean).join('.') + '=' + parts.__p.join(','));
+      const mk = (parts, p) => { parts = parts.slice(); parts.__p = p; return raw(parts); };
+      if (st.sub === 'gate') return rd([T(lab + '. להזנה הקישו 1. לדילוג הקישו 2')], 1, 1, '1.2');
+      if (st.sub === 'echo') return rd([T('התקבל ' + st.pend + '. לאישור הקישו 1. להקשה מחדש הקישו 2')], 1, 1, '1.2');
+      if (m === 'keys') {
+        if (S.type === 'checkbox') return rd([T(lab + '. לכן הקישו 1. ללא הקישו 2')], 1, 1, '1.2');
+        return rd([T(lab)].concat(S.opts.map((o, i) => T('ל' + o + ' הקישו ' + (i + 1)))), 2, 1, S.opts.map((o, i) => i + 1).join('.'));
+      }
+      if (m === 'stt') return mk([T('נא לומר ' + lab + ' בקול ברור. לסיום הקישו סולמית')], [next, 'no', 'voice']);
+      if (m === 'rec') { const pth = (((s.cfg || {}).ivr || {}).path || '').replace(/^\/+|\/+$/g, '');
+        return mk([T('נא להקליט ' + lab + '. לסיום הקישו סולמית')], [next, 'no', 'record', pth ? '/' + pth : '', recBase(call, st.jobs.length, S.key), e === 'sys' ? '' : 'no', 'yes', '', '1', '40']); }
+      /* הקשה באותיות: ימות מקריאה בעצמה כל אות ואחר כך מבקשת אישור (sys), או שהשרת מקריא ושואל (say) או בלי הקראה (none) */
+      return mk([T('נא להקיש ' + lab + ' באותיות במקשי הטלפון. בסיום בחרו באפשרות סיום ההקלדה')], [next, 'no', 40, 1, 30, 'HebrewKeyboard', 'no', 'no', '', '', '', '', '', '', e === 'sys' ? '' : 'no']);
+    }
     case 'items': { const strict = s.products.some(p => p.active !== false && +p.num < 100); return rd([T(st.jobs.length ? 'הקישו את הרשימה של הרוכש הבא' : strict ? 'הקישו מספר מוצר כוכבית כמות, ואחריהם כוכבית ומוצר הבא עם הכמות שלו. בסיום סולמית. לסיום השיחה הקישו אפס וסולמית' : 'הקישו מספר מוצר כוכבית כמות. לכרטיס אחד אפשר לדלג על הכמות. בין מוצר למוצר מקישים כוכבית. בסיום סולמית. לסיום השיחה הקישו אפס וסולמית')], 60, 1); }
     case 'confirm': { const Q = st.cur.quote; return rd(st.cur.lines.map(lineSay).concat(T('סך הכל ' + Q.count + ' כרטיסים ' + nis(Q.amount) + '. לאישור הקישו 1. להקשה מחדש הקישו 2')), 1, 1, '1.2'); }
     case 'phone': return rd([T('נא להקיש את מספר הטלפון של הרוכש וסולמית. לחזרה הקישו אפס')], 10, 1);
