@@ -119,6 +119,29 @@ iframe.pay{width:100%;border:0;min-height:430px}
 .rform .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .rform .hb{align-self:flex-start;color:var(--navy)}.rmsg{margin:0;min-height:1.4em}.rmsg.bad{color:var(--bad)}
 .rdone{text-align:center;padding:20px}
+/* עריכת דף המכירה: מבוא, תצוגת מוצר בולטת, וסגנונות עיצוב (html[data-st]) */
+.intro{margin:0;white-space:pre-line;font-size:18px;line-height:1.7;max-width:900px}
+.prods{container-type:inline-size}
+.prod.wide{grid-column:span 2}.prod.wide .im{height:calc(var(--imh,150px)*1.5)}.prod.wide .nm{font-size:20px}
+.prod.full{grid-column:1/-1;flex-direction:row}.prod.full .im{flex:0 0 46%;height:auto;min-height:calc(var(--imh,150px)*2)}.prod.full .bd{padding:22px 24px;justify-content:center}.prod.full .nm{font-size:26px}
+@container (max-width:520px){.prod.wide{grid-column:auto}.prod.full{flex-direction:column;grid-column:auto}.prod.full .im{flex:none;min-height:0;height:calc(var(--imh,150px)*1.4)}.prod.full .nm{font-size:20px}}
+.prod.hl{border:2px solid var(--gold);box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 22%,transparent),0 12px 28px rgba(0,0,0,.12)}
+html[data-st] .prod.hl{border-color:var(--gold);box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 30%,transparent),0 12px 28px rgba(0,0,0,.12)}
+.prod .rib{position:absolute;z-index:3;top:0;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--navy);font-weight:700;font-size:13px;padding:4px 14px;border-radius:0 0 10px 10px;white-space:nowrap}
+html[data-st=soft] .prod,html[data-st=soft] .pkg,html[data-st=soft] aside.sum,html[data-st=soft] .faq details,html[data-st=soft] .phonecard{border-radius:24px;border-color:transparent;box-shadow:0 10px 32px rgba(21,32,59,.10)}
+html[data-st=soft] .prod .im{border-radius:0}html[data-st=soft] header.top{border-radius:0 0 36px 36px;padding-bottom:46px}
+html[data-st=soft] .qty button,html[data-st=soft] .qty input,html[data-st=soft] .go,html[data-st=soft] label.f input,html[data-st=soft] .ghost{border-radius:999px}
+html[data-st=soft] .tag{border-radius:999px}html[data-st=soft] main{gap:40px}html[data-st=soft] .sec h2{font-size:28px}
+html[data-st=bold] .prod,html[data-st=bold] .pkg,html[data-st=bold] aside.sum,html[data-st=bold] .faq details{border:3px solid var(--navy);border-radius:4px;box-shadow:7px 7px 0 var(--navy)}
+html[data-st=bold] .pkg[aria-pressed=true]{background:var(--gold2)}html[data-st=bold] .prod .im{border-bottom:3px solid var(--navy)}
+html[data-st=bold] header.top{border-bottom:8px solid var(--gold)}html[data-st=bold] h1,html[data-st=bold] .sec h2{font-weight:900;font-family:Heebo,Arial,sans-serif}
+html[data-st=bold] .qty button,html[data-st=bold] .qty input,html[data-st=bold] .ghost,html[data-st=bold] label.f input{border-radius:4px;border:2.5px solid var(--navy)}
+html[data-st=bold] .go{border-radius:4px;border:2.5px solid var(--navy);box-shadow:4px 4px 0 var(--navy)}html[data-st=bold] .tag{border-radius:2px}
+html[data-st=elegant] .prod,html[data-st=elegant] .pkg,html[data-st=elegant] aside.sum,html[data-st=elegant] .faq details{border:1px solid var(--line2);border-radius:2px;box-shadow:none}
+html[data-st=elegant] .prod .nm{font-family:"Frank Ruhl Libre",serif;font-size:20px}html[data-st=elegant] h1{font-weight:500;letter-spacing:.5px}
+html[data-st=elegant] .sec h2,html.live[data-st=elegant] .sec>h2{display:block;width:100%;background:none;padding:0 0 10px;font-weight:500;font-size:30px;border-bottom:1px solid var(--gold)}
+html[data-st=elegant] header.top{border-bottom:4px double var(--gold)}
+html[data-st=elegant] .qty button,html[data-st=elegant] .qty input,html[data-st=elegant] .go,html[data-st=elegant] .ghost,html[data-st=elegant] label.f input{border-radius:2px}html[data-st=elegant] .tag{border-radius:2px;font-weight:500}
 :focus-visible{outline:3px solid #2A5BD7;outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:700px){aside.sum{position:static;max-width:none}}
@@ -128,7 +151,9 @@ iframe.pay{width:100%;border:0;min-height:430px}
 <script src="/assets/config.js"></script>
 <script src="/assets/auction-price.js?v=1"></script>
 <script src="/assets/orgpages.js?v=2"></script>
-<script src="/assets/live.js?v=10"></script>
+<script src="/assets/auction-txt.js?v=1"></script>
+<script src="/assets/auction-txt.js?v=1"></script>
+<script src="/assets/live.js?v=12"></script>
 </head>
 <body>
 <div id="app"><p class="cen">טוען…</p></div>
@@ -226,9 +251,11 @@ function buyView(){
     if(Q.get('kp'))kesherBack();
   }).catch(function(){closed('לא הצלחנו לטעון את המכירה. נסו לרענן.')});
   function repField(id){return '<label class="f" for="'+id+'">קוד נציג'+(S.cfg.repSkip?' (לא חובה)':'')+'<input id="'+id+'" class="repin" inputmode="numeric" maxlength="8" value="'+esc(typed)+'" placeholder="למשל 2417"><small>אם נציג או מגייס נתן לכם קוד, הקלידו אותו כאן והרכישה תירשם על שמו</small></label>'}
+  var XD={};(window.AUC_TXT||[]).forEach(function(t){XD[t.k]=t.d});
+  function X(k){var t=(S&&S.cfg&&S.cfg.txt)||{};return t[k]||XD[k]||''}
   function render(){
-    var c=S.cfg,rw=c.repWeb,h='';KH=S.payVia==='kehilot';
-    h+='<header class="top"><div class="t"><div class="kick">מכירה סינית</div><h1>'+esc(c.title)+'</h1>'+(c.sub?'<div class="sub">'+esc(c.sub)+'</div>':'')+(c.drawAt?'<div class="sub">ההגרלה: '+esc(c.drawAt)+'</div>':'')+'</div>'
+    var c=S.cfg,rw=c.repWeb,h='';KH=S.payVia==='kehilot';document.documentElement.setAttribute('data-st',c.style||'');
+    h+='<header class="top"><div class="t"><div class="kick">'+esc(X('kick'))+'</div><h1>'+esc(c.title)+'</h1>'+(c.sub?'<div class="sub">'+esc(c.sub)+'</div>':'')+(c.drawAt?'<div class="sub">ההגרלה: '+esc(c.drawAt)+'</div>':'')+'</div>'
      +(c.logo?'<img class="logo" src="'+esc(c.logo)+'" alt="">':'')
      +(c.phoneLine?'<div class="phonecard"><span>רכישה בטלפון</span><b>'+esc(c.phoneLine)+'</b><span>מקישים את מספר המוצר שמופיע על כל מוצר, ואת כמות הכרטיסים</span></div>':'')+'</header>';
     if(S.rep)h+='<div class="band">הגעתם דרך הקישור של <b>'+esc(S.rep.name||('נציג '+S.rep.code))+'</b> · הרכישה תיזקף לזכותו</div>';
@@ -239,35 +266,40 @@ function buyView(){
     h+=giveHtml(S.give);
     if(c.banner)h+='<img class="hero" src="'+esc(c.banner)+'" alt="">';
     h+='<main id="main">';
+    if(c.txt&&c.txt.intro)h+='<section class="sec"><p class="intro">'+esc(c.txt.intro)+'</p></section>';
     if(c.video)h+='<section class="sec"><div class="vid">'+vidHtml(c.video)+'</div></section>';
     if(S.open&&(rw==='start'||rw==='both')&&!S.rep)h+='<section class="sec" style="max-width:420px">'+repField('rep1')+'</section>';
-    if(S.pkgs.length){h+='<section class="sec"><h2>חבילות</h2><div class="pkgs" id="pkgs"></div></section>'}
-    h+='<div class="cols"><section class="sec prods"><h2>המוצרים בהגרלה</h2><div class="grid" id="grid"></div></section>';
+    if(S.pkgs.length){h+='<section class="sec"><h2>'+esc(X('pkgs'))+'</h2><div class="pkgs" id="pkgs"></div></section>'}
+    h+='<div class="cols"><section class="sec prods"><h2>'+esc(X('prods'))+'</h2><div class="grid" id="grid"></div></section>';
     h+='<aside class="sum" id="sum" aria-live="polite"></aside></div>';
-    if(c.faq&&c.faq.length&&!(c.org&&c.org.faq))h+='<section class="sec faq"><h2>שאלות ותשובות</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>';
-    if(c.terms&&!(c.org&&c.org.terms))h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">תקנון המכירה</a></p>';
+    if(c.faq&&c.faq.length&&!(c.org&&c.org.faq))h+='<section class="sec faq"><h2>'+esc(X('faq'))+'</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>';
+    if(c.terms&&!(c.org&&c.org.terms))h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">'+esc(X('terms'))+'</a></p>';
+    if(c.txt&&c.txt.foot)h+='<p class="msg foot" style="text-align:center;white-space:pre-line">'+esc(c.txt.foot)+'</p>';
     h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-manage?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
     h+='</main>';
     app.innerHTML=h;cdRun();
     if(!S.open&&c.winners)get({a:'winners',s:SLUG}).then(function(w){if(w._st!==200||!w.products.length)return;var m=document.querySelector('main')||app,sec=document.createElement('section');sec.className='sec';sec.innerHTML='<h2>הזוכים בהגרלות</h2>'+winList(w)+'<p class="msg"><a href="?s='+SLUG+'&view=winners" style="color:inherit">לדף הזוכים</a></p>';m.insertBefore(sec,m.firstChild)});
     var PS={sm:[170,115],lg:[240,175],xl:[290,215]}[c.prodSize];if(PS){document.documentElement.style.setProperty('--gmin',PS[0]+'px');document.documentElement.style.setProperty('--imh',PS[1]+'px')}
     drawPkgs();drawGrid();drawSum();
-    if(c.look==='live'&&window.MLLive)MLLive.start({open:S.open,names:(S.products||[]).map(function(p){return p.name}),badge:'לרכישה'});
+    var per={};S.products.forEach(function(p){if(p.want)per[p.id]=p.want});
+    var wOn=c.wantMode==='off'?false:c.wantMode==='on'?true:c.look==='live',wL=c.wantList&&c.wantList.length?c.wantList:null;
+    if(c.look==='live'&&window.MLLive)MLLive.start({open:S.open,names:(S.products||[]).map(function(p){return p.name}),badge:X('badge'),want:wOn,list:wL,per:per});
+    else if(wOn&&window.MLLive)MLLive.wantOnly({open:S.open,list:wL,per:per});
     app.addEventListener('input',function(e){if(e.target.classList.contains('repin')){typed=e.target.value.replace(/\D/g,'');[].forEach.call(document.querySelectorAll('.repin'),function(x){if(x!==e.target)x.value=typed})}
       if(e.target.dataset.q){var v=Math.max(0,Math.min(999,parseInt(e.target.value,10)||0));qty[e.target.dataset.q]=v;drawSum(true)}});
   }
   function drawPkgs(){var el=$('pkgs');if(!el)return;
-    var L=[{id:null,name:'ללא חבילה',descr:'תשלום לפי מחיר הכרטיס של כל מוצר',price:0}].concat(S.pkgs);
+    var L=[{id:null,name:X('noPkg'),descr:'תשלום לפי מחיר הכרטיס של כל מוצר',price:0}].concat(S.pkgs);
     el.innerHTML=L.map(function(k){var on=(pkg?pkg.id:null)===k.id;var d=k.descr||(k.kind==='free'?k.qty+' כרטיסים לחלוקה חופשית':k.kind==='fixed'?'הרכב קבוע של כרטיסים':k.kind==='credit'?'כרטיסים בשווי '+nis(k.credit)+' לבחירתכם':'');
       return '<button type="button" class="pkg" aria-pressed="'+on+'" data-k="'+(k.id==null?'':k.id)+'"'+(S.open?'':' disabled')+'><b>'+esc(k.name)+'</b><span>'+esc(d)+'</span><span class="pr">'+(k.price?nis(k.price):'לפי כרטיס')+'</span></button>'}).join('');
     el.onclick=function(e){var b=e.target.closest('.pkg');if(!b)return;var id=b.dataset.k;pkg=id?S.pkgs.filter(function(k){return String(k.id)===id})[0]:null;drawPkgs();drawGrid();drawSum()}}
   function inFixed(p){if(!pkg||pkg.kind!=='fixed')return 0;if(pkg.comp){var c=pkg.comp.filter(function(x){return +x.p===p.id})[0];return c?c.n:0}return !pkg.products||pkg.products.indexOf(p.id)>=0?1:0}
   function drawGrid(){
     $('grid').innerHTML=S.products.map(function(p){var f=inFixed(p);
-      return '<article class="prod"><div class="im">'+(p.img?'<img src="'+esc(p.img)+'" alt="'+esc(p.name)+'" loading="lazy">':'')+'<span class="tag num">מוצר '+p.num+'</span>'+(p.draws>1?'<span class="tag dr">'+p.draws+' הגרלות</span>':'')+'</div>'
+      return '<article class="prod'+(p.size?' '+p.size:'')+(p.hl?' hl':'')+'" data-pid="'+p.id+'"><div class="im">'+(p.hl&&p.tag?'<span class="rib">'+esc(p.tag)+'</span>':'')+(p.img?'<img src="'+esc(p.img)+'" alt="'+esc(p.name)+'" loading="lazy">':'')+'<span class="tag num">'+esc(X('prodNo'))+' '+p.num+'</span>'+(p.draws>1?'<span class="tag dr">'+p.draws+' הגרלות</span>':'')+'</div>'
        +'<div class="bd"><div class="nm">'+esc(p.name)+'</div>'+(p.descr?'<div class="ds">'+esc(p.descr)+'</div>':'')+(p.sponsor?'<div class="ds">בחסות: '+esc(p.sponsor)+'</div>':'')
-       +'<div class="pp">מחיר כרטיס: <b>'+nis(p.price)+'</b></div>'+(f?'<div class="inpkg">'+(f>1?f+' כרטיסים כלולים':'כרטיס אחד כלול')+' בחבילה</div>':'')
-       +(p.audio?'<button type="button" class="listen" data-au="'+esc(p.audio)+'">השמעה</button>':'')
+       +'<div class="pp">'+esc(X('price'))+': <b>'+nis(p.price)+'</b></div>'+(f?'<div class="inpkg">'+(f>1?f+' כרטיסים כלולים':'כרטיס אחד כלול')+' בחבילה</div>':'')
+       +(p.audio?'<button type="button" class="listen" data-au="'+esc(p.audio)+'">'+esc(X('listen'))+'</button>':'')
        +(S.open?'<div class="qty"><button type="button" data-d="-1" data-p="'+p.id+'" aria-label="הפחתת כרטיס במוצר '+p.num+'">−</button><label class="sr" for="q'+p.id+'">כמות כרטיסים למוצר '+p.num+'</label><input id="q'+p.id+'" data-q="'+p.id+'" inputmode="numeric" value="'+(qty[p.id]||0)+'"><button type="button" class="plus" data-d="1" data-p="'+p.id+'" aria-label="הוספת כרטיס במוצר '+p.num+'">+</button></div>':'')
        +'</div></article>'}).join('');
     $('grid').onclick=function(e){var b=e.target.closest('button');if(!b)return;
@@ -283,7 +315,7 @@ function buyView(){
     if(r.error&&r.error==='max')note=r.message;
     amount=r.error?0:r.amount;
     var shown=$('payArea');
-    var h='<h2>סיכום הרכישה</h2><div class="row"><span>חבילה</span><b>'+esc(pkg?pkg.name:'ללא')+'</b></div><div class="row"><span>סה"כ כרטיסים</span><b>'+(r.error?0:r.count)+'</b></div>'
+    var h='<h2>'+esc(X('sum'))+'</h2><div class="row"><span>חבילה</span><b>'+esc(pkg?pkg.name:'ללא')+'</b></div><div class="row"><span>סה"כ כרטיסים</span><b>'+(r.error?0:r.count)+'</b></div>'
       +(note?'<div class="note">'+esc(note)+'</div>':'')+'<div class="tot"><span>לתשלום</span><b>'+nis(amount)+'</b></div>';
     if(!S.open){el.innerHTML=h;return}
     var NP=!S.pay&&S.later; /* אין סליקה באתר, אבל אפשר להזמין ולשלם אחר כך */
@@ -346,7 +378,7 @@ function buyView(){
   }
   function agreeOk(){var a=$('agr');return !a||a.checked}
   function msg(t,bad){var m=$('pmsg');if(m){m.textContent=t;m.className='msg'+(bad?' bad':'')}}
-  function updGo(){var g=$('go');if(!g)return;g.disabled=!ready||!(amount>0)||busy;g.textContent=busy?'מעבד…':amount>0?'לתשלום '+nis(amount):'בוחרים כרטיסים כדי לשלם'}
+  function updGo(){var g=$('go');if(!g)return;g.disabled=!ready||!(amount>0)||busy;g.textContent=busy?'מעבד…':amount>0?X('pay')+' '+nis(amount):'בוחרים כרטיסים כדי לשלם'}
   function wirePay(){
     var frame=$('frame');var postF=function(d){frame.contentWindow&&frame.contentWindow.postMessage(d,'*')};
     frame.addEventListener('load',function(){postF({Name:'GetHeight'})});

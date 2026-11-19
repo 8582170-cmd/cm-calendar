@@ -46,6 +46,10 @@ const drop = slug => CACHE.delete(String(slug || '').toLowerCase());
 /* האם המכירה פתוחה לרכישה עכשיו */
 function isOpen(s) { if (!s || s.status !== 'open') return false; const c = s.cfg || {}; const t = Date.now(); if (c.openAt && Date.parse(c.openAt) > t) return false; if (c.closeAt && Date.parse(c.closeAt) <= t) return false; return true; }
 /* ההגדרות עם ברירות מחדל */
+/* טקסטים שהמנהל יכול לשנות בדף המכירה (ברירות המחדל נמצאות ב-assets/auction-txt.js, ויש לשמור על התאמה) */
+const TXT_KEYS = ['kick', 'pkgs', 'prods', 'sum', 'price', 'noPkg', 'prodNo', 'pay', 'faq', 'terms', 'listen', 'badge'];
+const txtOf = t => { t = t && typeof t === 'object' ? t : {}; const o = {}; for (const k of TXT_KEYS) { const v = clean(t[k], 40); if (v) o[k] = v; } const i = clean(t.intro, 600), f = clean(t.foot, 400); if (i) o.intro = i; if (f) o.foot = f; return o; };
+const wantList = l => Array.isArray(l) ? l.map(x => clean(x, 40)).filter(Boolean).slice(0, 12) : [];
 function cfgOf(s) {
   const c = s.cfg || {};
   return { title: c.title || s.name || '', sub: c.sub || '', drawAt: c.drawAt || '', drawTime: c.drawTime || '', winners: c.winners !== false, cd: { open: !(c.cd && c.cd.open === false), close: !(c.cd && c.cd.close === false), draw: !(c.cd && c.cd.draw === false) }, openAt: c.openAt || '', closeAt: c.closeAt || '', phoneLine: c.phoneLine || '', goal: +c.goal || 0,
@@ -54,10 +58,10 @@ function cfgOf(s) {
     allowUnpaid: c.allowUnpaid === true, repOrders: ['pending', 'paid'].includes(c.repOrders) ? c.repOrders : 'off',
     progress: { on: !!(c.progress && c.progress.on), amount: !(c.progress && c.progress.amount === false), reps: !(c.progress && c.progress.reps === false), groups: !(c.progress && c.progress.groups === false), products: !(c.progress && c.progress.products === false) },
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '', logo: /^https:\/\//.test(c.logo || '') ? c.logo : '', terms: c.terms || '',
-    banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '' };
+    banner: /^https:\/\//.test(c.banner || '') ? c.banner : '', video: /^https:\/\//.test(c.video || '') ? c.video : '', faq: Array.isArray(c.faq) ? c.faq : [], termsAgree: c.termsAgree !== false, look: c.look === 'live' ? 'live' : '', style: ['soft', 'bold', 'elegant'].includes(c.style) ? c.style : '', txt: txtOf(c.txt), wantMode: ['on', 'off'].includes(c.wantMode) ? c.wantMode : '', wantList: wantList(c.wantList), prodSize: ['sm', 'lg', 'xl'].includes(c.prodSize) ? c.prodSize : '' };
 }
 /* מה שהציבור רואה על מוצר / חבילה */
-const pubProd = p => ({ id: p.id, num: p.num, name: p.name, descr: p.descr || '', price: +p.price, draws: +p.draws || 1, img: p.img || '', audio: p.audio || '', maxPer: +((p.cfg || {}).maxPer) || 0, sponsor: (p.cfg || {}).sponsor || '' });
+const pubProd = p => ({ id: p.id, num: p.num, name: p.name, descr: p.descr || '', price: +p.price, draws: +p.draws || 1, img: p.img || '', audio: p.audio || '', maxPer: +((p.cfg || {}).maxPer) || 0, sponsor: (p.cfg || {}).sponsor || '', size: ['wide', 'full'].includes((p.cfg || {}).size) ? p.cfg.size : '', hl: !!(p.cfg || {}).hl, tag: (p.cfg || {}).tag || '', want: (p.cfg || {}).want || '' });
 const pubPkg = k => ({ id: k.id, name: k.name, descr: k.descr || '', kind: k.kind, price: +k.price, qty: +k.qty || 0, credit: +k.credit || 0, products: Array.isArray(k.products) && k.products.length ? k.products : null, comp: Array.isArray(k.comp) && k.comp.length ? k.comp : null, until: (k.cfg || {}).until || '' });
 const pkgLive = k => k.active !== false && (!(k.cfg || {}).until || (k.cfg.until + 'T23:59:59+02:00') >= new Date().toISOString());
 
@@ -228,6 +232,10 @@ function cleanCfg(old, b) {
   str('title', 120); str('sub', 600); str('drawAt', 120); str('phoneLine', 30); str('terms', 20000); str('color', 7); str('logo', 400); str('banner', 400); str('video', 400);
   if (b.termsAgree != null) c.termsAgree = !!b.termsAgree;
   if (b.look != null) c.look = b.look === 'live' ? 'live' : '';
+  if (b.style != null) c.style = ['soft', 'bold', 'elegant'].includes(b.style) ? b.style : '';
+  if (b.txt && typeof b.txt === 'object') c.txt = txtOf(b.txt);
+  if (b.wantMode != null) c.wantMode = ['on', 'off'].includes(b.wantMode) ? b.wantMode : '';
+  if (Array.isArray(b.wantList)) c.wantList = wantList(b.wantList);
   if (b.prodSize != null) c.prodSize = ['sm', 'lg', 'xl'].includes(b.prodSize) ? b.prodSize : '';
   if (Array.isArray(b.faq)) c.faq = b.faq.map(x => ({ q: clean(x && x.q, 300), a: clean(x && x.a, 3000) })).filter(x => x.q && x.a).slice(0, 60);
   iso('openAt'); iso('closeAt'); iso('drawTime');
@@ -288,7 +296,7 @@ const mkProduct = (x, i) => {
   if (!clean(x.name, 120)) return { error: 'חסר שם מוצר' };
   const cf = x.cfg || {};
   return { num, name: clean(x.name, 120), descr: clean(x.descr, 600) || null, price: Math.max(0, r2(+x.price || 0)), draws: Math.max(1, Math.min(100, Math.floor(+x.draws || 1))), img: /^https:\/\//.test(x.img || '') ? String(x.img).slice(0, 400) : null,
-    cfg: { maxPer: Math.max(0, Math.floor(+cf.maxPer || 0)), repeatWin: !!cf.repeatWin, reserves: Math.max(0, Math.min(20, Math.floor(+cf.reserves || 0))), sponsor: clean(cf.sponsor, 120), y: cf.y || '' }, sort: i, active: x.active !== false };
+    cfg: { maxPer: Math.max(0, Math.floor(+cf.maxPer || 0)), repeatWin: !!cf.repeatWin, reserves: Math.max(0, Math.min(20, Math.floor(+cf.reserves || 0))), sponsor: clean(cf.sponsor, 120), size: ['wide', 'full'].includes(cf.size) ? cf.size : '', hl: !!cf.hl, tag: clean(cf.tag, 30), want: clean(cf.want, 40), y: cf.y || '' }, sort: i, active: x.active !== false };
 };
 const mkPkg = (x, i) => {
   if (!['free', 'fixed', 'credit'].includes(x.kind)) return { error: 'סוג חבילה לא תקין' };
@@ -383,7 +391,7 @@ module.exports = async (req, res) => {
       const s = await load(b.s); if (!s || s.status === 'draft' && !b.preview) return json(res, 404, { error: 'no sale' });
       if (s.status === 'draft') { const u = await getUser(req); if (!u || (u.id !== s.user_id && !isAdmin(u))) return json(res, 404, { error: 'no sale' }); }
       const c = cfgOf(s), S = await site(), rep = b.m ? await repBy(s.id, b.m) : null;
-      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, look: c.look, prodSize: c.prodSize, progress: c.progress.on, org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms, cross: await crossLink(s, S) }) },
+      return json(res, 200, { slug: s.slug, cfg: { title: c.title, sub: c.sub, drawAt: c.drawAt, drawTime: c.drawTime, cd: c.cd, winners: c.winners, openAt: c.openAt, closeAt: c.closeAt, phoneLine: c.phoneLine, repWeb: c.repWeb, repSkip: c.repSkip, color: c.color, logo: c.logo, terms: c.terms, banner: c.banner, video: c.video, faq: c.faq, termsAgree: c.termsAgree, look: c.look, style: c.style, txt: c.txt, wantMode: c.wantMode, wantList: c.wantList, prodSize: c.prodSize, progress: c.progress.on, org: require('./_orgpages').pub((s.cfg || {}).org, { faq: c.faq, terms: c.terms, cross: await crossLink(s, S) }) },
         give: await giveBox(s, S), open: isOpen(s), status: s.status, products: s.products.filter(p => p.active !== false).map(pubProd), pkgs: s.pkgs.filter(pkgLive).map(pubPkg), rep: rep ? { name: rep.name || '', code: rep.code } : null, pay: PAY.provs(s, S).length > 0, payVia: PAY.provs(s, S)[0] || '', later: cfgOf(s).allowUnpaid });
     }
     if (a === 'quote') { const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const pkg = b.pkg ? s.pkgs.find(k => String(k.id) === String(b.pkg) && pkgLive(k)) : null; return json(res, 200, C.price(s.products, pkg, b.items)); }

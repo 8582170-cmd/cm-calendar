@@ -32,9 +32,6 @@
     + '.live .prod:hover .im img{transform:scale(1.14) translateY(-2%);filter:saturate(1.2) contrast(1.04)}'
     + '.live .prod .im::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.38) 50%,transparent 65%);transform:translateX(120%);pointer-events:none}'
     + '.live .prod:hover .im::after{transform:translateX(-120%);transition:transform .9s ease}'
-    + '.lv-want{display:none}'
-    + '@media (hover:hover){.lv-want{display:flex;position:absolute;inset:auto 0 0 0;z-index:3;border:0;cursor:pointer;justify-content:center;align-items:flex-end;padding:34px 12px 12px;background:linear-gradient(transparent,rgba(10,16,36,.86));color:var(--gold2);font:700 22px "Frank Ruhl Libre",Heebo,serif;letter-spacing:.3px;opacity:0;transform:translateY(40%);transition:opacity .35s ease,transform .45s cubic-bezier(.2,.8,.2,1)}'
-    + '.live .prod:hover .lv-want,.lv-want:focus-visible{opacity:1;transform:none}.lv-want:disabled{display:none}.lv-want em{font-style:normal;display:inline-block;transition:transform .3s}.lv-want:hover em{transform:scale(1.08)}}'
     + '.live .pkg{transition:transform .2s ease,box-shadow .2s ease}.live .pkg:hover{transform:translateY(-3px);box-shadow:4px 5px 0 var(--gold)}'
     + '.lv-rv{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease;transition-delay:calc(var(--d,0)*60ms)}'
     + '.lv-rv.lv-in{opacity:1;transform:none}.lv-rv.lv-now{transition:none}'
@@ -48,9 +45,14 @@
     + '@keyframes lvdrop{0%{opacity:0;transform:translate(var(--dx),-260px) rotate(var(--r))}55%{opacity:1}100%{opacity:1;transform:none}}@keyframes lvfill{to{color:#fff;-webkit-text-stroke-color:transparent}}@keyframes lvmq{to{transform:translateX(100%)}}@keyframes lvspin{to{transform:rotate(360deg)}}'
     + '@media (prefers-reduced-motion:reduce){.live header.top,.lv-orb,.lv-strip .lv-tr,.lv-badge svg{animation:none!important}.lc::before,.lv-sp,.lv-rays{display:none}.lc,.live header.top h1,.live header.top img.logo{animation:none!important}.lc{color:#fff;-webkit-text-stroke-color:transparent}.lv-rv{opacity:1;transform:none;transition:none}.live .prod{animation:none!important}.live .prod,.live .pkg,.live .prod .im img,.lv-want{transition:none}.live .prod:hover,.live .pkg:hover{transform:none}}'
     + '@media print{.lv-rays,.lv-badge,.lv-strip,.lv-orb{display:none!important}}';
-  var seen = {}, io = null, mo = null;
+  var WCSS = ''
+    + '.prod .im{overflow:hidden}'
+    + '.lv-want{display:none}'
+    + '@media (hover:hover){.lv-want{display:flex;position:absolute;inset:auto 0 0 0;z-index:3;border:0;cursor:pointer;justify-content:center;align-items:flex-end;padding:34px 12px 12px;background:linear-gradient(transparent,rgba(10,16,36,.86));color:var(--gold2);font:700 22px "Frank Ruhl Libre",Heebo,serif;letter-spacing:.3px;opacity:0;transform:translateY(40%);transition:opacity .35s ease,transform .45s cubic-bezier(.2,.8,.2,1)}'
+    + '.prod:hover .lv-want,.lv-want:focus-visible{opacity:1;transform:none}.lv-want:disabled{display:none}.lv-want em{font-style:normal;display:inline-block;transition:transform .3s}.lv-want:hover em{transform:scale(1.08)}}';
+  var seen = {}, io = null, mo = null, W = { open: false, list: null, per: {} };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function css() { if (!document.getElementById('lv-css')) { var st = document.createElement('style'); st.id = 'lv-css'; st.textContent = CSS; document.head.appendChild(st); } }
+  function css() { if (!document.getElementById('lv-css')) { var st = document.createElement('style'); st.id = 'lv-css'; st.textContent = CSS + WCSS; document.head.appendChild(st); } }
   /* כל אות יורדת מלמעלה: אותיות החצי הראשון נכנסות מצד אחד, ואותיות החצי השני מהצד השני, בו זמנית, וההרכבה נסגרת באמצע */
   /* גוני טקסט עדינים שנגזרים מהצבע הראשי של הדף (--navy), כדי שהכותרת תתאים לעיצוב של כל ארגון */
   function tints() {
@@ -84,15 +86,22 @@
       }).join('') + '</span>';
     }).join(' ');
   }
-  var WANT = ['אני רוצה את זה!', 'זה שלי!', 'תנו לי כרטיס!', 'אני בפנים!'];
-  function want(root, open) {
-    if (!open) return;
+  var WANT = ['אני רוצה את זה!', 'זה שלי!', 'אולי אזכה בו!', 'תנו לי כרטיס!', 'אני בפנים!'];
+  /* המשפט במעבר עכבר על מוצר: משפט מיוחד למוצר (W.per), ואם אין, מהרשימה שהמנהל הגדיר, ואם אין, ברירת המחדל */
+  function want(root) {
+    if (!W.open) return; var L = W.list && W.list.length ? W.list : WANT;
     [].forEach.call((root || document).querySelectorAll('.prod .im:not([data-lw])'), function (im, i) {
       im.setAttribute('data-lw', '1'); var card = im.closest('.prod'), plus = card && card.querySelector('.qty .plus');
-      if (!plus) return; var b = document.createElement('button'); b.type = 'button'; b.className = 'lv-want'; b.tabIndex = -1; b.setAttribute('aria-hidden', 'true');
-      b.innerHTML = '<em>' + esc(WANT[i % WANT.length]) + '</em>'; b.disabled = !!plus.disabled;
+      if (!plus) return; var pid = card.getAttribute('data-pid'), txt = (pid && W.per && W.per[pid]) || L[i % L.length];
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'lv-want'; b.tabIndex = -1; b.setAttribute('aria-hidden', 'true');
+      b.innerHTML = '<em>' + esc(txt) + '</em>'; b.disabled = !!plus.disabled;
       b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); if (!plus.disabled) plus.click(); }); im.appendChild(b);
     });
+  }
+  /* המשפטים בלבד, בלי הסגנון החי (כשהמנהל הפעיל אותם גם באתר הפשוט) */
+  function wantOnly(o) {
+    o = o || {}; css(); W = { open: !!o.open, list: o.list || null, per: o.per || {} }; want(document);
+    if ('MutationObserver' in window) { var m2 = new MutationObserver(function () { want(document); }); m2.observe(document.getElementById('main') || document.body, { childList: true, subtree: true }); }
   }
   function reveal(root) {
     [].forEach.call((root || document).querySelectorAll('.prod:not(.lv-rv),.pkg:not(.lv-rv)'), function (el, i) {
@@ -126,13 +135,14 @@
       hd.insertAdjacentHTML('afterend', '<div class="lv-strip" aria-hidden="true"><div class="lv-tr">' + items + items + '</div></div>');
     }
     if ('IntersectionObserver' in window && !io) io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('lv-in'); io.unobserve(e.target); } }); }, { threshold: .12 });
-    reveal(document); want(document, o.open);
-    if (!mo && 'MutationObserver' in window) { mo = new MutationObserver(function () { reveal(document); want(document, o.open); }); var g = document.getElementById('main') || document.body; mo.observe(g, { childList: true, subtree: true }); }
+    W = { open: !!o.open && o.want !== false, list: o.list || null, per: o.per || {} };
+    reveal(document); want(document);
+    if (!mo && 'MutationObserver' in window) { mo = new MutationObserver(function () { reveal(document); want(document); }); var g = document.getElementById('main') || document.body; mo.observe(g, { childList: true, subtree: true }); }
     if (o.open && !document.querySelector('.lv-badge')) {
       var t = (o.badge || 'לרכישה') + ' ✦ ', txt = t + t + t;
       document.body.insertAdjacentHTML('beforeend', '<a class="lv-badge" href="#main" aria-label="' + esc(o.badge || 'לרכישה') + '"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><path id="lvc" d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0"/></defs><text><textPath href="#lvc">' + esc(txt) + '</textPath></text></svg><b>' + esc(o.badge || 'לרכישה') + '</b></a>');
       document.querySelector('.lv-badge').addEventListener('click', function (e) { var t2 = document.querySelector('.cols') || document.getElementById('main'); if (t2) { e.preventDefault(); t2.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); } });
     }
   }
-  window.MLLive = { start: start };
+  window.MLLive = { start: start, wantOnly: wantOnly };
 })();
