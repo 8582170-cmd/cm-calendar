@@ -151,6 +151,9 @@ html[data-st=elegant] .qty button,html[data-st=elegant] .qty input,html[data-st=
 :focus-visible{outline:3px solid #2A5BD7;outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:700px){aside.sum{position:static;max-width:none}}
+/* הטמעה באתר אחר (?embed=1 מלא, ?embed=sm קטן): בלי קישורי ניהול ובלי כותרת עליונה גדולה */
+html.emb .sumbar{bottom:0}html.emb .emb-hide{display:none!important}
+html.emb-sm header.top{padding:18px 5%}html.emb-sm header.top h1{font-size:24px}html.emb-sm header.top .sub{font-size:14px}html.emb-sm header.top img.logo{max-height:44px}html.emb-sm .wrap{padding:0 4%}
 </style>
 <script src="/assets/a11y.js?v=9" defer></script>
 <script src="/assets/sitemsg.js?v=3" defer></script>
@@ -171,6 +174,7 @@ html[data-st=elegant] .qty button,html[data-st=elegant] .qty input,html[data-st=
 'use strict';
 var $=function(i){return document.getElementById(i)},app=$('app');
 var Q=new URLSearchParams(location.search),SLUG=(Q.get('s')||(location.pathname.match(/^\/auction\/([a-z0-9-]+)/)||[])[1]||'').toLowerCase();
+var EMB=Q.get('embed')==='sm'?'sm':Q.get('embed')?'1':'';if(EMB&&window.parent!==window){document.documentElement.classList.add('emb');if(EMB==='sm')document.documentElement.classList.add('emb-sm');(function(){var last=0,t;function send(){var h=Math.ceil(document.documentElement.scrollHeight);if(h===last)return;last=h;try{parent.postMessage({t:'mlh',h:h},'*')}catch(e){}}window.addEventListener('load',send);window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(send,80)});if('ResizeObserver' in window)new ResizeObserver(function(){clearTimeout(t);t=setTimeout(send,60)}).observe(document.documentElement);else setInterval(send,700)})()}
 var API='/api/pricing?c=_auction';
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function nis(n){n=Math.round(+n*100)/100;return n.toLocaleString('he-IL')+' ₪'}
@@ -293,7 +297,7 @@ function buyView(){
     (c.notes||[]).forEach(function(n){h+='<div class="band note'+(n.tone==='ok'?' ok':n.tone==='warn'?' bad':'')+'" role="note">'+esc(n.text)+'</div>'});
     if(c.liveOn)h+='<div class="band"><span>ההגרלה תתקיים בשידור חי, ואפשר לצפות בה מכל מקום.</span><a class="lv" href="/auction-live?s='+SLUG+'">לצפייה בהגרלה החיה</a></div>';
     h+=cdHtml(cdPick(c,S.open,S.status));
-    h+=orgNav(S.cfg.org,'');
+    if(!EMB)h+=orgNav(S.cfg.org,'');
     h+=giveHtml(S.give);
     if(c.banner&&!bgi)h+='<div class="herow"><img class="hero" src="'+esc(c.banner)+'" alt=""></div>';
     h+='<main id="main">';
@@ -306,7 +310,7 @@ function buyView(){
     if(c.faq&&c.faq.length&&!(c.org&&c.org.faq))h+='<section class="sec faq"><h2>'+esc(X('faq'))+'</h2>'+c.faq.map(function(x){return '<details><summary>'+esc(x.q)+'</summary><p>'+esc(x.a)+'</p></details>'}).join('')+'</section>';
     if(c.terms&&!(c.org&&c.org.terms))h+='<p class="msg"><a href="?s='+SLUG+'&view=terms" target="_blank" rel="noopener">'+esc(X('terms'))+'</a></p>';
     if(c.txt&&c.txt.foot)h+='<p class="msg foot" style="text-align:center;white-space:pre-line">'+esc(c.txt.foot)+'</p>';
-    h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-manage?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
+    if(!EMB)h+='<p class="msg" style="text-align:center;font-size:13px;margin-top:28px"><a href="?s='+SLUG+'&view=reps" style="color:inherit">כניסת נציגים</a> · <a href="/auction-manage?s='+SLUG+'" style="color:inherit">ניהול המכירה</a></p>';
     h+='</main>';
     app.innerHTML=h;cdRun();
     [].forEach.call(app.querySelectorAll('.vsnd'),function(b){b.onclick=function(){var v=b.parentNode.querySelector('video');if(!v)return;v.muted=!v.muted;v.controls=!v.muted;b.setAttribute('aria-pressed',String(!v.muted));b.textContent=v.muted?'הפעלת קול':'השתקה'}});
@@ -403,7 +407,7 @@ function buyView(){
       post({a:'checkout',agree:true,s:SLUG,pkg:pkg?pkg.id:null,items:items(),link:S.rep?S.rep.code:'',rep:typed,name:name,phone:phone,email:mail,city:ex.city,addr:ex.addr,fx:ex.fx}).then(function(j){
         if(!j.url){busy=false;updGo();msg(j.message||'לא הצלחנו לפתוח את דף התשלום. נסו שוב.',1);return}
         try{sessionStorage.setItem('auction-amt-'+j.id,String(j.amount))}catch(e){}
-        location.href=j.url;
+        if(EMB){try{window.top.location.href=j.url}catch(e){window.open(j.url,'_blank')||(location.href=j.url)}}else location.href=j.url;
       }).catch(function(){busy=false;updGo();msg('אין חיבור לשרת. נסו שוב.',1)});
     };
   }
