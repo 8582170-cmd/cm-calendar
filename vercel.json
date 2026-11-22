@@ -109,6 +109,7 @@
   { "source": "/auction-live", "destination": "/auction-live.html" },
   { "source": "/give-manage", "destination": "/give-admin.html" },
   { "source": "/book-manage", "destination": "/book-manage.html" },
+  { "source": "/book-admin", "destination": "/book-admin.html" },
   { "source": "/book", "destination": "/book.html" },
   { "source": "/book/:slug", "destination": "/book.html" },
   { "source": "/pdf-admin", "destination": "/pdf-admin.html" },

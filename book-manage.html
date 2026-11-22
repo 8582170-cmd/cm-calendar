@@ -204,20 +204,17 @@ function pageUrl(){return location.origin+'/book/'+B.biz.slug}
 /* ===== רשימת העסקים ===== */
 function listView(){SLUG='';nav.innerHTML='<div class="ttl">זימון תורים</div><div class="org">MyLuach</div><a href="/book" target="_blank">מה זה?</a><a href="/">לאתר</a>';
   box.innerHTML='<p>טוען…</p>';
-  call({a:'mine'}).then(function(r){if(r._st===401)return;var L=r.items||[];
-    if(L.length===1&&!r.admin){return go('ov',L[0].slug)}
+  call({a:'mine',own:true}).then(function(r){if(r._st===401)return;var L=r.items||[];
+    if(L.length===1){return go('ov',L[0].slug)}
     var h='<div class="hd"><h1>העסקים שלי</h1></div>';
     if(!L.length)h+='<div class="note">עוד אין לך עסק. '+(r.canCreate?'אפשר ליצור עכשיו, זה לוקח דקה.':(r.note?esc(r.note):'האגף עדיין לא נפתח להקמת עסקים חדשים.'))+'</div>';
-    h+='<div class="grid">'+L.map(function(x){return '<a class="card biz" href="?s='+encodeURIComponent(x.slug)+'"><h3>'+esc(x.name)+'</h3><span class="hint dirl">/book/'+esc(x.slug)+'</span><span><span class="pill '+(x.status==='open'?'ok':'wait')+'">'+{open:'פתוח',draft:'בהקמה',closed:'סגור'}[x.status]+'</span>'+(x.all&&x.role==='owner'?' <small class="hint">'+esc(x.email||'')+'</small>':'')+'</span></a>'}).join('')+'</div>';
+    h+='<div class="grid">'+L.map(function(x){return '<a class="card biz" href="?s='+encodeURIComponent(x.slug)+'"><h3>'+esc(x.name)+'</h3><span class="hint dirl">/book/'+esc(x.slug)+'</span><span><span class="pill '+(x.status==='open'?'ok':'wait')+'">'+{open:'פתוח',draft:'בהקמה',closed:'סגור'}[x.status]+'</span>'+''+'</span></a>'}).join('')+'</div>';
     if(r.canCreate)h+=CARD('עסק חדש',F('nn','שם העסק','',{ph:'לדוגמה: מרכז הסטודיו'})+F('ns','כתובת באתר','',{dir:'ltr',ph:'my-studio',hint:'אנגלית קטנה, מספרים ומקף. תהיה myluach.org/book/…'})+'<div class="acts"><button class="btn pri" id="nc" type="button">יצירת עסק</button></div><div class="hint" id="nx"></div>');
-    if(r.admin)h+='<div id="siteBox"></div>';
+    if(r.admin)h+='<p class="hint"><a href="/book-admin">ניהול האתר (בעל האתר) ←</a></p>';
     box.innerHTML=h;
     var nc=$('nc');if(nc){$('nn').oninput=function(){if(!$('ns').dataset.t){$('ns').value=$('nn').value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}};$('ns').oninput=function(){this.dataset.t=1};
       nc.onclick=function(){nc.disabled=true;call({a:'create',name:val('nn'),slug:val('ns').toLowerCase()}).then(function(r){nc.disabled=false;if(r.error){$('nx').textContent=errTxt(r);$('nx').style.color='#b00020';return}go('ov',r.slug)})}}
-    if(r.admin)siteBox()})}
-function siteBox(){call({a:'site'}).then(function(s){$('siteBox').innerHTML=CARD('הגדרות האגף (לבעל האתר בלבד)',CK('so','פתוח להקמת עסקים חדשים',s.open)+CK('ss','אפשר שליחת SMS ללקוחות',s.sms,'עלות על חשבון האתר')+F('sm','מספר עסקים מקסימלי לכל משתמש',s.max,{type:'number'})+F('sn','הודעה למי שנכנס כשהאגף סגור',s.note,{tag:'ta'})+'<div class="acts"><button class="btn pri" id="sv" type="button">שמירה</button></div>');
-    $('sv').onclick=function(){call({a:'site',set:{open:chk('so'),sms:chk('ss'),max:+val('sm'),note:val('sn')}}).then(function(){flash('נשמר')})}})}
-
+    })}
 /* ===== טעינה ותפריט ===== */
 function loadAll(){return call({a:'get'}).then(function(r){if(r._st===401)return Promise.reject();if(r.error){box.innerHTML='<div class="card"><h2>אין גישה</h2><p>העסק לא נמצא, או שלחשבון הזה אין הרשאה.</p><a class="btn" href="?">לרשימת העסקים</a></div>';return Promise.reject()}B=r;ROLE=r.role;return r})}
 var TABS=[['ov','היום','w'],['ap','תורים','w'],['cu','לקוחות','w'],['sv','שירותים','e'],['rs','חדרים ומשאבים','e'],['ad','תוספות','e'],['fm','שאלונים','e'],['st','הגדרות','e'],['sh','שיתוף והטמעה','e']];

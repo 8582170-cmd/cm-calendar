@@ -7,7 +7,7 @@ const cmp = (a, b) => { if (a == null || b == null) return a === b ? 0 : (a == n
 function match(row, k, v) {
   const m = /^(eq|neq|gt|gte|lt|lte|in|is|ilike|cs)\.(.*)$/.exec(v); if (!m) return true; const [, op, val] = m, x = row[k];
   switch (op) { case 'eq': return String(x) === val; case 'neq': return String(x) !== val; case 'gt': return cmp(x, val) > 0; case 'gte': return cmp(x, val) >= 0; case 'lt': return cmp(x, val) < 0; case 'lte': return cmp(x, val) <= 0;
-    case 'in': return val.replace(/^\(|\)$/g, '').split(',').includes(String(x)); case 'is': return val === 'null' ? x == null : x != null; default: return true; }
+    case 'in': return val.replace(/^\(|\)$/g, '').split(',').includes(String(x)); case 'is': return val === 'null' ? x == null : x != null; case 'cs': { const has = (h, n) => n && typeof n === 'object' ? (Array.isArray(n) ? n.every(e => Array.isArray(h) && h.some(y => has(y, e))) : h && typeof h === 'object' && Object.keys(n).every(k => has(h[k], n[k]))) : h === n; try { return has(x, JSON.parse(val)); } catch (e) { return false; } } default: return true; }
 }
 function overlapErr(table, row, rows, self) {
   if (table !== 'book_appt' || row.res_id == null || !['held', 'pending', 'confirmed'].includes(row.status)) return;
@@ -16,7 +16,8 @@ function overlapErr(table, row, rows, self) {
 async function db(p, opts = {}) {
   const [table, qs] = p.split('?'), Q = new URLSearchParams(qs || ''); const rows = T[table] || (T[table] = []), method = opts.method || 'GET', body = opts.body ? JSON.parse(opts.body) : null;
   const min = /return=minimal/.test((opts.headers || {}).Prefer || '');
-  const sel = () => { let L = rows.filter(r => [...Q.entries()].every(([k, v]) => ['select', 'order', 'limit', 'offset', 'or'].includes(k) || match(r, k, v)));
+  const orOk = r => { const o = Q.get('or'); if (!o || !/^\(.*\)$/.test(o)) return true; return o.slice(1, -1).split(',').some(c => { const m = /^([a-z_]+)\.(.*)$/.exec(c); return m && match(r, m[1], m[2]); }); };
+  const sel = () => { let L = rows.filter(r => orOk(r) && [...Q.entries()].every(([k, v]) => ['select', 'order', 'limit', 'offset', 'or'].includes(k) || match(r, k, v)));
     const o = Q.get('order'); if (o) { const [col, dir] = o.split(',')[0].split('.'); L = L.slice().sort((a, b) => (cmp(a[col], b[col])) * (dir === 'desc' ? -1 : 1)); } const lim = +Q.get('limit') || 1e9; return L.slice(0, lim); };
   if (method === 'GET') return JSON.parse(JSON.stringify(sel()));
   if (method === 'POST') { const row = { ...body }; if (row.id == null && table !== 'book_appt') row.id = SEQ[table] = (SEQ[table] || 0) + 1; if (table === 'book_biz' && rows.some(r => r.slug === row.slug)) throw new Error('db 409 duplicate'); if (table === 'book_cust' && rows.some(r => r.biz_id === row.biz_id && r.phone === row.phone)) throw new Error('db 409 23505 duplicate');

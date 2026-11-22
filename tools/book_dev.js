@@ -19,10 +19,10 @@ async function seed() {
   await A({ a: 'manual', s: 'studio', svc: g.svcs[0].id, start: d + ' 10:00', res: g.res[0].id, name: 'דנה לוי', phone: '0521234567', price: 40 });
 }
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
-seed().then(() => http.createServer((q, s) => {
+seed().then(() => { if (process.env.DEV_ADMIN) M.STATE.user = { id: 'u-admin', email: 'site@example.com' }; }).then(() => http.createServer((q, s) => {
   const u = new URL(q.url, 'http://x'); let p = u.pathname;
   if (p === '/api/pricing') { let b = ''; q.on('data', c => b += c); q.on('end', async () => { let j = {}; try { j = JSON.parse(b || '{}'); } catch (e) {} const r = await run(j, q.socket.remoteAddress); s.statusCode = r.st; if (r.json !== undefined) { s.setHeader('Content-Type', 'application/json'); s.end(JSON.stringify(r.json)); } else { Object.entries(r.h).forEach(([k, v]) => s.setHeader(k, v)); s.end(r.raw); } }); return; }
-  if (p === '/book' || p.startsWith('/book/')) p = '/book.html'; else if (p === '/book-manage') p = '/book-manage.html';
+  if (p === '/book' || p.startsWith('/book/')) p = '/book.html'; else if (p === '/book-manage' || p === '/book-admin') p += '.html';
   const f = path.join(ROOT, p); if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { s.statusCode = 404; return s.end('404'); }
   s.setHeader('Content-Type', MIME[path.extname(f)] || 'application/octet-stream'); s.end(fs.readFileSync(f));
 }).listen(PORT, () => console.log('http://localhost:' + PORT + '/book/studio')));

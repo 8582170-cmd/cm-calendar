@@ -341,10 +341,10 @@ function ics(B, a) {
 }
 
 /* ===== צוות העסק ===== */
-async function mine(u) {
+async function mine(u, onlyMine) {
   const em = u.email ? '(user_id.eq.' + u.id + ',email.eq.' + enc(u.email) + ')' : '(user_id.eq.' + u.id + ')';
   const [own, staff, all] = await Promise.all([db('book_biz?or=' + em + '&select=id,slug,name,status,cfg,created_at&order=id.desc&limit=100'),
-    u.email ? db('book_biz?cfg=cs.' + enc(JSON.stringify({ staff: [{ email: u.email }] })) + '&select=id,slug,name,status,cfg,created_at&limit=100').catch(() => []) : [], isAdmin(u) ? db('book_biz?select=id,slug,name,status,email,created_at&order=id.desc&limit=300') : []]);
+    u.email ? db('book_biz?cfg=cs.' + enc(JSON.stringify({ staff: [{ email: u.email }] })) + '&select=id,slug,name,status,cfg,created_at&limit=100').catch(() => []) : [], isAdmin(u) && !onlyMine ? db('book_biz?select=id,slug,name,status,email,created_at&order=id.desc&limit=300') : []]);
   const seen = new Set(), L = [];
   [...(own || []).map(x => ({ ...x, role: 'owner' })), ...(staff || []).map(x => ({ ...x, role: ((x.cfg.staff || []).find(s => s.email === u.email) || {}).role || 'clerk' })), ...(all || []).map(x => ({ ...x, role: 'owner', all: true }))].forEach(x => { if (!seen.has(x.id)) { seen.add(x.id); L.push({ id: x.id, slug: x.slug, name: x.name, status: x.status, role: x.role, all: !!x.all, email: x.email || '' }); } });
   return L;
@@ -495,7 +495,7 @@ module.exports = async (req, res) => {
     }
     /* צוות העסק */
     const u = await getUser(req); if (!u) return json(res, 401, { error: 'login' });
-    if (a === 'mine') { const S = await site(); return json(res, 200, { items: await mine(u), canCreate: S.open || isAdmin(u), note: S.note, admin: isAdmin(u) }); }
+    if (a === 'mine') { const S = await site(); return json(res, 200, { items: await mine(u, b.own === true), canCreate: S.open || isAdmin(u), note: S.note, admin: isAdmin(u) }); }
     if (a === 'create') return out(await create(u, b));
     const B = await load(b.s, true); if (!B) return json(res, 404, { error: 'none' });
     return out(await MAN(u, B, { ...b, _req: req }));

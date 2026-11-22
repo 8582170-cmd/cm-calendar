@@ -21,6 +21,8 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   await bad({ a: 'create', name: 'מ', slug: 'centre' }, 400, 'name', OWN); await bad({ a: 'create', name: 'מרכז', slug: 'A' }, 400, 'slug', OWN); await bad({ a: 'create', name: 'מרכז', slug: 'admin' }, 400, 'slug', OWN);
   await ok({ a: 'create', name: 'מרכז השכרה', slug: 'centre' }, OWN); await bad({ a: 'create', name: 'עוד', slug: 'centre' }, 409, 'slug_taken', OWN);
   const mine = await ok({ a: 'mine' }); assert.strictEqual(mine.items.length, 1);
+  const SITEADMIN = { id: 'u-site', email: 'site@example.com' };
+  assert.strictEqual((await ok({ a: 'mine' }, SITEADMIN)).items.length, 1, 'בעל האתר רואה את כל העסקים'); assert.strictEqual((await ok({ a: 'mine', own: true }, SITEADMIN)).items.length, 0, 'own: רק העסקים שלו'); await bad({ a: 'site' }, 403, 'forbidden', OWN); assert.strictEqual((await ok({ a: 'site' }, SITEADMIN)).admin, true); await bad({ a: 'site', set: { open: true } }, 403, 'forbidden', OWN); await ok({ a: 'mine' }, OWN);
   let g = await ok({ a: 'get', s: 'centre' }); assert.strictEqual(g.role, 'owner'); assert.strictEqual(g.res.length, 1); assert.strictEqual(g.svcs.length, 1);
   await bad({ a: 'get', s: 'centre' }, 403, 'forbidden', { id: 'x', email: 'stranger@example.com' });
 

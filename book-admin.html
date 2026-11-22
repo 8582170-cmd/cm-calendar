@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ניהול אתר התורים · MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
+<style>
+:root{--navy:#15203B;--gold:#C9A24B;--gold2:#E6C36F;--cream:#FBF4DF;--cream-line:#E8D9A8;--cream-ink:#4A3A0E;--bg:#F3F4F7;--ink:#1B2338;--mute:#505869;--line:#DFE2EA;--line2:#C5CAD6;--bad:#A3261B;--good:#1C7A56}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Heebo,Arial,sans-serif}
+h1,h2,h3{margin:0}h1{font-family:"Frank Ruhl Libre",serif;font-size:28px}h2{font-size:19px}h3{font-size:16px}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:#8A6516}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+nav.side{flex:1 1 220px;max-width:260px;background:var(--navy);color:#fff;padding:24px 14px;display:flex;flex-direction:column;gap:4px}
+nav.side .ttl{font-family:"Frank Ruhl Libre",serif;font-size:21px;font-weight:700;padding:0 10px}
+nav.side .org{font-size:13px;color:var(--gold2);padding:0 10px 12px}
+nav.side button,nav.side a{display:block;text-align:right;width:100%;padding:10px 12px;border-radius:8px;border:0;background:transparent;color:#D5DAE6;font-size:15px;cursor:pointer;text-decoration:none;min-height:42px}
+nav.side button[aria-current="page"]{background:var(--gold2);color:var(--navy);font-weight:700}
+nav.side button:hover{background:#1F2C4D}nav.side button[aria-current="page"]:hover{background:var(--gold2)}
+main{flex:999 1 560px;min-width:0;padding:28px 32px 60px;display:flex;flex-direction:column;gap:22px}
+.hd{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column}.kpi span{font-size:13px;color:var(--mute)}.kpi b{font-size:24px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:500}
+label.f small,.hint{font-weight:400;color:var(--mute);font-size:13px}
+input[type=text],input[type=number],input[type=tel],input[type=email],input[type=password],input[type=datetime-local],input[type=date],input:not([type]),select,textarea{height:42px;border:1px solid var(--line2);border-radius:8px;padding:0 10px;background:#fff;width:100%}
+textarea{height:auto;min-height:80px;padding:8px 10px;resize:vertical}
+label.ck{display:flex;gap:8px;align-items:center;font-size:14px;min-height:32px;cursor:pointer}label.ck input{width:18px;height:18px}
+.btn{height:42px;padding:0 16px;border-radius:8px;border:1px solid var(--line2);background:#fff;cursor:pointer;font-size:14px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}
+.btn.pri{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+.btn.dark{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.bad{color:var(--bad);border-color:#E3B3AD}
+.btn:disabled{opacity:.5;cursor:default}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tw{background:#fff;border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:right}
+th{background:#F8F9FB;color:var(--mute);font-weight:500;padding:10px 12px;white-space:nowrap}
+td{padding:8px 12px;border-top:1px solid #EEF0F4;vertical-align:top}
+td input,td select{height:38px;min-width:70px}
+td input:not([type=checkbox]):not([type=file]),td select,td textarea{min-width:120px}td input[type=checkbox]{width:20px;height:20px;min-width:0}td input[type=file]{min-width:0;width:auto}td textarea{min-width:200px}
+tr.click{cursor:pointer}tr.click:hover{background:#FAFAF6}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:#E4E7EF}
+.pill.ok{background:#DDF1E7;color:#145A3F}.pill.wait{background:var(--cream);color:var(--cream-ink)}.pill.bad{background:#FBE9E7;color:var(--bad)}
+.flash{position:fixed;bottom:18px;left:18px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;z-index:9;max-width:420px}
+.flash.bad{background:var(--bad)}
+.note{background:var(--cream);border:1px solid var(--cream-line);color:var(--cream-ink);border-radius:10px;padding:12px 14px;font-size:14px}
+.mono{direction:ltr;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:13px;word-break:break-all}
+.two{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}.two>*{flex:1 1 320px;min-width:0}
+.drawbox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.win{width:100%;max-width:560px;background:var(--navy);color:#fff;border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;text-align:right}
+.win .s{font-size:36px;font-weight:700;letter-spacing:3px;direction:ltr}.win small{color:#D5DAE6}.win .k{color:var(--gold2);font-size:13px}
+.drawgo{min-height:62px;padding:0 40px;border:0;border-radius:14px;background:var(--gold);color:var(--navy);font-size:21px;font-weight:700;cursor:pointer}
+.prodlist{display:flex;flex-direction:column;gap:8px}
+.prodlist button{min-height:52px;padding:8px 12px;border-radius:10px;border:2px solid var(--line);background:#fff;text-align:right;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.prodlist button[aria-pressed="true"]{border-color:var(--gold);background:var(--cream)}
+.full{position:fixed;inset:0;background:var(--navy);color:#fff;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:30px}
+.full .p{font-family:"Frank Ruhl Libre",serif;font-size:clamp(36px,6vw,70px)}.full .s{font-size:clamp(60px,12vw,150px);font-weight:700;letter-spacing:6px;color:var(--gold2);direction:ltr}.full .n{font-size:clamp(28px,4vw,50px)}
+.shuf{font-size:clamp(40px,8vw,110px);font-weight:700;direction:ltr;color:#D5DAE6;letter-spacing:4px}
+:focus-visible{outline:3px solid #2A5BD7;outline-offset:2px}
+@media print{nav.side,.noprint,.flash{display:none!important}main{padding:0}body{background:#fff}}
+
+.ttl{font-family:"Frank Ruhl Libre",serif}.btn.sm{height:34px;padding:0 10px;font-size:13px}
+.err{background:#FBE9E7;color:#7A1D14;border-radius:8px;padding:8px 12px}
+nav.side .ttl{padding:0 10px}
+</style>
+<script src="/assets/config.js"></script>
+</head>
+<body>
+<div class="app"><nav class="side noprint" id="nav" aria-label="ניהול אתר התורים"></nav><main id="box"><p>טוען…</p></main></div>
+<div class="flash" id="flash" role="status" hidden></div>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)},box=$('box'),nav=$('nav');
+var API='/api/pricing?c=_book',KEY='myluach-auth',TK='';
+var Q=new URLSearchParams(location.search),SLUG=Q.get('s')||'',TAB=Q.get('t')||'ov';
+var S=null,ME={};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function nis(n){return (Math.round(+n*100)/100).toLocaleString('he-IL')+' ₪'}
+function dt(d){try{return d?new Date(d).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):''}catch(e){return ''}}
+function flash(t,bad){var m=$('flash');m.textContent=t;m.className='flash'+(bad?' bad':'');m.hidden=false;clearTimeout(flash.t);flash.t=setTimeout(function(){m.hidden=true},4500)}
+function meMail(){var j=sess();if(!j)return '';if(j.user&&j.user.email)return j.user.email;try{var p=(j.access_token||'').split('.')[1];return JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/g,'+').replace(/_/g,'/'))))).email||''}catch(e){return ''}}
+function switchAcct(){try{localStorage.removeItem(KEY)}catch(e){}TK='';var a=$('acct');if(a)a.remove();login()}
+function acctBar(){var m=meMail(),a=$('acct');if(!m){if(a)a.remove();return}if(!a){a=document.createElement('div');a.id='acct';a.style.cssText='position:fixed;bottom:8px;left:8px;z-index:20;background:#fff;border:1px solid #ccc;border-radius:8px;padding:4px 10px;font-size:12px;box-shadow:0 1px 4px rgba(0,0,0,.15)';document.body.appendChild(a)}
+  a.innerHTML='מחובר כ־<b dir="ltr">'+esc(m)+'</b> · <a href="#" id="acs">החלפת חשבון</a>';$('acs').onclick=function(e){e.preventDefault();switchAcct()}}
+function sess(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
+function tok(){var j=sess();if(!j)return Promise.resolve('');
+  if(j.access_token&&(!j.expires_at||j.expires_at*1000>Date.now()+60000))return Promise.resolve(j.access_token);
+  var C=window.MYLUACH_CFG||{};if(!j.refresh_token||!C.supabaseUrl)return Promise.resolve('');
+  return fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:j.refresh_token})})
+   .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at})))}catch(e){}return n.access_token}).catch(function(){return ''})}
+function call(b){return tok().then(function(t){TK=t;return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TK},body:JSON.stringify(Object.assign({s:SLUG},b))})}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;if(r.status===401)login();if(j.error==='setup')flash(j.message,1);return j})})}
+function loadSb(){return window.supabase?Promise.resolve():new Promise(function(res,rej){var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';s.onload=res;s.onerror=function(){var s2=document.createElement('script');s2.src='/cdn/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';s2.onload=res;s2.onerror=rej;document.head.appendChild(s2)};document.head.appendChild(s)})}
+var SB=null;
+function sbReady(){var C=window.MYLUACH_CFG||{};if(!C.supabaseUrl)return Promise.reject(new Error('cfg'));return loadSb().then(function(){return SB||(SB=window.supabase.createClient(C.supabaseUrl,C.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:KEY}}))})}
+function authMsg(e){var m=String(e&&e.message||e||'');if(/invalid login/i.test(m))return 'המייל או הסיסמה שגויים. אם אין לכם סיסמה, השתמשו בקישור במייל.';if(/rate|limit|seconds/i.test(m))return 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.';if(/provider|not enabled|unsupported/i.test(m))return 'הכניסה עם Google עדיין לא הופעלה באתר. אפשר להיכנס עם קישור במייל.';return 'שגיאה: '+esc(m)}
+function login(msg0){nav.innerHTML='';
+  box.innerHTML='<div class="card" style="max-width:440px"><h1>כניסה לניהול אתר התורים</h1><p class="hint" style="margin:0 0 10px">כניסה באותו מייל שהוגדר לבעל האתר. אין צורך בסיסמה.</p>'
+   +'<div class="acts"><button class="btn" type="button" id="lgg" style="width:100%">כניסה עם Google</button></div>'
+   +'<p class="hint" style="text-align:center;margin:10px 0">או</p>'
+   +'<label class="f" for="lgm">מייל<input id="lgm" type="email" dir="ltr" autocomplete="email"></label>'
+   +'<div class="acts"><button class="btn pri" type="button" id="lgl" style="width:100%">שלחו לי קישור כניסה למייל</button></div>'
+   +'<details style="margin-top:12px"><summary style="cursor:pointer;font-size:14px">יש לי סיסמה</summary><label class="f" for="lgp">סיסמה<input id="lgp" type="password" dir="ltr" autocomplete="current-password"></label><div class="acts"><button class="btn" type="button" id="lgi">כניסה עם סיסמה</button></div></details>'
+   +'<p class="hint" id="lgx" style="margin:10px 0 0"></p></div>';
+  var X=$('lgx'),say=function(t,bad){X.innerHTML=t;X.style.color=bad?'#b00020':''};if(msg0)say(msg0,1);
+  var mail=function(){var m=$('lgm').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){say('נא למלא כתובת מייל תקינה.',1);$('lgm').focus();return ''}return m};
+  var here=location.origin+location.pathname;
+  var mark=function(){try{var u=location.pathname+location.search;sessionStorage.setItem('ml-back',u);localStorage.setItem('ml-back2',JSON.stringify({u:u,t:Date.now()}));if(SLUG)localStorage.setItem('ml-s',SLUG)}catch(e){}};
+  $('lgg').onclick=function(){say('עוברים לגוגל…');mark();sbReady().then(function(sb){return sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:here,queryParams:{prompt:'select_account'}}})}).then(function(r){if(r&&r.error)say(authMsg(r.error),1)}).catch(function(e){say(authMsg(e),1)})};
+  $('lgl').onclick=function(){var m=mail();if(!m)return;var b=$('lgl');b.disabled=true;say('שולחים…');mark();
+    sbReady().then(function(sb){return sb.auth.signInWithOtp({email:m,options:{emailRedirectTo:here}})}).then(function(r){b.disabled=false;if(r&&r.error)return say(authMsg(r.error),1);say('<b>נשלח!</b> פתחו את המייל ולחצו על הקישור, ותיכנסו ישר לניהול. אם הוא לא מגיע תוך דקה, בדקו בספאם.');b.textContent='שליחה חוזרת'}).catch(function(e){b.disabled=false;say(authMsg(e),1)})};
+  var pw=function(){var m=mail(),p=$('lgp').value,C=window.MYLUACH_CFG||{};if(!m)return;if(!p){say('נא למלא סיסמה.',1);return}if(!C.supabaseUrl){say('הכניסה לא זמינה כרגע.',1);return}$('lgi').disabled=true;say('נכנסים…');
+    fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({email:m,password:p})})
+     .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})}).then(function(o){
+       if(!o.ok||!o.j.access_token){$('lgi').disabled=false;say(/invalid|credentials/i.test(JSON.stringify(o.j))?'המייל או הסיסמה שגויים. אם אין לכם סיסמה, השתמשו בקישור במייל.':'הכניסה נכשלה. נסו שוב.',1);return}
+       try{localStorage.setItem(KEY,JSON.stringify(o.j))}catch(e){}location.reload()}).catch(function(){$('lgi').disabled=false;say('תקלת תקשורת. נסו שוב.',1)})};
+  $('lgi').onclick=pw;$('lgp').onkeydown=function(e){if(e.key==='Enter')pw()}}
+/* חזרה מכניסה עם Google או מקישור במייל: הכתובת מגיעה עם הטוקן, ספריית הכניסה שומרת אותו, ואז נכנסים לניהול */
+function finishHash(){var err=/error_description=([^&]+)/.exec(location.hash);nav.innerHTML='';box.innerHTML='<div class="card"><p>מתחברים…</p></div>';
+  var clean=function(){var s='';try{s=localStorage.getItem('ml-s')||'';localStorage.removeItem('ml-s');localStorage.removeItem('ml-back2');sessionStorage.removeItem('ml-back')}catch(e){}return location.pathname+(SLUG||!s?location.search:'?s='+encodeURIComponent(s))};
+  if(err){history.replaceState(null,'',location.pathname+location.search);return login('הכניסה נכשלה: '+esc(decodeURIComponent(err[1].replace(/\+/g,' '))))}
+  sbReady().then(function(sb){return new Promise(function(res){var d=0;sb.auth.onAuthStateChange(function(ev,s){if(s&&!d){d=1;res(s)}});setTimeout(function(){if(!d){d=1;res(null)}},5000)})}).then(function(s){if(!s)return login('הכניסה לא הושלמה. נסו שוב.');location.replace(clean())}).catch(function(){login('הכניסה לא הושלמה. נסו שוב.')})}
+
+var TABW=[];
+function wrap(h){nav.innerHTML='<div class="ttl">ניהול אתר התורים</div><div class="org">בעל האתר</div><a href="/book-manage">לניהול עסק ←</a><a href="/book" target="_blank">דף האגף ↗</a><a href="/">לאתר</a>';box.innerHTML=h}
+function show(){wrap('<p>טוען…</p>');
+  call({a:'site'}).then(function(s){
+    if(s._st===401)return;
+    if(s.error){return wrap('<div class="card" style="max-width:520px"><h1>אין הרשאה</h1><p>הדף הזה שייך לבעל האתר בלבד. מחוברים כ־<b dir="ltr">'+esc(meMail())+'</b>.</p><div class="acts"><button class="btn" id="sw" type="button">החלפת חשבון</button><a class="btn" href="/book-manage">לניהול עסק</a></div></div>'),$('sw').onclick=switchAcct}
+    call({a:'mine'}).then(function(m){var L=m.items||[];
+      wrap('<div class="hd"><h1>זימון תורים: ניהול האתר</h1></div>'
+       +'<section class="card"><h3>הגדרות האגף</h3><label class="ck"><input id="so" type="checkbox"'+(s.open?' checked':'')+'><span>פתוח להקמת עסקים חדשים <small class="hint">כשכבוי, אף אחד (חוץ ממך) לא יכול ליצור עסק. עסקים קיימים ממשיכים לעבוד.</small></span></label>'
+       +'<label class="ck"><input id="ss" type="checkbox"'+(s.sms?' checked':'')+'><span>אפשר שליחת SMS ללקוחות <small class="hint">עלות על חשבון האתר, ורק עסקים שהפעילו SMS אצלם</small></span></label>'
+       +'<label class="f">מספר עסקים מקסימלי לכל משתמש<input id="sm" type="number" value="'+esc(s.max)+'" style="max-width:140px"></label>'
+       +'<label class="f">הודעה למי שמנסה ליצור עסק כשהאגף סגור<textarea id="sn" rows="2">'+esc(s.note)+'</textarea></label><div class="acts"><button class="btn pri" id="sv" type="button">שמירה</button></div></section>'
+       +'<section class="card"><h3>כל העסקים ('+L.length+')</h3>'+table(['שם','כתובת','בעלים','מצב',''],L.map(function(x){return '<tr><td><b>'+esc(x.name)+'</b></td><td><a href="/book/'+esc(x.slug)+'" target="_blank" dir="ltr">/book/'+esc(x.slug)+'</a></td><td dir="ltr">'+esc(x.email||'')+'</td><td><span class="pill '+(x.status==='open'?'ok':x.status==='closed'?'bad':'wait')+'">'+({open:'פתוח',draft:'בהקמה',closed:'סגור'}[x.status]||x.status)+'</span></td><td><div class="acts"><a class="btn sm" href="/book-manage?s='+encodeURIComponent(x.slug)+'">ניהול</a>'+(x.status==='closed'?'<button class="btn sm" data-st="open" data-s="'+esc(x.slug)+'">החזרה לפעילות</button>':'<button class="btn sm bad" data-st="closed" data-s="'+esc(x.slug)+'">השהיה</button>')+'</div></td></tr>'}))+'</section>');
+      $('sv').onclick=function(){call({a:'site',set:{open:$('so').checked,sms:$('ss').checked,max:+$('sm').value,note:$('sn').value}}).then(function(){flash('נשמר')})};
+      [].forEach.call(box.querySelectorAll('[data-st]'),function(b){b.onclick=function(){if(b.dataset.st==='closed'&&!confirm('להשהות את העסק? הלקוחות לא יוכלו לקבוע בו תורים.'))return;call({a:'save',s:b.dataset.s,status:b.dataset.st}).then(function(r){r.error?flash('הפעולה לא הצליחה',1):(flash('עודכן'),show())})}})})})}
+function table(head,rows){return '<div class="tw"><table><thead><tr>'+head.map(function(h){return '<th scope="col">'+esc(h)+'</th>'}).join('')+'</tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="'+head.length+'" class="hint">עוד אין עסקים</td></tr>')+'</tbody></table></div>'}
+if(/[#&](access_token|error_description)=/.test(location.hash))finishHash();else tok().then(function(t){TK=t;if(!t)return login();acctBar();show()});
+
+})();
+</script>
+</body>
+</html>
