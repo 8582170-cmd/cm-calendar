@@ -14,6 +14,8 @@ var CSS = '.mlp-back{position:fixed;inset:0;background:rgb(0 0 0 / .45);z-index:
   '.mlp .row{display:flex;gap:10px;flex-wrap:wrap}.mlp .btn{font:inherit;font-size:18px;font-weight:800;min-height:52px;padding:10px 22px;border-radius:14px;border:2px solid var(--teal,#1f5c63);background:transparent;color:var(--teal,#1f5c63);cursor:pointer}' +
   '.mlp .btn.primary{background:var(--teal,#1f5c63);color:var(--teal-ink,#fff)}.mlp .btn:disabled{opacity:.5;cursor:default}' +
   '.mlp .choose{display:flex;gap:6px;flex-wrap:wrap}.mlp .choose button{flex:1 1 140px;font:inherit;font-weight:700;padding:10px;border-radius:12px;border:1.5px solid var(--line,#dde2df);background:var(--paper,#f6f7f4);color:inherit;cursor:pointer}.mlp .choose [aria-checked="true"]{border-color:var(--teal,#1f5c63);box-shadow:0 0 0 1px var(--teal,#1f5c63)}' +
+  '.mlp label.agree{flex-direction:row;align-items:flex-start;gap:8px;font-weight:600;font-size:15px;line-height:1.5}.mlp label.agree input{width:20px;height:20px;padding:0;margin-top:3px;flex:none;accent-color:var(--teal,#1f5c63)}' +
+  '.mlp.noagree #mlpChoose,.mlp.noagree #mlpFrame,.mlp.noagree #mlpBox,.mlp.noagree #mlpGo{pointer-events:none;opacity:.35;filter:grayscale(1)}' +
   '.mlp .cf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mlp [id^=mlpPp]{min-height:44px}';
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function tzOk(t){ t = String(t).padStart(9, '0'); if (!/^\d{9}$/.test(t)) return false; var s = 0; for (var i = 0; i < 9; i++) { var d = +t[i] * (i % 2 + 1); s += d > 9 ? d - 9 : d; } return s % 10 === 0; }
@@ -31,6 +33,7 @@ function open(opt){
     '<div class="who"><label>מייל <small style="font-weight:400">(' + esc(opt.mailNote || 'לשם יישלח הקישור לעיצוב') + ')</small><input type="email" id="mlpMail" dir="ltr" autocomplete="email"></label>' + (opt.coupon ? '<label>קוד קופון <small style="font-weight:400">(אם יש)</small><input type="text" id="mlpCp" dir="ltr" autocomplete="off" maxlength="30"></label>' : '') +
     '<label data-ned>שם מלא<input type="text" id="mlpName" autocomplete="name"></label><label data-ned>טלפון<input type="tel" id="mlpPhone" dir="ltr" autocomplete="tel"></label>' +
     '<label data-ned>תעודת זהות של בעל הכרטיס <small style="font-weight:400">(לכרטיס ישראלי)</small><input type="text" id="mlpZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label></div>' +
+    '<label class="agree"><input type="checkbox" id="mlpAgree"> <span>קראתי ואני מסכים/ה ל<a href="/terms.html" target="_blank">תקנון האתר</a> ול<a href="/privacy.html" target="_blank">מדיניות הפרטיות</a></span></label>' +
     '<div class="choose" id="mlpChoose" role="radiogroup" aria-label="דרך תשלום" hidden></div><p class="hint" id="mlpMsg"></p>' +
     '<iframe id="mlpFrame" title="טופס תשלום מאובטח" data-src="https://www.matara.pro/nedarimplus/iframe?language=he" hidden></iframe><div class="box" id="mlpBox" hidden></div>' +
     '<div class="row"><button class="btn primary" type="button" id="mlpGo">המשך לתשלום</button><button class="btn" type="button" id="mlpCancel">ביטול</button></div></div>';
@@ -38,6 +41,8 @@ function open(opt){
   /* בדפים שלא מגדירים צבעי דף לבן (--sheet), למשל דף הזמנה בערכת צבעים כהה, החלון נשאר עם צבעים קבועים וקריאים */
   try { if (!getComputedStyle(document.documentElement).getPropertyValue('--sheet').trim()) back.querySelector('.mlp').classList.add('fix'); } catch (e) {}
   var $ = function(id){ return back.querySelector('#' + id) }, frame = $('mlpFrame'), go = $('mlpGo');
+  /* אישור התקנון (דרישה של חברות האשראי): עד שמסמנים, אי אפשר ללחוץ על אמצעי התשלום */
+  var box0 = back.querySelector('.mlp'); box0.classList.add('noagree'); $('mlpAgree').onchange = function(){ box0.classList.toggle('noagree', !this.checked); };
   back.querySelector('h3').textContent = opt.title || 'תשלום';
   $('mlpSub').textContent = opt.sub || '';
   $('mlpMail').value = opt.email || saved.mail || ''; $('mlpName').value = saved.name || ''; $('mlpPhone').value = saved.phone || '';

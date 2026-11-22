@@ -102,7 +102,7 @@ T = [
     ('כן, לגמרי, בלי הרשמה ובלי הגבלה.', 'Yes, completely. No sign-up and no limits.'),
     ('מה קורה כשמגיע התאריך?', 'What happens when the date arrives?'),
     ('השעון מראה "הגיע הזמן!" במקום המספרים.', 'The clock shows "The time has come!" instead of the numbers.'),
-    ('תנאי שימוש', 'Terms'), ('פרטיות', 'Privacy'),
+    ('תנאי שימוש', 'Terms'), ('>תקנון</a>', '>Terms</a>'), ('>אודות</a>', '>About</a>'), ('>צור קשר</a>', '>Contact</a>'), ('פרטיות', 'Privacy'),
 
     # דף הזמנה
     ('📨 דף הזמנה לאירוע: אישור הגעה, תזכורות וברכות', '📨 Event invitation page: RSVP, reminders and blessings'),

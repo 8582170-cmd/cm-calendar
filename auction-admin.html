@@ -189,7 +189,7 @@ function feeCalc(f,a){if(!f)return 0;return Math.round(((f.type==='fixed'||f.typ
 
 /* דמי פתיחה: תשלום לפני הפתיחה לציבור (api/_openfee.js) */
 function ofPay(wing){var N=S.openFee||{};var go=function(){window.MLPay.open({title:'דמי פתיחה',sub:'דמי פתיחה עבור '+(S.eff&&S.eff.title||S.slug)+': '+nis(N.amount),body:{plan:'ofee',wing:wing,slug:S.slug},email:'',onPaid:function(){flash('התשלום התקבל, תודה');var t=0,w=function(){loadSale().then(function(){if(S.openFee&&S.openFee.paid||++t>6)show();else setTimeout(w,1500)})};w()}})};
-  if(window.MLPay)go();else{var sc=document.createElement('script');sc.src='/assets/pay.js?v=5';sc.onload=go;document.head.appendChild(sc)}}
+  if(window.MLPay)go();else{var sc=document.createElement('script');sc.src='/assets/pay.js?v=6';sc.onload=go;document.head.appendChild(sc)}}
 function ofBanner(){var N=S.openFee||{};if(N.required&&typeof AM!=='undefined'&&AM)return '<div class="note">דמי פתיחה בסך '+nis(N.amount)+' עוד לא שולמו. כבעל האתר אפשר לפתוח בלי תשלום.</div>';return N.required?'<div class="note"><b>לפני הפתיחה לציבור:</b> דמי פתיחה בסך '+nis(N.amount)+'. אפשר לבנות ולהגדיר הכל כטיוטה, והפתיחה תתאפשר אחרי התשלום.<div class="acts"><button class="btn pri" id="ofp" type="button">תשלום דמי פתיחה</button></div></div>':(N.on&&N.paid?'<div class="note">דמי הפתיחה שולמו. תודה!</div>':'')}
 function feeTxt(f){return !f||f.type==='none'||f.type==='deal'?'':f.type==='fixed'?nis(f.fixed):f.type==='pct'?f.pct+'% מההכנסות':nis(f.fixed)+' + '+f.pct+'% מההכנסות'}
 var AM=false,GS=null;

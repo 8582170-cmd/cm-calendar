@@ -3691,12 +3691,15 @@ function buyPlan(planId){
   let saved={};try{saved=JSON.parse(localStorage.getItem('myluach-buyer')||'{}')}catch(e){}
   const m=modal('<h3>תשלום · מסלול '+esc(p.name)+'</h3><p class="hint">'+esc(price)+' ללוח שנתי. התשלום מאובטח.</p>'+
     '<div class="pay-who"><label>שם מלא<input type="text" id="payName" autocomplete="name" value="'+esc(saved.name||'')+'"></label><label>מייל (לקבלה ולשחזור הלוח)<input type="email" id="payMail" autocomplete="email" dir="ltr" value="'+esc(saved.mail||'')+'"></label><label>טלפון<input type="tel" id="payPhone" autocomplete="tel" dir="ltr" value="'+esc(saved.phone||'')+'"></label><label>תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="payZeout" inputmode="numeric" dir="ltr" maxlength="9" autocomplete="off"></label><label class="pay-coupon">קוד קופון<span><input type="text" id="payCoupon" dir="ltr" autocomplete="off" spellcheck="false"><button class="btn" type="button" id="payCouponGo">החלה</button></span><small id="payCouponMsg"></small></label></div>'+
+    '<label class="chk pay-agree"><input type="checkbox" id="payAgree"> <span>קראתי ואני מסכים/ה ל<a href="terms.html" target="_blank">תקנון האתר</a> ול<a href="privacy.html" target="_blank">מדיניות הפרטיות</a></span></label>'+
     '<div id="payChoose" class="pay-choose" role="radiogroup" aria-label="דרך תשלום" hidden></div><p class="hint" id="payMsg">טוען טופס תשלום מאובטח…</p><iframe class="pay-frame" id="payFrame" title="טופס תשלום מאובטח" data-src="https://www.matara.pro/nedarimplus/iframe?language=he" hidden></iframe><div id="ppBox" class="pp-box" hidden></div>'+
     '<div class="row"><button class="btn primary" type="button" id="payGo" disabled>לתשלום '+esc(price)+'</button><button class="btn" type="button" id="payCancel">ביטול</button></div>'+acTrust());
   m.querySelector('.modal').classList.add('pay-modal');
   /* פרטי בעל הכרטיס מוצגים רק בנדרים פלוס (בפייפל ממלאים אצלם). הקופון תמיד */
   m.querySelectorAll('.pay-who>label:not(.pay-coupon)').forEach(x=>x.hidden=true);
   const $m=q=>m.querySelector(q),frame=$m('#payFrame'),go=$m('#payGo');
+  /* אישור התקנון (דרישה של חברות האשראי): עד שמסמנים, אי אפשר ללחוץ על אמצעי התשלום */
+  {const md=m.querySelector('.modal');md.classList.add('noagree');$m('#payAgree').onchange=e=>md.classList.toggle('noagree',!e.target.checked)}
   const msg=(h,bad)=>{const x=$m('#payMsg');if(x){x.innerHTML=h;x.classList.toggle('msg-bad',!!bad)}};
   let order=null,stop=false,ready=false,PROV='',provName='נדרים פלוס';
   const post=d=>frame.contentWindow&&frame.contentWindow.postMessage(d,'*');
@@ -3704,7 +3707,7 @@ function buyPlan(planId){
     if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';go.disabled=!order;msg('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.')}
     else if(d.Name==='TransactionResponse'){const v=d.Value||{};
       if(v.Status==='Error'&&UNSUP.test(String(v.Message||''))&&canPP()){switchTo('paypal','הכרטיס הזה לא נתמך כאן (למשל כרטיס מחו״ל). עוברים לתשלום ב־PayPal…');return}
-      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);const em=String(v.Message||'');msg(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות של בעל הכרטיס. מי שאין לו תעודת זהות ישראלית יכול לפנות אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.':esc(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1);if(/zeout/i.test(em))$m('#payZeout').focus()}
+      if(v.Status==='Error'){go.disabled=false;go.textContent='לתשלום '+(order?order.amount+' ₪':price);const em=String(v.Message||'');msg(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות של בעל הכרטיס. מי שאין לו תעודת זהות ישראלית יכול לפנות אלינו דרך <a href="contact.html" target="_blank">צור קשר</a>.':esc(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),1);if(/zeout/i.test(em))$m('#payZeout').focus()}
       else{go.remove();frame.style.display='none';msg('התשלום התקבל. מאשרים מול השרת…');waitPaid()}}};
   window.addEventListener('message',onMsg);
   const close=()=>{stop=true;window.removeEventListener('message',onMsg);m.remove()};
@@ -3727,7 +3730,7 @@ function buyPlan(planId){
     const np=mkOrder(code);np.then(j=>{orderP=np;cm.textContent=j.why==='coupon'?'הקוד הופעל: '+j.off+'% הנחה':'הקוד תקין, אבל ההנחה הקיימת גדולה ממנו';cm.className='msg-ok'})
       .catch(e=>{cm.textContent=e.msg||'לא הצלחנו לבדוק את הקוד, נסו שוב';cm.className='msg-bad'})};
   $m('#payCoupon').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$m('#payCouponGo').click()}};
-  orderP.then(()=>{if(ready)go.disabled=false}).catch(e=>{if(e.fb){switchTo('',e.msg,'yesh');return}go.disabled=true;msg(e.msg?esc(e.msg):'התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)});
+  orderP.then(()=>{if(ready)go.disabled=false}).catch(e=>{if(e.fb){switchTo('',e.msg,'yesh');return}go.disabled=true;msg(e.msg?esc(e.msg):'התשלום באתר עדיין לא פעיל. נסו שוב בקרוב, או פנו אלינו דרך <a href="contact.html" target="_blank">צור קשר</a>.',1)});
   /* אמצעי התשלום נקבע בשרת: נדרים פלוס (טופס מוטמע) או פייפל (כפתורים של פייפל) */
   /* מעבר בין דרכי תשלום באותו חלון: בחירה של הלקוח, תקלה, או כרטיס שלא נתמך */
   const PNAME={nedarim:'💳 כרטיס אשראי',sumit:'💳 כרטיס אשראי',yesh:'💳 כרטיס אשראי',paypal:'PayPal / כרטיס מחו״ל'};
@@ -3811,7 +3814,7 @@ function buyPlan(planId){
         b.render(box);acctBtn(P);gpayBtn(P);msg(ppAcct?'בוחרים: תשלום בחשבון פייפל, או בכרטיס אשראי.':'לוחצים על "כרטיס אשראי" וממלאים את הפרטים.')};
       if(window.paypal)return done();const sc=document.createElement('script');sc.src='https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(cid)+'&currency=ILS&intent=capture&locale=he_IL&components=buttons,card-fields'+(ppGpay?',googlepay':'')+'&disable-funding=paylater,venmo';sc.onload=done;sc.onerror=()=>{sc.remove();if(ppGpay){ppGpay=false;run(cid);return}msg('לא הצלחנו לטעון את טופס התשלום. נסו לרענן את הדף.',1)};document.head.appendChild(sc)};
     Promise.resolve(LP&&LP.ready).then(d=>{ppAcct=!!(d&&d.ppAcct);ppGpay=!!(d&&d.ppGpay);ppLive=!(d&&d.ppMode==='sandbox');if(d&&d.ppc)run(d.ppc);else msg('התשלום בפייפל עדיין לא מוגדר.',1)})}
-  setTimeout(()=>{if(!ready&&!stop&&PROV==='nedarim')msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="terms.html#contact" target="_blank">יצירת קשר</a>.',1)},12000);
+  setTimeout(()=>{if(!ready&&!stop&&PROV==='nedarim')msg('טופס התשלום לא נטען. נסו לרענן את הדף, ואם זה חוזר פנו אלינו דרך <a href="contact.html" target="_blank">צור קשר</a>.',1)},12000);
   go.onclick=()=>{
     const name=$m('#payName').value.trim(),mail=$m('#payMail').value.trim(),phone=$m('#payPhone').value.trim(),zeout=$m('#payZeout').value.replace(/\D/g,'');
     if(name.split(/\s+/).length<2){msg('נא למלא שם פרטי ושם משפחה.',1);$m('#payName').focus();return}

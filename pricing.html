@@ -282,7 +282,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
 
   <footer>
     <span>© <span id="yr">2026</span> MyLuach · לוח שנה עברי־לועזי להדפסה</span>
-    <nav class="foot-links" aria-label="קישורים"><a href="gallery.html">גלריה</a><a href="pricing.html">מחירים</a><a href="/torah/" class="nav-torah" style="display:none">דברי תורה</a><a href="online/">לוח אונליין</a><a href="articles/">מאמרים</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="simple.html">בונה פשוט</a><a href="countdown.html">ספירה לאחור</a><a href="terms.html#contact">יצירת קשר</a></nav>
+    <nav class="foot-links" aria-label="קישורים"><a href="gallery.html">גלריה</a><a href="pricing.html">מחירים</a><a href="/torah/" class="nav-torah" style="display:none">דברי תורה</a><a href="online/">לוח אונליין</a><a href="articles/">מאמרים</a><a href="terms.html">תקנון</a><a href="privacy.html">פרטיות</a><a href="accessibility.html">נגישות</a><a href="simple.html">בונה פשוט</a><a href="countdown.html">ספירה לאחור</a><a href="about.html">אודות</a><a href="contact.html">צור קשר</a></nav>
     <span class="foot-note">התאריכים והזמנים מחושבים לפי הלוח העברי. כדאי לבדוק זמנים הלכתיים מול רב או לוח מקומי.</span>
   </footer>
 </div>
@@ -304,7 +304,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
     S.hidden = false; if (location.hash === '#rem') S.scrollIntoView();
     G.addEventListener('click', function(e){ var b = e.target.closest('[data-rb]'); if (!b) return; var x = R.opts[+b.dataset.rb], per = b.dataset.per, auto = !!b.dataset.auto;
       var go = function(){ window.MLPay.open({ title: 'מנוי תזכורות · ' + (x.name || ''), sub: (per === 'y' ? x.py + ' ₪ לשנה' : x.pm + ' ₪ לחודש') + (auto ? ', מתחדש אוטומטית. אפשר לבטל בכל עת באזור האישי.' : '. תשלום אחד, בלי חיוב אוטומטי.'), mailNote: 'למייל הזה יישלחו הקבלה והעדכונים', body: { plan: 'sub', kind: 'rsub', id: x.id, per: per, auto: auto ? 1 : 0 }, onPaid: function(){ b.textContent = '✓ שולם'; } }); };
-      if (window.MLPay) go(); else { var s = document.createElement('script'); s.src = '/assets/pay.js?v=5'; s.onload = go; document.head.appendChild(s); } });
+      if (window.MLPay) go(); else { var s = document.createElement('script'); s.src = '/assets/pay.js?v=6'; s.onload = go; document.head.appendChild(s); } });
   }).catch(function(){});
 })();
 </script>

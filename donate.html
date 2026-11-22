@@ -46,7 +46,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 <script src="/assets/sitemsg.js?v=3" defer></script>
 <script src="/assets/cms.js?v=7" defer></script>
 </head>
-<body><div class="wrap">
+<body class="noagree"><div class="wrap">
 <header class="nav"><a class="logo" href="./"><img class="logo-img" src="/assets/logo.svg?v=2" alt="" width="38" height="38">MyLuach</a></header>
 <main class="card" id="card">
   <h1>תרומה</h1>
@@ -60,6 +60,8 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
     <label class="full">תעודת זהות של בעל הכרטיס <small>(לכרטיס ישראלי)</small><input type="text" id="zeout" inputmode="numeric" maxlength="9" dir="ltr" autocomplete="off"></label>
     <label class="full">הקדשה או הערה (לא חובה)<input type="text" id="note" maxlength="120"></label>
   </div>
+  <label class="agree" style="display:flex;gap:8px;align-items:flex-start;font-weight:600;margin:10px 0"><input type="checkbox" id="agree" style="width:20px;height:20px;margin-top:3px" onchange="document.body.classList.toggle('noagree',!this.checked)"> <span>קראתי ואני מסכים/ה ל<a href="terms.html" target="_blank">תקנון האתר</a> ול<a href="privacy.html" target="_blank">מדיניות הפרטיות</a></span></label>
+  <style>body.noagree #frame,body.noagree #go{pointer-events:none;opacity:.35;filter:grayscale(1)}</style>
   <p class="msg" id="msg">טוען טופס תשלום מאובטח…</p>
   <iframe class="frame" id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he"></iframe>
   <button class="go" type="button" id="go" disabled>לתרומה</button>

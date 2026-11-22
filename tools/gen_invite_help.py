@@ -142,7 +142,7 @@ footer a{color:var(--mute)}
 %s
 <p style="margin-top:22px">לא מצאתם תשובה? כתבו לנו: <a href="mailto:contact@myluach.org">contact@myluach.org</a></p>
 </main>
-<footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="/invite">בניית דף הזמנה</a><a href="/brachot/">ברכות והזמנות</a><a href="/dir/">הפרטים שלי</a><a href="terms.html">תנאי שימוש</a><a href="privacy.html">פרטיות</a></footer>
+<footer><span>© 2026 MyLuach</span><a href="./">דף הבית</a><a href="/invite">בניית דף הזמנה</a><a href="/brachot/">ברכות והזמנות</a><a href="/dir/">הפרטים שלי</a><a href="terms.html">תקנון</a><a href="privacy.html">פרטיות</a><a href="about.html">אודות</a><a href="contact.html">צור קשר</a></footer>
 </div></body></html>
 ''' % (json.dumps(ld, ensure_ascii=False), toc, body, faq)
 open('/home/claude/cm-calendar/invite-help.html','w').write(page)

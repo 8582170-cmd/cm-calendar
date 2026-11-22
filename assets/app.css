@@ -1733,3 +1733,6 @@ body.file-drag .sx-drop-hint{display:block}
 
 .save-cloud.dirty{border-color:#c77c1a;background:#fff6e8}
 .save-cloud.ok{border-color:#2e7d4f;color:#2e7d4f}
+
+/* אישור התקנון לפני תשלום */
+.pay-agree{margin:8px 0;font-weight:600}.pay-modal.noagree #payChoose,.pay-modal.noagree #payFrame,.pay-modal.noagree #ppBox,.pay-modal.noagree #payGo{pointer-events:none;opacity:.35;filter:grayscale(1)}
