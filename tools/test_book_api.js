@@ -143,6 +143,20 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   await ok({ a: 'save', s: 'centre', cfg: { ...g.biz.cfg, hours: { ...g.biz.cfg.hours, 6: [['09:00', '12:00']] }, shabbat: { on: false } } }, OWN);
   const ss3 = await ok({ a: 'slots', s: 'centre', svc: pick.id, from: sat, days: 1 }, null); assert.ok(ss3.days[sat].length > 0, 'בלי חסימת שבת: פנוי');
 
+  /* ===== מסלולי מחיר: הגדרה בניהול האתר, בחירה על ידי העסק, אכיפה ===== */
+  const SA = { id: 'u-site', email: 'site@example.com' };
+  const plansSet = (await ok({ a: 'site', set: { open: true, plans: [{ name: 'בלי סליקה', mode: 'none', monthly: 49, perBooking: 0 }, { name: 'סליקה בחשבון שלכם', mode: 'own', monthly: 79, perBooking: 0.5 }, { name: 'סליקה דרך האתר', mode: 'site', monthly: 99, perBooking: 1, pct: 2.5, pub: false }, { name: '', mode: 'x' }] } }, SA)).plans;
+  assert.strictEqual(plansSet.length, 3, 'מסלול בלי שם נזרק'); assert.strictEqual(plansSet[2].pub, false); const [pNone, pOwn, pSite] = plansSet;
+  await bad({ a: 'site', set: { plans: [] } }, 403, 'forbidden', OWN);
+  const g2 = await ok({ a: 'get', s: 'centre' }, OWN); assert.deepStrictEqual(g2.plans.map(p => p.id), [pNone.id, pOwn.id], 'העסק רואה רק מסלולים פומביים');
+  await bad({ a: 'pickPlan', s: 'centre', plan: pSite.id }, 400, 'plan', OWN); await bad({ a: 'pickPlan', s: 'centre', plan: 'zzz' }, 400, 'plan');
+  await bad({ a: 'pickPlan', s: 'centre', plan: pOwn.id }, 403, 'forbidden', CLERK);
+  await ok({ a: 'pickPlan', s: 'centre', plan: pOwn.id }, OWN);
+  await ok({ a: 'save', s: 'centre', cfg: { ...(await ok({ a: 'get', s: 'centre' })).biz.cfg, pay: { mode: 'link', url: 'https://pay.example.com/x', require: 'deposit' } } });
+  let cf = (await ok({ a: 'get', s: 'centre' })).biz.cfg; assert.strictEqual(cf.plan, pOwn.id, 'שמירת הגדרות לא מוחקת את המסלול'); assert.strictEqual(cf.pay.mode, 'link', 'מסלול עם סליקה מאפשר תשלום');
+  await ok({ a: 'pickPlan', s: 'centre', plan: pNone.id }); cf = (await ok({ a: 'get', s: 'centre' })).biz.cfg; assert.strictEqual(cf.pay.mode, 'none', 'מסלול בלי סליקה מכבה תשלום באתר'); assert.strictEqual(cf.pay.require, 'none');
+  await bad({ a: 'plan', s: 'centre', plan: pSite.id }, 403, 'forbidden', OWN); await ok({ a: 'plan', s: 'centre', plan: pSite.id }, SA); assert.strictEqual((await ok({ a: 'mine' }, SA)).items[0].plan, pSite.id, 'בעל האתר משייך מסלול גם לא פומבי'); await bad({ a: 'plan', s: 'centre', plan: 'nope' }, 400, 'plan', SA);
+  USER = OWN;
   /* ===== ארכיון ומחיקה ===== */
   const del1 = await ok({ a: 'del', s: 'centre', kind: 'svc', id: pick.id }, OWN); assert.strictEqual(del1.archived, true, 'יש היסטוריה: לארכיון');
   const pv2 = await ok({ a: 'biz', s: 'centre' }, null); assert.ok(!pv2.svcs.some(s => s.id === pick.id));

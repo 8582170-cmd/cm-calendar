@@ -24,7 +24,16 @@ const admins = () => [env('OWNER_EMAIL'), ...env('BOOK_ADMINS').split(',')].map(
 const isAdmin = u => !!u && admins().includes(String(u.email || '').toLowerCase());
 const rid = n => crypto.randomBytes(n).toString('hex');
 
-async function site() { const s = (await loadSetting('book').catch(() => ({}))) || {}; return { open: s.open === true, sms: s.sms === true, note: clean(s.note, 600), max: num(s.max, 1, 200, 5) }; }
+/* מסלולי מחיר של האגף (נקבעים בניהול האתר): כל מסלול = שיטת סליקה + מחיר חודשי + עמלה לכל תור */
+const PLAN_MODES = ['none', 'own', 'site'];
+function cleanPlans(L) {
+  const seen = new Set();
+  return (Array.isArray(L) ? L : []).slice(0, 20).map(p => {
+    if (!p || typeof p !== 'object') return null; let id = String(p.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 12) || ('p' + rid(3)); while (seen.has(id)) id += 'x'; seen.add(id);
+    return { id, name: clean(p.name, 60), mode: PLAN_MODES.includes(p.mode) ? p.mode : 'none', monthly: num(p.monthly, 0, 100000, 0), perBooking: num(p.perBooking, 0, 10000, 0), pct: num(p.pct, 0, 100, 0), pub: p.pub !== false, on: p.on !== false, note: clean(p.note, 300) };
+  }).filter(p => p && p.name);
+}
+async function site() { const s = (await loadSetting('book').catch(() => ({}))) || {}; return { open: s.open === true, sms: s.sms === true, note: clean(s.note, 600), max: num(s.max, 1, 200, 5), plans: cleanPlans(s.plans) }; }
 
 /* ===== ניקוי הגדרות ===== */
 function cleanHours(h) {
@@ -344,9 +353,9 @@ function ics(B, a) {
 async function mine(u, onlyMine) {
   const em = u.email ? '(user_id.eq.' + u.id + ',email.eq.' + enc(u.email) + ')' : '(user_id.eq.' + u.id + ')';
   const [own, staff, all] = await Promise.all([db('book_biz?or=' + em + '&select=id,slug,name,status,cfg,created_at&order=id.desc&limit=100'),
-    u.email ? db('book_biz?cfg=cs.' + enc(JSON.stringify({ staff: [{ email: u.email }] })) + '&select=id,slug,name,status,cfg,created_at&limit=100').catch(() => []) : [], isAdmin(u) && !onlyMine ? db('book_biz?select=id,slug,name,status,email,created_at&order=id.desc&limit=300') : []]);
+    u.email ? db('book_biz?cfg=cs.' + enc(JSON.stringify({ staff: [{ email: u.email }] })) + '&select=id,slug,name,status,cfg,created_at&limit=100').catch(() => []) : [], isAdmin(u) && !onlyMine ? db('book_biz?select=id,slug,name,status,email,created_at,cfg&order=id.desc&limit=300') : []]);
   const seen = new Set(), L = [];
-  [...(own || []).map(x => ({ ...x, role: 'owner' })), ...(staff || []).map(x => ({ ...x, role: ((x.cfg.staff || []).find(s => s.email === u.email) || {}).role || 'clerk' })), ...(all || []).map(x => ({ ...x, role: 'owner', all: true }))].forEach(x => { if (!seen.has(x.id)) { seen.add(x.id); L.push({ id: x.id, slug: x.slug, name: x.name, status: x.status, role: x.role, all: !!x.all, email: x.email || '' }); } });
+  [...(own || []).map(x => ({ ...x, role: 'owner' })), ...(staff || []).map(x => ({ ...x, role: ((x.cfg.staff || []).find(s => s.email === u.email) || {}).role || 'clerk' })), ...(all || []).map(x => ({ ...x, role: 'owner', all: true }))].forEach(x => { if (!seen.has(x.id)) { seen.add(x.id); L.push({ id: x.id, slug: x.slug, name: x.name, status: x.status, role: x.role, all: !!x.all, email: x.email || '', plan: (x.cfg || {}).plan || '' }); } });
   return L;
 }
 const SEED_HOURS = { 0: [['09:00', '17:00']], 1: [['09:00', '17:00']], 2: [['09:00', '17:00']], 3: [['09:00', '17:00']], 4: [['09:00', '17:00']], 5: [], 6: [] };
@@ -371,6 +380,8 @@ function cleanItem(kind, it, B) {
   if (kind === 'addon') return { ...base, cfg: cleanAddonCfg(it.cfg) };
   if (kind === 'form') return { name: base.name, fields: cleanFields(it.fields) };
 }
+/* מסלול בלי סליקה: לא ניתן להפעיל תשלום באתר */
+async function enforcePlan(cfg) { const pl = (await site()).plans.find(p => p.id === cfg.plan); if (pl && pl.mode === 'none' && cfg.pay) cfg.pay = { ...cfg.pay, mode: 'none', require: 'none' }; }
 function fullView(B, role) {
   const c = B.biz.cfg || {}; return { biz: { id: B.biz.id, slug: B.biz.slug, name: B.biz.name, status: B.biz.status, email: B.biz.email, cfg: canEdit(role) ? c : { ...c, staff: undefined }, created_at: B.biz.created_at }, groups: B.groups, res: B.res, svcs: B.svcs, addons: B.addons, forms: B.forms, role };
 }
@@ -386,13 +397,17 @@ async function apptList(B, b, role) {
 const MAN = async (u, B, b) => {
   const role = roleOf(u, B); if (!role) return [403, { error: 'forbidden' }];
   switch (b.a) {
-    case 'get': return [200, fullView(B, role)];
+    case 'get': return [200, { ...fullView(B, role), plans: canEdit(role) ? (await site()).plans.filter(p => p.on && p.pub) : [] }];
+    case 'pickPlan': {
+      if (role !== 'owner') return [403, { error: 'forbidden' }]; const pl = (await site()).plans.find(p => p.id === String(b.plan) && p.on && p.pub); if (!pl) return [400, { error: 'plan' }];
+      const n = { ...(B.biz.cfg || {}), plan: pl.id }; await enforcePlan(n); await db('book_biz?id=eq.' + B.biz.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: n, updated_at: new Date().toISOString() }) }); drop(B); return [200, { ok: true }];
+    }
     case 'save': {
       if (!canEdit(role)) return [403, { error: 'forbidden' }];
       const patch = { updated_at: new Date().toISOString() };
       if (b.name != null) { const n = clean(b.name, 80); if (n.length < 2) return [400, { error: 'name' }]; patch.name = n; }
       if (b.status != null) patch.status = ['draft', 'open', 'closed'].includes(b.status) ? b.status : B.biz.status;
-      if (b.cfg) { const old = B.biz.cfg || {}, n = cleanBizCfg(b.cfg, old); if (role !== 'owner') n.staff = old.staff || []; patch.cfg = n; }
+      if (b.cfg) { const old = B.biz.cfg || {}, n = cleanBizCfg(b.cfg, old); if (role !== 'owner') n.staff = old.staff || []; n.plan = old.plan || ''; await enforcePlan(n); patch.cfg = n; }
       await db('book_biz?id=eq.' + B.biz.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) }); drop(B); return [200, { ok: true }];
     }
     case 'put': {
@@ -490,11 +505,12 @@ module.exports = async (req, res) => {
     /* בעל האתר */
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'forbidden' });
-      if (b.set) { const o = b.set; await saveSetting('book', { open: o.open === true, sms: o.sms === true, note: clean(o.note, 600), max: num(o.max, 1, 200, 5) }); }
+      if (b.set) { const o = b.set; await saveSetting('book', { open: o.open === true, sms: o.sms === true, note: clean(o.note, 600), max: num(o.max, 1, 200, 5), plans: Array.isArray(o.plans) ? cleanPlans(o.plans) : (await site()).plans }); }
       return json(res, 200, { ...(await site()), admin: true });
     }
     /* צוות העסק */
     const u = await getUser(req); if (!u) return json(res, 401, { error: 'login' });
+    if (a === 'plan') { if (!isAdmin(u)) return json(res, 403, { error: 'forbidden' }); const B0 = await load(b.s, true); if (!B0) return json(res, 404, { error: 'none' }); const pid = String(b.plan || ''); if (pid && !(await site()).plans.some(p => p.id === pid)) return json(res, 400, { error: 'plan' }); const n = { ...(B0.biz.cfg || {}), plan: pid }; await enforcePlan(n); await db('book_biz?id=eq.' + B0.biz.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: n, updated_at: new Date().toISOString() }) }); drop(B0); return json(res, 200, { ok: true }); }
     if (a === 'mine') { const S = await site(); return json(res, 200, { items: await mine(u, b.own === true), canCreate: S.open || isAdmin(u), note: S.note, admin: isAdmin(u) }); }
     if (a === 'create') return out(await create(u, b));
     const B = await load(b.s, true); if (!B) return json(res, 404, { error: 'none' });
