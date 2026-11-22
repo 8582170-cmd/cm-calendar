@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>קביעת תור · MyLuach</title>
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap">
+<style>
+:root{--c:#1e5a63;--c2:#c9a24b;--on:#fff;--r:14px;--bg:#f5f6f8;--card:#fff;--ink:#1b2338;--mute:#5b6477;--line:#e1e4ea;--bad:#a3261b;--ok:#17613f}
+body.dark{--bg:#12161f;--card:#1b2130;--ink:#eef0f5;--mute:#a4adc0;--line:#2c3447;--bad:#ff8a7d;--ok:#6fd3a2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Heebo,Arial,sans-serif;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 120px}
+.hero{background:var(--c);color:var(--on);padding:26px 14px 62px;text-align:center;background-size:cover;background-position:center}
+.hero.img{background-blend-mode:multiply}
+.hero img.logo{max-height:64px;max-width:200px;border-radius:10px;background:#fff;padding:4px;margin-bottom:8px}
+.hero h1{margin:0;font-size:28px;line-height:1.2}
+.hero p{margin:8px auto 0;max-width:520px;opacity:.92;font-size:15px}
+.emb .hero{padding:14px 14px 40px}.emb .hero h1{font-size:21px}
+.sheet{margin-top:-42px;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:0 2px 10px rgba(20,30,50,.05)}
+.card h2{margin:0 0 4px;font-size:19px}.hint{color:var(--mute);font-size:14px}
+.steps{display:flex;gap:6px;justify-content:center;margin:0 0 2px}
+.steps i{width:30px;height:5px;border-radius:3px;background:var(--line)}.steps i.on{background:var(--c)}
+.opts{display:grid;gap:10px;margin-top:12px}
+.opt{display:flex;gap:12px;align-items:center;text-align:right;width:100%;padding:12px;border:2px solid var(--line);border-radius:var(--r);background:var(--card);cursor:pointer;min-height:62px}
+.opt:hover{border-color:var(--c)}.opt[aria-pressed=true]{border-color:var(--c);background:color-mix(in srgb,var(--c) 8%,var(--card))}
+.opt img{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none}
+.opt .t{flex:1;min-width:0}.opt b{display:block;font-size:17px}.opt small{color:var(--mute);font-size:13.5px;display:block}
+.opt .pr{font-weight:700;white-space:nowrap;color:var(--c)}
+body.dark .opt .pr{color:var(--c2)}
+.btn{min-height:50px;padding:0 22px;border:0;border-radius:var(--r);background:var(--c);color:var(--on);font-weight:700;font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.sec{background:transparent;border:2px solid var(--line);color:var(--ink);font-weight:500}
+.btn.bad{background:transparent;border:2px solid var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}.btn.w{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row.sb{justify-content:space-between}
+.days{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory}
+.day{flex:none;width:64px;padding:8px 4px;border:2px solid var(--line);border-radius:12px;background:var(--card);text-align:center;cursor:pointer;scroll-snap-align:start;line-height:1.25}
+.day b{display:block;font-size:20px}.day span{font-size:12.5px;color:var(--mute)}.day.off{opacity:.45}
+.day[aria-pressed=true]{border-color:var(--c);background:var(--c);color:var(--on)}.day[aria-pressed=true] span{color:var(--on);opacity:.9}
+.times{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-top:6px}
+.tm{min-height:52px;border:2px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;font-weight:700;font-size:17px;line-height:1.15;padding:4px}
+.tm small{display:block;font-weight:400;font-size:12px;color:var(--mute)}.tm.low small{color:#b3541e}
+.tm:hover{border-color:var(--c)}.tm[aria-pressed=true]{background:var(--c);border-color:var(--c);color:var(--on)}.tm[aria-pressed=true] small{color:var(--on)}
+label.f{display:flex;flex-direction:column;gap:5px;font-weight:500;font-size:15px}
+label.f.r>span::after{content:" *";color:var(--bad)}
+input[type=text],input[type=tel],input[type=email],input[type=number],input[type=date],select,textarea{width:100%;min-height:50px;border:2px solid var(--line);border-radius:12px;padding:0 12px;background:var(--card);font-size:16px}
+textarea{min-height:90px;padding:10px 12px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--c)}
+.grp{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+.ck{display:flex;gap:10px;align-items:flex-start;font-size:15px;cursor:pointer;line-height:1.45}.ck input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--c)}
+.sum{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:4px;font-size:15px}.sum div{display:flex;justify-content:space-between;gap:10px}.sum .tot{font-size:19px;font-weight:700}
+.stepper{display:flex;align-items:center;gap:12px}.stepper button{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:var(--card);font-size:24px;cursor:pointer}.stepper b{min-width:80px;text-align:center;font-size:19px}
+.add{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}.add:first-of-type{border-top:0}
+.err{background:#fbe9e7;color:#7a1d14;border-radius:12px;padding:10px 14px;margin-top:10px;font-size:15px}
+body.dark .err{background:#4a1f1b;color:#ffc9c2}
+.ok{background:#e1f4ea;color:#145a3f;border-radius:12px;padding:14px;text-align:center}
+.big{font-size:44px;line-height:1}
+.bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);padding:10px 14px;z-index:5;box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+.bar .in{max-width:720px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.bar .s{font-size:14px;line-height:1.3;min-width:0}.bar .s b{display:block;font-size:17px}
+.foot{text-align:center;color:var(--mute);font-size:13px;margin-top:26px}.foot a{color:inherit}
+.hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
+:focus-visible{outline:3px solid #2a5bd7;outline-offset:2px}
+.emb .bar{position:sticky}
+</style>
+<script src="/assets/config.js"></script>
+</head>
+<body>
+<div id="app"><div class="wrap"><p class="hint" style="padding-top:40px;text-align:center">טוען…</p></div></div>
+<script>
+(function(){
+'use strict';
+var API='/api/pricing?c=_book',Q=new URLSearchParams(location.search),EMB=Q.get('embed')==='1';
+var SLUG=(location.pathname.match(/\/book\/([^\/?#]+)/)||[])[1]||Q.get('s')||'';
+var M=Q.get('m'),K=Q.get('k');
+var $=function(i){return document.getElementById(i)},app=$('app');
+var P=null,ST={step:1,svc:null,dur:0,add:{},from:'',days:null,day:'',time:null,group:0,res:0,busy:0,err:'',ans:{},con:{},cust:{},sel:null,wait:0};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function nis(n){n=Math.round(+n*100)/100;return n.toLocaleString('he-IL')+' ₪'}
+function call(b){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({s:SLUG},b))}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;return j})}).catch(function(){return {error:'net',_st:0}})}
+function lum(h){var n=parseInt(h.slice(1),16),r=n>>16,g=n>>8&255,b=n&255;return (0.299*r+0.587*g+0.114*b)/255}
+function hdate(d){try{return new Date(d+'T12:00:00').toLocaleDateString('he-u-ca-hebrew',{day:'numeric',month:'short'})}catch(e){return ''}}
+function wd(d){return new Date(d+'T12:00:00').toLocaleDateString('he-IL',{weekday:'short'})}
+function dm(d){var p=d.split('-');return +p[2]+'/'+ +p[1]}
+function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function addD(d,n){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2)}
+function svc(){return P.svcs.filter(function(s){return s.id===ST.svc})[0]}
+function resv(id){return P.res.filter(function(r){return r.id===id})[0]}
+function grp(id){return P.groups.filter(function(g){return g.id===id})[0]}
+function theme(){var t=P.theme||{},r=document.documentElement.style;var c=t.color||'#1e5a63';r.setProperty('--c',c);r.setProperty('--c2',t.color2||'#c9a24b');r.setProperty('--on',lum(c)>.62?'#101828':'#fff');r.setProperty('--r',(t.radius==null?14:t.radius)+'px');document.body.classList.toggle('dark',t.mode==='dark');if(EMB)document.body.classList.add('emb');document.title=P.biz.name+' · קביעת תור'}
+function resize(){if(EMB&&parent!==window)try{parent.postMessage({myluachBook:1,h:document.documentElement.scrollHeight},'*')}catch(e){}}
+function head(){var t=P.theme||{},x=P.texts||{};
+  return '<header class="hero"'+(t.banner?' style="background-image:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url(\''+esc(t.banner)+'\')"':'')+'>'+(t.logo?'<img class="logo" src="'+esc(t.logo)+'" alt="">':'')+'<h1>'+esc(P.biz.name)+'</h1>'+(x.intro?'<p>'+esc(x.intro)+'</p>':'')+(x.address?'<p>'+esc(x.address)+'</p>':'')+'</header>'}
+function foot(){var x=P.texts||{},l=[];if(x.phone)l.push('<a href="tel:'+esc(x.phone)+'">'+esc(x.phone)+'</a>');if(x.wa)l.push('<a href="https://wa.me/'+esc(String(x.wa).replace(/\D/g,'').replace(/^0/,'972'))+'">וואטסאפ</a>');if(x.mail)l.push('<a href="mailto:'+esc(x.mail)+'">'+esc(x.mail)+'</a>');
+  return '<div class="foot">'+(l.length?l.join(' · ')+'<br>':'')+'נבנה עם <a href="/book" target="_blank" rel="noopener">MyLuach · זימון תורים</a></div>'}
+function shell(inner,bar){app.innerHTML=head()+'<div class="wrap"><div class="sheet">'+inner+'</div>'+foot()+'</div>'+(bar||'');resize()}
+function dots(n){var h='<div class="steps" aria-hidden="true">';for(var i=1;i<=n;i++)h+='<i class="'+(i<=ST.step?'on':'')+'"></i>';return h+'</div>'}
+
+/* ===== דף התור האישי (קישור מהודעה) ===== */
+function viewMode(){
+  call({a:'view',m:M,k:K}).then(function(v){
+    if(!v||v.error)return shell('<div class="card"><h2>הקישור לא תקין</h2><p class="hint">ייתכן שהתור בוטל או שהקישור שגוי. אפשר להזמין תור חדש.</p><a class="btn w" href="/book/'+esc(SLUG)+'">להזמנת תור</a></div>');
+    var stx={confirmed:'מאושר',pending:'ממתין לאישור',held:'ממתין לתשלום',cancelled:'בוטל',done:'הושלם',noshow:'לא הגיע',expired:'פג תוקף'}[v.status]||v.status;
+    var due=Math.max(0,(v.pay.due||0)-(v.pay.paid||0));
+    shell('<div class="card"><div class="row sb"><h2>התור שלך</h2><span class="hint"><b style="color:'+(v.status==='cancelled'?'var(--bad)':'var(--ok)')+'">'+esc(stx)+'</b></span></div>'
+     +'<div class="sum" style="border:0;margin:0;padding:0"><div><span>שירות</span><b>'+esc(v.svc)+'</b></div><div><span>מתי</span><b>'+esc(v.when)+'</b></div>'+(v.res?'<div><span>מקום</span><b>'+esc(v.res)+'</b></div>':'')+'<div><span>משך</span><b>'+v.dur+' דקות</b></div>'
+     +(v.addons&&v.addons.length?'<div><span>תוספות</span><b>'+v.addons.map(function(a){return esc(a.name)+(a.n>1?' ×'+a.n:'')}).join(', ')+'</b></div>':'')+(v.price>0?'<div class="tot"><span>סכום</span><span>'+nis(v.price)+'</span></div>':'')+(v.address?'<div><span>כתובת</span><b>'+esc(v.address)+'</b></div>':'')+'</div>'
+     +(due>0&&v.payUrl&&v.status!=='cancelled'?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><a class="btn w" href="'+esc(v.payUrl)+'" target="_blank" rel="noopener">לתשלום</a>':'')
+     +'<div class="row" style="margin-top:14px"><button class="btn sec" id="ics" type="button">הוספה ליומן</button>'+(v.canCancel?'<button class="btn bad" id="can" type="button">ביטול התור</button>':'')+'</div>'
+     +(!v.canCancel&&['confirmed','pending','held'].indexOf(v.status)>-1?'<p class="hint">ביטול דרך הקישור אפשרי עד '+v.cancelH+' שעות לפני התור. לשינוי אפשר ליצור קשר עם העסק.</p>':'')
+     +'<div id="msg"></div></div><a class="btn sec w" href="/book/'+esc(SLUG)+'">להזמנת תור נוסף</a>');
+    $('ics').onclick=function(){icsDl(M,K)};
+    var c=$('can');if(c)c.onclick=function(){if(!confirm('לבטל את התור?'))return;c.disabled=true;call({a:'cancel',m:M,k:K}).then(function(r){if(r.error)return $('msg').innerHTML='<div class="err">'+(r.error==='late'?'חלף זמן הביטול האפשרי.':'הביטול לא הצליח. נסו שוב.')+'</div>',c.disabled=false;viewMode()})}
+  })}
+function icsDl(m,k){fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a:'ics',s:SLUG,m:m,k:k})}).then(function(r){return r.blob()}).then(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='appointment.ics';a.click()})}
+
+/* ===== שלב 1: שירות ===== */
+function s1(){ST.step=1;
+  var h=dots(4)+'<div class="card"><h2>איזה שירות?</h2><div class="opts">'+P.svcs.map(function(s){return optBtn('svc',s.id,s.img,s.name,(s.descr||'')+(s.note?' · '+s.note:''),svcPrice(s),ST.svc===s.id)}).join('')+'</div></div>';
+  shell(h);wireOpts('svc',function(id){pickSvc(+id)})}
+function svcPrice(s){var p=s.price||{};if(p.fixed!=null)return p.fixed?nis(p.fixed):'';if(p.per>0)return 'מ־'+nis(p.per*s.dur/p.unit);return ''}
+function optBtn(k,id,img,name,sub,pr,on){return '<button type="button" class="opt" data-k="'+k+'" data-id="'+id+'" aria-pressed="'+(on?'true':'false')+'">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy">':'')+'<span class="t"><b>'+esc(name)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span>'+(pr?'<span class="pr">'+esc(pr)+'</span>':'')+'</button>'}
+function wireOpts(k,fn){[].forEach.call(document.querySelectorAll('.opt[data-k="'+k+'"]'),function(b){b.onclick=function(){fn(b.dataset.id)}})}
+function pickSvc(id){ST.svc=id;var s=svc();ST.dur=s.dur;ST.add={};P.addons.filter(function(a){return s.addons.indexOf(a.id)>-1&&(a.def||a.req)}).forEach(function(a){ST.add[a.id]=1});ST.day='';ST.time=null;ST.days=null;ST.group=0;ST.res=0;ST.from=today();ST.ans={};
+  var hasOpt=(s.adj)||P.addons.some(function(a){return s.addons.indexOf(a.id)>-1});hasOpt?s2():s3()}
+
+/* ===== שלב 2: משך ותוספות ===== */
+function addList(s){return P.addons.filter(function(a){return s.addons.indexOf(a.id)>-1})}
+function addTotal(){var s=svc(),m=0,p=0;addList(s).forEach(function(a){var n=ST.add[a.id]||0;if(!n)return;m+=a.addMin*n;p+=a.per==='unit'?a.price*n*(ST.dur+m)/a.unit:a.price*n});return {min:m,price:p}}
+function s2(){ST.step=2;var s=svc(),h=dots(4)+'<div class="card"><h2>'+esc(s.name)+'</h2>';
+  if(s.adj){h+='<p class="hint">כמה זמן?</p><div class="stepper"><button type="button" id="dm" aria-label="פחות">−</button><b id="dv">'+ST.dur+' דק׳</b><button type="button" id="dp" aria-label="יותר">+</button></div>'}
+  var al=addList(s);if(al.length){h+='<h2 style="margin-top:16px;font-size:17px">תוספות</h2>';al.forEach(function(a){var n=ST.add[a.id]||0;
+    h+='<div class="add"><div><b>'+esc(a.name)+'</b>'+(a.req?' <small class="hint">(חובה)</small>':'')+'<small class="hint" style="display:block">'+(a.descr?esc(a.descr)+' · ':'')+(a.price?'+'+nis(a.price)+(a.per==='unit'?' ל־'+a.unit+' דק׳':''):'ללא עלות')+(a.addMin?' · +'+a.addMin+' דק׳':'')+'</small></div>'
+     +(a.max>1?'<div class="stepper"><button type="button" data-ad="'+a.id+'" data-d="-1" aria-label="פחות">−</button><b>'+n+'</b><button type="button" data-ad="'+a.id+'" data-d="1" aria-label="יותר">+</button></div>':'<input type="checkbox" style="width:26px;height:26px;accent-color:var(--c)" data-ad1="'+a.id+'"'+(n?' checked':'')+(a.req?' disabled':'')+' aria-label="'+esc(a.name)+'">')+'</div>'})}
+  h+='<div id="est" class="sum"></div></div>';
+  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="nx" type="button" style="flex:1">להמשך לבחירת שעה</button></div></div>');
+  var est=function(){var t=addTotal(),tot=ST.dur+t.min;$('est').innerHTML='<div><span>משך כולל</span><b>'+tot+' דקות</b></div>'+(t.price>0?'<div><span>תוספות</span><b>'+nis(t.price)+'</b></div>':'');if($('dv'))$('dv').textContent=ST.dur+' דק׳'};est();
+  if(s.adj){$('dm').onclick=function(){ST.dur=Math.max(s.adj.min,ST.dur-s.adj.step);est()};$('dp').onclick=function(){ST.dur=Math.min(s.adj.max,ST.dur+s.adj.step);est()}}
+  [].forEach.call(document.querySelectorAll('[data-ad]'),function(b){b.onclick=function(){var a=P.addons.filter(function(x){return x.id===+b.dataset.ad})[0],n=(ST.add[a.id]||0)+ +b.dataset.d;n=Math.max(a.req?1:0,Math.min(a.max,n));if(n)ST.add[a.id]=n;else delete ST.add[a.id];s2()}});
+  [].forEach.call(document.querySelectorAll('[data-ad1]'),function(b){b.onchange=function(){if(b.checked)ST.add[b.dataset.ad1]=1;else delete ST.add[b.dataset.ad1];est()}});
+  $('bk').onclick=s1;$('nx').onclick=s3}
+
+/* ===== שלב 3: יום ושעה ===== */
+function addArr(){return Object.keys(ST.add).map(function(k){return {id:+k,n:ST.add[k]}})}
+function loadDays(){ST.busy=1;ST.days=null;s3();call({a:'slots',svc:ST.svc,from:ST.from,days:7,dur:ST.dur,addons:addArr()}).then(function(r){ST.busy=0;if(r.error){ST.err=r.error==='closed'?'העסק סגור כרגע לקביעת תורים.':'לא הצלחנו לטעון שעות. נסו שוב.';ST.days={}}else{ST.days=r.days||{};ST.total=r.dur;if(!ST.day||!(ST.day in ST.days))ST.day=firstDay()}s3()})}
+function firstDay(){var k=Object.keys(ST.days).sort();for(var i=0;i<k.length;i++)if(ST.days[k[i]].length)return k[i];return k[0]||''}
+function s3(){ST.step=3;var s=svc();
+  if(ST.days===null&&!ST.busy)return loadDays();
+  var h=dots(4)+'<div class="card"><h2>מתי נוח?</h2><div class="row sb"><button class="btn sec" id="pv" type="button" style="min-height:40px"'+(ST.from<=today()?' disabled':'')+'>‹ קודם</button><span class="hint">'+(ST.days?dm(ST.from)+' עד '+dm(addD(ST.from,6)):'')+'</span><button class="btn sec" id="nw" type="button" style="min-height:40px"'+(ST.from>=addD(today(),P.maxAhead-7)?' disabled':'')+'>הבא ›</button></div>';
+  if(ST.days===null)h+='<p class="hint" style="text-align:center;padding:30px 0">טוענים שעות…</p>';
+  else{var ks=Object.keys(ST.days).sort();h+='<div class="days" role="group" aria-label="ימים">'+ks.map(function(d){var n=ST.days[d].length;return '<button type="button" class="day'+(n?'':' off')+'" data-d="'+d+'" aria-pressed="'+(d===ST.day?'true':'false')+'"><span>'+wd(d)+'</span><b>'+(+d.split('-')[2])+'</b><span>'+hdate(d)+'</span></button>'}).join('')+'</div>';
+    var L=ST.days[ST.day]||[];
+    if(L.length){h+='<div class="times" role="group" aria-label="שעות">'+L.map(function(o){var low=o.n!=null&&o.n<=3;return '<button type="button" class="tm'+(low?' low':'')+'" data-t="'+o.t+'" aria-pressed="'+(ST.time&&ST.time.t===o.t&&ST.day===ST.time.d?'true':'false')+'">'+o.t+(o.n!=null&&o.n<=5?'<small>נשארו '+o.n+'</small>':(o.p>0&&o.p!==L[0].p?'<small>'+nis(o.p)+'</small>':''))+'</button>'}).join('')+'</div>'}
+    else h+='<div style="text-align:center;padding:18px 0"><p class="hint">אין שעות פנויות ביום הזה.</p><button class="btn sec" id="wl" type="button">עדכנו אותי אם יתפנה תור</button></div>';
+    h+=ST.err?'<div class="err">'+esc(ST.err)+'</div>':''}
+  h+='</div>';
+  var chosen=ST.time&&ST.time.d===ST.day?ST.time:null;
+  if(chosen)h+=pickPlace(chosen);
+  var ok=chosen&&(svc().alloc==='auto'||(svc().alloc==='group'&&ST.group)||(svc().alloc==='pick'&&ST.res));
+  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button>'+(ok?'<div class="s"><b>'+nis(priceNow())+'</b>'+dm(ST.day)+' · '+chosen.t+'</div>':'')+'<button class="btn" id="nx" type="button" style="flex:1"'+(ok?'':' disabled')+'>להמשך</button></div></div>');
+  $('bk').onclick=function(){var s=svc();(s.adj||addList(s).length)?s2():s1()};$('nx').onclick=s4;
+  $('pv').onclick=function(){ST.from=addD(ST.from,-7);if(ST.from<today())ST.from=today();ST.days=null;loadDays()};$('nw').onclick=function(){ST.from=addD(ST.from,7);ST.days=null;loadDays()};
+  [].forEach.call(document.querySelectorAll('.day'),function(b){b.onclick=function(){ST.day=b.dataset.d;ST.time=null;ST.group=0;ST.res=0;s3()}});
+  [].forEach.call(document.querySelectorAll('.tm'),function(b){b.onclick=function(){var o=ST.days[ST.day].filter(function(x){return x.t===b.dataset.t})[0];ST.time=Object.assign({d:ST.day},o);ST.group=0;ST.res=0;var a=svc().alloc;if(a==='group'&&Object.keys(o.g||{}).length===1)ST.group=+Object.keys(o.g)[0];if(a==='pick'&&(o.r||[]).length===1)ST.res=o.r[0];s3();setTimeout(function(){var e=document.getElementById('place');if(e)e.scrollIntoView({behavior:'smooth',block:'center'})},50)}});
+  [].forEach.call(document.querySelectorAll('.opt[data-k=g]'),function(b){b.onclick=function(){ST.group=+b.dataset.id;s3()}});
+  [].forEach.call(document.querySelectorAll('.opt[data-k=r]'),function(b){b.onclick=function(){ST.res=+b.dataset.id;s3()}});
+  var w=$('wl');if(w)w.onclick=waitForm;resize()}
+function pickPlace(o){var s=svc(),h='';
+  if(s.alloc==='group'){var ks=Object.keys(o.g||{});if(ks.length>1||!ST.group)h='<div class="card" id="place"><h2>'+(ks.length>1?'איפה?':'')+'</h2><div class="opts">'+ks.map(function(k){var g=grp(+k);return optBtn('g',k,g&&g.img,g?g.name:'כללי',(g&&g.descr||'')+(o.g[k]<=5?' · נשארו '+o.g[k]:''),o.gp[k]>0?nis(o.gp[k]):'',ST.group===+k)}).join('')+'</div></div>'}
+  if(s.alloc==='pick'){var rs=o.r||[];if(rs.length>1||!ST.res)h='<div class="card" id="place"><h2>בחירה</h2><div class="opts">'+rs.map(function(id){var r=resv(id)||{name:'#'+id};return optBtn('r',id,r.img,r.name,r.descr||'',o.rp[id]>0?nis(o.rp[id]):'',ST.res===id)}).join('')+'</div></div>'}
+  return h}
+function priceNow(){var o=ST.time;if(!o)return 0;var s=svc();if(s.alloc==='group'&&ST.group)return o.gp[ST.group];if(s.alloc==='pick'&&ST.res)return o.rp[ST.res];return o.p}
+function waitForm(){var h='<div class="card"><h2>רשימת המתנה</h2><p class="hint">נשלח לכם הודעה אם יתפנה תור ב־'+dm(ST.day)+'.</p><div class="grp"><label class="f r"><span>שם</span><input type="text" id="wn" autocomplete="name"></label><label class="f r"><span>טלפון</span><input type="tel" id="wp" autocomplete="tel" dir="ltr"></label><label class="f"><span>מייל (לא חובה)</span><input type="email" id="we" dir="ltr"></label><div class="hp"><input id="hp" tabindex="-1" autocomplete="off"></div><div id="wm"></div><div class="row"><button class="btn" id="ws" type="button" style="flex:1">הצטרפות</button><button class="btn sec" id="wc" type="button">חזרה</button></div></div></div>';
+  shell(h);var c=ST.cust;$('wn').value=c.name||'';$('wp').value=c.phone||'';$('we').value=c.email||'';$('wc').onclick=s3;
+  $('ws').onclick=function(){$('ws').disabled=true;call({a:'wait',svc:ST.svc,day:ST.day,name:$('wn').value,phone:$('wp').value,email:$('we').value,hp:$('hp').value}).then(function(r){if(r.error){$('ws').disabled=false;$('wm').innerHTML='<div class="err">'+(r.error==='bad'?'נא למלא שם וטלפון תקינים.':'לא הצלחנו. נסו שוב.')+'</div>';return}shell('<div class="card"><div class="ok"><div class="big">✓</div><h2>נרשמתם להמתנה</h2><p>נעדכן אתכם אם יתפנה תור.</p></div><button class="btn w" id="ok" type="button" style="margin-top:12px">חזרה לשעות</button></div>');$('ok').onclick=s3})}}
+
+/* ===== שלב 4: פרטים ===== */
+function field(f){var id='q_'+f.id,r=f.req?' r':'',v=ST.ans[f.id],t=f.type,h='';
+  if(t==='text'||t==='phone'||t==='email'||t==='date')h='<input id="'+id+'" type="'+(t==='phone'?'tel':t==='text'?'text':t)+'" '+(t==='phone'||t==='email'?'dir="ltr" ':'')+'value="'+esc(v||'')+'">';
+  else if(t==='num')h='<input id="'+id+'" type="number" inputmode="decimal" value="'+esc(v||'')+'">';
+  else if(t==='long')h='<textarea id="'+id+'">'+esc(v||'')+'</textarea>';
+  else if(t==='select')h='<select id="'+id+'"><option value="">בחרו…</option>'+f.opts.map(function(o){return '<option'+(v===o?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select>';
+  else if(t==='multi')h=f.opts.map(function(o,i){return '<label class="ck"><input type="checkbox" data-m="'+f.id+'" value="'+esc(o)+'"'+((v||[]).indexOf(o)>-1?' checked':'')+'><span>'+esc(o)+'</span></label>'}).join('');
+  else if(t==='yn')h='<div class="row">'+['כן','לא'].map(function(o){return '<label class="ck"><input type="radio" name="'+id+'" data-yn="'+f.id+'" value="'+o+'"'+(v===o?' checked':'')+'><span>'+o+'</span></label>'}).join('')+'</div>';
+  else if(t==='check')return '<label class="ck"><input type="checkbox" data-c="'+f.id+'"'+(v==='כן'?' checked':'')+'><span>'+esc(f.label)+(f.req?' <b style="color:var(--bad)">*</b>':'')+'</span></label>'+(f.help?'<span class="hint">'+esc(f.help)+'</span>':'');
+  return '<div class="f'+r+'" style="display:flex;flex-direction:column;gap:5px"><label class="f'+r+'" for="'+id+'"><span>'+esc(f.label)+'</span></label>'+(f.help?'<span class="hint">'+esc(f.help)+'</span>':'')+h+'</div>'}
+function s4(){ST.step=4;var s=svc(),o=ST.time,c=ST.cust,fm=s.form&&s.form.fields||[],h=dots(4)+'<div class="card"><h2>הפרטים שלך</h2><div class="grp">'
+  +'<label class="f r"><span>שם מלא</span><input type="text" id="cn" autocomplete="name" value="'+esc(c.name||'')+'"></label>'
+  +'<label class="f r"><span>טלפון</span><input type="tel" id="cp" autocomplete="tel" dir="ltr" inputmode="tel" value="'+esc(c.phone||'')+'"></label>'
+  +'<label class="f"><span>מייל (לקבלת אישור)</span><input type="email" id="ce" autocomplete="email" dir="ltr" value="'+esc(c.email||'')+'"></label>'
+  +fm.map(field).join('')+'<div class="hp"><input id="hp" tabindex="-1" autocomplete="off"></div></div></div>';
+  if(P.consents.length)h+='<div class="card"><div class="grp" style="margin:0">'+P.consents.map(function(x){return '<label class="ck"><input type="checkbox" data-con="'+x.id+'"'+(ST.con[x.id]?' checked':'')+'><span>'+esc(x.text)+(x.link?' <a href="'+esc(x.link)+'" target="_blank" rel="noopener">לקריאה</a>':'')+(x.req?' <b style="color:var(--bad)">*</b>':'')+'</span></label>'}).join('')+'</div></div>';
+  var a=addTotal(),pr=priceNow(),lines=[['שירות',s.name],['מתי',dm(ST.day)+' · '+wd(ST.day)+' · '+o.t],['משך',(ST.dur+a.min)+' דקות']];
+  if(s.alloc==='group'&&ST.group&&grp(ST.group))lines.push(['מקום',grp(ST.group).name]);if(s.alloc==='pick'&&ST.res&&resv(ST.res))lines.push(['מקום',resv(ST.res).name]);
+  h+='<div class="card"><div class="sum" style="border:0;margin:0;padding:0">'+lines.map(function(l){return '<div><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'}).join('')+addList(s).filter(function(x){return ST.add[x.id]}).map(function(x){return '<div><span>'+esc(x.name)+(ST.add[x.id]>1?' ×'+ST.add[x.id]:'')+'</span><span></span></div>'}).join('')+(pr>0?'<div class="tot"><span>סכום</span><span>'+nis(pr)+'</span></div>':'')+'</div>'
+   +(s.deposit&&pr>0?'<p class="hint">מקדמה: '+nis(s.deposit.t==='pct'?pr*s.deposit.v/100:Math.min(pr,s.deposit.v))+'</p>':'')+(s.approval?'<p class="hint">התור יאושר על ידי העסק.</p>':'')+(P.pay.text?'<p class="hint">'+esc(P.pay.text)+'</p>':'')+'<div id="msg"></div></div>';
+  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="go" type="button" style="flex:1">'+(s.approval?'שליחת בקשה':'קביעת התור')+'</button></div></div>');
+  $('bk').onclick=function(){grab();s3()};$('go').onclick=submit}
+function grab(){var s=svc(),fm=s.form&&s.form.fields||[];ST.cust={name:$('cn').value,phone:$('cp').value,email:$('ce').value};
+  fm.forEach(function(f){var id='q_'+f.id;if(f.type==='multi')ST.ans[f.id]=[].filter.call(document.querySelectorAll('[data-m="'+f.id+'"]'),function(x){return x.checked}).map(function(x){return x.value});
+    else if(f.type==='yn'){var y=document.querySelector('[data-yn="'+f.id+'"]:checked');ST.ans[f.id]=y?y.value:''}else if(f.type==='check')ST.ans[f.id]=document.querySelector('[data-c="'+f.id+'"]').checked?'כן':'';else ST.ans[f.id]=$(id).value});
+  [].forEach.call(document.querySelectorAll('[data-con]'),function(x){ST.con[x.dataset.con]=x.checked})}
+function submit(){grab();var s=svc(),m=$('msg'),bad=function(t,el){m.innerHTML='<div class="err" role="alert">'+esc(t)+'</div>';m.scrollIntoView({block:'center'});if(el&&el.focus)el.focus();return};
+  var c=ST.cust;if((c.name||'').trim().length<2)return bad('נא למלא שם.',$('cn'));if(!/^0\d{8,9}$|^\+?972/.test((c.phone||'').replace(/[\s-]/g,'')))return bad('נא למלא מספר טלפון תקין.',$('cp'));if(c.email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email))return bad('כתובת המייל לא תקינה.',$('ce'));
+  var fm=s.form&&s.form.fields||[];for(var i=0;i<fm.length;i++){var f=fm[i],v=ST.ans[f.id];if(f.req&&(Array.isArray(v)?!v.length:!v))return bad('נא למלא: '+f.label,$('q_'+f.id))}
+  for(var j=0;j<P.consents.length;j++){var k=P.consents[j];if(k.req&&!ST.con[k.id])return bad('כדי להמשיך צריך לאשר: '+k.text.slice(0,70))}
+  $('go').disabled=true;$('go').textContent='קובעים…';
+  call({a:'book',svc:ST.svc,start:ST.day+' '+ST.time.t,group:ST.group||undefined,res:ST.res||undefined,dur:ST.dur,addons:addArr(),name:c.name,phone:c.phone,email:c.email,consent:Object.keys(ST.con).filter(function(x){return ST.con[x]}),answers:ST.ans,hp:$('hp').value}).then(function(r){
+    if(r.error){$('go').disabled=false;$('go').textContent=s.approval?'שליחת בקשה':'קביעת התור';
+      if(r.error==='taken'){ST.err='מישהו הקדים אתכם והשעה נתפסה. בחרו שעה אחרת.';ST.time=null;ST.days=null;return loadDays()}
+      var t={max:'יש כבר מספר תורים עתידיים על המספר הזה. אפשר לבטל תור קיים או ליצור קשר עם העסק.',rate:'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',consent:'נא לאשר את התנאים.',answer:'נא למלא את כל שדות החובה.',phone:'מספר הטלפון לא תקין.',email:'כתובת המייל לא תקינה.',net:'תקלת תקשורת. נסו שוב.'}[r.error]||'לא הצלחנו לקבוע את התור. נסו שוב.';return bad(t)}
+    try{localStorage.setItem('bk-'+SLUG,JSON.stringify(ST.cust))}catch(e){}
+    done(r)})}
+function done(r){var due=r.pay&&r.pay.url,h='<div class="card"><div class="ok"><div class="big">'+(r.status==='confirmed'?'✓':'⏳')+'</div><h2>'+(r.status==='confirmed'?'התור נקבע!':r.status==='held'?'התור שמור לכם, נשאר לשלם':'הבקשה נשלחה')+'</h2><p style="margin:6px 0 0"><b>'+esc(r.svc)+'</b><br>'+esc(r.start)+(r.res?'<br>'+esc(r.res):'')+'</p>'+(r.status==='pending'?'<p class="hint">נעדכן אתכם כשהעסק יאשר.</p>':'')+'</div>'
+  +(due&&r.due>0?'<p style="margin:14px 0 6px">לתשלום: <b>'+nis(r.due)+'</b></p><a class="btn w" href="'+esc(r.pay.url)+'" target="_blank" rel="noopener">מעבר לתשלום</a>':'')
+  +'<div class="row" style="margin-top:14px"><button class="btn sec" id="ics" type="button" style="flex:1">הוספה ליומן</button><a class="btn sec" href="'+esc(r.link)+'" style="flex:1">צפייה וביטול</a></div><p class="hint" style="text-align:center">שלחנו את הקישור גם בהודעה.</p></div>';
+  shell(h);$('ics').onclick=function(){icsDl(r.id,r.k)};window.scrollTo(0,0)}
+
+/* ===== פתיחה ===== */
+function start(){
+  if(!SLUG){app.innerHTML='<div class="wrap"><div class="card" style="margin-top:60px;text-align:center"><h2>זימון תורים</h2><p class="hint">הכניסו כתובת של עסק, או הצטרפו כעסק חדש.</p><a class="btn" href="/book-manage">לניהול התורים של העסק</a></div></div>';return}
+  call({a:'biz'}).then(function(r){
+    if(r.error||!r.biz){app.innerHTML='<div class="wrap"><div class="card" style="margin-top:60px;text-align:center"><h2>העמוד לא נמצא</h2><p class="hint">בדקו את הכתובת.</p></div></div>';return}
+    P=r;theme();try{ST.cust=JSON.parse(localStorage.getItem('bk-'+SLUG)||'{}')}catch(e){}
+    if(M&&K)return viewMode();
+    if(!P.biz.open)return shell('<div class="card" style="text-align:center"><h2>קביעת תורים סגורה כרגע</h2><p class="hint">אפשר ליצור קשר עם העסק.</p></div>');
+    if(!P.svcs.length)return shell('<div class="card" style="text-align:center"><h2>עוד אין שירותים</h2></div>');
+    if(P.svcs.length===1){var id=P.svcs[0].id;ST.svc=id;pickSvc(id)}else s1()})}
+start();
+})();
+</script>
+</body>
+</html>

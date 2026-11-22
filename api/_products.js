@@ -14,6 +14,7 @@ const LIST = [
   { k: 'invite', path: '/invite', name: 'הזמנות דיגיטליות', show: true, index: true },
   { k: 'auction', path: '/auction', name: 'מכירה סינית', show: true, index: true },
   { k: 'give', path: '/give', name: 'התרמה מקוונת', show: true, index: true },
+  { k: 'book', path: '/book', name: 'זימון תורים', show: false, index: false },
   { k: 'pdf', path: '/pdf', name: 'עריכת PDF', show: false, index: false },
   { k: 'gallery', path: '/gallery.html', name: 'גלריית עיצובים', show: false, index: true }
 ];

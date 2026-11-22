@@ -77,6 +77,8 @@ module.exports = async (req, res) => {
   if (cp === '_pdfpay') return require('./_pdfpay')(req, res);
   if (cp === '_sign') return require('./_pdfsign')(req, res);
   if (cp === '_give') return require('./_give')(req, res);
+  /* זימון תורים */
+  if (cp === '_book') return require('./_book')(req, res);
   if (cp === '_giveivr') return require('./_give_ivr')(req, res);
   if (cp === '_ivr') return require('./_timer').ivr(req, res);
   if (cp === '_ivrcb') return require('./_timer').ivrcb(req, res);

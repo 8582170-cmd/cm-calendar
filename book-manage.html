@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ניהול זימון תורים · MyLuach</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/logo.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
+<style>
+:root{--navy:#15203B;--gold:#C9A24B;--gold2:#E6C36F;--cream:#FBF4DF;--cream-line:#E8D9A8;--cream-ink:#4A3A0E;--bg:#F3F4F7;--ink:#1B2338;--mute:#505869;--line:#DFE2EA;--line2:#C5CAD6;--bad:#A3261B;--good:#1C7A56}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Heebo,Arial,sans-serif}
+h1,h2,h3{margin:0}h1{font-family:"Frank Ruhl Libre",serif;font-size:28px}h2{font-size:19px}h3{font-size:16px}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:#8A6516}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+nav.side{flex:1 1 220px;max-width:260px;background:var(--navy);color:#fff;padding:24px 14px;display:flex;flex-direction:column;gap:4px}
+nav.side .ttl{font-family:"Frank Ruhl Libre",serif;font-size:21px;font-weight:700;padding:0 10px}
+nav.side .org{font-size:13px;color:var(--gold2);padding:0 10px 12px}
+nav.side button,nav.side a{display:block;text-align:right;width:100%;padding:10px 12px;border-radius:8px;border:0;background:transparent;color:#D5DAE6;font-size:15px;cursor:pointer;text-decoration:none;min-height:42px}
+nav.side button[aria-current="page"]{background:var(--gold2);color:var(--navy);font-weight:700}
+nav.side button:hover{background:#1F2C4D}nav.side button[aria-current="page"]:hover{background:var(--gold2)}
+main{flex:999 1 560px;min-width:0;padding:28px 32px 60px;display:flex;flex-direction:column;gap:22px}
+.hd{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column}.kpi span{font-size:13px;color:var(--mute)}.kpi b{font-size:24px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:500}
+label.f small,.hint{font-weight:400;color:var(--mute);font-size:13px}
+input[type=text],input[type=number],input[type=tel],input[type=email],input[type=password],input[type=datetime-local],input[type=date],input:not([type]),select,textarea{height:42px;border:1px solid var(--line2);border-radius:8px;padding:0 10px;background:#fff;width:100%}
+textarea{height:auto;min-height:80px;padding:8px 10px;resize:vertical}
+label.ck{display:flex;gap:8px;align-items:center;font-size:14px;min-height:32px;cursor:pointer}label.ck input{width:18px;height:18px}
+.btn{height:42px;padding:0 16px;border-radius:8px;border:1px solid var(--line2);background:#fff;cursor:pointer;font-size:14px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit}
+.btn.pri{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+.btn.dark{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.bad{color:var(--bad);border-color:#E3B3AD}
+.btn:disabled{opacity:.5;cursor:default}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tw{background:#fff;border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:right}
+th{background:#F8F9FB;color:var(--mute);font-weight:500;padding:10px 12px;white-space:nowrap}
+td{padding:8px 12px;border-top:1px solid #EEF0F4;vertical-align:top}
+td input,td select{height:38px;min-width:70px}
+td input:not([type=checkbox]):not([type=file]),td select,td textarea{min-width:120px}td input[type=checkbox]{width:20px;height:20px;min-width:0}td input[type=file]{min-width:0;width:auto}td textarea{min-width:200px}
+tr.click{cursor:pointer}tr.click:hover{background:#FAFAF6}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:#E4E7EF}
+.pill.ok{background:#DDF1E7;color:#145A3F}.pill.wait{background:var(--cream);color:var(--cream-ink)}.pill.bad{background:#FBE9E7;color:var(--bad)}
+.flash{position:fixed;bottom:18px;left:18px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;z-index:9;max-width:420px}
+.flash.bad{background:var(--bad)}
+.note{background:var(--cream);border:1px solid var(--cream-line);color:var(--cream-ink);border-radius:10px;padding:12px 14px;font-size:14px}
+.mono{direction:ltr;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:13px;word-break:break-all}
+.two{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}.two>*{flex:1 1 320px;min-width:0}
+.drawbox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.win{width:100%;max-width:560px;background:var(--navy);color:#fff;border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;text-align:right}
+.win .s{font-size:36px;font-weight:700;letter-spacing:3px;direction:ltr}.win small{color:#D5DAE6}.win .k{color:var(--gold2);font-size:13px}
+.drawgo{min-height:62px;padding:0 40px;border:0;border-radius:14px;background:var(--gold);color:var(--navy);font-size:21px;font-weight:700;cursor:pointer}
+.prodlist{display:flex;flex-direction:column;gap:8px}
+.prodlist button{min-height:52px;padding:8px 12px;border-radius:10px;border:2px solid var(--line);background:#fff;text-align:right;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.prodlist button[aria-pressed="true"]{border-color:var(--gold);background:var(--cream)}
+.full{position:fixed;inset:0;background:var(--navy);color:#fff;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:30px}
+.full .p{font-family:"Frank Ruhl Libre",serif;font-size:clamp(36px,6vw,70px)}.full .s{font-size:clamp(60px,12vw,150px);font-weight:700;letter-spacing:6px;color:var(--gold2);direction:ltr}.full .n{font-size:clamp(28px,4vw,50px)}
+.shuf{font-size:clamp(40px,8vw,110px);font-weight:700;direction:ltr;color:#D5DAE6;letter-spacing:4px}
+:focus-visible{outline:3px solid #2A5BD7;outline-offset:2px}
+@media print{nav.side,.noprint,.flash{display:none!important}main{padding:0}body{background:#fff}}
+
+.ttl{font-family:"Frank Ruhl Libre",serif}
+a.biz,button.biz{text-decoration:none;color:inherit;gap:6px}a.biz:hover,button.biz:hover{border-color:var(--gold)}
+.dirl{direction:ltr;text-align:right}
+.btn.sm{height:34px;padding:0 10px;font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(15,22,40,.55);z-index:30;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px}
+.md{background:#fff;border-radius:14px;padding:20px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+.grp2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px}.kv span{color:var(--mute)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;align-items:start}
+.col{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.ap{display:flex;flex-direction:column;text-align:right;gap:1px;border:0;border-right:5px solid var(--good);background:#F3FAF6;border-radius:8px;padding:8px 10px;cursor:pointer}
+.ap small{color:var(--mute)}.ap.s-pending,.ap.s-held{border-color:var(--gold);background:var(--cream)}.ap.s-done{border-color:#8A93A6;background:#F1F2F6}.ap.s-noshow{border-color:var(--bad);background:#FBE9E7}
+.le{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px;background:#FAFBFC}.lg{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;min-width:0}.lx{display:flex;flex-direction:column;gap:6px}
+.lc{display:flex;flex-direction:column;gap:3px;font-size:13px}.ll{color:var(--mute)}
+.dys{display:flex;flex-wrap:wrap;gap:5px}.dy{height:34px;min-width:46px;border:1px solid var(--line2);border-radius:8px;background:#fff;cursor:pointer}.dy.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.hrs{display:flex;flex-direction:column;gap:6px}.hr{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}.hr .ck{width:90px}.hs{display:flex;gap:6px;align-items:center}.hs input{width:112px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{display:flex;gap:6px;align-items:center;border:1px solid var(--line2);border-radius:999px;padding:5px 12px;cursor:pointer;background:#fff}.chip input{width:16px;height:16px}
+.hist{display:flex;flex-direction:column;gap:6px;font-size:14px;max-height:200px;overflow:auto}
+textarea.mono{width:100%;height:auto;min-height:54px;padding:8px 10px}
+.err{background:#FBE9E7;color:#7A1D14;border-radius:8px;padding:8px 12px;margin-top:8px}
+nav.side .ttl{padding:0 10px}
+</style>
+<script src="/assets/config.js"></script>
+</head>
+<body>
+<div class="app"><nav class="side noprint" id="nav" aria-label="ניהול התורים"></nav><main id="box"><p>טוען…</p></main></div>
+<div class="flash" id="flash" role="status" hidden></div>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)},box=$('box'),nav=$('nav');
+var API='/api/pricing?c=_book',KEY='myluach-auth',TK='';
+var Q=new URLSearchParams(location.search),SLUG=Q.get('s')||'',TAB=Q.get('t')||'ov';
+var S=null,ME={};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function nis(n){return (Math.round(+n*100)/100).toLocaleString('he-IL')+' ₪'}
+function dt(d){try{return d?new Date(d).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):''}catch(e){return ''}}
+function flash(t,bad){var m=$('flash');m.textContent=t;m.className='flash'+(bad?' bad':'');m.hidden=false;clearTimeout(flash.t);flash.t=setTimeout(function(){m.hidden=true},4500)}
+function meMail(){var j=sess();if(!j)return '';if(j.user&&j.user.email)return j.user.email;try{var p=(j.access_token||'').split('.')[1];return JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/g,'+').replace(/_/g,'/'))))).email||''}catch(e){return ''}}
+function switchAcct(){try{localStorage.removeItem(KEY)}catch(e){}TK='';var a=$('acct');if(a)a.remove();login()}
+function acctBar(){var m=meMail(),a=$('acct');if(!m){if(a)a.remove();return}if(!a){a=document.createElement('div');a.id='acct';a.style.cssText='position:fixed;bottom:8px;left:8px;z-index:20;background:#fff;border:1px solid #ccc;border-radius:8px;padding:4px 10px;font-size:12px;box-shadow:0 1px 4px rgba(0,0,0,.15)';document.body.appendChild(a)}
+  a.innerHTML='מחובר כ־<b dir="ltr">'+esc(m)+'</b> · <a href="#" id="acs">החלפת חשבון</a>';$('acs').onclick=function(e){e.preventDefault();switchAcct()}}
+function sess(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
+function tok(){var j=sess();if(!j)return Promise.resolve('');
+  if(j.access_token&&(!j.expires_at||j.expires_at*1000>Date.now()+60000))return Promise.resolve(j.access_token);
+  var C=window.MYLUACH_CFG||{};if(!j.refresh_token||!C.supabaseUrl)return Promise.resolve('');
+  return fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:j.refresh_token})})
+   .then(function(r){return r.ok?r.json():null}).then(function(n){if(!n||!n.access_token)return '';try{localStorage.setItem(KEY,JSON.stringify(Object.assign({},j,{access_token:n.access_token,refresh_token:n.refresh_token||j.refresh_token,expires_at:n.expires_at})))}catch(e){}return n.access_token}).catch(function(){return ''})}
+function call(b){return tok().then(function(t){TK=t;return fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TK},body:JSON.stringify(Object.assign({s:SLUG},b))})}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;if(r.status===401)login();if(j.error==='setup')flash(j.message,1);return j})})}
+function loadSb(){return window.supabase?Promise.resolve():new Promise(function(res,rej){var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';s.onload=res;s.onerror=function(){var s2=document.createElement('script');s2.src='/cdn/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';s2.onload=res;s2.onerror=rej;document.head.appendChild(s2)};document.head.appendChild(s)})}
+var SB=null;
+function sbReady(){var C=window.MYLUACH_CFG||{};if(!C.supabaseUrl)return Promise.reject(new Error('cfg'));return loadSb().then(function(){return SB||(SB=window.supabase.createClient(C.supabaseUrl,C.supabaseKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:KEY}}))})}
+function authMsg(e){var m=String(e&&e.message||e||'');if(/invalid login/i.test(m))return 'המייל או הסיסמה שגויים. אם אין לכם סיסמה, השתמשו בקישור במייל.';if(/rate|limit|seconds/i.test(m))return 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.';if(/provider|not enabled|unsupported/i.test(m))return 'הכניסה עם Google עדיין לא הופעלה באתר. אפשר להיכנס עם קישור במייל.';return 'שגיאה: '+esc(m)}
+function login(msg0){nav.innerHTML='';
+  box.innerHTML='<div class="card" style="max-width:440px"><h1>כניסה לניהול התורים</h1><p class="hint" style="margin:0 0 10px">כניסה באותו מייל שהוגדר לבעל העסק. אין צורך בסיסמה.</p>'
+   +'<div class="acts"><button class="btn" type="button" id="lgg" style="width:100%">כניסה עם Google</button></div>'
+   +'<p class="hint" style="text-align:center;margin:10px 0">או</p>'
+   +'<label class="f" for="lgm">מייל<input id="lgm" type="email" dir="ltr" autocomplete="email"></label>'
+   +'<div class="acts"><button class="btn pri" type="button" id="lgl" style="width:100%">שלחו לי קישור כניסה למייל</button></div>'
+   +'<details style="margin-top:12px"><summary style="cursor:pointer;font-size:14px">יש לי סיסמה</summary><label class="f" for="lgp">סיסמה<input id="lgp" type="password" dir="ltr" autocomplete="current-password"></label><div class="acts"><button class="btn" type="button" id="lgi">כניסה עם סיסמה</button></div></details>'
+   +'<p class="hint" id="lgx" style="margin:10px 0 0"></p></div>';
+  var X=$('lgx'),say=function(t,bad){X.innerHTML=t;X.style.color=bad?'#b00020':''};if(msg0)say(msg0,1);
+  var mail=function(){var m=$('lgm').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){say('נא למלא כתובת מייל תקינה.',1);$('lgm').focus();return ''}return m};
+  var here=location.origin+location.pathname;
+  var mark=function(){try{var u=location.pathname+location.search;sessionStorage.setItem('ml-back',u);localStorage.setItem('ml-back2',JSON.stringify({u:u,t:Date.now()}));if(SLUG)localStorage.setItem('ml-s',SLUG)}catch(e){}};
+  $('lgg').onclick=function(){say('עוברים לגוגל…');mark();sbReady().then(function(sb){return sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:here,queryParams:{prompt:'select_account'}}})}).then(function(r){if(r&&r.error)say(authMsg(r.error),1)}).catch(function(e){say(authMsg(e),1)})};
+  $('lgl').onclick=function(){var m=mail();if(!m)return;var b=$('lgl');b.disabled=true;say('שולחים…');mark();
+    sbReady().then(function(sb){return sb.auth.signInWithOtp({email:m,options:{emailRedirectTo:here}})}).then(function(r){b.disabled=false;if(r&&r.error)return say(authMsg(r.error),1);say('<b>נשלח!</b> פתחו את המייל ולחצו על הקישור, ותיכנסו ישר לניהול. אם הוא לא מגיע תוך דקה, בדקו בספאם.');b.textContent='שליחה חוזרת'}).catch(function(e){b.disabled=false;say(authMsg(e),1)})};
+  var pw=function(){var m=mail(),p=$('lgp').value,C=window.MYLUACH_CFG||{};if(!m)return;if(!p){say('נא למלא סיסמה.',1);return}if(!C.supabaseUrl){say('הכניסה לא זמינה כרגע.',1);return}$('lgi').disabled=true;say('נכנסים…');
+    fetch(C.supabaseUrl.replace(/\/$/,'')+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:C.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({email:m,password:p})})
+     .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})}).then(function(o){
+       if(!o.ok||!o.j.access_token){$('lgi').disabled=false;say(/invalid|credentials/i.test(JSON.stringify(o.j))?'המייל או הסיסמה שגויים. אם אין לכם סיסמה, השתמשו בקישור במייל.':'הכניסה נכשלה. נסו שוב.',1);return}
+       try{localStorage.setItem(KEY,JSON.stringify(o.j))}catch(e){}location.reload()}).catch(function(){$('lgi').disabled=false;say('תקלת תקשורת. נסו שוב.',1)})};
+  $('lgi').onclick=pw;$('lgp').onkeydown=function(e){if(e.key==='Enter')pw()}}
+/* חזרה מכניסה עם Google או מקישור במייל: הכתובת מגיעה עם הטוקן, ספריית הכניסה שומרת אותו, ואז נכנסים לניהול */
+function finishHash(){var err=/error_description=([^&]+)/.exec(location.hash);nav.innerHTML='';box.innerHTML='<div class="card"><p>מתחברים…</p></div>';
+  var clean=function(){var s='';try{s=localStorage.getItem('ml-s')||'';localStorage.removeItem('ml-s');localStorage.removeItem('ml-back2');sessionStorage.removeItem('ml-back')}catch(e){}return location.pathname+(SLUG||!s?location.search:'?s='+encodeURIComponent(s))};
+  if(err){history.replaceState(null,'',location.pathname+location.search);return login('הכניסה נכשלה: '+esc(decodeURIComponent(err[1].replace(/\+/g,' '))))}
+  sbReady().then(function(sb){return new Promise(function(res){var d=0;sb.auth.onAuthStateChange(function(ev,s){if(s&&!d){d=1;res(s)}});setTimeout(function(){if(!d){d=1;res(null)}},5000)})}).then(function(s){if(!s)return login('הכניסה לא הושלמה. נסו שוב.');location.replace(clean())}).catch(function(){login('הכניסה לא הושלמה. נסו שוב.')})}
+function csv(name,head,rows){var e=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  var t='\uFEFF'+[head].concat(rows).map(function(r){return r.map(e).join(',')}).join('\r\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));a.download=name+'.csv';a.click()}
+function table(head,rows){return '<div class="tw"><table><thead><tr>'+head.map(function(h){return '<th scope="col">'+esc(h)+'</th>'}).join('')+'</tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="'+head.length+'" class="hint">אין נתונים</td></tr>')+'</tbody></table></div>'}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-cpw]');if(b&&navigator.clipboard)navigator.clipboard.writeText(b.dataset.cpw).then(function(){flash('הועתק')})});
+/* ===== ניהול זימון תורים ===== */
+var B=null,ROLE='',TZ='Asia/Jerusalem';
+var ST_LBL={pending:'ממתין לאישור',confirmed:'מאושר',held:'ממתין לתשלום',done:'בוצע',cancelled:'בוטל',noshow:'לא הגיע',expired:'פג תוקף'};
+var ST_CLS={pending:'wait',confirmed:'ok',held:'wait',done:'',cancelled:'bad',noshow:'bad',expired:''};
+var DOW=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+function stPill(s){return '<span class="pill '+(ST_CLS[s]||'')+'">'+esc(ST_LBL[s]||s)+'</span>'}
+function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function addD(d,n){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2)}
+function tm(iso){return new Date(iso).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',timeZone:TZ})}
+function dl(iso){return new Date(iso).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',weekday:'short',timeZone:TZ})}
+function dkey(iso){return new Date(iso).toLocaleDateString('sv-SE',{timeZone:TZ})}
+function fdate(d){return new Date(d+'T12:00:00').toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}
+function canEdit(){return ROLE==='owner'||ROLE==='manager'}
+function canWork(){return canEdit()||ROLE==='clerk'}
+function val(id){var e=$(id);return e?e.value:''}
+function chk(id){var e=$(id);return !!(e&&e.checked)}
+function F(id,label,v,o){o=o||{};return '<label class="f" for="'+id+'">'+label+(o.hint?' <small>'+o.hint+'</small>':'')+(o.tag==='ta'?'<textarea id="'+id+'" rows="'+(o.rows||3)+'">'+esc(v)+'</textarea>':'<input id="'+id+'" type="'+(o.type||'text')+'" value="'+esc(v)+'"'+(o.dir?' dir="'+o.dir+'"':'')+(o.ph?' placeholder="'+esc(o.ph)+'"':'')+(o.attr?' '+o.attr:'')+'>')+'</label>'}
+function SEL(id,label,opts,v,hint){return '<label class="f" for="'+id+'">'+label+(hint?' <small>'+hint+'</small>':'')+'<select id="'+id+'">'+opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(o[0])===String(v)?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></label>'}
+function CK(id,label,v,hint){return '<label class="ck" for="'+id+'"><input id="'+id+'" type="checkbox"'+(v?' checked':'')+'><span>'+label+(hint?' <small class="hint">'+hint+'</small>':'')+'</span></label>'}
+function CARD(t,inner,hint){return '<section class="card">'+(t?'<h3>'+t+'</h3>':'')+(hint?'<p class="hint" style="margin:-6px 0 0">'+hint+'</p>':'')+inner+'</section>'}
+function ov(html,wide){closeOv();var o=document.createElement('div');o.className='ov';o.id='ov';o.innerHTML='<div class="md" role="dialog" aria-modal="true" style="max-width:'+(wide||560)+'px">'+html+'</div>';o.onclick=function(e){if(e.target===o)closeOv()};document.body.appendChild(o);document.body.style.overflow='hidden';var f=o.querySelector('input,select,textarea');if(f&&!/date|time/.test(f.type))f.focus();return o}
+function closeOv(){var o=$('ov');if(o)o.remove();document.body.style.overflow=''}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeOv()});
+function api(b){return call(b).then(function(r){if(r.error==='forbidden')flash('אין הרשאה לפעולה הזאת.',1);return r})}
+function errTxt(r){var m={taken:'השעה או המשאב תפוסים.',name:'חסר שם.',phone:'מספר טלפון לא תקין.',res:'יש לבחור משאב.',group:'יש לבחור קבוצה.',svc:'יש לבחור שירות.',start:'תאריך או שעה לא תקינים.',dur:'משך לא תקין.',max:'הגעת למגבלה.',exists:'כבר קיים לקוח עם הטלפון הזה.',slug:'כתובת לא תקינה או שמורה: אותיות אנגלית קטנות, מספרים ומקף, 3 עד 40 תווים.',slug_taken:'הכתובת תפוסה. נסו אחרת.',closed:'האגף עדיין לא נפתח להקמת עסקים.',answer:'חסרה תשובה.',bad:'חסרים פרטים.'};return m[r.error]||'הפעולה לא הצליחה. נסו שוב.'}
+
+/* ----- עורך רשימות כללי ----- */
+function LE(id,arr,cols,mk,add){var el=$(id);if(!el)return;
+  function cell(c,it,i){if(c.show&&['select','multi'].indexOf(it.type)<0)return '';var v=it[c.k],a='data-i="'+i+'" data-k="'+c.k+'"',lab=c.l?'<span class="ll">'+c.l+'</span>':'';
+    if(c.t==='days')return '<div class="lc" style="grid-column:1/-1">'+lab+'<div class="dys">'+DOW.map(function(n,d){return '<button type="button" class="dy'+((v||[]).indexOf(d)>-1?' on':'')+'" data-i="'+i+'" data-dk="'+c.k+'" data-d="'+d+'" aria-pressed="'+((v||[]).indexOf(d)>-1)+'">'+n.slice(0,3)+'</button>'}).join('')+'</div></div>';
+    if(c.t==='chk')return '<label class="ck lc">'+'<input type="checkbox" '+a+(v?' checked':'')+'><span>'+c.l+'</span></label>';
+    if(c.t==='sel')return '<label class="lc">'+lab+'<select '+a+'>'+c.o.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(v)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></label>';
+    if(c.t==='ta')return '<label class="lc" style="grid-column:1/-1">'+lab+'<textarea rows="3" '+a+' data-lines="1">'+esc((v||[]).join('\n'))+'</textarea></label>';
+    return '<label class="lc">'+lab+'<input type="'+({num:'number',time:'time',date:'date',datetime:'datetime-local'}[c.t]||'text')+'" '+a+' value="'+esc(v==null?'':v)+'"'+(c.step?' step="'+c.step+'"':'')+(c.ph?' placeholder="'+esc(c.ph)+'"':'')+(c.dir?' dir="'+c.dir+'"':'')+'></label>'}
+  function draw(){el.innerHTML=arr.map(function(it,i){return '<div class="le"><div class="lg">'+cols.map(function(c){return cell(c,it,i)}).join('')+'</div><div class="lx">'+(c0(i)?'<button type="button" class="btn sm" data-mv="'+i+'" aria-label="הזזה למעלה">↑</button>':'')+'<button type="button" class="btn sm bad" data-del="'+i+'" aria-label="מחיקה">✕</button></div></div>'}).join('')+'<div class="acts"><button type="button" class="btn" data-add="1">'+(add||'+ הוספה')+'</button></div>'}
+  function c0(i){return i>0&&mk&&mk.move}
+  el.onclick=function(e){var t=e.target.closest('button');if(!t)return;
+    if(t.dataset.add){arr.push(mk.make());draw()}
+    else if(t.dataset.del!=null){arr.splice(+t.dataset.del,1);draw()}
+    else if(t.dataset.mv!=null){var i=+t.dataset.mv,x=arr[i];arr[i]=arr[i-1];arr[i-1]=x;draw()}
+    else if(t.dataset.dk){var it=arr[+t.dataset.i],d=+t.dataset.d,L=it[t.dataset.dk]=it[t.dataset.dk]||[],p=L.indexOf(d);if(p>-1)L.splice(p,1);else L.push(d);t.classList.toggle('on');t.setAttribute('aria-pressed',p<0)}};
+  el.oninput=el.onchange=function(e){var t=e.target;if(t.dataset.k==null)return;var it=arr[+t.dataset.i],c=cols.filter(function(c){return c.k===t.dataset.k})[0];
+    it[t.dataset.k]=t.type==='checkbox'?t.checked:t.dataset.lines?t.value.split('\n').map(function(x){return x.trim()}).filter(Boolean):c.t==='num'?(t.value===''?'':+t.value):t.value;
+    if(c.re&&e.type==='change')draw()};
+  draw()}
+/* ----- שעות פעילות ----- */
+function hoursEd(id,h,title){h=h||{};var o='<div class="hrs" id="'+id+'">';
+  for(var d=0;d<7;d++){var L=h[d]||h[String(d)]||[],a=L[0]||['',''],b=L[1]||['',''];
+    o+='<div class="hr"><label class="ck"><input type="checkbox" data-hd="'+d+'"'+(L.length?' checked':'')+'><span>'+DOW[d]+'</span></label><span class="hs"><input type="time" data-h="'+d+'.0.0" value="'+(a[0]||(L.length?'':'09:00'))+'" aria-label="מ־"> עד <input type="time" data-h="'+d+'.0.1" value="'+(a[1]||(L.length?'':'17:00'))+'" aria-label="עד"></span><span class="hs"><input type="time" data-h="'+d+'.1.0" value="'+(b[0]||'')+'" aria-label="מ־ שנייה"> עד <input type="time" data-h="'+d+'.1.1" value="'+(b[1]||'')+'" aria-label="עד שנייה"></span></div>'}
+  return o+'<p class="hint" style="margin:4px 0 0">הטווח השני אופציונלי, למשל לפני ואחרי הפסקת צהריים.</p></div>'}
+function hoursGet(id){var o={},r=$(id);for(var d=0;d<7;d++){o[d]=[];if(!r.querySelector('[data-hd="'+d+'"]').checked)continue;[0,1].forEach(function(k){var a=r.querySelector('[data-h="'+d+'.'+k+'.0"]').value,b=r.querySelector('[data-h="'+d+'.'+k+'.1"]').value;if(a&&b&&b>a)o[d].push([a,b])})}return o}
+function copyTxt(t){if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){flash('הועתק')})}
+function pageUrl(){return location.origin+'/book/'+B.biz.slug}
+
+/* ===== רשימת העסקים ===== */
+function listView(){SLUG='';nav.innerHTML='<div class="ttl">זימון תורים</div><div class="org">MyLuach</div><a href="/book" target="_blank">מה זה?</a><a href="/">לאתר</a>';
+  box.innerHTML='<p>טוען…</p>';
+  call({a:'mine'}).then(function(r){if(r._st===401)return;var L=r.items||[];
+    if(L.length===1&&!r.admin){return go('ov',L[0].slug)}
+    var h='<div class="hd"><h1>העסקים שלי</h1></div>';
+    if(!L.length)h+='<div class="note">עוד אין לך עסק. '+(r.canCreate?'אפשר ליצור עכשיו, זה לוקח דקה.':(r.note?esc(r.note):'האגף עדיין לא נפתח להקמת עסקים חדשים.'))+'</div>';
+    h+='<div class="grid">'+L.map(function(x){return '<a class="card biz" href="?s='+encodeURIComponent(x.slug)+'"><h3>'+esc(x.name)+'</h3><span class="hint dirl">/book/'+esc(x.slug)+'</span><span><span class="pill '+(x.status==='open'?'ok':'wait')+'">'+{open:'פתוח',draft:'בהקמה',closed:'סגור'}[x.status]+'</span>'+(x.all&&x.role==='owner'?' <small class="hint">'+esc(x.email||'')+'</small>':'')+'</span></a>'}).join('')+'</div>';
+    if(r.canCreate)h+=CARD('עסק חדש',F('nn','שם העסק','',{ph:'לדוגמה: מרכז הסטודיו'})+F('ns','כתובת באתר','',{dir:'ltr',ph:'my-studio',hint:'אנגלית קטנה, מספרים ומקף. תהיה myluach.org/book/…'})+'<div class="acts"><button class="btn pri" id="nc" type="button">יצירת עסק</button></div><div class="hint" id="nx"></div>');
+    if(r.admin)h+='<div id="siteBox"></div>';
+    box.innerHTML=h;
+    var nc=$('nc');if(nc){$('nn').oninput=function(){if(!$('ns').dataset.t){$('ns').value=$('nn').value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}};$('ns').oninput=function(){this.dataset.t=1};
+      nc.onclick=function(){nc.disabled=true;call({a:'create',name:val('nn'),slug:val('ns').toLowerCase()}).then(function(r){nc.disabled=false;if(r.error){$('nx').textContent=errTxt(r);$('nx').style.color='#b00020';return}go('ov',r.slug)})}}
+    if(r.admin)siteBox()})}
+function siteBox(){call({a:'site'}).then(function(s){$('siteBox').innerHTML=CARD('הגדרות האגף (לבעל האתר בלבד)',CK('so','פתוח להקמת עסקים חדשים',s.open)+CK('ss','אפשר שליחת SMS ללקוחות',s.sms,'עלות על חשבון האתר')+F('sm','מספר עסקים מקסימלי לכל משתמש',s.max,{type:'number'})+F('sn','הודעה למי שנכנס כשהאגף סגור',s.note,{tag:'ta'})+'<div class="acts"><button class="btn pri" id="sv" type="button">שמירה</button></div>');
+    $('sv').onclick=function(){call({a:'site',set:{open:chk('so'),sms:chk('ss'),max:+val('sm'),note:val('sn')}}).then(function(){flash('נשמר')})}})}
+
+/* ===== טעינה ותפריט ===== */
+function loadAll(){return call({a:'get'}).then(function(r){if(r._st===401)return Promise.reject();if(r.error){box.innerHTML='<div class="card"><h2>אין גישה</h2><p>העסק לא נמצא, או שלחשבון הזה אין הרשאה.</p><a class="btn" href="?">לרשימת העסקים</a></div>';return Promise.reject()}B=r;ROLE=r.role;return r})}
+var TABS=[['ov','היום','w'],['ap','תורים','w'],['cu','לקוחות','w'],['sv','שירותים','e'],['rs','חדרים ומשאבים','e'],['ad','תוספות','e'],['fm','שאלונים','e'],['st','הגדרות','e'],['sh','שיתוף והטמעה','e']];
+function go(t,s){var u=new URL(location.href);if(s!==undefined&&s!==SLUG){u.searchParams.set('s',s);SLUG=s;B=null}u.searchParams.set('t',t);history.replaceState(null,'',u);TAB=t;show()}
+function show(){if(!B||B.biz.slug!==SLUG)return loadAll().then(show,function(){});
+  var T=TABS.filter(function(x){return x[2]==='w'||canEdit()});if(!T.some(function(x){return x[0]===TAB}))TAB='ov';
+  nav.innerHTML='<div class="ttl">זימון תורים</div><div class="org">'+esc(B.biz.name)+'</div>'+T.map(function(x){return '<button type="button" data-t="'+x[0]+'"'+(x[0]===TAB?' aria-current="page"':'')+'>'+x[1]+'</button>'}).join('')+'<a href="/book/'+esc(B.biz.slug)+'" target="_blank">לדף ההזמנה ↗</a><a href="?">כל העסקים</a>';
+  [].forEach.call(nav.querySelectorAll('button'),function(b){b.onclick=function(){go(b.dataset.t)}});
+  ({ov:vToday,ap:vAppts,cu:vCusts,sv:vSvcs,rs:vRes,ad:vAddons,fm:vForms,st:vSettings,sh:vShare})[TAB]()}
+function reload(){return loadAll().then(show,function(){})}
+function banner(){var c=B.biz.cfg,miss=[];if(!Object.keys(c.hours||{}).some(function(d){return (c.hours[d]||[]).length}))miss.push('שעות פעילות');if(!B.svcs.some(function(s){return s.active}))miss.push('שירות');if(!B.res.some(function(s){return s.active}))miss.push('משאב');
+  if(B.biz.status==='open')return '';
+  return '<div class="note"><b>העסק עדיין לא פתוח ללקוחות.</b> '+(miss.length?'חסר: '+miss.join(', ')+'.':'הכול מוכן.')+(canEdit()?' <button class="btn pri sm" id="opn" type="button"'+(miss.length?' disabled':'')+'>פתיחה לקביעת תורים</button>':'')+'</div>'}
+function wireBanner(){var b=$('opn');if(b)b.onclick=function(){api({a:'save',status:'open'}).then(function(){flash('העסק פתוח! שלחו את הקישור ללקוחות.');reload()})}}
+
+/* ===== היום ===== */
+var DAY=today();
+function vToday(){box.innerHTML='<div class="hd"><h1>'+esc(B.biz.name)+'</h1><div class="acts">'+(canWork()?'<button class="btn pri" id="na" type="button">+ תור חדש</button>':'')+'</div></div>'+banner()+'<div class="acts noprint"><button class="btn" id="dp" type="button">›</button><input type="date" id="dd" value="'+DAY+'" style="max-width:170px"><button class="btn" id="dn" type="button">‹</button><button class="btn" id="dt" type="button">היום</button><b id="dh"></b></div><div id="tl"><p class="hint">טוען…</p></div>';
+  wireBanner();$('dh').textContent=fdate(DAY);
+  $('dp').onclick=function(){DAY=addD(DAY,-1);vToday()};$('dn').onclick=function(){DAY=addD(DAY,1);vToday()};$('dt').onclick=function(){DAY=today();vToday()};$('dd').onchange=function(){if(this.value){DAY=this.value;vToday()}};
+  if($('na'))$('na').onclick=function(){apptForm()};
+  api({a:'appts',from:DAY,to:addD(DAY,1)}).then(function(r){var L=(r.items||[]).filter(function(a){return a.status!=='cancelled'&&a.status!=='expired'});var cols=B.res.filter(function(x){return x.active}).map(function(x){return {id:x.id,n:x.name,L:[]}});var other={id:0,n:'ללא משאב',L:[]};
+    L.forEach(function(a){var c=cols.filter(function(x){return x.id===a.res_id})[0];(c||other).L.push(a)});if(other.L.length)cols.push(other);
+    var sum=L.length?'<p class="hint">'+(L.length===1?'תור אחד':L.length+' תורים')+(L.some(function(a){return a.status==='pending'})?' · <b style="color:#8a6516">'+L.filter(function(a){return a.status==='pending'}).length+' ממתינים לאישור</b>':'')+'</p>':'<div class="note">אין תורים ביום הזה.</div>';
+    $('tl').innerHTML=sum+'<div class="cols">'+cols.map(function(c){return '<div class="col"><h3>'+esc(c.n)+'</h3>'+(c.L.length?c.L.map(function(a){var s=B.svcs.filter(function(x){return x.id===a.svc_id})[0];return '<button type="button" class="ap s-'+a.status+'" data-id="'+esc(a.id)+'"><b>'+tm(a.start_at)+'–'+tm(a.end_at)+'</b><span>'+esc(a.name)+'</span><small>'+esc(s?s.name:'')+(a.status==='pending'?' · ממתין לאישור':a.status==='held'?' · ממתין לתשלום':'')+'</small></button>'}).join(''):'<p class="hint">פנוי</p>')+'</div>'}).join('')+'</div>';
+    wireAp(L)})}
+function wireAp(L,after){[].forEach.call(document.querySelectorAll('.ap[data-id],tr.click[data-id]'),function(b){b.onclick=function(){apptModal(L.filter(function(a){return a.id===b.dataset.id})[0],after)}})}
+
+/* ===== חלון תור ===== */
+function apptModal(a,after){if(!a)return;var s=B.svcs.filter(function(x){return x.id===a.svc_id})[0],r=B.res.filter(function(x){return x.id===a.res_id})[0],due=Math.max(0,((a.pay||{}).due||0)-((a.pay||{}).paid||0));
+  var h='<div class="hd"><h2>'+esc(a.name)+'</h2>'+stPill(a.status)+'</div><div class="kv"><span>שירות</span><b>'+esc(s?s.name:'')+'</b><span>מתי</span><b>'+dl(a.start_at)+' · '+tm(a.start_at)+'–'+tm(a.end_at)+'</b><span>משאב</span><b>'+esc(r?r.name:'')+'</b><span>טלפון</span><b dir="ltr" style="text-align:right"><a href="tel:'+esc(a.phone)+'">'+esc(a.phone)+'</a> · <a href="https://wa.me/972'+esc(a.phone.replace(/^0/,''))+'" target="_blank" rel="noopener">וואטסאפ</a></b>'+(a.email?'<span>מייל</span><b dir="ltr" style="text-align:right">'+esc(a.email)+'</b>':'')
+   +'<span>סכום</span><b>'+nis(a.price)+(a.pay&&a.pay.paid?' · שולם '+nis(a.pay.paid):due?' · לתשלום '+nis(due):'')+'</b>'+((a.addons||[]).length?'<span>תוספות</span><b>'+a.addons.map(function(x){return esc(x.name)+(x.n>1?' ×'+x.n:'')}).join(', ')+'</b>':'')+'<span>נקבע</span><b>'+chName(a.source)+'</b></div>';
+  if((a.answers||[]).length)h+='<div class="note" style="margin-top:10px"><b>תשובות בשאלון</b><br>'+a.answers.map(function(x){return esc(x.label)+': <b>'+esc(x.v)+'</b>'}).join('<br>')+'</div>';
+  if(a.consent&&a.consent.length)h+='<p class="hint" style="margin:8px 0 0">אישורים: '+a.consent.map(function(c){return esc(c.text.slice(0,50))}).join(' · ')+' (נשמר '+dt(a.consent[0].at)+')</p>';
+  if(canWork()){h+='<div class="acts" style="margin-top:12px">'+(a.status==='pending'||a.status==='held'?'<button class="btn pri" data-s="confirmed">אישור התור</button>':'')+(a.status==='confirmed'?'<button class="btn" data-s="done">סימון כבוצע</button><button class="btn" data-s="noshow">לא הגיע</button>':'')+(['cancelled','noshow','done'].indexOf(a.status)>-1?'<button class="btn" data-s="confirmed">החזרה למאושר</button>':'')+(['cancelled','done','noshow','expired'].indexOf(a.status)<0?'<button class="btn bad" data-s="cancelled">ביטול התור</button>':'')+'</div>';
+    h+='<div class="two" style="margin-top:10px">'+SEL('am','העברה למשאב אחר',B.res.filter(function(x){return x.active}).map(function(x){return [x.id,x.name]}),a.res_id)+F('ap','מחיר',a.price,{type:'number',attr:'step="0.01"'})+F('apd','שולם עד כה',(a.pay||{}).paid||0,{type:'number',attr:'step="0.01"'})+'</div>'+F('an','הערה פנימית',a.note||'',{tag:'ta',rows:2});
+    h+='<div class="acts" style="margin-top:8px"><button class="btn pri" id="asv" type="button">שמירה</button><button class="btn" id="acl" type="button">סגירה</button><label class="ck"><input type="checkbox" id="ant" checked><span>לעדכן את הלקוח בהודעה כשמשנים סטטוס</span></label></div>'}
+  else h+='<div class="acts"><button class="btn" id="acl" type="button">סגירה</button></div>';
+  ov(h);$('acl').onclick=closeOv;
+  var done=function(){closeOv();flash('נשמר');(after||show)()};
+  [].forEach.call(document.querySelectorAll('.md [data-s]'),function(b){b.onclick=function(){if(b.dataset.s==='cancelled'&&!confirm('לבטל את התור?'))return;api({a:'apptSet',id:a.id,patch:{status:b.dataset.s},notify:chk('ant')}).then(function(r){r.error?flash(errTxt(r),1):done()})}});
+  if($('asv'))$('asv').onclick=function(){var p={note:val('an'),price:val('ap'),paid:val('apd')};if(+val('am')!==a.res_id)p.res_id=+val('am');api({a:'apptSet',id:a.id,patch:p}).then(function(r){r.error?flash(errTxt(r),1):done()})}}
+function chName(c){return {web:'באתר',phone:'בטלפון',manual:'ידני'}[c]||c}
+/* תור חדש ידני */
+function apptForm(pre){pre=pre||{};var act=B.svcs.filter(function(s){return s.active});if(!act.length)return flash('קודם צריך להגדיר שירות.',1);
+  var h='<h2>תור חדש</h2><div class="grp2">'+SEL('ns','שירות',act.map(function(s){return [s.id,s.name]}),pre.svc||act[0].id)+SEL('nr','משאב',[['','אוטומטי (הראשון הפנוי)']].concat(B.res.filter(function(x){return x.active}).map(function(x){return [x.id,x.name]})),pre.res||'')
+   +F('nd','תאריך',pre.date||DAY,{type:'date'})+F('nt','שעה',pre.time||'09:00',{type:'time'})+'<div id="ndw"></div>'+F('nm','שם הלקוח','',{ph:'שם מלא'})+F('np','טלפון','',{type:'tel',dir:'ltr'})+F('ne','מייל (לא חובה)','',{type:'email',dir:'ltr'})+F('nc','מחיר','',{type:'number',attr:'step="0.01"',hint:'ריק = לפי המחירון'})+SEL('nst','סטטוס',[['confirmed','מאושר'],['pending','ממתין לאישור']],'confirmed')+'</div>'+F('nn','הערה','',{tag:'ta',rows:2})+'<div id="nxm"></div><div class="acts"><button class="btn pri" id="nsv" type="button">קביעת התור</button><button class="btn" id="ncl" type="button">ביטול</button></div>';
+  ov(h);$('ncl').onclick=closeOv;
+  var durUi=function(){var s=B.svcs.filter(function(x){return x.id===+val('ns')})[0],c=s.cfg;$('ndw').innerHTML=c.adj&&c.adj.on?F('ndu','משך בדקות',c.dur,{type:'number',attr:'step="'+c.adj.step+'" min="'+c.adj.min+'" max="'+c.adj.max+'"'}):'<p class="hint" style="margin:0">משך: '+c.dur+' דקות</p>'};durUi();$('ns').onchange=durUi;
+  $('nsv').onclick=function(){var b={a:'manual',svc:+val('ns'),start:val('nd')+' '+val('nt'),res:val('nr')?+val('nr'):undefined,name:val('nm'),phone:val('np'),email:val('ne'),price:val('nc'),status:val('nst'),note:val('nn')};if($('ndu'))b.dur=+val('ndu');$('nsv').disabled=true;
+    api(b).then(function(r){$('nsv').disabled=false;if(r.error){$('nxm').innerHTML='<div class="err">'+esc(errTxt(r))+'</div>';return}closeOv();flash('התור נקבע: '+r.start);DAY=val('nd')||DAY;show()})}}
+
+/* ===== תורים ===== */
+var AP={from:today(),to:addD(today(),14),st:''};
+function vAppts(){box.innerHTML='<div class="hd"><h1>תורים</h1><div class="acts">'+(canWork()?'<button class="btn pri" id="na" type="button">+ תור חדש</button>':'')+'<button class="btn" id="ex" type="button">ייצוא לאקסל</button></div></div><div class="card"><div class="acts"><label class="f">מתאריך<input type="date" id="af" value="'+AP.from+'"></label><label class="f">עד תאריך<input type="date" id="at" value="'+AP.to+'"></label>'+SEL('as','סטטוס',[['','הכול'],['pending,held','ממתינים'],['confirmed','מאושרים'],['done','בוצעו'],['cancelled,noshow,expired','בוטלו']],AP.st)+'</div></div><div id="al"><p class="hint">טוען…</p></div><div id="wl"></div>';
+  var re=function(){AP.from=val('af')||AP.from;AP.to=val('at')||AP.to;AP.st=val('as');vAppts()};$('af').onchange=$('at').onchange=$('as').onchange=re;if($('na'))$('na').onclick=function(){apptForm()};
+  api({a:'appts',from:AP.from,to:addD(AP.to,1),status:AP.st}).then(function(r){var L=(r.items||[]);
+    var rows=L.map(function(a){var s=B.svcs.filter(function(x){return x.id===a.svc_id})[0],q=B.res.filter(function(x){return x.id===a.res_id})[0];return '<tr class="click" data-id="'+esc(a.id)+'"><td>'+dl(a.start_at)+' '+tm(a.start_at)+'</td><td><b>'+esc(a.name)+'</b><br><small dir="ltr">'+esc(a.phone)+'</small></td><td>'+esc(s?s.name:'')+'</td><td>'+esc(q?q.name:'')+'</td><td>'+stPill(a.status)+'</td><td>'+nis(a.price)+'</td></tr>'});
+    $('al').innerHTML=table(['מתי','לקוח','שירות','משאב','סטטוס','סכום'],rows);wireAp(L,vAppts);
+    $('ex').onclick=function(){csv('appointments',['תאריך','שעה','שם','טלפון','מייל','שירות','משאב','סטטוס','מחיר','שולם','הערה'],L.map(function(a){var s=B.svcs.filter(function(x){return x.id===a.svc_id})[0],q=B.res.filter(function(x){return x.id===a.res_id})[0];return [dkey(a.start_at),tm(a.start_at),a.name,a.phone,a.email||'',s?s.name:'',q?q.name:'',ST_LBL[a.status],a.price,(a.pay||{}).paid||0,a.note||'']}))}});
+  if(canWork())api({a:'waits'}).then(function(r){var L=r.items||[];if(!L.length)return;$('wl').innerHTML='<h2 style="margin-top:20px">רשימת המתנה</h2>'+table(['יום','שם','טלפון','נשלחה הודעה',''],L.map(function(w){return '<tr><td>'+esc(w.day)+'</td><td>'+esc(w.name)+'</td><td dir="ltr">'+esc(w.phone)+'</td><td>'+(w.notified_at?dt(w.notified_at):'—')+'</td><td><button class="btn sm bad" data-w="'+w.id+'">הסרה</button></td></tr>'}));[].forEach.call(document.querySelectorAll('[data-w]'),function(b){b.onclick=function(){api({a:'waitDel',id:+b.dataset.w}).then(vAppts)}})})}
+
+/* ===== לקוחות ===== */
+function vCusts(){box.innerHTML='<div class="hd"><h1>לקוחות</h1><div class="acts"><button class="btn pri" id="nc" type="button">+ לקוח חדש</button><button class="btn" id="ex" type="button">ייצוא לאקסל</button></div></div><div class="card"><label class="f">חיפוש לפי שם, טלפון או מייל<input type="search" id="q" autocomplete="off"></label></div><div id="cl"><p class="hint">טוען…</p></div>';
+  var t,L=[];var load=function(){api({a:'custs',q:val('q')}).then(function(r){L=r.items||[];$('cl').innerHTML=table(['שם','טלפון','מייל','תגיות','עודכן'],L.map(function(c){return '<tr class="click" data-c="'+c.id+'"><td><b>'+esc(c.name)+'</b></td><td dir="ltr">'+esc(c.phone)+'</td><td dir="ltr">'+esc(c.email||'')+'</td><td>'+(c.tags||[]).map(function(x){return '<span class="pill">'+esc(x)+'</span>'}).join(' ')+'</td><td>'+dt(c.updated_at)+'</td></tr>'}));
+    [].forEach.call(document.querySelectorAll('tr[data-c]'),function(r){r.onclick=function(){custModal(L.filter(function(c){return c.id===+r.dataset.c})[0])}})})};
+  $('q').oninput=function(){clearTimeout(t);t=setTimeout(load,300)};$('nc').onclick=function(){custModal({id:0,name:'',phone:'',email:'',tags:[],note:'',marketing:false,fields:{}})};load();
+  $('ex').onclick=function(){csv('customers',['שם','טלפון','מייל','תגיות','אישר דיוור','הערה'],L.map(function(c){return [c.name,c.phone,c.email||'',(c.tags||[]).join(' | '),c.marketing?'כן':'לא',c.note||'']}))}}
+function custModal(c){var f=c.fields||{},ks=Object.keys(f);
+  var h='<h2>'+(c.id?esc(c.name):'לקוח חדש')+'</h2><div class="grp2">'+F('cn','שם',c.name)+F('cp','טלפון',c.phone,{type:'tel',dir:'ltr'})+F('ce','מייל',c.email||'',{type:'email',dir:'ltr'})+F('ct','תגיות',(c.tags||[]).join(', '),{hint:'מופרדות בפסיק, למשל VIP, חבר מועדון'})+'</div>'+F('cno','הערות על הלקוח',c.note||'',{tag:'ta'})+CK('cm','אישר קבלת דיוור',c.marketing)
+   +(ks.length?'<h3 style="margin-top:12px">פרטים שנשמרו מהשאלון</h3><div class="grp2">'+ks.map(function(k){return F('cf_'+k,esc(f[k].label)+(f[k].sens?' 🔒':''),f[k].v)}).join('')+'</div>':'')+'<div id="chist"></div>'
+   +'<div class="acts" style="margin-top:12px"><button class="btn pri" id="csv" type="button">שמירה</button><button class="btn" id="ccl" type="button">סגירה</button>'+(c.id&&canEdit()?'<button class="btn bad" id="cdl" type="button">מחיקת לקוח</button>':'')+'</div><div id="cx"></div>';
+  ov(h,680);$('ccl').onclick=closeOv;
+  if(c.id)api({a:'appts',cust:c.id,from:'2000-01-01',to:'2100-01-01'}).then(function(r){var L=(r.items||[]).slice().reverse();if(!L.length)return;$('chist').innerHTML='<h3 style="margin-top:12px">היסטוריית תורים ('+L.length+')</h3><div class="hist">'+L.slice(0,30).map(function(a){var s=B.svcs.filter(function(x){return x.id===a.svc_id})[0];return '<div>'+dl(a.start_at)+' '+tm(a.start_at)+' · '+esc(s?s.name:'')+' · '+stPill(a.status)+' · '+nis(a.price)+'</div>'}).join('')+'</div>'});
+  $('csv').onclick=function(){var nf={};ks.forEach(function(k){nf[k]={label:f[k].label,v:val('cf_'+k),at:f[k].at,sens:f[k].sens}});
+    api({a:'custSave',cust:{id:c.id,name:val('cn'),phone:val('cp'),email:val('ce'),tags:val('ct').split(',').map(function(x){return x.trim()}).filter(Boolean),note:val('cno'),marketing:chk('cm'),fields:nf}}).then(function(r){if(r.error){$('cx').innerHTML='<div class="err">'+esc(errTxt(r))+'</div>';return}closeOv();flash('נשמר');vCusts()})};
+  if($('cdl'))$('cdl').onclick=function(){if(confirm('למחוק את הלקוח? התורים שלו יישארו, בלי קישור לכרטיס.'))api({a:'custDel',id:c.id}).then(function(){closeOv();vCusts()})}}
+
+/* ===== שירותים ===== */
+function itemList(kind,title,items,line,onNew,hint){return '<div class="hd"><h1>'+title+'</h1><button class="btn pri" id="ni" type="button">+ חדש</button></div>'+(hint?'<p class="hint" style="margin:0">'+hint+'</p>':'')+(items.length?'<div class="grid">'+items.map(function(x){return '<button type="button" class="card biz" data-id="'+x.id+'" style="text-align:right;cursor:pointer"><h3>'+esc(x.name)+(x.active===false?' <span class="pill">בארכיון</span>':'')+'</h3>'+line(x)+'</button>'}).join('')+'</div>':'<div class="note">עוד אין כאן כלום. לחצו על "חדש".</div>')}
+function delRow(kind,x){return '<div class="acts" style="margin-top:12px"><button class="btn pri" id="isv" type="button">שמירה</button><button class="btn" id="icl" type="button">סגירה</button>'+(x.id?'<button class="btn bad" id="idl" type="button">'+(x.active===false?'שחזור':'מחיקה')+'</button>':'')+'</div><div id="ix"></div>'}
+function wireDel(kind,x,done){$('icl').onclick=closeOv;var d=$('idl');if(d)d.onclick=function(){if(x.active===false)return api({a:'del',kind:kind,id:x.id,archive:true,restore:true}).then(function(){closeOv();reload()});if(!confirm('למחוק? אם יש עליו תורים הוא יעבור לארכיון.'))return;api({a:'del',kind:kind,id:x.id}).then(function(r){closeOv();flash(r.archived?'עבר לארכיון (יש עליו היסטוריה)':'נמחק');reload()})}}
+function putItem(kind,item,after){api({a:'put',kind:kind,item:item}).then(function(r){if(r.error){$('ix').innerHTML='<div class="err">'+esc(errTxt(r))+'</div>';return}closeOv();flash('נשמר');reload()})}
+function imgF(id,v){return F(id,'תמונה (קישור, לא חובה)',v||'',{dir:'ltr',ph:'https://…'})}
+function priceTxt(c){var p=c.price||{};return p.fixed!=null?'מחיר קבוע '+nis(p.fixed):p.per>0?nis(p.per)+' ל־'+p.unit+' דק׳':'ללא תשלום'}
+function vSvcs(){box.innerHTML=itemList('svc','שירותים',B.svcs,function(s){var c=s.cfg;return '<span class="hint">'+c.dur+' דקות · '+priceTxt(c)+'</span><span class="hint">'+({auto:'שיבוץ אוטומטי',pick:'הלקוח בוחר מקום',group:'הלקוח בוחר קבוצה'}[c.alloc])+(c.approval?' · באישור':'')+'</span>'},0,'השירות הוא מה שהלקוח מזמין: אורך, מחיר, ואיפה הוא יתקיים.');
+  $('ni').onclick=function(){svcModal({name:'',cfg:{dur:30,price:{unit:30,per:0},alloc:'auto'}})};[].forEach.call(box.querySelectorAll('[data-id]'),function(b){b.onclick=function(){svcModal(B.svcs.filter(function(x){return x.id===+b.dataset.id})[0])}})}
+function svcModal(s){var c=JSON.parse(JSON.stringify(s.cfg||{})),a=c.adj||{on:false,min:c.dur||30,max:c.dur||30,step:15},p=c.price||{},fx=p.fixed!=null,d=c.deposit||{t:'pct',v:''};c.rules=c.rules||[];
+  var cb=function(arr,name,L,sel){return L.length?'<div class="chips">'+L.map(function(x){return '<label class="chip"><input type="checkbox" data-g="'+name+'" value="'+x.id+'"'+((sel||[]).indexOf(x.id)>-1?' checked':'')+'><span>'+esc(x.name)+'</span></label>'}).join('')+'</div>':'<p class="hint">עוד לא הוגדרו.</p>'};
+  var h='<h2>'+(s.id?'עריכת שירות':'שירות חדש')+'</h2>'+F('sn','שם השירות',s.name,{ph:'לדוגמה: טיפול, השכרת חדר, ייעוץ'})+F('sd','תיאור קצר (לא חובה)',s.descr||'')+imgF('si',s.img)+CK('sa','פעיל (מוצג ללקוחות)',s.active!==false)
+   +'<h3 style="margin-top:14px">משך וזמני הפסקה</h3><div class="grp2">'+F('sdu','משך בדקות',c.dur||30,{type:'number'})+F('sbb','הפסקה לפני (דקות)',c.bb||0,{type:'number'})+F('sba','הפסקה אחרי (דקות)',c.ba||0,{type:'number'})+'</div>'
+   +CK('sj','הלקוח יכול לבחור משך אחר',a.on)+'<div class="grp2" id="sjb"'+(a.on?'':' hidden')+'>'+F('sjm','מינימום (דקות)',a.min,{type:'number'})+F('sjx','מקסימום (דקות)',a.max,{type:'number'})+F('sjs','קפיצות (דקות)',a.step||15,{type:'number'})+'</div>'
+   +'<h3 style="margin-top:14px">מחיר</h3>'+SEL('spm','סוג מחיר',[['unit','לפי זמן (מחיר ליחידת זמן)'],['fixed','מחיר קבוע לתור']],fx?'fixed':'unit')+'<div class="grp2" id="spu"'+(fx?' hidden':'')+'>'+F('spp','מחיר ליחידה (₪)',p.per||0,{type:'number',attr:'step="0.01"'})+F('spun','אורך יחידה (דקות)',p.unit||15,{type:'number'})+'</div><div id="spf"'+(fx?'':' hidden')+'>'+F('spx','מחיר (₪)',p.fixed||0,{type:'number',attr:'step="0.01"'})+'</div>'
+   +'<p class="hint" style="margin:0">בלי מחיר: הכניסו 0.</p>'
+   +'<h3 style="margin-top:14px">מחירים שונים לפי שעות וימים</h3><p class="hint" style="margin:-6px 0 0">למשל יקר יותר בערב, או מחיר מיוחד בתאריך מסוים. תאריך מסוים גובר על ימים ושעות.</p><div id="sru"></div>'
+   +'<h3 style="margin-top:14px">איפה זה מתקיים</h3>'+SEL('sal','איך משבצים',[['auto','אוטומטית: המערכת בוחרת משאב פנוי'],['group','הלקוח בוחר קבוצה (למשל קומה) והמערכת משבצת בתוכה'],['pick','הלקוח בוחר משאב מסוים (חדר, רופא…)']],c.alloc||'auto')
+   +'<div id="sau">'+SEL('sar','כשמשבצים אוטומטית',[['order','לפי הסדר שהוגדר'],['least','למשאב הכי פנוי באותו יום']],c.autoRule||'order')+CK('ssr','להראות ללקוח את שם המשאב שקיבל',c.showRes!==false)+'</div>'+CK('ssl','להראות ללקוח כמה מקומות נשארו',c.showLeft!==false)
+   +'<p class="hint" style="margin:8px 0 2px"><b>מוגבל לקבוצות</b> (ריק = כולן)</p>'+cb(0,'sg',B.groups.filter(function(x){return x.active}),c.groups)+'<p class="hint" style="margin:8px 0 2px"><b>או מוגבל למשאבים</b> (ריק = כולם)</p>'+cb(0,'sr',B.res.filter(function(x){return x.active}),c.res)
+   +'<h3 style="margin-top:14px">תוספות ושאלון</h3><p class="hint" style="margin:0 0 2px">תוספות זמינות לשירות הזה</p>'+cb(0,'sx',B.addons.filter(function(x){return x.active}),c.addons)+SEL('sfm','שאלון שמצורף לתור',[['','בלי שאלון']].concat(B.forms.map(function(f){return [f.id,f.name]})),c.form||'')
+   +'<h3 style="margin-top:14px">אישור ותשלום</h3>'+CK('sap','כל תור מחכה לאישור שלי',c.approval,'הלקוח מקבל "ממתין לאישור" עד שתאשרו')+'<div class="grp2">'+SEL('sdt','מקדמה',[['','בלי מקדמה'],['pct','באחוזים'],['abs','סכום קבוע']],c.deposit?d.t:'')+F('sdv','גובה המקדמה',d.v||'',{type:'number'})+'</div>'+F('snt','הערה ללקוח על השירות',c.note||'')+delRow('svc',s);
+  ov(h,720);LE('sru',c.rules,[{k:'label',l:'שם (לא חובה)',ph:'ערב'},{k:'days',t:'days',l:'ימים (ריק = כל הימים)'},{k:'from',t:'time',l:'משעה'},{k:'to',t:'time',l:'עד שעה'},{k:'date',t:'date',l:'או תאריך מסוים'},{k:'t',t:'sel',l:'סוג',o:[['set','מחיר קבוע ליחידה'],['pct','תוספת באחוזים'],['add','תוספת סכום ליחידה']]},{k:'v',t:'num',l:'ערך'},{k:'on',t:'chk',l:'פעיל'}],{make:function(){return {on:true,days:[],from:'',to:'',date:'',t:'set',v:0,label:''}}},'+ כלל מחיר');
+  $('sj').onchange=function(){$('sjb').hidden=!this.checked};$('spm').onchange=function(){$('spu').hidden=this.value==='fixed';$('spf').hidden=this.value!=='fixed'};$('sal').onchange=function(){$('sau').hidden=this.value==='pick'};$('sau').hidden=$('sal').value==='pick';wireDel('svc',s);
+  var gv=function(n){return [].filter.call(document.querySelectorAll('[data-g="'+n+'"]'),function(x){return x.checked}).map(function(x){return +x.value})};
+  $('isv').onclick=function(){if(!val('sn').trim())return $('ix').innerHTML='<div class="err">חסר שם לשירות.</div>';
+    var cfg={dur:+val('sdu'),bb:+val('sbb'),ba:+val('sba'),adj:{on:chk('sj'),min:+val('sjm'),max:+val('sjx'),step:+val('sjs')},price:val('spm')==='fixed'?{fixed:+val('spx')}:{per:+val('spp'),unit:+val('spun')},rules:c.rules.filter(function(r){return r.v!==''}),alloc:val('sal'),autoRule:val('sar'),showRes:chk('ssr'),showLeft:chk('ssl'),groups:gv('sg'),res:gv('sr'),addons:gv('sx'),form:val('sfm')?+val('sfm'):null,approval:chk('sap'),deposit:val('sdt')&&+val('sdv')>0?{t:val('sdt'),v:+val('sdv')}:null,note:val('snt')};
+    putItem('svc',{id:s.id,name:val('sn'),descr:val('sd'),img:val('si'),active:chk('sa'),cfg:cfg})}}
+
+/* ===== חדרים ומשאבים וקבוצות ===== */
+function adjLine(a){return a&&a.t?({pct:(a.v>0?'+':'')+a.v+'%',add:(a.v>0?'+':'')+a.v+' ₪ ליחידה',set:'מחיר '+a.v+' ₪ ליחידה'}[a.t]):''}
+function adjEd(id,a){a=a||{};return '<div class="grp2">'+SEL(id+'t','התאמת מחיר',[['','ללא'],['pct','אחוזים'],['add','תוספת ליחידת זמן'],['set','מחיר קבוע ליחידת זמן']],a.t||'')+F(id+'v','ערך',a.v==null?'':a.v,{type:'number',attr:'step="0.01"'})+'</div>'}
+function adjGet(id){return val(id+'t')&&val(id+'v')!==''?{t:val(id+'t'),v:+val(id+'v')}:{}}
+function vRes(){box.innerHTML='<div class="hd"><h1>חדרים ומשאבים</h1></div><p class="hint" style="margin:0">משאב הוא כל דבר שמתפוס בזמן: חדר, רופא, עמדה, מגרש. אפשר כמה משאבים באותה שעה, והמערכת לא תאפשר כפל הזמנות. אפשר לקבץ משאבים לקבוצות (למשל קומות), והלקוח יבחר רק קבוצה.</p><div id="gp"></div><div id="rp"></div>';
+  var g=itemList('group','קבוצות (לא חובה)',B.groups,function(x){return '<span class="hint">'+B.res.filter(function(r){return r.group_id===x.id&&r.active}).length+' משאבים'+(x.adj&&x.adj.t?' · '+adjLine(x.adj):'')+'</span>'},0,'קבוצה היא למשל "קומה 1". אפשר לתמחר אותה אחרת.');$('gp').innerHTML=g.replace('<h1>','<h2>').replace('</h1>','</h2>').replace('id="ni"','id="gn"');
+  $('rp').innerHTML=itemList('res','משאבים',B.res,function(x){var gr=B.groups.filter(function(q){return q.id===x.group_id})[0];return '<span class="hint">'+(gr?esc(gr.name):'בלי קבוצה')+(x.cfg.adj&&x.cfg.adj.t?' · '+adjLine(x.cfg.adj):'')+(x.cfg.hours?' · שעות משלו':'')+'</span>'},0).replace('<h1>','<h2>').replace('</h1>','</h2>').replace('id="ni"','id="rn"');
+  $('gn').onclick=function(){grpModal({name:'',adj:{}})};$('rn').onclick=function(){resModal({name:'',cfg:{}})};
+  [].forEach.call($('gp').querySelectorAll('[data-id]'),function(b){b.onclick=function(){grpModal(B.groups.filter(function(x){return x.id===+b.dataset.id})[0])}});[].forEach.call($('rp').querySelectorAll('[data-id]'),function(b){b.onclick=function(){resModal(B.res.filter(function(x){return x.id===+b.dataset.id})[0])}})}
+function grpModal(g){ov('<h2>'+(g.id?'עריכת קבוצה':'קבוצה חדשה')+'</h2>'+F('gn1','שם',g.name,{ph:'קומה 1'})+F('gd','תיאור (מוצג ללקוח)',g.descr||'')+imgF('gi',g.img)+adjEd('ga',g.adj)+CK('gac','פעילה',g.active!==false)+delRow('group',g));wireDel('group',g);
+  $('isv').onclick=function(){if(!val('gn1').trim())return $('ix').innerHTML='<div class="err">חסר שם.</div>';putItem('group',{id:g.id,name:val('gn1'),descr:val('gd'),img:val('gi'),adj:adjGet('ga'),active:chk('gac'),sort:g.sort||B.groups.length+1})}}
+function resModal(r){var c=JSON.parse(JSON.stringify(r.cfg||{})),own=!!c.hours;c.blocks=(c.blocks||[]).map(function(b){return {from:String(b.from||'').replace(' ','T'),to:String(b.to||'').replace(' ','T'),note:b.note||''}});
+  ov('<h2>'+(r.id?'עריכת משאב':'משאב חדש')+'</h2>'+F('rn1','שם',r.name,{ph:'חדר 1 / ד״ר כהן'})+F('rd','תיאור (מוצג ללקוח כשהוא בוחר)',r.descr||'')+imgF('ri',r.img)+SEL('rg','קבוצה',[['','בלי קבוצה']].concat(B.groups.filter(function(x){return x.active}).map(function(x){return [x.id,x.name]})),r.group_id||'')+adjEd('ra',c.adj)
+   +CK('rho','שעות פעילות משלו (אחרת: שעות העסק)',own)+'<div id="rhb"'+(own?'':' hidden')+'>'+hoursEd('rh',c.hours||B.biz.cfg.hours)+'</div><h3 style="margin-top:12px">חופשות וחסימות</h3><div id="rbl"></div>'+CK('rac','פעיל',r.active!==false)+delRow('res',r));
+  LE('rbl',c.blocks,[{k:'from',t:'datetime',l:'מתאריך ושעה'},{k:'to',t:'datetime',l:'עד'},{k:'note',l:'הערה',ph:'חופשה'}],{make:function(){return {from:'',to:'',note:''}}},'+ חסימה');
+  $('rho').onchange=function(){$('rhb').hidden=!this.checked};wireDel('res',r);
+  $('isv').onclick=function(){if(!val('rn1').trim())return $('ix').innerHTML='<div class="err">חסר שם.</div>';var bl=c.blocks.filter(function(b){return b.from&&b.to}).map(function(b){return {from:b.from.replace('T',' '),to:b.to.replace('T',' '),note:b.note}});
+    putItem('res',{id:r.id,name:val('rn1'),descr:val('rd'),img:val('ri'),group_id:val('rg')?+val('rg'):null,active:chk('rac'),sort:r.sort||B.res.length+1,cfg:{hours:chk('rho')?hoursGet('rh'):null,adj:adjGet('ra'),blocks:bl}})}}
+
+/* ===== תוספות ===== */
+function vAddons(){box.innerHTML=itemList('addon','תוספות בתשלום',B.addons,function(x){var c=x.cfg;return '<span class="hint">'+(c.price?'+'+nis(c.price)+(c.per==='unit'?' ל־'+c.unit+' דק׳':''):'ללא עלות')+(c.addMin?' · +'+c.addMin+' דק׳':'')+(c.req?' · חובה':'')+'</span>'},0,'דברים שהלקוח יכול להוסיף לתור, כמו מקרן, כיבוד או זמן נוסף. מחברים אותם לשירות בעריכת השירות.');
+  $('ni').onclick=function(){addonModal({name:'',cfg:{price:0,per:'fixed',max:1}})};[].forEach.call(box.querySelectorAll('[data-id]'),function(b){b.onclick=function(){addonModal(B.addons.filter(function(x){return x.id===+b.dataset.id})[0])}})}
+function addonModal(x){var c=x.cfg||{};ov('<h2>'+(x.id?'עריכת תוספת':'תוספת חדשה')+'</h2>'+F('xn','שם',x.name,{ph:'מקרן, כיבוד, זמן נוסף'})+F('xd','תיאור (לא חובה)',x.descr||'')+imgF('xi',x.img)+'<div class="grp2">'+F('xp','מחיר (₪)',c.price||0,{type:'number',attr:'step="0.01"'})+SEL('xm','המחיר הוא',[['fixed','מחיר קבוע'],['unit','ליחידת זמן']],c.per||'fixed')+'<div id="xub">'+F('xu','אורך יחידה (דקות)',c.unit||15,{type:'number'})+'</div>'+F('xx','כמות מקסימלית',c.max||1,{type:'number'})+F('xa','מוסיף דקות לתור',c.addMin||0,{type:'number',hint:'0 אם לא משנה את האורך'})+'</div>'+CK('xr','חובה (תמיד נכלל)',c.req)+CK('xdf','מסומן מראש',c.def)+CK('xac','פעיל',x.active!==false)+delRow('addon',x));
+  var u=function(){$('xub').hidden=val('xm')!=='unit'};u();$('xm').onchange=u;wireDel('addon',x);
+  $('isv').onclick=function(){if(!val('xn').trim())return $('ix').innerHTML='<div class="err">חסר שם.</div>';putItem('addon',{id:x.id,name:val('xn'),descr:val('xd'),img:val('xi'),active:chk('xac'),sort:x.sort||B.addons.length+1,cfg:{price:+val('xp'),per:val('xm'),unit:+val('xu'),max:+val('xx'),addMin:+val('xa'),req:chk('xr'),def:chk('xdf')}})}}
+
+/* ===== שאלונים ===== */
+var FT=[['text','תשובה קצרה'],['long','פסקה'],['num','מספר'],['select','בחירה אחת מרשימה'],['multi','כמה אפשרויות'],['yn','כן / לא'],['check','תיבת סימון'],['date','תאריך'],['phone','טלפון'],['email','מייל']];
+function vForms(){box.innerHTML=itemList('form','שאלונים',B.forms,function(f){return '<span class="hint">'+(f.fields||[]).length+' שאלות · '+B.svcs.filter(function(s){return s.cfg.form===f.id}).length+' שירותים</span>'},0,'שאלון מצורף לשירות, והתשובות נשמרות עם התור. שאלה שמסומנת "נשמרת בכרטיס הלקוח" מתמלאת מחדש בפעם הבאה.');
+  $('ni').onclick=function(){formModal({name:'',fields:[]})};[].forEach.call(box.querySelectorAll('[data-id]'),function(b){b.onclick=function(){formModal(B.forms.filter(function(x){return x.id===+b.dataset.id})[0])}})}
+function formModal(f){var L=JSON.parse(JSON.stringify(f.fields||[]));
+  ov('<h2>'+(f.id?'עריכת שאלון':'שאלון חדש')+'</h2>'+F('fn','שם השאלון (פנימי)',f.name,{ph:'פרטים לפני התור'})+'<div id="ffl"></div><div class="acts" style="margin-top:12px"><button class="btn pri" id="isv" type="button">שמירה</button><button class="btn" id="icl" type="button">סגירה</button>'+(f.id?'<button class="btn bad" id="idl" type="button">מחיקה</button>':'')+'</div><div id="ix"></div>',760);
+  LE('ffl',L,[{k:'label',l:'השאלה',ph:'מה שם הקבוצה?'},{k:'type',t:'sel',l:'סוג',o:FT,re:1},{k:'help',l:'הסבר קטן (לא חובה)'},{k:'opts',t:'ta',l:'אפשרויות, שורה לכל אפשרות',show:'opts'},{k:'req',t:'chk',l:'חובה'},{k:'perm',t:'chk',l:'נשמרת בכרטיס הלקוח (למילוי אוטומטי בפעם הבאה)'},{k:'sens',t:'chk',l:'רגישה (רק מנהל רואה בכרטיס)'}],{make:function(){return {type:'text',label:'',help:'',req:false,opts:[],perm:false,sens:false}},move:1},'+ שאלה');
+  $('icl').onclick=closeOv;if($('idl'))$('idl').onclick=function(){if(confirm('למחוק את השאלון?'))api({a:'del',kind:'form',id:f.id}).then(function(){closeOv();reload()})};
+  $('isv').onclick=function(){if(!val('fn').trim())return $('ix').innerHTML='<div class="err">חסר שם לשאלון.</div>';putItem('form',{id:f.id,name:val('fn'),fields:L.filter(function(q){return q.label})})}}
+
+/* ===== הגדרות ===== */
+function vSettings(){var c=JSON.parse(JSON.stringify(B.biz.cfg)),own=ROLE==='owner';c.exc=c.exc||{};var EX=Object.keys(c.exc).sort().map(function(d){return {date:d,closed:!!c.exc[d].closed,from:((c.exc[d].hours||[])[0]||['',''])[0],to:((c.exc[d].hours||[])[0]||['',''])[1],note:c.exc[d].note||''}});
+  c.consents=c.consents||[];c.staff=c.staff||[];var py=c.pay||{},th=c.theme||{},tx=c.texts||{},nt=c.notify||{},sh=c.shabbat||{};
+  box.innerHTML='<div class="hd"><h1>הגדרות</h1><div class="acts"><button class="btn pri" id="sv" type="button">שמירה</button></div></div>'+banner()
+   +CARD('העסק',F('bn','שם העסק',B.biz.name)+SEL('bs','מצב',[['draft','בהקמה (לא מוצג ללקוחות)'],['open','פתוח לקביעת תורים'],['closed','סגור זמנית']],B.biz.status)+F('bi','טקסט פתיחה בדף ההזמנה',tx.intro||'',{tag:'ta',rows:2})+'<div class="grp2">'+F('ba','כתובת',tx.address||'')+F('bp','טלפון',tx.phone||'',{type:'tel',dir:'ltr'})+F('bw','וואטסאפ',tx.wa||'',{type:'tel',dir:'ltr'})+F('bm','מייל לפניות',tx.mail||'',{type:'email',dir:'ltr'})+'</div>'+F('bt','הודעה אחרי קביעת תור',tx.thanks||'',{tag:'ta',rows:2}))
+   +CARD('שעות פעילות','<p class="hint" style="margin:0">מתי אפשר לקבוע תורים. חגים ושבת נחסמים אוטומטית (למטה אפשר לשנות).</p>'+hoursEd('bh',c.hours))
+   +CARD('ימים מיוחדים','<p class="hint" style="margin:0">יום סגור, או שעות שונות בתאריך מסוים.</p><div id="bex"></div>')
+   +CARD('כללי הזמנה','<div class="grp2">'+SEL('bst','צעד בין שעות',[[5,'5 דקות'],[10,'10 דקות'],[15,'15 דקות'],[20,'20 דקות'],[30,'30 דקות'],[45,'45 דקות'],[60,'שעה']],c.step)+F('bmn','התראה מינימלית לפני תור (דקות)',c.minNotice,{type:'number'})+F('bma','כמה ימים קדימה אפשר להזמין',c.maxAhead,{type:'number'})+F('bch','ביטול עצמי עד כמה שעות לפני',c.cancelH,{type:'number'})+F('bmf','מקסימום תורים עתידיים לאותו טלפון',c.maxFuture,{type:'number'})+'</div>'
+     +CK('bsh','לחסום שבתות וחגים',sh.on!==false)+CK('byt','לחסום גם ימי חג (לא רק שבת)',sh.yt!==false)+'<div class="grp2">'+F('bsb','דקות חסימה לפני כניסת שבת/חג',sh.before==null?20:sh.before,{type:'number'})+F('bsa','דקות חסימה אחרי צאתה',sh.after||0,{type:'number'})+'</div>')
+   +CARD('אישור תקנון והסכמות','<p class="hint" style="margin:0">תיבות סימון שהלקוח מאשר לפני קביעת התור. נשמר מתי ומאיפה אישר.</p><div id="bco"></div>')
+   +CARD('תשלום',SEL('byp','איך משלמים',[['none','משלמים במקום, בלי תשלום באתר'],['link','קישור תשלום לחשבון הסליקה שלכם']],py.mode||'none')+'<div id="pyb"><div class="grp2">'+F('byu','קישור לתשלום',py.url||'',{dir:'ltr',ph:'https://…',hint:'מנדרים פלוס, קשר, או כל דף תשלום'})+SEL('byr','מה לגבות',[['none','לא לדרוש'],['deposit','מקדמה'],['full','הכול']],py.require||'none')+F('byh','לשמור את התור עד שמשלמים (דקות)',py.holdMin||0,{type:'number',hint:'0 = התור מאושר מיד'})+'</div>'+F('byx','הסבר ללקוח על התשלום',py.text||'',{tag:'ta',rows:2})+'<p class="hint" style="margin:0">הלקוח מקבל כפתור "לתשלום" בסיום. סימון תשלום שהתקבל נעשה בכרטיס התור.</p></div>')
+   +CARD('הודעות',CK('bne','מייל ללקוח עם אישור התור',nt.email!==false)+CK('bns','SMS ללקוח',nt.sms,'כפוף לאישור בעל האתר')+CK('bnr','תזכורת יום לפני',nt.remind!==false)+CK('bno','מייל אליי על כל תור חדש',nt.owner!==false))
+   +CARD('עיצוב הדף','<div class="grp2">'+F('hc','צבע ראשי',th.color||'#1e5a63',{type:'color'})+F('hc2','צבע משני',th.color2||'#c9a24b',{type:'color'})+SEL('hm','מצב',[['light','בהיר'],['dark','כהה']],th.mode||'light')+SEL('hr','פינות',[[0,'חדות'],[8,'עדינות'],[14,'מעוגלות'],[22,'עגולות מאוד']],th.radius==null?14:th.radius)+'</div>'+F('hl','לוגו (קישור לתמונה)',th.logo||'',{dir:'ltr'})+F('hb','תמונת רקע עליונה (קישור)',th.banner||'',{dir:'ltr'}))
+   +CARD('תקנון',F('btx','נוסח התקנון (לא חובה)',tx.terms||'',{tag:'ta',rows:4,hint:'אפשר גם להפנות לקישור בהסכמות'}))
+   +(own?CARD('צוות','<p class="hint" style="margin:0">מי עוד נכנס לניהול (באותו מייל שבו נכנסים). מנהל: הכול. פקידה: תורים ולקוחות. עובד: צפייה בלבד.</p><div id="bst2"></div>'):'')
+   +'<div class="acts"><button class="btn pri" id="sv2" type="button">שמירה</button></div>';
+  wireBanner();LE('bex',EX,[{k:'date',t:'date',l:'תאריך'},{k:'closed',t:'chk',l:'סגור כל היום'},{k:'from',t:'time',l:'שעת פתיחה'},{k:'to',t:'time',l:'שעת סגירה'},{k:'note',l:'הערה'}],{make:function(){return {date:'',closed:true,from:'',to:'',note:''}}},'+ יום מיוחד');
+  LE('bco',c.consents,[{k:'text',l:'הנוסח',ph:'קראתי ואני מאשר/ת את התקנון'},{k:'link',l:'קישור לתקנון (לא חובה)',dir:'ltr'},{k:'req',t:'chk',l:'חובה'},{k:'mkt',t:'chk',l:'הסכמה לדיוור'}],{make:function(){return {text:'',link:'',req:true,mkt:false}}},'+ הסכמה');
+  if(own)LE('bst2',c.staff,[{k:'email',l:'מייל',dir:'ltr'},{k:'role',t:'sel',l:'תפקיד',o:[['manager','מנהל'],['clerk','פקידה'],['worker','עובד']]}],{make:function(){return {email:'',role:'clerk'}}},'+ איש צוות');
+  var py2=function(){$('pyb').hidden=val('byp')==='none'};py2();$('byp').onchange=py2;
+  var save=function(){var exc={};EX.forEach(function(e){if(!e.date)return;exc[e.date]=e.closed?{closed:true,note:e.note}:{hours:e.from&&e.to?[[e.from,e.to]]:[],note:e.note}});
+    var cfg=Object.assign({},c,{hours:hoursGet('bh'),exc:exc,step:+val('bst'),minNotice:+val('bmn'),maxAhead:+val('bma'),cancelH:+val('bch'),maxFuture:+val('bmf'),shabbat:{on:chk('bsh'),yt:chk('byt'),before:+val('bsb'),after:+val('bsa')},consents:c.consents.filter(function(x){return x.text}),pay:{mode:val('byp'),url:val('byu'),require:val('byr'),holdMin:+val('byh'),text:val('byx')},notify:{email:chk('bne'),sms:chk('bns'),remind:chk('bnr'),owner:chk('bno')},
+      theme:{color:val('hc'),color2:val('hc2'),mode:val('hm'),radius:+val('hr'),logo:val('hl'),banner:val('hb')},texts:{intro:val('bi'),address:val('ba'),phone:val('bp'),wa:val('bw'),mail:val('bm'),thanks:val('bt'),terms:val('btx')},staff:c.staff.filter(function(x){return x.email})});
+    if(val('byp')==='link'&&val('byr')!=='none'&&!val('byu'))return flash('כדי לדרוש תשלום צריך להכניס קישור לתשלום.',1);
+    api({a:'save',name:val('bn'),status:val('bs'),cfg:cfg}).then(function(r){if(r.error)return flash(errTxt(r),1);flash('נשמר');reload()})};
+  $('sv').onclick=$('sv2').onclick=save}
+
+/* ===== שיתוף והטמעה ===== */
+function vShare(){var u=pageUrl(),sc=location.origin+'/assets/book-embed.js';
+  var snip={btn:'<script src="'+sc+'" data-slug="'+B.biz.slug+'" data-text="קביעת תור" async><\/script>',inl:'<div data-myluach-book="'+B.biz.slug+'"></div>\n<script src="'+sc+'" async><\/script>',lnk:'<a href="#" data-myluach-open="'+B.biz.slug+'">קביעת תור</a>\n<script src="'+sc+'" async><\/script>',ifr:'<iframe src="'+u+'?embed=1" style="border:0;width:100%;height:760px" title="קביעת תור"></iframe>'};
+  box.innerHTML='<div class="hd"><h1>שיתוף והטמעה</h1></div>'+(B.biz.status!=='open'?'<div class="note">העסק עדיין לא פתוח. הקישורים יעבדו אחרי שתפתחו אותו בהגדרות.</div>':'')
+   +CARD('הקישור ללקוחות','<div class="mono" id="u1">'+esc(u)+'</div><div class="acts"><button class="btn pri" data-cp="'+esc(u)+'">העתקה</button><a class="btn" href="'+esc(u)+'" target="_blank">פתיחה</a><a class="btn" target="_blank" href="https://wa.me/?text='+encodeURIComponent('לקביעת תור: '+u)+'">שיתוף בוואטסאפ</a></div>')
+   +CARD('כפתור צף באתר שלכם','<p class="hint" style="margin:0">הדביקו לפני סגירת התגית body. מופיע כפתור שפותח את ההזמנה בחלון.</p><textarea class="mono" readonly rows="2">'+esc(snip.btn)+'</textarea><div class="acts"><button class="btn" data-cp="'+esc(snip.btn)+'">העתקה</button></div>')
+   +CARD('בתוך דף (מוטמע)','<textarea class="mono" readonly rows="3">'+esc(snip.inl)+'</textarea><div class="acts"><button class="btn" data-cp="'+esc(snip.inl)+'">העתקה</button></div>')
+   +CARD('קישור שפותח חלון','<textarea class="mono" readonly rows="3">'+esc(snip.lnk)+'</textarea><div class="acts"><button class="btn" data-cp="'+esc(snip.lnk)+'">העתקה</button></div>')
+   +CARD('iframe רגיל','<textarea class="mono" readonly rows="2">'+esc(snip.ifr)+'</textarea><div class="acts"><button class="btn" data-cp="'+esc(snip.ifr)+'">העתקה</button></div>');
+  [].forEach.call(box.querySelectorAll('[data-cp]'),function(b){b.onclick=function(){copyTxt(b.dataset.cp)}})}
+
+if(/[#&](access_token|error_description)=/.test(location.hash))finishHash();else tok().then(function(t){TK=t;if(!t)return login();acctBar();SLUG?loadAll().then(show,function(){}):listView()});
+
+})();
+</script>
+</body>
+</html>

@@ -150,6 +150,8 @@ module.exports = async (req, res) => {
       catch (e) { parts[a + '-' + b] = { error: String(e.message).slice(0, 120) }; console.error('part', a, b, e.message); } }
     /* הזמנות לאירוע במייל שעוד בתור (למשל אחרי שהגענו למגבלה היומית של ספקי המייל) */
     try { const inv = await require('./_timer').cronSend(150); if (inv.sent) console.log('invites sent', inv.sent); } catch (e) { console.error('invite queue', e.message); }
+    /* תזכורות לתורים שנקבעו בזימון תורים */
+    try { const bk = await require('./_book').remind(days.length - 1); if (bk.sent) console.log('book reminders', bk.sent); } catch (e) { console.error('book remind', e.message); }
     try { const cm = await require('./_timer').cleanMedia(); if (cm.deleted) console.log('unpaid media deleted', cm.deleted); } catch (e) { console.error('clean media', e.message); }
     /* מנויים עם חידוש אוטומטי: בדיקה מול פייפל / נדרים, הארכה אחרי כל חיוב */
     try { const sa = await require('./_subauto').sync(); if (sa.checked) console.log('auto subs', JSON.stringify(sa)); } catch (e) { console.error('subauto', e.message); }

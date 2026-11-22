@@ -7,3 +7,4 @@
 /give/* /give 200
 /verify/* /verify 200
 /give-manage /give-admin 200
+/book/* /book 200
