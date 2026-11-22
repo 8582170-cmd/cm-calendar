@@ -237,7 +237,7 @@ function mgrView(s, S) {
   const c = { ...(s.cfg || {}) }, iv = { ...(c.ivr || {}) }; const hasTok = !!iv.token; delete iv.token; c.ivr = { ...iv, hasToken: hasTok };
   if (iv.cc) { const cc = { ...iv.cc }; const hp = !!cc.password; delete cc.password; c.ivr.cc = { ...cc, hasPassword: hp }; }
   if (c.pay && c.pay.kesher) { const k = { ...c.pay.kesher }; const hp = !!k.password; delete k.password; c.pay = { ...c.pay, kesher: { ...k, hasPassword: hp } }; }
-  return { openFee: require('./_openfee').need(s, S), id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
+  return { openFee: require('./_openfee').need(s, S), feePlans: FEE.plansPub(s.cfg, S.fee), id: s.id, slug: s.slug, name: s.name, status: s.status, open: isOpen(s), cfg: c, eff: cfgOf(s), products: s.products, pkgs: s.pkgs, provs: PAY.provs(s, S),
     ivrUrl: SITE() + '/api/pricing?c=_auctionivr&s=' + s.slug + '&k=' + (iv.key || ''), ivrBase: SITE() + '/api/pricing?c=_auctionivr', ivrSlug: s.slug, ivrKey: iv.key || '', site: S, managers: managersOf(s), ivrDefaults: Object.fromEntries(Object.entries(require('./_auction_ivr').MSG).map(([k, v]) => [k, [v[0], v[1], require('./_auction_ivr').partsOf(v[1])]])), ivrHold: ((s.cfg || {}).ivr || {}).hold || null, giveOk: giveOk(s, S), give: (s.cfg || {}).give || null, fee: FEE.pub(FEE.eff(s.cfg, S.fee)) };
 }
 /* שם תיקייה בימות: אותיות באנגלית וספרות בלבד (קו תחתון או מקף גורמים לתיקייה לא להיפתח בניהול של ימות). אפשר נתיב עם / */
@@ -644,8 +644,9 @@ module.exports = async (req, res) => {
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up) }); drop(s.slug);
       return json(res, 200, mgrView(await load(s.slug, true), await site()));
     }
+    if (a === 'feePlan') { const r = await require('./_openfee').choosePlan('auction', s, await site(), b.plan); if (r.error) return json(res, 409, { error: 'feeplan', message: r.error }); return json(res, 200, mgrView(await load(s.slug, true), await site())); }
     if (a === 'open' || a === 'close') {
-      if (a === 'open' && !isAdmin(u)) { const N = require('./_openfee').need(s, await site()); if (N.required) return json(res, 402, { error: 'openfee', amount: N.amount, message: 'לפני פתיחת המכירה לציבור צריך לשלם דמי פתיחה: ' + N.amount.toLocaleString('he-IL') + ' ₪' }); }
+      if (a === 'open' && !isAdmin(u)) { const N = require('./_openfee').need(s, await site()); if (N.choose) return json(res, 402, { error: 'feeplan', message: 'לפני הפתיחה לציבור צריך לבחור מסלול דמי שימוש' }); if (N.required) return json(res, 402, { error: 'openfee', amount: N.amount, message: 'לפני פתיחת המכירה לציבור צריך לשלם דמי פתיחה: ' + N.amount.toLocaleString('he-IL') + ' ₪' }); }
       if (a === 'open') { const S = await site(); if (!PAY.provs(s, S).length && !cfgOf(s).allowUnpaid && cfgOf(s).repOrders === 'off' && !b.force) return json(res, 409, { error: 'pay', message: 'לפני הפתיחה צריך להגדיר סליקה, או לאפשר הזמנה בלי תשלום' }); if (!s.products.some(p => p.active !== false)) return json(res, 409, { error: 'products', message: 'אין מוצרים במכירה' }); }
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: a === 'open' ? 'open' : 'closed', updated_at: new Date().toISOString() }) }); drop(s.slug);
       notify(s, a === 'open' ? 'המכירה נפתחה' : 'המכירה נסגרה', '<p>' + (a === 'open' ? 'המכירה נפתחה לרכישה' : 'המכירה נסגרה. אי אפשר לרכוש, ורשימת הכרטיסים נעולה להגרלה') + ' (על ידי ' + u.email + ').</p>').catch(() => {});
