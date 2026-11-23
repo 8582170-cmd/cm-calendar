@@ -85,6 +85,11 @@ a.biz,button.biz{text-decoration:none;color:inherit;gap:6px}a.biz:hover,button.b
 textarea.mono{width:100%;height:auto;min-height:54px;padding:8px 10px}
 .err{background:#FBE9E7;color:#7A1D14;border-radius:8px;padding:8px 12px;margin-top:8px}
 nav.side .ttl{padding:0 10px}
+.ex{background:var(--cream);border:1px solid var(--cream-line);color:var(--cream-ink);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:14px}.ex b{color:#2b2208}
+.gd summary{cursor:pointer;font-size:17px;font-weight:700;padding:4px 0;list-style:none;display:flex;justify-content:space-between;gap:10px}.gd summary::after{content:'＋';color:var(--mute)}.gd[open] summary::after{content:'－'}
+.gd .bd{display:flex;flex-direction:column;gap:6px;margin-top:8px}.gd ol,.gd ul{margin:4px 0;padding-inline-start:22px}.gd li{margin:3px 0}
+.gdl{font-size:13px;align-self:flex-end}
+.chk{display:flex;flex-direction:column;gap:6px}.chk .it{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:6px 0;border-top:1px solid #EEF0F4}.chk .it:first-child{border-top:0}.chk .y{color:var(--good);font-weight:700}
 </style>
 <script src="/assets/config.js"></script>
 </head>
@@ -167,7 +172,7 @@ function F(id,label,v,o){o=o||{};return '<label class="f" for="'+id+'">'+label+(
 function SEL(id,label,opts,v,hint){return '<label class="f" for="'+id+'">'+label+(hint?' <small>'+hint+'</small>':'')+'<select id="'+id+'">'+opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(o[0])===String(v)?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></label>'}
 function CK(id,label,v,hint){return '<label class="ck" for="'+id+'"><input id="'+id+'" type="checkbox"'+(v?' checked':'')+'><span>'+label+(hint?' <small class="hint">'+hint+'</small>':'')+'</span></label>'}
 function CARD(t,inner,hint){return '<section class="card">'+(t?'<h3>'+t+'</h3>':'')+(hint?'<p class="hint" style="margin:-6px 0 0">'+hint+'</p>':'')+inner+'</section>'}
-function ov(html,wide){closeOv();var o=document.createElement('div');o.className='ov';o.id='ov';o.innerHTML='<div class="md" role="dialog" aria-modal="true" style="max-width:'+(wide||560)+'px">'+html+'</div>';o.onclick=function(e){if(e.target===o)closeOv()};document.body.appendChild(o);document.body.style.overflow='hidden';var f=o.querySelector('input,select,textarea');if(f&&!/date|time/.test(f.type))f.focus();return o}
+function ov(html,wide,sec){closeOv();if(sec)html='<a href="#" class="gdl" data-gd="'+sec+'">דוגמאות והסבר במדריך ←</a>'+html;var o=document.createElement('div');o.className='ov';o.id='ov';o.innerHTML='<div class="md" role="dialog" aria-modal="true" style="max-width:'+(wide||560)+'px">'+html+'</div>';o.onclick=function(e){if(e.target===o)closeOv()};document.body.appendChild(o);document.body.style.overflow='hidden';var f=o.querySelector('input,select,textarea');if(f&&!/date|time/.test(f.type))f.focus();return o}
 function closeOv(){var o=$('ov');if(o)o.remove();document.body.style.overflow=''}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeOv()});
 function api(b){return call(b).then(function(r){if(r.error==='forbidden')flash('אין הרשאה לפעולה הזאת.',1);return r})}
@@ -217,17 +222,19 @@ function listView(){SLUG='';nav.innerHTML='<div class="ttl">זימון תורי�
     })}
 /* ===== טעינה ותפריט ===== */
 function loadAll(){return call({a:'get'}).then(function(r){if(r._st===401)return Promise.reject();if(r.error){box.innerHTML='<div class="card"><h2>אין גישה</h2><p>העסק לא נמצא, או שלחשבון הזה אין הרשאה.</p><a class="btn" href="?">לרשימת העסקים</a></div>';return Promise.reject()}B=r;ROLE=r.role;return r})}
-var TABS=[['ov','היום','w'],['ap','תורים','w'],['cu','לקוחות','w'],['sv','שירותים','e'],['rs','חדרים ומשאבים','e'],['ad','תוספות','e'],['fm','שאלונים','e'],['st','הגדרות','e'],['sh','שיתוף והטמעה','e']];
+var TABS=[['ov','היום','w'],['ap','תורים','w'],['cu','לקוחות','w'],['sv','שירותים','e'],['rs','חדרים ומשאבים','e'],['ad','תוספות','e'],['fm','שאלונים','e'],['st','הגדרות','e'],['sh','שיתוף והטמעה','e'],['gd','מדריך','w']];
 function go(t,s){var u=new URL(location.href);if(s!==undefined&&s!==SLUG){u.searchParams.set('s',s);SLUG=s;B=null}u.searchParams.set('t',t);history.replaceState(null,'',u);TAB=t;show()}
 function show(){if(!B||B.biz.slug!==SLUG)return loadAll().then(show,function(){});
   var T=TABS.filter(function(x){return x[2]==='w'||canEdit()});if(!T.some(function(x){return x[0]===TAB}))TAB='ov';
   nav.innerHTML='<div class="ttl">זימון תורים</div><div class="org">'+esc(B.biz.name)+'</div>'+T.map(function(x){return '<button type="button" data-t="'+x[0]+'"'+(x[0]===TAB?' aria-current="page"':'')+'>'+x[1]+'</button>'}).join('')+'<a href="/book/'+esc(B.biz.slug)+'" target="_blank">לדף ההזמנה ↗</a><a href="?">כל העסקים</a>';
   [].forEach.call(nav.querySelectorAll('button'),function(b){b.onclick=function(){go(b.dataset.t)}});
-  ({ov:vToday,ap:vAppts,cu:vCusts,sv:vSvcs,rs:vRes,ad:vAddons,fm:vForms,st:vSettings,sh:vShare})[TAB]()}
+  ({ov:vToday,ap:vAppts,cu:vCusts,sv:vSvcs,rs:vRes,ad:vAddons,fm:vForms,st:vSettings,sh:vShare,gd:vGuide})[TAB]()}
 function reload(){return loadAll().then(show,function(){})}
-function banner(){var c=B.biz.cfg,miss=[];if(!Object.keys(c.hours||{}).some(function(d){return (c.hours[d]||[]).length}))miss.push('שעות פעילות');if(!B.svcs.some(function(s){return s.active}))miss.push('שירות');if(!B.res.some(function(s){return s.active}))miss.push('משאב');
-  if(B.biz.status==='open')return '';
-  return '<div class="note"><b>העסק עדיין לא פתוח ללקוחות.</b> '+(miss.length?'חסר: '+miss.join(', ')+'.':'הכול מוכן.')+(canEdit()?' <button class="btn pri sm" id="opn" type="button"'+(miss.length?' disabled':'')+'>פתיחה לקביעת תורים</button>':'')+'</div>'}
+function banner(){var c=B.biz.cfg,hasH=Object.keys(c.hours||{}).some(function(d){return (c.hours[d]||[]).length}),hasS=B.svcs.some(function(x){return x.active}),hasR=B.res.some(function(x){return x.active}),open=B.biz.status==='open';
+  if(open)return '';
+  var st=[['שעות פעילות',hasH,'st','מתי אפשר לקבוע תורים'],['שירות אחד לפחות',hasS,'sv','מה הלקוח מזמין, כמה זמן וכמה זה עולה'],['משאב אחד לפחות',hasR,'rs','חדר, עובד או עמדה שנתפסים בזמן התור'],['תקנון או הסכמה',(c.consents||[]).length>0,'st','לא חובה, אבל מומלץ']];
+  var miss=!(hasH&&hasS&&hasR);
+  return '<div class="card"><h3>בואו נפתח את העסק ללקוחות</h3><p class="hint" style="margin:-6px 0 0">עוד כמה צעדים וקישור ההזמנה פעיל. לא בטוחים מה למלא? ב<a href="#" data-go="gd">מדריך</a> יש דוגמאות לכל שלב.</p><div class="chk">'+st.map(function(x){return '<div class="it"><span>'+(x[1]?'<span class="y">✓</span> ':'○ ')+'<b>'+x[0]+'</b> <small class="hint">'+x[3]+'</small></span>'+(x[1]?'':'<button class="btn sm" type="button" data-go="'+x[2]+'">להגדרה</button>')+'</div>'}).join('')+'<div class="it"><span>○ <b>פתיחה לקביעת תורים</b> <small class="hint">'+(miss?'אפשר אחרי שמילאתם שעות, שירות ומשאב':'הכול מוכן')+'</small></span>'+(canEdit()?'<button class="btn pri sm" id="opn" type="button"'+(miss?' disabled':'')+'>פתיחה</button>':'')+'</div></div></div>'}
 function wireBanner(){var b=$('opn');if(b)b.onclick=function(){api({a:'save',status:'open'}).then(function(){flash('העסק פתוח! שלחו את הקישור ללקוחות.');reload()})}}
 
 /* ===== היום ===== */
@@ -315,7 +322,7 @@ function svcModal(s){var c=JSON.parse(JSON.stringify(s.cfg||{})),a=c.adj||{on:fa
    +'<p class="hint" style="margin:8px 0 2px"><b>מוגבל לקבוצות</b> (ריק = כולן)</p>'+cb(0,'sg',B.groups.filter(function(x){return x.active}),c.groups)+'<p class="hint" style="margin:8px 0 2px"><b>או מוגבל למשאבים</b> (ריק = כולם)</p>'+cb(0,'sr',B.res.filter(function(x){return x.active}),c.res)
    +'<h3 style="margin-top:14px">תוספות ושאלון</h3><p class="hint" style="margin:0 0 2px">תוספות זמינות לשירות הזה</p>'+cb(0,'sx',B.addons.filter(function(x){return x.active}),c.addons)+SEL('sfm','שאלון שמצורף לתור',[['','בלי שאלון']].concat(B.forms.map(function(f){return [f.id,f.name]})),c.form||'')
    +'<h3 style="margin-top:14px">אישור ותשלום</h3>'+CK('sap','כל תור מחכה לאישור שלי',c.approval,'הלקוח מקבל "ממתין לאישור" עד שתאשרו')+'<div class="grp2">'+SEL('sdt','מקדמה',[['','בלי מקדמה'],['pct','באחוזים'],['abs','סכום קבוע']],c.deposit?d.t:'')+F('sdv','גובה המקדמה',d.v||'',{type:'number'})+'</div>'+F('snt','הערה ללקוח על השירות',c.note||'')+delRow('svc',s);
-  ov(h,720);LE('sru',c.rules,[{k:'label',l:'שם (לא חובה)',ph:'ערב'},{k:'days',t:'days',l:'ימים (ריק = כל הימים)'},{k:'from',t:'time',l:'משעה'},{k:'to',t:'time',l:'עד שעה'},{k:'date',t:'date',l:'או תאריך מסוים'},{k:'t',t:'sel',l:'סוג',o:[['set','מחיר קבוע ליחידה'],['pct','תוספת באחוזים'],['add','תוספת סכום ליחידה']]},{k:'v',t:'num',l:'ערך'},{k:'on',t:'chk',l:'פעיל'}],{make:function(){return {on:true,days:[],from:'',to:'',date:'',t:'set',v:0,label:''}}},'+ כלל מחיר');
+  ov(h,720,'g-svc');LE('sru',c.rules,[{k:'label',l:'שם (לא חובה)',ph:'ערב'},{k:'days',t:'days',l:'ימים (ריק = כל הימים)'},{k:'from',t:'time',l:'משעה'},{k:'to',t:'time',l:'עד שעה'},{k:'date',t:'date',l:'או תאריך מסוים'},{k:'t',t:'sel',l:'סוג',o:[['set','מחיר קבוע ליחידה'],['pct','תוספת באחוזים'],['add','תוספת סכום ליחידה']]},{k:'v',t:'num',l:'ערך'},{k:'on',t:'chk',l:'פעיל'}],{make:function(){return {on:true,days:[],from:'',to:'',date:'',t:'set',v:0,label:''}}},'+ כלל מחיר');
   $('sj').onchange=function(){$('sjb').hidden=!this.checked};$('spm').onchange=function(){$('spu').hidden=this.value==='fixed';$('spf').hidden=this.value!=='fixed'};$('sal').onchange=function(){$('sau').hidden=this.value==='pick'};$('sau').hidden=$('sal').value==='pick';wireDel('svc',s);
   var gv=function(n){return [].filter.call(document.querySelectorAll('[data-g="'+n+'"]'),function(x){return x.checked}).map(function(x){return +x.value})};
   $('isv').onclick=function(){if(!val('sn').trim())return $('ix').innerHTML='<div class="err">חסר שם לשירות.</div>';
@@ -331,11 +338,11 @@ function vRes(){box.innerHTML='<div class="hd"><h1>חדרים ומשאבים</h1
   $('rp').innerHTML=itemList('res','משאבים',B.res,function(x){var gr=B.groups.filter(function(q){return q.id===x.group_id})[0];return '<span class="hint">'+(gr?esc(gr.name):'בלי קבוצה')+(x.cfg.adj&&x.cfg.adj.t?' · '+adjLine(x.cfg.adj):'')+(x.cfg.hours?' · שעות משלו':'')+'</span>'},0).replace('<h1>','<h2>').replace('</h1>','</h2>').replace('id="ni"','id="rn"');
   $('gn').onclick=function(){grpModal({name:'',adj:{}})};$('rn').onclick=function(){resModal({name:'',cfg:{}})};
   [].forEach.call($('gp').querySelectorAll('[data-id]'),function(b){b.onclick=function(){grpModal(B.groups.filter(function(x){return x.id===+b.dataset.id})[0])}});[].forEach.call($('rp').querySelectorAll('[data-id]'),function(b){b.onclick=function(){resModal(B.res.filter(function(x){return x.id===+b.dataset.id})[0])}})}
-function grpModal(g){ov('<h2>'+(g.id?'עריכת קבוצה':'קבוצה חדשה')+'</h2>'+F('gn1','שם',g.name,{ph:'קומה 1'})+F('gd','תיאור (מוצג ללקוח)',g.descr||'')+imgF('gi',g.img)+adjEd('ga',g.adj)+CK('gac','פעילה',g.active!==false)+delRow('group',g));wireDel('group',g);
+function grpModal(g){ov('<h2>'+(g.id?'עריכת קבוצה':'קבוצה חדשה')+'</h2>'+F('gn1','שם',g.name,{ph:'קומה 1'})+F('gd','תיאור (מוצג ללקוח)',g.descr||'')+imgF('gi',g.img)+adjEd('ga',g.adj)+CK('gac','פעילה',g.active!==false)+delRow('group',g),560,'g-res');wireDel('group',g);
   $('isv').onclick=function(){if(!val('gn1').trim())return $('ix').innerHTML='<div class="err">חסר שם.</div>';putItem('group',{id:g.id,name:val('gn1'),descr:val('gd'),img:val('gi'),adj:adjGet('ga'),active:chk('gac'),sort:g.sort||B.groups.length+1})}}
 function resModal(r){var c=JSON.parse(JSON.stringify(r.cfg||{})),own=!!c.hours;c.blocks=(c.blocks||[]).map(function(b){return {from:String(b.from||'').replace(' ','T'),to:String(b.to||'').replace(' ','T'),note:b.note||''}});
   ov('<h2>'+(r.id?'עריכת משאב':'משאב חדש')+'</h2>'+F('rn1','שם',r.name,{ph:'חדר 1 / ד״ר כהן'})+F('rd','תיאור (מוצג ללקוח כשהוא בוחר)',r.descr||'')+imgF('ri',r.img)+SEL('rg','קבוצה',[['','בלי קבוצה']].concat(B.groups.filter(function(x){return x.active}).map(function(x){return [x.id,x.name]})),r.group_id||'')+adjEd('ra',c.adj)
-   +CK('rho','שעות פעילות משלו (אחרת: שעות העסק)',own)+'<div id="rhb"'+(own?'':' hidden')+'>'+hoursEd('rh',c.hours||B.biz.cfg.hours)+'</div><h3 style="margin-top:12px">חופשות וחסימות</h3><div id="rbl"></div>'+CK('rac','פעיל',r.active!==false)+delRow('res',r));
+   +CK('rho','שעות פעילות משלו (אחרת: שעות העסק)',own)+'<div id="rhb"'+(own?'':' hidden')+'>'+hoursEd('rh',c.hours||B.biz.cfg.hours)+'</div><h3 style="margin-top:12px">חופשות וחסימות</h3><div id="rbl"></div>'+CK('rac','פעיל',r.active!==false)+delRow('res',r),560,'g-res');
   LE('rbl',c.blocks,[{k:'from',t:'datetime',l:'מתאריך ושעה'},{k:'to',t:'datetime',l:'עד'},{k:'note',l:'הערה',ph:'חופשה'}],{make:function(){return {from:'',to:'',note:''}}},'+ חסימה');
   $('rho').onchange=function(){$('rhb').hidden=!this.checked};wireDel('res',r);
   $('isv').onclick=function(){if(!val('rn1').trim())return $('ix').innerHTML='<div class="err">חסר שם.</div>';var bl=c.blocks.filter(function(b){return b.from&&b.to}).map(function(b){return {from:b.from.replace('T',' '),to:b.to.replace('T',' '),note:b.note}});
@@ -344,7 +351,7 @@ function resModal(r){var c=JSON.parse(JSON.stringify(r.cfg||{})),own=!!c.hours;c
 /* ===== תוספות ===== */
 function vAddons(){box.innerHTML=itemList('addon','תוספות בתשלום',B.addons,function(x){var c=x.cfg;return '<span class="hint">'+(c.price?'+'+nis(c.price)+(c.per==='unit'?' ל־'+c.unit+' דק׳':''):'ללא עלות')+(c.addMin?' · +'+c.addMin+' דק׳':'')+(c.req?' · חובה':'')+'</span>'},0,'דברים שהלקוח יכול להוסיף לתור, כמו מקרן, כיבוד או זמן נוסף. מחברים אותם לשירות בעריכת השירות.');
   $('ni').onclick=function(){addonModal({name:'',cfg:{price:0,per:'fixed',max:1}})};[].forEach.call(box.querySelectorAll('[data-id]'),function(b){b.onclick=function(){addonModal(B.addons.filter(function(x){return x.id===+b.dataset.id})[0])}})}
-function addonModal(x){var c=x.cfg||{};ov('<h2>'+(x.id?'עריכת תוספת':'תוספת חדשה')+'</h2>'+F('xn','שם',x.name,{ph:'מקרן, כיבוד, זמן נוסף'})+F('xd','תיאור (לא חובה)',x.descr||'')+imgF('xi',x.img)+'<div class="grp2">'+F('xp','מחיר (₪)',c.price||0,{type:'number',attr:'step="0.01"'})+SEL('xm','המחיר הוא',[['fixed','מחיר קבוע'],['unit','ליחידת זמן']],c.per||'fixed')+'<div id="xub">'+F('xu','אורך יחידה (דקות)',c.unit||15,{type:'number'})+'</div>'+F('xx','כמות מקסימלית',c.max||1,{type:'number'})+F('xa','מוסיף דקות לתור',c.addMin||0,{type:'number',hint:'0 אם לא משנה את האורך'})+'</div>'+CK('xr','חובה (תמיד נכלל)',c.req)+CK('xdf','מסומן מראש',c.def)+CK('xac','פעיל',x.active!==false)+delRow('addon',x));
+function addonModal(x){var c=x.cfg||{};ov('<h2>'+(x.id?'עריכת תוספת':'תוספת חדשה')+'</h2>'+F('xn','שם',x.name,{ph:'מקרן, כיבוד, זמן נוסף'})+F('xd','תיאור (לא חובה)',x.descr||'')+imgF('xi',x.img)+'<div class="grp2">'+F('xp','מחיר (₪)',c.price||0,{type:'number',attr:'step="0.01"'})+SEL('xm','המחיר הוא',[['fixed','מחיר קבוע'],['unit','ליחידת זמן']],c.per||'fixed')+'<div id="xub">'+F('xu','אורך יחידה (דקות)',c.unit||15,{type:'number'})+'</div>'+F('xx','כמות מקסימלית',c.max||1,{type:'number'})+F('xa','מוסיף דקות לתור',c.addMin||0,{type:'number',hint:'0 אם לא משנה את האורך'})+'</div>'+CK('xr','חובה (תמיד נכלל)',c.req)+CK('xdf','מסומן מראש',c.def)+CK('xac','פעיל',x.active!==false)+delRow('addon',x),560,'g-add');
   var u=function(){$('xub').hidden=val('xm')!=='unit'};u();$('xm').onchange=u;wireDel('addon',x);
   $('isv').onclick=function(){if(!val('xn').trim())return $('ix').innerHTML='<div class="err">חסר שם.</div>';putItem('addon',{id:x.id,name:val('xn'),descr:val('xd'),img:val('xi'),active:chk('xac'),sort:x.sort||B.addons.length+1,cfg:{price:+val('xp'),per:val('xm'),unit:+val('xu'),max:+val('xx'),addMin:+val('xa'),req:chk('xr'),def:chk('xdf')}})}}
 
@@ -353,7 +360,7 @@ var FT=[['text','תשובה קצרה'],['long','פסקה'],['num','מספר'],['
 function vForms(){box.innerHTML=itemList('form','שאלונים',B.forms,function(f){return '<span class="hint">'+(f.fields||[]).length+' שאלות · '+B.svcs.filter(function(s){return s.cfg.form===f.id}).length+' שירותים</span>'},0,'שאלון מצורף לשירות, והתשובות נשמרות עם התור. שאלה שמסומנת "נשמרת בכרטיס הלקוח" מתמלאת מחדש בפעם הבאה.');
   $('ni').onclick=function(){formModal({name:'',fields:[]})};[].forEach.call(box.querySelectorAll('[data-id]'),function(b){b.onclick=function(){formModal(B.forms.filter(function(x){return x.id===+b.dataset.id})[0])}})}
 function formModal(f){var L=JSON.parse(JSON.stringify(f.fields||[]));
-  ov('<h2>'+(f.id?'עריכת שאלון':'שאלון חדש')+'</h2>'+F('fn','שם השאלון (פנימי)',f.name,{ph:'פרטים לפני התור'})+'<div id="ffl"></div><div class="acts" style="margin-top:12px"><button class="btn pri" id="isv" type="button">שמירה</button><button class="btn" id="icl" type="button">סגירה</button>'+(f.id?'<button class="btn bad" id="idl" type="button">מחיקה</button>':'')+'</div><div id="ix"></div>',760);
+  ov('<h2>'+(f.id?'עריכת שאלון':'שאלון חדש')+'</h2>'+F('fn','שם השאלון (פנימי)',f.name,{ph:'פרטים לפני התור'})+'<div id="ffl"></div><div class="acts" style="margin-top:12px"><button class="btn pri" id="isv" type="button">שמירה</button><button class="btn" id="icl" type="button">סגירה</button>'+(f.id?'<button class="btn bad" id="idl" type="button">מחיקה</button>':'')+'</div><div id="ix"></div>',760,'g-form');
   LE('ffl',L,[{k:'label',l:'השאלה',ph:'מה שם הקבוצה?'},{k:'type',t:'sel',l:'סוג',o:FT,re:1},{k:'help',l:'הסבר קטן (לא חובה)'},{k:'opts',t:'ta',l:'אפשרויות, שורה לכל אפשרות',show:'opts'},{k:'req',t:'chk',l:'חובה'},{k:'perm',t:'chk',l:'נשמרת בכרטיס הלקוח (למילוי אוטומטי בפעם הבאה)'},{k:'sens',t:'chk',l:'רגישה (רק מנהל רואה בכרטיס)'}],{make:function(){return {type:'text',label:'',help:'',req:false,opts:[],perm:false,sens:false}},move:1},'+ שאלה');
   $('icl').onclick=closeOv;if($('idl'))$('idl').onclick=function(){if(confirm('למחוק את השאלון?'))api({a:'del',kind:'form',id:f.id}).then(function(){closeOv();reload()})};
   $('isv').onclick=function(){if(!val('fn').trim())return $('ix').innerHTML='<div class="err">חסר שם לשאלון.</div>';putItem('form',{id:f.id,name:val('fn'),fields:L.filter(function(q){return q.label})})}}
@@ -392,6 +399,74 @@ function planCard(c){var L=B.plans||[];if(!L.length)return '';
   var modeL={none:'בלי סליקה באתר',own:'סליקה בחשבון שלכם',site:'סליקה דרך האתר'};
   return CARD('מסלול ותשלום לאתר','<p class="hint" style="margin:0">המסלול קובע כמה העסק משלם על השימוש וגם איך אפשר לגבות מהלקוחות. החיוב נעשה בנפרד, מולנו.</p><div class="opts">'+L.map(function(p){return '<label class="ck" style="align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px"><input type="radio" name="bpl" value="'+esc(p.id)+'"'+(c.plan===p.id?' checked':'')+'><span><b>'+esc(p.name)+'</b> <small class="hint">'+modeL[p.mode]+'</small><br>'+(p.monthly?nis(p.monthly)+' לחודש':'ללא דמי מנוי')+(p.perBooking?' + '+nis(p.perBooking)+' לכל תור':'')+(p.pct?' + '+p.pct+'% מכל תור':'')+(p.note?'<br><small class="hint">'+esc(p.note)+'</small>':'')+'</span></label>'}).join('')+'</div>'+(ROLE==='owner'?'<div class="acts"><button class="btn" id="bplb" type="button">החלפת מסלול</button></div>':'<p class="hint">רק הבעלים יכול להחליף מסלול.</p>'))}
 function wirePlan(){var b=$('bplb');if(b)b.onclick=function(){var r=document.querySelector('input[name=bpl]:checked');if(!r)return flash('בחרו מסלול.',1);api({a:'pickPlan',plan:r.value}).then(function(x){x.error?flash('לא ניתן לבחור את המסלול.',1):(flash('המסלול עודכן'),reload())})}}
+
+/* ===== מדריך ===== */
+var GDS='';
+document.addEventListener('click',function(e){var a=e.target.closest('[data-gd]');if(a){e.preventDefault();GDS=a.dataset.gd;closeOv();return go('gd')}var g=e.target.closest('[data-go]');if(g){e.preventDefault();closeOv();go(g.dataset.go)}});
+function ex(h){return '<div class="ex">'+h+'</div>'}
+function vGuide(){
+  var S=[
+  ['g-start','איך מתחילים (5 דקות)',
+   '<p>כדי שלקוחות יוכלו לקבוע תור צריך שלושה דברים, ואז לפתוח.</p><ol><li><b>שעות פעילות</b>: בהגדרות. סמנו את הימים ותנו שעת פתיחה וסגירה. אפשר שני טווחים ביום (בוקר וערב).</li><li><b>שירות</b>: מה הלקוח מזמין. שם, משך ומחיר.</li><li><b>משאב</b>: מה נתפס בזמן התור. חדר, רופא, עמדה. גם עסק של איש אחד צריך משאב אחד (אפשר לקרוא לו בשמך).</li><li><b>פתיחה</b>: בראש היומן יש רשימת צעדים עם כפתור "פתיחה".</li></ol>'
+   +ex('<b>דוגמה, מספרה:</b> שעות: ראשון עד חמישי 09:00–19:00. שירות: "תספורת גבר", 30 דקות, מחיר קבוע 80 ₪. משאבים: "כיסא 1" ו"כיסא 2". כשלקוח מזמין, המערכת בוחרת כיסא פנוי לבד.')
+   +ex('<b>דוגמה, קליניקה עם שני רופאים:</b> משאבים: "ד״ר כהן" ו"ד״ר לוי". שירות "בדיקה", 20 דקות. בשירות בוחרים "הלקוח בוחר משאב מסוים", והלקוח בוחר רופא.')
+   +'<div class="acts"><button class="btn" data-go="st" type="button">להגדרות</button><button class="btn" data-go="sv" type="button">לשירותים</button><button class="btn" data-go="rs" type="button">למשאבים</button></div>'],
+  ['g-svc','שירותים: משך, הפסקות ומחיר',
+   '<ul><li><b>משך:</b> כמה דקות התור. אפשר לאפשר ללקוח לבחור משך אחר בין מינימום למקסימום, בקפיצות שתגדירו.</li><li><b>הפסקה לפני ואחרי:</b> זמן שנחסם ביומן אבל הלקוח לא משלם עליו ולא רואה אותו (ניקיון, הכנה).</li><li><b>מחיר:</b> קבוע לתור, או לפי זמן (מחיר ליחידת זמן).</li></ul>'
+   +ex('<b>מחיר קבוע:</b> "תספורת גבר", 30 דקות, 80 ₪. הלקוח משלם 80 ₪ בכל מקרה.')
+   +ex('<b>מחיר לפי זמן, השכרת חדר ישיבות:</b> משך בסיס 60 דקות, הלקוח יכול לבחור בין 30 ל־180 דקות בקפיצות של 30, מחיר 40 ₪ לכל 15 דקות. שעה = 4 יחידות = 160 ₪. שעה וחצי = 6 יחידות = 240 ₪. המחיר מתעדכן אצל הלקוח מיד כשהוא משנה את המשך.')
+   +ex('<b>הפסקה:</b> "הפסקה אחרי 15 דקות" לניקוי החדר. תור שמסתיים ב־11:00 חוסם את החדר עד 11:15, והלקוח הבא יוכל להתחיל ב־11:15.')
+   +'<div class="acts"><button class="btn" data-go="sv" type="button">לשירותים</button></div>'],
+  ['g-res','חדרים, משאבים וקומות',
+   '<p><b>משאב</b> הוא כל דבר שנתפס בזמן תור. כמה משאבים = כמה תורים במקביל באותה שעה. המערכת לא מאפשרת לתפוס את אותו משאב פעמיים.</p><p><b>קבוצה</b> היא דרך לארגן משאבים (למשל קומה). אפשר לתמחר קבוצה אחרת.</p><p>בכל שירות בוחרים איך משבצים:</p><ul><li><b>אוטומטית:</b> הלקוח לא בוחר. המערכת נותנת משאב פנוי (לפי הסדר, או לפי הכי פנוי באותו יום).</li><li><b>הלקוח בוחר קבוצה:</b> הוא בוחר קומה, והמערכת משבצת חדר בתוכה.</li><li><b>הלקוח בוחר משאב:</b> הוא בוחר חדר או רופא מסוים.</li></ul>'
+   +ex('<b>דוגמה, 4 חדרים בשתי קומות:</b> קבוצות "קומה 1" ו"קומה 2". חדרים 1 ו־2 בקומה 1, חדרים 3 ו־4 בקומה 2. לקומה 2 מגדירים "אחוזים: 20" והיא יקרה ב־20%. בשירות בוחרים "הלקוח בוחר קבוצה". הלקוח רואה: "קומה 1, 160 ₪, נשארו 2" ו"קומה 2, 192 ₪, נשארו 2". הוא בוחר קומה והמערכת נותנת לו חדר פנוי ואומרת איזה.')
+   +ex('<b>דוגמה, חדר בתחזוקה:</b> בעריכת חדר 3 מוסיפים חסימה מ־24.12 עד 26.12. בימים האלה הוא לא מוצע, והשאר ממשיכים לעבוד כרגיל.')
+   +ex('<b>דוגמה, שעות שונות למשאב:</b> לרופא שעובד רק ביום שלישי מסמנים "שעות פעילות משלו" ומגדירים שלישי בלבד.')
+   +'<div class="acts"><button class="btn" data-go="rs" type="button">למשאבים</button></div>'],
+  ['g-price','מחירים שונים לפי שעה, יום או תאריך',
+   '<p>בעריכת שירות, בחלק "מחירים שונים לפי שעות וימים", מוסיפים כללים. כלל יכול להיות: ימים מסוימים, טווח שעות, או תאריך מסוים. סוג הכלל: מחיר קבוע ליחידה, תוספת באחוזים, או תוספת סכום.</p><p><b>סדר העדיפויות:</b> כלל לתאריך מסוים קודם לכל, אחריו כללי הימים והשעות לפי הסדר, ואם אין כלל מתאים המחיר הרגיל. אחר כך מתווספת התאמת הקבוצה, התאמת המשאב והתוספות.</p>'
+   +ex('<b>ערב יקר יותר:</b> ימים: חמישי. משעה 18:00 עד 23:00. סוג: מחיר קבוע ליחידה, ערך 60. במקום 40 ₪ ל־15 דקות הלקוח ישלם 60 ₪.')
+   +ex('<b>סוף שבוע:</b> ימים: חמישי ושישי. סוג: תוספת באחוזים, ערך 15. כל התורים בימים האלה יקרים ב־15%.')
+   +ex('<b>ערב חג:</b> תאריך: 2026-12-14. סוג: מחיר קבוע ליחידה, ערך 100. מנצח כל כלל אחר באותו יום.')
+   +'<p class="hint">הלקוח רואה את המחיר הסופי כבר ברשימת השעות, והמחיר שהוצג הוא המחיר שנשמר.</p>'],
+  ['g-add','תוספות בתשלום',
+   '<p>דברים שהלקוח יכול להוסיף לתור. מגדירים אותם פעם אחת בלשונית "תוספות", ואחר כך מסמנים בכל שירות אילו תוספות זמינות לו.</p>'
+   +ex('<b>מקרן:</b> מחיר קבוע 30 ₪, כמות מקסימלית 1.')
+   +ex('<b>כיבוד קל:</b> מחיר קבוע 12 ₪ למנה, כמות עד 6. הלקוח בוחר 4 ומשלם 48 ₪.')
+   +ex('<b>זמן נוסף:</b> 20 ₪ ל־15 דקות, "מוסיף דקות לתור": 15. כשהלקוח מוסיף, התור מתארך והחדר נחסם יותר זמן, והמערכת בודקת שהשעה עדיין פנויה.')
+   +ex('<b>תוספת חובה:</b> "דמי ניקיון" 25 ₪ עם "חובה". היא תמיד נכללת, והלקוח לא יכול להסיר אותה.')
+   +'<div class="acts"><button class="btn" data-go="ad" type="button">לתוספות</button></div>'],
+  ['g-form','שאלון וכרטיס לקוח',
+   '<p>שאלון הוא רשימת שאלות שהלקוח עונה עליהן בזמן ההזמנה. מצרפים אותו לשירות. כל התשובות נשמרות עם התור, בנוסח שהוצג בזמנו.</p><p>לכל שאלה אפשר לסמן:</p><ul><li><b>חובה:</b> אי אפשר להמשיך בלי תשובה.</li><li><b>נשמרת בכרטיס הלקוח:</b> התשובה נשמרת בכרטיס, ובפעם הבאה היא תופיע אצלו מלאה מראש. אחרת היא נשמרת רק עם התור הזה.</li><li><b>רגישה:</b> רק מנהל רואה אותה בכרטיס, ופקידה לא.</li></ul>'
+   +ex('<b>דוגמה, קליניקה:</b> "סיבת הפנייה" (פסקה, חובה, לתור זה בלבד). "תאריך לידה" (תאריך, נשמרת בכרטיס, כדי שלא יצטרכו להקליד שוב). "תרופות קבועות" (פסקה, נשמרת בכרטיס, רגישה).')
+   +ex('<b>דוגמה, השכרת חדר:</b> "שם הקבוצה" (קצר, חובה, נשמרת בכרטיס). "מספר משתתפים" (בחירה: עד 10 / עד 20). "צריך נגישות?" (כן/לא).')
+   +'<p class="hint">שימו לב: מידע רפואי הוא רגיש. העסק אחראי על חוקיות איסוף המידע, ואל תבקשו מה שלא צריך.</p><div class="acts"><button class="btn" data-go="fm" type="button">לשאלונים</button><button class="btn" data-go="cu" type="button">ללקוחות</button></div>'],
+  ['g-con','תקנון והסכמות',
+   '<p>בהגדרות, "אישור תקנון והסכמות". כל הסכמה היא תיבת סימון שהלקוח מסמן לפני שקובע תור. אם היא חובה, אי אפשר להמשיך בלי לסמן. נשמר לכל תור מה אושר, מתי ומאיזו כתובת.</p>'
+   +ex('<b>חובה:</b> "קראתי ואני מאשר/ת את התקנון ומדיניות הביטולים", עם קישור לתקנון.')
+   +ex('<b>רשות, דיוור:</b> "אשמח לקבל עדכונים ומבצעים", מסומנת "הסכמה לדיוור". רק מי שסימן נחשב כמסכים לדיוור, ותזכורות לתור נשלחות בכל מקרה.')
+   +'<div class="acts"><button class="btn" data-go="st" type="button">להגדרות</button></div>'],
+  ['g-pay','תשלום ומקדמה',
+   '<p>בהגדרות, "תשלום". יש שתי דרכים: משלמים במקום (ברירת מחדל), או קישור תשלום של חשבון הסליקה שלכם.</p><p>עם קישור תשלום אפשר לדרוש מקדמה או תשלום מלא, ולשמור את השעה ללקוח כמה דקות עד שישלם. אחרי התשלום מסמנים בכרטיס התור "שולם". סליקה אוטומטית שמאשרת לבד עדיין לא זמינה.</p>'
+   +ex('<b>דוגמה:</b> אירוע במחיר 500 ₪ עם מקדמה של 20%. הלקוח רואה "מקדמה: 100 ₪" וכפתור "מעבר לתשלום". התור "ממתין לתשלום" והשעה שמורה 15 דקות. כשהכסף נכנס פותחים את התור ומסמנים "שולם: 100".')
+   +ex('<b>דוגמה, בלי תשלום באתר:</b> מספרה. הלקוח קובע, ומשלם במקום. בכרטיס התור אפשר לעדכן "שולם" אחרי הטיפול.')
+   +'<p class="hint">המסלול שבחרתם (בהגדרות, "מסלול ותשלום לאתר") קובע אילו אפשרויות תשלום זמינות לכם.</p><div class="acts"><button class="btn" data-go="st" type="button">להגדרות</button></div>'],
+  ['g-appr','אישור תורים ותורים ידניים',
+   '<ul><li><b>אישור:</b> בשירות מסמנים "כל תור מחכה לאישור שלי". הלקוח רואה "ממתין לאישור", ואתם מאשרים או מבטלים מכרטיס התור. הלקוח מקבל הודעה.</li><li><b>תור ידני:</b> הכפתור "תור חדש" ביומן, למי שהתקשר או הגיע. מחיר שמשאירים ריק מחושב לפי המחירון.</li><li><b>העברה:</b> בכרטיס התור אפשר להעביר למשאב אחר, אם הוא פנוי.</li><li><b>ביטול:</b> הלקוח מבטל בקישור האישי עד כמה שעות לפני התור (בהגדרות). ביטול מעדכן את רשימת ההמתנה.</li></ul>'
+   +ex('<b>דוגמה:</b> "אירוע" דורש אישור. לקוח מזמין ליום שלישי. ביומן התור מופיע בצהוב. אתם לוחצים "אישור התור", והלקוח מקבל הודעה שהתור מאושר.')],
+  ['g-share','שיתוף והטמעה באתר שלכם',
+   '<p>בלשונית "שיתוף והטמעה" יש קישור ללקוחות וקודים מוכנים להדבקה. אפשר: קישור בוואטסאפ, כפתור צף באתר, הטמעה בתוך דף, או קישור שפותח חלון.</p>'
+   +ex('<b>דוגמה:</b> מדביקים לפני סגירת התגית body באתר שלכם שורה אחת, ומופיע כפתור "קביעת תור" בפינה. לחיצה פותחת את ההזמנה בחלון, בלי לצאת מהאתר.')
+   +'<div class="acts"><button class="btn" data-go="sh" type="button">לשיתוף והטמעה</button></div>'],
+  ['g-team','צוות והרשאות',
+   '<p>בהגדרות (לבעלים בלבד), "צוות". מוסיפים מייל ובוחרים תפקיד. האיש נכנס עם אותו מייל.</p><div class="tw"><table><thead><tr><th>תפקיד</th><th>מה אפשר</th></tr></thead><tbody><tr><td>בעלים</td><td>הכול, כולל צוות ומסלול</td></tr><tr><td>מנהל</td><td>הכול חוץ מצוות ומסלול</td></tr><tr><td>פקידה</td><td>תורים ולקוחות, קביעת תור ידני</td></tr><tr><td>עובד</td><td>צפייה ביומן ובתורים בלבד</td></tr></tbody></table></div>'
+   +ex('<b>דוגמה:</b> מוסיפים את "dina@example.com" כפקידה. דינה רואה רק את היומן, התורים והלקוחות, ולא את ההגדרות והמחירים.')],
+  ['g-faq','לקוח לא רואה שעות פנויות? בדיקה קצרה',
+   '<ol><li>העסק במצב "פתוח" (הגדרות)?</li><li>יש שעות פעילות ליום הזה?</li><li>השירות מחובר למשאב או לקבוצה שקיימים, ופעילים? אם בשירות סימנתם "מוגבל למשאבים", רק הם נבדקים.</li><li>"התראה מינימלית" לא גדולה מדי? אם היא 120 דקות, שעה שמתחילה בעוד שעה לא תוצג.</li><li>היום הוא שבת או חג, או יום שהוגדר כסגור ב"ימים מיוחדים"?</li><li>המשאבים תפוסים או חסומים בחופשה בשעה הזאת, כולל ההפסקה אחרי התור הקודם?</li><li>משך התור, כולל התוספות, ארוך מהחלון הפנוי?</li></ol>'
+   +ex('<b>דוגמה:</b> חדר פנוי 14:00–15:00, ושירות של 60 דקות עם הפסקה של 15 דקות אחרי. התור ייגמר ב־15:00 וההפסקה עד 15:15. אם החדר נתפס ב־15:00, השעה 14:00 לא תוצג.')]
+  ];
+  box.innerHTML='<div class="hd"><h1>מדריך</h1></div><p class="hint" style="margin:0">הסבר לכל חלק במערכת, עם דוגמאות. לחצו על נושא כדי לפתוח.</p>'+S.map(function(x){return '<details class="card gd" id="'+x[0]+'"'+(x[0]===GDS||(!GDS&&x[0]==='g-start')?' open':'')+'><summary>'+x[1]+'</summary><div class="bd">'+x[2]+'</div></details>'}).join('');
+  if(GDS){var e=$(GDS);if(e)setTimeout(function(){e.scrollIntoView({behavior:'smooth',block:'start'})},60);GDS=''}}
 /* ===== שיתוף והטמעה ===== */
 function vShare(){var u=pageUrl(),sc=location.origin+'/assets/book-embed.js';
   var snip={btn:'<script src="'+sc+'" data-slug="'+B.biz.slug+'" data-text="קביעת תור" async><\/script>',inl:'<div data-myluach-book="'+B.biz.slug+'"></div>\n<script src="'+sc+'" async><\/script>',lnk:'<a href="#" data-myluach-open="'+B.biz.slug+'">קביעת תור</a>\n<script src="'+sc+'" async><\/script>',ifr:'<iframe src="'+u+'?embed=1" style="border:0;width:100%;height:760px" title="קביעת תור"></iframe>'};
