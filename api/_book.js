@@ -90,7 +90,7 @@ function cleanSvcCfg(c) {
     alloc: ['auto', 'pick', 'group'].includes(c.alloc) ? c.alloc : 'auto', autoRule: c.autoRule === 'least' ? 'least' : 'order', showRes: c.showRes !== false, showLeft: c.showLeft !== false,
     groups: cleanIds(c.groups), res: cleanIds(c.res), addons: cleanIds(c.addons), form: +c.form > 0 ? +c.form : null, approval: c.approval === true,
     deposit: +d.v > 0 ? { t: d.t === 'abs' ? 'abs' : 'pct', v: num(d.v, 0, 1e6, 0) } : null, note: clean(c.note, 400),
-    nights: cleanNights(c.nights), qty: cleanQty(c.qty)
+    nights: cleanNights(c.nights), qty: cleanQty(c.qty), priceCur: ['USD', 'EUR', 'GBP'].includes(c.priceCur) ? c.priceCur : 'ILS'
   };
 }
 const cleanResCfg = c => { c = c && typeof c === 'object' ? c : {}; return { hours: c.hours ? cleanHours(c.hours) : null, adj: cleanAdj(c.adj), blocks: cleanBlocks(c.blocks), cap: num(c.cap, 0, 1000, 0) }; };
@@ -146,7 +146,7 @@ function pubView(B, S) {
   const c = B.biz.cfg || {}, byId = new Map(B.forms.map(f => [f.id, f]));
   const svcs = B.svcs.filter(s => s.active !== false).map(s => {
     const x = s.cfg || {}, f = x.form && byId.get(x.form);
-    return { id: s.id, name: s.name, descr: s.descr || '', img: s.img || '', dur: x.dur, nights: x.nights && x.nights.on ? x.nights : null, qty: x.qty && x.qty.on ? x.qty : null, adj: x.adj && x.adj.on ? x.adj : null, price: x.price, rules: (x.rules || []).filter(r => r.on !== false).length > 0, alloc: x.alloc, showRes: x.showRes !== false,
+    return { id: s.id, name: s.name, descr: s.descr || '', img: s.img || '', dur: x.dur, cur: x.priceCur && x.priceCur !== 'ILS' ? x.priceCur : undefined, nights: x.nights && x.nights.on ? x.nights : null, qty: x.qty && x.qty.on ? x.qty : null, adj: x.adj && x.adj.on ? x.adj : null, price: x.price, rules: (x.rules || []).filter(r => r.on !== false).length > 0, alloc: x.alloc, showRes: x.showRes !== false,
       groups: x.groups || [], res: x.res || [], addons: x.addons || [], deposit: x.deposit || null, approval: !!x.approval, note: x.note || '', form: f ? { id: f.id, name: f.name, fields: (f.fields || []).map(q => ({ id: q.id, type: q.type, label: q.label, help: q.help, req: q.req, opts: q.opts })) } : null };
   });
   const usedRes = new Set(), usedGr = new Set(); svcs.forEach(s => { if (s.alloc === 'pick') B.res.forEach(r => { if (!s.res.length || s.res.includes(r.id)) usedRes.add(r.id); }); if (s.alloc === 'group') (s.groups.length ? s.groups : B.groups.map(g => g.id)).forEach(g => usedGr.add(g)); });
@@ -335,22 +335,28 @@ async function createAppt(B, b, opt) {
   const meta = require('./_lib').reqMeta(opt.req), at = new Date().toISOString();
   const consent = (c.consents || []).filter(x => (Array.isArray(b.consent) ? b.consent : []).includes(x.id)).map(x => ({ id: x.id, text: x.text, link: x.link || '', v: true, at, ip: meta ? meta.ip : '' }));
   const marketing = (c.consents || []).some(x => x.mkt && (Array.isArray(b.consent) ? b.consent : []).includes(x.id));
+  const sCur = (sc.priceCur && sc.priceCur !== 'ILS') ? sc.priceCur : 'ILS', sRate = sCur === 'ILS' ? 1 : await FX.rateOf(sCur); if (!sRate) return [503, { error: 'cur' }];
   let appt = null;
   for (const rid0 of order) {
     const r = R.find(x => x.id === rid0), q = priceOf(B, svc, r, startMs, P), id = 'bk' + rid(9);
-    const dueIls = linkPay || sitePay ? (py.require === 'full' ? q.total : q.deposit || q.total) : (q.deposit || 0);
+    /* מחיר השירות יכול להיות במטבע חוץ. במסד הסכום נשמר גם בשקלים לפי שער שננעל עכשיו */
+    const iq = sCur === 'ILS' ? q : { ...q, total: FX.toIls(q.total, sRate), deposit: q.deposit ? FX.toIls(q.deposit, sRate) : q.deposit };
+    const dueSvc = linkPay || sitePay ? (py.require === 'full' ? q.total : q.deposit || q.total) : (q.deposit || 0), dueIls = linkPay || sitePay ? (py.require === 'full' ? iq.total : iq.deposit || iq.total) : (iq.deposit || 0);
     let payObj = { mode: py.mode || 'none', due: dueIls, paid: 0 };
-    if (sitePay && !opt.force && b.cur && b.cur !== 'ILS') {
-    const off = await curOffer(B), rt = off.includes(b.cur) ? await FX.rateOf(b.cur) : null; if (!rt) return [400, { error: 'cur' }];
-      payObj = { ...payObj, cur: b.cur, rate: rt, curDue: FX.toCur(dueIls, rt), curPaid: 0 };
+    if (sitePay && !opt.force) {
+      const off = await curOffer(B, svc), want = b.cur ? String(b.cur) : (off.includes(sCur) ? sCur : 'ILS');
+      if (want !== 'ILS') {
+        const rt = off.includes(want) ? await FX.rateOf(want) : null; if (!rt) return [400, { error: 'cur' }];
+        payObj = { ...payObj, cur: want, rate: rt, curDue: want === sCur ? dueSvc : FX.toCur(dueIls, rt), curPaid: 0 };
+      }
     }
     const row = { id, biz_id: B.biz.id, svc_id: svc.id, res_id: r.id, group_id: r.group_id || null, start_at: new Date(startMs).toISOString(), end_at: new Date(endMs).toISOString(),
       busy_start: new Date(startMs - bbm * 60000).toISOString(), busy_end: new Date(endMs + bam * 60000).toISOString(), status, hold_until: hold, dur: durMin, qty: P.qty, shared,
-      price: opt.force && b.price != null && b.price !== '' ? num(b.price, 0, 1e6, q.total) : q.total, detail: q, addons: q.lines.filter(l => l.k === 'addon').map(l => ({ id: l.id, name: l.label, n: l.n, amt: l.amt })),
+      price: opt.force && b.price != null && b.price !== '' ? num(b.price, 0, 1e6, iq.total) : iq.total, detail: sCur === 'ILS' ? q : { ...q, cur: sCur, rate: sRate }, addons: q.lines.filter(l => l.k === 'addon').map(l => ({ id: l.id, name: l.label, n: l.n, amt: l.amt })),
       answers: AN.list.map(a => ({ id: a.id, label: a.label, v: a.v })), consent, pay: payObj,
       source: opt.force ? 'manual' : (b.source === 'phone' ? 'phone' : 'web'), name, phone, email: email || null, note: opt.force ? clean(b.note, 600) : '', token: rid(12), remind: {} };
     try {
-      const out = await db('book_appt', { method: 'POST', body: JSON.stringify(row) }); appt = (out && out[0]) || row; appt._q = q; appt._res = r;
+      const out = await db('book_appt', { method: 'POST', body: JSON.stringify(row) }); appt = (out && out[0]) || row; appt._q = iq; appt._res = r;
       if (shared) { /* המקומות נבדקים אחרי ההכנסה: אם חרגנו (שני לקוחות במקביל), התור שלנו מתבטל והלקוח מקבל "נתפס" */
         const all = (await busyIn(B.biz.id, startMs - 1, endMs + 1)).filter(x => String(x.res_id) === String(r.id) && x.shared), sum = all.reduce((a, x) => a + (x.qty || 1), 0);
         if (sum > capOf(r)) { await db('book_appt?id=eq.' + enc(appt.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'cancelled' }) }); appt = null; continue; }
@@ -362,7 +368,7 @@ async function createAppt(B, b, opt) {
   try { const cid = await upsertCust(B.biz, { name, phone, email, answers: AN.list, marketing }); if (cid) { await db('book_appt?id=eq.' + appt.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cust_id: cid }) }); appt.cust_id = cid; } } catch (e) { console.error('book cust', e.message); }
   if (!(sitePay && !opt.force)) notifyBooked(B, svc, appt).catch(e => console.error('book notify', e.message));
   const showRes = sc.showRes !== false || opt.force;
-  const out = { id: appt.id, k: appt.token, status, start: when(startMs), ...(nt ? { nights: P.nights, until: when(endMs) } : {}), qty: P.qty, svc: svc.name, res: showRes ? appt._res.name : '', price: appt.price, due: appt.pay.due, pay: linkPay ? { url: py.url, text: py.text } : null, link: linkOf(B, appt), hold: hold };
+  const out = { id: appt.id, k: appt.token, status, start: when(startMs), ...(nt ? { nights: P.nights, until: when(endMs) } : {}), qty: P.qty, svc: svc.name, res: showRes ? appt._res.name : '', price: appt.price, ...(appt.detail && appt.detail.cur ? { priceCur: appt.detail.cur, priceSvc: appt.detail.total } : {}), due: appt.pay.due, pay: linkPay ? { url: py.url, text: py.text } : null, link: linkOf(B, appt), hold: hold };
   if (sitePay && !opt.force) { Object.assign(out, await payInfo(B, svc, appt)); out.payNow = true; }
   return [200, out];
 }
@@ -405,10 +411,10 @@ function dueNow(pay) {
   const amt = r2m((+pay.curDue || 0) - (+pay.curPaid || 0)); return { cur, amt, ils: FX.toIls(amt, +pay.rate), rate: +pay.rate };
 }
 /* אילו מטבעות העסק מציע ללקוח: ₪ תמיד, ועוד מה שהעסק הפעיל, אם יש שער וחברת סליקה שיודעת לגבות בו */
-async function curOffer(B) {
+async function curOffer(B, svc) {
   const c = B.biz.cfg || {}, py = c.pay || {}; if (!((py.mode === 'site' || py.mode === 'own') && py.require && py.require !== 'none')) return ['ILS'];
-  const provs = py.mode === 'own' ? [ownAcc(c)].filter(Boolean) : await payProvs();
-  return FX.offer(((c.cur || {}).allowed) || [], provs);
+  const provs = py.mode === 'own' ? [ownAcc(c)].filter(Boolean) : await payProvs(), sc = svc && ((svc.cfg || {}).priceCur);
+  return FX.offer([...(((c.cur || {}).allowed) || []), ...(sc && sc !== 'ILS' ? [sc] : [])], provs);
 }
 /* העמלה לפי המסלול של העסק: קבועה לתור + אחוזים מהסכום ששולם */
 async function feeFor(B, paid) { const pl = (await site()).plans.find(p => p.id === (B.biz.cfg || {}).plan); return pl && pl.mode === 'site' ? r2m(pl.perBooking + paid * pl.pct / 100) : 0; }
@@ -508,7 +514,7 @@ async function getByToken(B, id, k) {
 }
 function apptPub(B, a) {
   const svc = B.svcs.find(s => s.id === a.svc_id), res = B.res.find(r => r.id === a.res_id), st = Date.parse(a.start_at), cH = (B.biz.cfg || {}).cancelH || 0;
-  return { id: a.id, status: a.status, svc: svc ? svc.name : '', res: res && !(svc && (svc.cfg || {}).showRes === false) ? res.name : '', when: when(st), qty: a.qty || 1, nights: (a.detail || {}).nights || 0, until: (a.detail || {}).nights ? when(Date.parse(a.end_at)) : '', start: a.start_at, dur: a.dur, price: a.price, addons: a.addons || [], name: a.name, canCancel: ['pending', 'confirmed', 'held'].includes(a.status) && Date.now() < st - cH * 3600e3, cancelH: cH, pay: a.pay || {}, payMode: (a.pay || {}).mode || 'none', payUrl: ((B.biz.cfg || {}).pay || {}).url || '', address: ((B.biz.cfg || {}).texts || {}).address || '' };
+  return { id: a.id, status: a.status, svc: svc ? svc.name : '', res: res && !(svc && (svc.cfg || {}).showRes === false) ? res.name : '', when: when(st), qty: a.qty || 1, nights: (a.detail || {}).nights || 0, until: (a.detail || {}).nights ? when(Date.parse(a.end_at)) : '', start: a.start_at, dur: a.dur, price: a.price, ...((a.detail || {}).cur ? { priceCur: a.detail.cur, priceSvc: a.detail.total } : {}), addons: a.addons || [], name: a.name, canCancel: ['pending', 'confirmed', 'held'].includes(a.status) && Date.now() < st - cH * 3600e3, cancelH: cH, pay: a.pay || {}, payMode: (a.pay || {}).mode || 'none', payUrl: ((B.biz.cfg || {}).pay || {}).url || '', address: ((B.biz.cfg || {}).texts || {}).address || '' };
 }
 function ics(B, a) {
   const f = ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''), svc = B.svcs.find(s => s.id === a.svc_id), esc = s => String(s || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
@@ -666,7 +672,7 @@ module.exports = async (req, res) => {
   const out = ([st, o]) => json(res, st, o);
   try {
     /* ציבורי */
-    if (a === 'biz') { const B = await load(b.s); if (!B) return json(res, 404, { error: 'none' }); const S = await site(), v = pubView(B, S); const off = await curOffer(B); if (off.length > 1) { const R = await FX.rates(); v.cur = { offer: off, rates: Object.fromEntries(off.filter(x => x !== 'ILS').map(x => [x, R[x]])) }; } return json(res, 200, v); }
+    if (a === 'biz') { const B = await load(b.s); if (!B) return json(res, 404, { error: 'none' }); const S = await site(), v = pubView(B, S); const off = [...new Set([...(await curOffer(B)), ...(await Promise.all(B.svcs.filter(x => (x.cfg || {}).priceCur && x.cfg.priceCur !== 'ILS').map(x => curOffer(B, x)))).flat()])]; if (off.length > 1 || B.svcs.some(x => (x.cfg || {}).priceCur && x.cfg.priceCur !== 'ILS')) { const R = await FX.rates() || {}; v.cur = { offer: off, rates: Object.fromEntries(['USD', 'EUR', 'GBP'].filter(x => R[x] > 0).map(x => [x, R[x]])) }; } return json(res, 200, v); }
     if (a === 'slots') return out(await slotsAction(b));
     if (a === 'book') {
       if (b.hp) return json(res, 200, { ok: true }); if (limited(req, 20, 'b')) return json(res, 429, { error: 'rate' });

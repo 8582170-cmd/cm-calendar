@@ -274,7 +274,15 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   const PMU = { s: 'centre', m: pu.id, k: pu.k }; await ok({ a: 'ppcreate', ...PMU }, null); assert.deepStrictEqual(cs[0], [pu.due, 'USD']);
   await ok({ a: 'ppcapture', ...PMU, ppid: 'PPU' }, null); const au = T.book_appt.find(x => x.id === pu.id); assert.strictEqual(au.pay.curPaid, pu.due); assert.ok(Math.abs(au.pay.paid - pu.dueIls) < 0.06, 'שולם במלואו ' + au.pay.paid + '/' + pu.dueIls); assert.ok(['confirmed', 'pending'].includes(au.status), 'אושר ' + au.status);
   PP3.capture = async () => ({ ok: true, amount: 0, currency: 'ILS', txn: 'BAD' }); const pu2 = await ok({ ...pkc, phone: '0521110042', start: day + ' 15:30', name: 'דולר2', cur: 'USD' }, null); await ok({ a: 'ppcreate', s: 'centre', m: pu2.id, k: pu2.k }, null); await bad({ a: 'ppcapture', s: 'centre', m: pu2.id, k: pu2.k, ppid: 'PPU' }, 402, 'payment', null);
-  SETTINGS.fx = {}; FXM.reset(); assert.deepStrictEqual((await ok({ a: 'biz', s: 'centre' }, null)).cur, undefined, 'בלי שער תקף אין מטבע חוץ');
+  /* שירות שמחירו בדולר: משלמים בדולר בדיוק, או בשקלים לפי שער נעול */
+  const usd = (await ok({ a: 'put', s: 'centre', kind: 'svc', item: { name: 'סיור בדולר', cfg: { dur: 60, price: { fixed: 100 }, alloc: 'auto', approval: false, priceCur: 'USD' } } }, OWN)).item;
+  const bu = await ok({ a: 'biz', s: 'centre' }, null); assert.strictEqual(bu.svcs.find(x => x.id === usd.id).cur, 'USD'); assert.strictEqual(bu.cur.rates.USD, 3.5);
+  const ua = await ok({ a: 'book', s: 'centre', svc: usd.id, name: 'דולרי', phone: '0521110051', start: day + ' 16:00', consent: ['c1'] }, null);
+  const uv = T.book_appt.find(x => x.id === ua.id).detail.total; assert.ok(uv >= 100); assert.strictEqual(ua.cur, 'USD'); assert.strictEqual(ua.due, uv); assert.strictEqual(ua.dueIls, Math.round(uv * 350) / 100); assert.strictEqual(T.book_appt.find(x => x.id === ua.id).price, ua.dueIls);
+  const ub = await ok({ a: 'book', s: 'centre', svc: usd.id, name: 'שקלי', phone: '0521110052', start: day + ' 11:00', consent: ['c1'], cur: 'ILS' }, null);
+  assert.ok(!ub.cur || ub.cur === 'ILS'); assert.strictEqual(ub.due, Math.round(T.book_appt.find(x => x.id === ub.id).detail.total * 350) / 100);
+  const uc = await ok({ a: 'book', s: 'centre', svc: usd.id, name: 'אירו', phone: '0521110053', start: day + ' 12:00', consent: ['c1'], cur: 'EUR' }, null); assert.strictEqual(uc.cur, 'EUR'); assert.strictEqual(uc.due, Math.round(uc.dueIls / 4 * 100) / 100);
+  SETTINGS.fx = {}; FXM.reset(); const nf = await ok({ a: 'biz', s: 'centre' }, null); assert.deepStrictEqual(nf.cur.offer, ['ILS']); assert.deepStrictEqual(nf.cur.rates, {}, 'בלי שער תקף אין מטבע חוץ'); await bad({ a: 'book', s: 'centre', svc: usd.id, name: 'ללא', phone: '0521110054', start: day + ' 13:00', consent: ['c1'] }, 503, 'cur', null);
   PP3.create = oc.c; PP3.capture = oc.cap; PP3.refund = oc.r;
   /* מסלול בלי site: מצב site מכובה */
   await ok({ a: 'plan', s: 'centre', plan: pOwn.id }, SA); assert.notStrictEqual((await cfgNow()).pay.mode, 'site', 'מעבר למסלול בלי סליקה דרך האתר מכבה אותה');
