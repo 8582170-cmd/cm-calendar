@@ -212,6 +212,24 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   L2 = await ok({ a: 'ledger', s: 'centre' }, OWN); assert.ok(L2.items.some(r => r.kind === 'refund' && /ידני/.test(r.note)), 'החזר שלא אוטומטי נרשם לביצוע ידני');
   await bad({ a: 'refund', s: 'centre', id: ppr.id, amount: ppb.price }, 400, 'over', OWN);
   Object.assign(SUM, { ready: orig.r, pub: orig.p, charge: orig.c }); Object.assign(PPL, { ready: orig.pr, create: orig.pc, capture: orig.pcap, refund: orig.prf });
+  /* חשבון סליקה של העסק עצמו: נדרים פלוס (callback) וקשר (בדיקת עסקה). אין רישום בספר, והאישור אוטומטי */
+  await ok({ a: 'plan', s: 'centre', plan: pOwn.id }, SA);
+  const ownCfg = o => ({ ...cfgNowSync, pay: { mode: 'own', require: 'full', holdMin: 10, own: o } }); let cfgNowSync = await cfgNow();
+  await ok({ a: 'save', s: 'centre', cfg: ownCfg({ prov: 'nedarim', mosad: '', apiValid: '' }) }, OWN);
+  await bad({ ...pkc, phone: '0521110030', start: day + ' 16:00', name: 'אין חשבון' }, 503, 'payoff', null);
+  await ok({ a: 'save', s: 'centre', cfg: ownCfg({ prov: 'nedarim', mosad: '7654321', apiValid: 'secretX' }) }, OWN);
+  const ob = await ok({ ...pkc, phone: '0521110031', start: day + ' 10:00', name: 'עסק' }, null); assert.deepStrictEqual(ob.provs, ['nedarim']); assert.strictEqual(ob.tx.Mosad, '7654321', 'הטופס של חשבון העסק'); assert.ok(!JSON.stringify(await ok({ a: 'biz', s: 'centre' }, null)).includes('secretX'), 'הסוד לא נחשף ללקוחות');
+  const ledN = (await ok({ a: 'ledger', s: 'centre' }, OWN)).items.length;
+  assert.deepStrictEqual(await BOOKMOD.nedPaid({ Param1: ob.id, Status: 'OK', Mosad: '1111111', Amount: String(ob.price), TransactionId: 'O1' }), { error: 'mosad' }, 'מוסד שונה נדחה');
+  await BOOKMOD.nedPaid({ Param1: ob.id, Status: 'OK', Mosad: '7654321', Amount: String(ob.price), TransactionId: 'O1' });
+  const oa = T.book_appt.find(x => x.id === ob.id); assert.strictEqual(oa.status, 'pending'); assert.strictEqual(oa.pay.paid, ob.price); assert.strictEqual((await ok({ a: 'ledger', s: 'centre' }, OWN)).items.length, ledN, 'תשלום בחשבון העסק לא נרשם בספר האתר');
+  await ok({ a: 'save', s: 'centre', cfg: ownCfg({ prov: 'kesher', kesher: { pageUrl: 'https://kesher.example/pay', userName: 'u', password: 'p' } }) }, OWN);
+  const AP2 = require('../api/_auction_pay'); const oldKL = AP2.kesherLinkOf, oldKC = AP2.kesherCheck; AP2.kesherLinkOf = async () => 'https://kesher.example/pay?token=T'; let kamount = 0; AP2.kesherCheck = async (s2, num) => ({ ok: num === '555', amount: kamount, num });
+  const kb = await ok({ ...pkc, phone: '0521110032', start: day + ' 11:30', name: 'קשר' }, null); assert.deepStrictEqual(kb.provs, ['kesher']); assert.ok(kb.kurl.includes('token=T'));
+  const KM = { s: 'centre', m: kb.id, k: kb.k }; await bad({ a: 'kcheck', ...KM, num: '999' }, 402, 'notpaid', null); kamount = kb.price - 1; await bad({ a: 'kcheck', ...KM, num: '555' }, 402, 'amount', null);
+  kamount = kb.price; await ok({ a: 'kcheck', ...KM, num: '555' }, null); assert.strictEqual(T.book_appt.find(x => x.id === kb.id).status, 'pending');
+  const kb2 = await ok({ ...pkc, phone: '0521110033', start: day + ' 12:30', name: 'קשר2' }, null); await bad({ a: 'kcheck', s: 'centre', m: kb2.id, k: kb2.k, num: '555' }, 409, 'used', null);
+  AP2.kesherLinkOf = oldKL; AP2.kesherCheck = oldKC;
   /* מסלול בלי site: מצב site מכובה */
   await ok({ a: 'plan', s: 'centre', plan: pOwn.id }, SA); assert.notStrictEqual((await cfgNow()).pay.mode, 'site', 'מעבר למסלול בלי סליקה דרך האתר מכבה אותה');
   USER = OWN;

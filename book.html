@@ -101,6 +101,8 @@ function dots(n){var h='<div class="steps" aria-hidden="true">';for(var i=1;i<=n
 
 /* ===== דף התור האישי (קישור מהודעה) ===== */
 function viewMode(){
+  var tn=Q.get('transactionNumber')||Q.get('TransactionNumber')||'';
+  if(Q.get('kp')&&tn&&!window.__kd){window.__kd=1;shell('<div class="card"><p>מאשרים את התשלום…</p></div>');return call({a:'kcheck',m:M,k:K,num:tn}).then(function(r){if(r&&r.ok){history.replaceState(null,'','?m='+encodeURIComponent(M)+'&k='+encodeURIComponent(K))}viewMode()})}
   call({a:'view',m:M,k:K}).then(function(v){
     if(!v||v.error)return shell('<div class="card"><h2>הקישור לא תקין</h2><p class="hint">ייתכן שהתור בוטל או שהקישור שגוי. אפשר להזמין תור חדש.</p><a class="btn w" href="/book/'+esc(SLUG)+'">להזמנת תור</a></div>');
     var stx={confirmed:'מאושר',pending:'ממתין לאישור',held:'ממתין לתשלום',cancelled:'בוטל',done:'הושלם',noshow:'לא הגיע',expired:'פג תוקף'}[v.status]||v.status;
@@ -108,8 +110,8 @@ function viewMode(){
     shell('<div class="card"><div class="row sb"><h2>התור שלך</h2><span class="hint"><b style="color:'+(v.status==='cancelled'?'var(--bad)':'var(--ok)')+'">'+esc(stx)+'</b></span></div>'
      +'<div class="sum" style="border:0;margin:0;padding:0"><div><span>שירות</span><b>'+esc(v.svc)+'</b></div><div><span>מתי</span><b>'+esc(v.when)+'</b></div>'+(v.res?'<div><span>מקום</span><b>'+esc(v.res)+'</b></div>':'')+'<div><span>משך</span><b>'+v.dur+' דקות</b></div>'
      +(v.addons&&v.addons.length?'<div><span>תוספות</span><b>'+v.addons.map(function(a){return esc(a.name)+(a.n>1?' ×'+a.n:'')}).join(', ')+'</b></div>':'')+(v.price>0?'<div class="tot"><span>סכום</span><span>'+nis(v.price)+'</span></div>':'')+(v.address?'<div><span>כתובת</span><b>'+esc(v.address)+'</b></div>':'')+'</div>'
-     +(due>0&&v.payMode==='site'&&['held','pending','confirmed'].indexOf(v.status)>-1?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><button class="btn w" id="payb" type="button">לתשלום בכרטיס אשראי</button>':'')
-     +(due>0&&v.payMode!=='site'&&v.payUrl&&v.status!=='cancelled'?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><a class="btn w" href="'+esc(v.payUrl)+'" target="_blank" rel="noopener">לתשלום</a>':'')
+     +(due>0&&(v.payMode==='site'||v.payMode==='own')&&['held','pending','confirmed'].indexOf(v.status)>-1?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><button class="btn w" id="payb" type="button">לתשלום בכרטיס אשראי</button>':'')
+     +(due>0&&v.payMode==='link'&&v.payUrl&&v.status!=='cancelled'?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><a class="btn w" href="'+esc(v.payUrl)+'" target="_blank" rel="noopener">לתשלום</a>':'')
      +'<div class="row" style="margin-top:14px"><button class="btn sec" id="ics" type="button">הוספה ליומן</button>'+(v.canCancel?'<button class="btn bad" id="can" type="button">ביטול התור</button>':'')+'</div>'
      +(!v.canCancel&&['confirmed','pending','held'].indexOf(v.status)>-1?'<p class="hint">ביטול דרך הקישור אפשרי עד '+v.cancelH+' שעות לפני התור. לשינוי אפשר ליצור קשר עם העסק.</p>':'')
      +'<div id="msg"></div></div><a class="btn sec w" href="/book/'+esc(SLUG)+'">להזמנת תור נוסף</a>');
@@ -201,7 +203,7 @@ function s4(){ST.step=4;var s=svc(),o=ST.time,c=ST.cust,fm=s.form&&s.form.fields
    +(s.deposit&&pr>0?'<p class="hint">מקדמה: '+nis(s.deposit.t==='pct'?pr*s.deposit.v/100:Math.min(pr,s.deposit.v))+'</p>':'')+(s.approval?'<p class="hint">התור יאושר על ידי העסק.</p>':'')+(P.pay.text?'<p class="hint">'+esc(P.pay.text)+'</p>':'')+(paysSite()?'<p class="hint">בשלב הבא משלמים בכרטיס אשראי, והתור נשמר לך בזמן התשלום.</p>':'')+'<div id="msg"></div></div>';
   shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="go" type="button" style="flex:1">'+(paysSite()?'להמשך לתשלום':s.approval?'שליחת בקשה':'קביעת התור')+'</button></div></div>');
   $('bk').onclick=function(){grab();s3()};$('go').onclick=submit;if(paysSite()&&!P.pay.ready){$('go').disabled=true;$('msg').innerHTML='<div class="err">התשלום באתר לא זמין כרגע. אפשר ליצור קשר עם העסק.</div>'}}
-function paysSite(){return P.pay.mode==='site'&&P.pay.require&&P.pay.require!=='none'}
+function paysSite(){return (P.pay.mode==='site'||P.pay.mode==='own')&&P.pay.require&&P.pay.require!=='none'}
 function grab(){var s=svc(),fm=s.form&&s.form.fields||[];ST.cust={name:$('cn').value,phone:$('cp').value,email:$('ce').value};
   fm.forEach(function(f){var id='q_'+f.id;if(f.type==='multi')ST.ans[f.id]=[].filter.call(document.querySelectorAll('[data-m="'+f.id+'"]'),function(x){return x.checked}).map(function(x){return x.value});
     else if(f.type==='yn'){var y=document.querySelector('[data-yn="'+f.id+'"]:checked');ST.ans[f.id]=y?y.value:''}else if(f.type==='check')ST.ans[f.id]=document.querySelector('[data-c="'+f.id+'"]').checked?'כן':'';else ST.ans[f.id]=$(id).value});
@@ -228,7 +230,7 @@ function done(r){var due=r.pay&&r.pay.url,h='<div class="card"><div class="ok"><
 function flashMsg(t){var m=$('msg');if(m)m.innerHTML='<div class="err">'+esc(t)+'</div>'}
 function hh(d){try{return new Date(d).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function loadJs(u){return new Promise(function(res,rej){var e=document.createElement('script');e.src=u;e.onload=res;e.onerror=rej;document.head.appendChild(e)})}
-var PN={nedarim:'כרטיס אשראי',sumit:'כרטיס אשראי',paypal:'PayPal / כרטיס מחו״ל'};
+var PN={kesher:'כרטיס אשראי',nedarim:'כרטיס אשראי',sumit:'כרטיס אשראי',paypal:'PayPal / כרטיס מחו״ל'};
 function payScreen(o){
   if(PAYH){window.removeEventListener('message',PAYH);PAYH=null}
   var pv=o.provs||['nedarim'],cur=pv[0],ready=false,busy=false,stop=false;
@@ -238,7 +240,7 @@ function payScreen(o){
   var pm=$('pmsg'),go=$('pgo'),say=function(t,bad){pm.textContent=t;pm.style.color=bad?'var(--bad)':''},fin=function(){stop=true;go.disabled=true;say('התשלום התקבל. מאשרים את התור…');waitConfirm(o,0)};
   var pick=function(k){cur=k;ready=false;busy=false;go.disabled=true;go.hidden=false;[].forEach.call(document.querySelectorAll('[data-pv]'),function(b){b.setAttribute('aria-checked',b.dataset.pv===k)});$('pbox').innerHTML='';
     if(PAYH){window.removeEventListener('message',PAYH);PAYH=null}
-    if(k==='nedarim')ned();else if(k==='sumit')sumit();else pp()};
+    if(k==='nedarim')ned();else if(k==='sumit')sumit();else if(k==='kesher')ksh();else pp()};
   [].forEach.call(document.querySelectorAll('[data-pv]'),function(b){b.onclick=function(){pick(b.dataset.pv)}});
   function ned(){
     $('pbox').innerHTML='<iframe id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he" style="width:100%;border:0;min-height:430px"></iframe><label class="f" style="margin-top:8px"><span>תעודת זהות של בעל הכרטיס <small class="hint">(אם הכרטיס דורש)</small></span><input id="zo" inputmode="numeric" dir="ltr" autocomplete="off"></label>';
@@ -251,6 +253,7 @@ function payScreen(o){
         else{window.removeEventListener('message',PAYH);PAYH=null;fin()}}};
     window.addEventListener('message',PAYH);
     go.onclick=function(){if(busy||!ready)return;busy=true;go.disabled=true;say('מעבד את התשלום…');post({Name:'FinishTransaction2',Value:Object.assign({},o.tx,{Zeout:$('zo').value.replace(/\D/g,''),FirstName:o.name||'',LastName:'',Phone:o.phone||'',Mail:o.email||''})})}}
+  function ksh(){say('לוחצים על כפתור התשלום ועוברים לדף תשלום מאובטח. בסיום חוזרים לכאן.');go.disabled=false;go.onclick=function(){go.disabled=true;location.href=o.kurl}}
   function sumit(){
     $('pbox').innerHTML='<form id="smf" onsubmit="return false" dir="rtl" style="display:flex;flex-direction:column;gap:10px"><label class="f"><span>מספר כרטיס</span><input type="text" data-og="cardnumber" inputmode="numeric" autocomplete="cc-number" dir="ltr" maxlength="19"></label>'
       +'<div class="grp2"><label class="f"><span>חודש</span><select data-og="expirationmonth">'+Array.from({length:12},function(_,i){return '<option>'+String(i+1).padStart(2,'0')+'</option>'}).join('')+'</select></label><label class="f"><span>שנה</span><select data-og="expirationyear">'+Array.from({length:12},function(_,i){var y=new Date().getFullYear()+i;return '<option value="'+y+'">'+y+'</option>'}).join('')+'</select></label></div>'
