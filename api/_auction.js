@@ -278,7 +278,7 @@ function cleanCfg(old, b) {
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
     if (b.pay.mosad != null) p.mosad = String(b.pay.mosad).replace(/\D/g, '').slice(0, 10); if (b.pay.apiValid != null) p.apiValid = clean(b.pay.apiValid, 60); if (b.pay.groupe != null) p.groupe = clean(b.pay.groupe, 60); c.pay = p; }
-  if (b.give && typeof b.give === 'object' && c.give) c.give = { ...c.give, on: !!b.give.on, mode: b.give.mode === 'button' ? 'button' : 'progress', prog: !!b.give.prog };
+  if (b.give && typeof b.give === 'object' && c.give) c.give = { ...c.give, on: !!b.give.on, mode: b.give.mode === 'button' ? 'button' : 'progress', prog: !!b.give.prog, ...(b.give.joint != null ? { joint: !!b.give.joint } : {}) };
   if (b.mailName != null) c.mailName = clean(b.mailName, 60);
   if (Array.isArray(b.notify)) c.notify = [...new Set(b.notify.map(mailN).filter(Boolean))].slice(0, 4);
   if (b.pay && b.pay.kesher && typeof b.pay.kesher === 'object') { const k = { ...((c.pay || {}).kesher || {}) }, K = b.pay.kesher;
@@ -520,13 +520,19 @@ module.exports = async (req, res) => {
     }
     if (a === 'progress') {
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=20');
-      const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const c = cfgOf(s); if (!c.progress.on) return json(res, 403, { error: 'off' });
+      const s = await load(b.s); if (!s) return json(res, 404, { error: 'no sale' }); const c = cfgOf(s), g0 = (s.cfg || {}).give || {};
+      /* קישור מלא: דף התקדמות אחד לשניהם. הסכום הוא מכירה + תרומות + הכפלה (הכנסה שנספרת בשני הקמפיינים מופיעה פעם אחת) */
+      let J = null; const S0 = await site();
+      if (g0.joint && g0.slug && giveOk(s, S0)) { try { const x = await require('./_give').summary(g0.slug); if (x && x.status !== 'draft') J = x; } catch (e) { } }
+      if (!c.progress.on && !J) return json(res, 403, { error: 'off' });
       const R = await report(s), top = (L, k) => L.filter(x => x[k] > 0).slice(0, 10);
-      return json(res, 200, { title: c.title, closeAt: c.closeAt, openAt: c.openAt, drawTime: c.drawTime, drawAt: c.drawAt, cd: c.cd, status: s.status, goal: c.progress.amount ? c.goal : 0, amount: c.progress.amount ? R.totals.amount : null, tickets: R.totals.tickets, buyers: R.totals.buyers,
+      const jt = J ? { sale: r2(R.totals.amount), give: r2(J.raised), matched: r2(J.matched), total: r2(R.totals.amount + J.raised + J.matched), goal: (+c.goal || 0) + (+J.goal || 0), donors: J.donors, url: J.url, can: J.can, match: J.match } : null;
+      const mon = c.progress.on ? !!c.progress.amount : true;
+      return json(res, 200, { joint: jt && mon ? jt : null, title: c.title, closeAt: c.closeAt, openAt: c.openAt, drawTime: c.drawTime, drawAt: c.drawAt, cd: c.cd, status: s.status, goal: c.progress.amount ? c.goal : 0, amount: c.progress.amount ? R.totals.amount : null, tickets: R.totals.tickets, buyers: R.totals.buyers,
         reps: c.progress.reps ? top(R.reps, 'amount').map(r => ({ name: r.name || '', amount: c.progress.amount ? r.amount : null, grp: r.grp || '' })) : [],
         groups: c.progress.groups ? top(R.groups.filter(g => g.grp !== 'ללא קבוצה'), 'amount').map(g => ({ grp: g.grp, amount: c.progress.amount ? g.amount : null })) : [],
         products: c.progress.products ? R.products.slice().sort((x, y) => y.tickets - x.tickets).slice(0, 10).map(p => ({ num: p.num, name: p.name, tickets: p.tickets })) : [],
-        give: (s.cfg.give || {}).prog ? await giveBox(s, await site()) : null });
+        give: !J && (s.cfg.give || {}).prog ? await giveBox(s, await site()) : null });
     }
     if (a === 'repLogin') {
       if (req.method !== 'POST') return json(res, 405, {});
@@ -642,6 +648,9 @@ module.exports = async (req, res) => {
       const before = managersOf(s), up = { cfg: cleanCfg(s.cfg, b.cfg || {}), updated_at: new Date().toISOString() };
       if (Array.isArray((b.cfg || {}).managers)) { up.cfg.managers = [...new Set(b.cfg.managers.map(mailN).filter(Boolean))].slice(0, 5); const added = up.cfg.managers.filter(m => !before.includes(m) && m !== u.email); if (added.length) inviteManagers({ ...s, cfg: up.cfg }, added, u.email).catch(() => {}); } if (b.name != null && clean(b.name, 120)) up.name = clean(b.name, 120);
       await db('auction_sale?id=eq.' + s.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(up) }); drop(s.slug);
+      /* קישור מלא: ההתרמה סופרת את הכנסות המכירה (אחרת הספירה לא הדדית) */
+      if (up.cfg.give && up.cfg.give.slug && !up.cfg.give.joint) { try { require('./_give').drop(up.cfg.give.slug); } catch (e) { } }
+      if (up.cfg.give && up.cfg.give.joint && up.cfg.give.slug) { try { const G = await db('give_campaign?slug=eq.' + enc(up.cfg.give.slug) + '&select=id,cfg&limit=1'), gr = G && G[0]; if (gr && (gr.cfg.auction !== s.slug || gr.cfg.auctionCount === false)) { await db('give_campaign?id=eq.' + gr.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...gr.cfg, auction: s.slug, auctionCount: true }, updated_at: new Date().toISOString() }) }); } try { require('./_give').drop(up.cfg.give.slug); } catch (e) { } } catch (e) { console.error('joint sync', e.message); } }
       return json(res, 200, mgrView(await load(s.slug, true), await site()));
     }
     if (a === 'feePlan') { const r = await require('./_openfee').choosePlan('auction', s, await site(), b.plan); if (r.error) return json(res, 409, { error: 'feeplan', message: r.error }); return json(res, 200, mgrView(await load(s.slug, true), await site())); }

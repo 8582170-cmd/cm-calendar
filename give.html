@@ -390,7 +390,7 @@ function chartHtml(){var h='',one=function(t,L){L=L.slice().sort(function(a,b){r
 function render(){if(SCREEN)return screen();var c=D.cfg,T=D.time;
   if(T.full){app.innerHTML='<div class="full"><h1>שבת שלום</h1><p>האתר סגור בשבת ובחג. נשמח לראותכם במוצאי שבת.</p></div>';return}
   var h=heroHtml()+'<div class="wrap">'+progHtml()+'<div class="grid"><main>'+whoHtml()
-   +(D.auctionUrl&&!D.rep?'<div class="auc" style="margin-bottom:20px"><div><b>המכירה הסינית של הקמפיין</b><div class="msg">כל כרטיס שנקנה במכירה נכנס לסכום הקמפיין</div></div><a class="btn pri" href="'+esc(D.auctionUrl)+'">למכירה הסינית</a></div>':'')
+   +(D.auctionUrl&&!D.rep?'<div class="auc" style="margin-bottom:20px"><div><b>המכירה הסינית של הקמפיין</b><div class="msg">כל כרטיס שנקנה במכירה נכנס לסכום הקמפיין</div></div><span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn pri" href="'+esc(D.auctionUrl)+'">למכירה הסינית</a>'+(D.jointUrl?'<a class="btn" href="'+esc(D.jointUrl)+'">התקדמות משותפת למכירה ולהתרמה</a>':'')+'</span></div>':'')
    +tabsHtml()+'</main>'+donHtml()+'</div><p class="foot">התרומות מתקבלות ישירות אצל הארגון, בסליקה מאובטחת. '+(c.phoneLine?'לתרומה בטלפון: <b dir="ltr">'+esc(c.phoneLine)+'</b> · ':'')+'<a href="/">MyLuach</a></p></div>';
   app.innerHTML=h;wireDon();pane();tick();clearInterval(timer);timer=setInterval(tick,1000);if(Q.get('kp'))kesherBack()}
 function refresh(){var r=$('raised');if(r){var old=document.querySelector('.prog');if(old){old.outerHTML=progHtml();tick()}}

@@ -484,9 +484,14 @@ function progView(){
     var lb=function(t,L,lab,val){if(!L.length)return '';var mx=Math.max.apply(null,L.map(function(x){return +x._v||0}))||1;
       return '<section class="board"><h2 style="font-size:22px">'+t+'</h2>'+L.map(function(x,i){return '<div class="lb"><div class="r"><span><b>'+(i+1)+'.</b> '+esc(lab(x))+'</span><b>'+esc(val(x))+'</b></div><div class="t" aria-hidden="true"><i style="width:'+Math.round((+x._v||0)/mx*100)+'%"></i></div></div>'}).join('')+'</section>'};
     var money=j.amount!=null,now=Date.now(),cdx=cdPick(j,j.status==='open'&&!(Date.parse(j.openAt)>now)&&!(Date.parse(j.closeAt)<=now),j.status);
-    app.innerHTML='<header class="top"><div class="kick">המכירה הסינית של '+esc(j.title)+' · התקדמות המכירה</div>'
-      +(money?'<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:baseline"><span class="big">'+nis(j.amount)+'</span>'+(j.goal?'<span style="font-size:22px;color:#D5DAE6">מתוך יעד של '+nis(j.goal)+'</span>':'')+'</div>':'')
-      +(money&&j.goal?'<div class="bar" role="img" aria-label="'+pct+' אחוז מהיעד"><i style="width:'+pct+'%"></i></div>':'')
+    var J=j.joint,jp=J&&J.goal?Math.min(100,Math.round(J.total/J.goal*100)):0;
+    app.innerHTML='<header class="top"><div class="kick">'+(J?'המכירה הסינית וההתרמה של '+esc(j.title)+' · התקדמות משותפת':'המכירה הסינית של '+esc(j.title)+' · התקדמות המכירה')+'</div>'
+      +(J?'<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:baseline"><span class="big">'+nis(J.total)+'</span>'+(J.goal?'<span style="font-size:22px;color:#D5DAE6">מתוך יעד משותף של '+nis(J.goal)+'</span>':'')+'</div>'
+        +(J.goal?'<div class="bar" role="img" aria-label="'+jp+' אחוז מהיעד"><i style="width:'+jp+'%"></i></div>':'')
+        +'<div class="kpis"><div><span>מהמכירה</span><b>'+nis(J.sale)+'</b></div><div><span>מתרומות</span><b>'+nis(J.give)+'</b></div>'+(J.matched>0?'<div><span>הכפלה</span><b>'+nis(J.matched)+'</b></div>':'')+(J.donors!=null?'<div><span>תורמים ורוכשים</span><b>'+J.donors.toLocaleString('he-IL')+'</b></div>':'')+'</div>'
+        +(J.can?'<p style="margin:10px 0 0"><a class="btn pri" style="display:inline-block;background:var(--gold);color:var(--navy);font-weight:700;border-radius:10px;padding:10px 20px;text-decoration:none" href="'+esc(J.url)+'">לתרומה</a></p>':''):'')
+      +(!J&&money?'<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:baseline"><span class="big">'+nis(j.amount)+'</span>'+(j.goal?'<span style="font-size:22px;color:#D5DAE6">מתוך יעד של '+nis(j.goal)+'</span>':'')+'</div>':'')
+      +(!J&&money&&j.goal?'<div class="bar" role="img" aria-label="'+pct+' אחוז מהיעד"><i style="width:'+pct+'%"></i></div>':'')
       +'<div class="kpis"><div><span>כרטיסים שנמכרו</span><b>'+j.tickets.toLocaleString('he-IL')+'</b></div><div><span>רוכשים</span><b>'+j.buyers.toLocaleString('he-IL')+'</b></div>'+(left&&!cdx?'<div><span>עד סגירת המכירה</span><b>'+esc(left)+'</b></div>':'')+'</div></header>'+cdHtml(cdx)
       +'<main>'+(j.give?giveHtml(Object.assign({},j.give,{mode:'progress'}),1):'')+'<div class="boards">'
       +lb('מגייסים מובילים',j.reps.map(function(r){r._v=r.amount;return r}),function(r){return r.name||'מגייס'},function(r){return money?nis(r.amount):''})

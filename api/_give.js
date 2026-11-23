@@ -100,10 +100,11 @@ async function stats(s, fresh) {
   const rep = {}, team = {}; let raised = 0;
   s.reps.forEach(r => { rep[r.id] = { amount: 0, count: 0 }; }); s.teams.forEach(t => { team[t.id] = { amount: 0, count: 0 }; });
   D.forEach(d => { const v = +d.total || 0; raised += v; if (d.rep_id && rep[d.rep_id]) { rep[d.rep_id].amount += v; rep[d.rep_id].count++; } if (d.team_id && team[d.team_id]) { team[d.team_id].amount += v; team[d.team_id].count++; } });
-  let auction = 0, aCount = 0;
+  let auction = 0, aCount = 0, jointUrl = '';
   if (c.auction && c.f.auction && c.auctionCount) {
     try {
-      const A = await db('auction_sale?slug=eq.' + enc(c.auction) + '&select=id&limit=1'), aid = A && A[0] && A[0].id;
+      const A = await db('auction_sale?slug=eq.' + enc(c.auction) + '&select=id,cfg&limit=1'), aid = A && A[0] && A[0].id;
+      { const sg = ((A && A[0] && A[0].cfg) || {}).give || {}; if (aid && sg.joint && sg.slug === s.slug && sg.on !== false) jointUrl = SITE() + '/auction?s=' + c.auction + '&view=progress'; }
       if (aid) {
         const [O, AR] = await Promise.all([all('auction_order?sale_id=eq.' + aid + '&status=eq.paid&select=amount,rep_id'), db('auction_rep?sale_id=eq.' + aid + '&select=id,code&limit=5000')]);
         const code = new Map((AR || []).map(r => [r.id, r.code])), byCode = new Map(s.reps.map(r => [r.code, r]));
@@ -113,7 +114,7 @@ async function stats(s, fresh) {
   }
   const base = raised + (c.match.auction ? auction : 0);
   const matched = c.match.on ? r2(Math.min(c.match.cap > 0 ? c.match.cap : Infinity, base * (c.match.ratio - 1))) : 0;
-  const v = { raised: r2(raised), auction: r2(auction), auctionCount: aCount, matched, total: r2(raised + auction + matched), donors: D.length + aCount, rep, team, D };
+  const v = { jointUrl, raised: r2(raised), auction: r2(auction), auctionCount: aCount, matched, total: r2(raised + auction + matched), donors: D.length + aCount, rep, team, D };
   STATS.set(k, { at: Date.now(), v }); if (STATS.size > 200) STATS.delete(STATS.keys().next().value);
   return v;
 }
@@ -180,7 +181,7 @@ async function campView(s, b) {
     rep: one ? { id: one.id, code: one.code, name: one.name || '', img: one.img || '', story: one.story || '', goal: +one.goal || 0, team: one.team_id || null, amount: r2((st.rep[one.id] || {}).amount * X || 0), count: (st.rep[one.id] || {}).count || 0 } : null,
     team: tm ? { id: tm.id, name: tm.name, descr: tm.descr || '', img: tm.img || '', goal: +tm.goal || 0, amount: r2((st.team[tm.id] || {}).amount * X || 0), count: (st.team[tm.id] || {}).count || 0 } : null,
     payVia: PAY.provs(s, await site())[0] || '',
-    auctionUrl: c.auction && c.f.auction ? SITE() + '/auction?s=' + c.auction : ''
+    auctionUrl: c.auction && c.f.auction ? SITE() + '/auction?s=' + c.auction : '', jointUrl: st.jointUrl || ''
   };
 }
 
@@ -597,6 +598,6 @@ async function ymUpload(token, path, buf) {
   if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 80));
 }
 module.exports.summary = async slug => { const s = await load(slug); if (!s) return null; const c = cfgOf(s), st = await stats(s), t = await timing(s, c, st);
-  return { status: s.status, title: c.title, url: SITE() + '/give/' + s.slug, total: st.total, goal: c.goal, donors: c.f.donors ? st.donors : null, match: c.match.on ? c.match.ratio : 0, can: t.can, end: c.f.countdown ? t.end : '' }; };
+  return { status: s.status, title: c.title, url: SITE() + '/give/' + s.slug, raised: st.raised, matched: st.matched, total: st.total, goal: c.goal, donors: c.f.donors ? st.donors : null, match: c.match.on ? c.match.ratio : 0, can: t.can, end: c.f.countdown ? t.end : '' }; };
 module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.cfgOf = cfgOf; module.exports.timing = timing; module.exports.load = load; module.exports.stats = stats; module.exports.markPaid = markPaid;
 module.exports.notifyPhone = async (s, d) => { const { escH } = require('./_mail'), r = d.rep_id ? s.reps.find(x => x.id === d.rep_id) : null; await notify(s, 'תרומה בטלפון ממתינה לגבייה: ' + (+d.amount) + ' ₪', '<p>' + escH(d.method || 'תרומה בטלפון') + (r ? ' · נציג: ' + escH(r.name || r.code) : '') + (d.phone ? ' · טלפון: ' + escH(d.phone) : '') + '</p><p>אחרי הגבייה מסמנים "שולם" בלשונית התרומות.</p>'); };
