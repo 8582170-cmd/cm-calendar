@@ -190,6 +190,28 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   await ok({ ...pk, phone: '0521110006', name: 'תופס' }, null); /* מישהו אחר תפס את השעה אחרי שהחזקה פגה */
   const mails2 = sent.mail.length; const late = await BOOKMOD.nedPaid({ Param1: ex.id, Status: 'OK', Amount: String(ex.price), TransactionId: 'T2' }); assert.strictEqual(late.conflict, true);
   assert.notStrictEqual(T.book_appt.find(a => a.id === ex.id).status, 'confirmed'); assert.ok(sent.mail.length > mails2, 'התראה לעסק על תשלום בלי תור');
+  /* SUMIT ופייפל: אותם אמצעי תשלום של האתר, והחזר על ידי מנהל העסק */
+  const SUM = require('../api/_sumit'), PPL = require('../api/_paypal'); const orig = { r: SUM.ready, p: SUM.pub, c: SUM.charge, pr: PPL.ready, pc: PPL.create, pcap: PPL.capture, prf: PPL.refund };
+  SUM.ready = () => true; SUM.pub = () => ({ cid: 1, pk: 'pk' }); SUM.charge = async o => ({ ok: o.token === 'good', system: false, message: 'סירוב', paymentId: 'S9', amount: o.amount });
+  PPL.ready = () => true; PPL.create = async () => 'PP1'; PPL.capture = async id => ({ ok: id === 'PP1', amount: 0, txn: 'CAP1' }); const refunds = []; PPL.refund = async (id, am) => { refunds.push([id, am]); return { id: 'RF1', amount: am }; };
+  process.env.PAYPAL_CLIENT_ID = 'ppc';
+  const pkc = { ...pay2Bk(), start: day + ' 14:00' }; function pay2Bk() { return { a: 'book', s: 'centre', svc: appr.id, name: 'כרטיס', phone: '0521110020', consent: ['c1'] }; }
+  await ok({ a: 'plan', s: 'centre', plan: pSite.id }, SA); await ok({ a: 'save', s: 'centre', cfg: { ...(await cfgNow()), pay: { mode: 'site', require: 'full', holdMin: 10 } } }, OWN);
+  const sb = await ok(pkc, null); assert.ok(sb.provs.includes('sumit') && sb.provs.includes('paypal') && sb.provs.includes('nedarim')); assert.deepStrictEqual(sb.sumit, { cid: 1, pk: 'pk' }); assert.strictEqual(sb.ppc, 'ppc');
+  const SM = { s: 'centre', m: sb.id, k: sb.k };
+  await bad({ a: 'paysumit', ...SM, token: 'bad' }, 402, 'payment', null); assert.strictEqual(T.book_appt.find(x => x.id === sb.id).status, 'held');
+  await ok({ a: 'paysumit', ...SM, token: 'good', name: 'כרטיס בדיקה' }, null); const sa = T.book_appt.find(x => x.id === sb.id); assert.strictEqual(sa.status, 'pending'); assert.strictEqual(sa.pay.paid, sb.price);
+  await bad({ a: 'paysumit', ...SM, token: 'good' }, 400, 'paid', null);
+  const ppb = await ok({ ...pkc, phone: '0521110021', start: day + ' 15:30', name: 'פייפל' }, null); const PM2 = { s: 'centre', m: ppb.id, k: ppb.k };
+  assert.strictEqual((await ok({ a: 'ppcreate', ...PM2 }, null)).ppid, 'PP1'); await bad({ a: 'ppcapture', ...PM2, ppid: 'X' }, 402, 'payment', null);
+  await ok({ a: 'ppcapture', ...PM2, ppid: 'PP1' }, null); assert.strictEqual(T.book_appt.find(x => x.id === ppb.id).pay.paid, ppb.price);
+  let L2 = await ok({ a: 'ledger', s: 'centre' }, OWN); const spr = L2.items.find(r => r.kind === 'payment' && r.txn === 'sumit:S9'), ppr = L2.items.find(r => r.kind === 'payment' && r.txn === 'paypal:CAP1'); assert.ok(spr && ppr);
+  await bad({ a: 'refund', s: 'centre', id: ppr.id, amount: 10 }, 403, 'forbidden', CLERK);
+  const rf = await ok({ a: 'refund', s: 'centre', id: ppr.id, amount: 50 }, OWN); assert.strictEqual(rf.auto, true); assert.deepStrictEqual(refunds[0], ['CAP1', 50]);
+  const rf2 = await ok({ a: 'refund', s: 'centre', id: spr.id, amount: 30 }, OWN); assert.strictEqual(rf2.auto, false);
+  L2 = await ok({ a: 'ledger', s: 'centre' }, OWN); assert.ok(L2.items.some(r => r.kind === 'refund' && /ידני/.test(r.note)), 'החזר שלא אוטומטי נרשם לביצוע ידני');
+  await bad({ a: 'refund', s: 'centre', id: ppr.id, amount: ppb.price }, 400, 'over', OWN);
+  Object.assign(SUM, { ready: orig.r, pub: orig.p, charge: orig.c }); Object.assign(PPL, { ready: orig.pr, create: orig.pc, capture: orig.pcap, refund: orig.prf });
   /* מסלול בלי site: מצב site מכובה */
   await ok({ a: 'plan', s: 'centre', plan: pOwn.id }, SA); assert.notStrictEqual((await cfgNow()).pay.mode, 'site', 'מעבר למסלול בלי סליקה דרך האתר מכבה אותה');
   USER = OWN;
