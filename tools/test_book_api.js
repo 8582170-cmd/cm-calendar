@@ -158,6 +158,30 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   await ok({ a: 'pickPlan', s: 'centre', plan: pNone.id }); cf = (await ok({ a: 'get', s: 'centre' })).biz.cfg; assert.strictEqual(cf.pay.mode, 'none', 'מסלול בלי סליקה מכבה תשלום באתר'); assert.strictEqual(cf.pay.require, 'none');
   await bad({ a: 'plan', s: 'centre', plan: pSite.id }, 403, 'forbidden', OWN); await ok({ a: 'plan', s: 'centre', plan: pSite.id }, SA); assert.strictEqual((await ok({ a: 'mine' }, SA)).items[0].plan, pSite.id, 'בעל האתר משייך מסלול גם לא פומבי'); await bad({ a: 'plan', s: 'centre', plan: 'nope' }, 400, 'plan', SA);
   USER = OWN;
+  /* ===== לילות וכמויות ===== */
+  const nq_hg = (await ok({ a: 'put', s: 'centre', kind: 'group', item: { name: 'מלון' } })).item;
+  const nq_rA = (await ok({ a: 'put', s: 'centre', kind: 'res', item: { name: 'חדר א', group_id: nq_hg.id, cfg: { cap: 4 } } })).item, nq_rB = (await ok({ a: 'put', s: 'centre', kind: 'res', item: { name: 'חדר ב', group_id: nq_hg.id, cfg: { cap: 2 } } })).item;
+  const nq_hotel = (await ok({ a: 'put', s: 'centre', kind: 'svc', item: { name: 'לינה', cfg: { alloc: 'auto', res: [nq_rA.id, nq_rB.id], nights: { on: true, min: 1, max: 7, inT: '15:00', outT: '11:00', price: 300 }, qty: { on: true, max: 4, mult: false, label: 'אורחים' } } } })).item;
+  const nq_hs = await ok({ a: 'slots', s: 'centre', svc: nq_hotel.id, from: day, days: 10, nights: 2, qty: 1 }, null); assert.strictEqual(nq_hs.kind, 'nights'); assert.strictEqual(nq_hs.days[day].mx, 7); assert.strictEqual(nq_hs.days[day].pn[2], 600);
+  await bad({ a: 'slots', s: 'centre', svc: nq_hotel.id, from: day, nights: 2, qty: 9 }, 400, 'qty', null);
+  const nq_hb = { a: 'book', s: 'centre', svc: nq_hotel.id, start: day, nights: 2, qty: 3, name: 'אורח', phone: '0521110040', consent: ['c1'] };
+  await bad({ ...nq_hb, nights: 9 }, 400, 'nights', null);
+  const nq_h1 = await ok(nq_hb, null); assert.strictEqual(nq_h1.price, 600); assert.strictEqual(nq_h1.nights, 2); assert.strictEqual(T.book_appt.find(x => x.id === nq_h1.id).res_id, nq_rA.id, 'האורחים 3 מתאימים רק לחדר א (עד 4)');
+  const nq_h1r = T.book_appt.find(x => x.id === nq_h1.id); assert.strictEqual(new Date(nq_h1r.end_at) - new Date(nq_h1r.start_at), (2 * 24 - 4) * 3600e3, 'כניסה ב-15:00 ויציאה ב-11:00 כעבור לילותיים');
+  await bad({ ...nq_hb, phone: '0521110041', qty: 3 }, 409, 'taken', null); /* היחיד שמתאים ל-3 אורחים תפוס */
+  const nq_h2 = await ok({ ...nq_hb, phone: '0521110042', qty: 2 }, null); assert.strictEqual(T.book_appt.find(x => x.id === nq_h2.id).res_id, nq_rB.id);
+  const nq_dayOut = K.addDays(day, 2); const nq_h3 = await ok({ ...nq_hb, phone: '0521110043', qty: 2, start: nq_dayOut, nights: 1 }, null); assert.ok(nq_h3.id, 'כניסה ביום היציאה של אחר מותרת (15:00 אחרי 11:00)');
+  const nq_hs2 = await ok({ a: 'slots', s: 'centre', svc: nq_hotel.id, from: day, days: 4, nights: 1, qty: 3 }, null); assert.strictEqual(nq_hs2.days[day], null, 'אין חדר פנוי ל-3 בימים האלה'); assert.strictEqual(nq_hs2.days[nq_dayOut], null); assert.strictEqual(nq_hs2.days[K.addDays(nq_dayOut, 1)].mx, 7);
+  USER = OWN; const nq_tour = (await ok({ a: 'put', s: 'centre', kind: 'res', item: { name: 'סיור', cfg: { cap: 10 } } })).item;
+  const nq_ts = (await ok({ a: 'put', s: 'centre', kind: 'svc', item: { name: 'סיור קבוצתי', cfg: { dur: 60, alloc: 'auto', res: [nq_tour.id], price: { fixed: 50 }, qty: { on: true, max: 5, share: true, mult: true, label: 'משתתפים' } } } })).item;
+  const nq_tb = { a: 'book', s: 'centre', svc: nq_ts.id, start: day + ' 10:00', name: 'קבוצה', phone: '0521110050', consent: ['c1'], qty: 4 };
+  const nq_sl = (await ok({ a: 'slots', s: 'centre', svc: nq_ts.id, from: day, days: 1, qty: 1 }, null)).days[day].find(x => x.t === '10:00'); assert.strictEqual(nq_sl.n, 10); assert.ok(nq_sl.seats);
+  const nq_t1 = await ok(nq_tb, null); assert.strictEqual(nq_t1.price, 200, 'מחיר לכל משתתף');
+  const nq_t2 = await ok({ ...nq_tb, phone: '0521110051', qty: 5 }, null); assert.strictEqual(nq_t2.price, 250);
+  const nq_sl2 = (await ok({ a: 'slots', s: 'centre', svc: nq_ts.id, from: day, days: 1, qty: 1 }, null)).days[day].find(x => x.t === '10:00'); assert.strictEqual(nq_sl2.n, 1, 'נשאר מקום אחד');
+  await bad({ ...nq_tb, phone: '0521110052', qty: 2 }, 409, 'taken', null); await bad({ ...nq_tb, phone: '0521110052', qty: 9 }, 400, 'qty', null);
+  const nq_t3 = await ok({ ...nq_tb, phone: '0521110053', qty: 1 }, null); assert.ok(nq_t3.id);
+  await ok({ a: 'cancel', s: 'centre', m: nq_t1.id, k: nq_t1.k }, null); await ok({ ...nq_tb, phone: '0521110054', qty: 4 }, null);
   /* ===== תשלום דרך האתר: סליקה בחשבון האתר, ספר חשבונות, החזר והעברה ידנית ===== */
   const cfgNow = async () => (await ok({ a: 'get', s: 'centre' }, OWN)).biz.cfg;
   await ok({ a: 'plan', s: 'centre', plan: pSite.id }, SA); await ok({ a: 'save', s: 'centre', cfg: { ...(await cfgNow()), pay: { mode: 'site', require: 'full', holdMin: 10 } } }, OWN);

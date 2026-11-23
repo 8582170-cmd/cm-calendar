@@ -173,3 +173,9 @@ create table if not exists public.book_pay (
 );
 create index if not exists book_pay_biz on public.book_pay(biz_id, id);
 alter table public.book_pay enable row level security;
+
+-- כמויות (מקומות/כרטיסים) ותורים משותפים: תור "משותף" לא נחסם בנעילת החפיפה, והקיבולת נבדקת באפליקציה.
+alter table public.book_appt add column if not exists qty int not null default 1;
+alter table public.book_appt add column if not exists shared boolean not null default false;
+alter table public.book_appt drop constraint if exists book_appt_no_overlap;
+alter table public.book_appt add constraint book_appt_no_overlap exclude using gist (res_id with =, tstzrange(busy_start, busy_end) with &&) where (status in ('held','pending','confirmed') and not shared);

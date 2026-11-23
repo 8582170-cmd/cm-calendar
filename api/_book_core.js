@@ -67,7 +67,7 @@ function quote(o) {
     const unit = Math.max(1, +P.unit || 15), per = +P.per || 0; let done = 0;
     while (done < dur) { const slice = Math.min(unit, dur - done); base += adj(per, o.startMs + done * 60000) * (slice / unit); done += slice; }
   }
-  base = r2(base); lines.push({ k: 'svc', label: (o.svc && o.svc.name) || '', amt: base });
+  base = r2(base * (c.qty && c.qty.on && c.qty.mult !== false ? Math.max(1, +o.qty || 1) : 1)); lines.push({ k: 'svc', label: ((o.svc && o.svc.name) || '') + (c.qty && c.qty.on && c.qty.mult !== false && +o.qty > 1 ? ' · ' + (+o.qty) + (c.qty.label ? ' ' + c.qty.label : '') : ''), amt: base });
   let total = base;
   (o.addons || []).forEach(x => {
     const ac = x.a.cfg || {}, per = ac.per === 'unit' ? Math.max(1, +ac.unit || 15) : 0, n = x.n;
@@ -78,6 +78,29 @@ function quote(o) {
   let deposit = 0; const d = c.deposit;
   if (d && +d.v > 0) deposit = d.t === 'pct' ? r2(total * Math.min(100, +d.v) / 100) : r2(Math.min(total, +d.v));
   return { total, base, dur, lines, deposit };
+}
+
+/* ===== לילות (מלון, צימר): כניסה בתאריך, יציאה כעבור N לילות, בשעות קבועות ===== */
+/* מתחילת ההשהיה עד סופה: [startMs, endMs, דקות] */
+function nightsSpan(date, N, n, tz) {
+  tz = tz || TZ; const inM = toMin(n.inT) == null ? 15 * 60 : toMin(n.inT), outM = toMin(n.outT) == null ? 11 * 60 : toMin(n.outT);
+  const s = localToMs(date, inM, tz), e = localToMs(addDays(date, N), outM, tz); return [s, e, Math.round((e - s) / 60000)];
+}
+/* מחיר לילות: מחיר ללילה (אחרי התאמת קבוצה/משאב וכללי תמחור לפי היום בשבוע או תאריך), כפול כמות אם הוגדר */
+function quoteNights(o) {
+  const tz = o.tz || TZ, c = (o.svc && o.svc.cfg) || {}, n = c.nights || {}, qty = Math.max(1, +o.qty || 1), mult = (c.qty && c.qty.on && c.qty.mult !== false) ? qty : 1, lines = [];
+  let base = 0;
+  for (let i = 0; i < o.nights; i++) {
+    const d = addDays(o.date, i), at = localToMs(d, toMin(n.inT) == null ? 15 * 60 : toMin(n.inT), tz);
+    let u = adjust(+n.price || 0, o.group && o.group.adj); u = adjust(u, o.res && o.res.cfg && o.res.cfg.adj); const r = ruleFor(c.rules, msToLocal(at, tz)); if (r) u = adjust(u, { t: r.t, v: r.v });
+    base += u;
+  }
+  base = r2(base * mult); lines.push({ k: 'svc', label: ((o.svc && o.svc.name) || '') + ' · ' + o.nights + ' לילות' + (mult > 1 ? ' · ' + qty + ' במקום אחד' : ''), amt: base });
+  let total = base;
+  (o.addons || []).forEach(x => { const ac = x.a.cfg || {}, amt = r2((+ac.price || 0) * x.n * (ac.per === 'night' ? o.nights : 1)); lines.push({ k: 'addon', id: x.a.id, label: x.a.name, n: x.n, amt }); total += amt; });
+  total = r2(total); let deposit = 0; const d = c.deposit;
+  if (d && +d.v > 0) deposit = d.t === 'pct' ? r2(total * Math.min(100, +d.v) / 100) : r2(Math.min(total, +d.v));
+  return { total, base, nights: o.nights, qty, lines, deposit, dur: o.nightsDur || 0 };
 }
 /* האורך שנבחר: אם הלקוח רשאי לשנות, בטווח ובצעד שהוגדרו. אחרת האורך הקבוע. null = לא תקין */
 function pickDur(svc, want) {
@@ -145,7 +168,7 @@ function slots(o) {
         for (let t = Math.ceil(w0 / step) * step; t + o.dur <= w1; t += step) {
           const start = localToMs(date, t, tz), end = start + o.dur * 60000;
           if (start < minAt) continue;
-          if (!resFree(r, bm, o.blocks, start, end, bb, ba, tz)) continue;
+          if (o.freeFn ? !o.freeFn(r, start, end) : !resFree(r, bm, o.blocks, start, end, bb, ba, tz)) continue;
           if (!by.has(t)) by.set(t, { t: fmtMin(t), ms: start, res: [] });
           by.get(t).res.push(r.id);
         }
@@ -171,4 +194,4 @@ function countBy(freeIds, res) {
   return G;
 }
 
-module.exports = { TZ, r2, localToMs, msToLocal, dowOf, addDays, toMin, fmtMin, isDate, adjust, ruleFor, quote, pickDur, pickAddons, windows, slots, pick, countBy, resFree, busyBy, parts };
+module.exports = { nightsSpan, quoteNights, TZ, r2, localToMs, msToLocal, dowOf, addDays, toMin, fmtMin, isDate, adjust, ruleFor, quote, pickDur, pickAddons, windows, slots, pick, countBy, resFree, busyBy, parts };

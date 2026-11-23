@@ -77,7 +77,7 @@ var API='/api/pricing?c=_book',Q=new URLSearchParams(location.search),EMB=Q.get(
 var SLUG=(location.pathname.match(/\/book\/([^\/?#]+)/)||[])[1]||Q.get('s')||'';
 var M=Q.get('m'),K=Q.get('k'),PAYH=null;
 var $=function(i){return document.getElementById(i)},app=$('app');
-var P=null,ST={step:1,svc:null,dur:0,add:{},from:'',days:null,day:'',time:null,group:0,res:0,busy:0,err:'',ans:{},con:{},cust:{},sel:null,wait:0};
+var P=null,ST={step:1,svc:null,dur:0,add:{},from:'',days:null,day:'',time:null,group:0,res:0,busy:0,err:'',ans:{},con:{},cust:{},sel:null,wait:0,qty:1,nights:0};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function nis(n){n=Math.round(+n*100)/100;return n.toLocaleString('he-IL')+' ₪'}
 function call(b){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({s:SLUG},b))}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;return j})}).catch(function(){return {error:'net',_st:0}})}
@@ -108,7 +108,7 @@ function viewMode(){
     var stx={confirmed:'מאושר',pending:'ממתין לאישור',held:'ממתין לתשלום',cancelled:'בוטל',done:'הושלם',noshow:'לא הגיע',expired:'פג תוקף'}[v.status]||v.status;
     var due=Math.max(0,(v.pay.due||0)-(v.pay.paid||0));
     shell('<div class="card"><div class="row sb"><h2>התור שלך</h2><span class="hint"><b style="color:'+(v.status==='cancelled'?'var(--bad)':'var(--ok)')+'">'+esc(stx)+'</b></span></div>'
-     +'<div class="sum" style="border:0;margin:0;padding:0"><div><span>שירות</span><b>'+esc(v.svc)+'</b></div><div><span>מתי</span><b>'+esc(v.when)+'</b></div>'+(v.res?'<div><span>מקום</span><b>'+esc(v.res)+'</b></div>':'')+'<div><span>משך</span><b>'+v.dur+' דקות</b></div>'
+     +'<div class="sum" style="border:0;margin:0;padding:0"><div><span>שירות</span><b>'+esc(v.svc)+'</b></div><div><span>'+(v.nights?'כניסה':'מתי')+'</span><b>'+esc(v.when)+'</b></div>'+(v.nights?'<div><span>יציאה</span><b>'+esc(v.until)+'</b></div><div><span>לילות</span><b>'+v.nights+'</b></div>':'')+(v.qty>1?'<div><span>כמות</span><b>'+v.qty+'</b></div>':'')+(v.res?'<div><span>מקום</span><b>'+esc(v.res)+'</b></div>':'')+(v.nights?'':'<div><span>משך</span><b>'+v.dur+' דקות</b></div>')
      +(v.addons&&v.addons.length?'<div><span>תוספות</span><b>'+v.addons.map(function(a){return esc(a.name)+(a.n>1?' ×'+a.n:'')}).join(', ')+'</b></div>':'')+(v.price>0?'<div class="tot"><span>סכום</span><span>'+nis(v.price)+'</span></div>':'')+(v.address?'<div><span>כתובת</span><b>'+esc(v.address)+'</b></div>':'')+'</div>'
      +(due>0&&(v.payMode==='site'||v.payMode==='own')&&['held','pending','confirmed'].indexOf(v.status)>-1?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><button class="btn w" id="payb" type="button">לתשלום בכרטיס אשראי</button>':'')
      +(due>0&&v.payMode==='link'&&v.payUrl&&v.status!=='cancelled'?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><a class="btn w" href="'+esc(v.payUrl)+'" target="_blank" rel="noopener">לתשלום</a>':'')
@@ -128,20 +128,22 @@ function s1(){ST.step=1;
 function svcPrice(s){var p=s.price||{};if(p.fixed!=null)return p.fixed?nis(p.fixed):'';if(p.per>0)return 'מ־'+nis(p.per*s.dur/p.unit);return ''}
 function optBtn(k,id,img,name,sub,pr,on){return '<button type="button" class="opt" data-k="'+k+'" data-id="'+id+'" aria-pressed="'+(on?'true':'false')+'">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy">':'')+'<span class="t"><b>'+esc(name)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span>'+(pr?'<span class="pr">'+esc(pr)+'</span>':'')+'</button>'}
 function wireOpts(k,fn){[].forEach.call(document.querySelectorAll('.opt[data-k="'+k+'"]'),function(b){b.onclick=function(){fn(b.dataset.id)}})}
-function pickSvc(id){ST.svc=id;var s=svc();ST.dur=s.dur;ST.add={};P.addons.filter(function(a){return s.addons.indexOf(a.id)>-1&&(a.def||a.req)}).forEach(function(a){ST.add[a.id]=1});ST.day='';ST.time=null;ST.days=null;ST.group=0;ST.res=0;ST.from=today();ST.ans={};
-  var hasOpt=(s.adj)||P.addons.some(function(a){return s.addons.indexOf(a.id)>-1});hasOpt?s2():s3()}
+function pickSvc(id){ST.svc=id;var s=svc();ST.dur=s.dur;ST.add={};P.addons.filter(function(a){return s.addons.indexOf(a.id)>-1&&(a.def||a.req)}).forEach(function(a){ST.add[a.id]=1});ST.day='';ST.time=null;ST.days=null;ST.group=0;ST.res=0;ST.from=today();ST.ans={};ST.qty=1;ST.nights=s.nights?s.nights.min:0;
+  var hasOpt=(s.adj)||s.qty||P.addons.some(function(a){return s.addons.indexOf(a.id)>-1});hasOpt?s2():s3()}
 
 /* ===== שלב 2: משך ותוספות ===== */
 function addList(s){return P.addons.filter(function(a){return s.addons.indexOf(a.id)>-1})}
 function addTotal(){var s=svc(),m=0,p=0;addList(s).forEach(function(a){var n=ST.add[a.id]||0;if(!n)return;m+=a.addMin*n;p+=a.per==='unit'?a.price*n*(ST.dur+m)/a.unit:a.price*n});return {min:m,price:p}}
 function s2(){ST.step=2;var s=svc(),h=dots(4)+'<div class="card"><h2>'+esc(s.name)+'</h2>';
+  if(s.qty){h+='<p class="hint">'+(s.qty.share?'כמה '+esc(s.qty.label||'מקומות')+'?':'כמה '+esc(s.qty.label||'אנשים')+'?')+'</p><div class="stepper"><button type="button" id="qm" aria-label="פחות">−</button><b id="qv">'+ST.qty+'</b><button type="button" id="qp" aria-label="יותר">+</button></div>'}
   if(s.adj){h+='<p class="hint">כמה זמן?</p><div class="stepper"><button type="button" id="dm" aria-label="פחות">−</button><b id="dv">'+ST.dur+' דק׳</b><button type="button" id="dp" aria-label="יותר">+</button></div>'}
   var al=addList(s);if(al.length){h+='<h2 style="margin-top:16px;font-size:17px">תוספות</h2>';al.forEach(function(a){var n=ST.add[a.id]||0;
     h+='<div class="add"><div><b>'+esc(a.name)+'</b>'+(a.req?' <small class="hint">(חובה)</small>':'')+'<small class="hint" style="display:block">'+(a.descr?esc(a.descr)+' · ':'')+(a.price?'+'+nis(a.price)+(a.per==='unit'?' ל־'+a.unit+' דק׳':''):'ללא עלות')+(a.addMin?' · +'+a.addMin+' דק׳':'')+'</small></div>'
      +(a.max>1?'<div class="stepper"><button type="button" data-ad="'+a.id+'" data-d="-1" aria-label="פחות">−</button><b>'+n+'</b><button type="button" data-ad="'+a.id+'" data-d="1" aria-label="יותר">+</button></div>':'<input type="checkbox" style="width:26px;height:26px;accent-color:var(--c)" data-ad1="'+a.id+'"'+(n?' checked':'')+(a.req?' disabled':'')+' aria-label="'+esc(a.name)+'">')+'</div>'})}
   h+='<div id="est" class="sum"></div></div>';
-  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="nx" type="button" style="flex:1">להמשך לבחירת שעה</button></div></div>');
-  var est=function(){var t=addTotal(),tot=ST.dur+t.min;$('est').innerHTML='<div><span>משך כולל</span><b>'+tot+' דקות</b></div>'+(t.price>0?'<div><span>תוספות</span><b>'+nis(t.price)+'</b></div>':'');if($('dv'))$('dv').textContent=ST.dur+' דק׳'};est();
+  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="nx" type="button" style="flex:1">'+(s.nights?'להמשך לבחירת תאריכים':'להמשך לבחירת שעה')+'</button></div></div>');
+  var est=function(){var t=addTotal(),tot=ST.dur+t.min;$('est').innerHTML=(s.nights?'':'<div><span>משך כולל</span><b>'+tot+' דקות</b></div>')+(t.price>0?'<div><span>תוספות</span><b>'+nis(t.price)+'</b></div>':'');if($('dv'))$('dv').textContent=ST.dur+' דק׳'};est();
+  if(s.qty){$('qm').onclick=function(){ST.qty=Math.max(1,ST.qty-1);ST.days=null;$('qv').textContent=ST.qty};$('qp').onclick=function(){ST.qty=Math.min(s.qty.max,ST.qty+1);ST.days=null;$('qv').textContent=ST.qty}}
   if(s.adj){$('dm').onclick=function(){ST.dur=Math.max(s.adj.min,ST.dur-s.adj.step);est()};$('dp').onclick=function(){ST.dur=Math.min(s.adj.max,ST.dur+s.adj.step);est()}}
   [].forEach.call(document.querySelectorAll('[data-ad]'),function(b){b.onclick=function(){var a=P.addons.filter(function(x){return x.id===+b.dataset.ad})[0],n=(ST.add[a.id]||0)+ +b.dataset.d;n=Math.max(a.req?1:0,Math.min(a.max,n));if(n)ST.add[a.id]=n;else delete ST.add[a.id];s2()}});
   [].forEach.call(document.querySelectorAll('[data-ad1]'),function(b){b.onchange=function(){if(b.checked)ST.add[b.dataset.ad1]=1;else delete ST.add[b.dataset.ad1];est()}});
@@ -149,10 +151,11 @@ function s2(){ST.step=2;var s=svc(),h=dots(4)+'<div class="card"><h2>'+esc(s.nam
 
 /* ===== שלב 3: יום ושעה ===== */
 function addArr(){return Object.keys(ST.add).map(function(k){return {id:+k,n:ST.add[k]}})}
-function loadDays(){ST.busy=1;ST.days=null;s3();call({a:'slots',svc:ST.svc,from:ST.from,days:7,dur:ST.dur,addons:addArr()}).then(function(r){ST.busy=0;if(r.error){ST.err=r.error==='closed'?'העסק סגור כרגע לקביעת תורים.':'לא הצלחנו לטעון שעות. נסו שוב.';ST.days={}}else{ST.days=r.days||{};ST.total=r.dur;if(!ST.day||!(ST.day in ST.days))ST.day=firstDay()}s3()})}
-function firstDay(){var k=Object.keys(ST.days).sort();for(var i=0;i<k.length;i++)if(ST.days[k[i]].length)return k[i];return k[0]||''}
+function loadDays(){ST.busy=1;ST.days=null;s3();call({a:'slots',svc:ST.svc,from:ST.from,days:svc().nights?14:7,dur:ST.dur,addons:addArr(),qty:ST.qty,nights:svc().nights?svc().nights.min:undefined}).then(function(r){ST.busy=0;if(r.error){ST.err=r.error==='closed'?'העסק סגור כרגע לקביעת תורים.':'לא הצלחנו לטעון שעות. נסו שוב.';ST.days={}}else{ST.days=r.days||{};ST.total=r.dur;if(!ST.day||!(ST.day in ST.days))ST.day=firstDay()}s3()})}
+function firstDay(){var k=Object.keys(ST.days).sort();for(var i=0;i<k.length;i++){var x=ST.days[k[i]];if(x&&(x.length||x.mx))return k[i]}return k[0]||''}
 function s3(){ST.step=3;var s=svc();
   if(ST.days===null&&!ST.busy)return loadDays();
+  if(s.nights)return s3n(s);
   var h=dots(4)+'<div class="card"><h2>מתי נוח?</h2><div class="row sb"><button class="btn sec" id="pv" type="button" style="min-height:40px"'+(ST.from<=today()?' disabled':'')+'>‹ קודם</button><span class="hint">'+(ST.days?dm(ST.from)+' עד '+dm(addD(ST.from,6)):'')+'</span><button class="btn sec" id="nw" type="button" style="min-height:40px"'+(ST.from>=addD(today(),P.maxAhead-7)?' disabled':'')+'>הבא ›</button></div>';
   if(ST.days===null)h+='<p class="hint" style="text-align:center;padding:30px 0">טוענים שעות…</p>';
   else{var ks=Object.keys(ST.days).sort();h+='<div class="days" role="group" aria-label="ימים">'+ks.map(function(d){var n=ST.days[d].length;return '<button type="button" class="day'+(n?'':' off')+'" data-d="'+d+'" aria-pressed="'+(d===ST.day?'true':'false')+'"><span>'+wd(d)+'</span><b>'+(+d.split('-')[2])+'</b><span>'+hdate(d)+'</span></button>'}).join('')+'</div>';
@@ -172,6 +175,33 @@ function s3(){ST.step=3;var s=svc();
   [].forEach.call(document.querySelectorAll('.opt[data-k=g]'),function(b){b.onclick=function(){ST.group=+b.dataset.id;s3()}});
   [].forEach.call(document.querySelectorAll('.opt[data-k=r]'),function(b){b.onclick=function(){ST.res=+b.dataset.id;s3()}});
   var w=$('wl');if(w)w.onclick=waitForm;resize()}
+/* ===== לילות: תאריך כניסה, מספר לילות, ומקום ===== */
+function ntInfo(){var D=ST.days&&ST.days[ST.day];if(!D)return null;var s=svc(),pn=D.pn,mx=D.mx;if(s.alloc==='group'&&ST.group&&D.g[ST.group]){pn=D.g[ST.group].pn;mx=D.g[ST.group].mx}if(s.alloc==='pick'&&ST.res&&D.r[ST.res]){pn=D.r[ST.res].pn;mx=D.r[ST.res].mx}return {pn:pn,mx:mx}}
+function ntPlace(D){var s=svc(),h='';
+  if(s.alloc==='group'){var ks=Object.keys(D.g||{});if(ks.length>1||!ST.group)h='<div class="card" id="place"><h2>'+(ks.length>1?'איזה סוג?':'')+'</h2><div class="opts">'+ks.map(function(k){var g=grp(+k),p=D.g[k].pn[Math.min(ST.nights,D.g[k].mx)];return optBtn('g',k,g&&g.img,g?g.name:'כללי',g&&g.descr||'',p>0?nis(p):'',ST.group===+k)}).join('')+'</div></div>'}
+  if(s.alloc==='pick'){var rs=Object.keys(D.r||{}).map(Number);if(rs.length>1||!ST.res)h='<div class="card" id="place"><h2>בחירה</h2><div class="opts">'+rs.map(function(id){var r=resv(id)||{name:'#'+id},p=D.r[id].pn[Math.min(ST.nights,D.r[id].mx)];return optBtn('r',id,r.img,r.name,r.descr||'',p>0?nis(p):'',ST.res===id)}).join('')+'</div></div>'}
+  return h}
+function s3n(s){var nt=s.nights,h=dots(4)+'<div class="card"><h2>מתי מגיעים?</h2><div class="row sb"><button class="btn sec" id="pv" type="button" style="min-height:40px"'+(ST.from<=today()?' disabled':'')+'>‹ קודם</button><span class="hint">'+(ST.days?dm(ST.from)+' עד '+dm(addD(ST.from,13)):'')+'</span><button class="btn sec" id="nw" type="button" style="min-height:40px"'+(ST.from>=addD(today(),P.maxAhead-14)?' disabled':'')+'>הבא ›</button></div>';
+  if(ST.days===null)h+='<p class="hint" style="text-align:center;padding:30px 0">טוענים תאריכים…</p>';
+  else{var ks=Object.keys(ST.days).sort();h+='<div class="days" role="group" aria-label="תאריכי כניסה">'+ks.map(function(d){var on=!!ST.days[d];return '<button type="button" class="day'+(on?'':' off')+'" data-d="'+d+'" aria-pressed="'+(d===ST.day?'true':'false')+'"'+(on?'':' aria-disabled="true"')+'><span>'+wd(d)+'</span><b>'+(+d.split('-')[2])+'</b><span>'+hdate(d)+'</span></button>'}).join('')+'</div>';
+    var D=ST.days[ST.day];
+    if(D){var inf=ntInfo();if(!inf||!inf.mx){inf={mx:D.mx,pn:D.pn}}if(ST.nights>inf.mx)ST.nights=inf.mx;if(ST.nights<nt.min)ST.nights=nt.min;
+      var pr=inf.pn[ST.nights],out=addD(ST.day,ST.nights);
+      h+='<p class="hint" style="margin:14px 0 6px">כמה לילות?</p><div class="stepper"><button type="button" id="nm" aria-label="פחות"'+(ST.nights<=nt.min?' disabled':'')+'>−</button><b id="nv">'+ST.nights+' לילות</b><button type="button" id="np" aria-label="יותר"'+(ST.nights>=inf.mx?' disabled':'')+'>+</button></div>'
+       +'<div class="sum"><div><span>כניסה</span><b>'+wd(ST.day)+' '+dm(ST.day)+' · מ־'+esc(nt.inT)+'</b></div><div><span>יציאה</span><b>'+wd(out)+' '+dm(out)+' · עד '+esc(nt.outT)+'</b></div>'+(pr>0?'<div class="tot"><span>מחיר ללינה</span><span>'+nis(pr)+'</span></div>':'')+'</div>'+(inf.mx<nt.max?'<p class="hint">אפשר עד '+inf.mx+' לילות מהתאריך הזה.</p>':'')}
+    else h+='<p class="hint" style="padding:12px 0;text-align:center">בחרו תאריך כניסה מהימים הפנויים.</p>';
+    h+=ST.err?'<div class="err">'+esc(ST.err)+'</div>':''}
+  h+='</div>';
+  var D2=ST.days&&ST.days[ST.day],ok=false;
+  if(D2){h+=ntPlace(D2);ok=s.alloc==='auto'||(s.alloc==='group'&&ST.group)||(s.alloc==='pick'&&ST.res)}
+  var inf2=D2&&ntInfo(),pr2=inf2&&inf2.pn[ST.nights];
+  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button>'+(ok&&pr2?'<div class="s"><b>'+nis(pr2)+'</b>'+ST.nights+' לילות</div>':'')+'<button class="btn" id="nx" type="button" style="flex:1"'+(ok?'':' disabled')+'>להמשך</button></div></div>');
+  $('bk').onclick=function(){(s.adj||s.qty||addList(s).length)?s2():s1()};$('nx').onclick=s4;
+  $('pv').onclick=function(){ST.from=addD(ST.from,-14);if(ST.from<today())ST.from=today();ST.days=null;loadDays()};$('nw').onclick=function(){ST.from=addD(ST.from,14);ST.days=null;loadDays()};
+  [].forEach.call(document.querySelectorAll('.day:not(.off)'),function(b){b.onclick=function(){ST.day=b.dataset.d;ST.group=0;ST.res=0;var D=ST.days[ST.day];if(s.alloc==='group'&&Object.keys(D.g).length===1)ST.group=+Object.keys(D.g)[0];if(s.alloc==='pick'&&Object.keys(D.r).length===1)ST.res=+Object.keys(D.r)[0];s3()}});
+  var nm=$('nm'),np=$('np');if(nm)nm.onclick=function(){ST.nights=Math.max(nt.min,ST.nights-1);s3()};if(np)np.onclick=function(){ST.nights++;s3()};
+  [].forEach.call(document.querySelectorAll('.opt[data-k=g]'),function(b){b.onclick=function(){ST.group=+b.dataset.id;s3()}});
+  [].forEach.call(document.querySelectorAll('.opt[data-k=r]'),function(b){b.onclick=function(){ST.res=+b.dataset.id;s3()}});resize()}
 function pickPlace(o){var s=svc(),h='';
   if(s.alloc==='group'){var ks=Object.keys(o.g||{});if(ks.length>1||!ST.group)h='<div class="card" id="place"><h2>'+(ks.length>1?'איפה?':'')+'</h2><div class="opts">'+ks.map(function(k){var g=grp(+k);return optBtn('g',k,g&&g.img,g?g.name:'כללי',(g&&g.descr||'')+(o.g[k]<=5?' · נשארו '+o.g[k]:''),o.gp[k]>0?nis(o.gp[k]):'',ST.group===+k)}).join('')+'</div></div>'}
   if(s.alloc==='pick'){var rs=o.r||[];if(rs.length>1||!ST.res)h='<div class="card" id="place"><h2>בחירה</h2><div class="opts">'+rs.map(function(id){var r=resv(id)||{name:'#'+id};return optBtn('r',id,r.img,r.name,r.descr||'',o.rp[id]>0?nis(o.rp[id]):'',ST.res===id)}).join('')+'</div></div>'}
@@ -191,15 +221,16 @@ function field(f){var id='q_'+f.id,r=f.req?' r':'',v=ST.ans[f.id],t=f.type,h='';
   else if(t==='yn')h='<div class="row">'+['כן','לא'].map(function(o){return '<label class="ck"><input type="radio" name="'+id+'" data-yn="'+f.id+'" value="'+o+'"'+(v===o?' checked':'')+'><span>'+o+'</span></label>'}).join('')+'</div>';
   else if(t==='check')return '<label class="ck"><input type="checkbox" data-c="'+f.id+'"'+(v==='כן'?' checked':'')+'><span>'+esc(f.label)+(f.req?' <b style="color:var(--bad)">*</b>':'')+'</span></label>'+(f.help?'<span class="hint">'+esc(f.help)+'</span>':'');
   return '<div class="f'+r+'" style="display:flex;flex-direction:column;gap:5px"><label class="f'+r+'" for="'+id+'"><span>'+esc(f.label)+'</span></label>'+(f.help?'<span class="hint">'+esc(f.help)+'</span>':'')+h+'</div>'}
-function s4(){ST.step=4;var s=svc(),o=ST.time,c=ST.cust,fm=s.form&&s.form.fields||[],h=dots(4)+'<div class="card"><h2>הפרטים שלך</h2><div class="grp">'
+function s4(){ST.step=4;var s=svc(),o=s.nights?{t:s.nights.inT}:ST.time,c=ST.cust,fm=s.form&&s.form.fields||[],h=dots(4)+'<div class="card"><h2>הפרטים שלך</h2><div class="grp">'
   +'<label class="f r"><span>שם מלא</span><input type="text" id="cn" autocomplete="name" value="'+esc(c.name||'')+'"></label>'
   +'<label class="f r"><span>טלפון</span><input type="tel" id="cp" autocomplete="tel" dir="ltr" inputmode="tel" value="'+esc(c.phone||'')+'"></label>'
   +'<label class="f"><span>מייל (לקבלת אישור)</span><input type="email" id="ce" autocomplete="email" dir="ltr" value="'+esc(c.email||'')+'"></label>'
   +fm.map(field).join('')+'<div class="hp"><input id="hp" tabindex="-1" autocomplete="off"></div></div></div>';
   if(P.consents.length)h+='<div class="card"><div class="grp" style="margin:0">'+P.consents.map(function(x){return '<label class="ck"><input type="checkbox" data-con="'+x.id+'"'+(ST.con[x.id]?' checked':'')+'><span>'+esc(x.text)+(x.link?' <a href="'+esc(x.link)+'" target="_blank" rel="noopener">לקריאה</a>':'')+(x.req?' <b style="color:var(--bad)">*</b>':'')+'</span></label>'}).join('')+'</div></div>';
-  var a=addTotal(),pr=priceNow(),lines=[['שירות',s.name],['מתי',dm(ST.day)+' · '+wd(ST.day)+' · '+o.t],['משך',(ST.dur+a.min)+' דקות']];
+  var a=addTotal(),pr=s.nights?(ntInfo()||{pn:{}}).pn[ST.nights]:priceNow(),lines=s.nights?[['שירות',s.name],['כניסה',wd(ST.day)+' '+dm(ST.day)+' · מ־'+s.nights.inT],['יציאה',wd(addD(ST.day,ST.nights))+' '+dm(addD(ST.day,ST.nights))+' · עד '+s.nights.outT],['לילות',String(ST.nights)]]:[['שירות',s.name],['מתי',dm(ST.day)+' · '+wd(ST.day)+' · '+o.t],['משך',(ST.dur+a.min)+' דקות']];
+  if(s.qty)lines.push([s.qty.label||(s.qty.share?'מקומות':'אנשים'),String(ST.qty)]);
   if(s.alloc==='group'&&ST.group&&grp(ST.group))lines.push(['מקום',grp(ST.group).name]);if(s.alloc==='pick'&&ST.res&&resv(ST.res))lines.push(['מקום',resv(ST.res).name]);
-  h+='<div class="card"><div class="sum" style="border:0;margin:0;padding:0">'+lines.map(function(l){return '<div><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'}).join('')+addList(s).filter(function(x){return ST.add[x.id]}).map(function(x){return '<div><span>'+esc(x.name)+(ST.add[x.id]>1?' ×'+ST.add[x.id]:'')+'</span><span></span></div>'}).join('')+(pr>0?'<div class="tot"><span>סכום</span><span>'+nis(pr)+'</span></div>':'')+'</div>'
+  h+='<div class="card"><div class="sum" style="border:0;margin:0;padding:0">'+lines.map(function(l){return '<div><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'}).join('')+addList(s).filter(function(x){return ST.add[x.id]}).map(function(x){return '<div><span>'+esc(x.name)+(ST.add[x.id]>1?' ×'+ST.add[x.id]:'')+'</span><span></span></div>'}).join('')+(pr>0?'<div class="tot"><span>סכום</span><span>'+nis(pr+(s.nights?a.price:0))+'</span></div>':'')+'</div>'
    +(s.deposit&&pr>0?'<p class="hint">מקדמה: '+nis(s.deposit.t==='pct'?pr*s.deposit.v/100:Math.min(pr,s.deposit.v))+'</p>':'')+(s.approval?'<p class="hint">התור יאושר על ידי העסק.</p>':'')+(P.pay.text?'<p class="hint">'+esc(P.pay.text)+'</p>':'')+(paysSite()?'<p class="hint">בשלב הבא משלמים בכרטיס אשראי, והתור נשמר לך בזמן התשלום.</p>':'')+'<div id="msg"></div></div>';
   shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="go" type="button" style="flex:1">'+(paysSite()?'להמשך לתשלום':s.approval?'שליחת בקשה':'קביעת התור')+'</button></div></div>');
   $('bk').onclick=function(){grab();s3()};$('go').onclick=submit;if(paysSite()&&!P.pay.ready){$('go').disabled=true;$('msg').innerHTML='<div class="err">התשלום באתר לא זמין כרגע. אפשר ליצור קשר עם העסק.</div>'}}
@@ -213,14 +244,14 @@ function submit(){grab();var s=svc(),m=$('msg'),bad=function(t,el){m.innerHTML='
   var fm=s.form&&s.form.fields||[];for(var i=0;i<fm.length;i++){var f=fm[i],v=ST.ans[f.id];if(f.req&&(Array.isArray(v)?!v.length:!v))return bad('נא למלא: '+f.label,$('q_'+f.id))}
   for(var j=0;j<P.consents.length;j++){var k=P.consents[j];if(k.req&&!ST.con[k.id])return bad('כדי להמשיך צריך לאשר: '+k.text.slice(0,70))}
   $('go').disabled=true;$('go').textContent='קובעים…';
-  call({a:'book',svc:ST.svc,start:ST.day+' '+ST.time.t,group:ST.group||undefined,res:ST.res||undefined,dur:ST.dur,addons:addArr(),name:c.name,phone:c.phone,email:c.email,consent:Object.keys(ST.con).filter(function(x){return ST.con[x]}),answers:ST.ans,hp:$('hp').value}).then(function(r){
+  call({a:'book',svc:ST.svc,start:s.nights?ST.day:ST.day+' '+ST.time.t,nights:s.nights?ST.nights:undefined,qty:s.qty?ST.qty:undefined,group:ST.group||undefined,res:ST.res||undefined,dur:ST.dur,addons:addArr(),name:c.name,phone:c.phone,email:c.email,consent:Object.keys(ST.con).filter(function(x){return ST.con[x]}),answers:ST.ans,hp:$('hp').value}).then(function(r){
     if(r.error){$('go').disabled=false;$('go').textContent=paysSite()?'להמשך לתשלום':s.approval?'שליחת בקשה':'קביעת התור';
       if(r.error==='taken'){ST.err='מישהו הקדים אתכם והשעה נתפסה. בחרו שעה אחרת.';ST.time=null;ST.days=null;return loadDays()}
       var t={max:'יש כבר מספר תורים עתידיים על המספר הזה. אפשר לבטל תור קיים או ליצור קשר עם העסק.',rate:'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',consent:'נא לאשר את התנאים.',answer:'נא למלא את כל שדות החובה.',phone:'מספר הטלפון לא תקין.',email:'כתובת המייל לא תקינה.',net:'תקלת תקשורת. נסו שוב.',payoff:'התשלום באתר לא זמין כרגע. אפשר ליצור קשר עם העסק.'}[r.error]||'לא הצלחנו לקבוע את התור. נסו שוב.';return bad(t)}
     try{localStorage.setItem('bk-'+SLUG,JSON.stringify(ST.cust))}catch(e){}
     if(r.payNow)return payScreen(Object.assign({},r,{name:ST.cust.name,phone:ST.cust.phone,email:ST.cust.email}));
     done(r)})}
-function done(r){var due=r.pay&&r.pay.url,h='<div class="card"><div class="ok"><div class="big">'+(r.status==='confirmed'?'✓':'⏳')+'</div><h2>'+(r.status==='confirmed'?'התור נקבע!':r.status==='held'?'התור שמור לכם, נשאר לשלם':'הבקשה נשלחה')+'</h2><p style="margin:6px 0 0"><b>'+esc(r.svc)+'</b><br>'+esc(r.start)+(r.res?'<br>'+esc(r.res):'')+'</p>'+(r.status==='pending'?'<p class="hint">נעדכן אתכם כשהעסק יאשר.</p>':'')+'</div>'
+function done(r){var due=r.pay&&r.pay.url,h='<div class="card"><div class="ok"><div class="big">'+(r.status==='confirmed'?'✓':'⏳')+'</div><h2>'+(r.status==='confirmed'?'התור נקבע!':r.status==='held'?'התור שמור לכם, נשאר לשלם':'הבקשה נשלחה')+'</h2><p style="margin:6px 0 0"><b>'+esc(r.svc)+'</b><br>'+esc(r.start)+(r.nights?'<br>עד '+esc(r.until)+' · '+r.nights+' לילות':'')+(r.qty>1?'<br>'+r.qty+' '+esc((svc()&&(svc().qty||{}).label)||'אורחים'):'')+(r.res?'<br>'+esc(r.res):'')+'</p>'+(r.status==='pending'?'<p class="hint">נעדכן אתכם כשהעסק יאשר.</p>':'')+'</div>'
   +(due&&r.due>0?'<p style="margin:14px 0 6px">לתשלום: <b>'+nis(r.due)+'</b></p><a class="btn w" href="'+esc(r.pay.url)+'" target="_blank" rel="noopener">מעבר לתשלום</a>':'')
   +'<div class="row" style="margin-top:14px"><button class="btn sec" id="ics" type="button" style="flex:1">הוספה ליומן</button><a class="btn sec" href="'+esc(r.link)+'" style="flex:1">צפייה וביטול</a></div><p class="hint" style="text-align:center">שלחנו את הקישור גם בהודעה.</p></div>';
   shell(h);$('ics').onclick=function(){icsDl(r.id,r.k)};window.scrollTo(0,0)}

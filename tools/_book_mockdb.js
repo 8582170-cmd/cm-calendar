@@ -11,7 +11,7 @@ function match(row, k, v) {
 }
 function overlapErr(table, row, rows, self) {
   if (table !== 'book_appt' || row.res_id == null || !['held', 'pending', 'confirmed'].includes(row.status)) return;
-  for (const o of rows) if (o !== self && o.res_id === row.res_id && ['held', 'pending', 'confirmed'].includes(o.status) && Date.parse(row.busy_start) < Date.parse(o.busy_end) && Date.parse(row.busy_end) > Date.parse(o.busy_start)) throw new Error('db 409 {"code":"23P01","message":"conflicting key value violates exclusion constraint"}');
+  for (const o of rows) if (o !== self && !row.shared && !o.shared && o.res_id === row.res_id && ['held', 'pending', 'confirmed'].includes(o.status) && Date.parse(row.busy_start) < Date.parse(o.busy_end) && Date.parse(row.busy_end) > Date.parse(o.busy_start)) throw new Error('db 409 {"code":"23P01","message":"conflicting key value violates exclusion constraint"}');
 }
 async function db(p, opts = {}) {
   const [table, qs] = p.split('?'), Q = new URLSearchParams(qs || ''); const rows = T[table] || (T[table] = []), method = opts.method || 'GET', body = opts.body ? JSON.parse(opts.body) : null;

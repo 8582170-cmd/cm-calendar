@@ -71,6 +71,15 @@ function cleanBizCfg(c, old) {
     staff: (Array.isArray(c.staff) ? c.staff : (old.staff || [])).slice(0, 30).map(x => ({ email: mailN(x && x.email), role: ROLES.includes(x && x.role) ? x.role : 'clerk' })).filter(x => x.email)
   };
 }
+function cleanNights(n) {
+  n = n && typeof n === 'object' ? n : {}; if (n.on !== true) return { on: false };
+  const min = num(n.min, 1, 60, 1), max = num(n.max, 1, 60, 14), t = v => (K.toMin(v) == null ? null : K.fmtMin(K.toMin(v)));
+  return { on: true, min: Math.min(min, max), max: Math.max(min, max), inT: t(n.inT) || '15:00', outT: t(n.outT) || '11:00', price: num(n.price, 0, 1e6, 0) };
+}
+function cleanQty(q) {
+  q = q && typeof q === 'object' ? q : {}; if (q.on !== true) return { on: false };
+  return { on: true, max: num(q.max, 1, 500, 10), share: q.share === true, mult: q.mult !== false, label: clean(q.label, 20) };
+}
 function cleanSvcCfg(c) {
   c = c && typeof c === 'object' ? c : {}; const a = c.adj || {}, p = c.price || {}, d = c.deposit || {};
   const price = p.fixed != null && p.fixed !== '' ? { fixed: num(p.fixed, 0, 1e6, 0) } : { unit: num(p.unit, 5, 600, 15), per: num(p.per, 0, 1e6, 0) };
@@ -79,10 +88,11 @@ function cleanSvcCfg(c) {
     dur, adj: { on: a.on === true, min: Math.min(min, max), max: Math.max(min, max), step: num(a.step, 5, 240, 15) }, bb: num(c.bb, 0, 240, 0), ba: num(c.ba, 0, 240, 0), price, rules: cleanRules(c.rules),
     alloc: ['auto', 'pick', 'group'].includes(c.alloc) ? c.alloc : 'auto', autoRule: c.autoRule === 'least' ? 'least' : 'order', showRes: c.showRes !== false, showLeft: c.showLeft !== false,
     groups: cleanIds(c.groups), res: cleanIds(c.res), addons: cleanIds(c.addons), form: +c.form > 0 ? +c.form : null, approval: c.approval === true,
-    deposit: +d.v > 0 ? { t: d.t === 'abs' ? 'abs' : 'pct', v: num(d.v, 0, 1e6, 0) } : null, note: clean(c.note, 400)
+    deposit: +d.v > 0 ? { t: d.t === 'abs' ? 'abs' : 'pct', v: num(d.v, 0, 1e6, 0) } : null, note: clean(c.note, 400),
+    nights: cleanNights(c.nights), qty: cleanQty(c.qty)
   };
 }
-const cleanResCfg = c => { c = c && typeof c === 'object' ? c : {}; return { hours: c.hours ? cleanHours(c.hours) : null, adj: cleanAdj(c.adj), blocks: cleanBlocks(c.blocks) }; };
+const cleanResCfg = c => { c = c && typeof c === 'object' ? c : {}; return { hours: c.hours ? cleanHours(c.hours) : null, adj: cleanAdj(c.adj), blocks: cleanBlocks(c.blocks), cap: num(c.cap, 0, 1000, 0) }; };
 const cleanAddonCfg = c => { c = c && typeof c === 'object' ? c : {}; return { price: num(c.price, 0, 1e6, 0), per: c.per === 'unit' ? 'unit' : 'fixed', unit: num(c.unit, 5, 600, 15), max: Math.floor(num(c.max, 1, 50, 1)), addMin: Math.floor(num(c.addMin, 0, 240, 0)), req: c.req === true, def: c.def === true }; };
 const FT = ['text', 'long', 'num', 'select', 'multi', 'date', 'yn', 'check', 'phone', 'email'];
 function cleanFields(L) {
@@ -133,7 +143,7 @@ function pubView(B, S) {
   const c = B.biz.cfg || {}, byId = new Map(B.forms.map(f => [f.id, f]));
   const svcs = B.svcs.filter(s => s.active !== false).map(s => {
     const x = s.cfg || {}, f = x.form && byId.get(x.form);
-    return { id: s.id, name: s.name, descr: s.descr || '', img: s.img || '', dur: x.dur, adj: x.adj && x.adj.on ? x.adj : null, price: x.price, rules: (x.rules || []).filter(r => r.on !== false).length > 0, alloc: x.alloc, showRes: x.showRes !== false,
+    return { id: s.id, name: s.name, descr: s.descr || '', img: s.img || '', dur: x.dur, nights: x.nights && x.nights.on ? x.nights : null, qty: x.qty && x.qty.on ? x.qty : null, adj: x.adj && x.adj.on ? x.adj : null, price: x.price, rules: (x.rules || []).filter(r => r.on !== false).length > 0, alloc: x.alloc, showRes: x.showRes !== false,
       groups: x.groups || [], res: x.res || [], addons: x.addons || [], deposit: x.deposit || null, approval: !!x.approval, note: x.note || '', form: f ? { id: f.id, name: f.name, fields: (f.fields || []).map(q => ({ id: q.id, type: q.type, label: q.label, help: q.help, req: q.req, opts: q.opts })) } : null };
   });
   const usedRes = new Set(), usedGr = new Set(); svcs.forEach(s => { if (s.alloc === 'pick') B.res.forEach(r => { if (!s.res.length || s.res.includes(r.id)) usedRes.add(r.id); }); if (s.alloc === 'group') (s.groups.length ? s.groups : B.groups.map(g => g.id)).forEach(g => usedGr.add(g)); });
@@ -164,9 +174,9 @@ async function holyBlocks(B, fromMs, toMs) {
 }
 /* תורים שתופסים משאב בטווח (בלי החזקות שפג תוקפן) */
 async function busyIn(bizId, fromMs, toMs) {
-  const L = await db('book_appt?biz_id=eq.' + bizId + '&status=in.(held,pending,confirmed)&busy_end=gt.' + enc(new Date(fromMs).toISOString()) + '&busy_start=lt.' + enc(new Date(toMs).toISOString()) + '&select=id,res_id,busy_start,busy_end,status,hold_until&limit=5000');
+  const L = await db('book_appt?biz_id=eq.' + bizId + '&status=in.(held,pending,confirmed)&busy_end=gt.' + enc(new Date(fromMs).toISOString()) + '&busy_start=lt.' + enc(new Date(toMs).toISOString()) + '&select=id,res_id,busy_start,busy_end,status,hold_until,qty,shared&limit=5000');
   const now = Date.now();
-  return (L || []).filter(a => !(a.status === 'held' && a.hold_until && Date.parse(a.hold_until) < now)).map(a => ({ id: a.id, res_id: a.res_id, s: Date.parse(a.busy_start), e: Date.parse(a.busy_end) }));
+  return (L || []).filter(a => !(a.status === 'held' && a.hold_until && Date.parse(a.hold_until) < now)).map(a => ({ id: a.id, res_id: a.res_id, s: Date.parse(a.busy_start), e: Date.parse(a.busy_end), qty: a.qty || 1, shared: !!a.shared }));
 }
 async function expireHolds(bizId) { try { await db('book_appt?biz_id=eq.' + bizId + '&status=eq.held&hold_until=lt.' + enc(new Date().toISOString()), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'expired', updated_at: new Date().toISOString() }) }); } catch (e) { console.error('book expire', e.message); } }
 
@@ -180,26 +190,39 @@ function eligible(B, svc, group) {
 const grp = (B, id) => B.groups.find(g => g.id === id) || null;
 /* תכנון ההזמנה: אורך, תוספות, משאבים מתאימים */
 function plan(B, svc, want) {
-  const dur = K.pickDur(svc, want.dur); if (dur == null) return { error: 'dur' };
+  const sc = svc.cfg || {}, dur = K.pickDur(svc, want.dur); if (dur == null) return { error: 'dur' };
   const A = K.pickAddons(B.addons, svc, want.addons); if (A.error) return { error: A.error };
-  return { dur, addons: A.list, addMin: A.addMin, total: dur + A.addMin };
+  let qty = 1; if ((sc.qty || {}).on) { qty = Math.floor(+want.qty || 1); if (!(qty >= 1 && qty <= sc.qty.max)) return { error: 'qty' }; }
+  let nights = 0; if ((sc.nights || {}).on) { nights = Math.floor(+want.nights || 0); if (!(nights >= sc.nights.min && nights <= sc.nights.max)) return { error: 'nights' }; }
+  return { dur, addons: A.list, addMin: A.addMin, total: dur + A.addMin, qty, nights };
 }
-const priceOf = (B, svc, r, startMs, P) => K.quote({ svc, group: r ? grp(B, r.group_id) : null, res: r, startMs, dur: P.total, addons: P.addons, tz: K.TZ });
-
+/* מקומות: כמה תפוסים במשאב בטווח, ואם יש שם תור לא משותף */
+function usage(busy, rid0, s0, e0) { let sum = 0, ex = false; for (const b of busy) if (String(b.res_id) === String(rid0) && b.s < e0 && b.e > s0) { if (b.shared) sum += b.qty || 1; else ex = true; } return { sum, ex }; }
+const capOf = r => Math.max(1, +((r.cfg || {}).cap) || 1);
+/* משאבים שמתאימים לכמות: בתור רגיל הכמות חייבת להיכנס ל"מקומות" של המשאב (אם הוגדר) */
+const fitsQty = (svc, r, qty) => { const sc = svc.cfg || {}; if (!(sc.qty || {}).on || (sc.qty || {}).share) return true; const cap = +((r.cfg || {}).cap) || 0; return !cap || qty <= cap; };
+const nightsOn = svc => !!((svc.cfg || {}).nights || {}).on, sharedOn = svc => !!((svc.cfg || {}).qty || {}).on && !!svc.cfg.qty.share;
+const priceOf = (B, svc, r, startMs, P) => nightsOn(svc) ? K.quoteNights({ svc, group: r ? grp(B, r.group_id) : null, res: r, date: K.msToLocal(startMs, K.TZ).date, nights: P.nights, qty: P.qty, addons: P.addons, tz: K.TZ }) : K.quote({ svc, group: r ? grp(B, r.group_id) : null, res: r, startMs, dur: P.total, addons: P.addons, qty: P.qty, tz: K.TZ });
 async function slotsAction(b) {
   const B = await load(b.s); if (!B || B.biz.status !== 'open') return [404, { error: 'closed' }];
   const svc = B.svcs.find(s => s.id === +b.svc && s.active !== false); if (!svc) return [400, { error: 'svc' }];
-  const P = plan(B, svc, b); if (P.error) return [400, { error: P.error }];
-  const c = B.biz.cfg || {}, sc = svc.cfg || {}, R = eligible(B, svc, +b.group || 0); if (!R.length) return [200, { days: {}, empty: 'res' }];
+  const c = B.biz.cfg || {}, sc = svc.cfg || {}, nt = nightsOn(svc);
+  const P = plan(B, svc, nt ? { ...b, nights: b.nights || sc.nights.min } : b); if (P.error) return [400, { error: P.error }];
+  const R = eligible(B, svc, +b.group || 0).filter(r => fitsQty(svc, r, P.qty)); if (!R.length) return [200, { days: {}, empty: 'res' }];
   const today = K.msToLocal(Date.now(), K.TZ).date; let from = K.isDate(b.from) && b.from >= today ? b.from : today;
-  const n = Math.min(21, Math.max(1, +b.days || 7)), dates = Array.from({ length: n }, (_, i) => K.addDays(from, i));
-  const fromMs = K.localToMs(from, 0, K.TZ) - 86400e3, toMs = K.localToMs(K.addDays(from, n), 0, K.TZ) + 86400e3;
-  const [busy, blocks] = await Promise.all([busyIn(B.biz.id, fromMs, toMs), holyBlocks(B, fromMs, toMs)]);
-  const S = K.slots({ now: Date.now(), tz: K.TZ, biz: c, dates, dur: P.total, bb: sc.bb, ba: sc.ba, res: R, busy, blocks });
+  const n = Math.min(nt ? 42 : 21, Math.max(1, +b.days || 7)), dates = Array.from({ length: n }, (_, i) => K.addDays(from, i));
+  const longest = nt ? sc.nights.max : 0, fromMs = K.localToMs(from, 0, K.TZ) - 86400e3, toMs = K.localToMs(K.addDays(from, n + longest), 0, K.TZ) + 86400e3;
+  const [busy, blocks] = await Promise.all([busyIn(B.biz.id, fromMs, toMs), nt ? [] : holyBlocks(B, fromMs, toMs)]);
+  if (nt) return [200, { kind: 'nights', days: nightsDays(B, svc, R, dates, busy, P), from, to: dates[dates.length - 1], min: sc.nights.min, max: sc.nights.max, inT: sc.nights.inT, outT: sc.nights.outT }];
+  const shared = sharedOn(svc), q = P.qty, bm = K.busyBy(busy);
+  const freeFn = shared ? (r, s0, e0) => { const u = usage(busy, r.id, s0, e0); return !u.ex && u.sum + q <= capOf(r) && K.resFree({ ...r, cfg: { ...(r.cfg || {}), blocks: (r.cfg || {}).blocks } }, new Map(), blocks, s0, e0, 0, 0, K.TZ); } : null;
+  const S = K.slots({ now: Date.now(), tz: K.TZ, biz: c, dates, dur: P.total, bb: sc.bb, ba: sc.ba, res: R, busy, blocks, freeFn });
   const byId = new Map(R.map(r => [r.id, r])), out = {};
   for (const d of dates) {
     out[d] = (S[d] || []).map(x => {
-      const o = { t: x.t, n: sc.showLeft === false ? null : x.res.length }, prices = x.res.map(id => priceOf(B, svc, byId.get(id), x.ms, P).total);
+      const left = shared ? x.res.reduce((a, id) => a + capOf(byId.get(id)) - usage(busy, id, x.ms, x.ms + P.total * 60000).sum, 0) : x.res.length;
+      const o = { t: x.t, n: sc.showLeft === false ? null : left }, prices = x.res.map(id => priceOf(B, svc, byId.get(id), x.ms, P).total);
+      if (shared) o.seats = true;
       o.p = Math.min(...prices); o.P = Math.max(...prices);
       if (sc.alloc === 'group') { o.g = {}; o.gp = {}; x.res.forEach((id, i) => { const g = byId.get(id).group_id || 0; o.g[g] = (o.g[g] || 0) + 1; o.gp[g] = o.gp[g] == null ? prices[i] : Math.min(o.gp[g], prices[i]); }); }
       if (sc.alloc === 'pick') { o.r = x.res; o.rp = {}; x.res.forEach((id, i) => { o.rp[id] = prices[i]; }); }
@@ -207,6 +230,25 @@ async function slotsAction(b) {
     });
   }
   return [200, { days: out, dur: P.total, from, to: dates[dates.length - 1] }];
+}
+/* לילות: לכל תאריך כניסה, כמה לילות אפשר ובאיזה מחיר (לפי המשאבים הפנויים) */
+function nightsDays(B, svc, R, dates, busy, P) {
+  const sc = svc.cfg, nt = sc.nights, bm = K.busyBy(busy), now = Date.now(), minAt = now + Math.max(0, +(B.biz.cfg || {}).minNotice || 0) * 60000, maxDate = K.addDays(K.msToLocal(now, K.TZ).date, Math.max(0, (B.biz.cfg || {}).maxAhead == null ? 60 : +(B.biz.cfg || {}).maxAhead)), out = {};
+  for (const d of dates) {
+    const D = { mx: 0, pn: {}, g: {}, r: {} };
+    if (d <= maxDate) for (const r of R) {
+      let mx = 0; const pn = {};
+      for (let N = nt.min; N <= nt.max; N++) {
+        const [s0, e0] = K.nightsSpan(d, N, nt, K.TZ); if (s0 < minAt) break;
+        if (!K.resFree(r, bm, [], s0, e0, 0, 0, K.TZ)) break; mx = N; pn[N] = priceOf(B, svc, r, s0, { ...P, nights: N }).total;
+      }
+      if (!mx) continue; const gid = r.group_id || 0;
+      D.r[r.id] = { mx, pn }; const G = D.g[gid] || (D.g[gid] = { mx: 0, pn: {} }); G.mx = Math.max(G.mx, mx); Object.keys(pn).forEach(N => { G.pn[N] = Math.min(G.pn[N] == null ? 1e12 : G.pn[N], pn[N]); });
+      D.mx = Math.max(D.mx, mx); Object.keys(pn).forEach(N => { D.pn[N] = Math.min(D.pn[N] == null ? 1e12 : D.pn[N], pn[N]); });
+    }
+    out[d] = D.mx ? D : null;
+  }
+  return out;
 }
 
 /* ===== קביעת תור ===== */
@@ -253,17 +295,22 @@ async function createAppt(B, b, opt) {
   const sc = svc.cfg || {}, name = clean(b.name, 80), phone = phoneN(b.phone), email = mailN(b.email);
   if (name.length < 2) return [400, { error: 'name' }]; if (!phone) return [400, { error: 'phone' }]; if (b.email && !email) return [400, { error: 'email' }];
   const P = plan(B, svc, b); if (P.error) return [400, { error: P.error }];
-  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})$/.exec(String(b.start || '')); if (!m || !K.isDate(m[1]) || K.toMin(m[2]) == null) return [400, { error: 'start' }];
-  const startMs = K.localToMs(m[1], K.toMin(m[2]), K.TZ), endMs = startMs + P.total * 60000;
+  const nt = nightsOn(svc), m = nt ? /^(\d{4}-\d{2}-\d{2})(?:[ T]\d{1,2}:\d{2})?$/.exec(String(b.start || '')) : /^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})$/.exec(String(b.start || '')); if (!m || !K.isDate(m[1]) || (!nt && K.toMin(m[2]) == null)) return [400, { error: 'start' }];
+  const span = nt ? K.nightsSpan(m[1], P.nights, sc.nights, K.TZ) : null, startMs = nt ? span[0] : K.localToMs(m[1], K.toMin(m[2]), K.TZ), endMs = nt ? span[1] : startMs + P.total * 60000, durMin = nt ? span[2] : P.total, bbm = nt ? 0 : (sc.bb || 0), bam = nt ? 0 : (sc.ba || 0), shared = sharedOn(svc);
   if (!opt.force) { for (const x of c.consents || []) if (x.req && !(Array.isArray(b.consent) ? b.consent : []).includes(x.id)) return [400, { error: 'consent' }]; }
   const form = sc.form && B.forms.find(f => f.id === sc.form), AN = opt.force && !b.answers ? { list: [] } : readAnswers(form, b.answers); if (AN.error) return [400, AN];
   await expireHolds(B.biz.id);
-  const fromMs = startMs - 86400e3, toMs = endMs + 86400e3, R = eligible(B, svc, +b.group || 0);
+  const fromMs = startMs - 86400e3, toMs = endMs + 86400e3, R = eligible(B, svc, +b.group || 0).filter(r => fitsQty(svc, r, P.qty));
   if (!R.length) return [409, { error: 'taken' }];
   const [busy, blocks] = await Promise.all([busyIn(B.biz.id, fromMs, toMs), opt.force ? [] : holyBlocks(B, fromMs, toMs)]);
-  let free;
-  if (opt.force) { const bm = K.busyBy(busy); free = R.filter(r => K.resFree(r, bm, [], startMs, endMs, sc.bb || 0, sc.ba || 0, K.TZ)).map(r => r.id); }
-  else { const S = K.slots({ now: Date.now(), tz: K.TZ, biz: c, dates: [m[1]], dur: P.total, bb: sc.bb, ba: sc.ba, res: R, busy, blocks }), e = (S[m[1]] || []).find(x => x.ms === startMs); free = e ? e.res : []; }
+  let free; const bm = K.busyBy(busy), freeFn = shared ? (r, s0, e0) => { const u = usage(busy, r.id, s0, e0); return !u.ex && u.sum + P.qty <= capOf(r) && K.resFree(r, new Map(), opt.force ? [] : blocks, s0, e0, 0, 0, K.TZ); } : null;
+  if (nt) {
+    const today = K.msToLocal(Date.now(), K.TZ).date, maxD = K.addDays(today, Math.max(0, c.maxAhead == null ? 60 : +c.maxAhead));
+    if (!opt.force && (m[1] > maxD || startMs < Date.now() + Math.max(0, +c.minNotice || 0) * 60000)) return [409, { error: 'taken' }];
+    free = R.filter(r => K.resFree(r, bm, [], startMs, endMs, 0, 0, K.TZ)).map(r => r.id);
+  }
+  else if (opt.force) free = R.filter(r => freeFn ? freeFn(r, startMs, endMs) : K.resFree(r, bm, [], startMs, endMs, sc.bb || 0, sc.ba || 0, K.TZ)).map(r => r.id);
+  else { const S = K.slots({ now: Date.now(), tz: K.TZ, biz: c, dates: [m[1]], dur: P.total, bb: sc.bb, ba: sc.ba, res: R, busy, blocks, freeFn }), e = (S[m[1]] || []).find(x => x.ms === startMs); free = e ? e.res : []; }
   if (!free.length) return [409, { error: 'taken' }];
   /* מי מועמד: בחירת הלקוח (משאב מסוים, או קבוצה), או הקצאה אוטומטית */
   let cand;
@@ -289,18 +336,24 @@ async function createAppt(B, b, opt) {
   for (const rid0 of order) {
     const r = R.find(x => x.id === rid0), q = priceOf(B, svc, r, startMs, P), id = 'bk' + rid(9);
     const row = { id, biz_id: B.biz.id, svc_id: svc.id, res_id: r.id, group_id: r.group_id || null, start_at: new Date(startMs).toISOString(), end_at: new Date(endMs).toISOString(),
-      busy_start: new Date(startMs - (sc.bb || 0) * 60000).toISOString(), busy_end: new Date(endMs + (sc.ba || 0) * 60000).toISOString(), status, hold_until: hold, dur: P.total,
+      busy_start: new Date(startMs - bbm * 60000).toISOString(), busy_end: new Date(endMs + bam * 60000).toISOString(), status, hold_until: hold, dur: durMin, qty: P.qty, shared,
       price: opt.force && b.price != null && b.price !== '' ? num(b.price, 0, 1e6, q.total) : q.total, detail: q, addons: q.lines.filter(l => l.k === 'addon').map(l => ({ id: l.id, name: l.label, n: l.n, amt: l.amt })),
       answers: AN.list.map(a => ({ id: a.id, label: a.label, v: a.v })), consent, pay: { mode: py.mode || 'none', due: linkPay || sitePay ? (py.require === 'full' ? q.total : q.deposit || q.total) : (q.deposit || 0), paid: 0 },
       source: opt.force ? 'manual' : (b.source === 'phone' ? 'phone' : 'web'), name, phone, email: email || null, note: opt.force ? clean(b.note, 600) : '', token: rid(12), remind: {} };
-    try { const out = await db('book_appt', { method: 'POST', body: JSON.stringify(row) }); appt = (out && out[0]) || row; appt._q = q; appt._res = r; break; }
+    try {
+      const out = await db('book_appt', { method: 'POST', body: JSON.stringify(row) }); appt = (out && out[0]) || row; appt._q = q; appt._res = r;
+      if (shared) { /* המקומות נבדקים אחרי ההכנסה: אם חרגנו (שני לקוחות במקביל), התור שלנו מתבטל והלקוח מקבל "נתפס" */
+        const all = (await busyIn(B.biz.id, startMs - 1, endMs + 1)).filter(x => String(x.res_id) === String(r.id) && x.shared), sum = all.reduce((a, x) => a + (x.qty || 1), 0);
+        if (sum > capOf(r)) { await db('book_appt?id=eq.' + enc(appt.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'cancelled' }) }); appt = null; continue; }
+      }
+      break; }
     catch (e) { if (!conflict(e)) throw e; }
   }
   if (!appt) return [409, { error: 'taken' }];
   try { const cid = await upsertCust(B.biz, { name, phone, email, answers: AN.list, marketing }); if (cid) { await db('book_appt?id=eq.' + appt.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cust_id: cid }) }); appt.cust_id = cid; } } catch (e) { console.error('book cust', e.message); }
   if (!(sitePay && !opt.force)) notifyBooked(B, svc, appt).catch(e => console.error('book notify', e.message));
   const showRes = sc.showRes !== false || opt.force;
-  const out = { id: appt.id, k: appt.token, status, start: when(startMs), svc: svc.name, res: showRes ? appt._res.name : '', price: appt.price, due: appt.pay.due, pay: linkPay ? { url: py.url, text: py.text } : null, link: linkOf(B, appt), hold: hold };
+  const out = { id: appt.id, k: appt.token, status, start: when(startMs), ...(nt ? { nights: P.nights, until: when(endMs) } : {}), qty: P.qty, svc: svc.name, res: showRes ? appt._res.name : '', price: appt.price, due: appt.pay.due, pay: linkPay ? { url: py.url, text: py.text } : null, link: linkOf(B, appt), hold: hold };
   if (sitePay && !opt.force) { Object.assign(out, await payInfo(B, svc, appt)); out.payNow = true; }
   return [200, out];
 }
@@ -430,7 +483,7 @@ async function getByToken(B, id, k) {
 }
 function apptPub(B, a) {
   const svc = B.svcs.find(s => s.id === a.svc_id), res = B.res.find(r => r.id === a.res_id), st = Date.parse(a.start_at), cH = (B.biz.cfg || {}).cancelH || 0;
-  return { id: a.id, status: a.status, svc: svc ? svc.name : '', res: res && !(svc && (svc.cfg || {}).showRes === false) ? res.name : '', when: when(st), start: a.start_at, dur: a.dur, price: a.price, addons: a.addons || [], name: a.name, canCancel: ['pending', 'confirmed', 'held'].includes(a.status) && Date.now() < st - cH * 3600e3, cancelH: cH, pay: a.pay || {}, payMode: (a.pay || {}).mode || 'none', payUrl: ((B.biz.cfg || {}).pay || {}).url || '', address: ((B.biz.cfg || {}).texts || {}).address || '' };
+  return { id: a.id, status: a.status, svc: svc ? svc.name : '', res: res && !(svc && (svc.cfg || {}).showRes === false) ? res.name : '', when: when(st), qty: a.qty || 1, nights: (a.detail || {}).nights || 0, until: (a.detail || {}).nights ? when(Date.parse(a.end_at)) : '', start: a.start_at, dur: a.dur, price: a.price, addons: a.addons || [], name: a.name, canCancel: ['pending', 'confirmed', 'held'].includes(a.status) && Date.now() < st - cH * 3600e3, cancelH: cH, pay: a.pay || {}, payMode: (a.pay || {}).mode || 'none', payUrl: ((B.biz.cfg || {}).pay || {}).url || '', address: ((B.biz.cfg || {}).texts || {}).address || '' };
 }
 function ics(B, a) {
   const f = ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''), svc = B.svcs.find(s => s.id === a.svc_id), esc = s => String(s || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
