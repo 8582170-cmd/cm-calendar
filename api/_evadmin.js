@@ -109,6 +109,17 @@ module.exports = async function (b) {
     const I = (await loadSetting('evpaid').catch(() => null)) || {}; if (I[s] != null) { delete I[s]; await saveSetting('evpaid', I).catch(() => {}); }
     return { ok: true, deleted: true };
   }
+  /* מחיקה מרוכזת של שעוני ספירה בלבד (בלי דף הזמנה ובלי חבילה). האירועים האחרים לא נמחקים כאן */
+  if (a === 'ev_clock_del') {
+    const L = (Array.isArray(b.slugs) ? b.slugs : []).map(x => String(x).toLowerCase()).filter(x => /^[a-z0-9-]{1,60}$/.test(x)).slice(0, 100);
+    if (!L.length) return { error: 'empty' };
+    const ok = (await db('timer_event?slug=in.(' + L.join(',') + ')&kind=eq.clock&plan=is.null&select=slug&limit=100').catch(() => [])) || [];
+    for (const r of ok) {
+      for (const t of ['timer_recip', 'timer_rsvp', 'timer_wall', 'timer_teh', 'timer_event']) await db(t + '?slug=eq.' + r.slug, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
+      await R2().del(T().key(r.slug)).catch(() => {});
+    }
+    return { ok: true, deleted: ok.length, skipped: L.length - ok.length };
+  }
   return { error: 'unknown action' };
 };
 
