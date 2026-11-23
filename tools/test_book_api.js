@@ -254,6 +254,16 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   kamount = kb.price; await ok({ a: 'kcheck', ...KM, num: '555' }, null); assert.strictEqual(T.book_appt.find(x => x.id === kb.id).status, 'pending');
   const kb2 = await ok({ ...pkc, phone: '0521110033', start: day + ' 12:30', name: 'קשר2' }, null); await bad({ a: 'kcheck', s: 'centre', m: kb2.id, k: kb2.k, num: '555' }, 409, 'used', null);
   AP2.kesherLinkOf = oldKL; AP2.kesherCheck = oldKC;
+  /* PayPal של העסק עצמו: תשלום והחזר אוטומטי על ידי המנהל, עם מפתחות העסק */
+  const PP3 = require('../api/_paypal'); const oc = { c: PP3.create, cap: PP3.capture, r: PP3.refund }; const seen = []; PP3.create = async (a1, a2, a3, a4, acc) => { seen.push(acc); return 'PPX'; }; PP3.capture = async (id, acc) => { seen.push(acc); return { ok: true, amount: 0, txn: 'OCAP' }; }; const rfs = []; PP3.refund = async (id, am, k, n, acc) => { rfs.push([id, am, acc && acc.id]); return { id: 'R9' }; };
+  await ok({ a: 'save', s: 'centre', cfg: ownCfg({ prov: 'paypal', pp: { id: 'CID', secret: 'SEC', mode: 'sandbox' } }) }, OWN);
+  const pb3 = await ok({ ...pkc, phone: '0521110034', start: day + ' 13:30', name: 'פיי' }, null); assert.deepStrictEqual(pb3.provs, ['paypal']); assert.strictEqual(pb3.ppc, 'CID'); assert.ok(!JSON.stringify(pb3).includes('SEC'));
+  const PM3 = { s: 'centre', m: pb3.id, k: pb3.k }; assert.strictEqual((await ok({ a: 'ppcreate', ...PM3 }, null)).ppid, 'PPX'); await ok({ a: 'ppcapture', ...PM3, ppid: 'PPX' }, null);
+  assert.ok(seen.every(x => x && x.id === 'CID' && x.mode === 'sandbox'), 'נעשה שימוש בחשבון של העסק ולא בחשבון האתר'); assert.strictEqual(T.book_appt.find(x => x.id === pb3.id).pay.paid, pb3.price);
+  await bad({ a: 'refundOwn', s: 'centre', id: pb3.id, amount: 5 }, 403, 'forbidden', CLERK);
+  const ro = await ok({ a: 'refundOwn', s: 'centre', id: pb3.id, amount: 40 }, OWN); assert.strictEqual(ro.auto, true); assert.deepStrictEqual(rfs[0], ['OCAP', 40, 'CID']); assert.strictEqual(T.book_appt.find(x => x.id === pb3.id).pay.refunded, 40);
+  await bad({ a: 'refundOwn', s: 'centre', id: pb3.id, amount: pb3.price }, 400, 'over', OWN);
+  PP3.create = oc.c; PP3.capture = oc.cap; PP3.refund = oc.r;
   /* מסלול בלי site: מצב site מכובה */
   await ok({ a: 'plan', s: 'centre', plan: pOwn.id }, SA); assert.notStrictEqual((await cfgNow()).pay.mode, 'site', 'מעבר למסלול בלי סליקה דרך האתר מכבה אותה');
   USER = OWN;

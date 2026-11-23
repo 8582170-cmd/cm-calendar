@@ -131,10 +131,12 @@ function roleOf(u, B) {
 /* חשבון הסליקה של העסק עצמו: נדרים פלוס (טופס מוטמע) או קשר קהילות (דף תשלום). הכסף נכנס ישר לעסק, והאישור אוטומטי */
 function cleanOwn(o) {
   o = o && typeof o === 'object' ? o : {}; const k = o.kesher && typeof o.kesher === 'object' ? o.kesher : {};
-  return { prov: o.prov === 'kesher' ? 'kesher' : 'nedarim', mosad: String(o.mosad || '').replace(/\D/g, '').slice(0, 10), apiValid: clean(o.apiValid, 80), groupe: clean(o.groupe, 60),
+  const pp = o.pp && typeof o.pp === 'object' ? o.pp : {};
+  return { prov: ['kesher', 'paypal'].includes(o.prov) ? o.prov : 'nedarim', pp: { id: clean(pp.id, 120), secret: clean(pp.secret, 200), mode: pp.mode === 'sandbox' ? 'sandbox' : 'live' }, mosad: String(o.mosad || '').replace(/\D/g, '').slice(0, 10), apiValid: clean(o.apiValid, 80), groupe: clean(o.groupe, 60),
     kesher: { pageUrl: /^https:\/\/[^\s"<>]+$/.test(k.pageUrl || '') ? String(k.pageUrl).slice(0, 400) : '', pageId: clean(k.pageId, 40), userName: clean(k.userName, 80), password: clean(k.password, 120) } };
 }
-const ownAcc = c => { const o = ((c || {}).pay || {}).own || {}; return o.prov === 'kesher' ? (require('./_auction_pay').orgKesher({ cfg: { pay: { kesher: o.kesher } } }) ? 'kesher' : '') : (require('./_auction_pay').orgNed({ cfg: { pay: { mosad: o.mosad, apiValid: o.apiValid, groupe: o.groupe } } }) ? 'nedarim' : ''); };
+const ownPP = c => { const p = ((((c || {}).pay || {}).own || {}).pp) || {}; return p.id && p.secret ? { id: p.id, secret: p.secret, mode: p.mode } : null; };
+const ownAcc = c => { const o = ((c || {}).pay || {}).own || {}; if (o.prov === 'paypal') return ownPP(c) ? 'paypal' : ''; return o.prov === 'kesher' ? (require('./_auction_pay').orgKesher({ cfg: { pay: { kesher: o.kesher } } }) ? 'kesher' : '') : (require('./_auction_pay').orgNed({ cfg: { pay: { mosad: o.mosad, apiValid: o.apiValid, groupe: o.groupe } } }) ? 'nedarim' : ''); };
 const canEdit = r => r === 'owner' || r === 'manager';
 const canWork = r => canEdit(r) || r === 'clerk';
 
@@ -375,6 +377,7 @@ async function payInfo(B, svc, a) {
   const due = r2m(+a.pay.due - (+a.pay.paid || 0)), base = { due, name: a.name, phone: a.phone, email: a.email || '' };
   if ((a.pay || {}).mode === 'own') {
     const c = B.biz.cfg || {}, o = (c.pay || {}).own || {}, AP = require('./_auction_pay'), prov = ownAcc(c); if (!prov) return { ...base, provs: [] };
+    if (prov === 'paypal') return { ...base, provs: ['paypal'], ppc: ownPP(c).id };
     if (prov === 'nedarim') return { ...base, provs: ['nedarim'], tx: AP.nedTx(AP.orgNed({ cfg: { pay: { mosad: o.mosad, apiValid: o.apiValid, groupe: o.groupe } } }), { slug: 'book-' + B.biz.slug }, { id: a.id, amount: due, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { p2: 'book:' + B.biz.slug }) };
     try { const back = SITE() + '/book/' + B.biz.slug + '?m=' + a.id + '&k=' + a.token + '&kp=1'; return { ...base, provs: ['kesher'], kurl: await AP.kesherLinkOf({ cfg: { pay: { kesher: o.kesher } }, slug: 'book-' + B.biz.slug }, { id: a.id, amount: due, name: a.name, phone: a.phone, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { back }) }; }
     catch (e) { console.error('book kesher', e.message); return { ...base, provs: [] }; }
@@ -618,6 +621,15 @@ const MAN = async (u, B, b) => {
       const rows = (await db('book_pay?biz_id=eq.' + B.biz.id + '&order=id.desc&limit=2000')) || [], pl = (await site()).plans.find(p => p.id === (B.biz.cfg || {}).plan);
       return [200, { totals: ledgerSum(rows), items: rows, plan: pl ? { name: pl.name, mode: pl.mode, perBooking: pl.perBooking, pct: pl.pct, monthly: pl.monthly } : null }];
     }
+    case 'refundOwn': {
+      if (!canEdit(role)) return [403, { error: 'forbidden' }];
+      const ap = ((await db('book_appt?id=eq.' + enc(String(b.id || '')) + '&biz_id=eq.' + B.biz.id + '&select=*&limit=1')) || [])[0]; if (!ap || (ap.pay || {}).mode !== 'own') return [404, { error: 'none' }];
+      const pay = ap.pay || {}, amount = r2m(num(b.amount, 0, 1e7, 0)), left = r2m((+pay.paid || 0) - (+pay.refunded || 0)); if (!(amount > 0)) return [400, { error: 'amount' }]; if (amount > left + 0.001) return [400, { error: 'over' }];
+      let auto = false; const cap = (pay.txns || []).find(t => String(t).startsWith('paypal:'));
+      if (cap && ownPP(B.biz.cfg)) { try { await require('./_paypal').refund(String(cap).slice(7), amount, 'bko' + ap.id + '-' + Math.round(amount * 100) + '-' + Math.round((+pay.refunded || 0) * 100), 'החזר: ' + B.biz.name, ownPP(B.biz.cfg)); auto = true; } catch (e) { return [502, { error: 'provider', message: e.issue || e.message }]; } }
+      await db('book_appt?id=eq.' + enc(ap.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pay: { ...pay, refunded: r2m((+pay.refunded || 0) + amount) } }) });
+      return [200, { ok: true, auto }];
+    }
     case 'refund': return canEdit(role) ? doRefund(B, b) : [403, { error: 'forbidden' }];
     case 'waits': { if (!canWork(role)) return [403, { error: 'forbidden' }]; return [200, { items: await db('book_wait?biz_id=eq.' + B.biz.id + '&order=day.asc,id.asc&limit=300') }]; }
     case 'waitDel': { if (!canWork(role)) return [403, { error: 'forbidden' }]; await db('book_wait?id=eq.' + (+b.id) + '&biz_id=eq.' + B.biz.id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return [200, { ok: true }]; }
@@ -664,8 +676,8 @@ module.exports = async (req, res) => {
     }
     if (a === 'paysumit' || a === 'ppcreate' || a === 'ppcapture') {
       const B = await load(b.s); if (!B) return json(res, 404, { error: 'none' }); const ap = await getByToken(B, b.m, b.k); if (!ap) return json(res, 404, { error: 'none' });
-      const SS = await site(), pv = await payProvs(), prov = a === 'paysumit' ? 'sumit' : 'paypal', due = r2m((+(ap.pay || {}).due || 0) - (+(ap.pay || {}).paid || 0));
-      if ((ap.pay || {}).mode !== 'site' || !SS.sitePay || !pv.includes(prov) || !['held', 'pending', 'confirmed'].includes(ap.status)) return json(res, 400, { error: 'nopay' });
+      const SS = await site(), isOwn = (ap.pay || {}).mode === 'own', pv = isOwn ? [ownAcc(B.biz.cfg)] : await payProvs(), prov = a === 'paysumit' ? 'sumit' : 'paypal', due = r2m((+(ap.pay || {}).due || 0) - (+(ap.pay || {}).paid || 0));
+      if (!(isOwn || ((ap.pay || {}).mode === 'site' && SS.sitePay)) || !pv.includes(prov) || (isOwn && prov !== 'paypal') || !['held', 'pending', 'confirmed'].includes(ap.status)) return json(res, 400, { error: 'nopay' });
       if (due <= 0.001) return json(res, 400, { error: 'paid' });
       if (ap.status === 'held' && ap.hold_until && Date.parse(ap.hold_until) < Date.now()) return json(res, 400, { error: 'expired' });
       const svc = B.svcs.find(x => x.id === ap.svc_id), desc = B.biz.name + ' · ' + (svc ? svc.name : '');
@@ -677,8 +689,8 @@ module.exports = async (req, res) => {
           const r = await settle(ap, c.amount || due, 'sumit:' + c.paymentId); return json(res, 200, { ok: true, ...r });
         }
         const PP = require('./_paypal');
-        if (a === 'ppcreate') { const ppid = await PP.create(due, ap.id, desc, ap.email || ''); return json(res, 200, { ppid }); }
-        const c = await PP.capture(String(b.ppid || '')); if (!c.ok) return json(res, 402, { error: 'payment' });
+        if (a === 'ppcreate') { const ppid = await PP.create(due, ap.id, desc, ap.email || '', isOwn ? ownPP(B.biz.cfg) : undefined); return json(res, 200, { ppid }); }
+        const c = await PP.capture(String(b.ppid || ''), isOwn ? ownPP(B.biz.cfg) : undefined); if (!c.ok) return json(res, 402, { error: 'payment' });
         const r = await settle(ap, c.amount || due, 'paypal:' + c.txn); return json(res, 200, { ok: true, ...r });
       } catch (e) { console.error('book pay', e.message); return json(res, 502, { error: 'provider' }); }
     }
