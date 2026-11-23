@@ -63,6 +63,7 @@ function cleanBizCfg(c, old) {
     shabbat: { on: sh.on !== false, yt: sh.yt !== false, before: num(sh.before, 0, 180, 20), after: num(sh.after, 0, 180, 0) },
     place: pl.lat != null && pl.lng != null && isFinite(+pl.lat) && isFinite(+pl.lng) ? { lat: num(pl.lat, -90, 90, IL.lat), lng: num(pl.lng, -180, 180, IL.lng), il: pl.il !== false, tz: K.TZ } : {},
     consents: (Array.isArray(c.consents) ? c.consents : []).slice(0, 6).map((x, i) => ({ id: 'c' + (i + 1), text: clean(x && x.text, 400), link: url(x && x.link), req: !x || x.req !== false, mkt: !!(x && x.mkt) })).filter(x => x.text),
+    cur: { allowed: require('./_fx').cleanAllowed((c.cur || {}).allowed) },
     pay: { mode: ['none', 'link', 'site', 'own'].includes(py.mode) ? py.mode : 'none', own: cleanOwn(py.own), url: url(py.url), text: clean(py.text, 400), require: ['none', 'deposit', 'full'].includes(py.require) ? py.require : 'none', holdMin: num(py.holdMin, 0, 1440, 0) },
     notify: { email: nt.email !== false, owner: nt.owner !== false, sms: nt.sms === true, remind: nt.remind !== false },
     cancelH: num(c.cancelH, 0, 720, 24), maxFuture: num(c.maxFuture, 1, 50, 6),
@@ -337,10 +338,16 @@ async function createAppt(B, b, opt) {
   let appt = null;
   for (const rid0 of order) {
     const r = R.find(x => x.id === rid0), q = priceOf(B, svc, r, startMs, P), id = 'bk' + rid(9);
+    const dueIls = linkPay || sitePay ? (py.require === 'full' ? q.total : q.deposit || q.total) : (q.deposit || 0);
+    let payObj = { mode: py.mode || 'none', due: dueIls, paid: 0 };
+    if (sitePay && !opt.force && b.cur && b.cur !== 'ILS') {
+    const off = await curOffer(B), rt = off.includes(b.cur) ? await FX.rateOf(b.cur) : null; if (!rt) return [400, { error: 'cur' }];
+      payObj = { ...payObj, cur: b.cur, rate: rt, curDue: FX.toCur(dueIls, rt), curPaid: 0 };
+    }
     const row = { id, biz_id: B.biz.id, svc_id: svc.id, res_id: r.id, group_id: r.group_id || null, start_at: new Date(startMs).toISOString(), end_at: new Date(endMs).toISOString(),
       busy_start: new Date(startMs - bbm * 60000).toISOString(), busy_end: new Date(endMs + bam * 60000).toISOString(), status, hold_until: hold, dur: durMin, qty: P.qty, shared,
       price: opt.force && b.price != null && b.price !== '' ? num(b.price, 0, 1e6, q.total) : q.total, detail: q, addons: q.lines.filter(l => l.k === 'addon').map(l => ({ id: l.id, name: l.label, n: l.n, amt: l.amt })),
-      answers: AN.list.map(a => ({ id: a.id, label: a.label, v: a.v })), consent, pay: { mode: py.mode || 'none', due: linkPay || sitePay ? (py.require === 'full' ? q.total : q.deposit || q.total) : (q.deposit || 0), paid: 0 },
+      answers: AN.list.map(a => ({ id: a.id, label: a.label, v: a.v })), consent, pay: payObj,
       source: opt.force ? 'manual' : (b.source === 'phone' ? 'phone' : 'web'), name, phone, email: email || null, note: opt.force ? clean(b.note, 600) : '', token: rid(12), remind: {} };
     try {
       const out = await db('book_appt', { method: 'POST', body: JSON.stringify(row) }); appt = (out && out[0]) || row; appt._q = q; appt._res = r;
@@ -364,7 +371,7 @@ async function createAppt(B, b, opt) {
    הכסף נכנס לחשבון האתר. אין העברה אוטומטית לעסק: ההעברה ידנית ונרשמת בספר החשבונות ===== */
 function siteTx(B, svc, a) {
   const AP = require('./_auction_pay'), acc = AP.siteNed(); if (!acc) return null;
-  return AP.nedTx(acc, { slug: 'book-' + B.biz.slug }, { id: a.id, amount: Math.round((+a.pay.due - (+a.pay.paid || 0)) * 100) / 100, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { p2: 'book:' + B.biz.slug });
+  return AP.nedTx(acc, { slug: 'book-' + B.biz.slug }, { id: a.id, amount: dueNow(a.pay).amt, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { p2: 'book:' + B.biz.slug, currency: curOf(a.pay) });
 }
 async function payProvs() {
   const ok = { nedarim: !!require('./_auction_pay').siteNed(), sumit: require('./_sumit').ready(), paypal: require('./_paypal').ready() };
@@ -374,21 +381,35 @@ async function payProvs() {
   return list.filter(x => ok[x]);
 }
 async function payInfo(B, svc, a) {
-  const due = r2m(+a.pay.due - (+a.pay.paid || 0)), base = { due, name: a.name, phone: a.phone, email: a.email || '' };
+  const d = dueNow(a.pay), base = { due: d.amt, cur: d.cur, dueIls: d.ils, name: a.name, phone: a.phone, email: a.email || '' };
   if ((a.pay || {}).mode === 'own') {
-    const c = B.biz.cfg || {}, o = (c.pay || {}).own || {}, AP = require('./_auction_pay'), prov = ownAcc(c); if (!prov) return { ...base, provs: [] };
+    const c = B.biz.cfg || {}, o = (c.pay || {}).own || {}, AP = require('./_auction_pay'), prov = ownAcc(c); if (!prov || !FX.PROV_CUR[prov].includes(d.cur)) return { ...base, provs: [] };
     if (prov === 'paypal') return { ...base, provs: ['paypal'], ppc: ownPP(c).id };
-    if (prov === 'nedarim') return { ...base, provs: ['nedarim'], tx: AP.nedTx(AP.orgNed({ cfg: { pay: { mosad: o.mosad, apiValid: o.apiValid, groupe: o.groupe } } }), { slug: 'book-' + B.biz.slug }, { id: a.id, amount: due, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { p2: 'book:' + B.biz.slug }) };
-    try { const back = SITE() + '/book/' + B.biz.slug + '?m=' + a.id + '&k=' + a.token + '&kp=1'; return { ...base, provs: ['kesher'], kurl: await AP.kesherLinkOf({ cfg: { pay: { kesher: o.kesher } }, slug: 'book-' + B.biz.slug }, { id: a.id, amount: due, name: a.name, phone: a.phone, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { back }) }; }
+    if (prov === 'nedarim') return { ...base, provs: ['nedarim'], tx: AP.nedTx(AP.orgNed({ cfg: { pay: { mosad: o.mosad, apiValid: o.apiValid, groupe: o.groupe } } }), { slug: 'book-' + B.biz.slug }, { id: a.id, amount: d.amt, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { p2: 'book:' + B.biz.slug, currency: d.cur }) };
+    try { const back = SITE() + '/book/' + B.biz.slug + '?m=' + a.id + '&k=' + a.token + '&kp=1'; return { ...base, provs: ['kesher'], kurl: await AP.kesherLinkOf({ cfg: { pay: { kesher: o.kesher } }, slug: 'book-' + B.biz.slug }, { id: a.id, amount: d.amt, name: a.name, phone: a.phone, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { back }) }; }
     catch (e) { console.error('book kesher', e.message); return { ...base, provs: [] }; }
   }
-  const provs = await payProvs(), o = { ...base, provs };
+  const provs = FX.provsFor(await payProvs(), d.cur), o = { ...base, provs };
   if (provs.includes('nedarim')) o.tx = siteTx(B, svc, a);
   if (provs.includes('sumit')) o.sumit = require('./_sumit').pub();
   if (provs.includes('paypal')) o.ppc = require('./_lib').env('PAYPAL_CLIENT_ID');
   return o;
 }
 const r2m = v => Math.round(+v * 100) / 100;
+const FX = require('./_fx');
+/* מטבע התשלום של תור ומה שנשאר לשלם: בשקלים או במטבע חוץ לפי שער שננעל בעת ההזמנה */
+const curOf = pay => (pay && pay.cur && pay.cur !== 'ILS' ? pay.cur : 'ILS');
+function dueNow(pay) {
+  pay = pay || {}; const cur = curOf(pay);
+  if (cur === 'ILS') { const x = r2m((+pay.due || 0) - (+pay.paid || 0)); return { cur, amt: x, ils: x, rate: 1 }; }
+  const amt = r2m((+pay.curDue || 0) - (+pay.curPaid || 0)); return { cur, amt, ils: FX.toIls(amt, +pay.rate), rate: +pay.rate };
+}
+/* אילו מטבעות העסק מציע ללקוח: ₪ תמיד, ועוד מה שהעסק הפעיל, אם יש שער וחברת סליקה שיודעת לגבות בו */
+async function curOffer(B) {
+  const c = B.biz.cfg || {}, py = c.pay || {}; if (!((py.mode === 'site' || py.mode === 'own') && py.require && py.require !== 'none')) return ['ILS'];
+  const provs = py.mode === 'own' ? [ownAcc(c)].filter(Boolean) : await payProvs();
+  return FX.offer(((c.cur || {}).allowed) || [], provs);
+}
 /* העמלה לפי המסלול של העסק: קבועה לתור + אחוזים מהסכום ששולם */
 async function feeFor(B, paid) { const pl = (await site()).plans.find(p => p.id === (B.biz.cfg || {}).plan); return pl && pl.mode === 'site' ? r2m(pl.perBooking + paid * pl.pct / 100) : 0; }
 async function nedPaid(p) {
@@ -403,15 +424,16 @@ async function nedPaid(p) {
 async function settle(a, amount, txn) {
   const pay = a.pay || {}; if (txn && pay.txns && pay.txns.includes(txn)) return { already: true };
   const B = await load(String(a.biz_id), true); if (!B) return { error: 'no biz' };
-  const amt = r2m(amount || ((+pay.due || 0) - (+pay.paid || 0))), paid = r2m((+pay.paid || 0) + amt);
-  const own = pay.mode === 'own', fee = pay.feeDone || own ? 0 : await feeFor(B, amt), svc = B.svcs.find(s => s.id === a.svc_id), full = paid + 0.001 >= (+pay.due || 0);
-  const np = { ...pay, paid, at: new Date().toISOString(), txns: [...(pay.txns || []), txn].filter(Boolean), feeDone: true, fee: r2m((+pay.fee || 0) + fee), site: !own };
-  if (!own) await db('book_pay', { method: 'POST', body: JSON.stringify({ biz_id: a.biz_id, appt_id: a.id, kind: 'payment', amount: amt, fee, txn, note: (a.name || '') + ' · ' + (svc ? svc.name : '') }) });
+  const d = dueNow(pay), cur = d.cur, amtCur = r2m(amount || d.amt), amt = cur === 'ILS' ? amtCur : FX.toIls(amtCur, d.rate), curPaid = r2m((+pay.curPaid || 0) + amtCur);
+  const full = cur === 'ILS' ? r2m((+pay.paid || 0) + amt) + 0.001 >= (+pay.due || 0) : curPaid + 0.005 >= (+pay.curDue || 0), paid = full && cur !== 'ILS' ? Math.max(r2m((+pay.paid || 0) + amt), +pay.due || 0) : r2m((+pay.paid || 0) + amt);
+  const own = pay.mode === 'own', fee = pay.feeDone || own ? 0 : await feeFor(B, amt), svc = B.svcs.find(s => s.id === a.svc_id);
+  const np = { ...pay, paid, ...(cur !== 'ILS' ? { curPaid } : {}), at: new Date().toISOString(), txns: [...(pay.txns || []), txn].filter(Boolean), feeDone: true, fee: r2m((+pay.fee || 0) + fee), site: !own };
+  if (!own) await db('book_pay', { method: 'POST', body: JSON.stringify({ biz_id: a.biz_id, appt_id: a.id, kind: 'payment', amount: amt, fee, txn, ...(cur !== 'ILS' ? { cur, rate: d.rate, cur_amount: amtCur } : {}), note: (a.name || '') + ' · ' + (svc ? svc.name : '') }) });
   let status = a.status, conflictErr = false;
   if (full && ['held', 'expired'].includes(a.status)) status = svc && svc.cfg.approval ? 'pending' : 'confirmed';
   try { await db('book_appt?id=eq.' + enc(a.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status, hold_until: null, pay: np, updated_at: new Date().toISOString() }) }); }
   catch (e) { if (!conflict(e)) throw e; conflictErr = true; np.conflict = true; await db('book_appt?id=eq.' + enc(a.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pay: np }) }); }
-  if (conflictErr) { await notifyOwner(B, 'תשלום על תור שכבר נתפס: ' + a.name, 'התקבל תשלום של ' + amt + ' ₪ מ' + a.name + ' (' + a.phone + ') אבל זמן השמירה פג והשעה נתפסה. צריך להחזיר ללקוח את הכסף או לתאם איתו תור אחר.'); return { ok: true, conflict: true }; }
+  if (conflictErr) { await notifyOwner(B, 'תשלום על תור שכבר נתפס: ' + a.name, 'התקבל תשלום של ' + FX.fmt(amtCur, cur) + ' מ' + a.name + ' (' + a.phone + ') אבל זמן השמירה פג והשעה נתפסה. צריך להחזיר ללקוח את הכסף או לתאם איתו תור אחר.'); return { ok: true, conflict: true }; }
   if (status !== a.status) notifyBooked(B, svc, { ...a, status, pay: np }).catch(e => console.error('book notify', e.message));
   return { ok: true };
 }
@@ -426,7 +448,7 @@ async function doRefund(B, b) {
   if (amount + was > +pr.amount + 0.001) return [400, { error: 'over' }];
   const fee = b.refundFee === true ? r2m(Math.min(+pr.fee, +pr.fee * amount / +pr.amount)) : 0; let txn = '', note = clean(b.note, 200), auto = false;
   if (String(pr.txn || '').startsWith('paypal:')) {
-    try { const r = await require('./_paypal').refund(String(pr.txn).slice(7), amount, 'bkrf' + pr.id + '-' + Math.round(amount * 100) + '-' + Math.round(was * 100), 'החזר: ' + B.biz.name); txn = 'paypal:' + r.id; auto = true; }
+    try { const r = await require('./_paypal').refund(String(pr.txn).slice(7), pr.cur && pr.cur !== 'ILS' ? FX.toCur(amount, +pr.rate) : amount, 'bkrf' + pr.id + '-' + Math.round(amount * 100) + '-' + Math.round(was * 100), 'החזר: ' + B.biz.name, undefined, pr.cur && pr.cur !== 'ILS' ? pr.cur : undefined); txn = 'paypal:' + r.id; auto = true; }
     catch (e) { return [502, { error: 'provider', message: e.issue || e.message }]; }
   } else note = ('לביצוע ידני אצל חברת הסליקה. ' + note).trim();
   await db('book_pay', { method: 'POST', body: JSON.stringify({ biz_id: B.biz.id, appt_id: pr.appt_id, kind: 'refund', amount, fee, txn, note }) });
@@ -626,7 +648,7 @@ const MAN = async (u, B, b) => {
       const ap = ((await db('book_appt?id=eq.' + enc(String(b.id || '')) + '&biz_id=eq.' + B.biz.id + '&select=*&limit=1')) || [])[0]; if (!ap || (ap.pay || {}).mode !== 'own') return [404, { error: 'none' }];
       const pay = ap.pay || {}, amount = r2m(num(b.amount, 0, 1e7, 0)), left = r2m((+pay.paid || 0) - (+pay.refunded || 0)); if (!(amount > 0)) return [400, { error: 'amount' }]; if (amount > left + 0.001) return [400, { error: 'over' }];
       let auto = false; const cap = (pay.txns || []).find(t => String(t).startsWith('paypal:'));
-      if (cap && ownPP(B.biz.cfg)) { try { await require('./_paypal').refund(String(cap).slice(7), amount, 'bko' + ap.id + '-' + Math.round(amount * 100) + '-' + Math.round((+pay.refunded || 0) * 100), 'החזר: ' + B.biz.name, ownPP(B.biz.cfg)); auto = true; } catch (e) { return [502, { error: 'provider', message: e.issue || e.message }]; } }
+      if (cap && ownPP(B.biz.cfg)) { try { await require('./_paypal').refund(String(cap).slice(7), curOf(pay) !== 'ILS' ? FX.toCur(amount, +pay.rate) : amount, 'bko' + ap.id + '-' + Math.round(amount * 100) + '-' + Math.round((+pay.refunded || 0) * 100), 'החזר: ' + B.biz.name, ownPP(B.biz.cfg), curOf(pay) !== 'ILS' ? curOf(pay) : undefined); auto = true; } catch (e) { return [502, { error: 'provider', message: e.issue || e.message }]; } }
       await db('book_appt?id=eq.' + enc(ap.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pay: { ...pay, refunded: r2m((+pay.refunded || 0) + amount) } }) });
       return [200, { ok: true, auto }];
     }
@@ -644,7 +666,7 @@ module.exports = async (req, res) => {
   const out = ([st, o]) => json(res, st, o);
   try {
     /* ציבורי */
-    if (a === 'biz') { const B = await load(b.s); if (!B) return json(res, 404, { error: 'none' }); const S = await site(); return json(res, 200, pubView(B, S)); }
+    if (a === 'biz') { const B = await load(b.s); if (!B) return json(res, 404, { error: 'none' }); const S = await site(), v = pubView(B, S); const off = await curOffer(B); if (off.length > 1) { const R = await FX.rates(); v.cur = { offer: off, rates: Object.fromEntries(off.filter(x => x !== 'ILS').map(x => [x, R[x]])) }; } return json(res, 200, v); }
     if (a === 'slots') return out(await slotsAction(b));
     if (a === 'book') {
       if (b.hp) return json(res, 200, { ok: true }); if (limited(req, 20, 'b')) return json(res, 429, { error: 'rate' });
@@ -676,21 +698,21 @@ module.exports = async (req, res) => {
     }
     if (a === 'paysumit' || a === 'ppcreate' || a === 'ppcapture') {
       const B = await load(b.s); if (!B) return json(res, 404, { error: 'none' }); const ap = await getByToken(B, b.m, b.k); if (!ap) return json(res, 404, { error: 'none' });
-      const SS = await site(), isOwn = (ap.pay || {}).mode === 'own', pv = isOwn ? [ownAcc(B.biz.cfg)] : await payProvs(), prov = a === 'paysumit' ? 'sumit' : 'paypal', due = r2m((+(ap.pay || {}).due || 0) - (+(ap.pay || {}).paid || 0));
-      if (!(isOwn || ((ap.pay || {}).mode === 'site' && SS.sitePay)) || !pv.includes(prov) || (isOwn && prov !== 'paypal') || !['held', 'pending', 'confirmed'].includes(ap.status)) return json(res, 400, { error: 'nopay' });
+      const SS = await site(), isOwn = (ap.pay || {}).mode === 'own', pv = isOwn ? [ownAcc(B.biz.cfg)] : await payProvs(), prov = a === 'paysumit' ? 'sumit' : 'paypal', dn = dueNow(ap.pay), due = dn.amt;
+      if (!(isOwn || ((ap.pay || {}).mode === 'site' && SS.sitePay)) || !FX.provsFor(pv, dn.cur).includes(prov) || (isOwn && prov !== 'paypal') || !['held', 'pending', 'confirmed'].includes(ap.status)) return json(res, 400, { error: 'nopay' });
       if (due <= 0.001) return json(res, 400, { error: 'paid' });
       if (ap.status === 'held' && ap.hold_until && Date.parse(ap.hold_until) < Date.now()) return json(res, 400, { error: 'expired' });
       const svc = B.svcs.find(x => x.id === ap.svc_id), desc = B.biz.name + ' · ' + (svc ? svc.name : '');
       try {
         if (a === 'paysumit') {
           const token = String(b.token || ''); if (!token || token.length > 400) return json(res, 400, { error: 'bad' });
-          const c = await require('./_sumit').charge({ token, amount: due, name: clean(b.name || ap.name, 80), email: ap.email || clean(b.email, 120), ref: ap.id, desc });
+          const c = await require('./_sumit').charge({ token, amount: due, name: clean(b.name || ap.name, 80), email: ap.email || clean(b.email, 120), ref: ap.id, desc, currency: dn.cur });
           if (!c.ok) return json(res, c.system ? 503 : 402, { error: c.system ? 'provider' : 'payment', message: c.message || '' });
           const r = await settle(ap, c.amount || due, 'sumit:' + c.paymentId); return json(res, 200, { ok: true, ...r });
         }
         const PP = require('./_paypal');
-        if (a === 'ppcreate') { const ppid = await PP.create(due, ap.id, desc, ap.email || '', isOwn ? ownPP(B.biz.cfg) : undefined); return json(res, 200, { ppid }); }
-        const c = await PP.capture(String(b.ppid || ''), isOwn ? ownPP(B.biz.cfg) : undefined); if (!c.ok) return json(res, 402, { error: 'payment' });
+        if (a === 'ppcreate') { const ppid = await PP.create(due, ap.id, desc, ap.email || '', isOwn ? ownPP(B.biz.cfg) : undefined, dn.cur); return json(res, 200, { ppid }); }
+        const c = await PP.capture(String(b.ppid || ''), isOwn ? ownPP(B.biz.cfg) : undefined); if (!c.ok || (c.currency && c.currency !== dn.cur)) return json(res, 402, { error: 'payment' });
         const r = await settle(ap, c.amount || due, 'paypal:' + c.txn); return json(res, 200, { ok: true, ...r });
       } catch (e) { console.error('book pay', e.message); return json(res, 502, { error: 'provider' }); }
     }

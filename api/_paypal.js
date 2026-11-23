@@ -25,10 +25,10 @@ async function call(path, body, acc) {
 }
 /* הזמנה בפייפל לסכום בשקלים. ref = מספר ההזמנה שלנו */
 /* email: מייל הלקוח (אם ידוע) למילוי מראש בטופס של פייפל, כדי שלא יצטרך להקליד */
-async function create(amount, ref, desc, email, acc) {
+async function create(amount, ref, desc, email, acc, currency) {
   const j = await call('/v2/checkout/orders', {
     intent: 'CAPTURE',
-    purchase_units: [{ reference_id: ref, custom_id: ref, description: String(desc || 'MyLuach').slice(0, 120), amount: { currency_code: 'ILS', value: (Math.round(amount * 100) / 100).toFixed(2) } }],
+    purchase_units: [{ reference_id: ref, custom_id: ref, description: String(desc || 'MyLuach').slice(0, 120), amount: { currency_code: currency || 'ILS', value: (Math.round(amount * 100) / 100).toFixed(2) } }],
     ...(email ? { payer: { email_address: email, address: { country_code: 'IL' } } } : {}),
     application_context: { brand_name: 'MyLuach', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW', locale: 'he-IL' }
   }, acc);
@@ -48,10 +48,10 @@ async function get(ppid, acc) {
   return r.json();
 }
 /* החזר כספי (מלא או חלקי) לפי מזהה הגבייה. key = מפתח למניעת החזר כפול */
-async function refund(captureId, amount, key, note, acc) {
+async function refund(captureId, amount, key, note, acc, currency) {
   const r = await fetch(base(acc) + '/v2/payments/captures/' + encodeURIComponent(captureId) + '/refund', {
     method: 'POST', headers: { Authorization: 'Bearer ' + await token(acc), 'Content-Type': 'application/json', 'PayPal-Request-Id': key, Prefer: 'return=representation' },
-    body: JSON.stringify({ ...(amount ? { amount: { value: (Math.round(amount * 100) / 100).toFixed(2), currency_code: 'ILS' } } : {}), note_to_payer: String(note || 'החזר מ־MyLuach').slice(0, 255) })
+    body: JSON.stringify({ ...(amount ? { amount: { value: (Math.round(amount * 100) / 100).toFixed(2), currency_code: currency || 'ILS' } } : {}), note_to_payer: String(note || 'החזר מ־MyLuach').slice(0, 255) })
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { const iss = (j.details && j.details[0] && j.details[0].issue) || j.name || ''; throw Object.assign(new Error(iss || ('paypal ' + r.status)), { issue: iss }); }

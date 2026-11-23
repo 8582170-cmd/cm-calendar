@@ -31,7 +31,7 @@ function nedTx(acc, sale, order, desc, opt) {
   opt = opt || {};
   return {
     Mosad: acc.mosad, ApiValid: acc.apiValid, Zeout: '', PaymentType: opt.hk ? 'HK' : 'Ragil',
-    Amount: String(order.amount), Tashlumim: opt.hk ? (opt.months > 0 ? String(opt.months) : '') : '1', Currency: '1',
+    Amount: String(order.amount), Tashlumim: opt.hk ? (opt.months > 0 ? String(opt.months) : '') : '1', Currency: opt.currency === 'USD' ? '2' : '1',
     FirstName: '', LastName: '', Street: '', City: '', Phone: '', Mail: order.email || '',
     Groupe: acc.groupe || '', Comment: clean(desc, 180) + ' · ' + order.id.slice(2, 10),
     Param1: order.id, Param2: opt.p2 || 'auction:' + sale.slug,

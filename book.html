@@ -79,6 +79,9 @@ var M=Q.get('m'),K=Q.get('k'),PAYH=null;
 var $=function(i){return document.getElementById(i)},app=$('app');
 var P=null,ST={step:1,svc:null,dur:0,add:{},from:'',days:null,day:'',time:null,group:0,res:0,busy:0,err:'',ans:{},con:{},cust:{},sel:null,wait:0,qty:1,nights:0};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var CSYM={USD:'$',EUR:'€',GBP:'£'};
+function fc(n,c){n=Math.round(+n*100)/100;return c&&c!=='ILS'?(CSYM[c]||'')+n.toLocaleString('he-IL',{minimumFractionDigits:n%1?2:0}):nis(n)}
+function inCur(ils){var c=ST.cur;if(!c||c==='ILS'||!P.cur||!P.cur.rates[c])return null;return Math.round(ils/P.cur.rates[c]*100)/100}
 function nis(n){n=Math.round(+n*100)/100;return n.toLocaleString('he-IL')+' ₪'}
 function call(b){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({s:SLUG},b))}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j._st=r.status;return j})}).catch(function(){return {error:'net',_st:0}})}
 function lum(h){var n=parseInt(h.slice(1),16),r=n>>16,g=n>>8&255,b=n&255;return (0.299*r+0.587*g+0.114*b)/255}
@@ -232,7 +235,9 @@ function s4(){ST.step=4;var s=svc(),o=s.nights?{t:s.nights.inT}:ST.time,c=ST.cus
   if(s.alloc==='group'&&ST.group&&grp(ST.group))lines.push(['מקום',grp(ST.group).name]);if(s.alloc==='pick'&&ST.res&&resv(ST.res))lines.push(['מקום',resv(ST.res).name]);
   h+='<div class="card"><div class="sum" style="border:0;margin:0;padding:0">'+lines.map(function(l){return '<div><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'}).join('')+addList(s).filter(function(x){return ST.add[x.id]}).map(function(x){return '<div><span>'+esc(x.name)+(ST.add[x.id]>1?' ×'+ST.add[x.id]:'')+'</span><span></span></div>'}).join('')+(pr>0?'<div class="tot"><span>סכום</span><span>'+nis(pr+(s.nights?a.price:0))+'</span></div>':'')+'</div>'
    +(s.deposit&&pr>0?'<p class="hint">מקדמה: '+nis(s.deposit.t==='pct'?pr*s.deposit.v/100:Math.min(pr,s.deposit.v))+'</p>':'')+(s.approval?'<p class="hint">התור יאושר על ידי העסק.</p>':'')+(P.pay.text?'<p class="hint">'+esc(P.pay.text)+'</p>':'')+(paysSite()?'<p class="hint">בשלב הבא משלמים בכרטיס אשראי, והתור נשמר לך בזמן התשלום.</p>':'')+'<div id="msg"></div></div>';
+  if(paysSite()&&P.cur&&P.cur.offer&&P.cur.offer.length>1){h+='<div class="card"><h2>מטבע התשלום</h2><div id="curs" role="radiogroup" aria-label="מטבע" style="display:flex;gap:8px;flex-wrap:wrap">'+P.cur.offer.map(function(c){return '<button type="button" class="opt" role="radio" data-cur="'+c+'" aria-checked="'+((ST.cur||'ILS')===c)+'" style="flex:1;min-width:70px">'+({ILS:'₪ שקל',USD:'$ דולר',EUR:'€ אירו',GBP:'£ פאונד'}[c])+'</button>'}).join('')+'</div><p class="hint" id="curh"></p></div>'}
   shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="go" type="button" style="flex:1">'+(paysSite()?'להמשך לתשלום':s.approval?'שליחת בקשה':'קביעת התור')+'</button></div></div>');
+  [].forEach.call(document.querySelectorAll('[data-cur]'),function(b){b.onclick=function(){grab();ST.cur=b.dataset.cur;s4()}});var ch=$('curh');if(ch&&ST.cur&&ST.cur!=='ILS'){ch.textContent='שער יומי של בנק ישראל: 1 '+ST.cur+' = '+P.cur.rates[ST.cur]+' ₪. '+(pr>0?'סכום משוער: '+fc(inCur(pr),ST.cur)+'. ':'')+'הסכום הסופי נקבע בעת ההזמנה.'}
   $('bk').onclick=function(){grab();s3()};$('go').onclick=submit;if(paysSite()&&!P.pay.ready){$('go').disabled=true;$('msg').innerHTML='<div class="err">התשלום באתר לא זמין כרגע. אפשר ליצור קשר עם העסק.</div>'}}
 function paysSite(){return (P.pay.mode==='site'||P.pay.mode==='own')&&P.pay.require&&P.pay.require!=='none'}
 function grab(){var s=svc(),fm=s.form&&s.form.fields||[];ST.cust={name:$('cn').value,phone:$('cp').value,email:$('ce').value};
@@ -244,7 +249,7 @@ function submit(){grab();var s=svc(),m=$('msg'),bad=function(t,el){m.innerHTML='
   var fm=s.form&&s.form.fields||[];for(var i=0;i<fm.length;i++){var f=fm[i],v=ST.ans[f.id];if(f.req&&(Array.isArray(v)?!v.length:!v))return bad('נא למלא: '+f.label,$('q_'+f.id))}
   for(var j=0;j<P.consents.length;j++){var k=P.consents[j];if(k.req&&!ST.con[k.id])return bad('כדי להמשיך צריך לאשר: '+k.text.slice(0,70))}
   $('go').disabled=true;$('go').textContent='קובעים…';
-  call({a:'book',svc:ST.svc,start:s.nights?ST.day:ST.day+' '+ST.time.t,nights:s.nights?ST.nights:undefined,qty:s.qty?ST.qty:undefined,group:ST.group||undefined,res:ST.res||undefined,dur:ST.dur,addons:addArr(),name:c.name,phone:c.phone,email:c.email,consent:Object.keys(ST.con).filter(function(x){return ST.con[x]}),answers:ST.ans,hp:$('hp').value}).then(function(r){
+  call({a:'book',svc:ST.svc,start:s.nights?ST.day:ST.day+' '+ST.time.t,nights:s.nights?ST.nights:undefined,qty:s.qty?ST.qty:undefined,group:ST.group||undefined,res:ST.res||undefined,dur:ST.dur,addons:addArr(),name:c.name,phone:c.phone,email:c.email,consent:Object.keys(ST.con).filter(function(x){return ST.con[x]}),answers:ST.ans,cur:paysSite()&&ST.cur&&ST.cur!=='ILS'?ST.cur:undefined,hp:$('hp').value}).then(function(r){
     if(r.error){$('go').disabled=false;$('go').textContent=paysSite()?'להמשך לתשלום':s.approval?'שליחת בקשה':'קביעת התור';
       if(r.error==='taken'){ST.err='מישהו הקדים אתכם והשעה נתפסה. בחרו שעה אחרת.';ST.time=null;ST.days=null;return loadDays()}
       var t={max:'יש כבר מספר תורים עתידיים על המספר הזה. אפשר לבטל תור קיים או ליצור קשר עם העסק.',rate:'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',consent:'נא לאשר את התנאים.',answer:'נא למלא את כל שדות החובה.',phone:'מספר הטלפון לא תקין.',email:'כתובת המייל לא תקינה.',net:'תקלת תקשורת. נסו שוב.',payoff:'התשלום באתר לא זמין כרגע. אפשר ליצור קשר עם העסק.'}[r.error]||'לא הצלחנו לקבוע את התור. נסו שוב.';return bad(t)}
@@ -265,9 +270,9 @@ var PN={kesher:'כרטיס אשראי',nedarim:'כרטיס אשראי',sumit:'כ
 function payScreen(o){
   if(PAYH){window.removeEventListener('message',PAYH);PAYH=null}
   var pv=o.provs||['nedarim'],cur=pv[0],ready=false,busy=false,stop=false;
-  shell('<div class="card"><h2>תשלום</h2><p style="margin:0">סכום לתשלום: <b style="font-size:20px">'+nis(o.due)+'</b></p>'+(o.hold?'<p class="hint">התור שמור לך עד '+hh(o.hold)+'.</p>':'')
+  shell('<div class="card"><h2>תשלום</h2><p style="margin:0">סכום לתשלום: <b style="font-size:20px">'+fc(o.due,o.cur)+'</b>'+(o.cur&&o.cur!=='ILS'?' <span class="hint">(כ־'+nis(o.dueIls)+')</span>':'')+'</p>'+(o.hold?'<p class="hint">התור שמור לך עד '+hh(o.hold)+'.</p>':'')
     +(pv.length>1?'<div id="pvs" role="radiogroup" aria-label="אמצעי תשלום" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">'+pv.map(function(k){return '<button type="button" class="opt" role="radio" data-pv="'+k+'" style="flex:1;min-width:120px">'+PN[k]+(k==='paypal'?'':(pv.filter(function(x){return x!=='paypal'}).length>1?' ('+(k==='sumit'?'SUMIT':'נדרים')+')':''))+'</button>'}).join('')+'</div>':'')
-    +'<div id="pbox"></div><div id="pmsg" class="hint" role="status" style="margin-top:8px"></div></div>','<div class="bar"><div class="in"><button class="btn" id="pgo" type="button" style="flex:1" disabled>לתשלום '+nis(o.due)+'</button></div></div>');
+    +'<div id="pbox"></div><div id="pmsg" class="hint" role="status" style="margin-top:8px"></div></div>','<div class="bar"><div class="in"><button class="btn" id="pgo" type="button" style="flex:1" disabled>לתשלום '+fc(o.due,o.cur)+'</button></div></div>');
   var pm=$('pmsg'),go=$('pgo'),say=function(t,bad){pm.textContent=t;pm.style.color=bad?'var(--bad)':''},fin=function(){stop=true;go.disabled=true;say('התשלום התקבל. מאשרים את התור…');waitConfirm(o,0)};
   var pick=function(k){cur=k;ready=false;busy=false;go.disabled=true;go.hidden=false;[].forEach.call(document.querySelectorAll('[data-pv]'),function(b){b.setAttribute('aria-checked',b.dataset.pv===k)});$('pbox').innerHTML='';
     if(PAYH){window.removeEventListener('message',PAYH);PAYH=null}
@@ -303,7 +308,7 @@ function payScreen(o){
       onApprove:function(d){say('מאשרים את התשלום…');return call({a:'ppcapture',m:o.id,k:o.k,ppid:d.orderID}).then(function(x){if(x&&x.ok)fin();else say('התשלום לא הושלם. אפשר לנסות שוב.',true)})},
       onError:function(){say('תקלה בטופס התשלום. נסו שוב.',true)}});
       if(b.isEligible&&!b.isEligible())return say('התשלום בכרטיס לא זמין כרגע.',true);b.render('#pbox');say('לוחצים על "כרטיס אשראי" וממלאים את הפרטים.')};
-    if(window.paypal)run();else loadJs('https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(o.ppc)+'&currency=ILS&intent=capture&locale=he_IL&components=buttons&disable-funding=paylater,venmo').then(run).catch(function(){say('לא הצלחנו לטעון את טופס התשלום. נסו לרענן את הדף.',true)})}
+    if(window.paypal&&window.__ppc===(o.cur||'ILS'))run();else{window.paypal=undefined;window.__ppc=o.cur||'ILS'}if(window.paypal)run();else loadJs('https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(o.ppc)+'&currency='+(o.cur||'ILS')+'&intent=capture&locale=he_IL&components=buttons&disable-funding=paylater,venmo').then(run).catch(function(){say('לא הצלחנו לטעון את טופס התשלום. נסו לרענן את הדף.',true)})}
   pick(cur);
 }
 /* ההודעה מנדרים מגיעה לשרת בנפרד מהדפדפן, ולכן מחכים עד שהתור מתעדכן */

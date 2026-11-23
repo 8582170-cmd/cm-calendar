@@ -263,6 +263,18 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   await bad({ a: 'refundOwn', s: 'centre', id: pb3.id, amount: 5 }, 403, 'forbidden', CLERK);
   const ro = await ok({ a: 'refundOwn', s: 'centre', id: pb3.id, amount: 40 }, OWN); assert.strictEqual(ro.auto, true); assert.deepStrictEqual(rfs[0], ['OCAP', 40, 'CID']); assert.strictEqual(T.book_appt.find(x => x.id === pb3.id).pay.refunded, 40);
   await bad({ a: 'refundOwn', s: 'centre', id: pb3.id, amount: pb3.price }, 400, 'over', OWN);
+  /* תשלום בדולר: שער יומי נעול, הסכום נגבה במטבע ונרשם בשקלים */
+  const FXM = require('../api/_fx'); SETTINGS.fx = { rates: { USD: 3.5, EUR: 4, GBP: 4.5 }, at: new Date().toISOString() }; FXM.reset();
+  const cfgU = ownCfg({ prov: 'paypal', pp: { id: 'CID', secret: 'SEC', mode: 'sandbox' } }); cfgU.cur = { allowed: ['USD', 'EUR', 'XXX'] };
+  await ok({ a: 'save', s: 'centre', cfg: cfgU }, OWN); assert.deepStrictEqual((await cfgNow()).cur.allowed, ['USD', 'EUR']);
+  const bz = await ok({ a: 'biz', s: 'centre' }, null); assert.deepStrictEqual(bz.cur.offer, ['ILS', 'USD', 'EUR']); assert.strictEqual(bz.cur.rates.USD, 3.5);
+  await bad({ ...pkc, phone: '0521110041', start: day + ' 14:30', name: 'גי', cur: 'GBP' }, 400, 'cur', null);
+  const cs = []; PP3.create = async (a1, a2, a3, a4, acc, cu) => { cs.push([a1, cu]); return 'PPU'; }; PP3.capture = async () => ({ ok: true, amount: 0, currency: 'USD', txn: 'UCAP' });
+  const pu = await ok({ ...pkc, phone: '0521110041', start: day + ' 14:30', name: 'דולר', cur: 'USD' }, null); assert.strictEqual(pu.cur, 'USD'); assert.strictEqual(pu.due, Math.round(pu.dueIls / 3.5 * 100) / 100);
+  const PMU = { s: 'centre', m: pu.id, k: pu.k }; await ok({ a: 'ppcreate', ...PMU }, null); assert.deepStrictEqual(cs[0], [pu.due, 'USD']);
+  await ok({ a: 'ppcapture', ...PMU, ppid: 'PPU' }, null); const au = T.book_appt.find(x => x.id === pu.id); assert.strictEqual(au.pay.curPaid, pu.due); assert.ok(Math.abs(au.pay.paid - pu.dueIls) < 0.06, 'שולם במלואו ' + au.pay.paid + '/' + pu.dueIls); assert.ok(['confirmed', 'pending'].includes(au.status), 'אושר ' + au.status);
+  PP3.capture = async () => ({ ok: true, amount: 0, currency: 'ILS', txn: 'BAD' }); const pu2 = await ok({ ...pkc, phone: '0521110042', start: day + ' 15:30', name: 'דולר2', cur: 'USD' }, null); await ok({ a: 'ppcreate', s: 'centre', m: pu2.id, k: pu2.k }, null); await bad({ a: 'ppcapture', s: 'centre', m: pu2.id, k: pu2.k, ppid: 'PPU' }, 402, 'payment', null);
+  SETTINGS.fx = {}; FXM.reset(); assert.deepStrictEqual((await ok({ a: 'biz', s: 'centre' }, null)).cur, undefined, 'בלי שער תקף אין מטבע חוץ');
   PP3.create = oc.c; PP3.capture = oc.cap; PP3.refund = oc.r;
   /* מסלול בלי site: מצב site מכובה */
   await ok({ a: 'plan', s: 'centre', plan: pOwn.id }, SA); assert.notStrictEqual((await cfgNow()).pay.mode, 'site', 'מעבר למסלול בלי סליקה דרך האתר מכבה אותה');

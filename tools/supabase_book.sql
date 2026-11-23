@@ -179,3 +179,8 @@ alter table public.book_appt add column if not exists qty int not null default 1
 alter table public.book_appt add column if not exists shared boolean not null default false;
 alter table public.book_appt drop constraint if exists book_appt_no_overlap;
 alter table public.book_appt add constraint book_appt_no_overlap exclude using gist (res_id with =, tstzrange(busy_start, busy_end) with &&) where (status in ('held','pending','confirmed') and not shared);
+
+-- תשלום במטבע חוץ: הסכום בספר נשמר בשקלים (לפי שער נעול), והמטבע המקורי והשער נשמרים לצורך החזר.
+alter table public.book_pay add column if not exists cur text;
+alter table public.book_pay add column if not exists rate numeric;
+alter table public.book_pay add column if not exists cur_amount numeric;
