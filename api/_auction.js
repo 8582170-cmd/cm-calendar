@@ -278,7 +278,7 @@ function cleanCfg(old, b) {
   if (b.progress && typeof b.progress === 'object') c.progress = { on: !!b.progress.on, amount: b.progress.amount !== false, reps: b.progress.reps !== false, groups: b.progress.groups !== false, products: b.progress.products !== false };
   if (b.pay && typeof b.pay === 'object') { const p = { ...(c.pay || {}) }; if (b.pay.prov != null) p.prov = ['nedarim', 'kehilot', 'site'].includes(b.pay.prov) ? b.pay.prov : 'nedarim';
     if (b.pay.mosad != null) p.mosad = String(b.pay.mosad).replace(/\D/g, '').slice(0, 10); if (b.pay.apiValid != null) p.apiValid = clean(b.pay.apiValid, 60); if (b.pay.groupe != null) p.groupe = clean(b.pay.groupe, 60); c.pay = p; }
-  if (b.give && typeof b.give === 'object' && c.give) c.give = { ...c.give, on: !!b.give.on, mode: b.give.mode === 'button' ? 'button' : 'progress', prog: !!b.give.prog, ...(b.give.joint != null ? { joint: !!b.give.joint } : {}) };
+  if (b.give && typeof b.give === 'object' && c.give) c.give = { ...c.give, on: !!b.give.on, mode: b.give.mode === 'button' ? 'button' : 'progress', prog: !!b.give.prog, ...(b.give.joint != null ? { joint: !!b.give.joint } : {}), ...(b.give.jointReps != null ? { jointReps: !!b.give.jointReps } : {}) };
   if (b.mailName != null) c.mailName = clean(b.mailName, 60);
   if (Array.isArray(b.notify)) c.notify = [...new Set(b.notify.map(mailN).filter(Boolean))].slice(0, 4);
   if (b.pay && b.pay.kesher && typeof b.pay.kesher === 'object') { const k = { ...((c.pay || {}).kesher || {}) }, K = b.pay.kesher;
@@ -333,6 +333,27 @@ const mkPkg = (x, i) => {
     products: ids(x.products) && ids(x.products).length ? ids(x.products) : null, comp: Array.isArray(x.comp) && x.comp.length ? x.comp.map(c => ({ p: +c.p, n: Math.max(1, Math.floor(+c.n || 1)) })).filter(c => c.p > 0).slice(0, 500) : null,
     cfg: { until: /^\d{4}-\d{2}-\d{2}$/.test(cf.until || '') ? cf.until : '', key: Math.max(0, Math.min(9, Math.floor(+cf.key || 0))) }, sort: i, active: x.active !== false };
 };
+/* קישור מלא + מגייסים משותפים: לוח אחד לפי קוד. סכום ההתרמה של מגייס כבר כולל את הכנסות המכירה עם אותו קוד, ולכן לא מחברים פעמיים */
+function jointReps(saleReps, J, g0) {
+  if (!(J && g0 && g0.jointReps)) return saleReps;
+  const gm = new Map((J.reps || []).map(r => [r.code, r])), seen = new Set(), out = [];
+  saleReps.forEach(r => { const g = gm.get(r.code); seen.add(r.code); out.push({ ...r, amount: g ? Math.max(g.amount, r.amount) : r.amount }); });
+  (J.reps || []).forEach(g => { if (!seen.has(g.code)) out.push({ name: g.name, code: g.code, amount: g.amount, grp: '' }); });
+  return out.sort((x, y) => y.amount - x.amount);
+}
+/* יוצר בהתרמה מגייסים שחסרים (לפי קוד) מרשימת המגייסים של המכירה */
+async function syncGiveReps(s) {
+  const g = (s.cfg || {}).give || {}; if (!(g.joint && g.jointReps && g.slug)) return 0;
+  const G = await db('give_campaign?slug=eq.' + enc(g.slug) + '&select=id&limit=1'); if (!(G && G[0])) return 0;
+  const [GR, AR] = await Promise.all([db('give_rep?campaign_id=eq.' + G[0].id + '&select=code&limit=5000'), db('auction_rep?sale_id=eq.' + s.id + '&active=eq.true&select=code,name,phone,email,goal&limit=5000')]);
+  const have = new Set((GR || []).map(r => r.code)); let n = 0;
+  for (const r of (AR || [])) {
+    if (have.has(r.code) || String(r.code).length > 8) continue;
+    await db('give_rep', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ campaign_id: G[0].id, code: r.code, name: r.name || null, phone: r.phone || null, email: r.email || null, goal: +r.goal || 0, active: true, pin: String(1000 + crypto.randomBytes(2).readUInt16BE(0) % 9000) }) }); n++;
+  }
+  if (n) { try { require('./_give').drop(g.slug); } catch (e) { } }
+  return n;
+}
 const mkRep = x => {
   const code = String(x.code || '').replace(/\D/g, ''); if (!(code.length >= 2 && code.length <= 8)) return { error: 'קוד נציג: 2 עד 8 ספרות' };
   const pin = String(x.pin || '').replace(/\D/g, '');
@@ -529,7 +550,7 @@ module.exports = async (req, res) => {
       const jt = J ? { sale: r2(R.totals.amount), give: r2(J.raised), matched: r2(J.matched), total: r2(R.totals.amount + J.raised + J.matched), goal: (+c.goal || 0) + (+J.goal || 0), donors: J.donors, url: J.url, can: J.can, match: J.match } : null;
       const mon = c.progress.on ? !!c.progress.amount : true;
       return json(res, 200, { joint: jt && mon ? jt : null, title: c.title, closeAt: c.closeAt, openAt: c.openAt, drawTime: c.drawTime, drawAt: c.drawAt, cd: c.cd, status: s.status, goal: c.progress.amount ? c.goal : 0, amount: c.progress.amount ? R.totals.amount : null, tickets: R.totals.tickets, buyers: R.totals.buyers,
-        reps: c.progress.reps ? top(R.reps, 'amount').map(r => ({ name: r.name || '', amount: c.progress.amount ? r.amount : null, grp: r.grp || '' })) : [],
+        reps: c.progress.reps || (J && g0.jointReps) ? top(jointReps(R.reps, J, g0), 'amount').map(r => ({ name: r.name || '', amount: c.progress.amount || J ? r.amount : null, grp: r.grp || '' })) : [],
         groups: c.progress.groups ? top(R.groups.filter(g => g.grp !== 'ללא קבוצה'), 'amount').map(g => ({ grp: g.grp, amount: c.progress.amount ? g.amount : null })) : [],
         products: c.progress.products ? R.products.slice().sort((x, y) => y.tickets - x.tickets).slice(0, 10).map(p => ({ num: p.num, name: p.name, tickets: p.tickets })) : [],
         give: !J && (s.cfg.give || {}).prog ? await giveBox(s, await site()) : null });
@@ -651,6 +672,7 @@ module.exports = async (req, res) => {
       /* קישור מלא: ההתרמה סופרת את הכנסות המכירה (אחרת הספירה לא הדדית) */
       if (up.cfg.give && up.cfg.give.slug && !up.cfg.give.joint) { try { require('./_give').drop(up.cfg.give.slug); } catch (e) { } }
       if (up.cfg.give && up.cfg.give.joint && up.cfg.give.slug) { try { const G = await db('give_campaign?slug=eq.' + enc(up.cfg.give.slug) + '&select=id,cfg&limit=1'), gr = G && G[0]; if (gr && (gr.cfg.auction !== s.slug || gr.cfg.auctionCount === false)) { await db('give_campaign?id=eq.' + gr.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: { ...gr.cfg, auction: s.slug, auctionCount: true }, updated_at: new Date().toISOString() }) }); } try { require('./_give').drop(up.cfg.give.slug); } catch (e) { } } catch (e) { console.error('joint sync', e.message); } }
+      try { await syncGiveReps(await load(s.slug, true)); } catch (e) { console.error('give reps sync', e.message); }
       return json(res, 200, mgrView(await load(s.slug, true), await site()));
     }
     if (a === 'feePlan') { const r = await require('./_openfee').choosePlan('auction', s, await site(), b.plan); if (r.error) return json(res, 409, { error: 'feeplan', message: r.error }); return json(res, 200, mgrView(await load(s.slug, true), await site())); }
@@ -665,6 +687,7 @@ module.exports = async (req, res) => {
     if (a === 'pkgs') { const errs = await saveList('auction_pkg', s, b.list, mkPkg); return json(res, 200, { errors: errs, pkgs: (await load(s.slug, true)).pkgs }); }
     if (a === 'reps') {
       if (b.list) { const errs = await saveList('auction_rep', s, b.list, mkRep); if (errs.length) return json(res, 200, { errors: errs, reps: await db('auction_rep?sale_id=eq.' + s.id + '&select=*&order=code.asc&limit=2000') }); }
+      if (b.list) { try { await syncGiveReps(s); } catch (e) { console.error('give reps sync', e.message); } }
       const L = await db('auction_rep?sale_id=eq.' + s.id + '&select=*&order=code.asc&limit=2000');
       for (const r of (L || []).filter(r => !r.pin)) { r.pin = String(1000 + crypto.randomBytes(2).readUInt16BE(0) % 9000); await db('auction_rep?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pin: r.pin }) }).catch(() => {}); }
       return json(res, 200, { reps: (L || []).map(r => ({ ...r, link: SITE() + '/auction?s=' + s.slug + '&m=' + r.code, page: SITE() + '/auction?s=' + s.slug + '&rep=' + r.token })) });

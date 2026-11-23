@@ -598,6 +598,7 @@ async function ymUpload(token, path, buf) {
   if (!j || (j.responseStatus && j.responseStatus !== 'OK')) throw new Error((j && (j.message || j.responseStatus)) || r.status + ' ' + t.slice(0, 80));
 }
 module.exports.summary = async slug => { const s = await load(slug); if (!s) return null; const c = cfgOf(s), st = await stats(s), t = await timing(s, c, st);
-  return { status: s.status, title: c.title, url: SITE() + '/give/' + s.slug, raised: st.raised, matched: st.matched, total: st.total, goal: c.goal, donors: c.f.donors ? st.donors : null, match: c.match.on ? c.match.ratio : 0, can: t.can, end: c.f.countdown ? t.end : '' }; };
+  return { status: s.status, title: c.title, url: SITE() + '/give/' + s.slug, raised: st.raised, matched: st.matched, total: st.total, goal: c.goal, donors: c.f.donors ? st.donors : null, match: c.match.on ? c.match.ratio : 0, can: t.can, end: c.f.countdown ? t.end : '',
+    reps: s.reps.filter(r => r.active !== false).map(r => ({ code: r.code, name: r.name || '', amount: r2((st.rep[r.id] || {}).amount || 0) })) }; };
 module.exports.drop = drop; module.exports.nedPaid = nedPaid; module.exports.cfgOf = cfgOf; module.exports.timing = timing; module.exports.load = load; module.exports.stats = stats; module.exports.markPaid = markPaid;
 module.exports.notifyPhone = async (s, d) => { const { escH } = require('./_mail'), r = d.rep_id ? s.reps.find(x => x.id === d.rep_id) : null; await notify(s, 'תרומה בטלפון ממתינה לגבייה: ' + (+d.amount) + ' ₪', '<p>' + escH(d.method || 'תרומה בטלפון') + (r ? ' · נציג: ' + escH(r.name || r.code) : '') + (d.phone ? ' · טלפון: ' + escH(d.phone) : '') + '</p><p>אחרי הגבייה מסמנים "שולם" בלשונית התרומות.</p>'); };
