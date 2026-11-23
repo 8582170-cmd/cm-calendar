@@ -34,6 +34,8 @@ module.exports = async (req, res) => {
 
     /* מכירה סינית: ההזמנות שם מתחילות ב-au (טבלה נפרדת) */
     if (/^au[0-9a-f]{22}$/.test(String(p.Param1 || p.param1 || ''))) return json(res, 200, await require('./_auction').nedPaid(p, ip));
+    /* זימון תורים: תשלום על תור מתחיל ב-bk */
+    if (/^bk[0-9a-f]{18}$/.test(String(p.Param1 || p.param1 || ''))) return json(res, 200, await require('./_book').nedPaid(p, ip));
     /* אתר התרמה: התרומות מתחילות ב-gv */
     if (/^gv[0-9a-f]{22}$/.test(String(p.Param1 || p.param1 || ''))) return json(res, 200, await require('./_give').nedPaid(p, ip));
     /* מספר ההזמנה: Param1 (טופס התשלום) או Param2 (ביט) */

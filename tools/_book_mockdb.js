@@ -26,7 +26,7 @@ async function db(p, opts = {}) {
   if (method === 'DELETE') { const L = sel(); L.forEach(r => rows.splice(rows.indexOf(r), 1)); return null; }
 }
 const STATE = { user: { id: 'u-owner', email: 'owner@example.com' } }; const SETTINGS = { book: { open: true, sms: true } };
-const lib = { db, json: (res, st, o) => { res.statusCode = st; res.body = o; }, readBody: r => r.body || {}, getUser: async () => STATE.user, env: k => (k === 'OWNER_EMAIL' ? 'site@example.com' : ''), loadSetting: async k => SETTINGS[k] || {}, saveSetting: async (k, v) => { SETTINGS[k] = v; }, reqMeta: () => ({ ip: '1.2.3.4' }) };
+const lib = { db, json: (res, st, o) => { res.statusCode = st; res.body = o; }, readBody: r => r.body || {}, getUser: async () => STATE.user, env: k => (k === 'OWNER_EMAIL' ? 'site@example.com' : (process.env[k] || '')), loadSetting: async k => SETTINGS[k] || {}, saveSetting: async (k, v) => { SETTINGS[k] = v; }, reqMeta: () => ({ ip: '1.2.3.4' }) };
 const put = (rel, exp) => { const f = require.resolve(path.join('..', rel)); require.cache[f] = { id: f, filename: f, loaded: true, exports: exp }; };
 put('api/_lib.js', lib);
 put('api/_sms.js', { send: async (p, t) => { sent.sms.push([p, t]); }, ready: async () => true });

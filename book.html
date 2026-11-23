@@ -75,7 +75,7 @@ body.dark .err{background:#4a1f1b;color:#ffc9c2}
 'use strict';
 var API='/api/pricing?c=_book',Q=new URLSearchParams(location.search),EMB=Q.get('embed')==='1';
 var SLUG=(location.pathname.match(/\/book\/([^\/?#]+)/)||[])[1]||Q.get('s')||'';
-var M=Q.get('m'),K=Q.get('k');
+var M=Q.get('m'),K=Q.get('k'),PAYH=null;
 var $=function(i){return document.getElementById(i)},app=$('app');
 var P=null,ST={step:1,svc:null,dur:0,add:{},from:'',days:null,day:'',time:null,group:0,res:0,busy:0,err:'',ans:{},con:{},cust:{},sel:null,wait:0};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -108,11 +108,13 @@ function viewMode(){
     shell('<div class="card"><div class="row sb"><h2>התור שלך</h2><span class="hint"><b style="color:'+(v.status==='cancelled'?'var(--bad)':'var(--ok)')+'">'+esc(stx)+'</b></span></div>'
      +'<div class="sum" style="border:0;margin:0;padding:0"><div><span>שירות</span><b>'+esc(v.svc)+'</b></div><div><span>מתי</span><b>'+esc(v.when)+'</b></div>'+(v.res?'<div><span>מקום</span><b>'+esc(v.res)+'</b></div>':'')+'<div><span>משך</span><b>'+v.dur+' דקות</b></div>'
      +(v.addons&&v.addons.length?'<div><span>תוספות</span><b>'+v.addons.map(function(a){return esc(a.name)+(a.n>1?' ×'+a.n:'')}).join(', ')+'</b></div>':'')+(v.price>0?'<div class="tot"><span>סכום</span><span>'+nis(v.price)+'</span></div>':'')+(v.address?'<div><span>כתובת</span><b>'+esc(v.address)+'</b></div>':'')+'</div>'
-     +(due>0&&v.payUrl&&v.status!=='cancelled'?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><a class="btn w" href="'+esc(v.payUrl)+'" target="_blank" rel="noopener">לתשלום</a>':'')
+     +(due>0&&v.payMode==='site'&&['held','pending','confirmed'].indexOf(v.status)>-1?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><button class="btn w" id="payb" type="button">לתשלום בכרטיס אשראי</button>':'')
+     +(due>0&&v.payMode!=='site'&&v.payUrl&&v.status!=='cancelled'?'<p class="hint">נותר לתשלום: <b>'+nis(due)+'</b></p><a class="btn w" href="'+esc(v.payUrl)+'" target="_blank" rel="noopener">לתשלום</a>':'')
      +'<div class="row" style="margin-top:14px"><button class="btn sec" id="ics" type="button">הוספה ליומן</button>'+(v.canCancel?'<button class="btn bad" id="can" type="button">ביטול התור</button>':'')+'</div>'
      +(!v.canCancel&&['confirmed','pending','held'].indexOf(v.status)>-1?'<p class="hint">ביטול דרך הקישור אפשרי עד '+v.cancelH+' שעות לפני התור. לשינוי אפשר ליצור קשר עם העסק.</p>':'')
      +'<div id="msg"></div></div><a class="btn sec w" href="/book/'+esc(SLUG)+'">להזמנת תור נוסף</a>');
     $('ics').onclick=function(){icsDl(M,K)};
+    var pb=$('payb');if(pb)pb.onclick=function(){pb.disabled=true;call({a:'paytx',m:M,k:K}).then(function(t){pb.disabled=false;if(t.error||!t.tx)return flashMsg(t.error==='expired'?'זמן השמירה של התור הסתיים. אפשר לקבוע תור חדש.':'התשלום לא זמין כרגע.');payScreen({id:M,k:K,tx:t.tx,due:t.due,name:t.name,phone:t.phone,email:t.email})})};
     var c=$('can');if(c)c.onclick=function(){if(!confirm('לבטל את התור?'))return;c.disabled=true;call({a:'cancel',m:M,k:K}).then(function(r){if(r.error)return $('msg').innerHTML='<div class="err">'+(r.error==='late'?'חלף זמן הביטול האפשרי.':'הביטול לא הצליח. נסו שוב.')+'</div>',c.disabled=false;viewMode()})}
   })}
 function icsDl(m,k){fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a:'ics',s:SLUG,m:m,k:k})}).then(function(r){return r.blob()}).then(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='appointment.ics';a.click()})}
@@ -196,9 +198,10 @@ function s4(){ST.step=4;var s=svc(),o=ST.time,c=ST.cust,fm=s.form&&s.form.fields
   var a=addTotal(),pr=priceNow(),lines=[['שירות',s.name],['מתי',dm(ST.day)+' · '+wd(ST.day)+' · '+o.t],['משך',(ST.dur+a.min)+' דקות']];
   if(s.alloc==='group'&&ST.group&&grp(ST.group))lines.push(['מקום',grp(ST.group).name]);if(s.alloc==='pick'&&ST.res&&resv(ST.res))lines.push(['מקום',resv(ST.res).name]);
   h+='<div class="card"><div class="sum" style="border:0;margin:0;padding:0">'+lines.map(function(l){return '<div><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'}).join('')+addList(s).filter(function(x){return ST.add[x.id]}).map(function(x){return '<div><span>'+esc(x.name)+(ST.add[x.id]>1?' ×'+ST.add[x.id]:'')+'</span><span></span></div>'}).join('')+(pr>0?'<div class="tot"><span>סכום</span><span>'+nis(pr)+'</span></div>':'')+'</div>'
-   +(s.deposit&&pr>0?'<p class="hint">מקדמה: '+nis(s.deposit.t==='pct'?pr*s.deposit.v/100:Math.min(pr,s.deposit.v))+'</p>':'')+(s.approval?'<p class="hint">התור יאושר על ידי העסק.</p>':'')+(P.pay.text?'<p class="hint">'+esc(P.pay.text)+'</p>':'')+'<div id="msg"></div></div>';
-  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="go" type="button" style="flex:1">'+(s.approval?'שליחת בקשה':'קביעת התור')+'</button></div></div>');
-  $('bk').onclick=function(){grab();s3()};$('go').onclick=submit}
+   +(s.deposit&&pr>0?'<p class="hint">מקדמה: '+nis(s.deposit.t==='pct'?pr*s.deposit.v/100:Math.min(pr,s.deposit.v))+'</p>':'')+(s.approval?'<p class="hint">התור יאושר על ידי העסק.</p>':'')+(P.pay.text?'<p class="hint">'+esc(P.pay.text)+'</p>':'')+(paysSite()?'<p class="hint">בשלב הבא משלמים בכרטיס אשראי, והתור נשמר לך בזמן התשלום.</p>':'')+'<div id="msg"></div></div>';
+  shell(h,'<div class="bar"><div class="in"><button class="btn sec" id="bk" type="button">חזרה</button><button class="btn" id="go" type="button" style="flex:1">'+(paysSite()?'להמשך לתשלום':s.approval?'שליחת בקשה':'קביעת התור')+'</button></div></div>');
+  $('bk').onclick=function(){grab();s3()};$('go').onclick=submit;if(paysSite()&&!P.pay.ready){$('go').disabled=true;$('msg').innerHTML='<div class="err">התשלום באתר לא זמין כרגע. אפשר ליצור קשר עם העסק.</div>'}}
+function paysSite(){return P.pay.mode==='site'&&P.pay.require&&P.pay.require!=='none'}
 function grab(){var s=svc(),fm=s.form&&s.form.fields||[];ST.cust={name:$('cn').value,phone:$('cp').value,email:$('ce').value};
   fm.forEach(function(f){var id='q_'+f.id;if(f.type==='multi')ST.ans[f.id]=[].filter.call(document.querySelectorAll('[data-m="'+f.id+'"]'),function(x){return x.checked}).map(function(x){return x.value});
     else if(f.type==='yn'){var y=document.querySelector('[data-yn="'+f.id+'"]:checked');ST.ans[f.id]=y?y.value:''}else if(f.type==='check')ST.ans[f.id]=document.querySelector('[data-c="'+f.id+'"]').checked?'כן':'';else ST.ans[f.id]=$(id).value});
@@ -209,16 +212,43 @@ function submit(){grab();var s=svc(),m=$('msg'),bad=function(t,el){m.innerHTML='
   for(var j=0;j<P.consents.length;j++){var k=P.consents[j];if(k.req&&!ST.con[k.id])return bad('כדי להמשיך צריך לאשר: '+k.text.slice(0,70))}
   $('go').disabled=true;$('go').textContent='קובעים…';
   call({a:'book',svc:ST.svc,start:ST.day+' '+ST.time.t,group:ST.group||undefined,res:ST.res||undefined,dur:ST.dur,addons:addArr(),name:c.name,phone:c.phone,email:c.email,consent:Object.keys(ST.con).filter(function(x){return ST.con[x]}),answers:ST.ans,hp:$('hp').value}).then(function(r){
-    if(r.error){$('go').disabled=false;$('go').textContent=s.approval?'שליחת בקשה':'קביעת התור';
+    if(r.error){$('go').disabled=false;$('go').textContent=paysSite()?'להמשך לתשלום':s.approval?'שליחת בקשה':'קביעת התור';
       if(r.error==='taken'){ST.err='מישהו הקדים אתכם והשעה נתפסה. בחרו שעה אחרת.';ST.time=null;ST.days=null;return loadDays()}
-      var t={max:'יש כבר מספר תורים עתידיים על המספר הזה. אפשר לבטל תור קיים או ליצור קשר עם העסק.',rate:'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',consent:'נא לאשר את התנאים.',answer:'נא למלא את כל שדות החובה.',phone:'מספר הטלפון לא תקין.',email:'כתובת המייל לא תקינה.',net:'תקלת תקשורת. נסו שוב.'}[r.error]||'לא הצלחנו לקבוע את התור. נסו שוב.';return bad(t)}
+      var t={max:'יש כבר מספר תורים עתידיים על המספר הזה. אפשר לבטל תור קיים או ליצור קשר עם העסק.',rate:'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.',consent:'נא לאשר את התנאים.',answer:'נא למלא את כל שדות החובה.',phone:'מספר הטלפון לא תקין.',email:'כתובת המייל לא תקינה.',net:'תקלת תקשורת. נסו שוב.',payoff:'התשלום באתר לא זמין כרגע. אפשר ליצור קשר עם העסק.'}[r.error]||'לא הצלחנו לקבוע את התור. נסו שוב.';return bad(t)}
     try{localStorage.setItem('bk-'+SLUG,JSON.stringify(ST.cust))}catch(e){}
+    if(r.payNow&&r.tx)return payScreen({id:r.id,k:r.k,tx:r.tx,due:r.due,hold:r.hold,name:ST.cust.name,phone:ST.cust.phone,email:ST.cust.email});
     done(r)})}
 function done(r){var due=r.pay&&r.pay.url,h='<div class="card"><div class="ok"><div class="big">'+(r.status==='confirmed'?'✓':'⏳')+'</div><h2>'+(r.status==='confirmed'?'התור נקבע!':r.status==='held'?'התור שמור לכם, נשאר לשלם':'הבקשה נשלחה')+'</h2><p style="margin:6px 0 0"><b>'+esc(r.svc)+'</b><br>'+esc(r.start)+(r.res?'<br>'+esc(r.res):'')+'</p>'+(r.status==='pending'?'<p class="hint">נעדכן אתכם כשהעסק יאשר.</p>':'')+'</div>'
   +(due&&r.due>0?'<p style="margin:14px 0 6px">לתשלום: <b>'+nis(r.due)+'</b></p><a class="btn w" href="'+esc(r.pay.url)+'" target="_blank" rel="noopener">מעבר לתשלום</a>':'')
   +'<div class="row" style="margin-top:14px"><button class="btn sec" id="ics" type="button" style="flex:1">הוספה ליומן</button><a class="btn sec" href="'+esc(r.link)+'" style="flex:1">צפייה וביטול</a></div><p class="hint" style="text-align:center">שלחנו את הקישור גם בהודעה.</p></div>';
   shell(h);$('ics').onclick=function(){icsDl(r.id,r.k)};window.scrollTo(0,0)}
 
+
+/* ===== תשלום בכרטיס אשראי דרך האתר (טופס נדרים פלוס המוטמע) ===== */
+function flashMsg(t){var m=$('msg');if(m)m.innerHTML='<div class="err">'+esc(t)+'</div>'}
+function hh(d){try{return new Date(d).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
+function payScreen(o){
+  var ready=false,busy=false;if(PAYH){window.removeEventListener('message',PAYH);PAYH=null}
+  shell('<div class="card"><h2>תשלום</h2><p style="margin:0">סכום לתשלום: <b style="font-size:20px">'+nis(o.due)+'</b></p>'+(o.hold?'<p class="hint">התור שמור לך עד '+hh(o.hold)+'.</p>':'')
+    +'<iframe id="frame" title="טופס תשלום מאובטח" src="https://www.matara.pro/nedarimplus/iframe?language=he" style="width:100%;border:0;min-height:430px"></iframe>'
+    +'<label class="f" style="margin-top:8px"><span>תעודת זהות של בעל הכרטיס <small class="hint">(אם הכרטיס דורש)</small></span><input id="zo" inputmode="numeric" dir="ltr" autocomplete="off"></label>'
+    +'<div id="pmsg" class="hint" role="status" style="margin-top:8px">טוענים את טופס התשלום…</div></div>','<div class="bar"><div class="in"><button class="btn" id="pgo" type="button" style="flex:1" disabled>לתשלום '+nis(o.due)+'</button></div></div>');
+  var frame=$('frame'),pm=$('pmsg'),go=$('pgo'),post=function(d){frame.contentWindow&&frame.contentWindow.postMessage(d,'*')};
+  var say=function(t,bad){pm.textContent=t;pm.style.color=bad?'var(--bad)':''};
+  frame.addEventListener('load',function(){post({Name:'GetHeight'})});
+  setTimeout(function(){if(!ready)say('טופס התשלום לא נטען. נסו לרענן את הדף.',true)},12000);
+  PAYH=function(e){if(!/^https:\/\/(www\.)?matara\.pro$/.test(e.origin))return;var d=e.data;if(!d||!d.Name)return;
+    if(d.Name==='Height'){ready=true;frame.style.height=Math.max(430,parseInt(d.Value,10)+30)+'px';say('ממלאים את פרטי הכרטיס ולוחצים על כפתור התשלום.');go.disabled=false;resize()}
+    else if(d.Name==='TransactionResponse'){busy=false;go.disabled=false;var v=d.Value||{};
+      if(v.Status==='Error'){var em=String(v.Message||'');say(/zeout/i.test(em)?'לכרטיס הזה נדרש מספר תעודת זהות של בעל הכרטיס.':(em||'התשלום לא עבר. בדקו את הפרטים ונסו שוב.'),true)}
+      else{window.removeEventListener('message',PAYH);PAYH=null;go.disabled=true;say('התשלום התקבל. מאשרים את התור…');waitConfirm(o,0)}}};
+  window.addEventListener('message',PAYH);
+  go.onclick=function(){if(busy||!ready)return;busy=true;go.disabled=true;say('מעבד את התשלום…');post({Name:'FinishTransaction2',Value:Object.assign({},o.tx,{Zeout:$('zo').value.replace(/\D/g,''),FirstName:o.name||'',LastName:'',Phone:o.phone||'',Mail:o.email||''})})};
+}
+/* ההודעה מנדרים מגיעה לשרת בנפרד מהדפדפן, ולכן מחכים עד שהתור מתעדכן */
+function waitConfirm(o,n){call({a:'view',m:o.id,k:o.k}).then(function(v){
+  if(v&&!v.error&&(v.status!=='held'||(v.pay&&v.pay.paid>0)||n>=15)){M=o.id;K=o.k;return viewMode()}
+  setTimeout(function(){waitConfirm(o,n+1)},2000)})}
 /* ===== פתיחה ===== */
 function start(){
   if(!SLUG){app.innerHTML='<div class="wrap"><div class="card" style="margin-top:60px;text-align:center"><h2>זימון תורים</h2><p class="hint">הכניסו כתובת של עסק, או הצטרפו כעסק חדש.</p><a class="btn" href="/book-manage">לניהול התורים של העסק</a></div></div>';return}

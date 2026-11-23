@@ -33,7 +33,7 @@ function cleanPlans(L) {
     return { id, name: clean(p.name, 60), mode: PLAN_MODES.includes(p.mode) ? p.mode : 'none', monthly: num(p.monthly, 0, 100000, 0), perBooking: num(p.perBooking, 0, 10000, 0), pct: num(p.pct, 0, 100, 0), pub: p.pub !== false, on: p.on !== false, note: clean(p.note, 300) };
   }).filter(p => p && p.name);
 }
-async function site() { const s = (await loadSetting('book').catch(() => ({}))) || {}; return { open: s.open === true, sms: s.sms === true, note: clean(s.note, 600), max: num(s.max, 1, 200, 5), plans: cleanPlans(s.plans) }; }
+async function site() { const s = (await loadSetting('book').catch(() => ({}))) || {}; return { open: s.open === true, sms: s.sms === true, note: clean(s.note, 600), max: num(s.max, 1, 200, 5), sitePay: s.sitePay === true, plans: cleanPlans(s.plans) }; }
 
 /* ===== ניקוי הגדרות ===== */
 function cleanHours(h) {
@@ -63,7 +63,7 @@ function cleanBizCfg(c, old) {
     shabbat: { on: sh.on !== false, yt: sh.yt !== false, before: num(sh.before, 0, 180, 20), after: num(sh.after, 0, 180, 0) },
     place: pl.lat != null && pl.lng != null && isFinite(+pl.lat) && isFinite(+pl.lng) ? { lat: num(pl.lat, -90, 90, IL.lat), lng: num(pl.lng, -180, 180, IL.lng), il: pl.il !== false, tz: K.TZ } : {},
     consents: (Array.isArray(c.consents) ? c.consents : []).slice(0, 6).map((x, i) => ({ id: 'c' + (i + 1), text: clean(x && x.text, 400), link: url(x && x.link), req: !x || x.req !== false, mkt: !!(x && x.mkt) })).filter(x => x.text),
-    pay: { mode: ['none', 'link'].includes(py.mode) ? py.mode : 'none', url: url(py.url), text: clean(py.text, 400), require: ['none', 'deposit', 'full'].includes(py.require) ? py.require : 'none', holdMin: num(py.holdMin, 0, 1440, 0) },
+    pay: { mode: ['none', 'link', 'site'].includes(py.mode) ? py.mode : 'none', url: url(py.url), text: clean(py.text, 400), require: ['none', 'deposit', 'full'].includes(py.require) ? py.require : 'none', holdMin: num(py.holdMin, 0, 1440, 0) },
     notify: { email: nt.email !== false, owner: nt.owner !== false, sms: nt.sms === true, remind: nt.remind !== false },
     cancelH: num(c.cancelH, 0, 720, 24), maxFuture: num(c.maxFuture, 1, 50, 6),
     theme: { color: color(th.color) || '#1e5a63', color2: color(th.color2) || '#c9a24b', mode: th.mode === 'dark' ? 'dark' : 'light', logo: url(th.logo), banner: url(th.banner), radius: [0, 8, 14, 22].includes(+th.radius) ? +th.radius : 14 },
@@ -135,7 +135,7 @@ function pubView(B, S) {
     svcs, groups: B.groups.filter(g => g.active !== false && usedGr.has(g.id)).map(g => ({ id: g.id, name: g.name, descr: g.descr || '', img: g.img || '' })),
     res: B.res.filter(r => r.active !== false && usedRes.has(r.id)).map(r => ({ id: r.id, name: r.name, descr: r.descr || '', img: r.img || '', group_id: r.group_id })),
     addons: B.addons.filter(a => a.active !== false).map(a => ({ id: a.id, name: a.name, descr: a.descr || '', img: a.img || '', price: a.cfg.price, per: a.cfg.per, unit: a.cfg.unit, max: a.cfg.max, addMin: a.cfg.addMin, req: !!a.cfg.req, def: !!a.cfg.def })),
-    consents: c.consents || [], pay: { mode: (c.pay || {}).mode, require: (c.pay || {}).require, text: (c.pay || {}).text }, cancelH: c.cancelH, maxAhead: c.maxAhead, sms: !!(S && S.sms && (c.notify || {}).sms)
+    consents: c.consents || [], pay: { mode: (c.pay || {}).mode, require: (c.pay || {}).require, text: (c.pay || {}).text, ready: (c.pay || {}).mode !== 'site' || !!(S && S.sitePay && require('./_auction_pay').siteNed()) }, cancelH: c.cancelH, maxAhead: c.maxAhead, sms: !!(S && S.sms && (c.notify || {}).sms)
   };
 }
 
@@ -270,9 +270,11 @@ async function createAppt(B, b, opt) {
   const order = (!opt.force && sc.alloc === 'pick') || +b.res > 0 ? cand : K.pick(cand, R, sc.autoRule, load);
   /* מקסימום תורים עתידיים לאותו טלפון */
   if (!opt.force) { const f = await db('book_appt?biz_id=eq.' + B.biz.id + '&phone=eq.' + enc(phone) + '&status=in.(held,pending,confirmed)&start_at=gte.' + enc(new Date().toISOString()) + '&select=id&limit=60'); if ((f || []).length >= (c.maxFuture || 6)) return [429, { error: 'max' }]; }
-  const py = c.pay || {}, linkPay = py.mode === 'link' && py.require && py.require !== 'none';
-  let status = opt.force ? (['pending', 'confirmed'].includes(b.status) ? b.status : 'confirmed') : (sc.approval || linkPay ? 'pending' : 'confirmed'), hold = null;
-  if (!opt.force && linkPay && !sc.approval && py.holdMin > 0) { status = 'held'; hold = new Date(Date.now() + py.holdMin * 60000).toISOString(); }
+  const py = c.pay || {}, linkPay = py.mode === 'link' && py.require && py.require !== 'none', sitePay = py.mode === 'site' && py.require && py.require !== 'none';
+  if (sitePay && !opt.force) { const SS = await site(); if (!SS.sitePay || !require('./_auction_pay').siteNed()) return [503, { error: 'payoff' }]; }
+  let status = opt.force ? (['pending', 'confirmed'].includes(b.status) ? b.status : 'confirmed') : (sitePay ? 'held' : sc.approval || linkPay ? 'pending' : 'confirmed'), hold = null;
+  if (!opt.force && sitePay) hold = new Date(Date.now() + (py.holdMin > 0 ? py.holdMin : 15) * 60000).toISOString();
+  else if (!opt.force && linkPay && !sc.approval && py.holdMin > 0) { status = 'held'; hold = new Date(Date.now() + py.holdMin * 60000).toISOString(); }
   const meta = require('./_lib').reqMeta(opt.req), at = new Date().toISOString();
   const consent = (c.consents || []).filter(x => (Array.isArray(b.consent) ? b.consent : []).includes(x.id)).map(x => ({ id: x.id, text: x.text, link: x.link || '', v: true, at, ip: meta ? meta.ip : '' }));
   const marketing = (c.consents || []).some(x => x.mkt && (Array.isArray(b.consent) ? b.consent : []).includes(x.id));
@@ -282,16 +284,54 @@ async function createAppt(B, b, opt) {
     const row = { id, biz_id: B.biz.id, svc_id: svc.id, res_id: r.id, group_id: r.group_id || null, start_at: new Date(startMs).toISOString(), end_at: new Date(endMs).toISOString(),
       busy_start: new Date(startMs - (sc.bb || 0) * 60000).toISOString(), busy_end: new Date(endMs + (sc.ba || 0) * 60000).toISOString(), status, hold_until: hold, dur: P.total,
       price: opt.force && b.price != null && b.price !== '' ? num(b.price, 0, 1e6, q.total) : q.total, detail: q, addons: q.lines.filter(l => l.k === 'addon').map(l => ({ id: l.id, name: l.label, n: l.n, amt: l.amt })),
-      answers: AN.list.map(a => ({ id: a.id, label: a.label, v: a.v })), consent, pay: { mode: py.mode || 'none', due: linkPay ? (py.require === 'full' ? q.total : q.deposit || q.total) : (q.deposit || 0), paid: 0 },
+      answers: AN.list.map(a => ({ id: a.id, label: a.label, v: a.v })), consent, pay: { mode: py.mode || 'none', due: linkPay || sitePay ? (py.require === 'full' ? q.total : q.deposit || q.total) : (q.deposit || 0), paid: 0 },
       source: opt.force ? 'manual' : (b.source === 'phone' ? 'phone' : 'web'), name, phone, email: email || null, note: opt.force ? clean(b.note, 600) : '', token: rid(12), remind: {} };
     try { const out = await db('book_appt', { method: 'POST', body: JSON.stringify(row) }); appt = (out && out[0]) || row; appt._q = q; appt._res = r; break; }
     catch (e) { if (!conflict(e)) throw e; }
   }
   if (!appt) return [409, { error: 'taken' }];
   try { const cid = await upsertCust(B.biz, { name, phone, email, answers: AN.list, marketing }); if (cid) { await db('book_appt?id=eq.' + appt.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cust_id: cid }) }); appt.cust_id = cid; } } catch (e) { console.error('book cust', e.message); }
-  notifyBooked(B, svc, appt).catch(e => console.error('book notify', e.message));
+  if (!(sitePay && !opt.force)) notifyBooked(B, svc, appt).catch(e => console.error('book notify', e.message));
   const showRes = sc.showRes !== false || opt.force;
-  return [200, { id: appt.id, k: appt.token, status, start: when(startMs), svc: svc.name, res: showRes ? appt._res.name : '', price: appt.price, due: appt.pay.due, pay: linkPay ? { url: py.url, text: py.text } : null, link: linkOf(B, appt), hold: hold }];
+  const out = { id: appt.id, k: appt.token, status, start: when(startMs), svc: svc.name, res: showRes ? appt._res.name : '', price: appt.price, due: appt.pay.due, pay: linkPay ? { url: py.url, text: py.text } : null, link: linkOf(B, appt), hold: hold };
+  if (sitePay && !opt.force) { out.tx = siteTx(B, svc, appt); out.payNow = true; }
+  return [200, out];
+}
+
+/* ===== תשלום דרך האתר (חשבון נדרים פלוס של האתר). אין העברה אוטומטית: ההעברה לעסק ידנית, ונרשמת בספר החשבונות ===== */
+function siteTx(B, svc, a) {
+  const AP = require('./_auction_pay'), acc = AP.siteNed(); if (!acc) return null;
+  return AP.nedTx(acc, { slug: 'book-' + B.biz.slug }, { id: a.id, amount: Math.round((+a.pay.due - (+a.pay.paid || 0)) * 100) / 100, email: a.email || '' }, B.biz.name + ' · ' + (svc ? svc.name : ''), { p2: 'book:' + B.biz.slug });
+}
+const r2m = v => Math.round(+v * 100) / 100;
+/* העמלה לפי המסלול של העסק: קבועה לתור + אחוזים מהסכום ששולם */
+async function feeFor(B, paid) { const pl = (await site()).plans.find(p => p.id === (B.biz.cfg || {}).plan); return pl && pl.mode === 'site' ? r2m(pl.perBooking + paid * pl.pct / 100) : 0; }
+async function nedPaid(p) {
+  const id = String(p.Param1 || p.param1 || ''); if (!/^bk[0-9a-f]{18}$/.test(id)) return { skipped: 'id' };
+  const L = await db('book_appt?id=eq.' + id + '&select=*&limit=1'), a = L && L[0]; if (!a) return { error: 'no appt' };
+  const ok = /^(ok|1|true|success)$/i.test(String(p.Status || p.status || '')), txn = String(p.TransactionId || p.TransactionID || p.Id || p.ID || '');
+  if (!ok) return { ok: true, failed: true };
+  const pay = a.pay || {}; if (txn && pay.txns && pay.txns.includes(txn)) return { already: true };
+  const B = await load(String(a.biz_id), true); if (!B) return { error: 'no biz' };
+  const amt = r2m(Number(p.Amount || p.amount || 0) || ((+pay.due || 0) - (+pay.paid || 0))), paid = r2m((+pay.paid || 0) + amt);
+  const fee = pay.feeDone ? 0 : await feeFor(B, amt), svc = B.svcs.find(s => s.id === a.svc_id), full = paid + 0.001 >= (+pay.due || 0);
+  const np = { ...pay, paid, at: new Date().toISOString(), txns: [...(pay.txns || []), txn].filter(Boolean), feeDone: true, fee: r2m((+pay.fee || 0) + fee), site: true };
+  await db('book_pay', { method: 'POST', body: JSON.stringify({ biz_id: a.biz_id, appt_id: a.id, kind: 'payment', amount: amt, fee, txn, note: (a.name || '') + ' · ' + (svc ? svc.name : '') }) });
+  let status = a.status, conflictErr = false;
+  if (full && ['held', 'expired'].includes(a.status)) status = svc && svc.cfg.approval ? 'pending' : 'confirmed';
+  try { await db('book_appt?id=eq.' + enc(a.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status, hold_until: null, pay: np, updated_at: new Date().toISOString() }) }); }
+  catch (e) { if (!conflict(e)) throw e; conflictErr = true; np.conflict = true; await db('book_appt?id=eq.' + enc(a.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pay: np }) }); }
+  if (conflictErr) { await notifyOwner(B, 'תשלום על תור שכבר נתפס: ' + a.name, 'התקבל תשלום של ' + amt + ' ₪ מ' + a.name + ' (' + a.phone + ') אבל זמן השמירה פג והשעה נתפסה. צריך להחזיר ללקוח את הכסף או לתאם איתו תור אחר.'); return { ok: true, conflict: true }; }
+  if (status !== a.status) notifyBooked(B, svc, { ...a, status, pay: np }).catch(e => console.error('book notify', e.message));
+  return { ok: true };
+}
+async function notifyOwner(B, subject, text) {
+  try { const { sendMail, frame, escH } = require('./_mail'), to = [B.biz.email, ...(((B.biz.cfg || {}).staff || []).filter(x => x.role === 'manager').map(x => x.email))].filter(Boolean); if (to.length) await sendMail({ to: to[0], ...(to.length > 1 ? { cc: to.slice(1) } : {}), subject, html: frame({ title: escH(subject), body: escH(text), foot: '' }), text }, 'book'); } catch (e) { console.error('book owner mail', e.message); }
+}
+function ledgerSum(rows) {
+  const t = { gross: 0, fees: 0, refunded: 0, refundFees: 0, payouts: 0 };
+  (rows || []).forEach(r => { const a = +r.amount || 0, f = +r.fee || 0; if (r.kind === 'payment') { t.gross += a; t.fees += f; } else if (r.kind === 'refund') { t.refunded += a; t.refundFees += f; } else if (r.kind === 'payout') t.payouts += a; });
+  Object.keys(t).forEach(k => { t[k] = r2m(t[k]); }); t.net = r2m(t.gross - t.fees - (t.refunded - t.refundFees)); t.balance = r2m(t.net - t.payouts); return t;
 }
 
 /* ===== הודעות ===== */
@@ -342,7 +382,7 @@ async function getByToken(B, id, k) {
 }
 function apptPub(B, a) {
   const svc = B.svcs.find(s => s.id === a.svc_id), res = B.res.find(r => r.id === a.res_id), st = Date.parse(a.start_at), cH = (B.biz.cfg || {}).cancelH || 0;
-  return { id: a.id, status: a.status, svc: svc ? svc.name : '', res: res && !(svc && (svc.cfg || {}).showRes === false) ? res.name : '', when: when(st), start: a.start_at, dur: a.dur, price: a.price, addons: a.addons || [], name: a.name, canCancel: ['pending', 'confirmed', 'held'].includes(a.status) && Date.now() < st - cH * 3600e3, cancelH: cH, pay: a.pay || {}, payUrl: ((B.biz.cfg || {}).pay || {}).url || '', address: ((B.biz.cfg || {}).texts || {}).address || '' };
+  return { id: a.id, status: a.status, svc: svc ? svc.name : '', res: res && !(svc && (svc.cfg || {}).showRes === false) ? res.name : '', when: when(st), start: a.start_at, dur: a.dur, price: a.price, addons: a.addons || [], name: a.name, canCancel: ['pending', 'confirmed', 'held'].includes(a.status) && Date.now() < st - cH * 3600e3, cancelH: cH, pay: a.pay || {}, payMode: (a.pay || {}).mode || 'none', payUrl: ((B.biz.cfg || {}).pay || {}).url || '', address: ((B.biz.cfg || {}).texts || {}).address || '' };
 }
 function ics(B, a) {
   const f = ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''), svc = B.svcs.find(s => s.id === a.svc_id), esc = s => String(s || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
@@ -381,7 +421,11 @@ function cleanItem(kind, it, B) {
   if (kind === 'form') return { name: base.name, fields: cleanFields(it.fields) };
 }
 /* מסלול בלי סליקה: לא ניתן להפעיל תשלום באתר */
-async function enforcePlan(cfg) { const pl = (await site()).plans.find(p => p.id === cfg.plan); if (pl && pl.mode === 'none' && cfg.pay) cfg.pay = { ...cfg.pay, mode: 'none', require: 'none' }; }
+async function enforcePlan(cfg) {
+  const pl = (await site()).plans.find(p => p.id === cfg.plan); if (!pl || !cfg.pay) return;
+  const off = () => { cfg.pay = { ...cfg.pay, mode: 'none', require: 'none' }; };
+  if (pl.mode === 'none') off(); else if (pl.mode === 'own' && cfg.pay.mode === 'site') off(); else if (pl.mode === 'site' && cfg.pay.mode === 'link') off();
+}
 function fullView(B, role) {
   const c = B.biz.cfg || {}; return { biz: { id: B.biz.id, slug: B.biz.slug, name: B.biz.name, status: B.biz.status, email: B.biz.email, cfg: canEdit(role) ? c : { ...c, staff: undefined }, created_at: B.biz.created_at }, groups: B.groups, res: B.res, svcs: B.svcs, addons: B.addons, forms: B.forms, role };
 }
@@ -468,6 +512,11 @@ const MAN = async (u, B, b) => {
       await db('book_appt?cust_id=eq.' + id + '&biz_id=eq.' + B.biz.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cust_id: null }) });
       await db('book_cust?id=eq.' + id + '&biz_id=eq.' + B.biz.id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return [200, { ok: true }];
     }
+    case 'ledger': {
+      if (!canEdit(role)) return [403, { error: 'forbidden' }];
+      const rows = (await db('book_pay?biz_id=eq.' + B.biz.id + '&order=id.desc&limit=2000')) || [], pl = (await site()).plans.find(p => p.id === (B.biz.cfg || {}).plan);
+      return [200, { totals: ledgerSum(rows), items: rows, plan: pl ? { name: pl.name, mode: pl.mode, perBooking: pl.perBooking, pct: pl.pct, monthly: pl.monthly } : null }];
+    }
     case 'waits': { if (!canWork(role)) return [403, { error: 'forbidden' }]; return [200, { items: await db('book_wait?biz_id=eq.' + B.biz.id + '&order=day.asc,id.asc&limit=300') }]; }
     case 'waitDel': { if (!canWork(role)) return [403, { error: 'forbidden' }]; await db('book_wait?id=eq.' + (+b.id) + '&biz_id=eq.' + B.biz.id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); return [200, { ok: true }]; }
   }
@@ -495,6 +544,13 @@ module.exports = async (req, res) => {
       await db('book_appt?id=eq.' + enc(ap.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'cancelled', updated_at: new Date().toISOString() }) });
       notifyWait(B, ap).catch(() => {}); return json(res, 200, { ok: true });
     }
+    if (a === 'paytx') {
+      const B = await load(b.s); if (!B) return json(res, 404, { error: 'none' }); const ap = await getByToken(B, b.m, b.k); if (!ap) return json(res, 404, { error: 'none' });
+      const SS = await site(); if ((ap.pay || {}).mode !== 'site' || !SS.sitePay || !['held', 'pending', 'confirmed'].includes(ap.status)) return json(res, 400, { error: 'nopay' });
+      if ((+ap.pay.due || 0) - (+ap.pay.paid || 0) <= 0.001) return json(res, 400, { error: 'paid' });
+      if (ap.status === 'held' && ap.hold_until && Date.parse(ap.hold_until) < Date.now()) return json(res, 400, { error: 'expired' });
+      return json(res, 200, { tx: siteTx(B, B.svcs.find(x => x.id === ap.svc_id), ap), due: r2m(+ap.pay.due - (+ap.pay.paid || 0)), name: ap.name, phone: ap.phone, email: ap.email || '' });
+    }
     if (a === 'wait') {
       if (b.hp) return json(res, 200, { ok: true }); if (limited(req, 10, 'w')) return json(res, 429, { error: 'rate' });
       const B = await load(b.s); if (!B || B.biz.status !== 'open') return json(res, 404, { error: 'closed' });
@@ -505,19 +561,36 @@ module.exports = async (req, res) => {
     /* בעל האתר */
     if (a === 'site') {
       const u = await getUser(req); if (!isAdmin(u)) return json(res, 403, { error: 'forbidden' });
-      if (b.set) { const o = b.set; await saveSetting('book', { open: o.open === true, sms: o.sms === true, note: clean(o.note, 600), max: num(o.max, 1, 200, 5), plans: Array.isArray(o.plans) ? cleanPlans(o.plans) : (await site()).plans }); }
-      return json(res, 200, { ...(await site()), admin: true });
+      if (b.set) { const o = b.set; await saveSetting('book', { open: o.open === true, sms: o.sms === true, note: clean(o.note, 600), max: num(o.max, 1, 200, 5), plans: Array.isArray(o.plans) ? cleanPlans(o.plans) : (await site()).plans, sitePay: o.sitePay === undefined ? (await site()).sitePay : o.sitePay === true }); }
+      return json(res, 200, { ...(await site()), sitePayReady: !!require('./_auction_pay').siteNed(), admin: true });
     }
     /* צוות העסק */
     const u = await getUser(req); if (!u) return json(res, 401, { error: 'login' });
     if (a === 'plan') { if (!isAdmin(u)) return json(res, 403, { error: 'forbidden' }); const B0 = await load(b.s, true); if (!B0) return json(res, 404, { error: 'none' }); const pid = String(b.plan || ''); if (pid && !(await site()).plans.some(p => p.id === pid)) return json(res, 400, { error: 'plan' }); const n = { ...(B0.biz.cfg || {}), plan: pid }; await enforcePlan(n); await db('book_biz?id=eq.' + B0.biz.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ cfg: n, updated_at: new Date().toISOString() }) }); drop(B0); return json(res, 200, { ok: true }); }
     if (a === 'mine') { const S = await site(); return json(res, 200, { items: await mine(u, b.own === true), canCreate: S.open || isAdmin(u), note: S.note, admin: isAdmin(u) }); }
     if (a === 'create') return out(await create(u, b));
+    if (a === 'ledger' && !b.s) {
+      if (!isAdmin(u)) return json(res, 403, { error: 'forbidden' });
+      const [rows, bl] = await Promise.all([db('book_pay?select=biz_id,kind,amount,fee&limit=50000'), db('book_biz?select=id,slug,name,cfg&limit=500')]), by = new Map();
+      (rows || []).forEach(r => { if (!by.has(r.biz_id)) by.set(r.biz_id, []); by.get(r.biz_id).push(r); });
+      return json(res, 200, { items: (bl || []).filter(x => by.has(x.id)).map(x => ({ slug: x.slug, name: x.name, plan: (x.cfg || {}).plan || '', ...ledgerSum(by.get(x.id)) })) });
+    }
+    if (a === 'payout' || a === 'refund') {
+      if (!isAdmin(u)) return json(res, 403, { error: 'forbidden' }); const B1 = await load(b.s, true); if (!B1) return json(res, 404, { error: 'none' });
+      const amount = r2m(num(b.amount, 0, 1e7, 0)); if (!(amount > 0)) return json(res, 400, { error: 'amount' });
+      if (a === 'payout') { await db('book_pay', { method: 'POST', body: JSON.stringify({ biz_id: B1.biz.id, kind: 'payout', amount, note: clean(b.note, 200) }) }); return json(res, 200, { ok: true }); }
+      const pr = (await db('book_pay?id=eq.' + (+b.id) + '&biz_id=eq.' + B1.biz.id + '&kind=eq.payment&select=*&limit=1'))[0]; if (!pr) return json(res, 404, { error: 'none' });
+      const done = (await db('book_pay?biz_id=eq.' + B1.biz.id + '&appt_id=eq.' + enc(String(pr.appt_id)) + '&kind=eq.refund&select=amount,fee&limit=100')) || [], was = r2m(done.reduce((x, r) => x + +r.amount, 0)); if (amount + was > +pr.amount + 0.001) return json(res, 400, { error: 'over' });
+      const fee = b.refundFee === true ? r2m(Math.min(+pr.fee, +pr.fee * amount / +pr.amount)) : 0;
+      await db('book_pay', { method: 'POST', body: JSON.stringify({ biz_id: B1.biz.id, appt_id: pr.appt_id, kind: 'refund', amount, fee, note: clean(b.note, 200) }) }); return json(res, 200, { ok: true });
+    }
     const B = await load(b.s, true); if (!B) return json(res, 404, { error: 'none' });
     return out(await MAN(u, B, { ...b, _req: req }));
   } catch (e) { console.error('book', e); json(res, 500, { error: 'server error' }); }
 };
 module.exports.remind = remind;
+module.exports.nedPaid = nedPaid;
+module.exports.ledgerSum = ledgerSum;
 module.exports.cleanBizCfg = cleanBizCfg;
 module.exports.cleanSvcCfg = cleanSvcCfg;
 module.exports.readAnswers = readAnswers;

@@ -81,4 +81,4 @@ async function webTx(sale, order, S, desc, opt) {
   if (p === 'kehilot') { if (opt && opt.hk) throw Object.assign(new Error('hk'), { user: 'הוראת קבע אפשרית כרגע רק דרך נדרים פלוס' }); return { provider: 'kehilot', url: await kesherLink(sale, order, desc, opt) }; }
   return null;
 }
-module.exports = { provs, webTx, orgNed, siteNed, orgKesher, kehilotReady, kesherCheck };
+module.exports = { provs, webTx, orgNed, siteNed, orgKesher, kehilotReady, kesherCheck, nedTx };

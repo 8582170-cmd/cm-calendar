@@ -4,6 +4,7 @@
 const assert = require('node:assert');
 const path = require('node:path');
 
+process.env.NEDARIM_MOSAD = '1234567'; process.env.NEDARIM_API_VALID = 'abcdef';
 const { T, sent, SETTINGS, STATE } = require('./_book_mockdb');
 let USER = STATE.user;
 let IPN = 0;
@@ -156,6 +157,41 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   let cf = (await ok({ a: 'get', s: 'centre' })).biz.cfg; assert.strictEqual(cf.plan, pOwn.id, 'שמירת הגדרות לא מוחקת את המסלול'); assert.strictEqual(cf.pay.mode, 'link', 'מסלול עם סליקה מאפשר תשלום');
   await ok({ a: 'pickPlan', s: 'centre', plan: pNone.id }); cf = (await ok({ a: 'get', s: 'centre' })).biz.cfg; assert.strictEqual(cf.pay.mode, 'none', 'מסלול בלי סליקה מכבה תשלום באתר'); assert.strictEqual(cf.pay.require, 'none');
   await bad({ a: 'plan', s: 'centre', plan: pSite.id }, 403, 'forbidden', OWN); await ok({ a: 'plan', s: 'centre', plan: pSite.id }, SA); assert.strictEqual((await ok({ a: 'mine' }, SA)).items[0].plan, pSite.id, 'בעל האתר משייך מסלול גם לא פומבי'); await bad({ a: 'plan', s: 'centre', plan: 'nope' }, 400, 'plan', SA);
+  USER = OWN;
+  /* ===== תשלום דרך האתר: סליקה בחשבון האתר, ספר חשבונות, החזר והעברה ידנית ===== */
+  const cfgNow = async () => (await ok({ a: 'get', s: 'centre' }, OWN)).biz.cfg;
+  await ok({ a: 'plan', s: 'centre', plan: pSite.id }, SA); await ok({ a: 'save', s: 'centre', cfg: { ...(await cfgNow()), pay: { mode: 'site', require: 'full', holdMin: 10 } } }, OWN);
+  assert.strictEqual((await cfgNow()).pay.mode, 'site', 'מסלול סליקה דרך האתר מאפשר מצב site');
+  await bad({ a: 'book', s: 'centre', svc: pick.id, start: day + ' 17:30', res: g.res[0].id, name: 'משלם', phone: '0521110001', consent: ['c1'] }, 503, 'payoff', null);
+  await ok({ a: 'site', set: { sitePay: true } }, SA); assert.strictEqual((await ok({ a: 'site' }, SA)).sitePayReady, true);
+  const payBk = { a: 'book', s: 'centre', svc: appr.id, start: day + ' 17:00', name: 'משלם', phone: '0521110002', consent: ['c1'] };
+  const mailsBefore = sent.mail.length; const spb = await ok(payBk, null);
+  assert.strictEqual(spb.status, 'held'); assert.ok(spb.payNow && spb.tx && spb.tx.Mosad === '1234567', 'מוחזר טופס תשלום'); assert.strictEqual(spb.tx.Param1, spb.id); assert.strictEqual(spb.tx.Amount, String(spb.price), 'הסכום המלא'); assert.ok(spb.hold, 'השעה שמורה');
+  await new Promise(r => setTimeout(r, 30)); assert.strictEqual(sent.mail.length, mailsBefore, 'אין הודעת אישור לפני תשלום');
+  const PM = { s: 'centre', m: spb.id, k: spb.k }; const ptx = await ok({ a: 'paytx', ...PM }, null); assert.strictEqual(ptx.due, spb.price);
+  const BOOKMOD = require('../api/_book'); assert.deepStrictEqual(await BOOKMOD.nedPaid({ Param1: spb.id, Status: 'Error' }), { ok: true, failed: true });
+  assert.strictEqual(T.book_appt.find(a => a.id === spb.id).status, 'held', 'תשלום שנכשל לא מאשר');
+  const cb = await BOOKMOD.nedPaid({ Param1: spb.id, Status: 'OK', Amount: String(spb.price), TransactionId: 'T1' }); assert.strictEqual(cb.ok, true);
+  const apPaid = T.book_appt.find(a => a.id === spb.id); assert.strictEqual(apPaid.status, 'pending', 'שירות שדורש אישור עובר לממתין לאישור אחרי תשלום'); assert.strictEqual(apPaid.pay.paid, spb.price); assert.strictEqual(apPaid.hold_until, null);
+  assert.deepStrictEqual(await BOOKMOD.nedPaid({ Param1: spb.id, Status: 'OK', Amount: String(spb.price), TransactionId: 'T1' }), { already: true }, 'callback כפול לא נרשם פעמיים');
+  await new Promise(r => setTimeout(r, 30)); assert.ok(sent.mail.length > mailsBefore, 'הודעה אחרי תשלום'); await bad({ a: 'paytx', ...PM }, 400, 'paid', null);
+  let led = await ok({ a: 'ledger', s: 'centre' }, OWN);
+  const exFee = Math.round((pSite.perBooking + spb.price * pSite.pct / 100) * 100) / 100;
+  assert.strictEqual(led.totals.gross, spb.price); assert.strictEqual(led.totals.fees, exFee, 'עמלה: קבועה ואחוזים לפי המסלול'); assert.strictEqual(led.totals.balance, Math.round((spb.price - exFee) * 100) / 100); assert.strictEqual(led.plan.mode, 'site');
+  await bad({ a: 'ledger', s: 'centre' }, 403, 'forbidden', CLERK); await bad({ a: 'payout', s: 'centre', amount: 10 }, 403, 'forbidden', OWN);
+  await ok({ a: 'payout', s: 'centre', amount: 100, note: 'העברה בנקאית' }, SA); led = await ok({ a: 'ledger', s: 'centre' }, OWN); assert.strictEqual(led.totals.payouts, 100); assert.strictEqual(led.totals.balance, Math.round((spb.price - exFee - 100) * 100) / 100);
+  const payRow = led.items.find(r => r.kind === 'payment'); await bad({ a: 'refund', s: 'centre', id: payRow.id, amount: spb.price + 1 }, 400, 'over', SA);
+  await ok({ a: 'refund', s: 'centre', id: payRow.id, amount: spb.price, refundFee: true }, SA); led = await ok({ a: 'ledger', s: 'centre' }, OWN); assert.strictEqual(led.totals.net, 0, 'החזר מלא עם החזר עמלה מאפס את הנטו'); assert.strictEqual(led.totals.balance, -100, 'ההעברה שכבר בוצעה נשארת כחוב של העסק');
+  const all = await ok({ a: 'ledger' }, SA); assert.strictEqual(all.items.length, 1); assert.strictEqual(all.items[0].slug, 'centre'); await bad({ a: 'ledger' }, 403, 'forbidden', OWN);
+  /* תשלום אחרי שפג זמן השמירה ושהשעה נתפסה: נרשם, לא מאשר, ומתריעים לעסק */
+  USER = OWN; const pk = { ...payBk, svc: pick.id, res: g.res[0].id, start: day + ' 13:00' }; const ex = await ok({ ...pk, phone: '0521110005', name: 'מאחר' }, null); assert.ok(ex.payNow, 'שירות עם בחירת משאב גם גובה');
+  await bad({ ...pk, phone: '0521110007', name: 'אחר' }, 409, 'taken', null); /* החזקה על אותו משאב */
+  T.book_appt.find(a => a.id === ex.id).hold_until = new Date(Date.now() - 60000).toISOString();
+  await ok({ ...pk, phone: '0521110006', name: 'תופס' }, null); /* מישהו אחר תפס את השעה אחרי שהחזקה פגה */
+  const mails2 = sent.mail.length; const late = await BOOKMOD.nedPaid({ Param1: ex.id, Status: 'OK', Amount: String(ex.price), TransactionId: 'T2' }); assert.strictEqual(late.conflict, true);
+  assert.notStrictEqual(T.book_appt.find(a => a.id === ex.id).status, 'confirmed'); assert.ok(sent.mail.length > mails2, 'התראה לעסק על תשלום בלי תור');
+  /* מסלול בלי site: מצב site מכובה */
+  await ok({ a: 'plan', s: 'centre', plan: pOwn.id }, SA); assert.notStrictEqual((await cfgNow()).pay.mode, 'site', 'מעבר למסלול בלי סליקה דרך האתר מכבה אותה');
   USER = OWN;
   /* ===== ארכיון ומחיקה ===== */
   const del1 = await ok({ a: 'del', s: 'centre', kind: 'svc', id: pick.id }, OWN); assert.strictEqual(del1.archived, true, 'יש היסטוריה: לארכיון');

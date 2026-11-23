@@ -157,3 +157,19 @@ alter table public.book_form enable row level security;
 alter table public.book_cust enable row level security;
 alter table public.book_appt enable row level security;
 alter table public.book_wait enable row level security;
+
+-- ספר חשבונות לתשלומים שנגבו דרך האתר: תשלום (payment), החזר (refund) והעברה ידנית לעסק (payout).
+-- יתרה לעסק = סכום (payment.amount - payment.fee) פחות סכום (refund.amount - refund.fee) פחות סכום payout.amount.
+create table if not exists public.book_pay (
+  id bigserial primary key,
+  biz_id bigint not null references public.book_biz(id) on delete cascade,
+  appt_id text,
+  kind text not null,                 -- payment / refund / payout
+  amount numeric not null default 0,
+  fee numeric not null default 0,     -- עמלת האתר (ב-payment), או עמלה שהוחזרה (ב-refund)
+  txn text,
+  note text,
+  created_at timestamptz default now()
+);
+create index if not exists book_pay_biz on public.book_pay(biz_id, id);
+alter table public.book_pay enable row level security;
