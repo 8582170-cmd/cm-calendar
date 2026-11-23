@@ -105,9 +105,9 @@ async function put(s, obj) {
 const INVF = ['et', 'inv', 'it', 'venue', 'addr', 'rv', 'wl', 'tp', 'gift'];
 async function evIndex(s, o) {
   const c = (o && o.cfg) || {}, P = o && o.paid, inv = INVF.some(k => c[k]);
-  if (!inv && !P) return;
-  const row = { slug: s, title: String(c.t || '').slice(0, 120), date: /^\d{4}-\d{2}-\d{2}$/.test(c.d || '') ? c.d : null, kind: c.et || null, lang: c.lang || 'he',
-    plan: P ? (P.free ? 'free' : 'full') : null, email: (P && P.email) || null, emails: P ? +P.emails || 0 : 0, sms: P ? +P.sms || 0 : 0, calls: P ? +P.calls || 0 : 0, calls_used: P ? +P.callsUsed || 0 : 0,
+  /* גם שעון ספירה רגיל (בלי דף הזמנה) נרשם, עם הסוג clock. המייל: של בעל החבילה, ואם אין, של היוצר אם היה מחובר */
+  const row = { slug: s, title: String(c.t || '').slice(0, 120), date: /^\d{4}-\d{2}-\d{2}$/.test(c.d || '') ? c.d : null, kind: c.et || (inv || P ? null : 'clock'), lang: c.lang || 'he',
+    plan: P ? (P.free ? 'free' : 'full') : null, email: (P && P.email) || (o && o.by) || null, emails: P ? +P.emails || 0 : 0, sms: P ? +P.sms || 0 : 0, calls: P ? +P.calls || 0 : 0, calls_used: P ? +P.callsUsed || 0 : 0,
     disabled: !!o.disabled, updated_at: new Date().toISOString() };
   await db('timer_event?on_conflict=slug', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(row) });
 }
@@ -831,7 +831,8 @@ module.exports = async (req, res) => {
     /* בדף ההזמנות לא יוצרים אירוע חדש בלי חשבון, והאירוע מקושר לחשבון מיד */
     if (b.pg === 'invite') { const u = await require('./_lib').getUser(req).catch(() => null); if (!u || !u.email) return json(res, 401, { error: 'login' }); await require('./_evowners').set(s, u.email).catch(() => {}); }
     const token = crypto.randomBytes(16).toString('hex');
-    await put(s, { cfg, token, created: new Date().toISOString(), ip: (require('./_lib').reqMeta(req) || {}).ip || null });
+    const cu = b.pg === 'invite' ? null : await require('./_lib').getUser(req).catch(() => null);
+    await put(s, { cfg, token, created: new Date().toISOString(), ip: (require('./_lib').reqMeta(req) || {}).ip || null, by: (cu && cu.email) ? String(cu.email).toLowerCase() : undefined });
     return json(res, 200, { ok: true, slug: s, token });
   } catch (e) { console.error('timer', e.message); return json(res, 500, { error: e.message === 'storage' ? 'storage' : 'server' }); }
 };

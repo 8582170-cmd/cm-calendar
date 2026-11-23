@@ -27,11 +27,11 @@ module.exports = async function (b) {
   if (a === 'ev_scan') return module.exports.scan();
   /* לוח בקרה */
   if (a === 'ev_stats') {
-    const L = await db('timer_event?select=slug,date,plan,disabled,emails,calls,calls_used,sms,updated_at&limit=50000').catch(e => ({ err: e.message }));
+    const L = await db('timer_event?select=slug,date,plan,kind,disabled,emails,calls,calls_used,sms,updated_at&limit=50000').catch(e => ({ err: e.message }));
     if (L && L.err) return { setup: true, error: /timer_event|42P01|PGRST205/.test(L.err) ? '' : L.err };
     const t = today(), in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10), wk = new Date(Date.now() - 7 * 864e5).toISOString();
     const S = { total: L.length, full: 0, free: 0, none: 0, upcoming: 0, next30: 0, past: 0, disabled: 0, newWeek: 0, emails: 0, calls: 0, callsUsed: 0, sms: 0 };
-    L.forEach(e => { S[e.plan || 'none']++; if (e.disabled) S.disabled++; if (e.date && e.date >= t) { S.upcoming++; if (e.date <= in30) S.next30++; } else if (e.date) S.past++;
+    L.forEach(e => { if (e.kind === 'clock' && !e.plan) { S.clock = (S.clock || 0) + 1; return; } S[e.plan || 'none']++; if (e.disabled) S.disabled++; if (e.date && e.date >= t) { S.upcoming++; if (e.date <= in30) S.next30++; } else if (e.date) S.past++;
       if (e.updated_at >= wk) S.newWeek++; S.emails += +e.emails || 0; S.calls += +e.calls || 0; S.callsUsed += +e.calls_used || 0; S.sms += +e.sms || 0; });
     const O = await db('orders?select=amount,created_at&plan=eq.event&status=eq.paid&order=created_at.desc&limit=2000').catch(() => null);
     let rev = null; if (Array.isArray(O)) { rev = { total: 0, month: 0, n: O.length }; const m0 = t.slice(0, 7); O.forEach(o => { const v = +o.amount || 0; rev.total += v; if (String(o.created_at || '').slice(0, 7) === m0) rev.month += v; }); }
@@ -45,7 +45,7 @@ module.exports = async function (b) {
     const f = str(b.filter, 20), q = str(b.q, 60).trim().toLowerCase().replace(/[^a-z0-9@._\-א-ת ]/g, ''), page = int(b.page, 0, 1000), per = 50, t = today();
     let w = '';
     if (f === 'upcoming') w += '&date=gte.' + t; else if (f === 'past') w += '&date=lt.' + t;
-    else if (f === 'full' || f === 'free') w += '&plan=eq.' + f; else if (f === 'none') w += '&plan=is.null'; else if (f === 'disabled') w += '&disabled=is.true';
+    else if (f === 'full' || f === 'free') w += '&plan=eq.' + f; else if (f === 'none') w += '&plan=is.null&and=(or(kind.is.null,kind.neq.clock))'; else if (f === 'clock') w += '&kind=eq.clock'; else if (f === 'disabled') w += '&disabled=is.true';
     if (q) w += '&or=(slug.ilike.*' + encodeURIComponent(q) + '*,title.ilike.*' + encodeURIComponent(q) + '*,email.ilike.*' + encodeURIComponent(q) + '*)';
     const ord = f === 'upcoming' ? 'date.asc' : b.sort === 'date' ? 'date.desc.nullslast' : 'updated_at.desc';
     const L = await db('timer_event?select=*' + w + '&order=' + ord + '&limit=' + (per + 1) + '&offset=' + page * per).catch(e => ({ err: e.message }));
