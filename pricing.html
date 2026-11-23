@@ -256,7 +256,7 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
     <section id="rem" hidden data-cms-skip>
       <div class="sec-head"><h2>תזכורות בלוח המקוון</h2><p id="remIntro"></p></div>
       <div class="plans" id="remGrid"></div>
-      <p class="note">שיחות טלפון ו־SMS: בשלב זה רק למספרים בישראל. מנוי שמתחדש אוטומטית אפשר לבטל בכל עת באזור האישי. "חודש אחד" / "שנה אחת": תשלום אחד, וכמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש. צריך להיות מחוברים לחשבון.</p>
+      <p class="note">שיחה קולית: רק למספרי טלפון בישראל. הודעות SMS: גם למספרים מחוץ לישראל (בפורמט +קוד מדינה). מנוי שמתחדש אוטומטית אפשר לבטל בכל עת באזור האישי. "חודש אחד" / "שנה אחת": תשלום אחד, וכמה ימים לפני הסוף נשלח מייל עם אפשרות לחדש. צריך להיות מחוברים לחשבון.</p>
     </section>
 
     <section id="faq">
@@ -295,10 +295,10 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   fetch('/api/pricing?c=_subs').then(function(r){ return r.ok ? r.json() : {}; }).then(function(j){
     var R = j && j.rem; if (!R) return; var AU = j.auto || {}; var S = document.getElementById('rem'), G = document.getElementById('remGrid');
-    document.getElementById('remIntro').textContent = 'בחינם: ' + lim(R.freeMail, 'תזכורות במייל') + ', ' + lim(R.freeVoice, 'תזכורות בשיחה') + '. רוצים יותר? כלול במסלולים של הלוח, או במנוי.';
+    document.getElementById('remIntro').textContent = 'בחינם: ' + lim(R.freeMail, 'תזכורות במייל') + ', ' + lim(R.freeVoice, 'תזכורות בשיחה (ישראל)') + ', ' + lim(R.freeSms, 'תזכורות SMS') + '. רוצים יותר? כלול במסלולים של הלוח, או במנוי.';
     G.innerHTML = R.opts.map(function(x, i){
       return '<div class="plan"><h3>' + esc(x.name || 'אפשרות') + '</h3>' + (x.desc ? '<p class="sub">' + esc(x.desc) + '</p>' : '') +
-        '<ul><li>' + lim(x.mail, 'תזכורות במייל') + '</li><li>' + lim(x.voice, 'תזכורות בשיחה') + '</li>' + (x.planNames.length ? '<li>כלול בקניית מסלול ' + x.planNames.map(esc).join(' / ') + ' בלוח</li>' : '') + '</ul>' +
+        '<ul><li>' + lim(x.mail, 'תזכורות במייל') + '</li><li>' + lim(x.voice, 'תזכורות בשיחה (ישראל)') + '</li><li>' + lim(x.sms, 'תזכורות SMS') + '</li>' + (x.planNames.length ? '<li>כלול בקניית מסלול ' + x.planNames.map(esc).join(' / ') + ' בלוח</li>' : '') + '</ul>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (x.pm >= 1 && AU.m ? '<button class="btn btn-primary" type="button" data-rb="' + i + '" data-per="m" data-auto="1">' + x.pm + ' ₪ לחודש · מתחדש</button>' : '') + (x.py >= 1 && AU.y ? '<button class="btn" type="button" data-rb="' + i + '" data-per="y" data-auto="1">' + x.py + ' ₪ לשנה · מתחדש</button>' : '') + (x.pm >= 1 ? '<button class="btn' + (AU.m ? '' : ' btn-primary') + '" type="button" data-rb="' + i + '" data-per="m">חודש אחד · ' + x.pm + ' ₪</button>' : '') + (x.py >= 1 ? '<button class="btn" type="button" data-rb="' + i + '" data-per="y">שנה אחת · ' + x.py + ' ₪</button>' : '') + '</div></div>';
     }).join('');
     S.hidden = false; if (location.hash === '#rem') S.scrollIntoView();

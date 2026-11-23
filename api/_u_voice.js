@@ -1,4 +1,4 @@
-/* תזכורות קוליות בטלפון: במסלול המלא, עד 50, אחרי אימות מספר הטלפון */
+/* תזכורות בטלפון: שיחה קולית (ישראל בלבד) או הודעת SMS (כל העולם). במסלול המלא, עד 50, אחרי אימות מספר הטלפון. channel = call | sms */
 'use strict';
 const { db, readBody, json, getUser, bestPlan } = require('./_lib');
 const { cfg, ready } = require('./_voice');
@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   if (!user) return json(res, 401, { error: 'login' });
   try {
     if (req.method === 'GET') {
-      const rows = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&select=id,name,rule,notice&order=id');
+      const rows = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&select=id,name,rule,notice,channel&order=id');
       return json(res, 200, { items: rows || [], max: (await cfg()).max });
     }
     const b = readBody(req);
@@ -17,27 +17,31 @@ module.exports = async (req, res) => {
       if (id) await db('voice_reminders?id=eq.' + id + '&user_id=eq.' + user.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'off' }) });
       return json(res, 200, { ok: true });
     }
-    if (!(await ready())) return json(res, 503, { error: 'off' });
+    const ch = b.channel === 'sms' ? 'sms' : 'call';
+    if (!(ch === 'sms' ? await require('./_sms').ready() : await ready())) return json(res, 503, { error: 'off' });
     /* מגבלות מהניהול (מנויים וחבילות ← תזכורות בלוח). כשהן כבויות: כמו תמיד, רק במסלול המלא ועד max */
     const SB = require('./_subs'), ent = await SB.remEnt(user).catch(() => ({ off: true }));
+    const lim = ch === 'sms' ? ent.sms : ent.voice;
     if (ent.off) { if ((await bestPlan(user)) !== 'full') return json(res, 403, { error: 'plan' }); }
-    else if (ent.voice === 0 && !parseInt(b.id, 10)) return json(res, 403, { error: 'plan', message: 'תזכורת בשיחה זמינה במסלולים ובמנויים שכוללים שיחות.' });
+    else if (lim === 0 && !parseInt(b.id, 10)) return json(res, 403, { error: 'plan', message: ch === 'sms' ? 'תזכורת SMS זמינה במסלולים ובמנויים שכוללים SMS.' : 'תזכורת בשיחה זמינה במסלולים ובמנויים שכוללים שיחות.' });
     const prof = await db('profiles?user_id=eq.' + user.id + '&select=phone,phone_verified_at');
     const ph = prof && prof[0] && prof[0].phone_verified_at ? prof[0].phone : null;
     if (!ph) return json(res, 409, { error: 'phone' });
+    /* שיחה קולית רק למספר ישראלי. SMS גם למספר בינלאומי */
+    if (ch === 'call' && /^\+/.test(ph)) return json(res, 400, { error: 'callil', message: 'שיחה קולית זמינה רק למספרים בישראל. אפשר לבחור תזכורת SMS.' });
     const name = String(b.name || '').trim().slice(0, 120), rule = b.rule || {};
     const notice = (Array.isArray(b.notice) ? b.notice : [1]).map(Number).filter(n => [0, 1, 2, 3, 7].includes(n)).slice(0, 3);
     if (!name || !okRule(rule) || !notice.length) return json(res, 400, { error: 'bad reminder' });
     const clean = { rec: rule.rec, d: +rule.d || null, m: +rule.m || null, date: rule.rec === 'once' ? rule.date : null };
     const id = parseInt(b.id, 10);
     if (id) {
-      await db('voice_reminders?id=eq.' + id + '&user_id=eq.' + user.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, rule: clean, notice, phone: ph }) });
+      await db('voice_reminders?id=eq.' + id + '&user_id=eq.' + user.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, rule: clean, notice, phone: ph, channel: ch }) });
       return json(res, 200, { id });
     }
-    const mine = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&select=id');
-    const MAX = ent.off ? (+(await cfg()).max || 50) : ent.voice == null ? 1000 : ent.voice;
+    const mine = await db('voice_reminders?user_id=eq.' + user.id + '&status=eq.active&channel=eq.' + ch + '&select=id');
+    const MAX = ent.off ? (+(await cfg()).max || 50) : lim == null ? 1000 : lim;
     if ((mine || []).length >= MAX) return json(res, 429, { error: 'max', max: MAX });
-    const row = await db('voice_reminders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ user_id: user.id, phone: ph, name, rule: clean, notice }) });
+    const row = await db('voice_reminders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ user_id: user.id, phone: ph, name, rule: clean, notice, channel: ch }) });
     json(res, 200, { id: row && row[0] && row[0].id });
   } catch (e) { console.error('voice-rem', e); json(res, 500, { error: 'server error' }); }
 };

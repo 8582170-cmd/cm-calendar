@@ -7,7 +7,7 @@ const TABLES = [
   ['profiles', 'user_id,email,phone,phone_verified_at,created_at,updated_at,ip,ip_geo', 'created_at.desc'],
   ['downloads', 'created_at,email,kind,plan,cal,view,size,pages,page,snap,user_id,ip,ip_geo', 'created_at.desc'],
   ['reminders', 'id,email,name,rule,notice,lang,status,last_sent,created_at,ip,ip_geo', 'id.desc'],
-  ['voice_reminders', 'id,user_id,phone,name,rule,notice,status,last_sent,created_at,ip,ip_geo', 'id.desc'],
+  ['voice_reminders', 'id,user_id,phone,name,rule,notice,status,last_sent,channel,created_at,ip,ip_geo', 'id.desc'],
   ['appointments', 'id,user_id,email,date,start_t,end_t,title,place,note,color,notify,last_sent,created_at', 'id.desc'],
   ['free_lite', 'user_id,email,used_at', 'used_at.desc'],
   ['settings', 'key,value,updated_at', 'key.asc']

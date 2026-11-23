@@ -51,23 +51,27 @@ async function calMail(X, rep) {
 /* תזכורות קוליות מהלוח */
 async function calVoice(X, rep) {
   const { today, tIso, dueIn } = X;
-    let vsent = 0, vfailed = 0;
-    if (await voice.ready()) {
-      const vc = await voice.cfg();
-      const vr = await db('voice_reminders?status=eq.active&select=id,phone,name,rule,notice,last_sent&order=id&limit=5000').catch(() => []);
-      for (const r of vr || []) {
-        if (!rep && r.last_sent === tIso) continue;
-        const hitN = await dueIn(r);
-        if (hitN === null) continue;
-        const day = addD(today, hitN), heb = await hebStr(day);
-        try {
-          await voice.callTTS(r.phone, voice.fill(vc.remCall, { name: r.name, when: when(hitN), weekday: WD[day.getDay()], hebdate: heb }));
-          await db('voice_reminders?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_sent: tIso }) });
-          vsent++;
-        } catch (e) { vfailed++; console.error('voice send', r.id, e.message); }
-      }
+  let vsent = 0, vfailed = 0, ssent = 0, sfailed = 0;
+  const vOk = await voice.ready().catch(() => false), sOk = await require('./_sms').ready().catch(() => false);
+  if (vOk || sOk) {
+    const vc = await voice.cfg();
+    const vr = await db('voice_reminders?status=eq.active&select=id,phone,name,rule,notice,last_sent,channel&order=id&limit=5000').catch(() => []);
+    for (const r of vr || []) {
+      const sms = r.channel === 'sms';
+      if (sms ? !sOk : !vOk) continue;
+      if (!rep && r.last_sent === tIso) continue;
+      const hitN = await dueIn(r);
+      if (hitN === null) continue;
+      const day = addD(today, hitN), heb = await hebStr(day), vars = { name: r.name, when: when(hitN), weekday: WD[day.getDay()], hebdate: heb };
+      try {
+        if (sms) await require('./_sms').send(r.phone, voice.fill(vc.remSms || 'מיי לוח: תזכורת. {name}, {when}, יום {weekday}, {hebdate}.', vars));
+        else await voice.callTTS(r.phone, voice.fill(vc.remCall, vars));
+        await db('voice_reminders?id=eq.' + r.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_sent: tIso }) });
+        if (sms) ssent++; else vsent++;
+      } catch (e) { if (sms) sfailed++; else vfailed++; console.error((sms ? 'sms' : 'voice') + ' send', r.id, e.message); }
     }
-  return { vsent, vfailed };
+  }
+  return { vsent, vfailed, ssent, sfailed };
 }
 /* פגישות ביומן (יוצאות יחד עם התזכורות במייל) */
 async function calAppts(X, rep) {

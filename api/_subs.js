@@ -21,8 +21,8 @@ function clean(s) {
   const r = s.rem && typeof s.rem === 'object' ? s.rem : {};
   /* null = ללא הגבלה */
   const lim = v => v === null || v === '' || v === undefined || +v < 0 ? null : Math.round(num(v, 0, 100000, 0));
-  out.rem = { on: !!r.on, freeMail: lim(r.freeMail === undefined ? 15 : r.freeMail), freeVoice: lim(r.freeVoice === undefined ? 0 : r.freeVoice),
-    opts: uniq((Array.isArray(r.opts) ? r.opts : []).slice(0, 10).map(x => ({ id: id(x.id), name: str(x.name, 60), desc: str(x.desc, 200), mail: lim(x.mail), voice: lim(x.voice), plans: (Array.isArray(x.plans) ? x.plans : []).filter(p => PAID.indexOf(p) >= 0), pm: num(x.pm, 0, 100000, 0), py: num(x.py, 0, 100000, 0), on: x.on !== false }))) };
+  out.rem = { on: !!r.on, freeMail: lim(r.freeMail === undefined ? 15 : r.freeMail), freeVoice: lim(r.freeVoice === undefined ? 0 : r.freeVoice), freeSms: lim(r.freeSms === undefined ? 0 : r.freeSms),
+    opts: uniq((Array.isArray(r.opts) ? r.opts : []).slice(0, 10).map(x => ({ id: id(x.id), name: str(x.name, 60), desc: str(x.desc, 200), mail: lim(x.mail), voice: lim(x.voice), sms: lim(x.sms), plans: (Array.isArray(x.plans) ? x.plans : []).filter(p => PAID.indexOf(p) >= 0), pm: num(x.pm, 0, 100000, 0), py: num(x.py, 0, 100000, 0), on: x.on !== false }))) };
   return out;
 }
 async function cfg() { return clean(await loadSetting('subs').catch(() => ({}))); }
@@ -69,17 +69,17 @@ async function greetEnt(who, S) {
 /* זכאות לתזכורות: הכמות הגבוהה מבין החינם, מסלול שנקנה בלוח, ומנוי תזכורות פעיל. null = ללא הגבלה */
 async function remEnt(who, S) {
   S = S || await cfg(); const R = S.rem;
-  if (!R.on) return { off: true, mail: null, voice: null, via: [] };
+  if (!R.on) return { off: true, mail: null, voice: null, sms: null, via: [] };
   const best = (a, b) => a === null || b === null ? null : Math.max(a, b);
-  let mail = R.freeMail, voice = R.freeVoice; const via = [{ k: 'free', name: 'חינם', mail: R.freeMail, voice: R.freeVoice }];
+  let mail = R.freeMail, voice = R.freeVoice, sms = R.freeSms; const via = [{ k: 'free', name: 'חינם', mail: R.freeMail, voice: R.freeVoice, sms: R.freeSms }];
   const now = Date.now(), O = await orders(who, o => /^rsub:/.test(o.plan) || PAID.indexOf(o.plan) >= 0);
   R.opts.forEach(x => {
     const byPlan = O.find(o => x.plans.indexOf(o.plan) >= 0 && now - Date.parse(o.paid_at || o.created_at) < 400 * DAY);
     const endOf = o => { const m = /^rsub:([a-z0-9-]+):([my])$/.exec(o.plan); return m ? (o.auto && o.auto.until ? +o.auto.until : Date.parse(o.paid_at || o.created_at) + PER[m[2]] * DAY) : 0; };
     const bySub = O.find(o => { const m = /^rsub:([a-z0-9-]+):([my])$/.exec(o.plan); return m && m[1] === x.id && endOf(o) > now; });
-    if (byPlan || bySub) { mail = best(mail, x.mail); voice = best(voice, x.voice); via.push({ k: x.id, name: x.name, mail: x.mail, voice: x.voice, by: bySub ? 'sub' : 'plan', until: bySub ? endOf(bySub) : null, order: bySub ? bySub.id : null, auto: bySub && bySub.auto ? { prov: bySub.auto.prov, state: bySub.auto.state } : null }); }
+    if (byPlan || bySub) { mail = best(mail, x.mail); voice = best(voice, x.voice); sms = best(sms, x.sms); via.push({ k: x.id, name: x.name, mail: x.mail, voice: x.voice, sms: x.sms, by: bySub ? 'sub' : 'plan', until: bySub ? endOf(bySub) : null, order: bySub ? bySub.id : null, auto: bySub && bySub.auto ? { prov: bySub.auto.prov, state: bySub.auto.state } : null }); }
   });
-  return { mail, voice, via };
+  return { mail, voice, sms, via };
 }
 
 /* מהקופה: plan=sub עם kind (gsub / gpack / rsub), id ו-per (m / y) */
@@ -98,7 +98,7 @@ async function pub() {
   const S = await cfg(), PN = PLAN_NAMES;
   let auto = { m: false, y: false }; try { const AP = require('./_subauto'); auto = { m: AP.provs('m').length > 0, y: AP.provs('y').length > 0 }; } catch (e) {}
   return { auto, on: S.on, gsubs: S.on ? S.gsubs.filter(x => x.on && (x.pm >= 1 || x.py >= 1)) : [], gpacks: S.on ? S.gpacks.filter(x => x.on && x.price >= 1) : [],
-    rem: S.rem.on ? { freeMail: S.rem.freeMail, freeVoice: S.rem.freeVoice, opts: S.rem.opts.filter(x => x.on).map(x => ({ ...x, planNames: x.plans.map(p => PN[p] || p) })) } : null };
+    rem: S.rem.on ? { freeMail: S.rem.freeMail, freeVoice: S.rem.freeVoice, freeSms: S.rem.freeSms, opts: S.rem.opts.filter(x => x.on).map(x => ({ ...x, planNames: x.plans.map(p => PN[p] || p) })) } : null };
 }
 
 /* ממשימת הבוקר: מייל חידוש לפני סוף מנוי (פעם אחת לכל הזמנה), אם הלקוח עוד לא חידש */

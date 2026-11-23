@@ -9,7 +9,8 @@ const DEF = { enabled: false, token: '', callerId: '', smsFrom: '', base: 'https
   codeVia: 'both', max: 50,
   codeSms: 'MyLuach: קוד האימות שלכם הוא {code}',
   codeCall: 'קוד האימות שלכם למיי לוח הוא: {code}. חוזר: {code}',
-  remCall: 'שלום, זוהי תזכורת ממיי לוח. {name}, {when}, יום {weekday}, {hebdate}. חוזר: {name}, {when}.' };
+  remCall: 'שלום, זוהי תזכורת ממיי לוח. {name}, {when}, יום {weekday}, {hebdate}. חוזר: {name}, {when}.',
+  remSms: 'מיי לוח: תזכורת. {name}, {when}, יום {weekday}, {hebdate}.' };
 let C = null, CT = 0;
 async function cfg() {
   if (C && Date.now() - CT < 30000) return C;

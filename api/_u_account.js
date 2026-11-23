@@ -24,7 +24,7 @@ async function get(user) {
     safe(planInfo(user, false)), safe(planInfo(user, true)),
     safe(db('downloads?select=created_at,kind,plan,cal,view,size,pages,page&user_id=eq.' + user.id + '&order=created_at.desc&limit=60')),
     em ? safe(db('reminders?select=name,rule,notice,status,token,created_at&email=eq.' + enc(em) + '&status=neq.off&order=created_at.desc&limit=200')) : null,
-    safe(db('voice_reminders?select=id,name,rule,notice,status,phone,created_at&user_id=eq.' + user.id + '&status=neq.off&order=created_at.desc&limit=200'))
+    safe(db('voice_reminders?select=id,name,rule,notice,status,phone,channel,created_at&user_id=eq.' + user.id + '&status=neq.off&order=created_at.desc&limit=200'))
   ]);
   const plan = async p => p && p.plan ? { id: p.plan, name: planName(p.plan), since: p.since, limit: p.limit, used: p.used, left: p.left, year: await lockedYear(user, p.since) } : null;
   return {

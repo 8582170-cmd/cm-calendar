@@ -449,7 +449,7 @@ function yzPick(){dialog('<h2 id="dlgT">'+(HE()?'תזכורת מדברי הימ�
   $('#yzGo').onclick=go;$('#yzQ').addEventListener('keydown',e=>{if(e.key==='Enter')go()});setTimeout(()=>$('#yzQ').focus(),30)}
 function hebMonthNameNum(m){const L=['','ניסן','אייר','סיון','תמוז','אב','אלול','תשרי','חשון','כסלו','טבת','שבט','אדר','אדר ב׳'];return L[m]||''}
 /* תזכורות קוליות: מוצגות רק כשהשירות פעיל בדף הניהול */
-let VOICE_ON=false;fetch(BASE+'../api/pricing').then(r=>r.json()).then(j=>{VOICE_ON=!!(j&&j.voice)}).catch(()=>{});
+let VOICE_ON=false,SMS_ON=false;fetch(BASE+'../api/pricing').then(r=>r.json()).then(j=>{VOICE_ON=!!(j&&j.voice);SMS_ON=!!(j&&j.smsRem)}).catch(()=>{});
 /* חשבון המשתמש מהבונה (אותו אתר): אסימון הכניסה שנשמר בדפדפן */
 function authTok(){try{const o=JSON.parse(localStorage.getItem('myluach-auth')||'null');if(o&&o.access_token&&(o.expires_at||0)*1000>Date.now()+60000)return {tok:o.access_token,email:(o.user&&o.user.email)||''}}catch(e){}return null}
 const loginUrl=h=>BASE+'../app.html#login&back='+encodeURIComponent(location.pathname+location.search+'#'+(h||'reminders'));
@@ -462,9 +462,10 @@ function remEditor(id,date,pre){
     '<div class="fld" style="margin-top:8px">'+(HE()?'מתי להזכיר':'Remind me')+'<span class="opts">'+[[7,HE()?'שבוע לפני':'a week before'],[2,HE()?'יומיים לפני':'2 days before'],[1,HE()?'יום לפני':'a day before'],[0,HE()?'באותו יום':'same day']].map(([n,l])=>'<label class="chk"><input type="checkbox" data-nt="'+n+'"'+((v.notice||[]).includes(n)?' checked':'')+'> '+l+'</label>').join('')+'</span></div>'+
     '<div class="fld rem-mail" style="margin-top:10px"><label class="chk"><input type="checkbox" id="rM"'+(v.mail&&v.mail.status!=='off'?' checked':'')+'> 📧 '+(HE()?'לשלוח לי גם תזכורת במייל':'Also email me a reminder')+'</label>'+
       '<input type="email" id="rE" dir="ltr" maxlength="200" autocomplete="email" placeholder="name@example.com" value="'+esc((v.mail&&v.mail.email)||(authTok()&&authTok().email)||LS.get('mail')||'')+'">'+'<span class="small mute" id="rEHint">'+(HE()?'למייל של החשבון שלכם התזכורת מופעלת מיד. לכתובת אחרת נשלח קודם מייל אישור.':'Your account email is activated at once. Another address gets a confirmation email first.')+'</span>'+'<span class="small mute">'+(HE()?'המייל יישלח בבוקר, לפי מה שסימנתם למעלה (שבוע, יומיים, יום לפני או באותו יום). בפעם הראשונה תקבלו מייל לאישור.':'Sent in the morning, per the alert options above. First time, you will get a confirmation email.')+'</span></div>'+
-    (HE()&&(VOICE_ON||v.voice)?'<div class="fld rem-mail" style="margin-top:10px"><label class="chk"><input type="checkbox" id="rV"'+(v.voice?' checked':'')+'> 📞 גם שיחה קולית לטלפון <span class="small mute">(במסלול המלא, עד 50 תזכורות. בשלב זה רק למספרים בישראל)</span></label>'+
-      '<div id="rVBox" class="small" hidden><p style="margin:4px 0">כדי לקבל שיחות, מאמתים פעם אחת את מספר הטלפון:</p><div class="row"><input type="tel" id="rPh" dir="ltr" placeholder="05X-XXXXXXX" style="flex:1"><button class="btn" type="button" id="rPhS">קוד ב־SMS</button><button class="btn" type="button" id="rPhC">קוד בשיחה</button></div>'+
-      '<div class="row" style="margin-top:6px"><input id="rCode" inputmode="numeric" dir="ltr" maxlength="6" placeholder="הקוד שקיבלתם" style="flex:1"><button class="btn pri" type="button" id="rCodeOk">אישור</button></div><p class="small" id="rVMsg"></p></div></div>':'')+
+    (HE()&&(VOICE_ON||v.voice)?'<div class="fld rem-mail" style="margin-top:10px"><label class="chk"><input type="checkbox" id="rV"'+(v.voice?' checked':'')+'> 📞 גם שיחה קולית לטלפון <span class="small mute">(במסלול המלא, עד 50 תזכורות. שיחה קולית רק למספרי טלפון בישראל)</span></label></div>':'')+
+    ((SMS_ON||v.sms)?'<div class="fld rem-mail" style="margin-top:10px"><label class="chk"><input type="checkbox" id="rSm"'+(v.sms?' checked':'')+'> 💬 '+(HE()?'גם הודעת SMS לטלפון':'Also text me (SMS)')+' <span class="small mute">'+(HE()?'(מכל מדינה, אם מספר הטלפון נכתב עם קידומת מדינה, למשל +1 או +44)':'(any country; write the number with its country code, e.g. +1 or +44)')+'</span></label></div>':'')+
+    ((HE()&&(VOICE_ON||v.voice))||SMS_ON||v.sms?'<div id="rVBox" class="small" hidden><p style="margin:4px 0">'+(HE()?'כדי לקבל שיחות או SMS, מאמתים פעם אחת את מספר הטלפון. מספר ישראלי: 05X-XXXXXXX. מספר מחוץ לישראל: +קוד מדינה ואז המספר (למשל +1 212 555 0100), והקוד יגיע ב־SMS.':'To get texts, verify your phone number once. Use the format +<country code><number>, e.g. +1 212 555 0100. The code arrives by SMS.')+'</p><div class="row"><input type="tel" id="rPh" dir="ltr" placeholder="05X-XXXXXXX / +1 212 555 0100" style="flex:1"><button class="btn" type="button" id="rPhS">'+(HE()?'קוד ב־SMS':'Send SMS code')+'</button>'+(HE()?'<button class="btn" type="button" id="rPhC">קוד בשיחה (ישראל)</button>':'')+'</div>'+
+      '<div class="row" style="margin-top:6px"><input id="rCode" inputmode="numeric" dir="ltr" maxlength="6" placeholder="'+(HE()?'הקוד שקיבלתם':'Code')+'" style="flex:1"><button class="btn pri" type="button" id="rCodeOk">'+(HE()?'אישור':'OK')+'</button></div><p class="small" id="rVMsg"></p></div>':'')+
     '<p class="small mute" id="rP"></p><div class="row"><button class="btn pri" type="button" id="rS">'+t('save')+'</button>'+(r?'<button class="btn" type="button" id="rX">'+t('del')+'</button>':'')+'</div>');
   $('#rR').value=v.rec;
   const build=()=>{const dd=fromIso($('#rD').value||iso(d0)),hh=new HDate(dd),rec=$('#rR').value;const o={id:r?r.id:'r'+Math.random().toString(36).slice(2,9),name:$('#rN').value.trim(),rec,date:iso(dd),notice:[...document.querySelectorAll('[data-nt]:checked')].map(x=>+x.dataset.nt)};
@@ -474,7 +475,7 @@ function remEditor(id,date,pre){
   const A0=()=>authTok(),vApi=async(method,body)=>{const A=A0();if(!A)return {status:401};const r=await fetch(BASE+'../api/user?fn='+(body&&body.phoneApi?'phone':'voice'),{method,headers:{'Content-Type':'application/json',Authorization:'Bearer '+A.tok},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}};
   if($('#rPhS')){const vm=t=>{$('#rVMsg').innerHTML=t};
     const send=via=>async()=>{const r=await vApi('POST',{phoneApi:1,action:'send',phone:$('#rPh').value,via});vm(r.status===200?'✓ שלחנו קוד ל־'+esc(r.phone)+'. הקלידו אותו כאן.':r.error==='phone'?'מספר הטלפון לא תקין.':r.status===429?'יותר מדי ניסיונות. נסו שוב בעוד שעה.':r.status===401?'צריך להתחבר. <a href="'+loginUrl()+'">כניסה</a>':'השירות עוד לא זמין. נסו שוב מאוחר יותר.')};
-    $('#rPhS').onclick=send('sms');$('#rPhC').onclick=send('call');
+    $('#rPhS').onclick=send('sms');if($('#rPhC'))$('#rPhC').onclick=send('call');
     $('#rCodeOk').onclick=async()=>{const r=await vApi('POST',{phoneApi:1,action:'check',code:$('#rCode').value});if(r.status===200){vm('✓ הטלפון אומת: '+esc(r.phone)+'. עכשיו לוחצים "שמירה".');$('#rVBox').dataset.ok='1'}else vm(r.error==='code'?'הקוד לא נכון.':r.error==='expired'?'הקוד פג. שלחו קוד חדש.':'לא הצלחנו לאמת. נסו שוב.')}}
   $('#rS').onclick=async()=>{const o=build();if(!o.name){$('#rN').focus();return}
     const wantMail=$('#rM').checked,email=$('#rE').value.trim();o.mail=v.mail||null;
@@ -484,19 +485,22 @@ function remEditor(id,date,pre){
         const j=await rr.json();if(rr.status===402&&j.error==='limit'){$('#rS').disabled=false;$('#rP').innerHTML=esc(j.message||'')+' <a href="'+BASE+'../pricing.html#rem">'+(HE()?'לאפשרויות':'Options')+'</a>';return}if(rr.status===401){$('#rS').disabled=false;$('#rP').innerHTML=(HE()?'צריך להתחבר מחדש. ':'Please sign in again. ')+'<a href="'+loginUrl()+'">'+(HE()?'כניסה':'Sign in')+'</a>';return}if(!rr.ok||!j.token)throw new Error(j.error||rr.status);o.mail={email:j.email||email,token:j.token,status:j.status}}
       catch(e){$('#rS').disabled=false;$('#rP').textContent=HE()?'לא הצלחנו לשמור את התזכורת במייל. נסו שוב בעוד רגע.':'Could not save the email reminder. Please try again.';return}}
     else if(o.mail&&o.mail.token){fetch(BASE+'../api/rem-confirm?t='+o.mail.token+'&off=1').catch(()=>{});o.mail=null}
-    o.voice=v.voice||null;
-    if($('#rV')&&$('#rV').checked){const A=authTok();if(!A){$('#rS').disabled=false;$('#rP').innerHTML='לתזכורת קולית צריך להתחבר. <a href="'+loginUrl()+'">כניסה / הרשמה</a>';return}
-      $('#rS').disabled=true;$('#rP').textContent='שומרים את התזכורת הקולית…';
-      const rv=await vApi('POST',{id:o.voice&&o.voice.id,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice.filter(n=>n<=7):[0]});$('#rS').disabled=false;
-      if(rv.status===403){$('#rP').innerHTML=esc(rv.message||'תזכורת קולית זמינה במסלול המלא.')+' <a href="'+BASE+'../pricing.html#rem">למסלולים</a>';return}
-      if(rv.status===409){$('#rVBox').hidden=false;$('#rP').textContent='מאמתים את מספר הטלפון (פעם אחת), ואז לוחצים שוב "שמירה".';return}
-      if(rv.status===429){$('#rP').textContent='הגעתם למקסימום של '+(rv.max||50)+' תזכורות קוליות.';return}
-      if(rv.status!==200){$('#rP').textContent='לא הצלחנו לשמור את התזכורת הקולית. נסו שוב.';return}
-      o.voice={id:rv.id||(o.voice&&o.voice.id)}}
-    else if(o.voice&&o.voice.id){vApi('POST',{action:'delete',id:o.voice.id});o.voice=null}
+    o.voice=v.voice||null;o.sms=v.sms||null;
+    for(const [ch,key,cb] of [['call','voice','#rV'],['sms','sms','#rSm']]){
+      const nm=ch==='sms'?'SMS':'הקולית';
+      if($(cb)&&$(cb).checked){const A=authTok();if(!A){$('#rS').disabled=false;$('#rP').innerHTML=(ch==='sms'?'לתזכורת SMS':'לתזכורת קולית')+' צריך להתחבר. <a href="'+loginUrl()+'">כניסה / הרשמה</a>';return}
+        $('#rS').disabled=true;$('#rP').textContent='שומרים את תזכורת ה'+(ch==='sms'?'־SMS':'קולית')+'…';
+        const rv=await vApi('POST',{id:o[key]&&o[key].id,channel:ch,name:o.name,rule:{rec:o.rec,d:o.d,m:o.m,date:o.date},notice:o.notice.length?o.notice.filter(n=>n<=7):[0]});$('#rS').disabled=false;
+        if(rv.status===403){$('#rP').innerHTML=esc(rv.message||(ch==='sms'?'תזכורת SMS זמינה במסלולים ובמנויים שכוללים SMS.':'תזכורת קולית זמינה במסלול המלא.'))+' <a href="'+BASE+'../pricing.html#rem">למסלולים</a>';return}
+        if(rv.status===409){$('#rVBox').hidden=false;$('#rP').textContent='מאמתים את מספר הטלפון (פעם אחת), ואז לוחצים שוב "שמירה".';return}
+        if(rv.status===400&&rv.error==='callil'){$('#rP').textContent=rv.message||'שיחה קולית זמינה רק למספרים בישראל. אפשר לבחור SMS.';return}
+        if(rv.status===429){$('#rP').textContent='הגעתם למקסימום של '+(rv.max||50)+' תזכורות '+(ch==='sms'?'SMS':'קוליות')+'.';return}
+        if(rv.status!==200){$('#rP').textContent='לא הצלחנו לשמור את התזכורת ה'+(ch==='sms'?'־SMS':'קולית')+'. נסו שוב.';return}
+        o[key]={id:rv.id||(o[key]&&o[key].id)}}
+      else if(o[key]&&o[key].id){vApi('POST',{action:'delete',id:o[key].id});o[key]=null}}
     if(r)REM[REM.indexOf(r)]=o;else REM.push(o);saveRem();closeDlg();render();
     if(o.mail&&o.mail.status==='pending')dialog('<h2 id="dlgT">📧 '+(HE()?'כמעט סיימנו':'Almost done')+'</h2><p>'+(HE()?'שלחנו מייל אישור ל־<b dir="ltr">'+esc(o.mail.email)+'</b>. לחצו על הקישור שבו, והתזכורות במייל יופעלו. אם לא הגיע תוך כמה דקות, בדקו בספאם.':'We sent a confirmation email to <b>'+esc(o.mail.email)+'</b>. Click the link in it to turn on email reminders.')+'</p><div class="row"><button class="btn pri" type="button" data-close>'+(HE()?'הבנתי':'OK')+'</button></div>')};
-  if(r)$('#rX').onclick=()=>{if(r.voice&&r.voice.id)vApi('POST',{action:'delete',id:r.voice.id});if(r.mail&&r.mail.token)fetch(BASE+'../api/rem-confirm?t='+r.mail.token+'&off=1').catch(()=>{});REM=REM.filter(x=>x!==r);saveRem();closeDlg();render()};
+  if(r)$('#rX').onclick=()=>{if(r.voice&&r.voice.id)vApi('POST',{action:'delete',id:r.voice.id});if(r.sms&&r.sms.id)vApi('POST',{action:'delete',id:r.sms.id});if(r.mail&&r.mail.token)fetch(BASE+'../api/rem-confirm?t='+r.mail.token+'&off=1').catch(()=>{});REM=REM.filter(x=>x!==r);saveRem();closeDlg();render()};
   setTimeout(()=>$('#rN').focus(),30);
 }
 
