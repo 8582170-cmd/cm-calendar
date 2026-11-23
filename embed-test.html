@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ניסיון הטמעה · MyLuach</title>
+<style>body{margin:0;font:16px/1.6 Arial,sans-serif;background:#fff;color:#1b2338}.top{padding:18px 6%;border-bottom:1px solid #dfe2ea}.top h1{margin:0;font-size:22px}.note{padding:12px 6%;background:#fbf4df;color:#4a3a0e;font-size:14px}</style>
+</head>
+<body>
+<div class="top"><h1>דף ניסיון להטמעת מכירה</h1></div>
+<div class="note">זה דף ניסיון פנימי (לא מקושר מהאתר ולא נסרק במנועי חיפוש). המכירה למטה מוטמעת באמצעות קוד "גודל מלא" מהניהול.</div>
+<!-- הקוד שמועתק מכרטיס "הטמעה באתר שלכם" בניהול המכירה (גודל מלא) -->
+<iframe id="ml-auction" src="https://www.myluach.org/auction?s=a11&embed=1" title="מכירה סינית" style="width:100%;min-height:700px;border:0" allow="autoplay" loading="lazy"></iframe>
+<script>
+window.addEventListener("message",function(e){var f=document.getElementById("ml-auction");if(f&&e.source===f.contentWindow&&e.data&&e.data.t==="mlh")f.style.height=e.data.h+"px"});
+</script>
+</body>
+</html>
