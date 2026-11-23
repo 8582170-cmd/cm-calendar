@@ -13,7 +13,7 @@ const C = require('./_auction_core'), PAY = require('./_auction_pay');
 
 const r2 = n => Math.round(n * 100) / 100;
 const clean = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n || 200);
-const phoneN = v => { v = String(v || '').replace(/[^\d+]/g, ''); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); return /^0\d{8,9}$/.test(v) ? v : ''; };
+const phoneN = v => { v = String(v || '').replace(/[^\d+]/g, '').replace(/^00(?=[1-9])/, '+'); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); if (/^\+[1-9]\d{7,14}$/.test(v)) return v; return /^0\d{8,9}$/.test(v) ? v : ''; };
 const mailN = v => { v = String(v || '').trim().toLowerCase(); return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(v) && v.length <= 120 ? v : ''; };
 const SLUG = /^[a-z0-9][a-z0-9-]{2,39}$/;
 const SITE = () => (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/, '');

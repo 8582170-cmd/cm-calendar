@@ -1,4 +1,9 @@
-/* שליחת SMS (רק בארץ). כללי לכל ספק שיש לו API פשוט דרך כתובת אינטרנט:
+/* ניתוב לפי היעד: מספר ישראלי יוצא דרך ימות המשיח (או SMS_URL), וכל מספר אחר דרך Plivo.
+   מספר זר חייב להגיע בפורמט בינלאומי: +<קוד מדינה><מספר> (או 00 בתחילתו).
+   Plivo: PLIVO_AUTH_ID, PLIVO_AUTH_TOKEN, PLIVO_FROM (מזהה שולח באותיות, ברוב המדינות; עד 11 תווים) ו-PLIVO_FROM_US
+   (מספר שהושכר ב-Plivo, חובה לשליחה לארה"ב ולקנדה). בלי הגדרות Plivo, שליחה למספר זר נכשלת.
+   שליחת SMS ישראלית (הפונקציות למטה):
+   (הערה ישנה: בארץ בלבד) כללי לכל ספק שיש לו API פשוט דרך כתובת אינטרנט:
    SMS_URL     כתובת עם {to} {msg} {from}, למשל: https://api.provider.co.il/send?user=U&pass=P&to={to}&text={msg}&from={from}
    SMS_METHOD  GET (ברירת מחדל) או POST
    SMS_BODY    (ל-POST) גוף הבקשה עם אותם משתנים, למשל JSON או XML של הספק
@@ -10,7 +15,7 @@
 const { env } = require('./_lib');
 /* בלי SMS_URL: שולחים דרך ימות המשיח (SendSms, 0.1 יחידה לכל 70 תווים), עם הטוקן מהגדרות התזכורות הקוליות */
 const urlReady = () => /^https:\/\//.test(env('SMS_URL') || '');
-async function ready() { if (urlReady()) return true; try { const c = await require('./_voice').cfg(); return !!c.token; } catch (e) { return false; } }
+async function readyIl() { if (urlReady()) return true; try { const c = await require('./_voice').cfg(); return !!c.token; } catch (e) { return false; } }
 async function yemot(phone, text) {
   let p = String(phone || '').replace(/[^\d]/g, ''); if (p.startsWith('972')) p = '0' + p.slice(3); if (!/^05\d{8}$/.test(p)) throw new Error('phone');
   const c = await require('./_voice').cfg(), from = env('SMS_FROM') || c.smsFrom || '';
@@ -22,7 +27,7 @@ async function yemot(phone, text) {
   return true;
 }
 function intl(p) { p = String(p || '').replace(/[^\d]/g, ''); if (p.startsWith('972')) p = '0' + p.slice(3); if (!/^05\d{8}$/.test(p)) throw new Error('phone'); return env('SMS_LOCAL') === '1' ? p : '972' + p.slice(1); }
-async function send(phone, text) {
+async function sendIl(phone, text) {
   if (!urlReady()) return yemot(phone, text);
   const to = intl(phone), from = env('SMS_FROM') || 'MyLuach', enc = encodeURIComponent;
   const fillU = t => t.replace(/\{to\}/g, enc(to)).replace(/\{msg\}/g, enc(text)).replace(/\{from\}/g, enc(from));
@@ -35,4 +40,23 @@ async function send(phone, text) {
   if (env('SMS_OK') && !new RegExp(env('SMS_OK')).test(t)) throw new Error('sms rejected ' + t.slice(0, 80));
   return true;
 }
-module.exports = { ready, send };
+/* בודק איך להתייחס למספר: { il: true } או { il: false, e164: '+...' }. זורק 'phone' אם לא תקין */
+function route(phone) {
+  const raw = String(phone || '').trim(), d = raw.replace(/[^\d]/g, '');
+  const plus = /^\s*\+/.test(raw), oo = !plus && /^\s*00/.test(raw), intl = plus ? d : oo ? d.slice(2) : '';
+  if (intl) { if (/^972/.test(intl)) return { il: true }; if (!/^[1-9]\d{7,14}$/.test(intl)) throw new Error('phone'); return { il: false, e164: '+' + intl }; }
+  return { il: true };
+}
+const plivoCfg = () => ({ id: env('PLIVO_AUTH_ID') || '', tok: env('PLIVO_AUTH_TOKEN') || '', from: env('PLIVO_FROM') || 'MyLuach', fromUs: env('PLIVO_FROM_US') || '' });
+const plivoReady = () => { const c = plivoCfg(); return !!(c.id && c.tok); };
+async function plivo(e164, text) {
+  const c = plivoCfg(); if (!c.id || !c.tok) throw new Error('sms plivo not set');
+  const us = /^\+1/.test(e164), src = us ? c.fromUs : c.from; if (!src) throw new Error('sms plivo no sender for US/CA');
+  const r = await fetch('https://api.plivo.com/v1/Account/' + encodeURIComponent(c.id) + '/Message/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Basic ' + Buffer.from(c.id + ':' + c.tok).toString('base64') }, body: JSON.stringify({ src, dst: e164.replace(/^\+/, ''), text }), signal: AbortSignal.timeout(15000) });
+  const t = await r.text().catch(() => ''); let j = null; try { j = JSON.parse(t); } catch (e) {}
+  if (!r.ok || !j || !(j.message_uuid || []).length) throw new Error('sms plivo ' + r.status + ' ' + t.slice(0, 100));
+  return true;
+}
+const ready = async () => (await readyIl()) || plivoReady();
+async function send(phone, text) { const r = route(phone); return r.il ? sendIl(phone, text) : plivo(r.e164, text); }
+module.exports = { ready, send, route, plivoReady, readyIl };

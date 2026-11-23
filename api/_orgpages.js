@@ -8,7 +8,7 @@ const enc = encodeURIComponent;
 const str = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
 const url = u => { u = String(u || '').trim(); return /^https?:\/\/[^\s<>"']{3,300}$/i.test(u) ? u : ''; };
 const mailN = v => { v = String(v || '').trim().toLowerCase(); return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(v) && v.length <= 120 ? v : ''; };
-const phoneN = v => { v = String(v || '').replace(/[^\d+]/g, ''); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); return /^0\d{8,9}$/.test(v) ? v : ''; };
+const phoneN = v => { v = String(v || '').replace(/[^\d+]/g, '').replace(/^00(?=[1-9])/, '+'); if (/^\+?972/.test(v)) v = '0' + v.replace(/^\+?972/, ''); if (/^\+[1-9]\d{7,14}$/.test(v)) return v; return /^0\d{8,9}$/.test(v) ? v : ''; };
 const WING = { auction: 'המכירה הסינית', give: 'הקמפיין' };
 
 /* שמירת ההגדרות (מנהל הארגון) */

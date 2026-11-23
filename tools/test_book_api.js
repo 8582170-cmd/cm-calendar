@@ -282,6 +282,7 @@ const bad = async (body, st, err, user) => { const r = await call(body, user); a
   const ub = await ok({ a: 'book', s: 'centre', svc: usd.id, name: 'שקלי', phone: '0521110052', start: day + ' 11:00', consent: ['c1'], cur: 'ILS' }, null);
   assert.ok(!ub.cur || ub.cur === 'ILS'); assert.strictEqual(ub.due, Math.round(T.book_appt.find(x => x.id === ub.id).detail.total * 350) / 100);
   const uc = await ok({ a: 'book', s: 'centre', svc: usd.id, name: 'אירו', phone: '0521110053', start: day + ' 12:00', consent: ['c1'], cur: 'EUR' }, null); assert.strictEqual(uc.cur, 'EUR'); assert.strictEqual(uc.due, Math.round(uc.dueIls / 4 * 100) / 100);
+  const fp = await ok({ a: 'book', s: 'centre', svc: usd.id, name: 'חו״ל', phone: '+44 7700 900123', start: day + ' 13:30', consent: ['c1'], cur: 'ILS' }, null); assert.strictEqual(T.book_appt.find(x => x.id === fp.id).phone, '+447700900123'); await bad({ a: 'book', s: 'centre', svc: usd.id, name: 'רע', phone: '+12', start: day + ' 14:30', consent: ['c1'] }, 400, 'phone', null);
   SETTINGS.fx = {}; FXM.reset(); const nf = await ok({ a: 'biz', s: 'centre' }, null); assert.deepStrictEqual(nf.cur.offer, ['ILS']); assert.deepStrictEqual(nf.cur.rates, {}, 'בלי שער תקף אין מטבע חוץ'); await bad({ a: 'book', s: 'centre', svc: usd.id, name: 'ללא', phone: '0521110054', start: day + ' 13:00', consent: ['c1'] }, 503, 'cur', null);
   PP3.create = oc.c; PP3.capture = oc.cap; PP3.refund = oc.r;
   /* מסלול בלי site: מצב site מכובה */
