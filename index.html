@@ -177,7 +177,7 @@ section{padding-block:56px;border-top:1px solid var(--line)}
 .plan li::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-top:.6em}
 .plan .btn{width:100%}
 .note{color:var(--mute);font-size:15px;margin-top:18px}
-.plans.compact .plan{padding:18px 18px 16px;gap:8px}.plans.compact .plan h3{font-size:22px}.plans.compact .price{font-size:28px}
+.plan-more{font-size:15px;font-weight:600;color:var(--teal);margin-top:-4px}.plans.compact .plan{padding:18px 18px 16px;gap:8px}.plans.compact .plan h3{font-size:22px}.plans.compact .price{font-size:28px}
 
 /* משוב ופנייה */
 .fb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
@@ -456,15 +456,18 @@ footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mute);fon
   /* מסלולים מתוך plans.js */
   const P=window.MyLuachPlans,grid=document.getElementById('planGrid'),COMPACT=grid.classList.contains('compact');
   let cur='ils';try{cur=localStorage.getItem('luchenu-cur')||'ils'}catch(e){}
+  /* בדף הבית: עד 4 נקודות לכל מסלול, והשאר בדף המסלולים (אם נשארת רק אחת, מציגים גם אותה) */
+  function bl(L){if(L.length<=5)return '<ul>'+L.map(b=>'<li>'+b+'</li>').join('')+'</ul>';const n=L.length-4;
+    return '<ul>'+L.slice(0,4).map(b=>'<li>'+b+'</li>').join('')+'</ul><a class="plan-more" href="pricing.html">ועוד '+n+' אפשרויות ←</a>'}
   function draw(){
     grid.innerHTML=P.PLANS.filter(function(p){return !p.hidden&&!p.cd}).map(p=>'<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+
       '<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,cur)+(p.price.ils?'<small> ללוח שנתי</small>':'')+'</div>'+
-      (COMPACT?'':'<ul>'+p.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul>')+
+      (COMPACT?'':bl(p.bullets))+
       (COMPACT?'':'<a class="btn '+(p.best?'btn-primary':'btn-ghost')+'" href="app.html">'+(p.id==='free'?'להתחיל בחינם':'לבנות ולבחור '+p.name)+'</a>')+'</div>').join('');
     const fp=document.getElementById('fromPrice');if(fp){const paid=P.PLANS.filter(p=>p.price[cur]>0&&!p.cd).sort((a,b)=>a.price[cur]-b.price[cur])[0];if(paid)fp.textContent='החל מ־'+(P.introPrice(paid,cur)||P.price(paid,cur))}
     const cdg=document.getElementById('cdPlanGrid');if(cdg){const L=P.PLANS.filter(function(p){return p.cd&&!p.hidden});cdg.parentNode.hidden=!L.length;
       cdg.innerHTML=L.map(p=>'<div class="plan'+(p.best?' best':'')+'">'+(p.best?'<span class="tag">הכי משתלם</span>':'')+'<h3>'+p.name+'</h3><p class="sub">'+p.tagline+'</p><div class="price">'+P.priceHTML(p,cur)+'<small> ללוח ספירה</small></div>'+
-        (COMPACT?'':'<ul>'+p.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul><a class="btn '+(p.best?'btn-primary':'btn-ghost')+'" href="countdown.html">לבנות לוח ספירה</a>')+'</div>').join('')}
+        (COMPACT?'':bl(p.bullets)+'<a class="btn '+(p.best?'btn-primary':'btn-ghost')+'" href="countdown.html">לבנות לוח ספירה</a>')+'</div>').join('')}
     document.getElementById('curIls').setAttribute('aria-pressed',cur==='ils');
     document.getElementById('curUsd').setAttribute('aria-pressed',cur==='usd');
   }
