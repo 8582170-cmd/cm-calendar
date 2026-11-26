@@ -1736,3 +1736,5 @@ body.file-drag .sx-drop-hint{display:block}
 
 /* אישור התקנון לפני תשלום */
 .pay-agree{margin:8px 0;font-weight:600}.pay-modal.noagree #payChoose,.pay-modal.noagree #payFrame,.pay-modal.noagree #ppBox,.pay-modal.noagree #payGo{pointer-events:none;opacity:.35;filter:grayscale(1)}
+/* בחלון התשלום: טופס התשלום (iframe) לא מתכווץ, והטקסט שאחריו לא עולה עליו */
+.modal.pay-modal>*{flex-shrink:0}.pp-box iframe{display:block}

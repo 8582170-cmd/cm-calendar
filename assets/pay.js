@@ -16,6 +16,7 @@ var CSS = '.mlp-back{position:fixed;inset:0;background:rgb(0 0 0 / .45);z-index:
   '.mlp .choose{display:flex;gap:6px;flex-wrap:wrap}.mlp .choose button{flex:1 1 140px;font:inherit;font-weight:700;padding:10px;border-radius:12px;border:1.5px solid var(--line,#dde2df);background:var(--paper,#f6f7f4);color:inherit;cursor:pointer}.mlp .choose [aria-checked="true"]{border-color:var(--teal,#1f5c63);box-shadow:0 0 0 1px var(--teal,#1f5c63)}' +
   '.mlp label.agree{flex-direction:row;align-items:flex-start;gap:8px;font-weight:600;font-size:15px;line-height:1.5}.mlp label.agree input{width:20px;height:20px;padding:0;margin-top:3px;flex:none;accent-color:var(--teal,#1f5c63)}' +
   '.mlp.noagree #mlpChoose,.mlp.noagree #mlpFrame,.mlp.noagree #mlpBox,.mlp.noagree #mlpGo{pointer-events:none;opacity:.35;filter:grayscale(1)}' +
+  '.mlp>*{flex-shrink:0}.mlp .box iframe{display:block}' +
   '.mlp .cf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mlp [id^=mlpPp]{min-height:44px}';
 /* הסבר לטופס של UPAY: השדות שם נקבעים אצלם */
 var UPN = '<br><b>הטלפון לא חובה.</b> מי שאין לו תעודת זהות ישראלית מסמן <b>"כרטיס תייר"</b>.<br>';

@@ -75,7 +75,7 @@ function openPay(info, why, locked){
     m.$('#p0').onclick = function(){ m.close(); done(false) };
     m.box.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-i]'); if (!b) return; var o = opts[+b.dataset.i];
       var go = function(){ m.close(); window.MLPay.open({ title: o.t, sub: nis(o.p) + '. אחרי התשלום ההורדה תימשך אוטומטית.', mailNote: 'לשם יישלח אישור הרכישה', email: meMail(), body: { plan: 'sub', kind: o.k, id: o.id || '', per: o.per || '' }, onPaid: function(){ INFO = null; done(true) } }) };
-      if (window.MLPay) go(); else loadScript('/assets/pay.js?v=8').then(function(){ setTimeout(go, 300) }).catch(function(){ m.$('#p0').textContent = 'לא נטען חלון התשלום. סגרו ונסו שוב.' }) });
+      if (window.MLPay) go(); else loadScript('/assets/pay.js?v=9').then(function(){ setTimeout(go, 300) }).catch(function(){ m.$('#p0').textContent = 'לא נטען חלון התשלום. סגרו ונסו שוב.' }) });
   });
 }
 
