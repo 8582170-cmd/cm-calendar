@@ -112,11 +112,13 @@ module.exports = async (req, res) => {
   if (cp === '_share') return require('./_share').pub(req, res);
   /* לוח ציבורי מהלוח המקוון: myluach.org/<שם> */
   if (cp === '_pubcal') return require('./_pubcal').read(req, res);
+  /* UPAY: עדכון על תשלום להזמנה (ipnurl חתום) */
+  if (cp === '_upaycb') return require('./_upay').callback(req, res);
   /* UPAY: קישור בדיקה של ₪1 שנוצר אוטומטית (הסכום והכתובות נקבעים כאן), לבדיקת החיבור */
   if (cp === '_upaytest') {
     const { env } = require('./_lib'), em = env('UPAY_EMAIL');
     if (!em) return json(res, 400, { error: 'חסר UPAY_EMAIL בהגדרות השרת' });
-    const site = 'https://myluach.org', q = new URLSearchParams({ email: em, amount: '1', returnurl: site + '/pay-return.html?upay=test', ipnurl: site + '/api/pricing?c=_upayipn&t=test',
+    const site = 'https://myluach.org', q = new URLSearchParams({ email: em, amount: '1', returnurl: site + '/pay-return.html?ok=1&via=upay', ipnurl: site + '/api/pricing?c=_upayipn&t=test',
       paymentdetails: 'בדיקת חיבור MyLuach', maxpayments: '1', livesystem: '1', commissionreduction: '', createinvoiceandreceipt: '1', createinvoice: '0', createreceipt: '0', refername: 'UPAY', lang: 'HE', currency: 'NIS' });
     res.statusCode = 302; res.setHeader('Location', 'https://app.upay.co.il/API6/clientsecure/redirectpage.php?' + q); res.setHeader('Cache-Control', 'no-store'); return res.end();
   }
@@ -129,7 +131,7 @@ module.exports = async (req, res) => {
       { header: H, request: { mainaction: 'CONNECTION', minoraction: 'LOGIN', encoding: 'json', numbertemplate: 1, parameters: { email: em, key } } },
       { header: H, request: { mainaction: 'CASHIER', minoraction: 'REDIRECTDEPOSITCREDITCARDTRANSFER', encoding: 'json', numbertemplate: 1, parameters: {
         transfers: [{ email: em, amount: '1', numberpayments: '1', currency: 'NIS', commissionreduction: '1', acceptedtransaction: '1', comment: 'בדיקת חיבור MyLuach (API)',
-          ipnurl: site + '/api/pricing?c=_upayipn&t=api', returnurl: site + '/pay-return.html?upay=api', createinvoiceandreceipt: '1' }],
+          ipnurl: site + '/api/pricing?c=_upayipn&t=api', returnurl: site + '/pay-return.html?ok=1&via=upay', createinvoiceandreceipt: '1' }],
         key, cardreader: '0', creditcardcompanytype: 'ISR', creditcardtype: 'MA' } } }];
     let txt = '', st = 0;
     try { const r = await fetch('https://app.upay.co.il/API6/clientsecure/json.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ msgs: JSON.stringify(msgs) }), signal: AbortSignal.timeout(25000) }); st = r.status; txt = await r.text(); }
@@ -146,7 +148,7 @@ module.exports = async (req, res) => {
   if (cp === '_upayipn') {
     try {
       const { loadSetting, saveSetting, readBody } = require('./_lib');
-      const b = readBody(req); delete b.c;
+      const b = readBody(req); delete b.c; ['identitynumber', 'cardownername', 'expirydate', 'email', 'emailnotify', 'cellphonenotify'].forEach(k => delete b[k]); /* לא שומרים פרטים אישיים של המשלם */
       const h = {}; ['content-type', 'user-agent', 'x-forwarded-for', 'cf-connecting-ip', 'x-real-ip'].forEach(k => { if (req.headers[k]) h[k] = String(req.headers[k]).slice(0, 200); });
       const raw = typeof req.body === 'string' ? req.body : Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
       const log = await loadSetting('upaylog'); const L = Array.isArray(log.items) ? log.items : [];

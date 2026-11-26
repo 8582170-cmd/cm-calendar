@@ -36,8 +36,8 @@ function clean(c) {
   });
   const t = c.ticker || {};
   const ints = v => [...new Set((Array.isArray(v) ? v : []).map(x => parseInt(x, 10)).filter(x => x >= 0 && x < 100000))].slice(0, 20000);
-  out.pay = ['paypal', 'sumit', 'yesh'].includes(c.pay) ? c.pay : 'nedarim';
-  out.payAlso = (Array.isArray(c.payAlso) ? c.payAlso : []).filter((x, i, l) => ['nedarim', 'paypal', 'sumit', 'yesh'].includes(x) && x !== out.pay && l.indexOf(x) === i);
+  out.pay = ['paypal', 'sumit', 'yesh', 'upay'].includes(c.pay) ? c.pay : 'nedarim';
+  out.payAlso = (Array.isArray(c.payAlso) ? c.payAlso : []).filter((x, i, l) => ['nedarim', 'paypal', 'sumit', 'yesh', 'upay'].includes(x) && x !== out.pay && l.indexOf(x) === i);
   /* קבלות ללקוח, לכל חברת תשלום שמאפשרת לשלוט בזה מהאתר: SUMIT (לשלוח או לא), יש חשבונית (להפיק, לשלוח, סוג מסמך) */
   { const R = c.rcpt || {}, S = R.sumit || {}, Y = R.yesh || {};
     const other = k => { const X = R[k] || {}; return { by: ['sumit', 'yesh'].includes(X.by) ? X.by : '', send: X.send !== false }; };
@@ -583,7 +583,7 @@ async function main(req, res) {
       if (!(amt > 0) || amt > left + 0.001) return json(res, 400, { error: 'סכום ההחזר לא תקין (נשאר להחזרה: ' + left + ' ₪)' });
       let rec = { at: new Date().toISOString(), amount: amt, via: 'manual', note: String(b.note || '').slice(0, 200) };
       /* נדרים פלוס: ביטול (עסקה מהיום) או זיכוי, דרך ה-API (אם הוגדר NEDARIM_API_PASSWORD) */
-      const N = require('./_nedarim'), nedTid = !pp && !cb.sumit && !cb.bit && !cb.yesh && /^\d{4,}$/.test(String(o.txn || '')) ? o.txn : null;
+      const N = require('./_nedarim'), nedTid = !pp && !cb.sumit && !cb.bit && !cb.yesh && !cb.upay && /^\d{4,}$/.test(String(o.txn || '')) ? o.txn : null;
       if (nedTid && N.apiReady() && b.manual !== true) {
         try { const r = await N.refund(nedTid, amt, amt >= left - 0.001 && !done); rec = { ...rec, via: 'nedarim', how: r.how }; }
         catch (e) { return json(res, 400, { error: 'נדרים פלוס: ' + e.message }); }
@@ -720,7 +720,7 @@ async function main(req, res) {
     } catch (e) { dl = { missing: /does not exist|42P01|PGRST205/.test(e.message) }; }
     const orders = (await db('orders?select=id,plan,amount,status,coupon,email,created_at,paid_at,callback&order=created_at.desc&limit=100') || []).map(o => {
       const cb = o.callback && typeof o.callback === 'object' ? o.callback : {};
-      const via = cb.paypal ? 'paypal' : cb.sumit ? 'sumit' : cb.yesh ? 'yesh' : cb.bit ? 'bit' : !(+o.amount) ? 'free' : Object.keys(cb).some(k => /^[A-Z]/.test(k)) ? 'nedarim' : '';
+      const via = cb.paypal ? 'paypal' : cb.sumit ? 'sumit' : cb.yesh ? 'yesh' : cb.upay ? 'upay' : cb.bit ? 'bit' : !(+o.amount) ? 'free' : Object.keys(cb).some(k => /^[A-Z]/.test(k)) ? 'nedarim' : '';
       const refunded = (cb.refunds || []).reduce((a, r) => a + (+r.amount || 0), 0), rc = cb.receipt || null;
       const rcpt = rc ? { by: rc.by, ok: !rc.error, err: rc.error || '', num: rc.number || '' } : null; delete o.callback; return { ...o, via, refunded, rcpt };
     });
@@ -758,7 +758,7 @@ async function main(req, res) {
     } catch (e) { mail = null; }
     let smUsed = null; try { const mStart = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }).slice(0, 7) + '-01T00:00:00+02:00'), since = cfg.sumitPeriod === 'rolling' ? new Date(Date.now() - 30 * 864e5) : mStart;
       smUsed = ((await db('orders?select=id&status=in.(paid,refunded)&paid_at=gte.' + encodeURIComponent(since.toISOString()) + '&callback->sumit=not.is.null&limit=1000')) || []).length; } catch (e) {}
-    const payStatus = { nedApi: require('./_nedarim').apiReady(), smUsed, sumit: require('./_sumit').ready(), yesh: require('./_yesh').ready(), yeshTest: env('YESH_TEST_AMOUNT') || '', smTest: env('SUMIT_TEST_AMOUNT') || '', nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
+    const payStatus = { nedApi: require('./_nedarim').apiReady(), smUsed, sumit: require('./_sumit').ready(), yesh: require('./_yesh').ready(), upay: require('./_upay').ready(), upTest: env('UPAY_TEST_AMOUNT') || '', yeshTest: env('YESH_TEST_AMOUNT') || '', smTest: env('SUMIT_TEST_AMOUNT') || '', nedarim: !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), paypal: !!(env('PAYPAL_CLIENT_ID') && env('PAYPAL_SECRET')), mode: env('PAYPAL_MODE') === 'sandbox' ? 'sandbox' : 'live', ppTest: env('PAYPAL_TEST_AMOUNT') || '' };
     json(res, 200, { config: cfg, defaults, effective: publicPricing(cfg), orders, uses, mail, dl, payStatus, testAmount: env('NEDARIM_TEST_AMOUNT') || '' });
   } catch (e) {
     console.error('admin', e);

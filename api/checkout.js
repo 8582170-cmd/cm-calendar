@@ -27,16 +27,16 @@ async function providers(cfg, isDon, avoid) {
   const ned = !!(env('NEDARIM_MOSAD') && env('NEDARIM_API_VALID')), pp = require('./_paypal').ready();
   /* דף התרומות בנוי על הטופס של נדרים פלוס */
   if (isDon) return ned ? ['nedarim'] : [];
-  const ok = { nedarim: ned, paypal: pp, sumit: require('./_sumit').ready(), yesh: require('./_yesh').ready() };
+  const ok = { nedarim: ned, paypal: pp, sumit: require('./_sumit').ready(), yesh: require('./_yesh').ready(), upay: require('./_upay').ready() };
   if (avoid && ok[avoid] != null) ok[avoid] = false;
-  const ALL = ['nedarim', 'paypal', 'sumit', 'yesh'], first = ALL.includes(cfg.pay) ? cfg.pay : 'nedarim';
+  const ALL = ['nedarim', 'paypal', 'sumit', 'yesh', 'upay'], first = ALL.includes(cfg.pay) ? cfg.pay : 'nedarim';
   const list = [first, ...(Array.isArray(cfg.payAlso) ? cfg.payAlso : [])].filter((x, i, a) => ALL.includes(x) && a.indexOf(x) === i);
   if (ok.sumit && list.includes('sumit')) { /* המכסה בפעולות: כל סליקה = sumitOps פעולות (סליקה + קבלה = 2). עוברים לדרך השנייה כשהסליקה הבאה כבר לא נכנסת */
     const cap = +(cfg.sumitCap || 0), per = Math.max(1, +cfg.sumitOps || 2); if (cap > 0 && (await sumitCount(cfg) + 1) * per > cap) ok.sumit = false; }
   let av = list.filter(x => ok[x]);
   const after = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
   if (list.includes('sumit') && !ok.sumit && ok[after] && av.indexOf(after) < 0) av.unshift(after);
-  if (!av.length) av = ['paypal', 'nedarim', 'sumit', 'yesh'].filter(x => ok[x]).slice(0, 1);
+  if (!av.length) av = ['paypal', 'nedarim', 'sumit', 'yesh', 'upay'].filter(x => ok[x]).slice(0, 1);
   return av;
 }
 
@@ -260,6 +260,17 @@ module.exports = async (req, res) => {
       await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { yesh: { url } } }) });
       const R = require('./_yesh').rcptOf(cfg);
       return json(res, 200, { id, amount: charge, provider: 'yesh', provs, yesh: url, rcpt: R.create && R.send && !!email, email: email || '', ...extra });
+    }
+    /* UPAY: דף התשלום שלהם (בתוך החלון באתר). העדכון מגיע ל-/api/pricing?c=_upaycb, והדפדפן מחכה עד שההזמנה מסומנת כשולמה */
+    if (prov === 'upay') {
+      const charge = isDon || gift ? amount : (Number(env('UPAY_TEST_AMOUNT')) || amount);
+      await db('orders', { meta: require('./_lib').reqMeta(req), method: 'POST', body: JSON.stringify({ id, plan, amount: charge, status: 'pending', email: email || null, user_id: user ? user.id : null, coupon: extra.coupon }) });
+      let P;
+      try { P = await require('./_upay').createPayment({ id, amount: charge, desc: desc + ' · ' + id.slice(0, 8), email, phone: String(b.phone || '').trim(), cfg }); }
+      catch (e) { console.error('upay create', e.message); await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'failed', callback: { upay: { error: e.message } } }) }).catch(() => {});
+        return json(res, 503, { error: 'provider', fallback: true, message: 'מערכת התשלום לא זמינה כרגע. עוברים לדרך תשלום אחרת…' }); }
+      await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { upay: { url: P.url, cashier: P.cashier } } }) });
+      return json(res, 200, { id, amount: charge, provider: 'upay', provs, upay: P.url, rcpt: require('./_upay').rcptOf(cfg).create && !!email, email: email || '', ...extra });
     }
     if (prov === 'paypal') {
       const charge = isDon || gift ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);
