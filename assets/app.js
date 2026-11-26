@@ -3748,7 +3748,7 @@ function buyPlan(planId){
     /* יש חשבונית: דף התשלום המאובטח שלהם בתוך החלון. העדכון מגיע לשרת (/api/yesh-callback), והחלון מחכה לאישור */
     if(PROV==='yesh'||PROV==='upay'){provName=PROV==='upay'?'UPAY':'יש חשבונית';const PV=PROV;ready=true;go.hidden=true;m.querySelectorAll('.pay-who>label:not(.pay-coupon)').forEach(x=>x.hidden=true);
       const box=$m('#ppBox');box.hidden=false;box.innerHTML='<iframe title="טופס תשלום מאובטח" allow="payment" style="width:100%;height:560px;border:0;border-radius:12px;background:#fff"></iframe>';
-      orderP.then(o=>{if(stop||PROV!==PV)return;box.querySelector('iframe').src=o.yesh||o.upay;msg('ממלאים את פרטי הכרטיס בטופס המאובטח.'+(PV==='upay'?'<br><b>הטלפון לא חובה.</b> מי שאין לו תעודת זהות ישראלית מסמן <b>"כרטיס תייר"</b>.<br>':'')+(o.rcpt?' הקבלה תישלח למייל.':'')+' החלון יתעדכן לבד כשהתשלום יעבור.');waitPaid()}).catch(()=>{});
+      orderP.then(o=>{if(stop||PROV!==PV)return;box.querySelector('iframe').src=o.yesh||o.upay;msg('ממלאים את פרטי הכרטיס בטופס המאובטח.'+(PV==='upay'?'<br><b>🔒 פרטי הכרטיס ותעודת הזהות נשלחים ישירות לחברת הסליקה בחיבור מאובטח, ולא נשמרים באתר.</b><br><b>הטלפון לא חובה.</b> מי שאין לו תעודת זהות ישראלית מסמן <b>"כרטיס תייר"</b>.<br>':'')+(o.rcpt?' הקבלה תישלח למייל.':'')+' החלון יתעדכן לבד כשהתשלום יעבור.');waitPaid()}).catch(()=>{});
       return}
     /* SUMIT: טופס כרטיס באתר. פרטי הכרטיס הופכים לאסימון ישירות מול SUMIT (הם לא עוברים דרכנו), והקבלה נשלחת ללקוח מ-SUMIT */
     if(PROV==='sumit'){provName='SUMIT';

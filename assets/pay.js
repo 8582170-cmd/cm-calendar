@@ -19,7 +19,7 @@ var CSS = '.mlp-back{position:fixed;inset:0;background:rgb(0 0 0 / .45);z-index:
   '.mlp>*{flex-shrink:0}.mlp .box iframe{display:block}' +
   '.mlp .cf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mlp [id^=mlpPp]{min-height:44px}';
 /* הסבר לטופס של UPAY: השדות שם נקבעים אצלם */
-var UPN = '<br><b>הטלפון לא חובה.</b> מי שאין לו תעודת זהות ישראלית מסמן <b>"כרטיס תייר"</b>.<br>';
+var UPN = '<br><b>🔒 פרטי הכרטיס ותעודת הזהות נשלחים ישירות לחברת הסליקה בחיבור מאובטח, ולא נשמרים באתר.</b><br><b>הטלפון לא חובה.</b> מי שאין לו תעודת זהות ישראלית מסמן <b>"כרטיס תייר"</b>.<br>';
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function tzOk(t){ t = String(t).padStart(9, '0'); if (!/^\d{9}$/.test(t)) return false; var s = 0; for (var i = 0; i < 9; i++) { var d = +t[i] * (i % 2 + 1); s += d > 9 ? d - 9 : d; } return s % 10 === 0; }
 function load(src){ return new Promise(function(ok, bad){ var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); }); }
