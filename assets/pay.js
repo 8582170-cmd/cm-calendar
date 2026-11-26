@@ -17,6 +17,8 @@ var CSS = '.mlp-back{position:fixed;inset:0;background:rgb(0 0 0 / .45);z-index:
   '.mlp label.agree{flex-direction:row;align-items:flex-start;gap:8px;font-weight:600;font-size:15px;line-height:1.5}.mlp label.agree input{width:20px;height:20px;padding:0;margin-top:3px;flex:none;accent-color:var(--teal,#1f5c63)}' +
   '.mlp.noagree #mlpChoose,.mlp.noagree #mlpFrame,.mlp.noagree #mlpBox,.mlp.noagree #mlpGo{pointer-events:none;opacity:.35;filter:grayscale(1)}' +
   '.mlp .cf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mlp [id^=mlpPp]{min-height:44px}';
+/* הסבר לטופס של UPAY: השדות שם נקבעים אצלם */
+var UPN = '<br><b>הטלפון לא חובה.</b> מי שאין לו תעודת זהות ישראלית מסמן <b>"כרטיס תייר"</b>.<br>';
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function tzOk(t){ t = String(t).padStart(9, '0'); if (!/^\d{9}$/.test(t)) return false; var s = 0; for (var i = 0; i < 9; i++) { var d = +t[i] * (i % 2 + 1); s += d > 9 ? d - 9 : d; } return s % 10 === 0; }
 function load(src){ return new Promise(function(ok, bad){ var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); }); }
@@ -123,7 +125,7 @@ function open(opt){
       var yb = $('mlpBox'); yb.hidden = false;
       yb.innerHTML = '<iframe id="mlpYesh" title="טופס תשלום מאובטח" allow="payment" style="height:560px"></iframe>';
       var yf = yb.querySelector('iframe'); yf.src = order.yesh || order.upay;
-      msg('ממלאים את פרטי הכרטיס בטופס המאובטח.' + (order.rcpt ? ' הקבלה תישלח למייל.' : '') + ' החלון יתעדכן לבד כשהתשלום יעבור.');
+      msg('ממלאים את פרטי הכרטיס בטופס המאובטח.' + (PROV === 'upay' ? UPN : '') + (order.rcpt ? ' הקבלה תישלח למייל.' : '') + ' החלון יתעדכן לבד כשהתשלום יעבור.');
       waitPaid();
       return;
     }
