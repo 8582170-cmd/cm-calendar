@@ -296,6 +296,8 @@ module.exports = async (req, res) => {
     json(res, 200, { id, amount: charge, provider: 'nedarim', provs, tx, ...extra });
   } catch (e) {
     console.error('checkout', e);
+    /* התקלה האחרונה נשמרת (בלי פרטי לקוח), כדי שאפשר יהיה לבדוק אותה */
+    try { await require('./_lib').saveSetting('checkout_err', { at: new Date().toISOString(), msg: String(e && e.message || e).slice(0, 300), stack: String(e && e.stack || '').split('\n').slice(0, 6).join(' | ').slice(0, 900) }); } catch (x) {}
     json(res, 500, { error: 'server error', message: MSG.server });
   }
 };
