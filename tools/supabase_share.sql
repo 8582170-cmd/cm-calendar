@@ -33,3 +33,5 @@ alter table public.share_items enable row level security;
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('shared', 'shared', false, 6291456, array['image/jpeg','image/png','image/webp'])
 on conflict (id) do nothing;
+-- הדלי משמש גם לרשומות הברכות ששולמו (JSON, api/_greetpay.js)
+update storage.buckets set allowed_mime_types = array['image/jpeg','image/png','image/webp','application/json'] where id = 'shared';
