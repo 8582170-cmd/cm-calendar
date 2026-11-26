@@ -15,8 +15,8 @@ const site = () => (env('SITE_URL') || 'https://www.myluach.org').replace(/\/$/,
 const sig = id => crypto.createHmac('sha256', env('UPAY_KEY')).update('upay:' + String(id)).digest('hex').slice(0, 32);
 function sigOk(id, s) { const exp = sig(id), got = String(s || ''); return got.length === exp.length && crypto.timingSafeEqual(Buffer.from(exp), Buffer.from(got)); }
 
-/* הגדרות הקבלה מהניהול (cfg.rcpt.upay): האם UPAY מפיקים חשבונית מס/קבלה ושולחים ללקוח */
-function rcptOf(cfg) { const R = (cfg && cfg.rcpt && cfg.rcpt.upay) || {}; return { create: R.create !== false }; }
+/* הגדרות הקבלה מהניהול (cfg.rcpt.upay): האם UPAY מפיקים חשבונית מס/קבלה ושולחים ללקוח. ברירת המחדל: לא (הלקוח מקבל רק אישור רכישה מהאתר) */
+function rcptOf(cfg) { const R = (cfg && cfg.rcpt && cfg.rcpt.upay) || {}; return { create: R.create === true }; }
 
 async function call(msgs) {
   const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ msgs: JSON.stringify(msgs) }), signal: AbortSignal.timeout(25000) });
