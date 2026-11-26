@@ -42,12 +42,12 @@ function clean(c) {
   { const R = c.rcpt || {}, S = R.sumit || {}, Y = R.yesh || {};
     const other = k => { const X = R[k] || {}; return { by: ['sumit', 'yesh'].includes(X.by) ? X.by : '', send: X.send !== false }; };
     /* נדרים פלוס, ביט ו-PayPal לא מפיקים קבלה דרך האתר: אפשר להפיק להם קבלה ב-SUMIT או ביש חשבונית אחרי התשלום */
-    out.rcpt = { upay: { create: (R.upay || {}).create === true }, sumit: { send: S.send !== false }, yesh: { create: Y.create !== false, send: Y.send !== false, doc: [6, 9, 11].includes(+Y.doc) ? +Y.doc : 6 },
+    out.rcpt = { upay: { to: ['owner', 'customer'].includes((R.upay || {}).to) ? R.upay.to : (R.upay || {}).create === true ? 'customer' : 'none' }, sumit: { send: S.send !== false }, yesh: { create: Y.create !== false, send: Y.send !== false, doc: [6, 9, 11].includes(+Y.doc) ? +Y.doc : 6 },
       nedarim: other('nedarim'), bit: other('bit'), paypal: other('paypal'), sumitDoc: +R.sumitDoc === 1 ? 1 : 2 }; }
   out.sumitCap = Math.max(0, Math.min(100000, parseInt(c.sumitCap, 10) || 0));
   out.sumitOps = Math.max(1, Math.min(20, parseInt(c.sumitOps, 10) || 2));
   out.sumitPeriod = c.sumitPeriod === 'rolling' ? 'rolling' : 'month';
-  out.payAfter = c.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
+  out.payAfter = ['nedarim', 'upay'].includes(c.payAfter) ? c.payAfter : 'paypal';
   out.ppAcct = !!c.ppAcct;
   out.ppGpay = !!c.ppGpay;
   out.bitOff = !!c.bitOff;

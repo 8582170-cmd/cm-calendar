@@ -16,7 +16,7 @@ const sig = id => crypto.createHmac('sha256', env('UPAY_KEY')).update('upay:' + 
 function sigOk(id, s) { const exp = sig(id), got = String(s || ''); return got.length === exp.length && crypto.timingSafeEqual(Buffer.from(exp), Buffer.from(got)); }
 
 /* הגדרות הקבלה מהניהול (cfg.rcpt.upay): האם UPAY מפיקים חשבונית מס/קבלה ושולחים ללקוח. ברירת המחדל: לא (הלקוח מקבל רק אישור רכישה מהאתר) */
-function rcptOf(cfg) { const R = (cfg && cfg.rcpt && cfg.rcpt.upay) || {}; return { create: R.create === true }; }
+function rcptOf(cfg) { const R = (cfg && cfg.rcpt && cfg.rcpt.upay) || {}, to = ['owner', 'customer'].includes(R.to) ? R.to : R.create === true ? 'customer' : 'none'; return { create: to !== 'none', to }; }
 
 async function call(msgs) {
   const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ msgs: JSON.stringify(msgs) }), signal: AbortSignal.timeout(25000) });
@@ -33,7 +33,9 @@ async function createPayment({ id, amount, desc, email, phone, cfg }) {
     comment: String(desc || 'MyLuach').slice(0, 100), productdescription: String(desc || 'MyLuach').slice(0, 100),
     ipnurl: site() + '/api/pricing?' + q, returnurl: site() + '/pay-return.html?ok=1&via=upay',
     createinvoiceandreceipt: R.create ? '1' : '0' };
-  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email || '')) tr.emailnotify = email;
+  /* לאן UPAY שולחים את החשבונית: ללקוח, או רק לבעל האתר */
+  const to = R.to === 'customer' ? email : R.to === 'owner' ? (env('OWNER_EMAIL') || env('ALERT_EMAIL') || em) : '';
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to || '')) tr.emailnotify = to;
   const ph = String(phone || '').replace(/\D/g, ''); if (/^05\d{8}$/.test(ph)) tr.cellphonenotify = ph;
   const res = await call([
     { header: H, request: { mainaction: 'CONNECTION', minoraction: 'LOGIN', encoding: 'json', numbertemplate: 1, parameters: { email: em, key } } },

@@ -34,7 +34,7 @@ async function providers(cfg, isDon, avoid) {
   if (ok.sumit && list.includes('sumit')) { /* המכסה בפעולות: כל סליקה = sumitOps פעולות (סליקה + קבלה = 2). עוברים לדרך השנייה כשהסליקה הבאה כבר לא נכנסת */
     const cap = +(cfg.sumitCap || 0), per = Math.max(1, +cfg.sumitOps || 2); if (cap > 0 && (await sumitCount(cfg) + 1) * per > cap) ok.sumit = false; }
   let av = list.filter(x => ok[x]);
-  const after = cfg.payAfter === 'nedarim' ? 'nedarim' : 'paypal';
+  const after = ['nedarim', 'upay'].includes(cfg.payAfter) ? cfg.payAfter : 'paypal';
   if (list.includes('sumit') && !ok.sumit && ok[after] && av.indexOf(after) < 0) av.unshift(after);
   if (!av.length) av = ['paypal', 'nedarim', 'sumit', 'yesh', 'upay'].filter(x => ok[x]).slice(0, 1);
   return av;
@@ -270,7 +270,7 @@ module.exports = async (req, res) => {
       catch (e) { console.error('upay create', e.message); await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'failed', callback: { upay: { error: e.message } } }) }).catch(() => {});
         return json(res, 503, { error: 'provider', fallback: true, message: 'מערכת התשלום לא זמינה כרגע. עוברים לדרך תשלום אחרת…' }); }
       await db('orders?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ callback: { upay: { url: P.url, cashier: P.cashier } } }) });
-      return json(res, 200, { id, amount: charge, provider: 'upay', provs, upay: P.url, rcpt: require('./_upay').rcptOf(cfg).create && !!email, email: email || '', ...extra });
+      return json(res, 200, { id, amount: charge, provider: 'upay', provs, upay: P.url, rcpt: require('./_upay').rcptOf(cfg).to === 'customer' && !!email, email: email || '', ...extra });
     }
     if (prov === 'paypal') {
       const charge = isDon || gift ? amount : (Number(env('PAYPAL_TEST_AMOUNT')) || amount);
